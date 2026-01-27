@@ -96,7 +96,7 @@ export const SuggestedUserCard = ({
                             fontSize="$xs"
                             numberOfLines={1}
                         >
-                            {mutualTrustCount} ortak arkadaş
+                            {mutualTrustCount} mutual friends
                         </Text>
                     ) : null}
                 </VStack>

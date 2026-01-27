@@ -474,7 +474,7 @@ export const CreateExperiencePostScreen = () => {
                             {
                                 name: 'App',
                                 state: appRoute?.state,
-                            },
+                            } as any,
                             {
                                 name: ROOT_ROUTES.POST as any,
                                 state: {
@@ -492,7 +492,7 @@ export const CreateExperiencePostScreen = () => {
                                     ],
                                     index: 0,
                                 },
-                            },
+                            } as any,
                         ],
                     })
                 );
@@ -508,14 +508,14 @@ export const CreateExperiencePostScreen = () => {
                             {
                                 name: 'App',
                                 state: appRoute?.state,
-                            },
+                            } as any,
                             {
                                 name: 'Profile',
                                 params: {
                                     screen: 'ProfileMain',
                                     params: { userId: user.id },
                                 },
-                            },
+                            } as any,
                         ],
                     })
                 );
@@ -658,8 +658,8 @@ export const CreateExperiencePostScreen = () => {
                                 textColor: isSelectProductNextEnabled ? '#111111' : '#B1B1B1',
                                 fontSize: 12,
                                 borderRadius: 25,
-                                paddingX: 24,
-                                paddingY: 8,
+                                paddingX: 10,
+                                paddingY: 10,
                                 onPress: handleNextPress,
                             }}
                         />
@@ -718,10 +718,10 @@ export const CreateExperiencePostScreen = () => {
                                     borderWidth: 1,
                                     borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
                                     textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     borderRadius: 25,
-                                    paddingX: 24,
-                                    paddingY: 8,
+                                    paddingX: 10,
+                                    paddingY: 10,
                                     onPress: handleSubmit(onSubmit),
                                 }
                             }
@@ -777,8 +777,8 @@ export const CreateExperiencePostScreen = () => {
                                 textColor: isStep2NextDisabled ? '#B1B1B1' : '#111111',
                                 fontSize: 12,
                                 borderRadius: 25,
-                                paddingX: 24,
-                                paddingY: 8,
+                                paddingX: 10,
+                                paddingY: 10,
                                 onPress: handleNextPress,
                                 disabled: isStep2NextDisabled,
                             }}
@@ -848,8 +848,8 @@ export const CreateExperiencePostScreen = () => {
                             textColor: isStep1NextEnabled ? '#111111' : '#B1B1B1',
                             fontSize: 12,
                             borderRadius: 25,
-                            paddingX: 24,
-                            paddingY: 8,
+                            paddingX: 10,
+                            paddingY: 10,
                             onPress: handleNextPress,
                         }}
                     />

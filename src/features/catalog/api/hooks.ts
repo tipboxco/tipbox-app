@@ -68,8 +68,8 @@ export const useCatalogPrefetch = () => {
 
   const prefetchProductGroups = useCallback((subCategoryId: string) => {
     queryClient.prefetchQuery({
-      queryKey: catalogKeys.productGroups(subCategoryId, undefined, 100),
-      queryFn: () => getCatalogProductGroups(subCategoryId, undefined, 100),
+      queryKey: catalogKeys.productGroups(subCategoryId, undefined, 20),
+      queryFn: () => getCatalogProductGroups(subCategoryId, undefined, 20),
       staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
     });
   }, [queryClient]);
@@ -237,23 +237,26 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
 
 /**
  * Get Catalog ProductGroups query hook
- * Belirli bir alt kategoriye ait ürün gruplarını getirir
+ * Belirli bir alt kategoriye ait ürün gruplarını getirir (20'şerli pagination)
  * 
  * @param subCategoryId - Alt kategori ID'si
- * @param limit - Maksimum item sayısı (default: 1000)
+ * @param limit - Maksimum item sayısı (default: 20, max: 50)
  * @returns React Query hook result
  * 
  * @example
  * const { data, isLoading, error } = useCatalogProductGroups('subcategory-123');
  */
-export const useCatalogProductGroups = (subCategoryId: string | undefined, limit: number = 100) => {
+export const useCatalogProductGroups = (subCategoryId: string | undefined, limit: number = 20) => {
+  // Backend limit constraint: 1-50 arası olmalı
+  const validLimit = Math.min(Math.max(limit, 1), 50);
+  
   return useQuery<CatalogPaginationResponse<CatalogProductGroup>, Error>({
-    queryKey: subCategoryId ? catalogKeys.productGroups(subCategoryId, undefined, limit) : ['catalog', 'productGroups', 'disabled'],
+    queryKey: subCategoryId ? catalogKeys.productGroups(subCategoryId, undefined, validLimit) : ['catalog', 'productGroups', 'disabled'],
     queryFn: () => {
       if (!subCategoryId) {
         throw new Error('SubCategory ID is required');
       }
-      return getCatalogProductGroups(subCategoryId, undefined, limit);
+      return getCatalogProductGroups(subCategoryId, undefined, validLimit);
     },
     enabled: !!subCategoryId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL

@@ -44,13 +44,13 @@ export const SuggestedUsersScreen = () => {
     
     const addTrustMutation = useAddToTrustList();
 
-    // Tüm sayfaları tek array'de topla ve duplicate'ları filtrele
+    // Combine all pages into a single array and filter duplicates
     const allUsers = React.useMemo(() => {
         if (!data?.pages) return [];
         
         const flatUsers = data.pages.flatMap(page => page.items);
         
-        // Duplicate kullanıcıları filtrele (aynı ID'ye sahip kullanıcılar)
+        // Filter duplicate users (users with the same ID)
         const uniqueUsers = flatUsers.reduce((acc, user) => {
             if (!acc.find(u => u.id === user.id)) {
                 acc.push(user);
@@ -64,18 +64,18 @@ export const SuggestedUsersScreen = () => {
     const handleAddTrust = (userId: string) => {
         console.log('Add trust clicked for user:', userId);
         
-        // Optimistic update: Hemen UI'da göster
+        // Optimistic update: Show immediately in UI
         setLocalTrustedUsers(prev => new Set(prev).add(userId));
         
         addTrustMutation.mutate(userId, {
             onSuccess: () => {
                 console.log('✅ Trust added successfully');
-                // Suggested users listesini yenile
+                // Refresh suggested users list
                 queryClient.invalidateQueries({ queryKey: ['profile', 'suggested'] });
             },
             onError: (error) => {
                 console.error('❌ Failed to add trust:', error);
-                // Hata olursa optimistic update'i geri al
+                // Revert optimistic update on error
                 setLocalTrustedUsers(prev => {
                     const newSet = new Set(prev);
                     newSet.delete(userId);

@@ -54,33 +54,28 @@ interface PostOption {
 const postOptions: PostOption[] = [
     {
         id: 'free',
-        title: 'Serbest Gönderi',
-        description: 'Herhangi bir konuda serbest gönderi oluştur',
+        title: 'Free Post',
+        description: 'Create a free post on any topic',
     },
     {
         id: 'tips',
-        title: 'İpucu Gönderisi',
-        description: 'Bu ürün hakkında bir ipucu paylaş',
+        title: 'Tips Post',
+        description: 'Share a tip about this product',
     },
     {
         id: 'question',
-        title: 'Soru Gönderisi',
-        description: 'Bu ürün hakkında bir soru sor',
+        title: 'Question Post',
+        description: 'Ask a question about this product',
     },
     {
         id: 'experience',
-        title: 'Deneyim Gönderisi',
-        description: 'Bu ürün hakkında deneyimini paylaş',
+        title: 'Experience Post',
+        description: 'Share your experience about this product',
     },
     {
         id: 'benchmark',
-        title: 'Karşılaştırma Gönderisi',
-        description: 'Bu ürünü benzerleriyle karşılaştır',
-    },
-    {
-        id: 'update',
-        title: 'Güncelleme',
-        description: 'Bu ürün hakkında bir güncelleme yap',
+        title: 'Benchmark Post',
+        description: 'Compare this product with similar ones',
     },
 ];
 
@@ -109,8 +104,8 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
     const isDark = colorMode === 'dark';
     const [currentView, setCurrentView] = useState<ViewType>(showExperienceOptionsDirectly ? 'experience' : 'options');
 
-    // PERFORMANCE FIX: useMemo ile filter işlemini cache'le
-    // Bu sayede her render'da yeniden hesaplanmaz
+    // PERFORMANCE FIX: Cache filter operation with useMemo
+    // This prevents recalculation on every render
     const filteredPostOptions = useMemo((): PostOption[] => {
         if (!stage) {
             // If no stage specified, show all options
@@ -120,19 +115,18 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
         switch (stage) {
             case 'subcategories':
             case 'productgroups':
-                // Show only: Serbest Gönderi, İpucu Gönderisi, Soru Gönderisi
+                // Show only: Free Post, Tips Post, Question Post
                 return postOptions.filter(option => 
                     option.id === 'free' || 
                     option.id === 'tips' || 
                     option.id === 'question'
                 );
             case 'products':
-                // Show: Deneyim Gönderisi, İpucu Gönderisi, Karşılaştırma Gönderisi, Güncelleme, Soru Gönderisi
+                // Show: Tips Post, Benchmark Post, Question Post
+                // Experience post only available after add inventory
                 return postOptions.filter(option => 
-                    option.id === 'experience' || 
                     option.id === 'tips' || 
                     option.id === 'benchmark' || 
-                    option.id === 'update' || 
                     option.id === 'question'
                 );
             default:
@@ -196,7 +190,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                 textAlign="center"
                                 flex={1}
                             >
-                                Deneyim Gönderisi
+                                Experience Post
                             </Text>
                             <Box w={24} />
                         </HStack>
@@ -214,7 +208,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                 $dark-color="$textDark50"
                                 textAlign="center"
                             >
-                                Deneyim Gönderisi
+                                Experience Post
                             </Text>
                         </HStack>
                     </VStack>
@@ -310,7 +304,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                         $dark-color="$textDark50"
                         textAlign="center"
                     >
-                        Gönderi Oluştur
+                        Create Post
                     </Text>
                 </HStack>
             </VStack>

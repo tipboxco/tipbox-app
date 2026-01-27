@@ -306,7 +306,7 @@ const InventoryScreen = () => {
                   }
                 } else {
                   // Normal flow: navigate to InventoryDetail
-                  navigation.navigate('InventoryDetail', { itemId: item.id });
+                  navigation.navigate('InventoryDetail', { itemId: item.id, userId: userId });
                 }
               }}
               onUpdateExperience={handleUpdateExperience}

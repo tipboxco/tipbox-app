@@ -23,7 +23,7 @@ const InventoryDetailScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const route = useRoute<RouteProp<ProfileStackParamList, 'InventoryDetail'>>();
-  const { itemId } = route.params as { itemId: string };
+  const { itemId, userId } = route.params as { itemId: string; userId: string };
   const insets = useSafeAreaInsets();
   const { user } = useAppStore();
 
@@ -43,7 +43,8 @@ const InventoryDetailScreen = () => {
 
   // Create Button'u sadece kendi envanteri ise göster
   const currentUserId = user?.id;
-  const showCreateButton = item && currentUserId; // Item varsa ve kullanıcı giriş yapmışsa göster
+  const isOwnInventory = currentUserId === userId;
+  const showCreateButton = item && isOwnInventory; // Item varsa ve kendi envanteri ise göster
 
   // Loading state
   if (isLoading) {

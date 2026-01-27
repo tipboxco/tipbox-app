@@ -217,23 +217,31 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
 
   // Post owner actions
   const handleUpdate = React.useCallback(() => {
-    // Context bilgilerini data'dan al
-    const contextType = data.contextType || ProductInfoType.PRODUCT;
-    const contextId = (data as any).contextId || data.contextData?.id;
-    
-    // PostOptionsMenu'yu bottom sheet olarak aç
-    openBottomSheet(
-      <PostOptionsMenu
-        postId={data.id}
-        postContent={data.content.map(c => c.text).join('\n')}
-        postAuthorName={data.user.name}
-        postAuthorId={data.user.id}
-        postType="experience"
-        postContextType={contextType === ProductInfoType.PRODUCT ? 'product' : undefined}
-        postContextId={contextId}
-      />
-    );
-  }, [data, openBottomSheet]);
+    // CreateUpdatePostScreen'e yönlendir - experience post bilgileriyle
+    navigationService.navigate(ROOT_ROUTES.POST, {
+      screen: 'CreateUpdatePostScreen',
+      params: {
+        experiencePostId: data.id, // Experience post ID (update bu post'a bağlanacak)
+        experiencePost: {
+          id: data.id,
+          content: data.content,
+          images: data.images,
+          product: {
+            id: data.contextData?.id || '',
+            name: data.contextData?.name || '',
+            subName: data.contextData?.subName || '',
+            image: data.contextData?.image,
+          },
+        },
+        product: data.contextData ? {
+          id: data.contextData.id,
+          name: data.contextData.name,
+          description: data.contextData.subName,
+          image: data.contextData.image,
+        } : undefined,
+      },
+    });
+  }, [data]);
 
   const handleDelete = React.useCallback(() => {
     Alert.alert(

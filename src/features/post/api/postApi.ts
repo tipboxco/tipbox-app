@@ -198,50 +198,111 @@ export interface CreateTipsAndTricksPostRequest {
 export const createTipsAndTricksPost = async (
   data: CreateTipsAndTricksPostRequest
 ): Promise<CreatePostResponse> => {
-  const client = apiService.getClient();
-  
-  const formData = new FormData();
-  formData.append('contextType', data.contextType);
-  formData.append('contextId', data.contextId);
-  formData.append('description', data.description);
-  formData.append('benefitCategory', data.benefitCategory);
-  
-  if (data.images && data.images.length > 0) {
-    data.images.forEach((imageUri, index) => {
-      let fileExtension = 'jpg';
-      let mimeType = 'image/jpeg';
-      
-      const uriLower = imageUri.toLowerCase();
-      if (uriLower.includes('.')) {
-        const ext = imageUri.split('.').pop()?.toLowerCase();
-        if (ext === 'png') {
-          fileExtension = 'png';
-          mimeType = 'image/png';
-        } else if (ext === 'jpg' || ext === 'jpeg') {
-          fileExtension = 'jpg';
-          mimeType = 'image/jpeg';
-        }
-      }
-      
-      formData.append('images', {
-        uri: imageUri,
-        type: mimeType,
-        name: `image_${index}.${fileExtension}`,
-      } as any);
-    });
-  }
-  
-  const response = await client.post<CreatePostResponse>(
-    '/posts/tips-and-tricks',
-    formData,
-    {
-      headers: {
-        'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
-      },
+  try {
+    // Validate contextId is not empty
+    if (!data.contextId || data.contextId.trim() === '') {
+      console.error('[createTipsAndTricksPost] ❌ Empty contextId');
+      throw new Error('contextId cannot be empty');
     }
-  );
-  
-  return response.data;
+    
+    console.log('[createTipsAndTricksPost] 📤 Request data:', {
+      contextType: data.contextType,
+      contextId: data.contextId,
+      contextIdLength: data.contextId?.length || 0,
+      description: data.description?.substring(0, 50) + '...',
+      descriptionLength: data.description?.length || 0,
+      benefitCategory: data.benefitCategory,
+      imagesCount: data.images?.length || 0,
+    });
+    
+    const client = apiService.getClient();
+    
+    const formData = new FormData();
+    formData.append('contextType', data.contextType);
+    formData.append('contextId', data.contextId);
+    formData.append('description', data.description);
+    formData.append('benefitCategory', data.benefitCategory);
+    
+    if (data.images && data.images.length > 0) {
+      data.images.forEach((imageUri, index) => {
+        let fileExtension = 'jpg';
+        let mimeType = 'image/jpeg';
+        
+        const uriLower = imageUri.toLowerCase();
+        if (uriLower.includes('.')) {
+          const ext = imageUri.split('.').pop()?.toLowerCase();
+          if (ext === 'png') {
+            fileExtension = 'png';
+            mimeType = 'image/png';
+          } else if (ext === 'jpg' || ext === 'jpeg') {
+            fileExtension = 'jpg';
+            mimeType = 'image/jpeg';
+          }
+        }
+        
+        formData.append('images', {
+          uri: imageUri,
+          type: mimeType,
+          name: `image_${index}.${fileExtension}`,
+        } as any);
+      });
+    }
+    
+    console.log('[createTipsAndTricksPost] 📤 FormData prepared:', {
+      hasContextType: !!formData.get('contextType'),
+      hasContextId: !!formData.get('contextId'),
+      hasDescription: !!formData.get('description'),
+      hasBenefitCategory: !!formData.get('benefitCategory'),
+      imagesCount: data.images?.length || 0,
+    });
+    
+    const response = await client.post<CreatePostResponse>(
+      '/posts/tips-and-tricks',
+      formData,
+      {
+        headers: {
+          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+        },
+      }
+    );
+    
+    console.log('[createTipsAndTricksPost] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    const errorDetails = {
+      url: '/posts/tips-and-tricks',
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        contextIdLength: data.contextId?.length || 0,
+        descriptionLength: data.description?.length || 0,
+        benefitCategory: data.benefitCategory,
+        imagesCount: data.images?.length || 0,
+      },
+      responseData: error.response?.data,
+      responseMessage: error.response?.data?.message,
+      responseError: error.response?.data?.error,
+      errorMessage: error.message,
+      errorStack: error.stack,
+    };
+    
+    console.error('[createTipsAndTricksPost] ❌ API Error:', errorDetails);
+    
+    // Backend'den gelen detaylı hata mesajını logla
+    if (error.response?.data) {
+      console.error('[createTipsAndTricksPost] ❌ Backend Error Details:', {
+        message: error.response.data.message,
+        error: error.response.data.error,
+        statusCode: error.response.data.statusCode,
+        data: error.response.data,
+      });
+    }
+    
+    throw error;
+  }
 };
 
 /**
@@ -353,6 +414,7 @@ export interface CreateUpdatePostRequest {
   contextId: string;
   content: string; // "description" değil, "content"!
   images?: string[];
+  experiencePostId?: string; // Experience post ID (update bu post'a bağlanacak)
 }
 
 /**
@@ -368,6 +430,11 @@ export const createUpdatePost = async (
   formData.append('contextType', data.contextType);
   formData.append('contextId', data.contextId);
   formData.append('content', data.content); // "description" değil, "content"!
+  
+  // Experience post ID varsa ekle (update bu post'a bağlanacak)
+  if (data.experiencePostId) {
+    formData.append('experiencePostId', data.experiencePostId);
+  }
   
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {

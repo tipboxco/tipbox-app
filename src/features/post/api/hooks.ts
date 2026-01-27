@@ -83,6 +83,8 @@ const invalidateContextFeed = (
 /**
  * Helper function to invalidate catalog posts queries
  * Catalog posts (subCategoryPosts, productGroupPosts, catalogProductPosts) için invalidate eder
+ * 
+ * Tüm filter ve sort kombinasyonlarını invalidate eder çünkü query key'lerde filter ve sort parametreleri var
  */
 export const invalidateCatalogPosts = (
   queryClient: ReturnType<typeof useQueryClient>,
@@ -91,26 +93,41 @@ export const invalidateCatalogPosts = (
 ) => {
   switch (contextType) {
     case 'product':
-      // Invalidate catalog product posts
+      // Invalidate catalog product posts - tüm filter/sort kombinasyonlarını invalidate et
+      // Query key format: ['catalog', 'catalogProductPosts', productId, filter, sort, cursor, limit]
       queryClient.invalidateQueries({ 
-        queryKey: catalogKeys.catalogProductPosts(contextId),
+        queryKey: ['catalog', 'catalogProductPosts', contextId],
+        exact: false
+      });
+      // Also invalidate product posts (/products/:productId/posts) - used in BrandProductDetailScreen
+      queryClient.invalidateQueries({ 
+        queryKey: catalogKeys.productPosts(contextId),
         exact: false
       });
       break;
     case 'product_group':
-      // Invalidate product group posts
+      // Invalidate product group posts - tüm filter/sort kombinasyonlarını invalidate et
+      // Query key format: ['catalog', 'productGroupPosts', productGroupId, filter, sort, cursor, limit]
       queryClient.invalidateQueries({ 
-        queryKey: catalogKeys.productGroupPosts(contextId),
+        queryKey: ['catalog', 'productGroupPosts', contextId],
         exact: false
       });
       break;
     case 'sub_category':
-      // Invalidate sub category posts
+      // Invalidate sub category posts - tüm filter/sort kombinasyonlarını invalidate et
+      // Query key format: ['catalog', 'subCategoryPosts', subCategoryId, filter, sort, cursor, limit]
       queryClient.invalidateQueries({ 
-        queryKey: catalogKeys.subCategoryPosts(contextId),
+        queryKey: ['catalog', 'subCategoryPosts', contextId],
         exact: false
       });
       break;
+  }
+  
+  if (__DEV__) {
+    console.log('[invalidateCatalogPosts] ✅ Invalidated catalog posts:', {
+      contextType,
+      contextId,
+    });
   }
 };
 
@@ -248,6 +265,9 @@ export const useCreateTipsAndTricksPost = () => {
       // Context-based feed'i invalidate et
       invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
       
+      // Catalog posts'u invalidate et (product screen'de görünsün)
+      invalidateCatalogPosts(queryClient, variables.contextType, variables.contextId);
+      
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -276,6 +296,9 @@ export const useCreateQuestionPost = () => {
     onSuccess: (data, variables) => {
       // Context-based feed'i invalidate et
       invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
+      
+      // Catalog posts'u invalidate et (product screen'de görünsün)
+      invalidateCatalogPosts(queryClient, variables.contextType, variables.contextId);
       
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });

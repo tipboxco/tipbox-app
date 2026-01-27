@@ -8,6 +8,7 @@ import { InventoryItem } from '@/src/features/profile/types';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import type { ImageSourcePropType } from 'react-native';
 
 // Post Stack için type tanımlaması
 export type PostStackParamList = {
@@ -53,7 +54,17 @@ export type PostStackParamList = {
     selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any };
     selectedProductField?: 'selectedProduct1' | 'selectedProduct2';
   };
-  CreateUpdatePostScreen: { product?: { id: string; name: string; description?: string; image: any; brand?: string }; postId?: string }; // postId: Update modu için
+  CreateUpdatePostScreen: { 
+    product?: { id: string; name: string; description?: string; image: any; brand?: string }; 
+    postId?: string; // Update modu için (mevcut update post'u düzenleme)
+    experiencePostId?: string; // Experience post ID (update oluştururken bağlanacak experience post)
+    experiencePost?: {
+      id: string;
+      content: Array<{ tag: { icon: string; title: string }; text: string; rating: boolean[] }>;
+      images?: ImageSourcePropType[];
+      product: { id: string; name: string; subName: string; image: any };
+    };
+  };
   AddProductFromInventory: { 
     returnScreen: 'CreateBenchmarkPostScreen';
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';

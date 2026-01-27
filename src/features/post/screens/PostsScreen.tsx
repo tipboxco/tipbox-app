@@ -2,7 +2,7 @@ import React, { useRef, useMemo, useCallback, useState } from 'react';
 import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, Pressable, Text } from '@gluestack-ui/themed';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -24,6 +24,8 @@ import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
 import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useSubCategoryPosts, useProductGroupPosts, useCatalogProductPosts } from '@/src/features/catalog/api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
+import { useQueryClient } from '@tanstack/react-query';
+import { invalidateCatalogPosts } from '../api/hooks';
 import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
 import type { ProfilePost } from '@/src/features/profile/types';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
@@ -110,6 +112,9 @@ export const PostsScreen = () => {
   const feedContextId = useMemo((): string | undefined => {
     // Priority: route params > store > selectedProduct
     if (contextId) {
+      if (__DEV__) {
+        console.log('[PostsScreen] ✅ Using contextId from route params:', contextId);
+      }
       return contextId;
     }
     
@@ -117,16 +122,34 @@ export const PostsScreen = () => {
     const selectedSubCategoryId = useCatalogUIStore.getState().selectedSubCategoryId;
     const selectedProductGroupId = useCatalogUIStore.getState().selectedProductGroupId;
     
+    let result: string | undefined;
     switch (feedContextType) {
       case 'product':
-        return selectedProductId || selectedProduct?.id;
+        result = selectedProductId || selectedProduct?.id;
+        break;
       case 'product_group':
-        return selectedProductGroupId;
+        result = selectedProductGroupId;
+        break;
       case 'sub_category':
-        return selectedSubCategoryId;
+        result = selectedSubCategoryId;
+        break;
       default:
-        return undefined;
+        result = undefined;
     }
+    
+    if (__DEV__) {
+      console.log('[PostsScreen] 🔍 Feed Context ID calculated:', {
+        feedContextType,
+        contextId,
+        selectedProductId,
+        selectedProductGroupId,
+        selectedSubCategoryId,
+        selectedProductFromPayload: selectedProduct?.id,
+        result,
+      });
+    }
+    
+    return result;
   }, [contextId, feedContextType, selectedProduct]);
 
   // Determine which API to use based on context type
@@ -204,6 +227,26 @@ export const PostsScreen = () => {
     20
   );
 
+  // Debug: Log query state for product posts
+  React.useEffect(() => {
+    if (feedContextType === 'product' && feedContextId) {
+      if (__DEV__) {
+        console.log('[PostsScreen] 🔍 Product Posts Query State:', {
+          feedContextType,
+          feedContextId,
+          productFilter,
+          backendSort,
+          isLoading: catalogProductPostsQuery.isLoading,
+          isError: catalogProductPostsQuery.isError,
+          error: catalogProductPostsQuery.error,
+          hasData: !!catalogProductPostsQuery.data,
+          pagesCount: catalogProductPostsQuery.data?.pages?.length || 0,
+          totalItems: catalogProductPostsQuery.data?.pages?.reduce((acc, page) => acc + (page.items?.length || 0), 0) || 0,
+        });
+      }
+    }
+  }, [feedContextType, feedContextId, productFilter, backendSort, catalogProductPostsQuery]);
+
   // Select the appropriate query based on context type
   // Catalog posts endpoints now support filter and sort parameters directly
   const activeQuery = useMemo(() => {
@@ -246,7 +289,17 @@ export const PostsScreen = () => {
   // PERFORMANCE FIX: Optimize feedItems calculation - lazy evaluation
   // Only calculate when data is available, use early return for empty state
   const feedItems = useMemo(() => {
-    if (!data?.pages || data.pages.length === 0) return [];
+    if (!data?.pages || data.pages.length === 0) {
+      if (__DEV__) {
+        console.log('[PostsScreen] ⚠️ No data pages:', {
+          hasData: !!data,
+          pagesLength: data?.pages?.length || 0,
+          feedContextType,
+          feedContextId,
+        });
+      }
+      return [];
+    }
     
     // PERFORMANCE FIX: Use Set for faster duplicate checking
     const seenIds = new Set<string>();
@@ -254,19 +307,44 @@ export const PostsScreen = () => {
     
     // Iterate through pages and items once
     for (const page of data.pages) {
-      if (!page.items || page.items.length === 0) continue;
+      if (!page.items || page.items.length === 0) {
+        if (__DEV__) {
+          console.log('[PostsScreen] ⚠️ Empty page items:', {
+            pageItemsLength: page.items?.length || 0,
+            pagePagination: page.pagination,
+          });
+        }
+        continue;
+      }
       
       for (const item of page.items) {
         const itemId = item.data?.id;
         if (itemId && !seenIds.has(itemId)) {
           seenIds.add(itemId);
           uniqueItems.push(item);
+        } else if (__DEV__) {
+          console.log('[PostsScreen] ⚠️ Skipping item:', {
+            hasItemId: !!itemId,
+            isDuplicate: itemId ? seenIds.has(itemId) : false,
+            itemType: item.type,
+            itemDataId: item.data?.id,
+          });
         }
       }
     }
     
+    if (__DEV__) {
+      console.log('[PostsScreen] ✅ Feed items calculated:', {
+        totalItems: uniqueItems.length,
+        feedContextType,
+        feedContextId,
+        pagesCount: data.pages.length,
+        itemsPerPage: data.pages.map(p => p.items?.length || 0),
+      });
+    }
+    
     return uniqueItems;
-  }, [data?.pages]);
+  }, [data?.pages, feedContextType, feedContextId]);
 
   // Convert stage from PostsScreen to CatalogStage format
   const getCatalogStage = useCallback((): 'subcategories' | 'productgroups' | 'products' | undefined => {
@@ -932,10 +1010,29 @@ export const PostsScreen = () => {
   const renderFeedItem = useCallback(({ item }: { item: FeedApiItem }) => {
     // Safety check
     if (!item || !item.data || !item.data.id) {
+      if (__DEV__) {
+        console.log('[PostsScreen] ⚠️ Invalid item in renderFeedItem:', {
+          hasItem: !!item,
+          hasData: !!item?.data,
+          hasId: !!item?.data?.id,
+          itemType: item?.type,
+        });
+      }
       return null;
     }
 
     const itemId = item.data.id;
+    
+    if (__DEV__) {
+      console.log('[PostsScreen] 🎨 Rendering feed item:', {
+        itemId,
+        itemType: item.type,
+        dataType: item.data.type,
+        hasContextType: 'contextType' in item.data,
+        hasContextData: 'contextData' in item.data,
+        hasIsBoosted: 'isBoosted' in item.data,
+      });
+    }
 
     // Use string comparison for type matching
     switch (item.type) {
@@ -969,13 +1066,22 @@ export const PostsScreen = () => {
         );
       case CardType.QUESTION:
       case 'question':
-        if ('contextType' in item.data && 'contextData' in item.data && 'isBoosted' in item.data) {
+        // Check if item has required fields for question post
+        if ('contextType' in item.data && 'contextData' in item.data) {
+          // isBoosted is optional, so we don't require it
           return (
             <QuestionPostCard
               key={itemId}
               data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
             />
           );
+        }
+        if (__DEV__) {
+          console.log('[PostsScreen] ⚠️ Question item missing required fields:', {
+            hasContextType: 'contextType' in item.data,
+            hasContextData: 'contextData' in item.data,
+            itemData: item.data,
+          });
         }
         return null;
       case CardType.TIPS_AND_TRICKS:
@@ -999,11 +1105,19 @@ export const PostsScreen = () => {
     }
   }, [mapFeedToCardData, mapExperienceToCardData, mapBenchmarkToCardData, mapQuestionToCardData, mapTipsToCardData, mapUpdateToCardData]);
 
+  // Query client for invalidating queries
+  const queryClient = useQueryClient();
+
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Refetch active query
+      // Invalidate queries first to ensure fresh data
+      if (feedContextType && feedContextId) {
+        invalidateCatalogPosts(queryClient, feedContextType, feedContextId);
+      }
+      
+      // Refetch active query - this will fetch fresh data from the beginning
       if (activeQuery) {
         await activeQuery.refetch();
       }
@@ -1012,7 +1126,22 @@ export const PostsScreen = () => {
     } finally {
       setRefreshing(false);
     }
-  }, [activeQuery]);
+  }, [activeQuery, feedContextType, feedContextId, queryClient]);
+
+  // Refetch query when screen comes into focus (e.g., after creating a post)
+  useFocusEffect(
+    useCallback(() => {
+      // Refetch active query when screen is focused
+      // This ensures that newly created posts appear immediately
+      if (activeQuery && feedContextId) {
+        // Small delay to ensure navigation is complete
+        const timer = setTimeout(() => {
+          activeQuery.refetch();
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }, [activeQuery, feedContextId])
+  );
 
   const handleCreatePress = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view
@@ -1114,7 +1243,8 @@ export const PostsScreen = () => {
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
                 tintColor={isDark ? '#FFFFFF' : '#000000'}
-                colors={['#000000']}
+                colors={isDark ? ['#FFFFFF'] : ['#000000']}
+                progressBackgroundColor={isDark ? '#1A1A1A' : '#FFFFFF'}
               />
             }
             ListFooterComponent={ListFooterComponent}

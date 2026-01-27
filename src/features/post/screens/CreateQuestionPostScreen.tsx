@@ -19,6 +19,7 @@ import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { useWalletBalance } from '@/src/features/wallet/api/hooks';
 import { profileKeys } from '@/src/features/profile/api/hooks';
 import { invalidateCatalogPosts } from '../api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
@@ -73,23 +74,28 @@ export const CreateQuestionPostScreen = () => {
   const methods = useQuestionPostForm();
   const { formState, getValues, setValue } = methods;
   const handleSubmit = methods.handleSubmit;
-  const availableTips = 250;
   const toast = useToast();
   const createQuestionPostMutation = useCreateQuestionPost();
-  const { user } = useAppStore();
+  const { user, walletBalance: storeBalance } = useAppStore();
+  
+  // Realtime wallet balance - Store'dan al, yoksa API'den getir
+  const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
+  // Store'daki balance varsa onu kullan, yoksa API'den gelen balance'ı kullan
+  const availableTips = storeBalance !== null && storeBalance !== undefined ? storeBalance : (walletBalance?.balance || 0);
+  
   const queryClient = useQueryClient();
   
-  // Boost options'ı API'den çek
+  // Fetch boost options from API
   const { data: boostOptions = [], isLoading: isLoadingBoostOptions, error: boostOptionsError } = useBoostOptions();
   
-  // Flow store'dan context bilgilerini al
+  // Get context information from flow store
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
   const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
   const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
   
-  // Debug: Context değerlerini logla
+  // Debug: Log context values
   React.useEffect(() => {
     console.log('[CreateQuestionPostScreen] 🔍 Context State:', {
       contextType,
@@ -106,7 +112,7 @@ export const CreateQuestionPostScreen = () => {
       navigation.goBack();
     } else {
       // Fallback: Navigate to Feed screen
-      // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
+      // ARCHITECTURE FIX: Correct navigation structure: App → MainTabs → FeedScreen
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -181,20 +187,20 @@ export const CreateQuestionPostScreen = () => {
     }
   };
 
-  // Boost option ID'sini bul (form'daki selectedBoost artık gerçek boost option ID'si)
+  // Find boost option ID (selectedBoost in form is now the actual boost option ID)
   const getBoostOptionId = (selectedBoost: string): string | null => {
-    // Eğer boost option seçilmediyse veya boş string ise null döndür
+    // Return null if boost option is not selected or is empty string
     if (!selectedBoost || selectedBoost.trim() === '') {
       return null;
     }
     
-    // Boost options listesinde bu ID'yi ara
+    // Search for this ID in boost options list
     const foundOption = boostOptions.find(option => option.id === selectedBoost);
     if (foundOption) {
-      return foundOption.id; // Gerçek UUID ID'si
+      return foundOption.id; // Actual UUID ID
     }
     
-    // Bulunamazsa null döndür (backend'e gönderilmeyecek)
+    // Return null if not found (won't be sent to backend)
     console.warn('[CreateQuestionPostScreen] Boost option not found:', selectedBoost);
     return null;
   };
@@ -202,7 +208,7 @@ export const CreateQuestionPostScreen = () => {
   const onSubmit: SubmitHandler<QuestionPostFormData> = async (data) => {
     console.log('[CreateQuestionPostScreen] Form submitted:', data);
     
-    // Debug: Store state'i kontrol et
+    // Debug: Check store state
     const storeState = useCreatePostFlowStore.getState();
     console.log('[CreateQuestionPostScreen] 🔍 Store State Check:', {
       contextType,
@@ -216,7 +222,7 @@ export const CreateQuestionPostScreen = () => {
       },
     });
     
-    // ContextType ve contextId kontrolü
+    // Check contextType and contextId
     if (!contextType || !contextId) {
       console.error('[CreateQuestionPostScreen] ❌ Missing context:', { contextType, contextId });
       showCustomToast(toast, {
@@ -227,13 +233,13 @@ export const CreateQuestionPostScreen = () => {
       return;
     }
     
-    // API contextType'a çevir
+    // Convert to API contextType
     const apiContextType = mapProductInfoTypeToContextType(contextType);
     
-    // Boost option ID'sini al (gerçek UUID)
+    // Get boost option ID (actual UUID)
     const selectedBoostOptionId = getBoostOptionId(data.selectedBoost);
     
-    // Boost option ID kontrolü (backend zorunlu kılıyor)
+    // Boost option ID check (backend requires it)
     if (!selectedBoostOptionId) {
       showCustomToast(toast, {
         title: 'Missing Information',
@@ -262,7 +268,7 @@ export const CreateQuestionPostScreen = () => {
       
       console.log('[CreateQuestionPostScreen] ✅ API Response:', response);
       
-      // Başarılı toast göster
+      // Show success toast
       showCustomToast(toast, {
         title: 'Question Post Created',
         description: 'Your question post has been shared successfully!',
@@ -274,7 +280,7 @@ export const CreateQuestionPostScreen = () => {
         invalidateCatalogPosts(queryClient, apiContextType, contextId);
       }
       
-      // Profil verilerini invalidate et - yeni post görünsün
+      // Invalidate profile data - new post should be visible
       if (user?.id) {
         queryClient.invalidateQueries({
           queryKey: profileKeys.userPosts(user.id),
@@ -325,7 +331,7 @@ export const CreateQuestionPostScreen = () => {
               {
                 name: 'App',
                 state: appRoute?.state,
-              },
+              } as any,
               {
                 name: ROOT_ROUTES.POST as any,
                 state: {
@@ -343,12 +349,12 @@ export const CreateQuestionPostScreen = () => {
                   ],
                   index: 0,
                 },
-              },
+              } as any,
             ],
           })
         );
       } else if (user?.id) {
-        // Fallback: ProfileScreen'e yönlendir
+        // Fallback: Navigate to ProfileScreen
         const currentState = navigation.getState();
         const appRoute = currentState?.routes?.find((route) => route.name === 'App');
         
@@ -359,19 +365,19 @@ export const CreateQuestionPostScreen = () => {
               {
                 name: 'App',
                 state: appRoute?.state,
-              },
+              } as any,
               {
                 name: 'Profile',
                 params: {
                   screen: 'ProfileMain',
                   params: { userId: user.id },
                 },
-              },
+              } as any,
             ],
           })
         );
       } else {
-        // Fallback: Feed ekranına yönlendir
+        // Fallback: Navigate to Feed screen
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -398,7 +404,7 @@ export const CreateQuestionPostScreen = () => {
     } catch (error: any) {
       console.error('[CreateQuestionPostScreen] ❌ API Error:', error);
       
-      // Hata toast göster
+      // Show error toast
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
                           'An error occurred while creating the post. Please try again.';
@@ -436,8 +442,8 @@ export const CreateQuestionPostScreen = () => {
               textColor: isShareEnabled ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
-              paddingX: 22,
-              paddingY: 8,
+              paddingX: 10,
+              paddingY: 10,
               onPress: methods.handleSubmit(onSubmit),
             }}
           />

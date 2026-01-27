@@ -499,10 +499,10 @@ export const CreateBenchmarkPostScreen = () => {
               borderWidth: 1,
               borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
               textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-              fontSize: 12,
+              fontSize: 11,
               borderRadius: 25,
-              paddingX: 24,
-              paddingY: 8,
+              paddingX: 10,
+              paddingY: 10,
               onPress: () => {
                 // TypeScript type inference issue with react-hook-form handleSubmit
                 // useBenchmarkPostForm already uses BenchmarkPostFormData, so this is safe

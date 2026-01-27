@@ -220,25 +220,20 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
 
   // Post owner actions
   const handleUpdate = React.useCallback(() => {
-    // Context bilgilerini data'dan al
-    const contextType = data.contextType === ProductInfoType.PRODUCT ? 'product' :
-                       data.contextType === ProductInfoType.PRODUCT_GROUP ? 'product_group' :
-                       data.contextType === ProductInfoType.SUB_CATEGORY ? 'sub_category' : undefined;
-    const contextId = product?.id || (data as any).contextId;
-    
-    // PostOptionsMenu'yu bottom sheet olarak aç
-    openBottomSheet(
-      <PostOptionsMenu
-        postId={data.id}
-        postContent={data.content}
-        postAuthorName={data.user.name}
-        postAuthorId={data.user.id}
-        postType="update"
-        postContextType={contextType}
-        postContextId={contextId}
-      />
-    );
-  }, [data, product, openBottomSheet]);
+    // CreateUpdatePostScreen'e yönlendir - update post'u düzenleme modu
+    navigationService.navigate(ROOT_ROUTES.POST, {
+      screen: 'CreateUpdatePostScreen',
+      params: {
+        postId: data.id, // Update modu için post ID
+        product: product ? {
+          id: product.id,
+          name: product.name,
+          description: product.subName,
+          image: toImageSource(product.image),
+        } : undefined,
+      },
+    });
+  }, [data, product]);
 
   const handleDelete = React.useCallback(() => {
     Alert.alert(

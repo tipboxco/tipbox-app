@@ -191,12 +191,39 @@ export const getCatalogProductGroups = async (
   params.append('limit', limit.toString());
   
   try {
+    const url = `/catalog/sub-categories/${subCategoryId}/product-groups?${params.toString()}`;
     const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogProductGroup> | CatalogProductGroup[]>(
-      `/catalog/sub-categories/${subCategoryId}/product-groups?${params.toString()}`
+      url
     );
     
+    // DEBUG: API response'unu log'la
+    if (__DEV__) {
+      console.log('[getCatalogProductGroups] 📡 API Response:', {
+        url,
+        subCategoryId,
+        limit,
+        responseDataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        hasItems: response.data && typeof response.data === 'object' && 'items' in response.data,
+        hasPagination: response.data && typeof response.data === 'object' && 'pagination' in response.data,
+        itemsCount: (response.data as any)?.items?.length || (Array.isArray(response.data) ? response.data.length : 0),
+        responseData: response.data,
+      });
+    }
+    
     // Backend pagination destekliyorsa direkt döndür
-    if (response.data && typeof response.data === 'object' && 'items' in response.data && 'pagination' in response.data) {
+    if (response.data && typeof response.data === 'object' && 'items' in response.data) {
+      // Pagination field'ı olmayabilir, o zaman ekleyelim
+      const data = response.data as any;
+      if (!('pagination' in data)) {
+        return {
+          items: data.items || [],
+          pagination: {
+            hasMore: false,
+            limit: limit,
+          },
+        };
+      }
       return response.data as CatalogPaginationResponse<CatalogProductGroup>;
     }
     
@@ -212,8 +239,20 @@ export const getCatalogProductGroups = async (
     }
     
     // Beklenmeyen format
+    console.error('[getCatalogProductGroups] ❌ Unexpected response format:', {
+      url,
+      responseDataType: typeof response.data,
+      responseData: response.data,
+    });
     throw new Error('Unexpected response format from /catalog/sub-categories/{subCategoryId}/product-groups');
   } catch (error: any) {
+    console.error('[getCatalogProductGroups] ❌ API Error:', {
+      url: `/catalog/sub-categories/${subCategoryId}/product-groups`,
+      status: error.response?.status,
+      data: error.response?.data,
+      error: error.message,
+    });
+    
     // Backend pagination desteklemiyorsa, array döndürebilir - fallback
     if (error.response?.data && Array.isArray(error.response.data)) {
       return {
@@ -1013,9 +1052,27 @@ export const getCatalogProductPosts = async (
   params.append('limit', limit.toString());
 
   try {
+    const url = `/catalog/products/${productId}/posts?${params.toString()}`;
     const response = await apiService.getClient().get<FeedApiResponse>(
-      `/catalog/products/${productId}/posts?${params.toString()}`
+      url
     );
+    
+    // DEBUG: Log API response
+    if (__DEV__) {
+      console.log('[getCatalogProductPosts] 📡 API Response:', {
+        url,
+        productId,
+        filter,
+        sort,
+        limit,
+        responseDataType: typeof response.data,
+        hasItems: !!response.data?.items,
+        itemsCount: response.data?.items?.length || 0,
+        itemsType: Array.isArray(response.data?.items) ? 'array' : typeof response.data?.items,
+        hasPagination: !!response.data?.pagination,
+        responseData: response.data,
+      });
+    }
     
     // Ensure items is always an array (defensive programming)
     const safeResponse: FeedApiResponse = {
@@ -1026,9 +1083,18 @@ export const getCatalogProductPosts = async (
       },
     };
     
+    if (__DEV__) {
+      console.log('[getCatalogProductPosts] ✅ Parsed Response:', {
+        itemsCount: safeResponse.items.length,
+        pagination: safeResponse.pagination,
+        firstItemType: safeResponse.items[0]?.type,
+        firstItemId: safeResponse.items[0]?.data?.id,
+      });
+    }
+    
     return safeResponse;
   } catch (error: any) {
-    console.error('[getCatalogProductPosts] API Error:', {
+    console.error('[getCatalogProductPosts] ❌ API Error:', {
       url: `/catalog/products/${productId}/posts?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,

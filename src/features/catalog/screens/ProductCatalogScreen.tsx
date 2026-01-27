@@ -230,9 +230,30 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
 
   // ProductGroups için
   const catalogProductGroups = useMemo(() => {
-    if (!catalogProductGroupsData?.items) return [];
+    if (!catalogProductGroupsData?.items) {
+      if (__DEV__) {
+        console.log('[ProductCatalogScreen] ⚠️ No product groups data:', {
+          catalogProductGroupsData,
+          selectedSubCategoryId,
+        });
+      }
+      return [];
+    }
+    
+    if (__DEV__) {
+      console.log('[ProductCatalogScreen] ✅ Product groups loaded:', {
+        count: catalogProductGroupsData.items.length,
+        items: catalogProductGroupsData.items.map(item => ({
+          productGroupId: item.productGroupId,
+          name: item.name,
+          subCategoryId: item.subCategoryId,
+        })),
+        selectedSubCategoryId,
+      });
+    }
+    
     return catalogProductGroupsData.items;
-  }, [catalogProductGroupsData]);
+  }, [catalogProductGroupsData, selectedSubCategoryId]);
 
   // İlk 3 kategorinin subcategories'ini prefetch et (kullanıcı deneyimini iyileştirmek için)
   useEffect(() => {
@@ -298,16 +319,37 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
 
   // API'den gelen product groups'u formatla - useMemo ile cache'le
   const currentProductGroups = useMemo(() => {
-    if (!catalogProductGroups || catalogProductGroups.length === 0) return [];
+    if (!catalogProductGroups || catalogProductGroups.length === 0) {
+      if (__DEV__) {
+        console.log('[ProductCatalogScreen] ⚠️ No product groups to format:', {
+          catalogProductGroupsLength: catalogProductGroups?.length || 0,
+          selectedSubCategoryId,
+        });
+      }
+      return [];
+    }
     
-    return catalogProductGroups.map(productGroup => ({
+    const formatted = catalogProductGroups.map(productGroup => ({
       id: productGroup.productGroupId,
       name: productGroup.name,
       image: productGroup.image || undefined, // Boş string ise undefined yap
       subCategoryId: productGroup.subCategoryId,
       products: [], // API'den products gelmiyor, boş array
     }));
-  }, [catalogProductGroups]);
+    
+    if (__DEV__) {
+      console.log('[ProductCatalogScreen] ✅ Formatted ProductGroups:', {
+        count: formatted.length,
+        items: formatted.map(item => ({
+          id: item.id,
+          name: item.name,
+          subCategoryId: item.subCategoryId,
+        })),
+      });
+    }
+    
+    return formatted;
+  }, [catalogProductGroups, selectedSubCategoryId]);
 
   // API'den gelen products'ı formatla - useMemo ile cache'le
   // useCatalogProducts InfiniteData döndürüyor, pages.flatMap kullanmalıyız
@@ -526,7 +568,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   };
 
   const handleSubCategoryPress = (subCategory: CatalogSubCategory & { id: string; image: any }) => {
-    
     // Get the current category from breadcrumb
     const currentCategory = breadcrumbItems.find(item => item.type === 'category');
     const fallbackCategory =
@@ -1095,6 +1136,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       
       // Determine contextType and contextId based on current selection
       // Priority: Product > ProductGroup > SubCategory
+      // IMPORTANT: Category seviyesinde tips post oluşturulamaz, en az subcategory seçilmeli
       let determinedContextType: ProductInfoType | undefined;
       let determinedContextId: string | undefined;
       let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
@@ -1127,7 +1169,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             subName: subCategoryName,
           };
         }
-      } else if (selectedSubCategoryId) {
+      } else if (selectedSubCategoryId && currentView !== 'categories') {
         determinedContextType = ProductInfoType.SUB_CATEGORY;
         determinedContextId = selectedSubCategoryId;
         
@@ -1143,13 +1185,24 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             title: selectedSubCategory.name,
             subName: categoryName,
           };
+        } else {
+          // SubCategory bulunamadı - bu da bir sorun
+          console.error('[ProductCatalogScreen] ❌ SubCategory not found in currentSubCategories:', selectedSubCategoryId);
+          console.error('[ProductCatalogScreen] ❌ Available subCategories:', currentSubCategories.map(sc => ({ id: sc.id, name: sc.name })));
+          return;
         }
       }
       
-      // Store'da ID yoksa hata göster
+      // Store'da ID yoksa veya category seviyesindeyse hata göster
       if (!determinedContextType || !determinedContextId) {
-        console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId);
-        // TODO: Show error toast/modal to user
+        console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId, 'Current view:', currentView);
+        console.error('[ProductCatalogScreen] ❌ Store state:', {
+          selectedProductId,
+          selectedSubCategoryId,
+          selectedProductGroupId,
+          currentView,
+        });
+        // TODO: Show error toast/modal to user - "Please select a subcategory, product group, or product first"
         return;
       }
       
@@ -1253,19 +1306,6 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             name: selectedProduct.name,
             description: selectedProduct.description,
             image: selectedProduct.image,
-          } : undefined,
-        },
-      });
-    } else if (type === 'update') {
-      navigationService.navigate(ROOT_ROUTES.POST, {
-        screen: 'CreateUpdatePostScreen',
-        params: {
-          product: selectedProduct ? {
-            id: selectedProduct.id,
-            name: selectedProduct.name,
-            description: selectedProduct.description,
-            image: selectedProduct.image,
-            brand: selectedProduct.brand,
           } : undefined,
         },
       });

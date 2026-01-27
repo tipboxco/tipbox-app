@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, View, Image as RNImage } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, useToast, Image } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -25,6 +25,11 @@ import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { UpdatePostFormData } from '../schemas/updatePostSchema';
+import { TagIcon, CubeIcon, StarIcon } from 'react-native-heroicons/outline';
+import { StarIcon as StarIconSolid } from 'react-native-heroicons/solid';
+import { toImageSource } from '@/src/utils';
+import CardImageCarousel from '@/src/components/CardImageCarousel';
+import type { ImageSourcePropType } from 'react-native';
 
 type CreateUpdatePostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CreateUpdatePostScreenRouteProp = RouteProp<PostStackParamList, 'CreateUpdatePostScreen'>;
@@ -34,7 +39,10 @@ export const CreateUpdatePostScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreateUpdatePostScreenNavigationProp>();
   const route = useRoute<CreateUpdatePostScreenRouteProp>();
-  const { product, postId } = route.params || {}; // postId: Update modu için
+  const { product, postId, experiencePostId, experiencePost } = route.params || {}; 
+  // postId: Update modu için (mevcut update post'u düzenleme)
+  // experiencePostId: Experience post ID (update oluştururken bağlanacak experience post)
+  // experiencePost: Experience post bilgileri (content, images, product)
   const methods = useUpdatePostForm();
   const { handleSubmit, formState, getValues, setValue, watch, reset } = methods;
   const toast = useToast();
@@ -45,6 +53,8 @@ export const CreateUpdatePostScreen = () => {
   
   // Update modu kontrolü
   const isUpdateMode = !!postId;
+  // Experience post'tan update oluşturma modu
+  const isExperienceUpdateMode = !!experiencePostId && !!experiencePost;
   
   // Post detayını fetch et (update modu için)
   const { data: postDetail, isLoading: isLoadingPost } = usePostDetail(
@@ -144,6 +154,8 @@ export const CreateUpdatePostScreen = () => {
     console.log('[CreateUpdatePostScreen] Form submitted:', data);
     console.log('[CreateUpdatePostScreen] Product from route params:', product);
     console.log('[CreateUpdatePostScreen] Is update mode:', isUpdateMode);
+    console.log('[CreateUpdatePostScreen] Is experience update mode:', isExperienceUpdateMode);
+    console.log('[CreateUpdatePostScreen] Experience post ID:', experiencePostId);
     
     try {
       if (isUpdateMode && postId) {
@@ -167,8 +179,100 @@ export const CreateUpdatePostScreen = () => {
         
         // Geri dön
         navigation.goBack();
+      } else if (isExperienceUpdateMode && experiencePostId) {
+        // Experience post'tan update oluşturma modu
+        // ContextType ve contextId kontrolü
+        if (!contextType || !contextId) {
+          showCustomToast(toast, {
+            title: 'Error',
+            description: 'Context information not found. Please try again.',
+            action: 'error',
+          });
+          return;
+        }
+        
+        // API contextType'a çevir
+        const apiContextType = mapProductInfoTypeToContextType(contextType);
+        
+        const response = await createUpdatePostMutation.mutateAsync({
+          contextType: apiContextType,
+          contextId: contextId,
+          content: data.description, // API'de "content" field'ı kullanılıyor
+          images: data.selectedImages || [],
+          experiencePostId: experiencePostId, // Experience post ID'yi gönder
+        });
+        
+        console.log('[CreateUpdatePostScreen] ✅ Update Post Created from Experience:', response);
+        
+        // Başarılı toast göster
+        showCustomToast(toast, {
+          title: 'Update Post Created',
+          description: 'Your update post has been created successfully!',
+          action: 'success',
+        });
+        
+        // Clear flow context on successful submit
+        clearFlow();
+        
+        // Başarılı olursa ProfileScreen'e yönlendir ve Post stack'ini temizle
+        if (user?.id) {
+          // Profil verilerini invalidate et - yeni post görünsün
+          queryClient.invalidateQueries({
+            queryKey: profileKeys.userPosts(user.id),
+          });
+          queryClient.invalidateQueries({
+            queryKey: profileKeys.profile(user.id),
+          });
+          
+          // CRITICAL: Post stack'ini temizle ve ProfileScreen'e yönlendir
+          const currentState = navigation.getState();
+          const appRoute = currentState?.routes?.find((route) => route.name === 'App');
+          
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 1,
+              routes: [
+                {
+                  name: 'App',
+                  state: appRoute?.state as any,
+                },
+                {
+                  name: 'Profile',
+                  params: {
+                    screen: 'ProfileMain',
+                    params: { userId: user.id },
+                  },
+                },
+              ],
+            })
+          );
+        } else {
+          // Fallback: Feed ekranına yönlendir
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'App',
+                  state: {
+                    routes: [
+                      {
+                        name: 'MainTabs',
+                        state: {
+                          routes: [{ name: 'FeedScreen' }],
+                          index: 0,
+                        },
+                      },
+                    ],
+                    index: 0,
+                  },
+                },
+              ],
+            })
+          );
+        }
       } else {
-        // Create modu: Yeni post oluştur
+        // Create modu: Yeni post oluştur (normal flow)
         // ContextType ve contextId kontrolü
         if (!contextType || !contextId) {
           showCustomToast(toast, {
@@ -278,7 +382,7 @@ export const CreateUpdatePostScreen = () => {
   };
 
   // Check if share button should be enabled (product exists and form is valid)
-  const isShareEnabled = product !== undefined && formState.isValid;
+  const isShareEnabled = (product !== undefined || experiencePost !== undefined) && formState.isValid;
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -300,10 +404,10 @@ export const CreateUpdatePostScreen = () => {
               borderWidth: 1,
               borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
               textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-              fontSize: 12,
+              fontSize: 11,
               borderRadius: 25,
-              paddingX: 24,
-              paddingY: 8,
+              paddingX: 10,
+              paddingY: 10,
               onPress: handleSubmit(onSubmit),
             }}
           />
@@ -311,8 +415,103 @@ export const CreateUpdatePostScreen = () => {
           {/* Content */}
           <ScrollView flex={1} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <VStack space="md" pb={100}>
-              {/* Product Info Card */}
-              {product && (
+              {/* Experience Post Card - Show if creating update from experience post */}
+              {isExperienceUpdateMode && experiencePost && (
+                <Box px="$4" py="$2">
+                  <VStack space="sm">
+                    <Text
+                      fontSize="$sm"
+                      fontWeight="$semibold"
+                      color={isDark ? '$textDark50' : '#000'}
+                      mb="$2"
+                    >
+                      Original Experience Post
+                    </Text>
+                    <Box
+                      bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
+                      borderWidth={1}
+                      borderColor={isDark ? '$borderDark600' : '#E9E9E9'}
+                      borderRadius={8}
+                      overflow="hidden"
+                    >
+                      {/* Product Info */}
+                      {experiencePost.product && (
+                        <Box px="$3" py="$2" borderBottomWidth={1} borderColor={isDark ? '$borderDark600' : '#E9E9E9'}>
+                          <ProductInfoCard
+                            image={experiencePost.product.image}
+                            title={experiencePost.product.name}
+                            subName={experiencePost.product.subName}
+                            size="small"
+                            type={ProductInfoType.PRODUCT}
+                          />
+                        </Box>
+                      )}
+
+                      {/* Content */}
+                      <VStack px="$3" py="$2" space="sm">
+                        {experiencePost.content.map((item, index) => (
+                          <VStack key={index} space="xs">
+                            <HStack space="xs" alignItems="center">
+                              {item.tag.icon === 'tag' ? (
+                                <TagIcon width={16} height={16} color={isDark ? '#fff' : '#000'} />
+                              ) : (
+                                <CubeIcon width={16} height={16} color={isDark ? '#fff' : '#000'} />
+                              )}
+                              <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$xs"
+                                fontWeight="$semibold"
+                              >
+                                {item.tag.title}
+                              </Text>
+                            </HStack>
+                            <Text
+                              color={isDark ? '$textDark400' : '#666'}
+                              fontSize="$xs"
+                              ml={22}
+                              numberOfLines={3}
+                            >
+                              {item.text}
+                            </Text>
+                            <HStack ml={22} space="xs">
+                              {item.rating.map((star, idx) =>
+                                star ? (
+                                  <StarIconSolid
+                                    key={idx}
+                                    width={10}
+                                    height={10}
+                                    color={isDark ? '#fff' : '#829905'}
+                                  />
+                                ) : (
+                                  <StarIcon
+                                    key={idx}
+                                    width={10}
+                                    height={10}
+                                    color={isDark ? '#7E7E7E' : '#E8E8E8'}
+                                  />
+                                )
+                              )}
+                            </HStack>
+                          </VStack>
+                        ))}
+                      </VStack>
+
+                      {/* Images */}
+                      {experiencePost.images && experiencePost.images.length > 0 && (
+                        <Box px="$3" py="$2">
+                          <CardImageCarousel
+                            images={experiencePost.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)}
+                            height={200}
+                          />
+                        </Box>
+                      )}
+                    </Box>
+                  </VStack>
+                </Box>
+              )}
+
+              {/* Product Info Card - Show if not experience update mode */}
+              {!isExperienceUpdateMode && product && (
                 <Box px="$4" py="$2">
                   <ProductInfoCard
                     image={product.image}
@@ -323,7 +522,6 @@ export const CreateUpdatePostScreen = () => {
                   />
                 </Box>
               )}
-
 
               {/* Description Section */}
               <VStack px={16} space="xs">

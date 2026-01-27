@@ -17,7 +17,7 @@ export type ProfileStackParamList = {
   ProfileMain: { userId?: string } | undefined;
   ProfileEdit: undefined;
   InventoryList: { userId: string; selectMode?: 'event'; returnScreen?: string };
-  InventoryDetail: { itemId: string };
+  InventoryDetail: { itemId: string; userId: string };
   Collections: undefined;
   TrustList: { userId: string; initialTab?: 'trust' | 'truster' };
   SuggestedUsers: undefined;

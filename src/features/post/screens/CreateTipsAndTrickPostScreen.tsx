@@ -32,22 +32,22 @@ import type { TipsAndTrickPostFormData } from '../schemas/tipsAndTrickPostSchema
 // Categories from Figma
 const categories = [
   { 
-    label: 'Zaman Tasarrufu', 
+    label: 'Time Saving', 
     value: 'time-saving',
     icon: 'clock' as const
   },
   { 
-    label: 'Enerji Verimliliği', 
+    label: 'Energy Efficiency', 
     value: 'energy-efficiency',
     icon: 'zap' as const
   },
   { 
-    label: 'Kalıcılık / Dayanıklılık', 
+    label: 'Durability', 
     value: 'durability',
     icon: 'shield' as const
   },
   { 
-    label: 'Daha İyi Sonuç', 
+    label: 'Better Result', 
     value: 'better-result',
     icon: 'target' as const
   },
@@ -335,10 +335,30 @@ export const CreateTipsAndTrickPostScreen = () => {
     // Category'yi API formatına çevir
     const benefitCategory = mapCategoryToBenefitCategory(data.selectedCategory);
     
+    // Validate contextId before sending
+    if (!contextId || contextId.trim() === '') {
+      console.error('[CreateTipsAndTrickPostScreen] ❌ Empty or invalid contextId:', contextId);
+      showCustomToast(toast, {
+        title: 'Error',
+        description: 'Invalid context information. Please try again.',
+        action: 'error',
+      });
+      return;
+    }
+    
+    console.log('[CreateTipsAndTrickPostScreen] 📤 Sending request:', {
+      contextType: apiContextType,
+      contextId: contextId,
+      contextIdLength: contextId.length,
+      benefitCategory: benefitCategory,
+      descriptionLength: data.tipsText?.length || 0,
+      imagesCount: data.selectedImages?.length || 0,
+    });
+    
     try {
       const response = await createTipsAndTricksPostMutation.mutateAsync({
         contextType: apiContextType,
-        contextId: contextId,
+        contextId: contextId.trim(), // Trim whitespace
         description: data.tipsText,
         benefitCategory: benefitCategory,
         images: data.selectedImages || [],
@@ -480,12 +500,45 @@ export const CreateTipsAndTrickPostScreen = () => {
         );
       }
     } catch (error: any) {
-      console.error('[CreateTipsAndTrickPostScreen] ❌ API Error:', error);
+      console.error('[CreateTipsAndTrickPostScreen] ❌ API Error:', {
+        error,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        responseData: error?.response?.data,
+        responseMessage: error?.response?.data?.message,
+        responseError: error?.response?.data?.error,
+        requestData: {
+          contextType: apiContextType,
+          contextId: contextId,
+          contextIdLength: contextId?.length || 0,
+          descriptionLength: data.tipsText?.length || 0,
+          benefitCategory: benefitCategory,
+          imagesCount: data.selectedImages?.length || 0,
+        },
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+      });
       
-      // Hata toast göster
-      const errorMessage = error?.response?.data?.message || 
-                          error?.message || 
-                          'An error occurred while creating the post. Please try again.';
+      // Backend'den gelen detaylı hata mesajını al
+      let errorMessage = 'An error occurred while creating the post. Please try again.';
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.status === 500) {
+        errorMessage = 'Server error occurred. Please try again later.';
+      } else if (error?.response?.status === 400) {
+        errorMessage = error?.response?.data?.message || 'Invalid request data. Please check your input.';
+      } else if (error?.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      } else if (error?.response?.status === 403) {
+        errorMessage = 'You do not have permission to create this post.';
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
       
       showCustomToast(toast, {
         title: 'Error',
@@ -520,8 +573,8 @@ export const CreateTipsAndTrickPostScreen = () => {
               textColor: isShareEnabled ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
-              paddingX: 22,
-              paddingY: 8,
+              paddingX: 10,
+              paddingY: 10,
               onPress: handleSubmit(onSubmit),
             }}
           />

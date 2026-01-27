@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent, Divider } from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -768,6 +768,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const triggerViewRef = useRef<View>(null);
+  const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
@@ -918,15 +919,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     if (!user?.id || !targetUserId) return;
     
     Alert.alert(
-      'Kullanıcıyı Raporla',
-      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+      'Report User',
+      'Are you sure you want to report this user?',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Raporla',
+          text: 'Report',
           style: 'destructive',
           onPress: () => {
             reportUser({
@@ -945,15 +946,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
   const handleBlock = useCallback(() => {
     Alert.alert(
-      'Kullanıcıyı Engelle',
-      'Bu kullanıcıyı engellemek istediğinizden emin misiniz? Engellediğiniz kullanıcı sizinle etkileşime geçemez.',
+      'Block User',
+      'Are you sure you want to block this user? Blocked users cannot interact with you.',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Engelle',
+          text: 'Block',
           style: 'destructive',
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
@@ -967,41 +968,130 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     );
   }, [targetUserId, navigation]);
 
-  // Calculate menu position - butona tıklandığında pozisyonu hesapla
-  const handleMenuOpen = useCallback(() => {
-    console.log('handleMenuOpen called, ref:', triggerViewRef.current);
-    
-    // InteractionManager kullanarak UI thread'inde çalıştır
-    const InteractionManager = require('react-native').InteractionManager;
-    
-    InteractionManager.runAfterInteractions(() => {
-      const tryMeasure = (attempts = 0) => {
-        if (triggerViewRef.current) {
-          triggerViewRef.current.measureInWindow((wx, wy, w, h) => {
-            console.log('handleMenuOpen - measureInWindow:', { wx, wy, w, h });
-            if (w > 0 && h > 0) {
-              const screenWidth = Dimensions.get('window').width;
-              const menuWidth = 200;
-              const top = wy + h + 8;
-              const left = Math.max(16, wx - menuWidth);
-              console.log('handleMenuOpen - Menu position calculated:', { top, left });
-              setMenuPosition({ top, left });
-              setIsMenuOpen(true);
-            } else {
-              setIsMenuOpen(true);
-            }
-          });
-        } else if (attempts < 10) {
-          // Ref henüz hazır değil, 100ms sonra tekrar dene
-          console.log(`handleMenuOpen - ref null, retrying... (attempt ${attempts + 1})`);
-          setTimeout(() => tryMeasure(attempts + 1), 100);
-        } else {
-          console.log('handleMenuOpen - ref still null after 10 attempts, opening modal anyway');
-          setIsMenuOpen(true);
+  // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
+  // FlatList scroll edildiğinde pozisyon değişir, onLayout her değişiklikte çağrılır
+  const handleTriggerLayout = useCallback(() => {
+    if (triggerViewRef.current) {
+      // measureInWindow: Window koordinatları (ekranın en üst soluna göre, scroll dahil)
+      triggerViewRef.current.measureInWindow((x, y, width, height) => {
+        if (width > 0 && height > 0) {
+          triggerPositionRef.current = { x, y, width, height };
+          if (__DEV__) {
+            console.log('📍 [ProfileScreen] onLayout - measureInWindow:', {
+              x,
+              y,
+              width,
+              height,
+              reference: 'Window coordinates (top-left of screen, scroll included)',
+            });
+          }
         }
-      };
+      });
+    }
+  }, []);
+
+  // Calculate menu position - event koordinatlarını öncelikli kullan
+  const handleMenuOpen = useCallback((event?: any) => {
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const menuWidth = 200;
+    const menuHeight = 200; // Approximate height based on menu items
+    
+    const calculatePosition = (x: number, y: number, width: number, height: number, source: string) => {
+      // Menu'yu trigger button'ın sağında konumlandır
+      let left = x + width - menuWidth - 20;
+      let top = y + height + 8;
       
-      tryMeasure();
+      if (__DEV__) {
+        console.log(`📐 [ProfileScreen] Position calculation (${source}):`, {
+          triggerPosition: { x, y, width, height },
+          calculatedMenuPosition: { left, top },
+          screenDimensions: { screenWidth, screenHeight },
+          menuDimensions: { menuWidth, menuHeight },
+        });
+      }
+      
+      // Ekran sınırları kontrolü
+      if (left < 12) {
+        left = 12;
+      }
+      if (left + menuWidth > screenWidth - 12) {
+        left = screenWidth - menuWidth - 12;
+      }
+      if (top < 12) {
+        top = 12;
+      }
+      if (top + menuHeight > screenHeight - 12) {
+        // Eğer altında yer yoksa, üstünde göster
+        top = y - menuHeight - 8;
+        if (top < 12) {
+          top = 12;
+        }
+      }
+      
+      return { top, left };
+    };
+
+    // ÖNCELİK 1: Event'ten gelen koordinatları kullan (en güvenilir)
+    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
+      const pageX = event.nativeEvent.pageX;
+      const pageY = event.nativeEvent.pageY;
+      
+      // Trigger button'ın yaklaşık boyutları (24x24 icon + padding)
+      const triggerWidth = 44;
+      const triggerHeight = 44;
+      
+      // Event koordinatları button'ın merkezine yakın, sağ üst köşesini hesapla
+      const triggerX = pageX - triggerWidth / 2;
+      const triggerY = pageY - triggerHeight / 2;
+      
+      const position = calculatePosition(triggerX, triggerY, triggerWidth, triggerHeight, 'event-coordinates');
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 2: Stored position'ı kullan (onLayout'dan gelen)
+    if (triggerPositionRef.current) {
+      const stored = triggerPositionRef.current;
+      if (__DEV__) {
+        console.log('💾 [ProfileScreen] Using stored position from onLayout:', stored);
+      }
+      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height, 'stored');
+      if (__DEV__) {
+        console.log('✅ [ProfileScreen] Final menu position (stored):', {
+          top: position.top,
+          left: position.left,
+          reference: 'Modal uses position: absolute with top/left (relative to window/screen)',
+        });
+      }
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 3: measureInWindow ile ölç (ref varsa)
+    const InteractionManager = require('react-native').InteractionManager;
+    InteractionManager.runAfterInteractions(() => {
+      if (triggerViewRef.current) {
+        triggerViewRef.current.measureInWindow((x, y, width, height) => {
+          if (width > 0 && height > 0 && x >= 0 && y >= 0) {
+            // Stored position'ı güncelle
+            triggerPositionRef.current = { x, y, width, height };
+            const position = calculatePosition(x, y, width, height, 'measureInWindow');
+            setMenuPosition(position);
+            setIsMenuOpen(true);
+          } else {
+            // Invalid position - fallback kullan
+            setMenuPosition({ top: 50, left: screenWidth - 212 });
+            setIsMenuOpen(true);
+          }
+        });
+      } else {
+        // Ref yok - fallback kullan
+        setMenuPosition({ top: 50, left: screenWidth - 212 });
+        setIsMenuOpen(true);
+      }
     });
   }, []);
 
@@ -1243,8 +1333,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 ref={triggerViewRef}
                 collapsable={false}
                 style={{ position: 'relative', zIndex: 2001 }}
+                onLayout={handleTriggerLayout}
               >
-                <Pressable onPress={handleMenuOpen}>
+                <Pressable onPress={(event) => handleMenuOpen(event)}>
                   <EllipsisVerticalIcon size={24} color="#fff" />
                 </Pressable>
               </View>
@@ -1422,7 +1513,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       fontSize={10}
                       fontWeight="$semibold"
                     >
-                      {isTrusting ? "Ekleniyor..." : isUntrusting ? "Kaldırılıyor..." : (profile.isTrusted ? "Un Trust" : "Trust")}
+                      {isTrusting ? "Adding..." : isUntrusting ? "Removing..." : (profile.isTrusted ? "Un Trust" : "Trust")}
                     </Text>
                   </Pressable>
                 </>
@@ -1817,139 +1908,141 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 { 
                   top: menuPosition.top, 
                   left: menuPosition.left,
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' 
+                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: isDark ? '#333333' : '#E9E9E9',
+                  shadowOpacity: isDark ? 0.3 : 0.1,
                 }
               ]}
               onLayout={(event) => {
                 const { x, y, width, height } = event.nativeEvent.layout;
-                console.log('Modal menu opened at position:', {
-                  styleTop: menuPosition.top,
-                  styleLeft: menuPosition.left,
-                  actualLayout: { x, y, width, height },
-                  screenWidth: Dimensions.get('window').width,
-                  screenHeight: Dimensions.get('window').height,
-                });
+                if (__DEV__) {
+                  console.log('🎯 [ProfileScreen] Modal opened at position:', {
+                    styleTop: menuPosition.top,
+                    styleLeft: menuPosition.left,
+                    actualLayout: { x, y, width, height },
+                    screenWidth: Dimensions.get('window').width,
+                    screenHeight: Dimensions.get('window').height,
+                    reference: 'Modal View uses position: absolute (relative to window/screen)',
+                  });
+                }
               }}
             >
-              {/* Paylaş */}
               <RNPressable 
-                onPress={() => {
-                  setIsMenuOpen(false);
-                  handleShare();
-                }}
-                style={({ pressed }) => [
-                  styles.menuItem,
-                  { backgroundColor: pressed ? (isDark ? '#333333' : '#F5F5F5') : 'transparent' }
-                ]}
+                onPress={(e) => e.stopPropagation()}
+                style={{ flex: 1 }}
               >
-                <HStack alignItems="center" space="md">
-                  <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                  <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize="$md"
-                    fontWeight="$medium"
+                <VStack px={8} pl={12} py={2} width="100%">
+                  {/* Share */}
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleShare();
+                    }}
+                    py={8}
                   >
-                    Paylaş
-                  </Text>
-                </HStack>
-              </RNPressable>
-
-              <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
-
-              {/* Sessize Al / Sessizliği Kaldır */}
-              <RNPressable 
-                onPress={() => {
-                  if (!isMuting && !isUnmuting) {
-                    setIsMenuOpen(false);
-                    handleMute();
-                  }
-                }}
-                style={({ pressed }) => [
-                  styles.menuItem,
-                  { 
-                    backgroundColor: pressed ? (isDark ? '#333333' : '#F5F5F5') : 'transparent',
-                    opacity: (isMuting || isUnmuting) ? 0.6 : 1,
-                  }
-                ]}
-                disabled={isMuting || isUnmuting}
-              >
-                <HStack alignItems="center" space="md">
-                  {userProfile?.isMuted ? (
-                    <Box position="relative" justifyContent="center" alignItems="center">
-                      <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                      <Box
-                        position="absolute"
-                        width={24}
-                        height={1}
-                        bg={isDark ? '#FFFFFF' : '#000000'}
-                        style={{
-                          transform: [{ rotate: '-45deg' }],
-                        }}
-                      />
-                    </Box>
-                  ) : (
-                    <BellSlashIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                  )}
-                  <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize="$md"
-                    fontWeight="$medium"
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Share
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  <Divider 
+                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                    mx={0}
+                  />
+                  {/* Mute / Unmute */}
+                  <Pressable
+                    onPress={() => {
+                      if (!isMuting && !isUnmuting) {
+                        setIsMenuOpen(false);
+                        handleMute();
+                      }
+                    }}
+                    py={8}
+                    disabled={isMuting || isUnmuting}
+                    opacity={(isMuting || isUnmuting) ? 0.6 : 1}
                   >
-                    {(isMuting || isUnmuting) 
-                      ? (userProfile?.isMuted ? 'Sessizlik kaldırılıyor...' : 'Sessize alınıyor...')
-                      : (userProfile?.isMuted ? 'Sessizliği Kaldır' : 'Sessize Al')}
-                  </Text>
-                </HStack>
-              </RNPressable>
-
-              <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
-
-              {/* Şikayet Et */}
-              <RNPressable 
-                onPress={() => {
-                  setIsMenuOpen(false);
-                  handleReport();
-                }}
-                style={({ pressed }) => [
-                  styles.menuItem,
-                  { backgroundColor: pressed ? (isDark ? '#333333' : '#F5F5F5') : 'transparent' }
-                ]}
-              >
-                <HStack alignItems="center" space="md">
-                  <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                  <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize="$md"
-                    fontWeight="$medium"
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      {userProfile?.isMuted ? (
+                        <Box position="relative" justifyContent="center" alignItems="center">
+                          <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                          <Box
+                            position="absolute"
+                            width={24}
+                            height={1}
+                            bg={isDark ? '#FFFFFF' : '#000000'}
+                            style={{
+                              transform: [{ rotate: '-45deg' }],
+                            }}
+                          />
+                        </Box>
+                      ) : (
+                        <BellSlashIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      )}
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        {(isMuting || isUnmuting) 
+                          ? (userProfile?.isMuted ? 'Unmuting...' : 'Muting...')
+                          : (userProfile?.isMuted ? 'Unmute' : 'Mute')}
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  <Divider 
+                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                    mx={0}
+                  />
+                  {/* Report */}
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleReport();
+                    }}
+                    py={8}
                   >
-                    Şikayet Et
-                  </Text>
-                </HStack>
-              </RNPressable>
-
-              <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
-
-              {/* Engelle */}
-              <RNPressable 
-                onPress={() => {
-                  setIsMenuOpen(false);
-                  handleBlock();
-                }}
-                style={({ pressed }) => [
-                  styles.menuItem,
-                  { backgroundColor: pressed ? (isDark ? '#333333' : '#F5F5F5') : 'transparent' }
-                ]}
-              >
-                <HStack alignItems="center" space="md">
-                  <NoSymbolIcon width={20} height={20} color="#FF3040" />
-                  <Text
-                    color="#FF3040"
-                    fontSize="$md"
-                    fontWeight="$medium"
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <FlagIcon width={20} height={20} color="#FF3040" />
+                      <Text
+                        color="#FF3040"
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Report
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  <Divider 
+                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                    mx={0}
+                  />
+                  {/* Block */}
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleBlock();
+                    }}
+                    py={8}
                   >
-                    Engelle
-                  </Text>
-                </HStack>
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <NoSymbolIcon width={20} height={20} color="#FF3040" />
+                      <Text
+                        color="#FF3040"
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Block
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </VStack>
               </RNPressable>
             </View>
           </RNPressable>
@@ -1995,22 +2088,12 @@ const styles = StyleSheet.create({
   menuContent: {
     position: 'absolute',
     width: 200,
-    borderRadius: 16,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 10,
     overflow: 'hidden',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  divider: {
-    height: 1,
-    width: '100%',
   },
 });

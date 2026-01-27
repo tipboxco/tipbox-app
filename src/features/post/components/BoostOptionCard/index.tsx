@@ -38,13 +38,13 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
         borderRadius={5}
         position="relative"
       >
-        <HStack px={12} py={18} alignItems="center" justifyContent="space-between">
+        <HStack px={10} py={12} alignItems="center" justifyContent="space-between">
           {/* Left Side: Icon and Content */}
           <HStack alignItems="center" space="sm" flex={1}>
             {/* Icon */}
             <Box
-              width={36}
-              height={36}
+              width={30}
+              height={30}
               bg={isSelected ? iconBg : (isDark ? '$backgroundDark700' : '#F5F5F5')}
               borderRadius={5}
               justifyContent="center"
@@ -53,13 +53,13 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
               {isSelected ? (
                 <Feather
                   name="zap"
-                  size={18}
+                  size={15}
                   color="#FFFFFF"
                 />
               ) : (
                 <Feather
                   name="zap"
-                  size={18}
+                  size={15}
                   color={isDark ? '#FFFFFF' : '#646464'}
                 />
               )}
@@ -69,14 +69,14 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
             <VStack flex={1} space="xs">
               <Text
                 color={isDark ? '$textDark50' : '#000000'}
-                fontSize="$md"
+                fontSize="$sm"
                 fontWeight="$semibold"
               >
                 {title}
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#000000'}
-                fontSize="$sm"
+                fontSize="$xs"
                 fontWeight="$normal"
               >
                 {description}
@@ -108,7 +108,7 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
               )}
               <Text
                 color={isSelected ? '#829905' : (isDark ? '$textDark50' : '#000000')}
-                fontSize="$md"
+                fontSize="$sm"
                 fontWeight="$semibold"
               >
                 {price}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { Alert, View, Pressable as RNPressable, Modal, Dimensions } from 'react-native';
+import { Alert, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet } from 'react-native';
 import {
     VStack, 
     HStack, 
@@ -11,7 +11,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { XCircleIcon, BellIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useRemoveFromTrustList } from '../../api/hooks';
+import { useRemoveFromTrustList, useBlockUser, useUnblockUser, useMuteUser, useUnmuteUser, useUserProfile } from '../../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { DEFAULT_USER_AVATAR } from '@/src/utils';
 
@@ -26,6 +26,8 @@ export interface TrustUserCardUser {
   avatar?: any;
   trustLevel: number; // 1-5
   isOnline?: boolean;
+  isBlocked?: boolean; // Kullanıcı engellenmiş mi?
+  isMuted?: boolean; // Kullanıcı sessize alınmış mı?
 }
 
 interface TrustUserCardProps {
@@ -47,10 +49,48 @@ export const TrustUserCard = ({
 }: TrustUserCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { user: currentUser } = useAppStore();
   const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
+  const { mutate: blockUser, isPending: isBlocking } = useBlockUser();
+  const { mutate: unblockUser, isPending: isUnblocking } = useUnblockUser();
+  const { mutate: muteUser, isPending: isMuting } = useMuteUser();
+  const { mutate: unmuteUser, isPending: isUnmuting } = useUnmuteUser();
+  
+  // User profile'ı çek (block/mute durumunu öğrenmek için)
+  const { data: userProfile } = useUserProfile(user.id);
+  
+  // Block ve mute durumlarını belirle (profile'dan veya prop'tan)
+  const isBlocked = userProfile?.isBlocked ?? user.isBlocked ?? false;
+  const isMuted = userProfile?.isMuted ?? user.isMuted ?? false;
+  
+  // Error handling için mutation options
+  const handleUntrustError = (error: any) => {
+    console.error('[TrustUserCard] Untrust error:', error);
+    const errorMessage = error?.response?.data?.message 
+      || error?.message 
+      || (error?.message === 'Network Error' ? 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.' : 'Kullanıcı trust listesinden kaldırılırken bir hata oluştu.');
+    Alert.alert('Hata', errorMessage);
+  };
+  
+  const handleBlockError = (error: any) => {
+    console.error('[TrustUserCard] Block error:', error);
+    const errorMessage = error?.response?.data?.message 
+      || error?.message 
+      || (error?.message === 'Network Error' ? 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.' : 'Kullanıcı engellenirken bir hata oluştu.');
+    Alert.alert('Hata', errorMessage);
+  };
+  
+  const handleMuteError = (error: any) => {
+    console.error('[TrustUserCard] Mute error:', error);
+    const errorMessage = error?.response?.data?.message 
+      || error?.message 
+      || (error?.message === 'Network Error' ? 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.' : 'Kullanıcı sessize alınırken bir hata oluştu.');
+    Alert.alert('Hata', errorMessage);
+  };
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = useRef<View>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 16 });
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
   const getTrustColor = (level: number) => {
     const colors = ['#CE4A4A', '#FF6B35', '#FFA500', '#32CD32', '#00BFFF'];
@@ -58,24 +98,57 @@ export const TrustUserCard = ({
   };
 
   const handleBlock = () => {
-    Alert.alert(
-      'Block User',
-      'Are you sure you want to block this user? Blocked users cannot interact with you.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Block',
-          style: 'destructive',
-          onPress: () => {
-            // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
-            console.log('[TrustUserCard] Block user:', user.id);
+    if (!currentUser?.id) return;
+    
+    if (isBlocked) {
+      // Unblock
+      Alert.alert(
+        'Unblock User',
+        `Are you sure you want to unblock ${user.name}?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
           },
-        },
-      ]
-    );
+          {
+            text: 'Unblock',
+            style: 'default',
+            onPress: () => {
+              unblockUser(
+                { userId: currentUser.id, targetUserId: user.id },
+                {
+                  onError: handleBlockError,
+                }
+              );
+            },
+          },
+        ]
+      );
+    } else {
+      // Block
+      Alert.alert(
+        'Block User',
+        `Are you sure you want to block ${user.name}? Blocked users cannot interact with you.`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Block',
+            style: 'destructive',
+            onPress: () => {
+              blockUser(
+                { userId: currentUser.id, targetUserId: user.id },
+                {
+                  onError: handleBlockError,
+                }
+              );
+            },
+          },
+        ]
+      );
+    }
   };
 
   const handleRemoveFromTrustList = () => {
@@ -91,7 +164,9 @@ export const TrustUserCard = ({
           text: 'Remove',
           style: 'destructive',
           onPress: () => {
-            untrustUser(user.id);
+            untrustUser(user.id, {
+              onError: handleUntrustError,
+            });
           },
         },
       ]
@@ -99,21 +174,101 @@ export const TrustUserCard = ({
   };
 
   const handleMute = () => {
-    // TODO: Mute functionality eklendiğinde buraya entegre edilecek
-    console.log('[TrustUserCard] Mute user:', user.id);
+    if (!currentUser?.id) return;
+    
+    if (isMuted) {
+      // Unmute
+      unmuteUser(
+        { userId: currentUser.id, targetUserId: user.id },
+        {
+          onError: handleMuteError,
+        }
+      );
+    } else {
+      // Mute
+      muteUser(
+        { userId: currentUser.id, targetUserId: user.id },
+        {
+          onError: handleMuteError,
+        }
+      );
+    }
   };
 
-  // Calculate menu position
-  const handleMenuOpen = useCallback(() => {
+  // Calculate menu position - QuestionPostCard gibi
+  const handleMenuOpen = useCallback((event?: any) => {
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const menuWidth = 160;
+    const menuHeight = 140; // 3 item için yaklaşık yükseklik
+    
+    const calculatePosition = (x: number, y: number, width: number, height: number) => {
+      // Menu'yu trigger button'ın sağında konumlandır
+      let left = x + width - menuWidth - 20;
+      let top = y + height - 16;
+      
+      // Ekran sınırları kontrolü
+      if (left < 12) {
+        left = 12;
+      }
+      if (left + menuWidth > screenWidth - 12) {
+        left = screenWidth - menuWidth - 12;
+      }
+      if (top < 12) {
+        top = 12;
+      }
+      if (top + menuHeight > screenHeight - 12) {
+        // Eğer altında yer yoksa, üstünde göster
+        top = y - menuHeight - 8;
+        if (top < 12) {
+          top = 12;
+        }
+      }
+      
+      return { top, left };
+    };
+
+    // ÖNCELİK 1: Event'ten gelen koordinatları kullan
+    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
+      const pageX = event.nativeEvent.pageX;
+      const pageY = event.nativeEvent.pageY;
+      
+      const triggerWidth = 44;
+      const triggerHeight = 44;
+      
+      const triggerX = pageX - triggerWidth / 2;
+      const triggerY = pageY - triggerHeight / 2;
+      
+      const position = calculatePosition(triggerX, triggerY, triggerWidth, triggerHeight);
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 2: Stored position'ı kullan
+    if (triggerPositionRef.current) {
+      const stored = triggerPositionRef.current;
+      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height);
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 3: measureInWindow ile ölç
     if (menuTriggerRef.current) {
       menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-        const screenWidth = Dimensions.get('window').width;
-        const menuWidth = 200;
-        const right = Math.max(16, screenWidth - x - width);
-        setMenuPosition({ top: y, right });
-        setIsMenuOpen(true);
+        if (width > 0 && height > 0 && x >= 0 && y >= 0) {
+          triggerPositionRef.current = { x, y, width, height };
+          const position = calculatePosition(x, y, width, height);
+          setMenuPosition(position);
+          setIsMenuOpen(true);
+        } else {
+          setMenuPosition({ top: 40, left: screenWidth - 172 });
+          setIsMenuOpen(true);
+        }
       });
     } else {
+      setMenuPosition({ top: 40, left: screenWidth - 172 });
       setIsMenuOpen(true);
     }
   }, []);
@@ -190,8 +345,20 @@ export const TrustUserCard = ({
       </Pressable>
 
       {/* Context Menu - More Icon */}
-      <View ref={menuTriggerRef} collapsable={false}>
-        <Pressable onPress={handleMenuOpen}>
+      <View 
+        ref={menuTriggerRef} 
+        collapsable={false}
+        onLayout={() => {
+          if (menuTriggerRef.current) {
+            menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+              if (width > 0 && height > 0) {
+                triggerPositionRef.current = { x, y, width, height };
+              }
+            });
+          }
+        }}
+      >
+        <Pressable onPress={(event) => handleMenuOpen(event)}>
           <Box p={8}>
             <Feather
               name="more-horizontal"
@@ -213,83 +380,102 @@ export const TrustUserCard = ({
           style={{ flex: 1 }}
           onPress={() => setIsMenuOpen(false)}
         />
-        <Box
-          position="absolute"
-          top={menuPosition.top}
-          right={menuPosition.right}
-          width={200}
-          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-          borderRadius={16}
-          shadowColor="#000"
-          shadowOffset={{ width: 0, height: 2 }}
-          shadowOpacity={0.25}
-          shadowRadius={8}
-          elevation={8}
-          overflow="hidden"
+        <View
+          style={[
+            styles.menuContainer,
+            {
+              top: menuPosition.top,
+              left: menuPosition.left,
+              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              borderWidth: 1,
+              borderColor: isDark ? '#333333' : '#E9E9E9',
+              shadowOpacity: isDark ? 0.3 : 0.1,
+            }
+          ]}
         >
-          <Pressable
-            onPress={() => {
-              setIsMenuOpen(false);
-              handleRemoveFromTrustList();
-            }}
-            px={16}
-            py={12}
+          <RNPressable 
+            onPress={(e) => e.stopPropagation()}
+            style={{ flex: 1 }}
           >
-            <HStack alignItems="center" space="md">
-              <XCircleIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-              <Text
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize="$md"
-                fontWeight="$medium"
+            <VStack width="100%">
+              <RNPressable
+                onPress={() => {
+                  setIsMenuOpen(false);
+                  handleRemoveFromTrustList();
+                }}
+                style={{ paddingHorizontal: 12, paddingVertical: 8 }}
               >
-                Remove from Trust List
-              </Text>
-            </HStack>
-          </Pressable>
-          <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-          <Pressable
-            onPress={() => {
-              setIsMenuOpen(false);
-              handleMute();
-            }}
-            px={16}
-            py={12}
-          >
-            <HStack alignItems="center" space="md">
-              <BellIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-              <Text
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize="$md"
-                fontWeight="$medium"
+                <HStack alignItems="center" space="xs">
+                  <XCircleIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize="$sm"
+                    fontWeight="$medium"
+                  >
+                    Remove from Trust List
+                  </Text>
+                </HStack>
+              </RNPressable>
+              <View style={{ height: 1, backgroundColor: isDark ? '#333333' : '#E9E9E9' }} />
+              <RNPressable
+                onPress={() => {
+                  setIsMenuOpen(false);
+                  handleMute();
+                }}
+                style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+                disabled={isMuting || isUnmuting}
               >
-                Mute
-              </Text>
-            </HStack>
-          </Pressable>
-          <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-          <Pressable
-            onPress={() => {
-              setIsMenuOpen(false);
-              handleBlock();
-            }}
-            px={16}
-            py={12}
-          >
-            <HStack alignItems="center" space="md">
-              <XCircleIcon width={20} height={20} color="#FF3040" />
-              <Text
-                color="#FF3040"
-                fontSize="$md"
-                fontWeight="$medium"
+                <HStack alignItems="center" space="xs">
+                  <BellIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize="$sm"
+                    fontWeight="$medium"
+                  >
+                    {isMuting || isUnmuting ? (isMuted ? 'Unmuting...' : 'Muting...') : (isMuted ? 'Unmute' : 'Mute')}
+                  </Text>
+                </HStack>
+              </RNPressable>
+              <View style={{ height: 1, backgroundColor: isDark ? '#333333' : '#E9E9E9' }} />
+              <RNPressable
+                onPress={() => {
+                  setIsMenuOpen(false);
+                  handleBlock();
+                }}
+                style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+                disabled={isBlocking || isUnblocking}
               >
-                Block
-              </Text>
-            </HStack>
-          </Pressable>
-        </Box>
+                <HStack alignItems="center" space="xs">
+                  <XCircleIcon width={18} height={18} color="#FF3040" />
+                  <Text
+                    color="#FF3040"
+                    fontSize="$sm"
+                    fontWeight="$medium"
+                  >
+                    {isBlocking || isUnblocking ? (isBlocked ? 'Unblocking...' : 'Blocking...') : (isBlocked ? 'Unblock' : 'Block')}
+                  </Text>
+                </HStack>
+              </RNPressable>
+            </VStack>
+          </RNPressable>
+        </View>
       </Modal>
     </HStack>
   );
 };
+
+const styles = StyleSheet.create({
+  menuContainer: {
+    position: 'absolute',
+    width: 160,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+});
 
 export default TrustUserCard;

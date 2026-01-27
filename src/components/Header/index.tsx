@@ -267,16 +267,18 @@ const HeaderComponent = ({
             borderWidth={rightButton.borderWidth !== undefined ? rightButton.borderWidth : 0}
             borderColor={rightButton.borderColor || 'transparent'}
             px={rightButton.paddingX !== undefined ? rightButton.paddingX : 16}
-            py={rightButton.paddingY !== undefined ? rightButton.paddingY : 8}
+            py={rightButton.paddingY !== undefined ? rightButton.paddingY : 10}
             borderRadius={rightButton.borderRadius !== undefined ? rightButton.borderRadius : 8}
             alignItems="center"
             justifyContent="center"
+            minHeight={32}
           >
             <Text
               color={rightButton.textColor || '#FFFFFF'}
               fontSize={rightButton.fontSize || 14}
-              fontWeight="$medium"
+              fontWeight="$semibold"
               textAlign="center"
+              lineHeight={rightButton.fontSize ? rightButton.fontSize * 1.2 : 16.8}
             >
               {rightButton.text}
             </Text>
