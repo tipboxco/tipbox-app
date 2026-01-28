@@ -8,11 +8,11 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
-import { useLogin, useGoogleLogin } from '../api/hooks';
-import { googleService } from '@/src/services/GoogleService';
+import { useLogin } from '../api/hooks';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { LoginCredentialsService } from '@/src/services/LoginCredentialsService';
 import { BiometricService } from '@/src/services/BiometricService';
+import { GoogleLoginButton } from '../components/google-login-button';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 type LoginScreenRouteProp = RouteProp<AuthStackParamList, 'Login'>;
@@ -25,9 +25,7 @@ export const LoginScreen = () => {
   const { loginAsGuest } = useAppStore();
   const toast = useToast();
   const loginMutation = useLogin();
-  const googleLoginMutation = useGoogleLogin();
   const insets = useSafeAreaInsets();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
   // Edge-to-Edge Design: Top ve bottom insets için beyaz background
   const backgroundColor = '#FFFFFF';
@@ -116,7 +114,20 @@ export const LoginScreen = () => {
           email,
           password,
         });
-
+        if(result.success) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Main' as never }],
+          });
+        }
+        else {
+          showCustomToast(toast, {
+            title: 'Login Failed',
+            description: result.message,
+            action: 'error',
+            duration: 4000,
+          });
+        }
         // Console'da response'u göster (sadece development modunda)
         if (__DEV__) {
           console.log('[LoginScreen] ✅ Login successful:', {
@@ -273,44 +284,7 @@ export const LoginScreen = () => {
     navigation.navigate('ForgotPassword' as never);
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setIsGoogleLoading(true);
 
-      // Google OAuth ile giriş yap
-      const googleResult = await googleService.login();
-
-      // Backend'e ID token gönder
-      await googleLoginMutation.mutateAsync(googleResult.idToken);
-
-      // Başarılı toast göster
-      showCustomToast(toast, {
-        title: `Welcome ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'User'}!`,
-        action: 'success',
-        duration: 3000,
-      });
-
-      // RootNavigator otomatik olarak isAuthenticated=true olduğunda
-      // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
-    } catch (error: any) {
-      console.error('[LoginScreen] ❌ Google login error:', error);
-
-      // Hata toast göster
-      const errorMessage =
-        error?.message ||
-        error?.response?.data?.message ||
-        'An error occurred during Google login';
-
-      showCustomToast(toast, {
-        title: 'Google Login Failed',
-        description: errorMessage,
-        action: 'error',
-        duration: 4000,
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
 
   return (
     <View style={{ flex: 1, backgroundColor }}>
@@ -503,23 +477,7 @@ export const LoginScreen = () => {
           <Box flex={1} h={1} bg={isDark ? '$textDark300' : '$textLight600'} />
         </HStack>
 
-        <Button
-          variant="outline"
-          h={44}
-          rounded="$lg"
-          borderColor="$gray400"
-          borderWidth={1}
-          onPress={handleGoogleLogin}
-          isDisabled={isGoogleLoading || googleLoginMutation.isPending}
-          opacity={isGoogleLoading || googleLoginMutation.isPending ? 0.5 : 1}
-        >
-          <HStack space="md" alignItems="center">
-            <Icon as={Mail} size="md" color={isDark ? '$textDark300' : '$textLight600'} />
-            <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">
-              {isGoogleLoading || googleLoginMutation.isPending ? 'Signing in...' : 'Continue with Google'}
-            </ButtonText>
-          </HStack>
-        </Button>
+        <GoogleLoginButton />
 
         <Text
           fontSize="$xs"

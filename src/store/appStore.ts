@@ -5,6 +5,7 @@ import { TokenService } from '../services/TokenService';
 import { WalletService } from '../services/WalletService';
 import { ImageCacheService } from '../services/ImageCacheService';
 import { BiometricService } from '../services/BiometricService';
+import { apiService } from '../services/ApiService';
 import { updateTokenCache, clearTokenCache } from '../services/ApiService/interceptors';
 
 // PERFORMANCE FIX: Debounced AsyncStorage wrapper to reduce I/O overhead
@@ -259,8 +260,28 @@ export const useAppStore = create<AppState>()(
         },
         
         logout: async () => {
+
           try {
-            // ÖNCE: State'i anında güncelle (kullanıcı anında çıkış görsün)
+          } catch (error: any) {
+            const hasResponse = Boolean(error?.response);
+            if (!hasResponse) {
+              set({ isLoading: false, error: error as Error });
+              return;
+            }
+            // Cevap geldi ama non-2xx olabilir; yine de logout akışına devam et
+          }
+
+          try {
+            // Çıkış request'i sonuçlanmadan kullanıcıyı logout etme
+            // UX: bu sırada loading gösterilebilir
+            set({ isLoading: true, error: null });
+
+            // ÖNCE: Backend'e logout bildirimi gönder (token'lar temizlenmeden önce)
+            // - Eğer server cevap dönerse (2xx veya error response), logout akışına devam edilir
+            // - Eğer cevap dönmezse (network error/timeout), logout yapılmaz
+          
+
+            // SONRA: State'i güncelle (kullanıcı çıkış görsün)
             set({
               isAuthenticated: false,
               user: null,
@@ -271,8 +292,8 @@ export const useAppStore = create<AppState>()(
               isLoading: false,
               error: null,
             });
-            
-            // ÖNCE: Token'ları SecureStore'dan temizle (kritik - güvenlik)
+
+            // SONRA: Token'ları SecureStore'dan temizle (kritik - güvenlik)
             await TokenService.clearTokens();
             clearTokenCache(); // PERFORMANCE FIX: Clear token cache
             
