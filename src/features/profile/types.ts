@@ -1,5 +1,5 @@
 import { ProductInfoType } from '@/src/types/common';
-import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostApiItem } from '@/src/types/ExperienceCard';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
@@ -25,12 +25,13 @@ export interface InventoryBrand {
 
 /**
  * Inventory Item - API'den gelen envanter ürün bilgisi
+ * image: Katalogdaki ürüne ait görsel (productId'den); post görseli değil.
  */
 export interface InventoryItem {
   id: string;
   productId: string; // ✅ Product tablosundaki gerçek product ID'si
   brand: InventoryBrand;
-  image: string;
+  image: string; // Ürün görseli (katalog product); post oluştururken yüklenen görseller değil
   reviews: InventoryReview[];
   tags: string[];
 }
@@ -207,7 +208,7 @@ export type ProfileFeedItem = ProfilePost | ProfileReview | ProfileBenchmark | P
  * Profile Reviews - Kullanıcının review postları
  * /users/{id}/reviews endpoint'inden dönen tip
  */
-export type ProfileReview = ReviewApiItem;
+export type ProfileReview = ExperiencePostApiItem;
 
 /**
  * Profile Reviews API Response - Pagination ile birlikte

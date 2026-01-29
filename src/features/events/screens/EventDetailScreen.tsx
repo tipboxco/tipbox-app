@@ -54,8 +54,8 @@ import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
-import type { ReviewApiItem } from '@/src/types/ReviewsCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostApiItem } from '@/src/types/ExperienceCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
 import { ProductInfoType } from '@/src/types/common';
 import RoastProductInfoCard from '../components/RoastProductInfoCard';
@@ -304,35 +304,43 @@ const EventDetailScreen: React.FC = () => {
         };
     };
 
-    // Map Experience (ReviewApiItem) to ReviewCardData (from FeedScreen)
-    const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
+    // Map Experience (ExperiencePostApiItem) to ExperiencePostCardData
+    const mapExperienceToCardData = (item: ExperiencePostApiItem & { type: 'experience' }): ExperiencePostCardData => {
+        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
         const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
-        const productImage = item.contextData?.image
-            ? toImageSource(item.contextData.image)
-            : undefined;
+        const ctx = item.contextData as { product?: { id?: string; name?: string; image?: string | null; subName?: string } } | undefined;
+        const rawProduct = ctx?.product ?? item.contextData ?? item.product;
+        const productImage = rawProduct?.image ? toImageSource(rawProduct.image) : undefined;
 
-        // Content string ise tek bir ReviewCardContentItem'a çevir, array ise map et
-        const content: ReviewCardContentItem[] = (item.content && Array.isArray(item.content))
-            ? item.content.map((contentItem) => ({
+        const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
+        const contentBlocks = item.experienceContent ?? (Array.isArray(item.content) ? item.content : []);
+        const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
+            ? contentBlocks.map((contentItem) => ({
                 tag: {
-                    icon: 'tag',
+                    icon: (contentItem.title?.toLowerCase?.().includes('product') || contentItem.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
                     title: contentItem.title || 'Review',
                 },
-                text: contentItem.content,
+                text: trimTrailingParen(contentItem.content ?? ''),
                 rating: Array(5)
                     .fill(false)
                     .map((_, index) => index < (contentItem.rating || 0)),
             }))
             : (typeof item.content === 'string' && (item.content as string).trim())
                 ? [{
-                    tag: {
-                        icon: 'tag',
-                        title: 'Review',
-                    },
+                    tag: { icon: 'tag' as const, title: 'Review' },
                     text: item.content,
-                    rating: Array(5).fill(false), // String content için rating yok
+                    rating: Array(5).fill(false),
                 }]
                 : [];
+
+        const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
+        const subNameRaw = rawProduct?.subName ?? '';
+        const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
+        const tagsFromApi = Array.isArray(item.tags) ? item.tags : [];
+        const tags =
+          tagsFromApi.length >= 3
+            ? tagsFromApi
+            : [item.durationName, item.locationName, item.purposeName].filter((s): s is string => !!s);
 
         return {
             id: item.id,
@@ -341,17 +349,17 @@ const EventDetailScreen: React.FC = () => {
                 name: item.user.name,
                 title: item.user.title,
                 avatar: avatarSource,
-                action: 'wrote a review',
+                action: isOwned ? 'Added new product and experiences to inventory!' : undefined,
             },
             contextData: {
-                id: item.contextData?.id || '',
-                name: item.contextData?.name || '',
-                subName: item.contextData?.subName || '',
-                image: productImage,
-                isOwned: item.contextData?.isOwned,
+                id: rawProduct?.id || '',
+                name: rawProduct?.name || '',
+                subName,
+                image: productImage ?? defaultPostImage,
+                isOwned,
             },
             content,
-            tags: item.tags || [], // tags undefined ise boş array
+            tags,
             images: item.images
                 ?.map((img) => toImageSource(img))
                 .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
@@ -568,12 +576,12 @@ const EventDetailScreen: React.FC = () => {
     const renderFeedItem = (item: FeedApiItem) => {
         switch (item.type) {
             case CardType.EXPERIENCE:
-                // Experience type için ReviewApiItem kullan ve ExperiencePostCard render et
+                // Experience type için ExperiencePostApiItem kullan ve ExperiencePostCard render et
                 if ('contextData' in item.data && 'content' in item.data) {
                     return (
                         <ExperiencePostCard
                             key={item.data.id}
-                            data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
+                            data={mapExperienceToCardData(item.data as ExperiencePostApiItem & { type: 'experience' })}
                         />
                     );
                 }

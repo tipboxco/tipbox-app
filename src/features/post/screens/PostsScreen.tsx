@@ -31,13 +31,13 @@ import type { ProfilePost } from '@/src/features/profile/types';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
-import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostApiItem } from '@/src/types/ExperienceCard';
 import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import { CardType } from '@/src/types/common';
 import { FilterSortBottomSheet, type FilterSortState } from '../components/FilterSortBottomSheet';
@@ -379,7 +379,7 @@ export const PostsScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        animateOnMount: false,
+        animateOnMount: true,
         paddingBottom: bottomOffset,
         onChange: (index: number) => {
           if (index === -1) {
@@ -572,7 +572,7 @@ export const PostsScreen = () => {
     } else if (type === 'experience') {
       navigation.navigate('CreateExperiencePostScreen', {
         product: selectedProductPayload,
-        fromInventory: experienceOption === 'own',
+        fromInventory: false,
         experienceOption: experienceOption,
       });
     } else if (type === 'benchmark') {
@@ -632,27 +632,32 @@ export const PostsScreen = () => {
     };
   }, []);
 
-  const mapExperienceToCardData = useCallback((item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
+  const mapExperienceToCardData = useCallback((item: ExperiencePostApiItem & { type: 'experience' }): ExperiencePostCardData => {
     const defaultPostImage = require('@/assets/defaultImages/default-post.png');
     const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
     const avatarSource = toImageSource(item.user?.avatar) || defaultAvatar;
-    const productImage = item.contextData?.image
-      ? toImageSource(item.contextData.image)
+    const ctx = item.contextData as { product?: { id?: string; name?: string; image?: string | null; subName?: string; isOwned?: boolean } } | undefined;
+    const rawProduct = ctx?.product ?? item.contextData ?? item.product;
+    const productImage = rawProduct?.image
+      ? toImageSource(rawProduct.image)
       : defaultPostImage;
 
-    const content: ReviewCardContentItem[] = (item.content && Array.isArray(item.content))
-      ? item.content
+    const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
+    const contentBlocks = item.experienceContent ?? (Array.isArray(item.content) ? item.content : []);
+    const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
+      ? contentBlocks
         .filter((contentItem) => contentItem != null)
-        .map((contentItem) => ({
-          tag: {
-            icon: 'tag',
-            title: contentItem?.title || '',
-          },
-          text: contentItem?.content || '',
-          rating: Array(5)
-            .fill(false)
-            .map((_, index) => index < (contentItem?.rating || 0)),
-        }))
+        .map((contentItem) => {
+          const title = contentItem?.title || '';
+          const icon: 'tag' | 'package' = (title.toLowerCase().includes('product') || title.toLowerCase().includes('usage')) ? 'package' : 'tag';
+          return {
+            tag: { icon, title },
+            text: trimTrailingParen(contentItem?.content || ''),
+            rating: Array(5)
+              .fill(false)
+              .map((_, index) => index < (contentItem?.rating || 0)),
+          };
+        })
       : [];
 
     const mappedImages = Array.isArray(item.images)
@@ -662,6 +667,15 @@ export const PostsScreen = () => {
       : [];
     const images = mappedImages;
 
+    const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
+    // 3 tag: duration, condition (location), purpose. API tags yoksa/eksikse *Name alanlarından doldur.
+    const tagsFromApi = Array.isArray(item.tags) ? item.tags : [];
+    const tags =
+      tagsFromApi.length >= 3
+        ? tagsFromApi
+        : [item.durationName, item.locationName, item.purposeName].filter((s): s is string => !!s);
+    const subNameRaw = rawProduct?.subName ?? '';
+    const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
     return {
       id: item.id || '',
       user: {
@@ -669,17 +683,17 @@ export const PostsScreen = () => {
         name: item.user?.name || '',
         title: item.user?.title || '',
         avatar: avatarSource,
-        action: 'wrote a review',
+        action: isOwned ? 'Added new product and experiences to inventory!' : undefined,
       },
       contextData: {
-        id: item.contextData?.id || '',
-        name: item.contextData?.name || '',
-        subName: item.contextData?.subName || '',
+        id: rawProduct?.id || '',
+        name: rawProduct?.name || '',
+        subName,
         image: productImage || defaultPostImage,
-        isOwned: item.contextData?.isOwned || false,
+        isOwned,
       },
       content,
-      tags: Array.isArray(item.tags) ? item.tags : [],
+      tags,
       images,
       stats: item.stats,
       createdAt: item.createdAt,
@@ -1044,11 +1058,12 @@ export const PostsScreen = () => {
     switch (item.type) {
       case CardType.EXPERIENCE:
       case 'experience':
-        if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
+        const expData = item.data as ExperiencePostApiItem;
+        if (('contextData' in item.data || 'product' in item.data) && (Array.isArray(expData.experienceContent) || Array.isArray(expData.content))) {
           return (
             <ExperiencePostCard
               key={itemId}
-              data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
+              data={mapExperienceToCardData(item.data as ExperiencePostApiItem & { type: 'experience' })}
               hideProduct={shouldHideProduct}
             />
           );

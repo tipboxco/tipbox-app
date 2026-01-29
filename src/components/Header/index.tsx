@@ -279,7 +279,6 @@ const HeaderComponent = ({
               fontWeight="$semibold"
               textAlign="center"
               lineHeight={rightButton.fontSize ? rightButton.fontSize * 1.2 : 16.8}
-              numberOfLines={1}
             >
               {rightButton.text}
             </Text>
@@ -374,8 +373,14 @@ const HeaderComponent = ({
               ) : null}
             </Box>
 
-            {/* Sağ kısım - Sabit genişlik, flex-end */}
-            <Box width={40} alignItems="flex-end" justifyContent="center">
+            {/* Sağ kısım - Buton varsa içeriğe göre genişler (metin tam görünsün), yoksa 40px */}
+            <Box
+              minWidth={40}
+              flexShrink={0}
+              alignItems="flex-end"
+              justifyContent="center"
+              width={rightButton ? undefined : 40}
+            >
               {renderRightActions}
             </Box>
           </HStack>

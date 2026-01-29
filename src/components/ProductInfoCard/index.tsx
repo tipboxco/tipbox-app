@@ -18,8 +18,10 @@ interface ProductInfoCardProps {
   // Optional styling props
   mx?: number | string;
   mt?: number | string;
-  // Owned status
+  // Owned status (legacy)
   isOwned?: boolean;
+  /** Experience post: "Owned" | "Tried" - content yapısı içinde ikon + metin (görseldeki gibi) */
+  ownershipLabel?: 'Owned' | 'Tried';
   // Click handler
   onPress?: () => void;
   // Show average rating badge (deprecated - use type prop instead)
@@ -35,10 +37,12 @@ const ProductInfoCardComponent = ({
   size = 'small',
   type,
   isOwned = false,
+  ownershipLabel,
   onPress,
   showAverageRating = false,
   showChevron = false,
 }: ProductInfoCardProps) => {
+  const showOwnership = ownershipLabel ?? (isOwned ? 'Owned' : undefined);
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -113,32 +117,36 @@ const ProductInfoCardComponent = ({
               })()}
             </Text>
           )}
-          {/* Owned Status */}
-          {isOwned && (
+          {/* Owned / Tried - content yapısı içinde (ikon + metin) */}
+          {showOwnership && (
             <HStack alignItems="center" space="xs" mt={2}>
               <Box
                 width={16}
                 height={16}
                 borderWidth={1}
-                borderColor="#E8E8E8"
+                borderColor={isDark ? '#555' : '#E8E8E8'}
                 borderStyle="dashed"
                 borderRadius={2}
                 justifyContent="center"
                 alignItems="center"
                 bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
               >
-                <CheckIcon
-                  width={10}
-                  height={10}
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                />
+                {showOwnership === 'Owned' ? (
+                  <CheckIcon
+                    width={10}
+                    height={10}
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  />
+                ) : (
+                  <Box width={6} height={6} borderRadius={1} bg={isDark ? '$textDark400' : '#A3A3A3'} />
+                )}
               </Box>
               <Text
                 color={isDark ? '$textDark400' : '#A3A3A3'}
                 fontSize={10}
                 fontWeight="$normal"
               >
-                Owned
+                {showOwnership}
               </Text>
             </HStack>
           )}

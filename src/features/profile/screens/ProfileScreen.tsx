@@ -28,7 +28,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import SendTipsBottomSheet from '@/src/features/inbox/components/SendTipsBottomSheet';
 import { CardType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem, ExperiencePostApiContentBlock } from '@/src/types/ExperienceCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
@@ -66,7 +66,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
-  { key: 'reviews',     title: 'Reviews' },
+  { key: 'reviews',     title: 'Experience' },
   { key: 'benchmarks',  title: 'Benchmarks' },
   { key: 'tips',        title: 'Tips & Tricks' },
   { key: 'replies',     title: 'Questions' },
@@ -130,7 +130,7 @@ const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
   };
 };
 
-const mapExperienceToCardData = (review: ProfileReview): ReviewCardData | null => {
+const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData | null => {
   if (!review?.id || !review?.user?.id) {
     return null;
   }
@@ -143,16 +143,17 @@ const mapExperienceToCardData = (review: ProfileReview): ReviewCardData | null =
     ? toImageSource(review.contextData.image)
     : undefined;
 
-  const content: ReviewCardContentItem[] = review.content?.map((item) => ({
+  const contentBlocks = review.experienceContent ?? (Array.isArray(review.content) ? review.content : []);
+  const content: ExperiencePostCardContentItem[] = contentBlocks.map((item: ExperiencePostApiContentBlock) => ({
     tag: {
-      icon: 'tag',
+      icon: (item?.title?.toLowerCase?.().includes('product') || item?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
       title: item?.title || '',
     },
     text: item?.content || '',
     rating: Array(5)
       .fill(false)
-      .map((_, index) => index < (item?.rating || 0)),
-  })) ?? [];
+      .map((_, index) => index < (item?.rating ?? 0)),
+  }));
 
   return {
     id: review.id,
@@ -301,7 +302,7 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
 // Mapped post type
 type MappedPost = 
   | { type: 'post'; id: string; data: PostCardData }
-  | { type: 'experience'; id: string; data: ReviewCardData }
+  | { type: 'experience'; id: string; data: ExperiencePostCardData }
   | { type: 'benchmark'; id: string; data: BenchmarkCardData }
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };

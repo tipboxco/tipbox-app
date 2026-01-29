@@ -89,7 +89,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
         return (
             <VStack space="xs">
                 <Text
-                    fontSize={11}
+                    fontSize={14}
                     fontWeight="$semibold"
                     color={isDark ? '$textDark50' : '#3B3B3B'}
                 >
@@ -161,7 +161,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                 <HStack alignItems="center" space="xs">
                                     <TagIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
                                     <Text
-                                        fontSize={11}
+                                        fontSize={14}
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#3B3B3B'}
                                     >
@@ -189,8 +189,8 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     placeholder="Describe your price and shopping experience..."
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '$textDark50' : '#000000'}
-                                    fontSize={10}
-                                    lineHeight={14}
+                                    fontSize={14}
+                                    lineHeight={20}
                                     value={priceExperienceText}
                                     onChangeText={editingField === 'price' ? onPriceExperienceTextChange : undefined}
                                     editable={editingField === 'price'}
@@ -237,7 +237,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                 <HStack alignItems="center" space="xs">
                                     <CubeIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
                                     <Text
-                                        fontSize={11}
+                                        fontSize={14}
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#3B3B3B'}
                                     >
@@ -265,8 +265,8 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     placeholder="Describe your product and usage experience..."
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '$textDark50' : '#000000'}
-                                    fontSize={10}
-                                    lineHeight={14}
+                                    fontSize={14}
+                                    lineHeight={20}
                                     value={productExperienceText}
                                     onChangeText={editingField === 'product' ? onProductExperienceTextChange : undefined}
                                     editable={editingField === 'product'}
@@ -311,7 +311,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     py={3}
                                 >
                                     <Text
-                                        fontSize={8}
+                                        fontSize={12}
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#000000'}
                                     >
@@ -327,7 +327,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                 <VStack px={16} space="xs" opacity={isEditing ? 0.3 : 1} pointerEvents={isEditing ? 'none' : 'auto'}>
                     <Text
                         color={isDark ? '$textDark400' : '#A3A3A3'}
-                        fontSize={10}
+                        fontSize={14}
                         fontWeight="$bold"
                     >
                         Images

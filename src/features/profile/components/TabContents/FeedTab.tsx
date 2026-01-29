@@ -11,7 +11,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { CardType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
@@ -69,8 +69,8 @@ const mapPostToCardData = (post: ProfilePost): PostCardData => {
   };
 };
 
-// Map Experience (Review) to ReviewCardData
-const mapExperienceToCardData = (review: ProfileReview): ReviewCardData => {
+// Map Experience to ExperiencePostCardData
+const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData => {
   const avatarSource = review.user?.avatar
     ? toImageSource(review.user.avatar)!
     : DEFAULT_USER_AVATAR;
@@ -79,7 +79,7 @@ const mapExperienceToCardData = (review: ProfileReview): ReviewCardData => {
     ? toImageSource(review.contextData.image)
     : undefined;
 
-  const content: ReviewCardContentItem[] = review.content?.map((item) => ({
+  const content: ExperiencePostCardContentItem[] = review.content?.map((item) => ({
     tag: {
       icon: 'tag',
       title: item.title,
@@ -229,7 +229,7 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData => {
 // Mapped post type
 type MappedPost = 
   | { type: 'post'; id: string; data: PostCardData }
-  | { type: 'experience'; id: string; data: ReviewCardData }
+  | { type: 'experience'; id: string; data: ExperiencePostCardData }
   | { type: 'benchmark'; id: string; data: BenchmarkCardData }
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };

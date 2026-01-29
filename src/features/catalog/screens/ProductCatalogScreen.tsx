@@ -1291,7 +1291,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             image: selectedProduct.image,
             brand: selectedProduct.brand,
           } : undefined,
-          fromInventory: experienceOption === 'own',
+          fromInventory: false,
           experienceOption: experienceOption,
         },
       });

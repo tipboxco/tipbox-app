@@ -76,7 +76,19 @@ export const CreateUpdatePostScreen = () => {
   // Flow store'dan context bilgilerini al
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
+  const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+
+  // Experience update modunda flow store'da context yoksa experiencePost.product'tan set et
+  useEffect(() => {
+    if (isExperienceUpdateMode && experiencePost?.product?.id && (!contextType || !contextId)) {
+      setFlowContext(ProductInfoType.PRODUCT, experiencePost.product.id, {
+        image: experiencePost.product.image,
+        title: experiencePost.product.name,
+        subName: experiencePost.product.subName,
+      });
+    }
+  }, [isExperienceUpdateMode, experiencePost?.product?.id, experiencePost?.product?.name, experiencePost?.product?.image, experiencePost?.product?.subName, contextType, contextId, setFlowContext]);
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -180,9 +192,10 @@ export const CreateUpdatePostScreen = () => {
         // Geri dön
         navigation.goBack();
       } else if (isExperienceUpdateMode && experiencePostId) {
-        // Experience post'tan update oluşturma modu
-        // ContextType ve contextId kontrolü
-        if (!contextType || !contextId) {
+        // Experience post'tan update oluşturma modu: context flow store'da yoksa experiencePost.product'tan al
+        const effectiveContextType = contextType ?? ProductInfoType.PRODUCT;
+        const effectiveContextId = contextId ?? experiencePost?.product?.id;
+        if (!effectiveContextId) {
           showCustomToast(toast, {
             title: 'Error',
             description: 'Context information not found. Please try again.',
@@ -190,16 +203,14 @@ export const CreateUpdatePostScreen = () => {
           });
           return;
         }
-        
-        // API contextType'a çevir
-        const apiContextType = mapProductInfoTypeToContextType(contextType);
-        
+
+        const apiContextType = mapProductInfoTypeToContextType(effectiveContextType);
         const response = await createUpdatePostMutation.mutateAsync({
           contextType: apiContextType,
-          contextId: contextId,
-          content: data.description, // API'de "content" field'ı kullanılıyor
+          contextId: effectiveContextId,
+          content: data.description,
           images: data.selectedImages || [],
-          experiencePostId: experiencePostId, // Experience post ID'yi gönder
+          experiencePostId: experiencePostId,
         });
         
         console.log('[CreateUpdatePostScreen] ✅ Update Post Created from Experience:', response);

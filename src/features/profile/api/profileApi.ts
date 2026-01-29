@@ -421,6 +421,11 @@ export interface AddInventoryItemRequest {
     rating: number;
   }>;
   status: 'own' | 'tested';
+  /**
+   * Opsiyonel. Envanter kartında gösterilecek görsel.
+   * Ürünün katalog görseli (tek URL) gönderilmeli; post görselleri gönderilmemeli.
+   * Boş/verilmezse backend productId'den ürün görselini alır.
+   */
   images?: string[];
 }
 

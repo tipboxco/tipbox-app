@@ -4,6 +4,7 @@ import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
+  useBottomSheetTimingConfigs,
 } from '@gorhom/bottom-sheet';
 // BLUEPRINT FIX: Portal kullanmıyoruz - GlobalUIHost içinde render ediliyor
 // import { Portal } from '@gorhom/portal';
@@ -163,6 +164,10 @@ export const GlobalBottomSheet: React.FC = () => {
   // Padding bottom
   const paddingBottom = mergedOptions.paddingBottom ?? (Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8);
 
+  // animateOnMount true ise açılış/kapanış için aynı timing config (kapanış da animasyonlu olsun)
+  const timingConfigs = useBottomSheetTimingConfigs({ duration: 300 });
+  const animationConfigs = mergedOptions.animateOnMount ? timingConfigs : undefined;
+
   // Content yoksa render etme
   if (!content) {
     return null;
@@ -193,6 +198,7 @@ export const GlobalBottomSheet: React.FC = () => {
         enableHandlePanningGesture={mergedOptions.enableHandlePanningGesture}
         enableContentPanningGesture={mergedOptions.enableContentPanningGesture}
         animateOnMount={mergedOptions.animateOnMount !== undefined ? mergedOptions.animateOnMount : (mergedOptions.detached ? true : true)}
+        animationConfigs={mergedOptions.animationConfigs ?? animationConfigs}
         backdropComponent={renderBackdrop}
         onChange={handleSheetChanges}
         backgroundStyle={backgroundStyle}

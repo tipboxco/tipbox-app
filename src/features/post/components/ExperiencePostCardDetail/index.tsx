@@ -212,29 +212,39 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                 </VStack>
             )}
 
-            {/* Tags */}
+            {/* Usage Context: Duration, Condition, Frequency - padding 6x12, gap 10 */}
             {data.tags && data.tags.length > 0 && (
-                <HStack px={12} py={8} flexWrap="wrap">
-                    {data.tags.map((tag, index) => (
-                        <HStack
-                            key={index}
-                            bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
-                            borderWidth={1}
-                            borderColor={'#E9E9E9'}
-                            rounded={'$full'}
-                            px={16}
-                            py={6}
-                            mr={4}
-                        >
-                            <Text
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$xs"
-                                fontWeight="$semibold"
+                <HStack
+                    px={12}
+                    py={6}
+                    flexDirection="row"
+                    flexWrap="wrap"
+                    justifyContent="flex-start"
+                    alignItems="center"
+                    gap={10}
+                >
+                    {data.tags.slice(0, 3).map((value, index) => {
+                        if (value == null || value === '') return null;
+                        return (
+                            <HStack
+                                key={index}
+                                rounded="$full"
+                                px={12}
+                                py={6}
+                                bg={isDark ? 'rgba(255,255,255,0.15)' : '#FFFFFF'}
+                                borderWidth={1}
+                                borderColor="#E9E9E9"
                             >
-                                {tag}
-                            </Text>
-                        </HStack>
-                    ))}
+                                <Text
+                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                    fontSize="$xs"
+                                    fontWeight="$semibold"
+                                >
+                                    {value}
+                                </Text>
+                            </HStack>
+                        );
+                    })}
                 </HStack>
             )}
 

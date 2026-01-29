@@ -422,7 +422,7 @@ const CatalogScreenComponent = () => {
             image: selectedProductLocal.image,
             brand: selectedProductLocal.brand,
           } : undefined,
-          fromInventory: experienceOption === 'own',
+          fromInventory: false,
           experienceOption: experienceOption,
         },
       });
@@ -439,8 +439,51 @@ const CatalogScreenComponent = () => {
         },
       });
     } else if (type === 'update') {
+      const storeState = useCatalogUIStore.getState();
+      let determinedContextType: ProductInfoType | undefined;
+      let determinedContextId: string | undefined;
+      let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
+      if (storeState.selectedProductId && storeState.currentView === 'products') {
+        determinedContextType = ProductInfoType.PRODUCT;
+        determinedContextId = storeState.selectedProductId;
+        if (selectedProductLocal) {
+          productInfoSnapshot = {
+            image: selectedProductLocal.image,
+            title: selectedProductLocal.name,
+            subName: selectedProductLocal.description,
+          };
+        }
+      } else if (storeState.selectedProductGroupId && storeState.currentView === 'productgroups') {
+        determinedContextType = ProductInfoType.PRODUCT_GROUP;
+        determinedContextId = storeState.selectedProductGroupId;
+        const productGroupBreadcrumb = breadcrumbItems.find(item => item.type === 'productGroup');
+        const subCategoryBreadcrumb = breadcrumbItems.find(item => item.type === 'subCategory');
+        if (productGroupBreadcrumb?.data) {
+          productInfoSnapshot = {
+            image: productGroupBreadcrumb.data.image,
+            title: productGroupBreadcrumb.name,
+            subName: subCategoryBreadcrumb?.name || '',
+          };
+        }
+      } else if (storeState.selectedSubCategoryId) {
+        determinedContextType = ProductInfoType.SUB_CATEGORY;
+        determinedContextId = storeState.selectedSubCategoryId;
+        const subCategoryBreadcrumb = breadcrumbItems.find(item => item.type === 'subCategory');
+        const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
+        if (subCategoryBreadcrumb?.data) {
+          productInfoSnapshot = {
+            image: subCategoryBreadcrumb.data.image,
+            title: subCategoryBreadcrumb.name,
+            subName: categoryBreadcrumb?.name || '',
+          };
+        }
+      }
+      if (!determinedContextType || !determinedContextId) {
+        return;
+      }
+      setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
       navigationService.navigate(ROOT_ROUTES.POST, {
-        screen: 'CreateUpdatePostScreen',
+        screen: 'SelectExperienceForUpdateScreen',
         params: {
           product: selectedProductLocal ? {
             id: selectedProductLocal.id,
@@ -452,7 +495,7 @@ const CatalogScreenComponent = () => {
         },
       });
     }
-  }, [navigation, selectedProductLocal, closeBottomSheet, setFlowContext]);
+  }, [navigation, selectedProductLocal, closeBottomSheet, setFlowContext, breadcrumbItems]);
 
   const handleCreatePost = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view

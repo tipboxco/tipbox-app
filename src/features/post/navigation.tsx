@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen } from './screens';
+import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectExperienceForUpdateScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
@@ -64,6 +64,9 @@ export type PostStackParamList = {
       images?: ImageSourcePropType[];
       product: { id: string; name: string; subName: string; image: any };
     };
+  };
+  SelectExperienceForUpdateScreen: {
+    product?: { id: string; name: string; description?: string; image: any; brand?: string };
   };
   AddProductFromInventory: { 
     returnScreen: 'CreateBenchmarkPostScreen';
@@ -193,6 +196,10 @@ export const PostNavigator = () => {
       <Stack.Screen
         name="CreateUpdatePostScreen"
         component={CreateUpdatePostScreen}
+      />
+      <Stack.Screen
+        name="SelectExperienceForUpdateScreen"
+        component={SelectExperienceForUpdateScreen}
       />
       <Stack.Screen
         name="AddProductFromInventory"

@@ -75,13 +75,6 @@ const CustomTabBar = (props: BottomTabBarProps) => {
   const isPressing = useSharedValue(false);
   const [tabBarWidth, setTabBarWidth] = useState(0);
   
-  // Tab bar gizliyse render etme
-  if (!isTabBarVisible) {
-    return null;
-  }
-  
-  const androidBottomPadding = insets.bottom;
-  const tabBarHeight = Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding;
   const tabCount = props.state.routes.length;
   const tabWidth = tabBarWidth > 0 ? tabBarWidth / tabCount : 0;
   
@@ -165,6 +158,14 @@ const CustomTabBar = (props: BottomTabBarProps) => {
       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
     };
   });
+  
+  // Tab bar gizliyse render etme (tüm hook'lardan sonra)
+  if (!isTabBarVisible) {
+    return null;
+  }
+  
+  const androidBottomPadding = insets.bottom;
+  const tabBarHeight = Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding;
   
   // Liquid Glass için base tint color
   const baseTintColor = isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.5)';

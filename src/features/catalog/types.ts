@@ -190,7 +190,7 @@ export interface BrandFeedPost {
   type: string;
   data: 
     | (import('@/src/features/profile/types').ProfilePost & { type: 'post' })
-    | (import('@/src/types/ReviewsCard').ReviewApiItem & { type: 'experience' })
+    | (import('@/src/types/ExperienceCard').ExperiencePostApiItem & { type: 'experience' })
     | (import('@/src/types/BenchmarkCard').BenchmarkApiItem & { type: 'benchmark' })
     | (import('@/src/types/TipsAndTricksCard').TipsApiItem & { type: 'tipsAndTricks' })
     | (import('@/src/types/QuestionCard').QuestionApiItem & { type: 'question' })

@@ -32,7 +32,7 @@ import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
-import type { ReviewCardData } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData } from '@/src/types/ExperienceCard';
 import {
   useLikePost,
   useUnlikePost,
@@ -53,12 +53,14 @@ import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 
 interface PostCardProps {
-  data: ReviewCardData;
+  data: ExperiencePostCardData;
   hideProduct?: boolean;
   isDetailMode?: boolean;
+  /** When provided, card content tap calls this instead of navigating to PostDetailScreen (e.g. select-for-update flow) */
+  onCardPress?: () => void;
 }
 
-export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardProps) => {
+export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
@@ -70,6 +72,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const [isShared, setIsShared] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = React.useRef<View>(null);
+  const triggerPositionRef = React.useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const { openBottomSheet } = useGlobalBottomSheet();
   
@@ -561,13 +564,15 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
       {
         !hideProduct && data.contextData && (
           <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            <ProductInfoCard
-              size="small"
-              type={ProductInfoType.PRODUCT}
-              image={toImageSource(data.contextData.image)}
-              title={data.contextData.name}
-              subName={data.contextData.subName}
-              onPress={() => {
+            <VStack space="xs">
+              <ProductInfoCard
+                size="small"
+                type={ProductInfoType.PRODUCT}
+                image={toImageSource(data.contextData.image)}
+                title={data.contextData.name}
+                subName={data.contextData.subName && !/^Status:\s*(tested|own)$/i.test(String(data.contextData.subName)) ? data.contextData.subName : undefined}
+                ownershipLabel={data.contextData?.isOwned ? 'Owned' : 'Tried'}
+                onPress={() => {
                 // Product için PostsScreen'e navigate et
                 if (!data.contextData?.id) return;
                 
@@ -595,91 +600,115 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                   },
                 });
               }}
-            />
+              />
+            </VStack>
           </Box>
         )
       }
 
+
       {/* Content */}
       <Pressable onPress={() => {
         if (isDetailMode) return; // Detay modunda navigation yapma
+        if (onCardPress) {
+          onCardPress();
+          return;
+        }
         navigationService.navigate(ROOT_ROUTES.POST, {
           screen: 'PostDetailScreen',
           params: { postData: data, type: 'experience' }
         });
       }}>
         <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          {data.content.map((item, index) => (
-            <VStack key={index} py={8}>
-              <HStack space="sm" alignItems="center">
-                {item.tag.icon === 'tag' ? (
-                  <TagIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
-                ) : (
-                  <CubeIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
-                )}
-                <Text
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize={'$xs'}
-                  fontWeight="$bold"
-                >
-                  {item.tag.title}
-                </Text>
-              </HStack>
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$xs"
-                ml={26}
-                numberOfLines={isDetailMode ? undefined : (data.images && data.images!.length > 0 ? 3 : 6)}
-              >
-                {item.text}
-              </Text>
-              <HStack ml={26} mt={8}>
-                {item.rating.map((star, idx) => (
-                  star ? (
-                    <StarIconSolid
-                      key={idx}
-                      width={12}
-                      height={12}
-                      color={isDark ? '#fff' : '#829905'}
-                    />
+          {Array.isArray(data.content) && data.content.length > 0 ? (
+            data.content.map((item, index) => (
+              <VStack key={index} py={10} space="xs">
+                <HStack space="sm" alignItems="center">
+                  {item.tag.icon === 'package' ? (
+                    <CubeIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
                   ) : (
-                    <StarIcon
-                      key={idx}
-                      width={12}
-                      height={12}
-                      color={isDark ? '#7E7E7E' : '#E8E8E8'}
-                    />
-                  )
-                ))}
-              </HStack>
-            </VStack>
-          ))}
+                    <TagIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                  )}
+                  <Text
+                    color={isDark ? '$textDark50' : '#000'}
+                    fontSize={14}
+                    fontWeight="$bold"
+                  >
+                    {item.tag.title}
+                  </Text>
+                </HStack>
+                <Text
+                  color={isDark ? '$textDark50' : '#343434'}
+                  fontSize={14}
+                  lineHeight={20}
+                  ml={26}
+                  numberOfLines={isDetailMode ? undefined : (data.images && data.images!.length > 0 ? 3 : 6)}
+                >
+                  {item.text}
+                </Text>
+                <HStack ml={26} mt={6} space="xs">
+                  {item.rating.map((star, idx) => (
+                    star ? (
+                      <StarIconSolid
+                        key={idx}
+                        width={16}
+                        height={16}
+                        color={isDark ? '#fff' : '#829905'}
+                      />
+                    ) : (
+                      <StarIcon
+                        key={idx}
+                        width={16}
+                        height={16}
+                        color={isDark ? '#7E7E7E' : '#E8E8E8'}
+                      />
+                    )
+                  ))}
+                </HStack>
+              </VStack>
+            ))
+          ) : null}
         </VStack>
       </Pressable>
 
-      {/* Tags */}
-      <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" flexWrap="wrap">
-        {data.tags.map((tag, index) => (
-          <HStack
-            key={index}
-            bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
-            borderWidth={1}
-            borderColor={'#E9E9E9'}
-            rounded={'$full'}
-            px={16}
-            py={6}
-            mr={4}
-          >
-            <Text
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={8}
-              fontWeight="$semibold"
-            >
-              {tag}
-            </Text>
-          </HStack>
-        ))}
-      </HStack>
+      {/* Usage Context: Duration, Condition, Purpose - Owned/Tried sadece product (ProductInfoCard) içinde. */}
+      {data.tags && data.tags.length > 0 && (
+        <HStack
+          px={12}
+          py={5}
+          borderRightWidth={1}
+          borderLeftWidth={1}
+          borderColor="#E9E9E9"
+          flexDirection="row"
+          flexWrap="wrap"
+          justifyContent="flex-start"
+          alignItems="center"
+          gap={8}
+        >
+          {data.tags.slice(0, 3).map((value, index) => {
+            if (value == null || value === '') return null;
+            return (
+              <Box
+                key={index}
+                borderRadius="$full"
+                px={10}
+                py={4}
+                bg={isDark ? 'rgba(255,255,255,0.15)' : '#FFFFFF'}
+                borderWidth={1}
+                borderColor="#E9E9E9"
+              >
+                <Text
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  fontSize={11}
+                  fontWeight="$semibold"
+                >
+                  {value}
+                </Text>
+              </Box>
+            );
+          })}
+        </HStack>
+      )}
 
       {(() => {
         const validImages = data.images?.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) || [];

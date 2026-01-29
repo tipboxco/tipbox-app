@@ -92,11 +92,12 @@ export const PostDetailScreen = () => {
     const isFromNotificationOrDeepLink = !postData || !isPostDataComplete;
     
     // Fetch post detail - Notification/deep link'ten geldiğinde her zaman en güncel veriyi fetch et
-    const { data: fetchedPostData, isLoading: isLoadingPost } = usePostDetail(
+    const { data: fetchedPostData, isLoading: isLoadingPost, isError: isPostDetailError, error: postDetailError } = usePostDetail(
       postId,
       true, // Her zaman enabled
       isFromNotificationOrDeepLink // Notification/deep link'ten geldiğinde force refresh
     );
+    const is404 = isPostDetailError && (postDetailError as any)?.response?.status === 404;
 
     // Use fetched post data if available, otherwise use the passed postData
     // Notification/deep link'ten geldiğinde her zaman fetched data kullan (en güncel)
@@ -113,6 +114,8 @@ export const PostDetailScreen = () => {
       
       if (fetched && post) {
         // Fetched data'yı kullan, ama category/contextData/product bilgilerini postData'dan al (görseller zaten dönüştürülmüş)
+        // Experience post için content (split bloklar), tags (3 durum) ve images postData'dan korunmalı
+        const isExperience = (post.type || fetched.type) === 'experience';
         finalPostData = {
           ...fetched,
           // Category bilgisi (Tips & Tricks, Question, Post için) - postData'dan öncelikli (görseller dönüştürülmüş)
@@ -126,12 +129,59 @@ export const PostDetailScreen = () => {
           products: post.products || fetched.products,
           // RelatedPost bilgisi (Update için) - postData'dan öncelikli
           relatedPost: post.relatedPost || fetched.relatedPost,
+          // Experience: split content, 3 tag ve images postData'dan (zaten kart formatında)
+          ...(isExperience && {
+            content: Array.isArray(post.content) ? post.content : (fetched.content ?? []),
+            tags: Array.isArray(post.tags) ? post.tags : (fetched.tags ?? []),
+            images: post.images ?? fetched.images,
+          }),
         };
       } else {
         finalPostData = fetched || post;
       }
     }
     const finalType = type || (fetchedPostData as any)?.type || 'post';
+
+    // Experience post: API'den gelen veriyi kart formatına çevir (experienceContent -> content array, product/contextData, tags)
+    const finalExperienceData = useMemo(() => {
+      if (finalType !== 'experience' || !finalPostData) return finalPostData;
+      const raw = finalPostData as any;
+      const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
+      const contentBlocks = raw.experienceContent ?? (Array.isArray(raw.content) ? raw.content : []);
+      const content = Array.isArray(contentBlocks)
+        ? contentBlocks.map((item: any) => ({
+            tag: {
+              icon: (item?.title?.toLowerCase?.().includes('product') || item?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
+              title: item?.title ?? '',
+            },
+            text: trimTrailingParen(item?.content ?? item?.text ?? ''),
+            rating: Array(5).fill(false).map((_, i) => i < (Math.min(5, Math.max(0, Number(item?.rating) || 0)))),
+          }))
+        : [];
+      const tags = Array.isArray(raw.tags) ? raw.tags : [];
+      const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+      const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
+      const rawProduct = raw.contextData?.product ?? raw.contextData ?? raw.product;
+      const subNameRaw = rawProduct?.subName ?? '';
+      const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
+      return {
+        ...raw,
+        content,
+        tags,
+        user: raw.user ? {
+          ...raw.user,
+          avatar: toImageSource(raw.user.avatar) ?? defaultAvatar,
+        } : raw.user,
+        contextData: rawProduct ? {
+          id: rawProduct.id ?? '',
+          name: rawProduct.name ?? '',
+          subName,
+          image: toImageSource(rawProduct.image) ?? defaultPostImage,
+          isOwned: raw.status === 'own' || rawProduct.isOwned,
+        } : raw.contextData,
+        images: Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter(Boolean) : raw.images,
+      };
+    }, [finalType, finalPostData]);
 
     // Fetch comments
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
@@ -415,7 +465,7 @@ export const PostDetailScreen = () => {
                     ) : finalType === 'benchmark' ? (
                         <BenchmarkPostCard data={finalPostData} onCommentPress={handleCommentInputPress} isDetailMode={true} />
                     ) : finalType === 'experience' ? (
-                        <ExperiencePostCard data={finalPostData} isDetailMode={true} />
+                        <ExperiencePostCard data={finalExperienceData ?? finalPostData} isDetailMode={true} />
                     ) : finalType === 'update' ? (
                         <UpdatePostCard 
                             data={finalPostData} 
@@ -523,6 +573,23 @@ export const PostDetailScreen = () => {
             ? keyboardHeight + 80
             : lastKeyboardHeightRef.current + 80
     }), [keyboardHeight]);
+
+    // 404: Post bulunamadı (silinmiş veya geçersiz ID) - yükleme bittikten sonra göster
+    if (!isLoadingPost && is404) {
+        return (
+            <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#fff' }}>
+                <Header title="Post Details" showBackButton onBackPress={() => navigation.goBack()} />
+                <Box flex={1} justifyContent="center" alignItems="center" px="$6">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={16} textAlign="center">
+                        Post bulunamadı.
+                    </Text>
+                    <Text color={isDark ? '#A3A3A3' : '#666'} fontSize={14} mt="$2" textAlign="center">
+                        Bu post silinmiş veya artık mevcut değil.
+                    </Text>
+                </Box>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#fff' }}>

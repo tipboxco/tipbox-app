@@ -519,13 +519,14 @@ export const CreateTipsAndTrickPostScreen = () => {
         errorStack: error?.stack,
       });
       
-      // Backend'den gelen detaylı hata mesajını al
+      // Backend'den gelen detaylı hata mesajını al (description her zaman string olmalı; obje React hatası verir)
       let errorMessage = 'An error occurred while creating the post. Please try again.';
-      
-      if (error?.response?.data?.message) {
+      const errObj = error?.response?.data?.error;
+      const errMsg = typeof errObj?.message === 'string' ? errObj.message : undefined;
+      if (error?.response?.data?.message && typeof error.response.data.message === 'string') {
         errorMessage = error.response.data.message;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
+      } else if (errMsg) {
+        errorMessage = errMsg;
       } else if (error?.response?.status === 500) {
         errorMessage = 'Server error occurred. Please try again later.';
       } else if (error?.response?.status === 400) {

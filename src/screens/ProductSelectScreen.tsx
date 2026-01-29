@@ -347,7 +347,8 @@ export const ProductSelectScreen: React.FC = () => {
         })
       );
     } else if (returnScreen === 'CreateExperiencePostScreen') {
-      // Navigate back to CreateExperiencePostScreen with selected product for inventory
+      // Katalogdan ürün seçildi → fromInventory: false (envanterden değil)
+      // I Owned: önce envantere eklenir sonra post; I Tried: sadece post
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateExperiencePostScreen',
         params: {
@@ -357,7 +358,7 @@ export const ProductSelectScreen: React.FC = () => {
             image: product.image,
             description: product.description || '',
           },
-          fromInventory: experienceOption === 'own', // Only true if "I Own the Product" was selected
+          fromInventory: false,
           experienceOption: experienceOption || 'own',
         },
       });

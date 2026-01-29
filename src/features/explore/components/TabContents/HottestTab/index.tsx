@@ -17,13 +17,13 @@ import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { ProfilePost } from '@/src/features/profile/types';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
-import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostApiItem } from '@/src/types/ExperienceCard';
 import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 
 interface HottestTabProps {
   searchQuery?: string;
@@ -72,30 +72,41 @@ const mapFeedToCardData = (item: ProfilePost): PostCardData => {
   };
 };
 
-// Map Experience (ReviewApiItem) to ReviewCardData
-const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
+// Map Experience (ExperiencePostApiItem) to ExperiencePostCardData
+const mapExperienceToCardData = (item: ExperiencePostApiItem & { type: 'experience' }): ExperiencePostCardData => {
   const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(item.user.avatar)!;
-  const productImage = item.contextData?.image
-    ? toImageSource(item.contextData.image)
-    : undefined;
+  const ctx = item.contextData as { product?: { id?: string; name?: string; image?: string | null; subName?: string } } | undefined;
+  const rawProduct = ctx?.product ?? item.contextData ?? item.product;
+  const productImage = rawProduct?.image ? toImageSource(rawProduct.image) : undefined;
 
-  const content: ReviewCardContentItem[] = item.content.map((contentItem) => ({
-    tag: {
-      icon: 'tag',
-      title: contentItem.title,
-    },
-    text: contentItem.content,
-    rating: Array(5)
-      .fill(false)
-      .map((_, index) => index < (contentItem.rating || 0)),
-  }));
+  const contentBlocks = item.experienceContent ?? (Array.isArray(item.content) ? item.content : []);
+  const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
+    ? contentBlocks.map((contentItem) => ({
+        tag: {
+          icon: (contentItem.title?.toLowerCase?.().includes('product') || contentItem.title?.toLowerCase?.().includes('usage')) ? 'package' : 'tag',
+          title: contentItem.title,
+        },
+        text: contentItem.content,
+        rating: Array(5)
+          .fill(false)
+          .map((_, index) => index < (contentItem.rating || 0)),
+      }))
+    : [];
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
   const mappedImages = item.images
     ?.map((img) => toImageSource(img))
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
   const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
+  const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
+  const subNameRaw = rawProduct?.subName ?? '';
+  const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
+  const tagsFromApi = Array.isArray(item.tags) ? item.tags : [];
+  const tags =
+    tagsFromApi.length >= 3
+      ? tagsFromApi
+      : [item.durationName, item.locationName, item.purposeName].filter((s): s is string => !!s);
 
   return {
     id: item.id,
@@ -104,17 +115,17 @@ const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): 
       name: item.user.name,
       title: item.user.title,
       avatar: avatarSource,
-      action: 'wrote a review',
+      action: isOwned ? 'Added new product and experiences to inventory!' : undefined,
     },
     contextData: {
-      id: item.contextData?.id || '',
-      name: item.contextData?.name || '',
-      subName: item.contextData?.subName || '',
-      image: productImage,
-      isOwned: item.contextData?.isOwned,
+      id: rawProduct?.id || '',
+      name: rawProduct?.name || '',
+      subName,
+      image: productImage ?? defaultPostImage,
+      isOwned,
     },
     content,
-    tags: item.tags,
+    tags,
     images,
     stats: item.stats,
     createdAt: item.createdAt,
@@ -407,7 +418,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerCom
         if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
           return (
             <ExperiencePostCard
-              data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
+              data={mapExperienceToCardData(item.data as ExperiencePostApiItem & { type: 'experience' })}
             />
           );
         }

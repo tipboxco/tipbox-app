@@ -414,9 +414,10 @@ export const createQuestionPost = async (
 export interface CreateUpdatePostRequest {
   contextType: ApiContextType;
   contextId: string;
-  content: string; // "description" değil, "content"!
+  content: string;
   images?: string[];
-  experiencePostId?: string; // Experience post ID (update bu post'a bağlanacak)
+  experiencePostId?: string;
+  eventId?: string | null;
 }
 
 /**
@@ -433,11 +434,13 @@ export const createUpdatePost = async (
   formData.append('contextId', data.contextId);
   formData.append('content', data.content); // "description" değil, "content"!
   
-  // Experience post ID varsa ekle (update bu post'a bağlanacak)
   if (data.experiencePostId) {
     formData.append('experiencePostId', data.experiencePostId);
   }
-  
+  if (data.eventId != null && data.eventId !== '') {
+    formData.append('eventId', data.eventId);
+  }
+
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {
       let fileExtension = 'jpg';
@@ -482,6 +485,7 @@ export const createUpdatePost = async (
 export interface CreateExperiencePostRequest {
   contextType: ApiContextType;
   contextId: string;
+  experienceSnippetId: string;
   selectedDurationId: string;
   selectedLocationId: string;
   selectedPurposeId: string;
@@ -493,7 +497,8 @@ export interface CreateExperiencePostRequest {
   }>;
   status: 'own' | 'tested';
   images?: string[];
-  experienceSnippetId?: string;
+  /** Opsiyonel. Etkinlik ile ilişkili post için event id. */
+  eventId?: string | null;
 }
 
 /**
@@ -513,7 +518,6 @@ export const createExperiencePost = async (
       content: data.content?.substring(0, 50) + '...',
       experience: data.experience,
       status: data.status,
-      experienceSnippetId: data.experienceSnippetId,
       imagesCount: data.images?.length || 0,
     });
     
@@ -529,26 +533,64 @@ export const createExperiencePost = async (
     }
     
     const client = apiService.getClient();
-    
+    const hasImages = data.images && data.images.length > 0;
+
+    if (!hasImages) {
+      // Görsel yoksa application/json gönder. Backend bazen camelCase yerine snake_case bekliyor; her iki formatta gönder.
+      const body = {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        content: data.content,
+        experience: data.experience,
+        status: data.status,
+        experienceSnippetId: data.experienceSnippetId,
+        // camelCase (spec)
+        selectedDurationId: data.selectedDurationId,
+        selectedLocationId: data.selectedLocationId,
+        selectedPurposeId: data.selectedPurposeId,
+        // snake_case (bazı backend'ler bunu bekliyor)
+        selected_duration_id: data.selectedDurationId,
+        selected_location_id: data.selectedLocationId,
+        selected_purpose_id: data.selectedPurposeId,
+        // kısa isimler (bazı backend validation'ları bunları arıyor)
+        duration: data.selectedDurationId,
+        location: data.selectedLocationId,
+        purpose: data.selectedPurposeId,
+        ...(data.eventId != null && data.eventId !== '' ? { eventId: data.eventId } : {}),
+      };
+      console.log('[createExperiencePost] Request URL: POST /posts/experience (JSON)', {
+        ...body,
+        content: (body as { content?: string }).content?.substring(0, 50) + '...',
+      });
+      const response = await client.post<CreatePostResponse>('/posts/experience', body, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      console.log('[createExperiencePost] ✅ Success:', response.data);
+      return response.data;
+    }
+
+    // Görsel varsa multipart/form-data
     const formData = new FormData();
     formData.append('contextType', data.contextType);
     formData.append('contextId', data.contextId);
-    formData.append('selectedDurationId', data.selectedDurationId);
-    formData.append('selectedLocationId', data.selectedLocationId);
-    formData.append('selectedPurposeId', data.selectedPurposeId);
     formData.append('content', data.content);
     formData.append('experience', JSON.stringify(data.experience));
     formData.append('status', data.status);
-    
-    if (data.experienceSnippetId) {
-      formData.append('experienceSnippetId', data.experienceSnippetId);
+    formData.append('selectedDurationId', data.selectedDurationId);
+    formData.append('selectedLocationId', data.selectedLocationId);
+    formData.append('selectedPurposeId', data.selectedPurposeId);
+    formData.append('experienceSnippetId', data.experienceSnippetId);
+    if (data.eventId != null && data.eventId !== '') {
+      formData.append('eventId', data.eventId);
     }
-    
-    if (data.images && data.images.length > 0) {
-      data.images.forEach((imageUri, index) => {
+    data.images!.forEach((imageUri, index) => {
+      const isUrl =
+        imageUri.startsWith('http://') || imageUri.startsWith('https://');
+      if (isUrl) {
+        formData.append('images', imageUri);
+      } else {
         let fileExtension = 'jpg';
         let mimeType = 'image/jpeg';
-        
         const uriLower = imageUri.toLowerCase();
         if (uriLower.includes('.')) {
           const ext = imageUri.split('.').pop()?.toLowerCase();
@@ -560,17 +602,15 @@ export const createExperiencePost = async (
             mimeType = 'image/jpeg';
           }
         }
-        
         formData.append('images', {
           uri: imageUri,
           type: mimeType,
           name: `image_${index}.${fileExtension}`,
         } as any);
-      });
-    }
-    
-    console.log('[createExperiencePost] Request URL: POST /posts/experience');
-    console.log('[createExperiencePost] FormData fields:', {
+      }
+    });
+
+    console.log('[createExperiencePost] Request URL: POST /posts/experience (FormData)', {
       contextType: data.contextType,
       contextId: data.contextId,
       selectedDurationId: data.selectedDurationId,
@@ -579,16 +619,15 @@ export const createExperiencePost = async (
       content: data.content?.substring(0, 50) + '...',
       experience: JSON.stringify(data.experience),
       status: data.status,
-      experienceSnippetId: data.experienceSnippetId,
       imagesCount: data.images?.length || 0,
     });
-    
+
     const response = await client.post<CreatePostResponse>(
       '/posts/experience',
       formData,
       {
         headers: {
-          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+          'Content-Type': undefined,
         },
       }
     );

@@ -24,7 +24,7 @@ import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import type { UpdatePost } from '@/src/mock/feed/types';
 import type { UpdateCardData } from '@/src/types/UpdateCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -210,44 +210,42 @@ const SurveyScreen: React.FC = () => {
     };
   }, []);
 
-  const mapExperienceToCardData = useCallback((item: BrandFeedPost): ReviewCardData => {
+  const mapExperienceToCardData = useCallback((item: BrandFeedPost): ExperiencePostCardData => {
     // Type guard: experience type kontrolü
     if (item.type !== 'experience') {
       throw new Error(`Expected experience type, got ${item.type}`);
     }
     
-    const postData = item.data as import('@/src/types/ReviewsCard').ReviewApiItem;
-    
-    // Data validation: postData kontrolü
+    const postData = item.data as import('@/src/types/ExperienceCard').ExperiencePostApiItem;
+
     if (!postData || !postData.user) {
       console.warn('[mapExperienceToCardData] Missing postData or user:', { item, postData });
       throw new Error('Missing required data: postData or user');
     }
-    
+    const rawProduct = postData.contextData?.product ?? postData.contextData ?? postData.product;
     const avatarSource = toImageSource(postData.user.avatar)!;
-    const productImage = postData.contextData?.image
-      ? toImageSource(postData.contextData.image)
-      : undefined;
+    const productImage = rawProduct?.image ? toImageSource(rawProduct.image) : undefined;
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
 
-    // Content array'i map et - rating 0-100 arası, 0-5 arasına çevir (her 20 = 1 star)
-    const content: ReviewCardContentItem[] = Array.isArray(postData.content) 
-      ? postData.content.map((contentItem) => {
-          // Rating 0-100 arası, 0-5 arasına çevir (örnek: 46 -> 2.3 -> 2, 68 -> 3.4 -> 3)
-          const ratingValue = contentItem.rating || 0;
-          const stars = Math.floor(ratingValue / 20); // 0-100 -> 0-5
-          
+    const contentBlocks = postData.experienceContent ?? (Array.isArray(postData.content) ? postData.content : []);
+    const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
+      ? contentBlocks.map((contentItem) => {
+          const ratingVal = contentItem?.rating ?? 0;
+          const stars = ratingVal <= 5 ? Math.min(5, Math.max(0, Math.round(ratingVal))) : Math.floor(ratingVal / 20);
           return {
             tag: {
-              icon: 'tag' as const,
-              title: contentItem.title || '',
+              icon: (contentItem?.title?.toLowerCase?.().includes('product') || contentItem?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
+              title: contentItem?.title || '',
             },
-            text: contentItem.content || '',
-            rating: Array(5)
-              .fill(false)
-              .map((_, index) => index < stars),
+            text: contentItem?.content || '',
+            rating: Array(5).fill(false).map((_, index) => index < stars),
           };
         })
       : [];
+
+    const subNameRaw = rawProduct?.subName ?? '';
+    const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
+    const tags = Array.isArray(postData.tags) ? postData.tags : [];
 
     return {
       id: postData.id,
@@ -256,17 +254,17 @@ const SurveyScreen: React.FC = () => {
         name: postData.user.name,
         title: postData.user.title,
         avatar: avatarSource,
-        action: 'wrote a review',
+        action: (postData.status === 'own' || rawProduct?.isOwned) ? 'Added new product and experiences to inventory!' : undefined,
       },
       contextData: {
-        id: postData.contextData?.id || '',
-        name: postData.contextData?.name || '',
-        subName: postData.contextData?.subName || '',
-        image: productImage,
-        isOwned: postData.contextData?.isOwned,
+        id: rawProduct?.id || '',
+        name: rawProduct?.name || '',
+        subName,
+        image: productImage ?? defaultPostImage,
+        isOwned: postData.status === 'own' || rawProduct?.isOwned,
       },
       content,
-      tags: postData.tags || [],
+      tags,
       images: postData.images
         ?.map((img: string) => toImageSource(img))
         .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
