@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator } from 'react-native';
 import {
   Box,
@@ -12,44 +12,60 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
-import { useCurrentSubscription, useSubscriptionPlans } from '../../api/hooks';
+import { usePaymentDashboard, useSubscriptionPlans } from '../../api/hooks';
+
+const formatBillingDate = (dateStr: string) => {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+};
 
 export const SubscriptionTab: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  // API hooks
-  const { data: subscription, isLoading: isLoadingSubscription, error: subscriptionError } = useCurrentSubscription();
-  const { data: subscriptionPlans, isLoading: isLoadingPlans, error: plansError } = useSubscriptionPlans();
+  const { data: dashboard, isLoading: isLoadingDashboard } = usePaymentDashboard();
+  const { data: subscriptionPlans, isLoading: isLoadingPlans } = useSubscriptionPlans();
 
-  const isLoading = isLoadingSubscription || isLoadingPlans;
+  const activeSubscription = dashboard?.active_subscription ?? null;
+  const isLoading = isLoadingDashboard || isLoadingPlans;
 
-  // Use subscription data from API or fallback to default
-  const subscriptionData = subscription ? {
-    planName: subscription.planName,
-    renewalDate: subscription.renewalDate,
-  } : {
-    planName: 'No Active Subscription',
-    renewalDate: '',
-  };
+  const subscriptionData = useMemo(() => {
+    if (!activeSubscription)
+      return { planName: 'No active subscription', renewalDate: '', status: null as string | null };
+    return {
+      planName: activeSubscription.plan_name,
+      renewalDate: formatBillingDate(activeSubscription.next_billing_date),
+      status: activeSubscription.status,
+    };
+  }, [activeSubscription]);
 
-  // Use benefits from subscription or fallback to default
-  const benefits = subscription?.benefits || [
-    'Unlimited access to premium features',
-    'Priority customer support',
-    'Advanced analytics and insights',
-    'Exclusive content and early access',
-    'Ad-free experience',
-  ];
+  const benefits = useMemo(
+    () =>
+      activeSubscription?.benefits?.length
+        ? activeSubscription.benefits
+        :         [
+            'Unlimited access to premium features',
+            'Priority customer support',
+            'Advanced analytics',
+            'Ad-free experience',
+          ],
+    [activeSubscription]
+  );
 
   const handleManage = () => {
-    // TODO: Implement manage subscription functionality
-    console.log('Manage subscription');
+    // Abonelik yönetimi (gelecekte plan değiştirme / iptal eklenebilir)
   };
 
   const handleViewOtherPlans = () => {
-    // TODO: Navigate to subscription plans screen or show plans modal
-    console.log('View other premium plans', subscriptionPlans);
+    // Plan listesi modal veya ekran (subscriptionPlans kullanılabilir)
   };
 
   if (isLoading) {
@@ -61,7 +77,11 @@ export const SubscriptionTab: React.FC = () => {
   }
 
   return (
-    <ScrollView flex={1} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0 }}>
+    <ScrollView
+      flex={1}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 0 }}
+    >
       <VStack space="lg" pt="$4">
         {/* My Subscriptions Section */}
         <VStack space="md">
@@ -91,32 +111,35 @@ export const SubscriptionTab: React.FC = () => {
                   {subscriptionData.planName}
                 </Text>
                 {subscriptionData.renewalDate && (
-                  <Text
-                    fontSize="$xs"
-                    fontWeight="$normal"
-                    color="#B9B9B9"
-                  >
-                    Will renew on {subscriptionData.renewalDate}.
+                  <Text fontSize="$xs" fontWeight="$normal" color="#B9B9B9">
+                    Next billing: {subscriptionData.renewalDate}
+                  </Text>
+                )}
+                {subscriptionData.status && (
+                  <Text fontSize="$xs" fontWeight="$normal" color="#B9B9B9">
+                    Status: {subscriptionData.status}
                   </Text>
                 )}
               </VStack>
-              <Button
-                px="$4"
-                py="$2"
-                variant="outline"
-                onPress={handleManage}
-                borderColor="#B9B9B9"
-                bg="transparent"
-                ml="$3"
-              >
-                <ButtonText
-                  fontSize="$xs"
-                  fontWeight="$medium"
-                  color={isDark ? '#FFFFFF' : '#000000'}
+              {activeSubscription && (
+                <Button
+                  px="$4"
+                  py="$2"
+                  variant="outline"
+                  onPress={handleManage}
+                  borderColor="#B9B9B9"
+                  bg="transparent"
+                  ml="$3"
                 >
-                  Manage
-                </ButtonText>
-              </Button>
+                  <ButtonText
+                    fontSize="$xs"
+                    fontWeight="$medium"
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  >
+                    Manage
+                  </ButtonText>
+                </Button>
+              )}
             </HStack>
           </Box>
         </VStack>
@@ -129,7 +152,7 @@ export const SubscriptionTab: React.FC = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             px="$2"
           >
-            My Plan Benefits
+            Plan Benefits
           </Text>
 
           <Box
@@ -146,7 +169,7 @@ export const SubscriptionTab: React.FC = () => {
                 color={isDark ? '#FFFFFF' : '#000000'}
                 mb="$2"
               >
-                Benefits include:
+                Benefits:
               </Text>
               {benefits.map((benefit, index) => (
                 <HStack key={index} alignItems="flex-start" space="sm">
@@ -189,7 +212,7 @@ export const SubscriptionTab: React.FC = () => {
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              View Other Premium Plans
+              Other Premium Plans ({subscriptionPlans?.length ?? 0} plans)
             </Text>
             <Feather
               name="chevron-right"

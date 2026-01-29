@@ -1,116 +1,144 @@
 import { apiService } from '../../../services/ApiService';
 
 /**
- * Payment Method types
+ * Payment & Subscription API types (rehberle uyumlu)
  */
 export interface PaymentMethod {
   id: string;
-  nameOnCard: string;
-  cardNumber: string;
-  expirationDate: string;
-  cardName?: string;
-  cardType: 'visa' | 'mastercard' | 'amex' | 'discover';
-  isDefault?: boolean;
+  card_alias: string;
+  brand: string;
+  last4: string;
+  expiry_month: number;
+  expiry_year: number;
+  is_default: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface BillingHistoryEntry {
+export interface Subscription {
+  current_plan_id: string;
+  plan_name: string;
+  status: 'active' | 'trialing' | 'canceled' | 'past_due';
+  next_billing_date: string;
+  benefits: string[];
+}
+
+export interface Invoice {
   id: string;
-  planName: string;
+  amount: number;
+  currency: string;
   date: string;
-  amount: string;
-  cardLastFour: string;
+  status: 'Paid' | 'Pending' | 'Failed';
+  description: string | null;
 }
 
-export interface LinkedPaymentMethod {
-  cardType: string;
-  cardNumber: string;
+export interface PaymentDashboard {
+  saved_cards: PaymentMethod[];
+  active_subscription: Subscription | null;
+  recent_invoices: Invoice[];
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  period: 'MONTHLY' | 'YEARLY';
+  benefits: string[];
+}
+
+/** Kart ekleme request */
+export interface AddPaymentMethodRequest {
+  payment_token: string;
+  card_alias: string;
+}
+
+/** Kart ismi güncelleme request */
+export interface UpdatePaymentMethodRequest {
+  card_alias: string;
+}
+
+/** API hata response (error_code ile) */
+export interface PaymentApiErrorResponse {
+  message?: string;
+  error_code?:
+    | 'CARD_NOT_FOUND'
+    | 'CARD_IN_USE_BY_SUBSCRIPTION'
+    | 'INSUFFICIENT_FUNDS'
+    | 'INVALID_EXPIRY'
+    | 'CARD_DECLINED';
 }
 
 /**
- * Get Payment Methods endpoint function
- * Kayıtlı ödeme yöntemlerini getirir
- * 
- * @returns PaymentMethod[] - Kayıtlı kartlar listesi
+ * GET /users/settings/payment-dashboard
+ * Ödeme özeti: kartlar, aktif abonelik, son faturalar (tek istek)
  */
-export const getPaymentMethods = async (): Promise<PaymentMethod[]> => {
-  try {
-    const response = await apiService.getClient().get<PaymentMethod[]>(
-      '/users/settings/payment-methods'
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('[getPaymentMethods] API Error:', {
-      url: '/users/settings/payment-methods',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
-    throw error;
-  }
+export const getPaymentDashboard = async (): Promise<PaymentDashboard> => {
+  const response = await apiService.getClient().get<PaymentDashboard>(
+    '/users/settings/payment-dashboard'
+  );
+  return response.data;
 };
 
 /**
- * Get Billing History endpoint function
- * Fatura geçmişini getirir
- * 
- * @param startDate - Başlangıç tarihi (optional)
- * @param endDate - Bitiş tarihi (optional)
- * @param sort - Sıralama (optional)
- * @returns BillingHistoryEntry[] - Fatura geçmişi listesi
+ * POST /users/settings/payment-methods
+ * Yeni kart ekleme (payment_token sağlayıcıdan alınır; kart numarası/CVV gönderilmez)
  */
-export const getBillingHistory = async (
-  startDate?: string,
-  endDate?: string,
-  sort?: string
-): Promise<BillingHistoryEntry[]> => {
-  try {
-    const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
-    if (sort) params.append('sort', sort);
-
-    const queryString = params.toString();
-    const url = `/users/settings/billing-history${queryString ? `?${queryString}` : ''}`;
-
-    const response = await apiService.getClient().get<BillingHistoryEntry[]>(url);
-    return response.data;
-  } catch (error: any) {
-    console.error('[getBillingHistory] API Error:', {
-      url: '/users/settings/billing-history',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
-    throw error;
-  }
+export const addPaymentMethod = async (
+  body: AddPaymentMethodRequest
+): Promise<PaymentMethod> => {
+  const response = await apiService.getClient().post<PaymentMethod>(
+    '/users/settings/payment-methods',
+    body
+  );
+  return response.data;
 };
 
 /**
- * Get Linked Payment Method endpoint function
- * Bağlı ödeme yöntemini getirir
- * 
- * @returns LinkedPaymentMethod - Bağlı ödeme yöntemi
+ * PATCH /users/settings/payment-methods/:id
+ * Kart ismini güncelleme
  */
-export const getLinkedPaymentMethod = async (): Promise<LinkedPaymentMethod | null> => {
-  try {
-    const response = await apiService.getClient().get<LinkedPaymentMethod>(
-      '/users/settings/linked-payment-method'
-    );
-    return response.data;
-  } catch (error: any) {
-    // 404 durumunda null döndür (bağlı ödeme yöntemi yoksa)
-    if (error.response?.status === 404) {
-      return null;
-    }
-    console.error('[getLinkedPaymentMethod] API Error:', {
-      url: '/users/settings/linked-payment-method',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
-    throw error;
-  }
+export const updatePaymentMethod = async (
+  id: string,
+  body: UpdatePaymentMethodRequest
+): Promise<PaymentMethod> => {
+  const response = await apiService.getClient().patch<PaymentMethod>(
+    `/users/settings/payment-methods/${id}`,
+    body
+  );
+  return response.data;
+};
+
+/**
+ * DELETE /users/settings/payment-methods/:id
+ * Kart silme (aktif abonelikte kullanılıyorsa 409 döner)
+ */
+export const deletePaymentMethod = async (id: string): Promise<void> => {
+  await apiService.getClient().delete(`/users/settings/payment-methods/${id}`);
+};
+
+export type InvoicesSortBy = 'date_asc' | 'date_desc';
+
+export interface GetInvoicesParams {
+  sort_by?: InvoicesSortBy;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * GET /users/settings/invoices
+ * Fatura geçmişi (sayfalı)
+ */
+export const getInvoices = async (
+  params: GetInvoicesParams = {}
+): Promise<Invoice[]> => {
+  const { sort_by = 'date_desc', limit = 20, offset = 0 } = params;
+  const searchParams = new URLSearchParams();
+  searchParams.set('sort_by', sort_by);
+  searchParams.set('limit', String(Math.min(100, limit)));
+  searchParams.set('offset', String(offset));
+  const response = await apiService.getClient().get<Invoice[]>(
+    `/users/settings/invoices?${searchParams.toString()}`
+  );
+  return response.data;
 };

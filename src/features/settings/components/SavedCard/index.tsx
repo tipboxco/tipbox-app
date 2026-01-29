@@ -58,11 +58,11 @@ export const SavedCard: React.FC<SavedCardProps> = ({ data, onPress, onDelete, o
     }
   };
 
-  // Format card number: 5209 - 3984 - **** - **39
+  // Format card number: API'den last4 veya tam numara; maskeli gösterim
   const formatCardNumber = (cardNumber: string) => {
     const cleaned = cardNumber.replace(/\s/g, '');
     const last4 = cleaned.slice(-4);
-    return `5209 - 3984 - **** - **${last4}`;
+    return `**** - **** - **** - **${last4}`;
   };
 
   const handlePress = () => {
