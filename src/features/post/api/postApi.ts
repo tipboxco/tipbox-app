@@ -131,14 +131,16 @@ export const createBenchmarkPost = async (
   data: CreateBenchmarkPostRequest
 ): Promise<CreatePostResponse> => {
   const client = apiService.getClient();
-  
-  // FormData oluştur (multipart/form-data için)
+
+  // Backend sadece "product" (küçük harf) kabul eder; büyük harf 400 döner
+  const contextType = String(data.contextType ?? 'product').toLowerCase();
+
   const formData = new FormData();
-  formData.append('contextType', data.contextType);
+  formData.append('contextType', contextType);
   formData.append('contextId', data.contextId);
   formData.append('description', data.description);
-  
-  // Products array'ini JSON string olarak ekle
+
+  // Products array'ini JSON string olarak ekle (her iki üründe isSelected: true olmalı)
   formData.append('products', JSON.stringify(data.products));
   
   // Images varsa ekle
@@ -624,7 +626,7 @@ export const createExperiencePost = async (
  */
 export interface SplitExperienceRequest {
   productId: string;
-  content: string;
+  experienceText: string;
 }
 
 /**
@@ -665,11 +667,11 @@ export const splitExperience = async (
 ): Promise<SplitExperienceResponse> => {
   try {
     console.log('[splitExperience] Request data:', JSON.stringify(data, null, 2));
-    console.log('[splitExperience] Request URL: POST /posts/experience/split');
+    console.log('[splitExperience] Request URL: POST /inventory/split-experience');
     
     // AI işlemleri için timeout'u 60 saniyeye çıkar (default: 10 saniye)
     const response = await apiService.getClient().post<SplitExperienceResponse>(
-      '/posts/experience/split',
+      '/inventory/split-experience',
       data,
       {
         timeout: 60000, // 60 saniye - AI işlemleri daha uzun sürebilir
@@ -680,7 +682,7 @@ export const splitExperience = async (
     return response.data;
   } catch (error: any) {
     console.error('[splitExperience] ❌ API Error:', {
-      url: '/posts/experience/split',
+      url: '/inventory/split-experience',
       method: 'POST',
       status: error.response?.status,
       statusText: error.response?.statusText,

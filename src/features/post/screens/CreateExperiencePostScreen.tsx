@@ -186,7 +186,7 @@ export const CreateExperiencePostScreen = () => {
                     console.log('[CreateExperiencePostScreen] 📤 Calling split-experience API...');
                     const response = await splitExperienceMutation.mutateAsync({
                         productId: selectedProduct.id,
-                        content: experienceText.trim(),
+                        experienceText: experienceText.trim(),
                     });
 
                     console.log('[CreateExperiencePostScreen] ✅ Split response received:', response);

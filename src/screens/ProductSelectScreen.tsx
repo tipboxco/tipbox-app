@@ -33,6 +33,8 @@ export const ProductSelectScreen: React.FC = () => {
   const eventId = route.params?.eventId;
   const eventType = route.params?.eventType;
   const experienceOption = route.params?.experienceOption;
+  const selectedProductField = route.params?.selectedProductField;
+  const initialProduct = route.params?.initialProduct;
   
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
@@ -357,6 +359,25 @@ export const ProductSelectScreen: React.FC = () => {
           },
           fromInventory: experienceOption === 'own', // Only true if "I Own the Product" was selected
           experienceOption: experienceOption || 'own',
+        },
+      });
+    } else if (returnScreen === 'CreateBenchmarkPostScreen') {
+      // Navigate back to CreateBenchmarkPostScreen with selected product (benchmark ikinci ürün)
+      const nameParts = product.name.split(' ');
+      const brand = nameParts.length > 1 ? nameParts[0] : undefined;
+      const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
+      navigationService.navigate(ROOT_ROUTES.POST, {
+        screen: 'CreateBenchmarkPostScreen',
+        params: {
+          product: initialProduct,
+          selectedProduct: {
+            id: product.id,
+            name: productName,
+            brand,
+            description: product.description || '',
+            image: product.image,
+          },
+          selectedProductField: selectedProductField || 'selectedProduct2',
         },
       });
     } else {

@@ -54,7 +54,8 @@ export const PostDetailScreen = () => {
     
     // Type'ı belirle: params'dan veya default 'post'
     const type = params?.type || 'post';
-    const showRelatedPost = params?.showRelatedPost;
+    // Update post için detay ekranında her zaman related post (experience) gösterilmeli
+    const showRelatedPost = params?.showRelatedPost !== undefined ? params.showRelatedPost : (type === 'update' ? true : false);
     const relatedPostData = params?.relatedPostData;
     
     // FIX: postId kontrolü - postId yoksa geri dön (sadece bir kez kontrol et)

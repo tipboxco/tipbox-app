@@ -1007,17 +1007,15 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         });
       }
       
-      // CatalogUIStore zaten güncellenmiş (handleCategoryPress, handleSubCategoryPress, handleProductGroupPress, handleProductPress içinde)
-      // Burada sadece navigation yapılıyor
-      
+      // contextId'yi route params ile gönder - store'a güvenmeyelim (product group ekranında boş veri sorununu önler)
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'PostsScreen',
         params: {
           stage,
           name,
           productInfo,
-          contextType, // Sadece type gönderiliyor, ID store'dan okunacak
-          // contextId artık gönderilmiyor, store'dan okunacak
+          contextType,
+          contextId,
         },
       });
     }

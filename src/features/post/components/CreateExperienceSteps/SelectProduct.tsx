@@ -26,6 +26,8 @@ import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
 import { InventoryItem } from '@/src/features/profile/types';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useBottomOffset } from '@/src/utils';
 
 interface SelectProductProps {
     onProductSelect: (product: { id: string; name: string; brand?: string; description?: string; image: any }) => void;
@@ -49,10 +51,30 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
     const [selectedDuration, setSelectedDuration] = useState<string>('');
     const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [selectedPurpose, setSelectedPurpose] = useState<string>('');
+    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+    const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
     const handleProductSelectPress = () => {
-        // Open product selector (inventory or catalog based on fromInventory prop)
-        setShowProductSelector(true);
+        if (fromInventory) {
+            // Open inventory selector as bottom sheet
+            openBottomSheet(
+                <AddProductFromInventory
+                    onProductSelect={handleInventoryProductSelect}
+                    onClose={closeBottomSheet}
+                />,
+                {
+                    enablePanDownToClose: true,
+                    enableOverDrag: false,
+                    enableHandlePanningGesture: true,
+                    enableContentPanningGesture: true,
+                    animateOnMount: false,
+                    paddingBottom: bottomOffset,
+                }
+            );
+        } else {
+            // Open catalog selector (full screen)
+            setShowProductSelector(true);
+        }
     };
 
     const handleCatalogProductSelect = (product: Product) => {
@@ -86,30 +108,21 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
             image: item.image,
         };
         onProductSelect(selectedProductData);
-        setShowProductSelector(false);
+        closeBottomSheet();
     };
 
     const handleCloseProductSelector = () => {
         setShowProductSelector(false);
     };
 
-    // Show AddProductFromInventory if fromInventory is true, otherwise AddProductFromCatalog
-    if (showProductSelector) {
-        if (fromInventory) {
-            return (
-                <AddProductFromInventory
-                    onProductSelect={handleInventoryProductSelect}
-                    onClose={handleCloseProductSelector}
-                />
-            );
-        } else {
-            return (
-                <AddProductFromCatalog
-                    onProductSelect={handleCatalogProductSelect}
-                    onClose={handleCloseProductSelector}
-                />
-            );
-        }
+    // Show AddProductFromCatalog if showProductSelector is true (only for catalog, inventory uses bottom sheet)
+    if (showProductSelector && !fromInventory) {
+        return (
+            <AddProductFromCatalog
+                onProductSelect={handleCatalogProductSelect}
+                onClose={handleCloseProductSelector}
+            />
+        );
     }
 
     return (

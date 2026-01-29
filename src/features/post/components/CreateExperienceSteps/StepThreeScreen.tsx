@@ -10,6 +10,7 @@ import {
     TextareaInput,
     Image
 } from '@gluestack-ui/themed';
+import Feather from '@expo/vector-icons/Feather';
 import {
   TagIcon,
   CubeIcon,

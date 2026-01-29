@@ -1,6 +1,6 @@
 // Environment variable'dan API_BASE_URL al, yoksa default kullan
 // React Native'de @env modülü ile environment variable'lar okunur
-let baseUrl = 'http://10.5.51.125:3000';
+let baseUrl = 'http://10.5.49.57:3000';
 
 try {
   // @env modülünden API_BASE_URL'i oku

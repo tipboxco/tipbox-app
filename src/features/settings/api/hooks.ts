@@ -77,9 +77,10 @@ export const useNotificationSettings = () => {
     queryKey: settingsKeys.notifications(),
     queryFn: getNotificationSettings,
     enabled: isAuthenticated,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 30 * 1000, // 30 saniye - settings nadiren değişir
+    gcTime: 5 * 60 * 1000, // 5 dakika cache'de tut
+    refetchOnMount: false, // Sadece stale ise refetch et
+    refetchOnWindowFocus: false, // Window focus'ta refetch etme
     retry: 1,
   });
 };
@@ -117,9 +118,10 @@ export const usePrivacySettings = () => {
     queryKey: settingsKeys.privacy(),
     queryFn: getPrivacySettings,
     enabled: isAuthenticated,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 30 * 1000, // 30 saniye - settings nadiren değişir
+    gcTime: 5 * 60 * 1000, // 5 dakika cache'de tut
+    refetchOnMount: false, // Sadece stale ise refetch et
+    refetchOnWindowFocus: false, // Window focus'ta refetch etme
     retry: 1,
   });
 };

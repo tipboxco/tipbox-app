@@ -628,8 +628,8 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
           </Text>
         </Pressable>
 
-        {/* See Related Post Button - Detay sayfasına yönlendirir */}
-        {data.relatedPost && (
+        {/* See Related Post Button - Sadece feed'de göster (detay ekranında showRelatedPost true olduğu için gerek yok) */}
+        {!isDetailMode && data.relatedPost && (
           <Pressable 
             onPress={() => {
               // Detay sayfasına yönlendir (related post detay sayfasında açılacak)
@@ -638,6 +638,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
                 params: { 
                   postData: data, 
                   type: 'update',
+                  showRelatedPost: true, // Detay ekranında experience content gösterilsin
                 }
               });
             }} 
@@ -676,7 +677,163 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         );
       })()}
 
-      {/* Related Post Details - Sadece detay sayfasında gösterilecek, burada render edilmiyor */}
+      {/* Related Post Details - Sadece detay sayfasında gösterilecek (showRelatedPost === true) */}
+      {showRelatedPost && (data.relatedPost || relatedPostData) && (
+        <>
+          {/* Related Post Title */}
+          <VStack px={12} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <Text
+              color={isDark ? '$textDark50' : '#A3A3A3'}
+              fontSize="$sm"
+              fontWeight="$bold"
+              textDecorationLine="underline"
+            >
+              Related Post
+            </Text>
+          </VStack>
+
+          {/* Product Info Card */}
+          {(relatedPostData?.product || data.relatedPost?.product) && (
+            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              <ProductInfoCard
+                image={toImageSource((relatedPostData?.product || data.relatedPost?.product)?.image)}
+                title={(relatedPostData?.product || data.relatedPost?.product)?.name || ''}
+                subName={(relatedPostData?.product || data.relatedPost?.product)?.subName}
+                size="big"
+                type={ProductInfoType.PRODUCT}
+                isOwned={(relatedPostData?.product || data.relatedPost?.product)?.isOwned || false}
+              />
+            </VStack>
+          )}
+
+          {/* Content Cards - Experience post content */}
+          {((relatedPostData?.content && Array.isArray(relatedPostData.content) && relatedPostData.content.length > 0) || 
+            (data.relatedPost?.content && Array.isArray(data.relatedPost.content) && data.relatedPost.content.length > 0)) && (
+            <VStack px={16} space="md" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              {(
+                (Array.isArray(relatedPostData?.content) && relatedPostData.content.length > 0) 
+                  ? relatedPostData.content 
+                  : (Array.isArray(data.relatedPost?.content) ? data.relatedPost.content : [])
+              ).map((contentItem: any, index: number) => (
+                <Box
+                  key={index}
+                  bg={isDark ? '$backgroundDark800' : '#FAFAFA'}
+                  borderRadius={10}
+                  overflow="hidden"
+                >
+                  {/* Card Header - Başlık ve Content aynı hizada */}
+                  <HStack px={16} py={8} alignItems="flex-start" space="sm">
+                    <Box
+                      width={18}
+                      height={18}
+                      borderRadius={9}
+                      bg={isDark ? '#571FDD' : '#571FDD'}
+                      alignItems="center"
+                      justifyContent="center"
+                      mt={2}
+                    >
+                      <Text color="#FFFFFF" fontSize={10} fontWeight="$bold">
+                        {contentItem.tag?.icon === 'tag' ? 'T' : 'C'}
+                      </Text>
+                    </Box>
+                    <VStack flex={1} space="xs">
+                      <Text
+                        fontSize={11}
+                        fontWeight="$semibold"
+                        color={isDark ? '$textDark50' : '#3B3B3B'}
+                      >
+                        {contentItem.tag?.title || 'Experience'}
+                      </Text>
+                      <Text
+                        color={isDark ? '$textDark50' : '#000000'}
+                        fontSize="$sm"
+                        lineHeight={22}
+                      >
+                        {contentItem.text}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  {/* Rating Section */}
+                  {contentItem.rating && Array.isArray(contentItem.rating) && (
+                    <HStack px={16} pb={12} alignItems="flex-start" space="sm">
+                      <Box width={18} />
+                      <VStack flex={1} space="xs">
+                        <Text
+                          fontSize={11}
+                          fontWeight="$semibold"
+                          color={isDark ? '$textDark50' : '#3B3B3B'}
+                        >
+                          Rate Experience
+                        </Text>
+                        <HStack space="xs">
+                          {[1, 2, 3, 4, 5].map((star) => {
+                            const rating = contentItem.rating || [];
+                            const isFilled = star <= rating.filter((r: number) => r === 1).length;
+                            return (
+                              <Box key={star}>
+                                <Text color={isFilled ? '#829905' : '#E9E9E9'} fontSize={16}>
+                                  ★
+                                </Text>
+                              </Box>
+                            );
+                          })}
+                        </HStack>
+                      </VStack>
+                    </HStack>
+                  )}
+                </Box>
+              ))}
+            </VStack>
+          )}
+
+          {/* Tags Section */}
+          {((relatedPostData?.tags && Array.isArray(relatedPostData.tags) && relatedPostData.tags.length > 0) || 
+            (data.relatedPost?.tags && Array.isArray(data.relatedPost.tags) && data.relatedPost.tags.length > 0)) && (
+            <HStack px={16} py={10} flexWrap="wrap" gap={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              {(
+                (Array.isArray(relatedPostData?.tags) && relatedPostData.tags.length > 0) 
+                  ? relatedPostData.tags 
+                  : (Array.isArray(data.relatedPost?.tags) ? data.relatedPost.tags : [])
+              ).map((tag: string, index: number) => (
+                <Box
+                  key={index}
+                  bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
+                  borderWidth={1}
+                  borderColor="#EFEFEF"
+                  borderRadius={10}
+                  px={12}
+                  py={3}
+                >
+                  <Text
+                    fontSize="$xs"
+                    fontWeight="$semibold"
+                    color={isDark ? '$textDark50' : '#000000'}
+                  >
+                    {tag}
+                  </Text>
+                </Box>
+              ))}
+            </HStack>
+          )}
+
+          {/* Related Post Images */}
+          {((relatedPostData?.images && Array.isArray(relatedPostData.images) && relatedPostData.images.length > 0) ||
+            (data.relatedPost?.images && Array.isArray(data.relatedPost.images) && data.relatedPost.images.length > 0)) && (
+            <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              <CardImageCarousel 
+                images={(
+                  (Array.isArray(relatedPostData?.images) && relatedPostData.images.length > 0)
+                    ? relatedPostData.images.map((img: any) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                    : (Array.isArray(data.relatedPost?.images) 
+                        ? data.relatedPost.images.map((img: any) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                        : [])
+                )}
+              />
+            </VStack>
+          )}
+        </>
+      )}
 
       {/* Stats */}
       <HStack
