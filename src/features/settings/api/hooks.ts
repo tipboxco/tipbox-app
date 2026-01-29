@@ -4,28 +4,36 @@ import { getNotificationSettings, updateNotificationSettings } from './notificat
 import { getPrivacySettings, updatePrivacySettings } from './privacyApi';
 import { getSupportSessionPrice, updateSupportSessionPrice } from './supportSessionPriceApi';
 import { getDevices, deleteDevice } from './devicesApi';
-import { getPaymentMethods, getBillingHistory, getLinkedPaymentMethod } from './paymentApi';
-import { getCurrentSubscription, getSubscriptionPlans } from './subscriptionApi';
+import {
+  getPaymentDashboard,
+  addPaymentMethod,
+  updatePaymentMethod,
+  deletePaymentMethod,
+  getInvoices,
+  type AddPaymentMethodRequest,
+  type GetInvoicesParams,
+  type UpdatePaymentMethodRequest,
+} from './paymentApi';
+import { getSubscriptionPlans } from './subscriptionApi';
 import { useAppStore } from '../../../store/appStore';
 import type { ChangePasswordRequest, ChangePasswordResponse } from '../types';
-import type { 
-  NotificationSetting, 
-  UpdateNotificationSettingsRequest, 
-  UpdateNotificationSettingsResponse 
+import type {
+  NotificationSetting,
+  UpdateNotificationSettingsRequest,
+  UpdateNotificationSettingsResponse,
 } from '../types';
-import type { 
-  PrivacySetting, 
-  UpdatePrivacySettingsRequest, 
-  UpdatePrivacySettingsResponse 
+import type {
+  PrivacySetting,
+  UpdatePrivacySettingsRequest,
+  UpdatePrivacySettingsResponse,
 } from '../types';
-import type { 
-  SupportSessionPriceResponse, 
-  UpdateSupportSessionPriceRequest, 
-  UpdateSupportSessionPriceResponse 
+import type {
+  SupportSessionPriceResponse,
+  UpdateSupportSessionPriceRequest,
+  UpdateSupportSessionPriceResponse,
 } from '../types';
 import type { Device, DeleteDeviceResponse } from '../types';
-import type { PaymentMethod, BillingHistoryEntry, LinkedPaymentMethod } from './paymentApi';
-import type { Subscription, SubscriptionPlan } from './subscriptionApi';
+import type { SubscriptionPlan } from './paymentApi';
 
 /**
  * Query Keys - Settings feature için cache key pattern'leri
@@ -36,10 +44,9 @@ export const settingsKeys = {
   privacy: () => [...settingsKeys.all, 'privacy'] as const,
   supportSessionPrice: () => [...settingsKeys.all, 'supportSessionPrice'] as const,
   devices: () => [...settingsKeys.all, 'devices'] as const,
-  paymentMethods: () => [...settingsKeys.all, 'paymentMethods'] as const,
-  billingHistory: () => [...settingsKeys.all, 'billingHistory'] as const,
-  linkedPaymentMethod: () => [...settingsKeys.all, 'linkedPaymentMethod'] as const,
-  subscription: () => [...settingsKeys.all, 'subscription'] as const,
+  paymentDashboard: () => [...settingsKeys.all, 'paymentDashboard'] as const,
+  invoices: (params?: GetInvoicesParams) =>
+    [...settingsKeys.all, 'invoices', params ?? {}] as const,
   subscriptionPlans: () => [...settingsKeys.all, 'subscriptionPlans'] as const,
 };
 
@@ -223,105 +230,102 @@ export const useDeleteDevice = () => {
 };
 
 /**
- * Get Payment Methods query hook
- * Kayıtlı ödeme yöntemlerini getirir
- * 
+ * Get Payment Dashboard query hook
+ * Ödeme özeti: kayıtlı kartlar, aktif abonelik, son faturalar (tek istek)
+ *
  * @example
- * const { data, isLoading, error } = usePaymentMethods();
+ * const { data, isLoading, error } = usePaymentDashboard();
  */
-export const usePaymentMethods = () => {
+export const usePaymentDashboard = () => {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
-  return useQuery<PaymentMethod[], Error>({
-    queryKey: settingsKeys.paymentMethods(),
-    queryFn: getPaymentMethods,
+  return useQuery({
+    queryKey: settingsKeys.paymentDashboard(),
+    queryFn: getPaymentDashboard,
     enabled: isAuthenticated,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
     retry: 1,
   });
 };
 
 /**
- * Get Billing History query hook
- * Fatura geçmişini getirir
- * 
- * @param startDate - Başlangıç tarihi (optional)
- * @param endDate - Bitiş tarihi (optional)
- * @param sort - Sıralama (optional)
+ * Get Invoices query hook
+ * Fatura geçmişi (sayfalı)
+ *
  * @example
- * const { data, isLoading, error } = useBillingHistory('2024-01-01', '2024-12-31', 'date');
+ * const { data } = useInvoices({ sort_by: 'date_desc', limit: 20, offset: 0 });
  */
-export const useBillingHistory = (
-  startDate?: string,
-  endDate?: string,
-  sort?: string
-) => {
+export const useInvoices = (params: GetInvoicesParams = {}) => {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
-  return useQuery<BillingHistoryEntry[], Error>({
-    queryKey: [...settingsKeys.billingHistory(), startDate, endDate, sort],
-    queryFn: () => getBillingHistory(startDate, endDate, sort),
+  return useQuery({
+    queryKey: settingsKeys.invoices(params),
+    queryFn: () => getInvoices(params),
     enabled: isAuthenticated,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: 1,
   });
 };
 
 /**
- * Get Linked Payment Method query hook
- * Bağlı ödeme yöntemini getirir
- * 
- * @example
- * const { data, isLoading, error } = useLinkedPaymentMethod();
+ * Add Payment Method mutation hook
+ * Yeni kart ekleme (payment_token sağlayıcıdan alınır)
  */
-export const useLinkedPaymentMethod = () => {
-  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
-  return useQuery<LinkedPaymentMethod | null, Error>({
-    queryKey: settingsKeys.linkedPaymentMethod(),
-    queryFn: getLinkedPaymentMethod,
-    enabled: isAuthenticated,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    retry: 1,
+export const useAddPaymentMethod = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AddPaymentMethodRequest) => addPaymentMethod(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.paymentDashboard() });
+    },
   });
 };
 
 /**
- * Get Current Subscription query hook
- * Mevcut abonelik bilgisini getirir
- * 
- * @example
- * const { data, isLoading, error } = useCurrentSubscription();
+ * Update Payment Method mutation hook
+ * Kart ismini güncelleme
  */
-export const useCurrentSubscription = () => {
-  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
-  return useQuery<Subscription | null, Error>({
-    queryKey: settingsKeys.subscription(),
-    queryFn: getCurrentSubscription,
-    enabled: isAuthenticated,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    retry: 1,
+export const useUpdatePaymentMethod = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdatePaymentMethodRequest }) =>
+      updatePaymentMethod(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.paymentDashboard() });
+    },
+  });
+};
+
+/**
+ * Delete Payment Method mutation hook
+ * Kart silme (aktif abonelikte kullanılıyorsa 409 döner)
+ */
+export const useDeletePaymentMethod = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deletePaymentMethod(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.paymentDashboard() });
+    },
   });
 };
 
 /**
  * Get Subscription Plans query hook
- * Mevcut abonelik planlarını getirir
- * 
+ * Abonelik planları kataloğu (fiyat sayfası / plan seçimi)
+ *
  * @example
  * const { data, isLoading, error } = useSubscriptionPlans();
  */
 export const useSubscriptionPlans = () => {
-  return useQuery<SubscriptionPlan[], Error>({
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  return useQuery({
     queryKey: settingsKeys.subscriptionPlans(),
     queryFn: getSubscriptionPlans,
-    staleTime: 5 * 60 * 1000, // 5 dakika - planlar nadiren değişir
-    gcTime: 30 * 60 * 1000, // 30 dakika - cache'de tut
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     refetchOnMount: false,
     retry: 1,
   });
