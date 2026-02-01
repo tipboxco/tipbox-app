@@ -238,11 +238,20 @@ export interface BrandProductGroup {
 }
 
 /**
+ * Brand Product Category - /brands/{brandId}/groups endpoint'inden dönen item (kategori bazlı)
+ */
+export interface BrandProductCategory {
+  categoryId: string;
+  categoryName: string;
+  products: BrandProduct[];
+}
+
+/**
  * Brand Product Book Response - /brands/{brandId}/groups endpoint'inden dönen response
- * Pagination ile birlikte product group listesi
+ * Pagination ile birlikte kategori listesi (categoryId, categoryName, products)
  */
 export interface BrandProductBookResponse {
-  items: BrandProductGroup[];
+  items: BrandProductCategory[];
   pagination: {
     cursor?: string;
     hasMore: boolean;

@@ -1,7 +1,7 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands } from './brandApi';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand } from './brandApi';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
 
 /**
@@ -437,6 +437,64 @@ export const useBrandCatalog = (brandId: string | undefined) => {
     refetchOnWindowFocus: false,
     retry: 3, // Dokümana göre retry mekanizması
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+};
+
+type BrandJoinLeaveContext = { previous: BrandCatalogResponse | undefined };
+
+/**
+ * Join Brand mutation - Optimistic update ile anında UI günceller, hata durumunda rollback
+ */
+export const useJoinBrand = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string, BrandJoinLeaveContext>({
+    mutationFn: (brandId: string) => joinBrand(brandId),
+    onMutate: async (brandId) => {
+      await queryClient.cancelQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
+      const previous = queryClient.getQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId));
+      queryClient.setQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId), (old) => {
+        if (!old) return old;
+        return { ...old, isJoined: true, followers: old.followers + 1 };
+      });
+      return { previous };
+    },
+    onError: (_, brandId, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(catalogKeys.brandCatalog(brandId), context.previous);
+      }
+    },
+    onSettled: (_, __, brandId) => {
+      queryClient.invalidateQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
+    },
+  });
+};
+
+/**
+ * Leave Brand mutation - Optimistic update ile anında UI günceller, hata durumunda rollback
+ */
+export const useLeaveBrand = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string, BrandJoinLeaveContext>({
+    mutationFn: (brandId: string) => leaveBrand(brandId),
+    onMutate: async (brandId) => {
+      await queryClient.cancelQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
+      const previous = queryClient.getQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId));
+      queryClient.setQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId), (old) => {
+        if (!old) return old;
+        return { ...old, isJoined: false, followers: Math.max(0, old.followers - 1) };
+      });
+      return { previous };
+    },
+    onError: (_, brandId, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(catalogKeys.brandCatalog(brandId), context.previous);
+      }
+    },
+    onSettled: (_, __, brandId) => {
+      queryClient.invalidateQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
+    },
   });
 };
 

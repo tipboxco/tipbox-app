@@ -865,9 +865,9 @@ const SurveyScreen: React.FC = () => {
           <VStack space="md" p="$4" pb={0}>
             {/* Top Cards */}
             <BrandInfoCard
+              brandId={brandId}
               onNotificationPress={() => console.log('Notification pressed')}
               onHistoryPress={() => {
-                const brandId = route.params?.brandId;
                 if (brandId) {
                   navigation.navigate('BrandHistoryScreen', { brandId });
                 }

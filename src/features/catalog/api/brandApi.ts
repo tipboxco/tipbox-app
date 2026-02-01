@@ -202,6 +202,57 @@ export const getBrandCatalog = async (
 };
 
 /**
+ * ---------------------------------------------------------------------------
+ * BACKEND SPEC: Brand Join / Leave (Backend ekibine iletilecek)
+ * ---------------------------------------------------------------------------
+ *
+ * 1) POST /brands/{brandId}/join
+ *    - Açıklama: Kullanıcıyı markaya üye yapar (join).
+ *    - Auth: Bearer token zorunlu.
+ *    - Path: brandId (string, required)
+ *    - Success: 200 OK veya 204 No Content. Body opsiyonel (örn. { success: true }).
+ *    - Hata: 401 Unauthorized, 404 Brand not found, 409 Already joined.
+ *
+ * 2) POST /brands/{brandId}/leave
+ *    - Açıklama: Kullanıcının marka üyeliğini kaldırır (leave).
+ *    - Auth: Bearer token zorunlu.
+ *    - Path: brandId (string, required)
+ *    - Success: 200 OK veya 204 No Content. Body opsiyonel.
+ *    - Hata: 401 Unauthorized, 404 Brand not found, 409 Not joined.
+ *
+ * 3) GET /brands/{brandId}/catalog (mevcut)
+ *    - Response içinde isJoined: boolean ve followers: number olmalı.
+ *    - Join/leave sonrası bu endpoint tekrar çağrıldığında güncel isJoined ve followers dönmeli.
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Join Brand endpoint function
+ * POST /brands/{brandId}/join - Kullanıcıyı markaya üye yapar
+ *
+ * @param brandId - Marka ID'si
+ */
+export const joinBrand = async (brandId: string): Promise<void> => {
+  const response = await apiService.getClient().post<void>(
+    `/brands/${brandId}/join`
+  );
+  return response.data;
+};
+
+/**
+ * Leave Brand endpoint function
+ * POST /brands/{brandId}/leave - Kullanıcının marka üyeliğini kaldırır
+ *
+ * @param brandId - Marka ID'si
+ */
+export const leaveBrand = async (brandId: string): Promise<void> => {
+  const response = await apiService.getClient().post<void>(
+    `/brands/${brandId}/leave`
+  );
+  return response.data;
+};
+
+/**
  * Get Brand Feed endpoint function
  * /brands/{brandId}/feed API'sinden marka feed postlarını getirir (pagination ile)
  *
@@ -271,14 +322,17 @@ export const getBrandProductBook = async (
 
     const responseData = response.data;
 
-    // Response formatı: { items: [...], pagination: {...} }
+    // Response formatı: { items: [...], pagination: {...} } — item'lar categoryId, categoryName, products içerir
     if (responseData && typeof responseData === 'object' && 'items' in responseData) {
       const items = responseData.items || [];
-      const pagination = responseData.pagination || {
-        hasMore: items.length >= limit,
-        limit,
-        cursor: items.length > 0 ? items[items.length - 1]?.productGroupId : undefined,
-      };
+      const rawPagination = responseData.pagination;
+      const pagination = rawPagination && typeof rawPagination === 'object'
+        ? { hasMore: !!rawPagination.hasMore, limit: rawPagination.limit ?? limit, cursor: rawPagination.cursor }
+        : {
+            hasMore: items.length >= limit,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1]?.categoryId : undefined,
+          };
 
       return {
         items,
