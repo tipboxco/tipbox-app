@@ -155,6 +155,16 @@ export interface BrandCatalogResponse {
 }
 
 /**
+ * Brand Follow / Unfollow API response
+ * POST /brands/:brandId/follow → { isJoined: true, followers }
+ * DELETE /brands/:brandId/follow → { isJoined: false, followers }
+ */
+export interface BrandFollowResponse {
+  isJoined: boolean;
+  followers: number;
+}
+
+/**
  * Brand Update API Item - /brands/{brandId}/trends endpoint'inden gelen update type için
  * Update type'ında content array olarak gelebilir
  */

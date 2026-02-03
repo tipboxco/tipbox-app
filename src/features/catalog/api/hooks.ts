@@ -2,7 +2,7 @@ import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tansta
 import { useCallback, useEffect } from 'react';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
 import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -443,12 +443,13 @@ export const useBrandCatalog = (brandId: string | undefined) => {
 type BrandJoinLeaveContext = { previous: BrandCatalogResponse | undefined };
 
 /**
- * Join Brand mutation - Optimistic update ile anında UI günceller, hata durumunda rollback
+ * Join Brand (Follow) mutation
+ * POST /brands/:brandId/follow - Optimistic update, başarıda dönen followers ile güncelle, hata durumunda rollback
  */
 export const useJoinBrand = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, string, BrandJoinLeaveContext>({
+  return useMutation<BrandFollowResponse, Error, string, BrandJoinLeaveContext>({
     mutationFn: (brandId: string) => joinBrand(brandId),
     onMutate: async (brandId) => {
       await queryClient.cancelQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
@@ -458,6 +459,12 @@ export const useJoinBrand = () => {
         return { ...old, isJoined: true, followers: old.followers + 1 };
       });
       return { previous };
+    },
+    onSuccess: (data, brandId) => {
+      queryClient.setQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId), (old) => {
+        if (!old) return old;
+        return { ...old, isJoined: data.isJoined, followers: data.followers };
+      });
     },
     onError: (_, brandId, context) => {
       if (context?.previous !== undefined) {
@@ -471,12 +478,13 @@ export const useJoinBrand = () => {
 };
 
 /**
- * Leave Brand mutation - Optimistic update ile anında UI günceller, hata durumunda rollback
+ * Leave Brand (Unfollow) mutation
+ * DELETE /brands/:brandId/follow - Optimistic update, başarıda dönen followers ile güncelle, hata durumunda rollback
  */
 export const useLeaveBrand = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, string, BrandJoinLeaveContext>({
+  return useMutation<BrandFollowResponse, Error, string, BrandJoinLeaveContext>({
     mutationFn: (brandId: string) => leaveBrand(brandId),
     onMutate: async (brandId) => {
       await queryClient.cancelQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
@@ -486,6 +494,12 @@ export const useLeaveBrand = () => {
         return { ...old, isJoined: false, followers: Math.max(0, old.followers - 1) };
       });
       return { previous };
+    },
+    onSuccess: (data, brandId) => {
+      queryClient.setQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId), (old) => {
+        if (!old) return old;
+        return { ...old, isJoined: data.isJoined, followers: data.followers };
+      });
     },
     onError: (_, brandId, context) => {
       if (context?.previous !== undefined) {

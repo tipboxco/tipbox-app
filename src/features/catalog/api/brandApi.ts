@@ -3,6 +3,7 @@ import type {
   BrandCategory, 
   BrandListItem, 
   BrandCatalogResponse, 
+  BrandFollowResponse,
   BrandFeedResponse, 
   BrandProductBookResponse, 
   BrandSurveysResponse, 
@@ -203,54 +204,47 @@ export const getBrandCatalog = async (
 
 /**
  * ---------------------------------------------------------------------------
- * BACKEND SPEC: Brand Join / Leave (Backend ekibine iletilecek)
+ * Brand Follow / Unfollow (Backend spec)
  * ---------------------------------------------------------------------------
- *
- * 1) POST /brands/{brandId}/join
- *    - Açıklama: Kullanıcıyı markaya üye yapar (join).
- *    - Auth: Bearer token zorunlu.
- *    - Path: brandId (string, required)
- *    - Success: 200 OK veya 204 No Content. Body opsiyonel (örn. { success: true }).
- *    - Hata: 401 Unauthorized, 404 Brand not found, 409 Already joined.
- *
- * 2) POST /brands/{brandId}/leave
- *    - Açıklama: Kullanıcının marka üyeliğini kaldırır (leave).
- *    - Auth: Bearer token zorunlu.
- *    - Path: brandId (string, required)
- *    - Success: 200 OK veya 204 No Content. Body opsiyonel.
- *    - Hata: 401 Unauthorized, 404 Brand not found, 409 Not joined.
- *
- * 3) GET /brands/{brandId}/catalog (mevcut)
- *    - Response içinde isJoined: boolean ve followers: number olmalı.
- *    - Join/leave sonrası bu endpoint tekrar çağrıldığında güncel isJoined ve followers dönmeli.
+ * - POST   /brands/:brandId/follow → 200: { isJoined: true, followers }
+ * - DELETE /brands/:brandId/follow → 200: { isJoined: false, followers }
+ * - GET /brands/:brandId/catalog → isJoined, followers (catalog ile uyumlu)
  * ---------------------------------------------------------------------------
  */
 
 /**
- * Join Brand endpoint function
- * POST /brands/{brandId}/join - Kullanıcıyı markaya üye yapar
+ * Markayı takip et (Follow)
+ * POST /brands/:brandId/follow - Bearer token zorunlu, body yok
  *
- * @param brandId - Marka ID'si
+ * @param brandId - Takip edilecek markanın ID'si (UUID)
+ * @returns { isJoined: true, followers } - Güncel takipçi sayısı
  */
-export const joinBrand = async (brandId: string): Promise<void> => {
-  const response = await apiService.getClient().post<void>(
-    `/brands/${brandId}/join`
+export const followBrand = async (brandId: string): Promise<BrandFollowResponse> => {
+  const response = await apiService.getClient().post<BrandFollowResponse>(
+    `/brands/${brandId}/follow`
   );
   return response.data;
 };
 
 /**
- * Leave Brand endpoint function
- * POST /brands/{brandId}/leave - Kullanıcının marka üyeliğini kaldırır
+ * Markayı bırak (Unfollow / Leave)
+ * DELETE /brands/:brandId/follow - Bearer token zorunlu, body yok
  *
- * @param brandId - Marka ID'si
+ * @param brandId - Bırakılacak markanın ID'si (UUID)
+ * @returns { isJoined: false, followers } - Güncel takipçi sayısı
  */
-export const leaveBrand = async (brandId: string): Promise<void> => {
-  const response = await apiService.getClient().post<void>(
-    `/brands/${brandId}/leave`
+export const unfollowBrand = async (brandId: string): Promise<BrandFollowResponse> => {
+  const response = await apiService.getClient().delete<BrandFollowResponse>(
+    `/brands/${brandId}/follow`
   );
   return response.data;
 };
+
+/** @deprecated Use followBrand. Kept for backward compatibility. */
+export const joinBrand = followBrand;
+
+/** @deprecated Use unfollowBrand. Kept for backward compatibility. */
+export const leaveBrand = unfollowBrand;
 
 /**
  * Get Brand Feed endpoint function

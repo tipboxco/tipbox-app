@@ -337,29 +337,46 @@ export interface UserCollectionAchievementsApiResponse {
 }
 
 /**
- * Bridge Badge API Item - /users/{id}/collections/bridges endpoint'inden gelen bridge badge bilgisi
+ * Collection Badge Task - /users/{id}/collections/bridges item tasks
  */
-export interface BridgeBadgeApiItem {
+export interface CollectionBadgeTask {
   id: string;
   title: string;
-  rarity: 'Usual' | 'Rare' | 'Epic' | 'Legendary';
-  image: string;
-  isClaimed: boolean;
-  nftAddress: string | null;
-  earnedDate: string; // ISO string
-  totalEarned: number;
-  tasks: unknown[]; // Boş array olarak geliyor, ileride detaylandırılabilir
+  type: 'Comment' | 'Like' | 'Share';
 }
 
 /**
- * User Collection Bridges API Response - Pagination ile birlikte
- * /users/{id}/collections/bridges endpoint'inden dönen response
- * Backend direkt array döndürüyor, pagination objesi oluşturulacak
+ * Collection Badge API Item - /users/{id}/collections/bridges endpoint'inden gelen badge bilgisi
+ * Hem brand hem achievement tab'ında aynı item şeması kullanılır.
+ */
+export interface CollectionBadgeApiItem {
+  id: string;
+  title: string;
+  image: string | null;
+  rarity: 'Usual' | 'Rare' | 'Epic' | 'Legendary';
+  isClaimed: boolean;
+  nftAddress: string | null;
+  totalEarned: number;
+  earnedDate: string | null; // ISO8601
+  tasks: CollectionBadgeTask[];
+}
+
+/** @deprecated Kullanım: CollectionBadgeApiItem - geriye uyumluluk için bırakıldı */
+export type BridgeBadgeApiItem = CollectionBadgeApiItem;
+
+/**
+ * User Collection Bridges API Response - GET /users/:id/collections/bridges
+ * Tab yapısı: brand (Bridge Badges), achievement (Achievement Badges). Sayfalama ortak.
  */
 export interface UserCollectionBridgesApiResponse {
-  items: BridgeBadgeApiItem[];
+  brand: {
+    items: CollectionBadgeApiItem[];
+  };
+  achievement: {
+    items: CollectionBadgeApiItem[];
+  };
   pagination: {
-    cursor?: string;
+    cursor: string | null;
     hasMore: boolean;
     limit: number;
   };
