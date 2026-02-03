@@ -3,6 +3,7 @@ import type {
   BrandCategory, 
   BrandListItem, 
   BrandCatalogResponse, 
+  BrandFollowResponse,
   BrandFeedResponse, 
   BrandProductBookResponse, 
   BrandSurveysResponse, 
@@ -202,6 +203,50 @@ export const getBrandCatalog = async (
 };
 
 /**
+ * ---------------------------------------------------------------------------
+ * Brand Follow / Unfollow (Backend spec)
+ * ---------------------------------------------------------------------------
+ * - POST   /brands/:brandId/follow → 200: { isJoined: true, followers }
+ * - DELETE /brands/:brandId/follow → 200: { isJoined: false, followers }
+ * - GET /brands/:brandId/catalog → isJoined, followers (catalog ile uyumlu)
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Markayı takip et (Follow)
+ * POST /brands/:brandId/follow - Bearer token zorunlu, body yok
+ *
+ * @param brandId - Takip edilecek markanın ID'si (UUID)
+ * @returns { isJoined: true, followers } - Güncel takipçi sayısı
+ */
+export const followBrand = async (brandId: string): Promise<BrandFollowResponse> => {
+  const response = await apiService.getClient().post<BrandFollowResponse>(
+    `/brands/${brandId}/follow`
+  );
+  return response.data;
+};
+
+/**
+ * Markayı bırak (Unfollow / Leave)
+ * DELETE /brands/:brandId/follow - Bearer token zorunlu, body yok
+ *
+ * @param brandId - Bırakılacak markanın ID'si (UUID)
+ * @returns { isJoined: false, followers } - Güncel takipçi sayısı
+ */
+export const unfollowBrand = async (brandId: string): Promise<BrandFollowResponse> => {
+  const response = await apiService.getClient().delete<BrandFollowResponse>(
+    `/brands/${brandId}/follow`
+  );
+  return response.data;
+};
+
+/** @deprecated Use followBrand. Kept for backward compatibility. */
+export const joinBrand = followBrand;
+
+/** @deprecated Use unfollowBrand. Kept for backward compatibility. */
+export const leaveBrand = unfollowBrand;
+
+/**
  * Get Brand Feed endpoint function
  * /brands/{brandId}/feed API'sinden marka feed postlarını getirir (pagination ile)
  *
@@ -271,14 +316,17 @@ export const getBrandProductBook = async (
 
     const responseData = response.data;
 
-    // Response formatı: { items: [...], pagination: {...} }
+    // Response formatı: { items: [...], pagination: {...} } — item'lar categoryId, categoryName, products içerir
     if (responseData && typeof responseData === 'object' && 'items' in responseData) {
       const items = responseData.items || [];
-      const pagination = responseData.pagination || {
-        hasMore: items.length >= limit,
-        limit,
-        cursor: items.length > 0 ? items[items.length - 1]?.productGroupId : undefined,
-      };
+      const rawPagination = responseData.pagination;
+      const pagination = rawPagination && typeof rawPagination === 'object'
+        ? { hasMore: !!rawPagination.hasMore, limit: rawPagination.limit ?? limit, cursor: rawPagination.cursor }
+        : {
+            hasMore: items.length >= limit,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1]?.categoryId : undefined,
+          };
 
       return {
         items,

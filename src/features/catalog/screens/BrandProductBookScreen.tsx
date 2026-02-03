@@ -25,7 +25,7 @@ import {
 } from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandProductBook } from '../api/hooks';
-import type { BrandProductGroup, BrandProduct } from '../types';
+import type { BrandProductCategory, BrandProduct } from '../types';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { ProductInfoType } from '@/src/types/common';
@@ -67,8 +67,8 @@ const BrandProductBookScreen: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [brandId]); // brandId değiştiğinde de refetch yap
 
-    // Flatten all pages into a single array
-    const allProductGroups = useMemo(() => {
+    // Flatten all pages into a single array (kategoriler)
+    const allCategories = useMemo(() => {
         if (!productBookData?.pages) return [];
         return productBookData.pages.flatMap((page) => page.items);
     }, [productBookData?.pages]);
@@ -192,24 +192,24 @@ const BrandProductBookScreen: React.FC = () => {
         );
     };
 
-    const renderProductGroup = (productGroup: BrandProductGroup) => (
-        <VStack key={productGroup.productGroupId} space="xs" mb='$2'>
-            {/* Group Header */}
+    const renderCategory = (category: BrandProductCategory) => (
+        <VStack key={category.categoryId} space="xs" mb='$2'>
+            {/* Kategori Header */}
             <Pressable
                 onPress={() => {
-                    // Product Group için PostsScreen'e navigate et
+                    // Kategori için PostsScreen'e navigate et (SubCategory context)
                     navigationService.navigate(ROOT_ROUTES.POST, {
                         screen: 'PostsScreen',
                         params: {
-                            stage: 'ProductGroup',
-                            name: productGroup.productGroupName,
+                            stage: 'SubCategories',
+                            name: category.categoryName,
                             productInfo: {
-                                image: require('@/assets/events/card-icon.png'), // Placeholder, API'den gelecek
-                                title: productGroup.productGroupName,
-                                subName: productGroup.productGroupName,
+                                image: require('@/assets/events/card-icon.png'),
+                                title: category.categoryName,
+                                subName: category.categoryName,
                             },
-                            contextType: ProductInfoType.PRODUCT_GROUP,
-                            contextId: productGroup.productGroupId,
+                            contextType: ProductInfoType.SUB_CATEGORY,
+                            contextId: category.categoryId,
                         },
                     });
                 }}
@@ -220,7 +220,7 @@ const BrandProductBookScreen: React.FC = () => {
                         fontSize="$sm"
                         fontWeight="$bold"
                     >
-                        {productGroup.productGroupName}
+                        {category.categoryName}
                     </Text>
                     <ChevronRightIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#9D9D9D'} />
                 </HStack>
@@ -228,16 +228,15 @@ const BrandProductBookScreen: React.FC = () => {
 
             {/* Horizontal Scrollable Products */}
             <FlatList
-                data={productGroup.products}
+                data={category.products}
                 renderItem={renderProductCard}
                 keyExtractor={(item) => item.productId}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ 
                     paddingRight: 16,
-                    paddingLeft: 0, // İlk card için sol padding yok
+                    paddingLeft: 0,
                 }}
-                // 3. cardın bir kısmının görünmesi için ek padding
                 style={{ marginRight: -16 }}
             />
         </VStack>
@@ -331,7 +330,7 @@ const BrandProductBookScreen: React.FC = () => {
                     scrollEventThrottle={400}
                 >
                     <VStack space="md" pb="$4" pl="$4">
-                        {allProductGroups.length === 0 ? (
+                        {allCategories.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm">
                                     No products yet
@@ -339,7 +338,7 @@ const BrandProductBookScreen: React.FC = () => {
                             </Box>
                         ) : (
                             <>
-                                {allProductGroups.map(renderProductGroup)}
+                                {allCategories.map(renderCategory)}
                                 {isFetchingNextPage && (
                                     <Box py="$4" alignItems="center">
                                         <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />

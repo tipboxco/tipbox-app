@@ -714,16 +714,8 @@ export const useUserCollectionBridges = (
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
-      // Eğer hasMore false ise, daha fazla sayfa yok
-      if (!lastPage.pagination.hasMore) {
-        // Log'u sadece ilk kez bas (re-render'ları azaltmak için)
-        return undefined;
-      }
-      
-      // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini cursor olarak kullan
-      const cursor = lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].id : undefined);
-      
-      return cursor;
+      if (!lastPage.pagination.hasMore) return undefined;
+      return lastPage.pagination.cursor ?? undefined;
     },
     enabled: !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster

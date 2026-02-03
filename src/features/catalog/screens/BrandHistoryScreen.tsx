@@ -100,6 +100,7 @@ const BrandHistoryScreen: React.FC = () => {
             <VStack space="md" p="$4">
             {/* Brand Info Card */}
             <BrandInfoCard
+              brandId={brandId}
               onNotificationPress={() => console.log('Notification pressed')}
               onHistoryPress={() => navigation.navigate('BrandHistoryScreen', { brandId })}
               showPoints={true}

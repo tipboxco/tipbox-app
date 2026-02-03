@@ -29,7 +29,7 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import { useSafeAreaValues, toImageSource, isSameImageSource } from '@/src/utils';
-import { useBrandCatalog, useBrandFeed } from '../api/hooks';
+import { useBrandCatalog, useBrandFeed, useJoinBrand, useLeaveBrand } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
@@ -77,6 +77,20 @@ const BrandDetailScreen: React.FC = () => {
         isLoading: isBrandFeedLoading,
         error: brandFeedError,
     } = useBrandFeed(brandId, 6);
+
+    // Join / Leave brand - optimistic update ile anında UI güncellenir
+    const joinBrandMutation = useJoinBrand();
+    const leaveBrandMutation = useLeaveBrand();
+    const isJoinLeavePending = joinBrandMutation.isPending || leaveBrandMutation.isPending;
+
+    const handleJoinLeavePress = useCallback(() => {
+        if (!brandId || isJoinLeavePending) return;
+        if (brandCatalog?.isJoined) {
+            leaveBrandMutation.mutate(brandId);
+        } else {
+            joinBrandMutation.mutate(brandId);
+        }
+    }, [brandId, brandCatalog?.isJoined, isJoinLeavePending, joinBrandMutation, leaveBrandMutation]);
 
     // Map BrandFeedPost to PostCardData (Post type için)
     const mapBrandPostToPostCardData = useCallback((post: BrandFeedPost): PostCardData => {
@@ -141,7 +155,7 @@ const BrandDetailScreen: React.FC = () => {
         
         const postData = item.data as import('@/src/types/ExperienceCard').ExperiencePostApiItem;
         const avatarSource = toImageSource(postData.user.avatar)!;
-        const rawProduct = postData.contextData?.product ?? postData.contextData ?? postData.product;
+        const rawProduct = postData.contextData;
         const productImage = rawProduct?.image ? toImageSource(rawProduct.image) : undefined;
 
         const contentBlocks = postData.experienceContent ?? (Array.isArray(postData.content) ? postData.content : []);
@@ -327,7 +341,7 @@ const BrandDetailScreen: React.FC = () => {
     const allPosts = useMemo(() => {
         if (!brandFeedData?.pages) return [];
         
-        const allItems = brandFeedData.pages.flatMap((page) => page.items || page.posts || []);
+        const allItems = brandFeedData.pages.flatMap((page) => page.items || []);
         
         // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
         const uniqueItemsMap = new Map<string, BrandFeedPost>();
@@ -645,16 +659,22 @@ const BrandDetailScreen: React.FC = () => {
                             borderRadius={10}
                             minWidth={65}
                             height={24}
-                            onPress={() => console.log(brandCatalog.isJoined ? 'Leave' : 'Join')}
+                            onPress={handleJoinLeavePress}
+                            disabled={isJoinLeavePending}
+                            opacity={isJoinLeavePending ? 0.7 : 1}
                         >
-                            <ButtonText
-                                color="#000000"
-                                fontSize="$xs"
-                                fontWeight="$bold"
-                                textAlign="center"
-                            >
-                                {brandCatalog.isJoined ? 'Leave' : 'Join'}
-                            </ButtonText>
+                            {isJoinLeavePending ? (
+                                <ActivityIndicator size="small" color="#000000" />
+                            ) : (
+                                <ButtonText
+                                    color="#000000"
+                                    fontSize="$xs"
+                                    fontWeight="$bold"
+                                    textAlign="center"
+                                >
+                                    {brandCatalog.isJoined ? 'Leave' : 'Join'}
+                                </ButtonText>
+                            )}
                         </Button>
                     </HStack>
 
@@ -727,7 +747,7 @@ const BrandDetailScreen: React.FC = () => {
                                         borderWidth={1}
                                         borderColor="#ADADAD"
                                         borderRadius={10}
-                                        width={65}
+                                        width={75}
                                         height={24}
                                         onPress={() => {
                                             if (brandId) {

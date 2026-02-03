@@ -1593,21 +1593,9 @@ export const getUserCollectionAchievements = async (
 };
 
 /**
- * Get User Collection Bridges endpoint function
- * Kullanıcının collection bridges'larını getirir (pagination ile)
- * 
- * API Endpoint: GET /users/{id}/collections/bridges
- * - q: Badge adı veya açıklamasına göre arama (case-insensitive, opsiyonel)
- * - cursor: Pagination cursor (opsiyonel)
- * - limit: Sayfa başına item sayısı (default: 20, min: 1, max: 100)
- * 
- * Backend direkt array döndürüyor, pagination objesi oluşturulacak
- * 
- * @param userId - Kullanıcı ID'si
- * @param cursor - Pagination cursor (opsiyonel)
- * @param limit - Sayfa başına item sayısı (default: 20)
- * @param searchQuery - Arama sorgusu (opsiyonel)
- * @returns UserCollectionBridgesApiResponse - Bridge items ve pagination bilgisi
+ * GET /users/:id/collections/bridges
+ * Tek response: brand (Bridge Badges) + achievement (Achievement Badges), ortak pagination.
+ * Query: q veya search (opsiyonel), cursor (opsiyonel), limit (1–50, varsayılan: 20)
  */
 export const getUserCollectionBridges = async (
   userId: string,
@@ -1616,135 +1604,46 @@ export const getUserCollectionBridges = async (
   searchQuery?: string
 ): Promise<UserCollectionBridgesApiResponse> => {
   const params = new URLSearchParams();
-  if (cursor) {
-    params.append('cursor', cursor);
-  }
-  if (searchQuery) {
-    params.append('q', searchQuery);
-  }
-  params.append('limit', limit.toString());
+  if (cursor) params.append('cursor', cursor);
+  if (searchQuery?.trim()) params.append('q', searchQuery.trim());
+  const clampedLimit = Math.min(50, Math.max(1, limit));
+  params.append('limit', clampedLimit.toString());
+
+  const url = `/users/${userId}/collections/bridges?${params.toString()}`;
 
   try {
-    const response = await apiService.getClient().get<any>(
-      `/users/${userId}/collections/bridges?${params.toString()}`
-    );
-    
-    // Backend response formatı: { success: true, data: [...] } veya direkt array
-    const responseData = (response.data as any)?.data ?? response.data;
-    
-    // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserCollectionBridges] API Request:', {
-      url: `/users/${userId}/collections/bridges?${params.toString()}`,
-      requestedLimit: limit,
-      cursor,
-      searchQuery,
-    });
-    
-    console.log('[getUserCollectionBridges] API Response Detay:', {
-      url: `/users/${userId}/collections/bridges?${params.toString()}`,
-      cursor,
-      requestedLimit: limit,
-      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
-      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
-      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
-      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
-      allItemIds: Array.isArray(responseData) 
-        ? responseData.map((item: any) => item?.id).filter(Boolean)
-        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
-    });
-    
-    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
-    if (Array.isArray(responseData)) {
-      const items = responseData;
-      const hasMore = items.length >= limit;
-      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
-      
-      console.log('[getUserCollectionBridges] Normalized Response:', {
-        requestedLimit: limit,
-        actualItemsCount: items.length,
-        hasMore,
-        cursor: cursorValue,
-        itemIds: items.map((item: any) => item?.id).filter(Boolean),
-        warning: items.length !== limit ? `⚠️ Backend ${limit} yerine ${items.length} item döndürdü!` : '✅ Limit doğru',
-      });
-      
+    const response = await apiService.getClient().get<unknown>(url);
+    const raw = (response.data as { data?: unknown })?.data ?? response.data;
+
+    if (
+      raw &&
+      typeof raw === 'object' &&
+      'brand' in raw &&
+      'achievement' in raw &&
+      'pagination' in raw
+    ) {
+      const data = raw as UserCollectionBridgesApiResponse;
       return {
-        items,
+        brand: {
+          items: Array.isArray(data.brand?.items) ? data.brand.items : [],
+        },
+        achievement: {
+          items: Array.isArray(data.achievement?.items) ? data.achievement.items : [],
+        },
         pagination: {
-          hasMore,
-          limit,
-          cursor: cursorValue,
+          cursor: data.pagination?.cursor ?? null,
+          hasMore: Boolean(data.pagination?.hasMore),
+          limit: Number(data.pagination?.limit) || clampedLimit,
         },
       };
     }
-    
-    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
-    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
-      // Pagination objesi eksikse oluştur
-      if (!responseData.pagination) {
-        const items = responseData.items || [];
-        const hasMore = items.length >= limit;
-        
-        return {
-          items,
-          pagination: {
-            hasMore,
-            limit,
-            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
-          },
-        };
-      }
-      
-      // Zaten doğru formatta - backend'den gelen pagination'ı kullan
-      const items = responseData.items || [];
-      const pagination = responseData.pagination || {};
-      
-      // Eğer items boşsa ve hasMore true ise, bu bir sorun demektir - hasMore'u false yap
-      // Backend'in cursor pagination'ı düzgün çalışmıyor olabilir
-      const correctedHasMore = items.length > 0 ? pagination.hasMore : false;
-      
-      // Cursor yoksa son item'ın id'sini cursor olarak kullan
-      const finalCursor = pagination.cursor || (items.length > 0 ? items[items.length - 1].id : undefined);
-      
-      console.log('[getUserCollectionBridges] Response (already formatted):', {
-        itemsCount: items.length,
-        backendHasMore: pagination.hasMore,
-        correctedHasMore,
-        backendCursor: pagination.cursor,
-        fallbackCursor: items.length > 0 ? items[items.length - 1].id : undefined,
-        finalCursor,
-        itemIds: items.map((item: any) => item?.id).filter(Boolean) || [],
-        warning: items.length === 0 && pagination.hasMore ? '⚠️ Backend hasMore=true ama items boş! hasMore false yapıldı.' : null,
-      });
-      
-      // Cursor'ı güncelle ve hasMore'u düzelt
-      return {
-        items,
-        pagination: {
-          ...pagination,
-          hasMore: correctedHasMore,
-          cursor: finalCursor,
-        },
-      } as UserCollectionBridgesApiResponse;
-    }
-    
-    // Beklenmeyen format
-    console.warn('[getUserCollectionBridges] Unexpected response format:', responseData);
+
     return {
-      items: [],
-      pagination: {
-        hasMore: false,
-        limit,
-      },
+      brand: { items: [] },
+      achievement: { items: [] },
+      pagination: { cursor: null, hasMore: false, limit: clampedLimit },
     };
-  } catch (error: any) {
-    console.error('[getUserCollectionBridges] API Error:', {
-      url: `/users/${userId}/collections/bridges?${params.toString()}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
+  } catch (error: unknown) {
     throw error;
   }
 };

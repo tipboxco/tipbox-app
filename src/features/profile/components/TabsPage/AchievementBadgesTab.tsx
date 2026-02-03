@@ -5,10 +5,10 @@ import { Badge } from '@/src/mock/profile/badges/types';
 import BadgeCard from '../BadgeCard';
 import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
 import { useSafeAreaValues, toImageSource, useCurrentUserIdOrLogout } from '@/src/utils';
-import { useUserCollectionAchievements } from '../../api/hooks';
+import { useUserCollectionBridges } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
-import type { AchievementApiItem } from '@/src/features/events/types';
+import type { CollectionBadgeApiItem } from '../../types';
 
 interface AchievementBadgesTabProps {
   userId?: string;
@@ -16,24 +16,15 @@ interface AchievementBadgesTabProps {
   searchQuery?: string;
 }
 
-// Map AchievementApiItem to Badge format
-const mapAchievementToBadge = (achievement: AchievementApiItem): Badge => {
-  const imageSource = toImageSource(achievement.image) || require('@/assets/defaultImages/default-badge.png');
-  
-  // Rarity belirleme - status'a göre veya default 'Usual'
-  // API'den rarity gelmiyorsa, completed durumuna göre belirleyebiliriz
-  let rarity: 'Usual' | 'Rare' | 'Epic' | 'Legendary' = 'Usual';
-  if (achievement.status === 'completed') {
-    // Completed achievement'lar için rarity belirleme mantığı
-    // Şimdilik default 'Usual', ileride API'den gelebilir
-    rarity = 'Usual';
-  }
+// Map CollectionBadgeApiItem (achievement item from GET /users/:id/collections/bridges) to Badge format
+const mapAchievementToBadge = (item: CollectionBadgeApiItem): Badge => {
+  const imageSource = toImageSource(item.image ?? '') || require('@/assets/defaultImages/default-badge.png');
 
   return {
-    id: achievement.id,
-    title: achievement.title,
+    id: item.id,
+    title: item.title,
     icon: imageSource,
-    rarity,
+    rarity: item.rarity,
     category: 'achievement',
   };
 };
@@ -50,10 +41,9 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   const targetUserId = userId || currentUserId;
   const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
 
-  // Her sayfada 10'ar achievement getirilecek
   const ACHIEVEMENTS_PER_PAGE = 10;
 
-  // User Collection Achievements API hook with infinite scroll
+  // Aynı endpoint (GET /users/:id/collections/bridges) – achievement tab = response.achievement.items
   const {
     data,
     fetchNextPage,
@@ -61,22 +51,21 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     isFetchingNextPage,
     isLoading,
     error,
-  } = useUserCollectionAchievements(targetUserId, ACHIEVEMENTS_PER_PAGE, searchQuery);
+  } = useUserCollectionBridges(targetUserId, ACHIEVEMENTS_PER_PAGE, searchQuery);
 
-  // Flatten all pages into a single array - useMemo ile memoize et
+  // Flatten achievement.items from all pages
   const achievements = useMemo(() => {
-    if (!data || !('pages' in data) || !data.pages) return [];
-    
-    const allItems = data.pages.flatMap((page) => page.items ?? []);
-    
-    // ID'ye göre unique item'ları filtrele (cursor pagination'da aynı item tekrar gelebilir)
-    const uniqueItemsMap = new Map<string, AchievementApiItem>();
+    if (!data?.pages) return [];
+
+    const allItems = data.pages.flatMap((page) => page.achievement?.items ?? []);
+
+    const uniqueItemsMap = new Map<string, CollectionBadgeApiItem>();
     for (const item of allItems) {
       if (!uniqueItemsMap.has(item.id)) {
         uniqueItemsMap.set(item.id, item);
       }
     }
-    
+
     return Array.from(uniqueItemsMap.values());
   }, [data]);
 
@@ -139,9 +128,8 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     );
   }, [handleBadgePress]);
 
-  // Loading state
-  // CACHE FIX: Only show loading when loading and no cached data
-  const hasCachedData = data && 'pages' in data && Array.isArray(data.pages) && data.pages.length > 0 && data.pages[0];
+  // Loading state – cache varsa loading spinner gösterme
+  const hasCachedData = Boolean(data?.pages?.length);
   if (isLoading && !hasCachedData) {
     return (
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">

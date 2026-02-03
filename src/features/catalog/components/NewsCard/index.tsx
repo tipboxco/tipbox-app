@@ -36,8 +36,9 @@ const NewsCard: React.FC<NewsCardProps> = ({
         borderColor="#E9E9E9"
         borderRadius={10}
         p="$3"
+        overflow="hidden"
       >
-        <HStack space="sm" alignItems="center">
+        <HStack space="sm" alignItems="flex-start" flex={1}>
           {/* News Image */}
           <Box
             width={64}
@@ -47,6 +48,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
             alignItems="center"
             justifyContent="center"
             overflow="hidden"
+            flexShrink={0}
           >
             <Image
               source={image}
@@ -59,36 +61,52 @@ const NewsCard: React.FC<NewsCardProps> = ({
             />
           </Box>
 
-          {/* News Content - VStack */}
-          <VStack pr={'$5'} maxHeight={64} flex={1} space="xs">
+          {/* News Content - VStack: kart içine sığacak şekilde taşma önlenir */}
+          <VStack
+            flex={1}
+            flexShrink={1}
+            minWidth={0}
+            pr="$2"
+            space="xs"
+            justifyContent="flex-start"
+          >
             {/* Source and Date */}
-            <HStack alignItems="center" space="xs">
+            <HStack alignItems="center" space="xs" flexShrink={0}>
               <BookOpenIcon width={12} height={12} color="#B9B9B9" />
               <Text
                 color="#B9B9B9"
                 fontSize="$2xs"
                 fontWeight="$medium"
+                numberOfLines={1}
+                flexShrink={1}
+                minWidth={0}
               >
                 {source} - {date}
               </Text>
             </HStack>
 
-            {/* Title */}
+            {/* Title - tek satır, ellipsis */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
               fontSize="$sm"
               fontWeight="$bold"
               numberOfLines={1}
+              ellipsizeMode="tail"
+              flexShrink={1}
+              minWidth={0}
             >
               {title}
             </Text>
 
-            {/* Description */}
+            {/* Description - 2 satır, ellipsis; kartın içinde kalır */}
             <Text
               color={isDark ? '#FFFFFF' : '#343434'}
               fontSize="$2xs"
               lineHeight="$sm"
-              numberOfLines={4}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+              flexShrink={1}
+              minWidth={0}
             >
               {description}
             </Text>
@@ -100,6 +118,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
             height={24}
             alignItems="center"
             justifyContent="center"
+            flexShrink={0}
           >
             <ChevronRightIcon width={24} height={24} color="#B9B9B9" />
           </Box>

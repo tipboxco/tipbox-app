@@ -155,6 +155,16 @@ export interface BrandCatalogResponse {
 }
 
 /**
+ * Brand Follow / Unfollow API response
+ * POST /brands/:brandId/follow → { isJoined: true, followers }
+ * DELETE /brands/:brandId/follow → { isJoined: false, followers }
+ */
+export interface BrandFollowResponse {
+  isJoined: boolean;
+  followers: number;
+}
+
+/**
  * Brand Update API Item - /brands/{brandId}/trends endpoint'inden gelen update type için
  * Update type'ında content array olarak gelebilir
  */
@@ -238,11 +248,20 @@ export interface BrandProductGroup {
 }
 
 /**
+ * Brand Product Category - /brands/{brandId}/groups endpoint'inden dönen item (kategori bazlı)
+ */
+export interface BrandProductCategory {
+  categoryId: string;
+  categoryName: string;
+  products: BrandProduct[];
+}
+
+/**
  * Brand Product Book Response - /brands/{brandId}/groups endpoint'inden dönen response
- * Pagination ile birlikte product group listesi
+ * Pagination ile birlikte kategori listesi (categoryId, categoryName, products)
  */
 export interface BrandProductBookResponse {
-  items: BrandProductGroup[];
+  items: BrandProductCategory[];
   pagination: {
     cursor?: string;
     hasMore: boolean;

@@ -6,7 +6,7 @@ import BadgeCard from '../BadgeCard';
 import { useSafeAreaValues, toImageSource, useCurrentUserIdOrLogout } from '@/src/utils';
 import { useUserCollectionBridges } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import type { BridgeBadgeApiItem } from '../../types';
+import type { CollectionBadgeApiItem } from '../../types';
 
 interface BridgeBadgesTabProps {
   userId?: string;
@@ -15,8 +15,8 @@ interface BridgeBadgesTabProps {
 }
 
 // Map BridgeBadgeApiItem to Badge format
-const mapBridgeToBadge = (bridge: BridgeBadgeApiItem): Badge => {
-  const imageSource = toImageSource(bridge.image) || require('@/assets/defaultImages/default-badge.png');
+const mapBridgeToBadge = (bridge: CollectionBadgeApiItem): Badge => {
+  const imageSource = toImageSource(bridge.image ?? '') || require('@/assets/defaultImages/default-badge.png');
   
   return {
     id: bridge.id,
@@ -66,22 +66,23 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
     }
   }, [hasNextPage]);
 
-  // Flatten all pages into a single array - useMemo ile memoize et
+  // Flatten brand.items from all pages (GET /users/:id/collections/bridges → response.brand.items)
   const bridges = useMemo(() => {
     if (!data?.pages) return [];
-    
-    const allItems = data.pages.flatMap((page) => page.items ?? []);
-    
-    // ID'ye göre unique item'ları filtrele (backend aynı badge'i farklı tarihlerde kazanılmış olarak döndürebilir)
-    // En son kazanılan badge'i tut (earnedDate'e göre)
-    const uniqueItemsMap = new Map<string, BridgeBadgeApiItem>();
+
+    const allItems = data.pages.flatMap((page) => page.brand?.items ?? []);
+
+    // ID'ye göre unique; en son kazanılanı tut (earnedDate'e göre)
+    const uniqueItemsMap = new Map<string, CollectionBadgeApiItem>();
     for (const item of allItems) {
       const existing = uniqueItemsMap.get(item.id);
-      if (!existing || new Date(item.earnedDate) > new Date(existing.earnedDate)) {
+      const itemDate = item.earnedDate ? new Date(item.earnedDate).getTime() : 0;
+      const existingDate = existing?.earnedDate ? new Date(existing.earnedDate).getTime() : 0;
+      if (!existing || itemDate > existingDate) {
         uniqueItemsMap.set(item.id, item);
       }
     }
-    
+
     return Array.from(uniqueItemsMap.values());
   }, [data]);
 
