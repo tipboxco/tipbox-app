@@ -122,7 +122,8 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-router"
     ],
     "extra": {
       "eas": {
