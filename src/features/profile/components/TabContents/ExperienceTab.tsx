@@ -2,11 +2,83 @@ import React, { useMemo, useCallback, useRef, useEffect } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { VStack, Text, Box } from '@gluestack-ui/themed';
 import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCard';
+import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import { useUserReviews } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
+import { ProductInfoType } from '@/src/types/common';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
+import type { UpdateCardData } from '@/src/types/UpdateCard';
 import type { ProfileReview } from '../../types';
+
+/** Review item'ı Update post ise UpdateCardData'ya çevirir (Experience tab'da type: 'update' için) */
+function mapReviewToUpdateCardData(item: ProfileReview & { type: string; relatedPost?: any; content?: string }): UpdateCardData {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const avatarSource = item.user?.avatar ? toImageSource(item.user.avatar)! : DEFAULT_USER_AVATAR;
+  const raw = item as any;
+  let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
+  if (raw.contextType === 'product_group') productInfoType = ProductInfoType.PRODUCT_GROUP;
+  else if (raw.contextType === 'sub_category') productInfoType = ProductInfoType.SUB_CATEGORY;
+
+  if (!raw.relatedPost) {
+    const productFromContext = raw.contextData ?? raw.relatedPost?.product;
+    return {
+      id: item.id,
+      user: { id: item.user?.id || '', name: item.user?.name || '', title: item.user?.title || '', avatar: avatarSource },
+      stats: item.stats,
+      createdAt: item.createdAt,
+      contextType: productInfoType,
+      product: productFromContext ? {
+        id: productFromContext.id ?? '',
+        name: productFromContext.name ?? '',
+        subName: productFromContext.subName ?? '',
+        image: toImageSource(productFromContext.image) ?? defaultPostImage,
+        isOwned: productFromContext.isOwned ?? false,
+      } : { id: '', name: '', subName: '', image: defaultPostImage, isOwned: false },
+      content: typeof raw.content === 'string' ? raw.content : '',
+      images: Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter(Boolean) : [],
+      relatedPost: undefined,
+    };
+  }
+
+  const rp = raw.relatedPost;
+  const relatedPostContent = (rp.content && Array.isArray(rp.content))
+    ? rp.content.filter((c: any) => c != null).map((contentItem: any) => {
+        const ratingVal = typeof contentItem?.rating === 'number' ? contentItem.rating : (Array.isArray(contentItem?.rating) ? contentItem.rating.filter((r: number) => r === 1).length : 0);
+        const ratingArray: number[] = Array(5).fill(0);
+        const stars = contentItem?.rating != null && Array.isArray(contentItem.rating) ? contentItem.rating.filter((r: number) => r === 1).length : Math.min(5, Math.max(0, Math.round((contentItem?.rating ?? 0) / 20)));
+        for (let i = 0; i < stars; i++) ratingArray[i] = 1;
+        return { tag: { icon: 'tag' as const, title: contentItem?.tag?.title ?? contentItem?.title ?? '' }, text: contentItem?.text ?? contentItem?.content ?? '', rating: ratingArray };
+      })
+    : [];
+
+  const mappedImages = Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter((x): x is NonNullable<typeof x> => !!x) : [];
+  const relatedPostImages = (rp.images && Array.isArray(rp.images)) ? rp.images.map((img: any) => toImageSource(img)).filter((x): x is NonNullable<typeof x> => !!x) : [];
+
+  return {
+    id: item.id,
+    user: { id: item.user?.id || '', name: item.user?.name || '', title: item.user?.title || '', avatar: avatarSource },
+    stats: item.stats,
+    createdAt: item.createdAt,
+    contextType: productInfoType,
+    product: {
+      id: rp.product?.id ?? '',
+      name: rp.product?.name ?? '',
+      subName: rp.product?.subName ?? '',
+      image: toImageSource(rp.product?.image) ?? defaultPostImage,
+      isOwned: rp.product?.isOwned ?? false,
+    },
+    content: typeof raw.content === 'string' ? raw.content : '',
+    images: mappedImages,
+    relatedPost: {
+      id: rp.id ?? item.id,
+      product: { id: rp.product?.id ?? '', name: rp.product?.name ?? '', subName: rp.product?.subName ?? '', image: toImageSource(rp.product?.image) ?? defaultPostImage, isOwned: rp.product?.isOwned ?? false },
+      content: relatedPostContent,
+      tags: Array.isArray(rp.tags) ? rp.tags : [],
+      images: relatedPostImages,
+    },
+  };
+}
 
 const mapExperienceToCardData = (item: ProfileReview): ExperiencePostCardData => {
   const avatarSource = item.user?.avatar
@@ -46,10 +118,12 @@ const mapExperienceToCardData = (item: ProfileReview): ExperiencePostCardData =>
     },
     content,
     tags: item.tags?.slice(0, 3) ?? [],
-    images:
-      item.images
+    images: (() => {
+      const mapped = item.images
         ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+      return mapped.filter((img) => !isSameImageSource(img, productImage));
+    })(),
     stats: item.stats,
     createdAt: item.createdAt,
   };
@@ -77,12 +151,12 @@ const ExperienceTabComponent = () => {
     );
   }, [experienceData]);
 
-  const mappedExperience = useMemo(() => experienceItems.map(mapExperienceToCardData), [experienceItems]);
+  const isUpdateItem = (item: ProfileReview) => (item as any).type === 'update';
 
   const isLoadingMoreRef = useRef(false);
   useEffect(() => {
     isLoadingMoreRef.current = false;
-  }, [mappedExperience.length]);
+  }, [experienceItems.length]);
 
   const handleLoadMore = useCallback(() => {
     if (isLoadingMoreRef.current || !hasNextPage || isFetchingNextPage) return;
@@ -90,7 +164,7 @@ const ExperienceTabComponent = () => {
     fetchNextPage().finally(() => {
       setTimeout(() => { isLoadingMoreRef.current = false; }, 1000);
     });
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage, mappedExperience.length]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, experienceItems.length]);
 
   const LoadingFooter = React.memo(({ isFetching, isDark }: { isFetching: boolean; isDark: boolean }) => {
     if (!isFetching) return null;
@@ -134,7 +208,7 @@ const ExperienceTabComponent = () => {
     );
   }
 
-  if (mappedExperience.length === 0) {
+  if (experienceItems.length === 0) {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
@@ -146,9 +220,15 @@ const ExperienceTabComponent = () => {
 
   return (
     <FlatList
-      data={mappedExperience}
-      renderItem={({ item }) => <ExperiencePostCard data={item} />}
+      data={experienceItems}
       keyExtractor={(item) => item.id}
+      renderItem={({ item }) =>
+        isUpdateItem(item) ? (
+          <UpdatePostCard data={mapReviewToUpdateCardData(item as ProfileReview & { type: string; relatedPost?: any; content?: string })} />
+        ) : (
+          <ExperiencePostCard data={mapExperienceToCardData(item)} />
+        )
+      }
       contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
       showsVerticalScrollIndicator={false}
       nestedScrollEnabled={true}

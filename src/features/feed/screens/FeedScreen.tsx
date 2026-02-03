@@ -26,7 +26,7 @@ import { useFeed, useFeedFiltered } from '../api/hooks';
 import { getFeed, getFilteredFeed } from '../api/feedApi';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
-import { toImageSource, useBottomOffset } from '@/src/utils';
+import { toImageSource, useBottomOffset, isSameImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
@@ -370,7 +370,8 @@ const FeedScreenInner = React.memo(() => {
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages;
+    // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+    const images = mappedImages.filter((img) => !isSameImageSource(img, productImage));
 
     const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
     const subNameRaw = rawProduct?.subName ?? '';
@@ -770,7 +771,15 @@ const FeedScreenInner = React.memo(() => {
         return null;
       case CardType.POST:
       case 'post':
-        // Post type için ProfilePost kullan ve PostCard render et
+        // relatedPost varsa update post olarak göster (mor UPDATE badge + See Related Post)
+        if ((item.data as any)?.relatedPost != null) {
+          return (
+            <UpdatePostCard
+              key={itemId}
+              data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
+            />
+          );
+        }
         return (
           <PostCard
             key={itemId}
@@ -814,8 +823,8 @@ const FeedScreenInner = React.memo(() => {
         );
       case CardType.UPDATE:
       case 'update':
-        // Update type için UpdateApiItem kullan ve UpdatePostCard render et
-        if ('relatedPost' in item.data && 'contextType' in item.data) {
+        // Update type: relatedPost varsa UpdatePostCard (mor badge + See Related Post)
+        if ((item.data as any)?.relatedPost != null) {
           return (
             <UpdatePostCard
               key={itemId}
@@ -824,7 +833,7 @@ const FeedScreenInner = React.memo(() => {
           );
         }
         if (__DEV__) {
-          console.warn(`[FeedScreen] UPDATE item ${itemId} failed validation checks`);
+          console.warn(`[FeedScreen] UPDATE item missing relatedPost:`, itemId);
         }
         return null;
       default:

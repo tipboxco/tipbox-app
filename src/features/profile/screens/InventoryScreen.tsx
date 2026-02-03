@@ -75,10 +75,16 @@ const InventoryScreen = () => {
   // Delete inventory item mutation
   const { mutate: deleteInventoryItem, isPending: isDeleting } = useDeleteInventoryItem();
 
-  // Tüm sayfalardaki item'ları birleştir
+  // Tüm sayfalardaki item'ları birleştir (duplicate id'leri kaldır - pagination overlap önlemi)
   const allInventoryItems = useMemo(() => {
     if (!data?.pages) return [];
-    return data.pages.flatMap((page) => page.items);
+    const flat = data.pages.flatMap((page) => page.items);
+    const seen = new Set<string>();
+    return flat.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
   }, [data]);
 
   // API'den gelen verileri filtrele

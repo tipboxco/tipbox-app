@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { KeyboardAvoidingView, Platform, View, Image as RNImage } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, View, Image as RNImage } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast, Image } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
@@ -394,6 +394,12 @@ export const CreateUpdatePostScreen = () => {
 
   // Check if share button should be enabled (product exists and form is valid)
   const isShareEnabled = (product !== undefined || experiencePost !== undefined) && formState.isValid;
+  const isShareLoading = isUpdateMode ? updatePostMutation.isPending : createUpdatePostMutation.isPending;
+
+  const handleSharePress = () => {
+    Keyboard.dismiss();
+    handleSubmit(onSubmit)();
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -411,15 +417,16 @@ export const CreateUpdatePostScreen = () => {
             onLeftActionPress={handleBackPress}
             rightButton={{
               text: 'Share',
-              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
-              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
               paddingX: 10,
               paddingY: 10,
-              onPress: handleSubmit(onSubmit),
+              onPress: handleSharePress,
+              loading: isShareLoading,
             }}
           />
 

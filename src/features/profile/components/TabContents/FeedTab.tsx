@@ -3,14 +3,16 @@ import { FlatList, ActivityIndicator } from 'react-native';
 import { VStack, Text, Box } from '@gluestack-ui/themed';
 import PostCard from '@/src/components/PostCards/PostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
+import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useUserPosts } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { CardType } from '@/src/types/common';
+import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
+import { CardType, ProductInfoType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
+import type { UpdateCardData } from '@/src/types/UpdateCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
@@ -108,10 +110,12 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
     },
     content,
     tags: review.tags?.slice(0, 3) ?? [],
-    images:
-      review.images
+    images: (() => {
+      const mapped = review.images
         ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+      return mapped.filter((img) => !isSameImageSource(img, productImage));
+    })(),
     stats: review.stats,
     createdAt: review.createdAt,
   };
@@ -226,9 +230,79 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData => {
   };
 };
 
+// Map Update (feed post type 'update') to UpdateCardData
+const mapUpdateToCardData = (post: ProfilePost & { relatedPost?: any }): UpdateCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const avatarSource = post.user?.avatar ? toImageSource(post.user.avatar)! : DEFAULT_USER_AVATAR;
+  const raw = post as any;
+  let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
+  if (raw.contextType === 'product_group') productInfoType = ProductInfoType.PRODUCT_GROUP;
+  else if (raw.contextType === 'sub_category') productInfoType = ProductInfoType.SUB_CATEGORY;
+
+  if (!raw.relatedPost) {
+    const productFromContext = raw.contextData ?? raw.relatedPost?.product;
+    return {
+      id: post.id,
+      user: { id: post.user?.id || '', name: post.user?.name || '', title: post.user?.title || '', avatar: avatarSource },
+      stats: post.stats,
+      createdAt: post.createdAt,
+      contextType: productInfoType,
+      product: productFromContext ? {
+        id: productFromContext.id ?? '',
+        name: productFromContext.name ?? '',
+        subName: productFromContext.subName ?? '',
+        image: toImageSource(productFromContext.image) ?? defaultPostImage,
+        isOwned: productFromContext.isOwned ?? false,
+      } : { id: '', name: '', subName: '', image: defaultPostImage, isOwned: false },
+      content: typeof raw.content === 'string' ? raw.content : (Array.isArray(raw.content) ? (raw.content.map((c: any) => c?.content ?? '').join(' ')) : ''),
+      images: Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter(Boolean) : [],
+      relatedPost: undefined,
+    };
+  }
+
+  const rp = raw.relatedPost;
+  const relatedPostContent = (rp.content && Array.isArray(rp.content))
+    ? rp.content.filter((c: any) => c != null).map((contentItem: any) => {
+        const ratingVal = typeof contentItem?.rating === 'number' ? contentItem.rating : (Array.isArray(contentItem?.rating) ? contentItem.rating.filter((r: number) => r === 1).length : 0);
+        const stars = contentItem?.rating != null && Array.isArray(contentItem.rating) ? contentItem.rating.filter((r: number) => r === 1).length : Math.min(5, Math.max(0, Math.round((contentItem?.rating ?? 0) / 20)));
+        const ratingArray: number[] = Array(5).fill(0);
+        for (let i = 0; i < stars; i++) ratingArray[i] = 1;
+        return { tag: { icon: 'tag' as const, title: contentItem?.tag?.title ?? contentItem?.title ?? '' }, text: contentItem?.text ?? contentItem?.content ?? '', rating: ratingArray };
+      })
+    : [];
+
+  const mappedImages = Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter((x): x is NonNullable<typeof x> => !!x) : [];
+  const relatedPostImages = (rp.images && Array.isArray(rp.images)) ? rp.images.map((img: any) => toImageSource(img)).filter((x): x is NonNullable<typeof x> => !!x) : [];
+
+  return {
+    id: post.id,
+    user: { id: post.user?.id || '', name: post.user?.name || '', title: post.user?.title || '', avatar: avatarSource },
+    stats: post.stats,
+    createdAt: post.createdAt,
+    contextType: productInfoType,
+    product: {
+      id: rp.product?.id ?? '',
+      name: rp.product?.name ?? '',
+      subName: rp.product?.subName ?? '',
+      image: toImageSource(rp.product?.image) ?? defaultPostImage,
+      isOwned: rp.product?.isOwned ?? false,
+    },
+    content: typeof raw.content === 'string' ? raw.content : (Array.isArray(raw.content) ? (raw.content.map((c: any) => c?.content ?? '').join(' ')) : ''),
+    images: mappedImages,
+    relatedPost: {
+      id: rp.id ?? post.id,
+      product: { id: rp.product?.id ?? '', name: rp.product?.name ?? '', subName: rp.product?.subName ?? '', image: toImageSource(rp.product?.image) ?? defaultPostImage, isOwned: rp.product?.isOwned ?? false },
+      content: relatedPostContent,
+      tags: Array.isArray(rp.tags) ? rp.tags : [],
+      images: relatedPostImages,
+    },
+  };
+};
+
 // Mapped post type
 type MappedPost = 
   | { type: 'post'; id: string; data: PostCardData }
+  | { type: 'update'; id: string; data: UpdateCardData }
   | { type: 'experience'; id: string; data: ExperiencePostCardData }
   | { type: 'benchmark'; id: string; data: BenchmarkCardData }
   | { type: 'tips'; id: string; data: TipsCardData }
@@ -269,6 +343,13 @@ const FeedTabComponent = () => {
   const mappedPosts = useMemo(() => {
     const mapped = posts.map((post) => {
       switch (post.type) {
+        case CardType.UPDATE:
+        case 'update':
+          return {
+            type: 'update' as const,
+            id: post.id,
+            data: mapUpdateToCardData(post as ProfilePost & { relatedPost?: any }),
+          };
         case CardType.EXPERIENCE:
           if ('contextData' in post && 'content' in post && Array.isArray(post.content)) {
             return {
@@ -301,6 +382,14 @@ const FeedTabComponent = () => {
           return null;
         case CardType.POST:
         default:
+          // relatedPost varsa update post olarak göster (UPDATE tag + See Related Post)
+          if ((post as any).relatedPost != null) {
+            return {
+              type: 'update' as const,
+              id: post.id,
+              data: mapUpdateToCardData(post as ProfilePost & { relatedPost?: any }),
+            };
+          }
           return {
             type: 'post' as const,
             id: post.id,
@@ -369,6 +458,8 @@ const FeedTabComponent = () => {
   // Mapping sonuçları zaten cache'lenmiş durumda
   const renderItem = useCallback(({ item }: { item: MappedPost }) => {
     switch (item.type) {
+      case 'update':
+        return <UpdatePostCard data={item.data} />;
       case 'experience':
         return <ExperiencePostCard data={item.data} />;
       case 'benchmark':

@@ -695,7 +695,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               alt="Premium Banner"
               w="100%"
               h="100%"
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </Box>
         </Box>

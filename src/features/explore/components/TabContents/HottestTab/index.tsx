@@ -11,7 +11,7 @@ import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import { useHottest } from '../../../api/hooks';
 import { CardType, ProductInfoType } from '@/src/types/common';
-import { toImageSource, useBottomOffset } from '@/src/utils';
+import { toImageSource, useBottomOffset, isSameImageSource } from '@/src/utils';
 import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { ProfilePost } from '@/src/features/profile/types';
@@ -97,7 +97,9 @@ const mapExperienceToCardData = (item: ExperiencePostApiItem & { type: 'experien
   const mappedImages = item.images
     ?.map((img) => toImageSource(img))
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+  const filteredImages = mappedImages.filter((img) => !isSameImageSource(img, productImage ?? defaultPostImage));
+  const images = filteredImages.length > 0 ? filteredImages : [defaultPostImage];
 
   const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
   const subNameRaw = rawProduct?.subName ?? '';

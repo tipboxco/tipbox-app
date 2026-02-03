@@ -112,7 +112,10 @@ export const getUserProfile = async (
   return {
     id: apiData.id,
     name: apiData.name || '',
-    avatar: apiData.avatarUrl || '', // avatarUrl → avatar mapping
+    avatar: (() => {
+      const v = apiData.avatarUrl ?? apiData.avatar ?? apiData.user?.avatar ?? apiData.user?.avatarUrl ?? '';
+      return typeof v === 'string' ? v.trim() : (v ? String(v) : '');
+    })(), // Backend avatarUrl/avatar veya user.avatar dönebilir
     bannerUrl: apiData.bannerUrl || '',
     biography: apiData.biography || '',
     titles: apiData.titles || [],

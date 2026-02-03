@@ -20,7 +20,7 @@ import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import { Header } from '@/src/components/Header';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
-import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { useComments, useCreateComment, useDeleteComment, useLikeComment, useUnlikeComment, useUpdateComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
 import { usePostDetail } from '../api/hooks';
@@ -179,9 +179,104 @@ export const PostDetailScreen = () => {
           image: toImageSource(rawProduct.image) ?? defaultPostImage,
           isOwned: raw.status === 'own' || rawProduct.isOwned,
         } : raw.contextData,
-        images: Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter(Boolean) : raw.images,
+        // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+        images: (() => {
+          const mapped = Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter(Boolean) : (raw.images ?? []);
+          const productImg = rawProduct ? (toImageSource(rawProduct.image) ?? defaultPostImage) : null;
+          return productImg ? mapped.filter((img: any) => !isSameImageSource(img, productImg)) : mapped;
+        })(),
       };
     }, [finalType, finalPostData]);
+
+    // Update post: relatedPost (experience) tam yapısını kart formatına çevir ve detayda tam gösterilsin
+    const finalUpdateRelatedPostData = useMemo(() => {
+      if (finalType !== 'update' || !finalPostData) return undefined;
+      const raw = finalPostData as any;
+      const rp = raw?.relatedPost;
+      if (!rp) return undefined;
+      const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+      // API formatı (title, content, rating) -> kart formatı (tag, text, rating[])
+      const content = (rp.content && Array.isArray(rp.content))
+        ? rp.content
+            .filter((item: any) => item != null)
+            .map((item: any) => {
+              let stars = 0;
+              if (Array.isArray(item?.rating) && item.rating.every((x: unknown) => typeof x === 'number')) {
+                stars = Math.min(5, item.rating.filter((r: number) => r === 1).length);
+              } else if (typeof item?.rating === 'number') {
+                const v = item.rating;
+                stars = v <= 5 ? Math.round(v) : Math.min(5, Math.max(0, Math.round(v / 20)));
+              }
+              const ratingArray: number[] = Array(5).fill(0);
+              for (let i = 0; i < stars; i++) ratingArray[i] = 1;
+              return {
+                tag: {
+                  icon:
+                    item?.tag?.icon ??
+                    (((item?.title ?? '').toLowerCase().includes('product') ||
+                      (item?.title ?? '').toLowerCase().includes('usage'))
+                      ? 'package'
+                      : 'tag'),
+                  title: item?.tag?.title ?? item?.title ?? '',
+                },
+                text: item?.text ?? item?.content ?? '',
+                rating: Array.isArray(item?.rating) && item.rating.every((x: unknown) => typeof x === 'number')
+                  ? item.rating
+                  : ratingArray,
+              };
+            })
+        : [];
+      const product = rp.product
+        ? {
+            id: rp.product.id ?? '',
+            name: rp.product.name ?? '',
+            subName: rp.product.subName ?? '',
+            image: toImageSource(rp.product.image) ?? defaultPostImage,
+            isOwned: rp.product.isOwned ?? false,
+          }
+        : undefined;
+      const tags = Array.isArray(rp.tags) ? rp.tags : [];
+      const images = (rp.images && Array.isArray(rp.images))
+        ? rp.images.map((img: any) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+        : [];
+      return {
+        id: rp.id,
+        product,
+        content,
+        tags,
+        images,
+        stats: rp.stats ?? raw.stats,
+      };
+    }, [finalType, finalPostData]);
+
+    // Update detayda: related post'u ExperiencePostCard olarak göstermek için ExperiencePostCardData
+    const updateRelatedAsExperienceCardData = useMemo(() => {
+      if (finalType !== 'update' || !finalPostData || !finalUpdateRelatedPostData?.product) return undefined;
+      const raw = finalPostData as any;
+      const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+      const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
+      const user = raw.user ? { ...raw.user, avatar: toImageSource(raw.user.avatar) ?? defaultAvatar } : { id: '', name: '', title: '', avatar: defaultAvatar };
+      return {
+        id: finalUpdateRelatedPostData.id ?? raw.id,
+        user,
+        contextData: {
+          id: finalUpdateRelatedPostData.product.id,
+          name: finalUpdateRelatedPostData.product.name,
+          subName: finalUpdateRelatedPostData.product.subName,
+          image: finalUpdateRelatedPostData.product.image ?? defaultPostImage,
+          isOwned: finalUpdateRelatedPostData.product.isOwned ?? false,
+        },
+        content: (finalUpdateRelatedPostData.content ?? []).map((c: any) => ({
+          tag: c.tag ?? { icon: 'tag' as const, title: '' },
+          text: c.text ?? '',
+          rating: Array.isArray(c.rating) ? c.rating.map((r: number) => r === 1) : Array(5).fill(false),
+        })),
+        tags: finalUpdateRelatedPostData.tags ?? [],
+        images: finalUpdateRelatedPostData.images ?? [],
+        stats: finalUpdateRelatedPostData.stats ?? raw.stats,
+        createdAt: raw.createdAt ?? '',
+      };
+    }, [finalType, finalPostData, finalUpdateRelatedPostData]);
 
     // Fetch comments
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
@@ -467,12 +562,16 @@ export const PostDetailScreen = () => {
                     ) : finalType === 'experience' ? (
                         <ExperiencePostCard data={finalExperienceData ?? finalPostData} isDetailMode={true} />
                     ) : finalType === 'update' ? (
-                        <UpdatePostCard 
-                            data={finalPostData} 
-                            isDetailMode={true}
-                            showRelatedPost={showRelatedPost}
-                            relatedPostData={relatedPostData}
-                        />
+                        <>
+                            <UpdatePostCard 
+                                data={finalPostData} 
+                                isDetailMode={true}
+                                showRelatedPost={false}
+                            />
+                            {updateRelatedAsExperienceCardData && (
+                                <ExperiencePostCard data={updateRelatedAsExperienceCardData} isDetailMode={true} />
+                            )}
+                        </>
                     ) : (
                         <PostCard data={finalPostData} isDetailMode={true} />
                     )}
@@ -527,7 +626,7 @@ export const PostDetailScreen = () => {
                 </Pressable>
             </HStack>
         </>
-    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, showRelatedPost, relatedPostData, isDark, selectedOption, handleSortPress]);
+    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, updateRelatedAsExperienceCardData, isDark, selectedOption, handleSortPress]);
 
     // FlatList render item - useCallback ile memoize edildi
     const renderCommentItem = useCallback(({ item }: { item: typeof flattenedComments[0] }) => (

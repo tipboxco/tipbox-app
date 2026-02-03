@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Dimensions, RefreshControl } from 'react-native';
+import { Dimensions, RefreshControl, ActivityIndicator, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
@@ -14,11 +14,9 @@ import {
     VStack,
     HStack,
     Text,
-    Image,
     Pressable,
     Input,
     InputField,
-    Spinner,
 } from '@gluestack-ui/themed';
 import {
   MagnifyingGlassIcon,
@@ -122,15 +120,15 @@ const NotificationsScreenComponent: React.FC = () => {
     }, allQueryEnabled);
 
     // Filter 1: Tips (UI'da Tips tabı ama backend'de replies type'ı kullanılıyor)
-    // CRITICAL FIX: Tips tabında Replies bildirimleri görünüyor, bu yüzden type=replies kullanıyoruz
+    // UX FIX: Tüm tab'lar ekran açıldığında yüklenir (Feed gibi), tab geçişinde fetch yok
     const tipsFilter = filters[1];
     const tipsUnreadOnly = tipsFilter?.id === 'unread';
     const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
-    const tipsQueryEnabled = shouldFetchNotifications && currentPage === 1;
+    const tipsQueryEnabled = shouldFetchNotifications;
     const tipsQuery = useNotifications({
-        limit: 10, // CRITICAL FIX: limit=10 olarak değiştirildi
+        limit: 10,
         unreadOnly: tipsUnreadOnly,
-        type: tipsNotificationType, // type=replies (Tips tabında Replies bildirimleri gösteriliyor)
+        type: tipsNotificationType,
         search: debouncedSearchQuery || undefined,
     }, tipsQueryEnabled);
 
@@ -138,7 +136,7 @@ const NotificationsScreenComponent: React.FC = () => {
     const trustFilter = filters[2];
     const trustUnreadOnly = trustFilter?.id === 'unread';
     const trustNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'truster';
-    const trustQueryEnabled = shouldFetchNotifications && currentPage === 2;
+    const trustQueryEnabled = shouldFetchNotifications;
     const trustQuery = useNotifications({
         limit: 20,
         unreadOnly: trustUnreadOnly,
@@ -147,15 +145,14 @@ const NotificationsScreenComponent: React.FC = () => {
     }, trustQueryEnabled);
 
     // Filter 3: Replies (UI'da Replies tabı ama backend'de tips type'ı kullanılıyor)
-    // CRITICAL FIX: Replies tabında Tips bildirimleri görünüyor, bu yüzden type=tips kullanıyoruz
     const repliesFilter = filters[3];
     const repliesUnreadOnly = repliesFilter?.id === 'unread';
     const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
-    const repliesQueryEnabled = shouldFetchNotifications && currentPage === 3;
+    const repliesQueryEnabled = shouldFetchNotifications;
     const repliesQuery = useNotifications({
         limit: 20,
         unreadOnly: repliesUnreadOnly,
-        type: repliesNotificationType, // type=tips (Replies tabında Tips bildirimleri gösteriliyor)
+        type: repliesNotificationType,
         search: debouncedSearchQuery || undefined,
     }, repliesQueryEnabled);
 
@@ -179,98 +176,10 @@ const NotificationsScreenComponent: React.FC = () => {
         filterQueryResultsRef.current = filterQueryResults;
     }, [filterQueryResults]);
 
-    // CRITICAL FIX: İlk açılışta query'nin direkt başlaması için useEffect eklendi
-    // İlk tab için query enabled olsa bile, React Query bazen query'yi başlatmıyor
-    // Bu durumda manuel olarak query'yi başlatıyoruz
-    useEffect(() => {
-        // İlk tab için: shouldFetchNotifications true ise ve query enabled ise ama henüz başlamamışsa başlat
-        if (shouldFetchNotifications && allQueryEnabled) {
-            const queryStatus = allQuery.status;
-            const hasNoData = !allQuery.data;
-            const isNotLoading = !allQuery.isLoading && !allQuery.isFetching && !allQuery.isPending;
-            
-            // Query henüz başlamamışsa (pending) veya error durumunda takılı kalmışsa başlat
-            // CRITICAL: Query enabled olsa bile, React Query bazen query'yi başlatmıyor
-            // Bu durumda manuel olarak refetch çağırarak query'yi başlatıyoruz
-            if (hasNoData && isNotLoading) {
-                // Query status'u kontrol et - pending veya error ise başlat
-                if (queryStatus === 'pending' || queryStatus === 'error') {
-                    // Query'yi başlat - refetch çağrısı query'yi başlatacak
-                    const refetchFn = (allQuery as { refetch?: () => Promise<unknown> }).refetch;
-                    if (refetchFn) {
-                        refetchFn().catch((error: unknown) => {
-                            console.warn('[NotificationsScreen] Failed to refetch allQuery:', error);
-                        });
-                    }
-                }
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shouldFetchNotifications, allQueryEnabled]);
-
-    // CRITICAL FIX: Tab değiştiğinde aktif tab'ın query'sini başlat
-    useEffect(() => {
-        if (!shouldFetchNotifications) {
-            return;
-        }
-        
-        // Aktif tab'ın query'sini al
-        const activeQuery = filterQueryResultsRef.current[currentPage];
-        if (!activeQuery) {
-            return;
-        }
-        
-        // Query enabled kontrolü
-        const isQueryEnabled = 
-            currentPage === 0 ? allQueryEnabled :
-            currentPage === 1 ? tipsQueryEnabled :
-            currentPage === 2 ? trustQueryEnabled :
-            repliesQueryEnabled;
-        
-        if (!isQueryEnabled) {
-            return;
-        }
-        
-        // Query durumunu kontrol et
-        const queryStatus = activeQuery.status;
-        const hasNoData = !activeQuery.data;
-        const isNotLoading = !activeQuery.isLoading && !activeQuery.isFetching && !activeQuery.isPending;
-        
-        // Query henüz başlamamışsa (pending) veya error durumunda başlat
-        if (hasNoData && isNotLoading && (queryStatus === 'pending' || queryStatus === 'error')) {
-            const refetchFn = (activeQuery as { refetch?: () => Promise<unknown> }).refetch;
-            if (refetchFn) {
-                refetchFn().catch((error: unknown) => {
-                    console.warn(`[NotificationsScreen] Failed to refetch query for tab ${currentPage}:`, error);
-                });
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, shouldFetchNotifications, allQueryEnabled, tipsQueryEnabled, trustQueryEnabled, repliesQueryEnabled]);
-
     useFocusEffect(
         useCallback(() => {
             // Ekran focus aldığında drawer gesture'ı disable et
             setGestureEnabled(false);
-            
-            // CRITICAL FIX: İlk açılışta query'yi başlat
-            // Query enabled olsa bile, React Query bazen query'yi başlatmıyor
-            // Bu durumda manuel olarak query'yi başlatıyoruz
-            if (shouldFetchNotifications && allQueryEnabled) {
-                const queryStatus = allQuery.status;
-                const hasNoData = !allQuery.data;
-                const isNotLoading = !allQuery.isLoading && !allQuery.isFetching && !allQuery.isPending;
-                
-                // Query henüz başlamamışsa başlat
-                if (hasNoData && isNotLoading && queryStatus === 'pending') {
-                    const refetchFn = (allQuery as { refetch?: () => Promise<unknown> }).refetch;
-                    if (refetchFn) {
-                        refetchFn().catch((error: unknown) => {
-                            console.warn('[NotificationsScreen] Failed to refetch allQuery on focus:', error);
-                        });
-                    }
-                }
-            }
             
             // Ekran focus aldığında tüm bildirimleri okunmuş olarak işaretle
             // CRITICAL: Sadece bir kez çalışması için ref kontrolü (sonsuz döngü önleme)
@@ -320,12 +229,6 @@ const NotificationsScreenComponent: React.FC = () => {
                     },
                 });
                 
-                // PERFORMANCE FIX: Sadece aktif tab'ı refetch et (yeni bildirimler için)
-                // Diğer tab'lar cache'den okuyacak, tab değiştiğinde o tab'ın query'si enable olacak
-                // CRITICAL FIX: ref ile çağır - dependency array'den kaldırıldı
-                if (filterQueryResultsRef.current[currentPage]) {
-                    filterQueryResultsRef.current[currentPage].refetch();
-                }
             }
             
             return () => {
@@ -335,10 +238,7 @@ const NotificationsScreenComponent: React.FC = () => {
                 // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde ref resetlenmemeli
                 hasMarkedAllAsReadRef.current = false;
             };
-        }, [setGestureEnabled, shouldFetchNotifications, queryClient, allQueryEnabled, allQuery.status, allQuery.data])
-        // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde useFocusEffect tekrar çalışmamalı
-        // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi
-        // CRITICAL FIX: allQuery objesi yerine spesifik değerleri dependency array'e ekledik (sonsuz döngü önleme)
+        }, [setGestureEnabled, shouldFetchNotifications, queryClient])
     );
     
     // PERFORMANCE FIX: Memoize background colors to prevent re-renders
@@ -463,30 +363,8 @@ const NotificationsScreenComponent: React.FC = () => {
             const position = e.nativeEvent.position;
             progress.value = withTiming(position, { duration: 0 });
             setCurrentPage(position);
-            
-            // CRITICAL FIX: Tab değiştiğinde aktif tab'ın query'sini başlat
-            // Query enabled olsa bile, React Query bazen query'yi başlatmıyor
-            // Bu durumda manuel olarak query'yi başlatıyoruz
-            if (shouldFetchNotifications) {
-                const activeQuery = filterQueryResultsRef.current[position];
-                if (activeQuery) {
-                    const queryStatus = activeQuery.status;
-                    const hasNoData = !activeQuery.data;
-                    const isNotLoading = !activeQuery.isLoading && !activeQuery.isFetching && !activeQuery.isPending;
-                    
-                    // Query henüz başlamamışsa (pending) veya error durumunda başlat
-                    if (hasNoData && isNotLoading && (queryStatus === 'pending' || queryStatus === 'error')) {
-                        const refetchFn = (activeQuery as { refetch?: () => Promise<unknown> }).refetch;
-                        if (refetchFn) {
-                            refetchFn().catch((error: unknown) => {
-                                console.warn(`[NotificationsScreen] Failed to refetch query for tab ${position}:`, error);
-                            });
-                        }
-                    }
-                }
-            }
         },
-        [progress, shouldFetchNotifications]
+        [progress]
     );
 
 
@@ -705,22 +583,8 @@ const NotificationsScreenComponent: React.FC = () => {
             status,
         } = queryResult;
 
-        // Query enabled durumunu kontrol et
-        // CRITICAL FIX: İlk tab (All) için her zaman enabled, diğer tablar için sadece aktif tab enabled
-        const isQueryEnabled = filterIndex === 0 ? shouldFetchNotifications :
-                              filterIndex === 1 ? (shouldFetchNotifications && currentPage === 1) :
-                              filterIndex === 2 ? (shouldFetchNotifications && currentPage === 2) :
-                              (shouldFetchNotifications && currentPage === 3);
-        
-        // Loading state: 
-        // CRITICAL FIX: Sadece gerçekten loading durumunda loading göster
-        // 1. Query aktif olarak yükleniyor (isLoading, isFetching, isPending)
-        // 2. Query enabled değilse ve data yoksa (henüz başlamamış - bu durumda loading göster)
-        // 3. Auth ready değilse ve data yoksa (henüz başlamamış - bu durumda loading göster)
-        // NOT: Query enabled ise ve data yoksa ama loading değilse, bu bir hata durumu olabilir - loading gösterme
-        const isActuallyLoading = (isLoading || isFetching || isPending) || 
-                                  (!isQueryEnabled && !notificationsResponse && shouldFetchNotifications) ||
-                                  (!isAuthReady && !notificationsResponse && shouldFetchNotifications);
+        // Loading state: Feed/Profile gibi - sadece ilk yüklemede (data yok + fetch devam ediyor) göster
+        const isActuallyLoading = (isLoading || isFetching || isPending) && !notificationsResponse;
 
         // Her tab için kendi notifications'ını çıkar
         const notifications = extractNotificationsFromResponse(notificationsResponse);
@@ -770,12 +634,12 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
-        // Loading state kontrolü - query enabled değilse veya data yoksa loading göster
+        // Loading state: App standardı ActivityIndicator (Feed/Profile ile uyumlu)
         if (isActuallyLoading && filtered.length === 0) {
             return (
-                <Box flex={1} justifyContent="center" alignItems="center">
-                    <Spinner size="large" />
-                </Box>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                </View>
             );
         }
         
@@ -921,9 +785,9 @@ const NotificationsScreenComponent: React.FC = () => {
                                 </HStack>
                             </Pressable>
                             {isFetchingNextPage && (
-                                <Box mt={8}>
-                                    <Spinner size="small" />
-                                </Box>
+                                <View style={{ marginTop: 8 }}>
+                                    <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                                </View>
                             )}
                         </Box>
                     ) : null
@@ -941,12 +805,6 @@ const NotificationsScreenComponent: React.FC = () => {
         keyExtractor,
         refreshing,
         bottomOffset,
-        isAuthReady,
-        shouldFetchNotifications,
-        currentPage,
-        // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi (sonsuz döngü önleme)
-        // Query sonuçları değiştiğinde React Query otomatik olarak component'i re-render eder
-        // hasNextPage, isFetchingNextPage, fetchNextPage queryResult içinde olduğu için dependency'ye eklenmez
     ]);
 
     return (

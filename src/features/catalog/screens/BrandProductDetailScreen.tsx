@@ -15,7 +15,7 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import PostCard from '@/src/components/PostCards/PostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
-import { useSafeAreaValues, toImageSource, useBottomOffset, formatRelativeTime } from '@/src/utils';
+import { useSafeAreaValues, toImageSource, useBottomOffset, formatRelativeTime, isSameImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useUserProfile } from '@/src/features/profile/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
@@ -174,9 +174,12 @@ const mapExperienceToCardData = (item: BrandFeedPost): ExperiencePostCardData | 
     },
     content,
     tags,
-    images: postData.images
-      ?.map((img: string) => toImageSource(img))
-      .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+    images: (() => {
+      const mapped = postData.images
+        ?.map((img: string) => toImageSource(img))
+        .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+      return mapped.filter((img: any) => !isSameImageSource(img, productImage ?? defaultPostImage));
+    })(),
     stats: postData.stats,
     createdAt: postData.createdAt,
   };

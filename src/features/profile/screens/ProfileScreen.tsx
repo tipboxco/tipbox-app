@@ -23,7 +23,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { ProfileStackParamList } from '../navigation';
-import { toImageSource, useSafeAreaValues, useBottomOffset } from '@/src/utils';
+import { toImageSource, useSafeAreaValues, useBottomOffset, isSameImageSource } from '@/src/utils';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import SendTipsBottomSheet from '@/src/features/inbox/components/SendTipsBottomSheet';
 import { CardType } from '@/src/types/common';
@@ -173,10 +173,12 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
     },
     content,
     tags: review.tags?.slice(0, 3) ?? [],
-    images:
-      review.images
+    images: (() => {
+      const mapped = review.images
         ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+      return mapped.filter((img) => !isSameImageSource(img, productImage));
+    })(),
     stats: review.stats,
     createdAt: review.createdAt,
   };
@@ -1238,17 +1240,18 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     // TypeScript için: userProfile bu noktada kesinlikle tanımlı
     const profile = userProfile;
     
-    // CRITICAL FIX: Avatar source'u DrawerContent ile aynı mantıkla hesapla
-    // Önce userProfile'dan avatar al (API'den gelen güncel veri)
-    // Yoksa store'dan avatar al (persist edilmiş veri)
+    // Avatar: Her zaman görüntülenen profilin (userProfile) avatar'ı kullanılır.
+    // Başkasının profilinde store (giriş yapan kullanıcı) avatar'ı asla kullanılmaz.
+    const profileAvatarRaw = typeof userProfile?.avatar === 'string' ? userProfile.avatar.trim() : userProfile?.avatar;
     let avatarSource: any = null;
-    if (userProfile?.avatar) {
-      const profileAvatar = toImageSource(userProfile.avatar);
+    if (profileAvatarRaw) {
+      const profileAvatar = toImageSource(profileAvatarRaw);
       if (profileAvatar) {
         avatarSource = profileAvatar;
       }
-    } else if (user?.avatar) {
-      // Yoksa store'dan avatar al (persist edilmiş veri)
+    }
+    if (!avatarSource && isOwnProfile && user?.avatar) {
+      // Sadece kendi profilimizde: API'de avatar yoksa store'dan al
       const storeAvatar = toImageSource(user.avatar);
       if (storeAvatar) {
         avatarSource = storeAvatar;

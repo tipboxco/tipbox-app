@@ -151,7 +151,12 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
     if (isDetailMode) return; // Detay modunda navigation yapma
     navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
-      params: { postData: data, type: 'update' },
+      params: { 
+        postData: data, 
+        type: 'update',
+        showRelatedPost: true,
+        relatedPostData: data.relatedPost,
+      },
     });
   };
 
@@ -616,12 +621,15 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
             params: { 
               postData: data, 
               type: 'update',
+              showRelatedPost: true,
+              relatedPostData: data.relatedPost,
             }
           });
         }}>
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize="$xs"
+            fontSize="$sm"
+            lineHeight={18}
             numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
           >
             {data.content}
@@ -638,7 +646,8 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
                 params: { 
                   postData: data, 
                   type: 'update',
-                  showRelatedPost: true, // Detay ekranında experience content gösterilsin
+                  showRelatedPost: true,
+                  relatedPostData: data.relatedPost,
                 }
               });
             }} 
@@ -666,7 +675,12 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               if (isDetailMode) return; // Detay modunda navigation yapma
               navigationService.navigate(ROOT_ROUTES.POST, {
                 screen: 'PostDetailScreen',
-                params: { postData: data, type: 'update' }
+                params: { 
+                  postData: data, 
+                  type: 'update',
+                  showRelatedPost: true,
+                  relatedPostData: data.relatedPost,
+                }
               });
             }}
           >
@@ -747,7 +761,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
                       <Text
                         color={isDark ? '$textDark50' : '#000000'}
                         fontSize="$sm"
-                        lineHeight={22}
+                        lineHeight={18}
                       >
                         {contentItem.text}
                       </Text>
@@ -824,7 +838,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               <CardImageCarousel 
                 images={(
                   (Array.isArray(relatedPostData?.images) && relatedPostData.images.length > 0)
-                    ? relatedPostData.images.map((img: any) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                    ? relatedPostData.images.map((img: any) => toImageSource(img)).filter((img: any): img is NonNullable<typeof img> => !!img)
                     : (Array.isArray(data.relatedPost?.images) 
                         ? data.relatedPost.images.map((img: any) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
                         : [])

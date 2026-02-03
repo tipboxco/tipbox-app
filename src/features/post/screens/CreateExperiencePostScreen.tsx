@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, Modal, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, View, StyleSheet } from 'react-native';
 import { Box, useToast, VStack, Text } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
@@ -815,16 +815,20 @@ export const CreateExperiencePostScreen = () => {
                                     onPress: handleSavePress,
                                 } : {
                                     text: buttonText,
-                                    backgroundColor: isShareEnabled && !isSubmitPending ? '#D0F205' : '#EDEDED',
+                                    backgroundColor: isShareEnabled || isSubmitPending ? '#D0F205' : '#EDEDED',
                                     borderWidth: 1,
-                                    borderColor: isShareEnabled && !isSubmitPending ? '#B8CC04' : '#B1B1B1',
-                                    textColor: isShareEnabled && !isSubmitPending ? '#111111' : '#B1B1B1',
+                                    borderColor: isShareEnabled || isSubmitPending ? '#B8CC04' : '#B1B1B1',
+                                    textColor: isShareEnabled || isSubmitPending ? '#111111' : '#B1B1B1',
                                     fontSize: 14,
                                     borderRadius: 25,
                                     paddingX: 12,
                                     paddingY: 8,
-                                    onPress: handleSubmit(onSubmit),
+                                    onPress: () => {
+                                      Keyboard.dismiss();
+                                      handleSubmit(onSubmit)();
+                                    },
                                     disabled: isSubmitPending,
+                                    loading: isSubmitPending,
                                 }
                             }
                         />

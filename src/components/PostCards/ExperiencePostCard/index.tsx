@@ -631,7 +631,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                   )}
                   <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={14}
+                    fontSize="$sm"
                     fontWeight="$bold"
                   >
                     {item.tag.title}
@@ -639,8 +639,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                 </HStack>
                 <Text
                   color={isDark ? '$textDark50' : '#343434'}
-                  fontSize={14}
-                  lineHeight={20}
+                  fontSize="$sm"
+                  lineHeight={18}
                   ml={26}
                   numberOfLines={isDetailMode ? undefined : (data.images && data.images!.length > 0 ? 3 : 6)}
                 >

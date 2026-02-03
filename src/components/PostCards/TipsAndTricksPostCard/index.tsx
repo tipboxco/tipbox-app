@@ -651,7 +651,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
-                        fontSize="$xs"
+                        fontSize="$sm"
+                        lineHeight={18}
                         numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
                     >
                         {data.content}

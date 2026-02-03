@@ -17,7 +17,7 @@ import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import EventCard, { type EventCardData } from '../components/EventCard';
 import BrandInfoCard from '../components/BrandInfoCard';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useSafeAreaValues, toImageSource, isSameImageSource } from '@/src/utils';
 import { useBrandSurveys, useBrandTrends, useBrandEvents } from '../api/hooks';
 import type { Survey, BrandFeedPost, Event } from '../types';
 import type { PostCardData } from '@/src/types/PostCard';
@@ -265,9 +265,12 @@ const SurveyScreen: React.FC = () => {
       },
       content,
       tags,
-      images: postData.images
-        ?.map((img: string) => toImageSource(img))
-        .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+      images: (() => {
+        const mapped = postData.images
+          ?.map((img: string) => toImageSource(img))
+          .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+        return mapped.filter((img: any) => !isSameImageSource(img, productImage ?? defaultPostImage));
+      })(),
       stats: postData.stats,
       createdAt: postData.createdAt,
     };

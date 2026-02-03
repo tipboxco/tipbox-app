@@ -28,7 +28,7 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useSafeAreaValues, toImageSource, isSameImageSource } from '@/src/utils';
 import { useBrandCatalog, useBrandFeed } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
 import type { PostCardData } from '@/src/types/PostCard';
@@ -184,9 +184,13 @@ const BrandDetailScreen: React.FC = () => {
             },
             content,
             tags,
-            images: postData.images
-                ?.map((img: string) => toImageSource(img))
-                .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+            images: (() => {
+                const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+                const mapped = postData.images
+                    ?.map((img: string) => toImageSource(img))
+                    .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+                return mapped.filter((img: any) => !isSameImageSource(img, productImage ?? defaultPostImage));
+            })(),
             stats: postData.stats,
             createdAt: postData.createdAt,
         };

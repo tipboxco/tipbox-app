@@ -21,7 +21,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
-import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { useSubCategoryPosts, useProductGroupPosts, useCatalogProductPosts } from '@/src/features/catalog/api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useQueryClient } from '@tanstack/react-query';
@@ -665,7 +665,8 @@ export const PostsScreen = () => {
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages;
+    // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+    const images = mappedImages.filter((img) => !isSameImageSource(img, productImage));
 
     const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
     // 3 tag: duration, condition (location), purpose. API tags yoksa/eksikse *Name alanlarından doldur.

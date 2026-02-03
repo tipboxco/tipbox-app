@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
@@ -551,6 +551,12 @@ export const CreateTipsAndTrickPostScreen = () => {
 
   // Check if share button should be enabled (form is valid)
   const isShareEnabled = formState.isValid;
+  const isShareLoading = createTipsAndTricksPostMutation.isPending;
+
+  const handleSharePress = () => {
+    Keyboard.dismiss();
+    handleSubmit(onSubmit)();
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -568,15 +574,16 @@ export const CreateTipsAndTrickPostScreen = () => {
             onLeftActionPress={handleBackPress}
             rightButton={{
               text: 'Share',
-              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
-              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
               paddingX: 10,
               paddingY: 10,
-              onPress: handleSubmit(onSubmit),
+              onPress: handleSharePress,
+              loading: isShareLoading,
             }}
           />
 
