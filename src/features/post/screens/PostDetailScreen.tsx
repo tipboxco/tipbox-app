@@ -569,7 +569,12 @@ export const PostDetailScreen = () => {
                                 showRelatedPost={false}
                             />
                             {updateRelatedAsExperienceCardData && (
-                                <ExperiencePostCard data={updateRelatedAsExperienceCardData} isDetailMode={true} />
+                                <ExperiencePostCard
+                                  data={updateRelatedAsExperienceCardData}
+                                  isDetailMode={true}
+                                  showHeader={false}
+                                  showActions={false}
+                                />
                             )}
                         </>
                     ) : (

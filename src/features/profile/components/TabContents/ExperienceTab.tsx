@@ -21,7 +21,7 @@ function mapReviewToUpdateCardData(item: ProfileReview & { type: string; related
   else if (raw.contextType === 'sub_category') productInfoType = ProductInfoType.SUB_CATEGORY;
 
   if (!raw.relatedPost) {
-    const productFromContext = raw.contextData ?? raw.relatedPost?.product;
+    const productFromContext = raw.contextData?.product ?? raw.contextData ?? raw.relatedPost?.product;
     return {
       id: item.id,
       user: { id: item.user?.id || '', name: item.user?.name || '', title: item.user?.title || '', avatar: avatarSource },
@@ -42,15 +42,19 @@ function mapReviewToUpdateCardData(item: ProfileReview & { type: string; related
   }
 
   const rp = raw.relatedPost;
-  const relatedPostContent = (rp.content && Array.isArray(rp.content))
-    ? rp.content.filter((c: any) => c != null).map((contentItem: any) => {
-        const ratingVal = typeof contentItem?.rating === 'number' ? contentItem.rating : (Array.isArray(contentItem?.rating) ? contentItem.rating.filter((r: number) => r === 1).length : 0);
-        const ratingArray: number[] = Array(5).fill(0);
-        const stars = contentItem?.rating != null && Array.isArray(contentItem.rating) ? contentItem.rating.filter((r: number) => r === 1).length : Math.min(5, Math.max(0, Math.round((contentItem?.rating ?? 0) / 20)));
-        for (let i = 0; i < stars; i++) ratingArray[i] = 1;
-        return { tag: { icon: 'tag' as const, title: contentItem?.tag?.title ?? contentItem?.title ?? '' }, text: contentItem?.text ?? contentItem?.content ?? '', rating: ratingArray };
-      })
-    : [];
+  const experienceBlocks = rp.experienceContent ?? (Array.isArray(rp.content) ? rp.content : []);
+  const relatedPostContent = experienceBlocks
+    .filter((c: any) => c != null)
+    .map((contentItem: any) => {
+      const ratingVal = typeof contentItem?.rating === 'number' ? Math.min(5, Math.max(0, contentItem.rating)) : (Array.isArray(contentItem?.rating) ? contentItem.rating.filter((r: number) => r === 1).length : Math.min(5, Math.max(0, Math.round((contentItem?.rating ?? 0) / 20))));
+      const ratingArray: number[] = Array(5).fill(0);
+      for (let i = 0; i < ratingVal; i++) ratingArray[i] = 1;
+      return {
+        tag: { icon: (contentItem?.title?.toLowerCase?.().includes('product') || contentItem?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const, title: contentItem?.tag?.title ?? contentItem?.title ?? '' },
+        text: contentItem?.text ?? contentItem?.content ?? '',
+        rating: ratingArray,
+      };
+    });
 
   const mappedImages = Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter((x): x is NonNullable<typeof x> => !!x) : [];
   const relatedPostImages = (rp.images && Array.isArray(rp.images)) ? rp.images.map((img: any) => toImageSource(img)).filter((x): x is NonNullable<typeof x> => !!x) : [];

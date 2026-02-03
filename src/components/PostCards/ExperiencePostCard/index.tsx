@@ -58,9 +58,13 @@ interface PostCardProps {
   isDetailMode?: boolean;
   /** When provided, card content tap calls this instead of navigating to PostDetailScreen (e.g. select-for-update flow) */
   onCardPress?: () => void;
+  /** Hide user header (avatar, name, menu). Used when card is embedded as "Related Post" in update detail. */
+  showHeader?: boolean;
+  /** Hide action bar (like, comment, share, bookmark). Used when card is embedded as "Related Post" in update detail. */
+  showActions?: boolean;
 }
 
-export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress }: PostCardProps) => {
+export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress, showHeader = true, showActions = true }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
@@ -379,65 +383,67 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         position: 'relative',
       }}
     >
-      {/* Header */}
-      <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
-        <HStack alignItems="center" space="xs">
-          {data.user && toImageSource(data.user.avatar) && (
-            <Pressable onPress={handleViewProfile}>
-              <Image
-                source={toImageSource(data.user.avatar)!}
-                alt={data.user?.name || 'User'}
-                mr={8}
-                width={48}
-                height={48}
-                borderRadius={100}
-              />
-            </Pressable>
-          )}
-          <Pressable flex={1} onPress={handleViewProfile}>
-            <VStack 
-              flex={1}
-              justifyContent={data.user?.title ? 'flex-start' : 'center'}
-            >
-              {data.user?.action ? (
-                <Text
-                  color={isDark ? '$textDark400' : '#C7C7C7'}
-                  fontSize={8}
-                  fontWeight="$semibold"
-                >
-                  {data.user.action}
-                </Text>
-              ) : null}
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize='$xs'
-                fontWeight="$bold"
+      {/* Header - hidden when embedded as Related Post in update detail */}
+      {showHeader && (
+        <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
+          <HStack alignItems="center" space="xs">
+            {data.user && toImageSource(data.user.avatar) && (
+              <Pressable onPress={handleViewProfile}>
+                <Image
+                  source={toImageSource(data.user.avatar)!}
+                  alt={data.user?.name || 'User'}
+                  mr={8}
+                  width={48}
+                  height={48}
+                  borderRadius={100}
+                />
+              </Pressable>
+            )}
+            <Pressable flex={1} onPress={handleViewProfile}>
+              <VStack 
+                flex={1}
+                justifyContent={data.user?.title ? 'flex-start' : 'center'}
               >
-                {data.user?.name || 'Unknown User'}
-              </Text>
-              {data.user?.title ? (
+                {data.user?.action ? (
+                  <Text
+                    color={isDark ? '$textDark400' : '#C7C7C7'}
+                    fontSize={8}
+                    fontWeight="$semibold"
+                  >
+                    {data.user.action}
+                  </Text>
+                ) : null}
                 <Text
-                  color={isDark ? '$textDark400' : '#787878'}
-                  fontSize={9}
-                  numberOfLines={1}
-                  maxWidth={250}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize='$xs'
+                  fontWeight="$bold"
                 >
-                  {data.user.title}
+                  {data.user?.name || 'Unknown User'}
                 </Text>
-              ) : null}
-            </VStack>
-          </Pressable>
-          <View 
-            ref={menuTriggerRef} 
-            collapsable={false}
-            onLayout={handleTriggerLayout}
-          >
-            <Pressable onPress={(event) => handleMenuOpen(event)}>
-              <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
+                {data.user?.title ? (
+                  <Text
+                    color={isDark ? '$textDark400' : '#787878'}
+                    fontSize={9}
+                    numberOfLines={1}
+                    maxWidth={250}
+                  >
+                    {data.user.title}
+                  </Text>
+                ) : null}
+              </VStack>
             </Pressable>
-          </View>
-        </HStack>
-      </VStack>
+            <View 
+              ref={menuTriggerRef} 
+              collapsable={false}
+              onLayout={handleTriggerLayout}
+            >
+              <Pressable onPress={(event) => handleMenuOpen(event)}>
+                <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
+              </Pressable>
+            </View>
+          </HStack>
+        </VStack>
+      )}
 
       {/* Menu Modal */}
       <Modal
@@ -563,7 +569,14 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
       {/* Product */}
       {
         !hideProduct && data.contextData && (
-          <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <Box
+            px={12}
+            py={8}
+            borderRightWidth={1}
+            borderLeftWidth={1}
+            borderColor="#E9E9E9"
+            {...(!showHeader && { borderTopWidth: 1, borderTopLeftRadius: 5, borderTopRightRadius: 5 })}
+          >
             <VStack space="xs">
               <ProductInfoCard
                 size="small"
@@ -619,7 +632,15 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           params: { postData: data, type: 'experience' }
         });
       }}>
-        <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <VStack
+          px={12}
+          pb={8}
+          pt={hideProduct ? 8 : 0}
+          borderRightWidth={1}
+          borderLeftWidth={1}
+          borderColor="#E9E9E9"
+          {...(!showHeader && !data.contextData && { borderTopWidth: 1, borderTopLeftRadius: 5, borderTopRightRadius: 5 })}
+        >
           {Array.isArray(data.content) && data.content.length > 0 ? (
             data.content.map((item, index) => (
               <VStack key={index} py={10} space="xs">
@@ -729,62 +750,64 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           </Pressable>
         );
       })()}
-      {/* Stats */}
-      <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={5} borderBottomLeftRadius={5} borderColor="#E9E9E9"
-      >
-        <Pressable onPress={handleLike}>
-        <HStack mr={10} alignItems="center">
-            {isLiked ? (
-              <HeartIconSolid width={24} height={24} color="#FF3040" />
-            ) : (
-              <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-            )}
-            <AnimatedCounter
-              value={likesCount}
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={10}
-              ml={4}
-            />
+      {/* Stats - hidden when embedded as Related Post in update detail */}
+      {showActions && (
+        <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={5} borderBottomLeftRadius={5} borderColor="#E9E9E9"
+        >
+          <Pressable onPress={handleLike}>
+          <HStack mr={10} alignItems="center">
+              {isLiked ? (
+                <HeartIconSolid width={24} height={24} color="#FF3040" />
+              ) : (
+                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
+              <AnimatedCounter
+                value={likesCount}
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize={10}
+                ml={4}
+              />
+          </HStack>
+          </Pressable>
+          <Pressable onPress={handleComment}>
+          <HStack mr={10} alignItems="center">
+            <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              <AnimatedCounter
+                value={commentsCount}
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize={10}
+                ml={4}
+              />
+          </HStack>
+          </Pressable>
+          <Pressable onPress={handleShare}>
+          <HStack mr={10} alignItems="center">
+            <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              <AnimatedCounter
+                value={sharesCount}
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize={10}
+                ml={4}
+              />
+          </HStack>
+          </Pressable>
+          <Pressable onPress={handleBookmark}>
+          <HStack mr={10} alignItems="center">
+              {isBookmarked ? (
+                <BookmarkIconSolid width={24} height={24} color="#829905" />
+              ) : (
+                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
+              <AnimatedCounter
+                value={bookmarksCount}
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize={10}
+                ml={4}
+              />
+          </HStack>
+          </Pressable>
         </HStack>
-        </Pressable>
-        <Pressable onPress={handleComment}>
-        <HStack mr={10} alignItems="center">
-          <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-            <AnimatedCounter
-              value={commentsCount}
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={10}
-              ml={4}
-            />
-        </HStack>
-        </Pressable>
-        <Pressable onPress={handleShare}>
-        <HStack mr={10} alignItems="center">
-          <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-            <AnimatedCounter
-              value={sharesCount}
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={10}
-              ml={4}
-            />
-        </HStack>
-        </Pressable>
-        <Pressable onPress={handleBookmark}>
-        <HStack mr={10} alignItems="center">
-            {isBookmarked ? (
-              <BookmarkIconSolid width={24} height={24} color="#829905" />
-            ) : (
-              <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-            )}
-            <AnimatedCounter
-              value={bookmarksCount}
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={10}
-              ml={4}
-            />
-        </HStack>
-        </Pressable>
-      </HStack>
+      )}
     </View>
   );
 };

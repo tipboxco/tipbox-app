@@ -26,17 +26,19 @@ import { ProfileStackParamList } from '../navigation';
 import { toImageSource, useSafeAreaValues, useBottomOffset, isSameImageSource } from '@/src/utils';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import SendTipsBottomSheet from '@/src/features/inbox/components/SendTipsBottomSheet';
-import { CardType } from '@/src/types/common';
+import { CardType, ProductInfoType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem, ExperiencePostApiContentBlock } from '@/src/types/ExperienceCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
+import type { UpdateCardData } from '@/src/types/UpdateCard';
 import type { ProfilePost, ProfileReview, UserProfile } from '../types';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
 import PostCard from '@/src/components/PostCards/PostCard';
+import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
@@ -301,9 +303,80 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
   };
 };
 
+/** Map /users/{id}/reviews API update item to UpdateCardData (contextData.product, relatedPost.experienceContent) */
+const mapUpdateToCardData = (item: any): UpdateCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
+  let productInfoType = ProductInfoType.PRODUCT;
+  if (item.contextType === 'product_group') productInfoType = ProductInfoType.PRODUCT_GROUP;
+  else if (item.contextType === 'sub_category') productInfoType = ProductInfoType.SUB_CATEGORY;
+
+  const productFromContext = item.contextData?.product ?? item.contextData;
+  const rp = item.relatedPost;
+
+  const productForCard = (p: any) => ({
+    id: p?.id ?? '',
+    name: p?.name ?? '',
+    subName: p?.subName ?? '',
+    image: toImageSource(p?.image) ?? defaultPostImage,
+    isOwned: p?.isOwned ?? false,
+  });
+
+  if (!rp) {
+    return {
+      id: item.id,
+      user: { id: item.user?.id ?? '', name: item.user?.name ?? '', title: item.user?.title ?? '', avatar: avatarSource },
+      stats: item.stats ?? { likes: 0, comments: 0, shares: 0, bookmarks: 0 },
+      createdAt: item.createdAt ?? '',
+      contextType: productInfoType,
+      product: productFromContext ? productForCard(productFromContext) : { id: '', name: '', subName: '', image: defaultPostImage, isOwned: false },
+      content: typeof item.content === 'string' ? item.content : '',
+      images: Array.isArray(item.images) ? item.images.map((img: any) => toImageSource(img)).filter(Boolean) : [],
+      relatedPost: undefined,
+    };
+  }
+
+  const experienceContent = rp.experienceContent ?? (Array.isArray(rp.content) ? rp.content : []);
+  const relatedPostContent = experienceContent.map((block: any) => {
+    const ratingVal = typeof block?.rating === 'number' ? Math.min(5, Math.max(0, block.rating)) : 0;
+    const ratingArray: number[] = Array(5).fill(0);
+    for (let i = 0; i < ratingVal; i++) ratingArray[i] = 1;
+    return {
+      tag: {
+        icon: (block?.title?.toLowerCase?.().includes('product') || block?.title?.toLowerCase?.().includes('usage')) ? 'package' : 'tag',
+        title: block?.title ?? '',
+      },
+      text: block?.content ?? '',
+      rating: ratingArray,
+    };
+  });
+
+  const mappedImages = Array.isArray(item.images) ? item.images.map((img: any) => toImageSource(img)).filter((x: any): x is NonNullable<typeof x> => !!x) : [];
+  const relatedPostImages = Array.isArray(rp.images) ? rp.images.map((img: any) => toImageSource(img)).filter((x: any): x is NonNullable<typeof x> => !!x) : [];
+
+  return {
+    id: item.id,
+    user: { id: item.user?.id ?? '', name: item.user?.name ?? '', title: item.user?.title ?? '', avatar: avatarSource },
+    stats: item.stats ?? { likes: 0, comments: 0, shares: 0, bookmarks: 0 },
+    createdAt: item.createdAt ?? '',
+    contextType: productInfoType,
+    product: productForCard(rp.product ?? productFromContext),
+    content: typeof item.content === 'string' ? item.content : '',
+    images: mappedImages,
+    relatedPost: {
+      id: rp.id ?? item.id,
+      product: productForCard(rp.product),
+      content: relatedPostContent,
+      tags: Array.isArray(rp.tags) ? rp.tags : [],
+      images: relatedPostImages,
+    },
+  };
+};
+
 // Mapped post type
 type MappedPost = 
   | { type: 'post'; id: string; data: PostCardData }
+  | { type: 'update'; id: string; data: UpdateCardData }
   | { type: 'experience'; id: string; data: ExperiencePostCardData }
   | { type: 'benchmark'; id: string; data: BenchmarkCardData }
   | { type: 'tips'; id: string; data: TipsCardData }
@@ -445,6 +518,10 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
       let mappedItem: MappedPost | null = null;
       
       switch (item.type) {
+        case CardType.UPDATE:
+          const updateData = mapUpdateToCardData(item);
+          mappedItem = { type: 'update', id: item.id, data: updateData };
+          break;
         case CardType.EXPERIENCE:
           if (item?.contextData && Array.isArray(item?.content)) {
             const experienceData = mapExperienceToCardData(item as ProfileReview);
@@ -495,6 +572,8 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
   // Render post card
   const renderPostCard = useCallback((postData: MappedPost) => {
     switch (postData.type) {
+      case 'update':
+        return <UpdatePostCard data={postData.data} />;
       case 'experience':
         return <ExperiencePostCard data={postData.data} />;
       case 'benchmark':
