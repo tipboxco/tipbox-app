@@ -13,8 +13,22 @@ import { TouchableOpacity, Modal, View, ActivityIndicator } from 'react-native';
 import { navigationService } from '@/src/services/NavigationService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import Constants from 'expo-constants';
 import { XMarkIcon } from 'react-native-heroicons/outline';
+
+// expo-av (ExponentAV) Expo Go'da yok; sadece development build'de yükle (runtime crash önlenir)
+let ExpoVideo: React.ComponentType<any> | null = null;
+let ExpoResizeMode: { CONTAIN: string } | null = null;
+if (Constants.appOwnership !== 'expo') {
+  try {
+    const av = require('expo-av');
+    ExpoVideo = av.Video;
+    ExpoResizeMode = av.ResizeMode;
+  } catch {
+    ExpoVideo = null;
+    ExpoResizeMode = null;
+  }
+}
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -321,7 +335,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
 
   // Prime Pass Video Modal State
   const [isPrimePassVideoVisible, setIsPrimePassVideoVisible] = useState(false);
-  const videoRef = useRef<Video>(null);
+  const videoRef = useRef<{ pauseAsync?: () => Promise<void> } | null>(null);
 
   const handlePrimePassPress = useCallback(() => {
     handleCloseDrawer();
@@ -331,15 +345,12 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const handleClosePrimePassVideo = useCallback(() => {
     setIsPrimePassVideoVisible(false);
     // Video'yu durdur
-    if (videoRef.current) {
-      videoRef.current.pauseAsync();
-    }
+    videoRef.current?.pauseAsync?.();
   }, []);
 
-  const handleVideoLoad = useCallback((status: AVPlaybackStatus) => {
+  const handleVideoLoad = useCallback((status: { isLoaded?: boolean }) => {
     if (status.isLoaded) {
-      // Video yüklendiğinde otomatik oynat
-      videoRef.current?.playAsync();
+      (videoRef.current as any)?.playAsync?.();
     }
   }, []);
 
@@ -884,19 +895,28 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <XMarkIcon width={24} height={24} color="#FFFFFF" />
           </Pressable>
 
-          {/* Video Player */}
-          <Video
-            ref={videoRef}
-            source={require('@/src/Expert Now Video/expertnow-comingsoon.mp4')}
-            style={{ width: '100%', height: '100%' }}
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={true}
-            isLooping={false}
-            onLoad={handleVideoLoad}
-            onError={(error) => {
-              console.error('[DrawerContent] Video error:', error);
-            }}
-          />
+          {/* Video Player (expo-av Expo Go'da yok; development build gerekir) */}
+          {ExpoVideo && ExpoResizeMode ? (
+            <ExpoVideo
+              ref={videoRef}
+              source={require('@/src/Expert Now Video/expertnow-comingsoon.mp4')}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode={ExpoResizeMode.CONTAIN}
+              shouldPlay={true}
+              isLooping={false}
+              onLoad={handleVideoLoad}
+              onError={(error: unknown) => {
+                console.error('[DrawerContent] Video error:', error);
+              }}
+            />
+          ) : (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+              <Text style={{ color: '#FFF', textAlign: 'center' }}>
+                Video oynatıcı Expo Go'da kullanılamaz.{'\n'}
+                Development build ile açın: npm start
+              </Text>
+            </View>
+          )}
         </View>
       </Modal>
     </Box>

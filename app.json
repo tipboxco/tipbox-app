@@ -3,7 +3,6 @@
     "name": "Tipbox",
     "slug": "tipbox-app",
     "version": "1.0.0",
-    "newArchEnabled": true,
     "runtimeVersion": {
       "policy": "sdkVersion"
     },
@@ -97,7 +96,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/icon.png",
           "color": "#000000",
           "enableBackgroundRemoteNotifications": true
         }
