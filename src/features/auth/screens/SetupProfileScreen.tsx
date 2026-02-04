@@ -36,6 +36,7 @@ export const SetupProfileScreen = () => {
   const [isUsernameValid, setIsUsernameValid] = useState(false);
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ fullName?: string; username?: string }>({});
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<Array<{
@@ -102,17 +103,18 @@ export const SetupProfileScreen = () => {
     React.useCallback(() => {
       const params = route.params as any;
       
-      // Avatar data'yı al (sadece yeni avatar seçildiyse)
+      // Avatar data'yı al (SelectAvatar'dan: API avatarı veya upload foto)
       if (params?.avatarData) {
         if (params.avatarData.type === 'upload') {
           setProfileImage(params.avatarData.uri);
+          setSelectedAvatarUrl(null);
         } else if (params.avatarData.type === 'avatar') {
           setProfileImage(`avatar://${params.avatarData.id}`);
+          setSelectedAvatarUrl(params.avatarData.url ?? null);
         }
-        // Avatar data'yı params'tan temizle, ama diğer state'leri koru
-        navigation.setParams({ 
+        navigation.setParams({
           ...params,
-          avatarData: undefined 
+          avatarData: undefined,
         } as any);
       }
       
@@ -282,7 +284,14 @@ export const SetupProfileScreen = () => {
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
                 />
-              ) : profileImage && profileImage.startsWith('avatar://') ? (
+              ) : profileImage?.startsWith('avatar://') && selectedAvatarUrl ? (
+                <Image
+                  source={{ uri: selectedAvatarUrl }}
+                  alt="Avatar"
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              ) : profileImage?.startsWith('avatar://') ? (
                 <Image
                   source={require('@/assets/avatar/default-useravatar.png')}
                   alt="Avatar"

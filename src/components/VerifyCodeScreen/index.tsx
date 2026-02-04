@@ -1,17 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { 
-  Box, 
-  VStack, 
-  HStack, 
-  Text, 
-  Button, 
+import React, { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Box,
+  VStack,
+  Text,
+  Button,
   ButtonText,
-  Pressable
 } from '@gluestack-ui/themed';
-import { TextInput, View } from 'react-native';
+import { View, Platform } from 'react-native';
+import type { TextInputProps } from 'react-native';
+import {
+  CodeField,
+  Cursor,
+  useBlurOnFulfill,
+  useClearByFocusCell,
+} from 'react-native-confirmation-code-field';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
+
+const CELL_COUNT = 6;
+const autoComplete = Platform.select<TextInputProps['autoComplete']>({
+  android: 'sms-otp',
+  default: 'one-time-code',
+});
 
 interface VerifyCodeScreenProps {
   headerTitle: string;
@@ -37,109 +48,24 @@ export const VerifyCodeScreen = ({
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
 
-  // Edge-to-Edge Design: Top insets için beyaz background
   const backgroundColor = '#FFFFFF';
 
-  const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [focusedIndex, setFocusedIndex] = useState(0);
-  const nextFocusIndexRef = useRef<number | null>(null);
+  const [value, setValue] = useState('');
+  const ref = useBlurOnFulfill({ value, cellCount: CELL_COUNT });
+  const [clearByFocusCellProps, getCellOnLayoutHandler] = useClearByFocusCell({
+    value,
+    setValue,
+  });
 
-  const inputRefs = useRef<Array<TextInput | null>>([]);
-
-  // İlk ekran açıldığında 0. input focus
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      inputRefs.current[0]?.focus();
-      setFocusedIndex(0);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Code değiştiğinde bir sonraki hücreye focus taşı (rakam girince sağa kayar)
-  useEffect(() => {
-    if (nextFocusIndexRef.current === null) return;
-    const nextIndex = nextFocusIndexRef.current;
-    nextFocusIndexRef.current = null;
-
-    const attemptFocus = (retryCount = 0) => {
-      const nextRef = inputRefs.current[nextIndex];
-      if (nextRef) {
-        nextRef.focus();
-        setFocusedIndex(nextIndex);
-      } else if (retryCount < 15) {
-        setTimeout(() => attemptFocus(retryCount + 1), 20);
-      }
-    };
-
-    setTimeout(() => attemptFocus(), 0);
-  }, [code]);
-
-  // Focus handler - focusedIndex'i güncelle
-  const handleFocus = (index: number) => {
-    setFocusedIndex(index);
+  const handleChangeText = (text: string) => {
+    const digits = text.replace(/[^0-9]/g, '').slice(0, CELL_COUNT);
+    setValue(digits);
   };
 
-  // Rakam girince sağdaki hücreye geç; yapıştırınca 6 hane tüm hücrelere sırayla
-  const handleCodeChange = (value: string, index: number) => {
-    const digits = value.replace(/[^0-9]/g, '');
-
-    // 6 haneli yapıştırma: Hangi hücrede olursa olsun, tüm hücrelere doğru sırayla yerleştir
-    if (digits.length >= 6) {
-      const codeToPaste = digits.slice(0, 6).split('');
-      setCode(codeToPaste);
-      nextFocusIndexRef.current = null;
-      return;
-    }
-
-    // 2–5 karakter (kısmi yapıştırma): Mevcut hücreden başlayarak dağıt
-    if (digits.length > 1) {
-      setCode((prevCode) => {
-        const newCode = [...prevCode];
-        let pos = index;
-        for (let i = 0; i < digits.length && pos < 6; i++) {
-          newCode[pos] = digits[i];
-          pos++;
-        }
-        nextFocusIndexRef.current = pos < 6 ? pos : null;
-        return newCode;
-      });
-      return;
-    }
-
-    // Tek rakam: Mevcut hücreye yaz, sonraki (sağdaki) hücreye geç
-    const digit = digits.slice(0, 1);
-    if (!digit) return;
-
-    setCode((prevCode) => {
-      const newCode = [...prevCode];
-      newCode[index] = digit;
-      nextFocusIndexRef.current = index < 5 ? index + 1 : null;
-      return newCode;
-    });
-  };
-
-  // Backspace: Mevcut hücre doluysa sil; boşsa soldaki hücreyi sil ve oraya geç
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace') {
-      nextFocusIndexRef.current = null;
-      setCode((prevCode) => {
-        const newCode = [...prevCode];
-        if (newCode[index]) {
-          newCode[index] = '';
-        } else if (index > 0) {
-          newCode[index - 1] = '';
-          nextFocusIndexRef.current = index - 1;
-        }
-        return newCode;
-      });
-    }
-  };
-
-  const isCodeComplete = code.every(d => d !== '');
+  const isCodeComplete = value.length === CELL_COUNT;
 
   const handleVerify = () => {
-    const verificationCode = code.join('');
-    if (verificationCode.length === 6) onVerify(verificationCode);
+    if (value.length === CELL_COUNT) onVerify(value);
   };
 
   return (
@@ -172,61 +98,55 @@ export const VerifyCodeScreen = ({
               {description}{'\n'}{maskedEmail}
             </Text>
 
-            {/* PIN Input */}
-            <VStack space="md" alignItems="center">
-              <HStack space="md" justifyContent="center">
-                {code.map((digit, index) => (
-                  <Pressable
+            {/* PIN Input - react-native-confirmation-code-field */}
+            <VStack space="md" alignItems="center" mt="$2">
+              <CodeField
+                ref={ref}
+                {...clearByFocusCellProps}
+                value={value}
+                onChangeText={handleChangeText}
+                cellCount={CELL_COUNT}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                autoComplete={autoComplete}
+                rootStyle={{ gap: 12 }}
+                renderCell={({ index, symbol, isFocused }) => (
+                  <Box
                     key={index}
-                    onPress={() => {
-                      inputRefs.current[index]?.focus();
-                      setFocusedIndex(index);
-                    }}
+                    w={43}
+                    h={59}
+                    alignItems="center"
+                    justifyContent="center"
+                    borderWidth={1}
+                    borderColor={
+                      isFocused
+                        ? isDark ? '#FFFFFF' : '#000000'
+                        : '#E9E9E9'
+                    }
+                    borderRadius={8}
+                    bg="transparent"
+                    onLayout={getCellOnLayoutHandler(index)}
                   >
-                    <Box
-                      w={43}
-                      h={59}
-                      alignItems="center"
-                      justifyContent="center"
-                      borderWidth={1}
-                      borderColor={
-                        focusedIndex === index
-                          ? (isDark ? '#FFFFFF' : '#000000')
-                          : '#E9E9E9'
-                      }
-                      borderRadius={8}
-                      bg="transparent"
-                    >
+                    {symbol ? (
                       <Text
                         fontSize={32}
                         fontWeight="$medium"
-                        color={digit ? (isDark ? '#FFFFFF' : '#000000') : '#C1BEBF'}
+                        color={isDark ? '#FFFFFF' : '#000000'}
                       >
-                        {digit || ''}
+                        {symbol}
                       </Text>
-
-                      <TextInput
-                        ref={ref => {
-                          inputRefs.current[index] = ref;
-                        }}
-                        value={digit}
-                        onChangeText={text => handleCodeChange(text, index)}
-                        onKeyPress={e => handleKeyPress(e, index)}
-                        onFocus={() => handleFocus(index)}
-                        keyboardType="number-pad"
-                        maxLength={6}
-                        style={{
-                          position: 'absolute',
-                          width: 43,
-                          height: 59,
-                          opacity: 0.02,
-                          color: 'transparent',
-                        }}
-                      />
-                    </Box>
-                  </Pressable>
-                ))}
-              </HStack>
+                    ) : isFocused ? (
+                      <Text fontSize={32} fontWeight="$medium" color={isDark ? '#FFFFFF' : '#000000'}>
+                        <Cursor />
+                      </Text>
+                    ) : (
+                      <Text fontSize={32} fontWeight="$medium" color="#C1BEBF">
+                        {' '}
+                      </Text>
+                    )}
+                  </Box>
+                )}
+              />
             </VStack>
 
             {/* Button */}

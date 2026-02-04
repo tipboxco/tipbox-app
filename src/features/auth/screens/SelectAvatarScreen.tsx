@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, ScrollView, Pressable, Image, Icon, Spinner } from '@gluestack-ui/themed';
@@ -29,6 +29,19 @@ export const SelectAvatarScreen = () => {
 
   const { data: avatarsData, isLoading: isLoadingAvatars, error: avatarsError } = useUserAvatars();
   const avatars = avatarsData?.avatars ?? [];
+
+  useEffect(() => {
+    if (avatarsData) {
+      console.log('[SelectAvatarScreen] Avatars data:', {
+        success: avatarsData.success,
+        count: avatars.length,
+        avatars: avatarsData.avatars,
+      });
+    }
+    if (avatarsError) {
+      console.warn('[SelectAvatarScreen] Avatars error:', avatarsError);
+    }
+  }, [avatarsData, avatars.length, avatarsError]);
 
   const [activeTab, setActiveTab] = useState<'avatars' | 'upload'>('avatars');
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(null);
@@ -79,18 +92,16 @@ export const SelectAvatarScreen = () => {
   };
 
   const handleNext = () => {
-    // Seçilen avatar veya upload edilen görseli geri gönder
+    // Seçilen avatar (API'den) veya upload edilen fotoğrafı SetupProfile'a gönder
     if (selectedAvatarId || uploadedImage) {
-      const avatarData = uploadedImage 
+      const selectedAvatar = avatars.find((a) => a.id === selectedAvatarId);
+      const avatarData = uploadedImage
         ? { type: 'upload' as const, uri: uploadedImage }
-        : { type: 'avatar' as const, id: selectedAvatarId! };
-      
-      // SetupProfile ekranına navigate et ve avatar bilgisini params ile gönder
-      // Mevcut selectedCategories varsa onu da koru
+        : { type: 'avatar' as const, id: selectedAvatarId!, url: selectedAvatar?.url };
       const currentParams = route.params as any;
-      navigation.navigate('SetupProfile', { 
+      navigation.navigate('SetupProfile', {
         avatarData,
-        selectedCategories: currentParams?.selectedCategories 
+        selectedCategories: currentParams?.selectedCategories,
       });
     }
   };
@@ -157,50 +168,70 @@ export const SelectAvatarScreen = () => {
             <ScrollView flex={1} showsVerticalScrollIndicator={false}>
               {activeTab === 'avatars' ? (
                 <Box mt="$4">
-                  <HStack flexWrap="wrap" justifyContent="space-between" space="md">
-                    {MOCK_AVATARS.map((avatar) => {
-                      const isSelected = selectedAvatarId === avatar.id;
-                      return (
-                        <Pressable
-                          key={avatar.id}
-                          onPress={() => handleSelectAvatar(avatar.id)}
-                          w="30%"
-                          aspectRatio={1}
-                          mb="$3"
-                          position="relative"
-                        >
-                          <Box
-                            w="100%"
-                            h="100%"
-                            rounded="$lg"
-                            borderWidth={isSelected ? 3 : 1}
-                            borderColor={isSelected ? '$buttonPrimary' : isDark ? '$borderDark100' : '$borderLight100'}
-                            overflow="hidden"
-                            bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
+                  {avatarsError && (
+                    <Text color="$error500" fontSize="$sm" textAlign="center" mb="$2">
+                      Avatarlar yüklenemedi. Tekrar deneyin.
+                    </Text>
+                  )}
+                  {isLoadingAvatars ? (
+                    <Box py="$12" alignItems="center" justifyContent="center">
+                      <Spinner size="large" color={isDark ? '$textDark50' : '$primary500'} />
+                      <Text color={isDark ? '$textDark300' : '$textLight600'} mt="$2" fontSize="$sm">
+                        Avatarlar yükleniyor...
+                      </Text>
+                    </Box>
+                  ) : avatars.length === 0 ? (
+                    <Box py="$12" alignItems="center">
+                      <Text color={isDark ? '$textDark300' : '$textLight600'} fontSize="$sm" textAlign="center">
+                        Avatar listesi boş veya yüklenemedi.
+                      </Text>
+                    </Box>
+                  ) : (
+                    <HStack flexWrap="wrap" justifyContent="space-between" space="md">
+                      {avatars.map((avatar) => {
+                        const isSelected = selectedAvatarId === avatar.id;
+                        return (
+                          <Pressable
+                            key={avatar.id}
+                            onPress={() => handleSelectAvatar(avatar.id)}
+                            w="30%"
+                            aspectRatio={1}
+                            mb="$3"
+                            position="relative"
                           >
-                            <Image
-                              source={avatar.image}
-                              alt={`Avatar ${avatar.id}`}
-                              style={{ width: '100%', height: '100%' }}
-                              resizeMode="cover"
-                            />
-                            {isSelected && (
-                              <Box
-                                position="absolute"
-                                top="$2"
-                                right="$2"
-                                bg="$buttonPrimary"
-                                rounded="$full"
-                                p="$1"
-                              >
-                                <Icon as={Check} size="sm" color="$textLight900" />
-                              </Box>
-                            )}
-                          </Box>
-                        </Pressable>
-                      );
-                    })}
-                  </HStack>
+                            <Box
+                              w="100%"
+                              h="100%"
+                              rounded="$lg"
+                              borderWidth={isSelected ? 3 : 1}
+                              borderColor={isSelected ? '$buttonPrimary' : isDark ? '$borderDark100' : '$borderLight100'}
+                              overflow="hidden"
+                              bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
+                            >
+                              <Image
+                                source={{ uri: avatar.url }}
+                                alt={avatar.name}
+                                style={{ width: '100%', height: '100%' }}
+                                resizeMode="cover"
+                              />
+                              {isSelected && (
+                                <Box
+                                  position="absolute"
+                                  top="$2"
+                                  right="$2"
+                                  bg="$buttonPrimary"
+                                  rounded="$full"
+                                  p="$1"
+                                >
+                                  <Icon as={Check} size="sm" color="$textLight900" />
+                                </Box>
+                              )}
+                            </Box>
+                          </Pressable>
+                        );
+                      })}
+                    </HStack>
+                  )}
                 </Box>
               ) : (
                 <VStack space="md" mt="$4" alignItems="center">

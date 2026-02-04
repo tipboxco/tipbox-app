@@ -637,6 +637,11 @@ export const getUserAvatars = async (): Promise<GetUserAvatarsResponse> => {
     const response = await apiService.getClient().get<GetUserAvatarsResponse>(
       '/users/avatars'
     );
+    console.log('[getUserAvatars] Response:', {
+      success: response.data?.success,
+      avatarsCount: response.data?.avatars?.length ?? 0,
+      avatars: response.data?.avatars,
+    });
     return response.data;
   } catch (error: any) {
     console.error('[getUserAvatars] API Error:', {
