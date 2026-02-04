@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { register, login, setupProfile, updateUserInterests, googleLogin, verifyEmail, checkUsernameAvailability, getUsernameSuggestions, getUserCategories, forgotPassword, verifyResetCode, resetPassword } from './authApi';
+import { register, login, setupProfile, updateUserInterests, googleLogin, verifyEmail, checkUsernameAvailability, getUsernameSuggestions, getUserCategories, getUserAvatars, forgotPassword, verifyResetCode, resetPassword } from './authApi';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
 import type { RegisterResponse, ApiLoginResponse } from '../types';
-import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse, VerifyEmailRequest, VerifyEmailResponse, UsernameCheckResponse, UsernameSuggestionsResponse, UserCategory, ForgotPasswordResponse, VerifyResetCodeRequest, VerifyResetCodeResponse, ResetPasswordRequest, ResetPasswordResponse } from './authApi';
+import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse, VerifyEmailRequest, VerifyEmailResponse, UsernameCheckResponse, UsernameSuggestionsResponse, UserCategory, GetUserAvatarsResponse, ForgotPasswordResponse, VerifyResetCodeRequest, VerifyResetCodeResponse, ResetPasswordRequest, ResetPasswordResponse } from './authApi';
 import { useAppStore } from '../../../store/appStore';
 import { notificationService } from '@/src/services/ExpoNotificationService';
 import { notificationKeys } from '@/src/features/notifications/api/hooks';
@@ -16,6 +16,7 @@ export const authKeys = {
   all: ['auth'] as const,
   currentUser: () => [...authKeys.all, 'currentUser'] as const,
   userCategories: () => [...authKeys.all, 'userCategories'] as const,
+  userAvatars: () => [...authKeys.all, 'userAvatars'] as const,
 };
 
 /**
@@ -240,6 +241,23 @@ export const useUsernameSuggestions = (username: string, limit: number = 5, enab
     enabled: Boolean(enabled && username.length >= 3),
     staleTime: 0,
     gcTime: 0,
+  });
+};
+
+/**
+ * Get User Avatars query hook
+ * Avatar seçim ekranı için varsayılan avatar listesini getirir
+ *
+ * @returns React Query hook result
+ * @example
+ * const { data, isLoading, error } = useUserAvatars();
+ */
+export const useUserAvatars = () => {
+  return useQuery<GetUserAvatarsResponse, Error>({
+    queryKey: authKeys.userAvatars(),
+    queryFn: getUserAvatars,
+    staleTime: 10 * 60 * 1000, // 10 dakika
+    gcTime: 60 * 60 * 1000, // 1 saat
   });
 };
 

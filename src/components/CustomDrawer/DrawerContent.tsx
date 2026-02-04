@@ -13,7 +13,7 @@ import { TouchableOpacity, Modal, View, ActivityIndicator } from 'react-native';
 import { navigationService } from '@/src/services/NavigationService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { XMarkIcon } from 'react-native-heroicons/outline';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
@@ -38,6 +38,8 @@ import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 
 // Default user avatar
 const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
+
+const PRIME_PASS_VIDEO_SOURCE = require('@/src/Expert Now Video/expertnow-comingsoon.mp4');
 
 interface MenuItem {
   id: string;
@@ -319,9 +321,9 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     navigationService.navigate('MoreSchoise', undefined);
   }, [handleCloseDrawer]);
 
-  // Prime Pass Video Modal State
+  // Prime Pass Video Modal State (expo-video)
   const [isPrimePassVideoVisible, setIsPrimePassVideoVisible] = useState(false);
-  const videoRef = useRef<Video>(null);
+  const primePassPlayer = useVideoPlayer(PRIME_PASS_VIDEO_SOURCE);
 
   const handlePrimePassPress = useCallback(() => {
     handleCloseDrawer();
@@ -330,18 +332,15 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
 
   const handleClosePrimePassVideo = useCallback(() => {
     setIsPrimePassVideoVisible(false);
-    // Video'yu durdur
-    if (videoRef.current) {
-      videoRef.current.pauseAsync();
-    }
-  }, []);
+    primePassPlayer.pause();
+  }, [primePassPlayer]);
 
-  const handleVideoLoad = useCallback((status: AVPlaybackStatus) => {
-    if (status.isLoaded) {
-      // Video yüklendiğinde otomatik oynat
-      videoRef.current?.playAsync();
+  // Modal açıldığında videoyu oynat
+  useEffect(() => {
+    if (isPrimePassVideoVisible) {
+      primePassPlayer.play();
     }
-  }, []);
+  }, [isPrimePassVideoVisible, primePassPlayer]);
 
   // PERFORMANCE FIX: Profile section handler'ını memoize et
   const handleProfilePress = useCallback(() => {
@@ -884,18 +883,12 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <XMarkIcon width={24} height={24} color="#FFFFFF" />
           </Pressable>
 
-          {/* Video Player */}
-          <Video
-            ref={videoRef}
-            source={require('@/src/Expert Now Video/expertnow-comingsoon.mp4')}
+          {/* Video Player (expo-video) */}
+          <VideoView
+            player={primePassPlayer}
             style={{ width: '100%', height: '100%' }}
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={true}
-            isLooping={false}
-            onLoad={handleVideoLoad}
-            onError={(error) => {
-              console.error('[DrawerContent] Video error:', error);
-            }}
+            contentFit="contain"
+            nativeControls={false}
           />
         </View>
       </Modal>

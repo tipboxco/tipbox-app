@@ -14,7 +14,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
-import { Clipboard } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 
 export const GoogleAuthenticatorSetupScreen = () => {
@@ -28,7 +28,7 @@ export const GoogleAuthenticatorSetupScreen = () => {
   const [showQRCode, setShowQRCode] = useState(false);
 
   const handleCopyKey = async () => {
-    Clipboard.setString(secretKey);
+    await Clipboard.setStringAsync(secretKey);
     toast.show({
       placement: 'top',
       render: ({ id }) => {

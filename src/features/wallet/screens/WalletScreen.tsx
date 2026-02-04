@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, Alert, Clipboard } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -114,9 +115,9 @@ export const WalletScreen: React.FC = () => {
       gestureEnabled: currentPage === 0, // Only enable on first page
     });
   }, [currentPage, navigation]);
-  const handleCopyAddress = useCallback(() => {
+  const handleCopyAddress = useCallback(async () => {
     if (walletInfo?.walletIdentifier) {
-      Clipboard.setString(walletInfo.walletIdentifier);
+      await Clipboard.setStringAsync(walletInfo.walletIdentifier);
       Alert.alert('Copied', 'Wallet address copied to clipboard');
     }
   }, [walletInfo?.walletIdentifier]);

@@ -12,25 +12,10 @@ import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { toImageSource } from '@/src/utils';
 import { Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUserAvatars } from '../api/hooks';
 
 type SelectAvatarScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectAvatar'>;
 type SelectAvatarScreenRouteProp = RouteProp<AuthStackParamList, 'SelectAvatar'>;
-
-// Mock avatar listesi - API'den gelecek
-const MOCK_AVATARS = [
-  { id: '1', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '2', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '3', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '4', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '5', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '6', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '7', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '8', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '9', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '10', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '11', image: require('@/assets/avatar/default-useravatar.png') },
-  { id: '12', image: require('@/assets/avatar/default-useravatar.png') },
-];
 
 export const SelectAvatarScreen = () => {
   const { colorMode } = useColorMode();
@@ -41,6 +26,9 @@ export const SelectAvatarScreen = () => {
   
   // Edge-to-Edge Design: Top ve bottom insets için beyaz background
   const backgroundColor = '#FFFFFF';
+
+  const { data: avatarsData, isLoading: isLoadingAvatars, error: avatarsError } = useUserAvatars();
+  const avatars = avatarsData?.avatars ?? [];
 
   const [activeTab, setActiveTab] = useState<'avatars' | 'upload'>('avatars');
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(null);

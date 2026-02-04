@@ -9,7 +9,7 @@ import {
   ButtonText,
   Pressable
 } from '@gluestack-ui/themed';
-import { TextInput, View, Clipboard } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 
@@ -55,26 +55,23 @@ export const VerifyCodeScreen = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Code değiştiğinde otomatik focus yap
+  // Code değiştiğinde bir sonraki hücreye focus taşı (rakam girince sağa kayar)
   useEffect(() => {
-    if (nextFocusIndexRef.current !== null) {
-      const nextIndex = nextFocusIndexRef.current;
-      nextFocusIndexRef.current = null;
-      
-      const attemptFocus = (retryCount = 0) => {
-        const nextRef = inputRefs.current[nextIndex];
-        if (nextRef) {
-          nextRef.focus();
-          setFocusedIndex(nextIndex);
-        } else if (retryCount < 10) {
-          setTimeout(() => attemptFocus(retryCount + 1), 30);
-        }
-      };
-      
-      requestAnimationFrame(() => {
-        attemptFocus();
-      });
-    }
+    if (nextFocusIndexRef.current === null) return;
+    const nextIndex = nextFocusIndexRef.current;
+    nextFocusIndexRef.current = null;
+
+    const attemptFocus = (retryCount = 0) => {
+      const nextRef = inputRefs.current[nextIndex];
+      if (nextRef) {
+        nextRef.focus();
+        setFocusedIndex(nextIndex);
+      } else if (retryCount < 15) {
+        setTimeout(() => attemptFocus(retryCount + 1), 20);
+      }
+    };
+
+    setTimeout(() => attemptFocus(), 0);
   }, [code]);
 
   // Focus handler - focusedIndex'i güncelle
@@ -82,124 +79,57 @@ export const VerifyCodeScreen = ({
     setFocusedIndex(index);
   };
 
-  // Digit değişimi → sonraki input focus
-  const handleCodeChange = async (value: string, index: number) => {
-    // Sadece rakamları kabul et
+  // Rakam girince sağdaki hücreye geç; yapıştırınca 6 hane tüm hücrelere sırayla
+  const handleCodeChange = (value: string, index: number) => {
     const digits = value.replace(/[^0-9]/g, '');
-    
-    // Paste işlemini algıla: İlk input'a paste yapıldığında
-    if (index === 0 && digits.length > 1) {
-      // İlk input'a birden fazla karakter geldiğinde, paste işlemi yapılmış demektir
-      // Tüm kodu dağıt
-      setCode((prevCode) => {
-        const newCode = [...prevCode];
-        const codeToPaste = digits.slice(0, 6);
-        
-        for (let i = 0; i < 6; i++) {
-          newCode[i] = codeToPaste[i] || '';
-        }
-        
-        // Tüm kod dolduruldu, focus'u kaldır
-        nextFocusIndexRef.current = null;
-        
-        return newCode;
-      });
+
+    // 6 haneli yapıştırma: Hangi hücrede olursa olsun, tüm hücrelere doğru sırayla yerleştir
+    if (digits.length >= 6) {
+      const codeToPaste = digits.slice(0, 6).split('');
+      setCode(codeToPaste);
+      nextFocusIndexRef.current = null;
       return;
     }
-    
-    // İlk input'a tek karakter geldiğinde, clipboard'u kontrol et (paste olup olmadığını anlamak için)
-    if (index === 0 && digits.length === 1) {
-      try {
-        const clipboardContent = await Clipboard.getString();
-        const clipboardDigits = clipboardContent.replace(/[^0-9]/g, '');
-        
-        // Eğer clipboard'ta 6 haneli bir kod varsa ve kullanıcı paste yapmış olabilir
-        // (Bazı durumlarda paste işlemi tek karakter olarak gelebilir)
-        if (clipboardDigits.length >= 6) {
-          // Paste işlemi: Tüm kodu dağıt
-          setCode((prevCode) => {
-            const newCode = [...prevCode];
-            const codeToPaste = clipboardDigits.slice(0, 6);
-            
-            for (let i = 0; i < 6; i++) {
-              newCode[i] = codeToPaste[i] || '';
-            }
-            
-            // Tüm kod dolduruldu, focus'u kaldır
-            nextFocusIndexRef.current = null;
-            
-            return newCode;
-          });
-          return;
-        }
-      } catch (error) {
-        // Clipboard okuma hatası, normal akışa devam et
-      }
-    }
-    
-    // Yapıştırma işlemi: Eğer birden fazla karakter varsa (diğer input'larda), tüm kodu dağıt
+
+    // 2–5 karakter (kısmi yapıştırma): Mevcut hücreden başlayarak dağıt
     if (digits.length > 1) {
       setCode((prevCode) => {
         const newCode = [...prevCode];
-        // Mevcut pozisyondan başlayarak, kalan hücrelere karakterleri dağıt
-        let remainingDigits = digits.slice(0, 6); // Maksimum 6 karakter
-        let currentIndex = index;
-        
-        while (remainingDigits.length > 0 && currentIndex < 6) {
-          newCode[currentIndex] = remainingDigits[0];
-          remainingDigits = remainingDigits.slice(1);
-          currentIndex++;
+        let pos = index;
+        for (let i = 0; i < digits.length && pos < 6; i++) {
+          newCode[pos] = digits[i];
+          pos++;
         }
-        
-        // Son doldurulan hücreye focus yap
-        const lastFilledIndex = Math.min(index + digits.length - 1, 5);
-        if (lastFilledIndex < 6) {
-          nextFocusIndexRef.current = lastFilledIndex;
-        } else {
-          // Tüm kod dolduruldu, focus'u kaldır
-          nextFocusIndexRef.current = null;
-        }
-        
+        nextFocusIndexRef.current = pos < 6 ? pos : null;
         return newCode;
       });
       return;
     }
-    
-    // Tek karakter girişi (normal kullanım)
+
+    // Tek rakam: Mevcut hücreye yaz, sonraki (sağdaki) hücreye geç
     const digit = digits.slice(0, 1);
-    
-    // Functional update kullanarak güncel state'i garanti et
+    if (!digit) return;
+
     setCode((prevCode) => {
       const newCode = [...prevCode];
       newCode[index] = digit;
-      
-      // Rakam girildiyse sonraki input'a geçmek için işaretle
-      if (digit && index < 5) {
-        nextFocusIndexRef.current = index + 1;
-      }
-      
+      nextFocusIndexRef.current = index < 5 ? index + 1 : null;
       return newCode;
     });
   };
 
-  // Backspace → önceki input'a dön
+  // Backspace: Mevcut hücre doluysa sil; boşsa soldaki hücreyi sil ve oraya geç
   const handleKeyPress = (e: any, index: number) => {
     if (e.nativeEvent.key === 'Backspace') {
+      nextFocusIndexRef.current = null;
       setCode((prevCode) => {
         const newCode = [...prevCode];
-        
         if (newCode[index]) {
-          // Eğer mevcut input'ta karakter varsa, onu sil
           newCode[index] = '';
         } else if (index > 0) {
-          // Eğer mevcut input boşsa, önceki input'a geç ve onu sil
           newCode[index - 1] = '';
-          setTimeout(() => {
-            inputRefs.current[index - 1]?.focus();
-            setFocusedIndex(index - 1);
-          }, 50);
+          nextFocusIndexRef.current = index - 1;
         }
-        
         return newCode;
       });
     }
@@ -214,112 +144,106 @@ export const VerifyCodeScreen = ({
 
   return (
     <View style={{ flex: 1, backgroundColor }}>
-      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
-      <View 
-        style={{ 
-          height: insets.top, 
-          backgroundColor,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }} 
-      />
 
-      {/* Ana İçerik */}
-      <View style={{ flex: 1 }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
 
-      <Header
-        title={headerTitle}
-        showBackButton={!!onBackPress}
-        onBackPress={onBackPress}
-      />
-      
-      <VStack flex={1} space="xl" p="$4" pt="$16">
-          <Text fontSize={22} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
-          {title}
-        </Text>
-        
-          <Text fontSize={10} color={isDark ? '#FFFFFF' : '#000000'} lineHeight={12}>
-            {description}{'\n'}{maskedEmail}
-        </Text>
+      {/* Ana İçerik - paddingTop ile Header beyaz alanın altında kalır */}
+      <View style={{ flex: 1, paddingTop: insets.top }}>
+        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} p="$4">
+          <Header
+            title={headerTitle}
+            showBackButton={!!onBackPress}
+            onBackPress={onBackPress}
+          />
 
-          {/* PIN Input */}
-        <VStack space="md" alignItems="center">
-          <HStack space="md" justifyContent="center">
-            {code.map((digit, index) => (
-                <Pressable
-                  key={index}
-                  onPress={() => {
-                    inputRefs.current[index]?.focus();
-                    setFocusedIndex(index);
-                  }}
-                >
-                  <Box
-                    w={43}
-                    h={59}
-                    alignItems="center"
-                    justifyContent="center"
-                    borderWidth={1}
-                    borderColor={
-                      focusedIndex === index
-                        ? (isDark ? '#FFFFFF' : '#000000')
-                        : '#E9E9E9'
-                    }
-                    borderRadius={8}
-                    bg="transparent"
+          <VStack flex={1} space="xl" pt="$16">
+            <Text
+              fontSize="$2xl"
+              fontWeight="$bold"
+              color={isDark ? '$textDark50' : '$textLight900'}
+            >
+              {title}
+            </Text>
+
+            <Text
+              fontSize="$sm"
+              color={isDark ? '$textDark300' : '$textLight600'}
+              mb="$4"
+            >
+              {description}{'\n'}{maskedEmail}
+            </Text>
+
+            {/* PIN Input */}
+            <VStack space="md" alignItems="center">
+              <HStack space="md" justifyContent="center">
+                {code.map((digit, index) => (
+                  <Pressable
+                    key={index}
+                    onPress={() => {
+                      inputRefs.current[index]?.focus();
+                      setFocusedIndex(index);
+                    }}
                   >
-                    <Text
-                      fontSize={32}
-                      fontWeight="$medium"
-                      color={digit ? (isDark ? '#FFFFFF' : '#000000') : '#C1BEBF'}
+                    <Box
+                      w={43}
+                      h={59}
+                      alignItems="center"
+                      justifyContent="center"
+                      borderWidth={1}
+                      borderColor={
+                        focusedIndex === index
+                          ? (isDark ? '#FFFFFF' : '#000000')
+                          : '#E9E9E9'
+                      }
+                      borderRadius={8}
+                      bg="transparent"
                     >
-                      {digit || ''}
-                    </Text>
+                      <Text
+                        fontSize={32}
+                        fontWeight="$medium"
+                        color={digit ? (isDark ? '#FFFFFF' : '#000000') : '#C1BEBF'}
+                      >
+                        {digit || ''}
+                      </Text>
 
-                    {/* ⛔ Artık invisible değil → tamamen görünmez ama input eventlerini alıyor */}
-                    <TextInput
-                      ref={ref => {
-                        inputRefs.current[index] = ref;
-                      }}
-                      value={digit}
-                      onChangeText={text => handleCodeChange(text, index)}
-                      onKeyPress={e => handleKeyPress(e, index)}
-                      onFocus={() => handleFocus(index)}
-                      keyboardType="number-pad"
-                      maxLength={index === 0 ? 6 : 1}
-                      style={{
-                        position: 'absolute',
-                        width: 43,
-                        height: 59,
-                        opacity: 0.02,
-                        color: 'transparent',
-                      }}
-                      autoFocus={index === 0}
-                    />
-                  </Box>
-                </Pressable>
-            ))}
-          </HStack>
-        </VStack>
+                      <TextInput
+                        ref={ref => {
+                          inputRefs.current[index] = ref;
+                        }}
+                        value={digit}
+                        onChangeText={text => handleCodeChange(text, index)}
+                        onKeyPress={e => handleKeyPress(e, index)}
+                        onFocus={() => handleFocus(index)}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                        style={{
+                          position: 'absolute',
+                          width: 43,
+                          height: 59,
+                          opacity: 0.02,
+                          color: 'transparent',
+                        }}
+                      />
+                    </Box>
+                  </Pressable>
+                ))}
+              </HStack>
+            </VStack>
 
-          {/* Button */}
-        <Button
-            bg="#D8FF08"
-          borderRadius={8}
-          py="$3"
-          onPress={handleVerify}
-          opacity={isCodeComplete ? 1 : 0.5}
-          disabled={!isCodeComplete || isLoading}
-        >
-            <ButtonText color="#111111" fontSize={14} fontWeight="$bold">
-            {isLoading ? 'Verifying...' : 'Next'}
-          </ButtonText>
-        </Button>
-      </VStack>
-      </Box>
+            {/* Button */}
+            <Button
+              bg="#D8FF08"
+              borderRadius={8}
+              py="$3"
+              onPress={handleVerify}
+              opacity={isCodeComplete ? 1 : 0.5}
+              disabled={!isCodeComplete || isLoading}
+            >
+              <ButtonText color="#111111" fontSize={14} fontWeight="$bold">
+                {isLoading ? 'Verifying...' : 'Next'}
+              </ButtonText>
+            </Button>
+          </VStack>
+        </Box>
       </View>
     </View>
   );
