@@ -34,7 +34,9 @@ export interface ExperiencePostApiContentBlock {
 
 /** API'den gelen experience post: split bloklar experienceContent, metin content (string) */
 export interface ExperiencePostApiItem {
-  id: string;
+  id: string; // UUID (bookmark/favorite ID) veya ULID (post ID) olabilir
+  postId?: string; // Gerçek post ID (ULID, 26 karakter) - bazı endpoint'ler döner
+  contentPostId?: string; // Alternatif post ID field adı
   type: string;
   user: ExperiencePostApiUser;
   stats: ExperiencePostApiStats;

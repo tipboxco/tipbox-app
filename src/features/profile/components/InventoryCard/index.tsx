@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { TouchableOpacity, Pressable as RNPressable, Modal, View, Dimensions } from 'react-native';
-import { Box, VStack, Text, Pressable, HStack } from '@gluestack-ui/themed';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { TouchableOpacity, Pressable as RNPressable, View, StyleSheet } from 'react-native';
+import { Box, VStack, Text, Pressable, HStack, Divider } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { InventoryItem } from '../../types';
 import { toImageSource, cleanNewlines } from '@/src/utils';
 import { CachedImage } from '@/src/components/CachedImage';
-import { PencilIcon, TrashIcon } from 'react-native-heroicons/outline';
+import { PencilIcon, TrashIcon, EllipsisVerticalIcon } from 'react-native-heroicons/outline';
 
 // Default post image
 const DEFAULT_POST_IMAGE = require('@/assets/defaultImages/default-post.png');
@@ -13,20 +13,17 @@ const DEFAULT_POST_IMAGE = require('@/assets/defaultImages/default-post.png');
 interface InventoryCardProps {
   item: InventoryItem;
   width: number;
+  isMenuOpen: boolean;
+  onMenuToggle: (isOpen: boolean) => void;
   onPress?: () => void;
   onUpdateExperience?: (item: InventoryItem) => void;
   onDeleteProduct?: (item: InventoryItem) => void;
   isOwnProfile?: boolean;
 }
 
-export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDeleteProduct, isOwnProfile = false }: InventoryCardProps) => {
+export const InventoryCard = ({ item, width, isMenuOpen, onMenuToggle, onPress, onUpdateExperience, onDeleteProduct, isOwnProfile = false }: InventoryCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
-  // Context menu state
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuTriggerRef = useRef<View>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   
   // Image source state - görsel yüklenemezse default image'a geçiş için
   const initialImageSource = toImageSource(item.image) || DEFAULT_POST_IMAGE;
@@ -106,30 +103,18 @@ export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDele
 
   // Context menu handlers
   const handleUpdateExperience = useCallback(() => {
-    setIsMenuOpen(false);
+    onMenuToggle(false);
     onUpdateExperience?.(item);
-  }, [item, onUpdateExperience]);
+  }, [item, onUpdateExperience, onMenuToggle]);
 
   const handleDeleteProduct = useCallback(() => {
-    setIsMenuOpen(false);
+    onMenuToggle(false);
     onDeleteProduct?.(item);
-  }, [item, onDeleteProduct]);
+  }, [item, onDeleteProduct, onMenuToggle]);
 
-  // Calculate menu position
   const handleMenuOpen = useCallback(() => {
-    if (menuTriggerRef.current) {
-      menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-        const screenWidth = Dimensions.get('window').width;
-        const menuWidth = 180;
-        const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
-        const top = Math.max(12, y - 8);
-        setMenuPosition({ top, left });
-        setIsMenuOpen(true);
-      });
-    } else {
-      setIsMenuOpen(true);
-    }
-  }, []);
+    onMenuToggle(true);
+  }, [onMenuToggle]);
 
   return (
     <Box
@@ -137,122 +122,179 @@ export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDele
       w={width}
       mb={10}
     >
-      <View ref={menuTriggerRef} collapsable={false}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onPress}
-          onLongPress={isOwnProfile ? handleMenuOpen : undefined}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onPress}
+      >
+        <Box
+          bg={isDark ? '$backgroundDark800' : '$white'}
+          borderWidth={1}
+          borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
+          borderRadius={5}
+          w={width}
+          h={175}
+          overflow="hidden"
         >
           <Box
-            bg={isDark ? '$backgroundDark800' : '$white'}
-            borderWidth={1}
-            borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
-            borderRadius={5}
-            w={width}
-            h={175}
-            overflow="hidden"
+            flex={1}
+            p={15}
+            alignItems="center"
+            justifyContent="center"
           >
-            <Box
-              flex={1}
-              p={15}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <CachedImage
-                source={imageSource}
-                placeholder={DEFAULT_POST_IMAGE}
-                style={{
-                  width: 100,
-                  height: 100,
-                }}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-                priority="normal"
-                onLoadEnd={handleImageLoad}
-                onError={handleImageError}
-              />
-            </Box>
-            <VStack p={8} space="xs">
-              <Text
-                color={isDark ? '$textDark400' : '#A3A3A3'}
-                fontSize={11}
-                fontWeight="$bold"
-                numberOfLines={3}
-              >
-                {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
-                  .filter(Boolean)
-                  .join(' ')}
-              </Text>
-            </VStack>
-          </Box>
-        </TouchableOpacity>
-      </View>
-      
-      {isOwnProfile && (
-        <>
-          <Modal
-            visible={isMenuOpen}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={() => setIsMenuOpen(false)}
-          >
-            <RNPressable
-              style={{ flex: 1 }}
-              onPress={() => setIsMenuOpen(false)}
+            <CachedImage
+              source={imageSource}
+              placeholder={DEFAULT_POST_IMAGE}
+              style={{
+                width: 100,
+                height: 100,
+              }}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              priority="normal"
+              onLoadEnd={handleImageLoad}
+              onError={handleImageError}
             />
-            <Box
-              position="absolute"
-              top={menuPosition.top}
-              left={menuPosition.left}
-              width={180}
-              bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-              borderRadius={16}
-              shadowColor="#000"
-              shadowOffset={{ width: 0, height: 2 }}
-              shadowOpacity={0.25}
-              shadowRadius={8}
-              elevation={8}
-              overflow="hidden"
+          </Box>
+          <VStack p={8} space="xs">
+            <Text
+              color={isDark ? '$textDark400' : '#A3A3A3'}
+              fontSize={11}
+              fontWeight="$bold"
+              numberOfLines={3}
             >
-              <Pressable
-                onPress={handleUpdateExperience}
-                px={16}
-                py={12}
-              >
-                <HStack alignItems="center" space="md">
-                  <PencilIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                  <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize="$md"
-                    fontWeight="$medium"
-                  >
-                    Update Experience
-                  </Text>
-                </HStack>
-              </Pressable>
-              <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-              <Pressable
-                onPress={handleDeleteProduct}
-                px={16}
-                py={12}
-              >
-                <HStack alignItems="center" space="md">
-                  <TrashIcon width={20} height={20} color="#FF3040" />
-                  <Text
-                    color="#FF3040"
-                    fontSize="$md"
-                    fontWeight="$medium"
-                  >
-                    Delete Product
-                  </Text>
-                </HStack>
-              </Pressable>
-            </Box>
-          </Modal>
-        </>
+              {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
+                .filter(Boolean)
+                .join(' ')}
+            </Text>
+          </VStack>
+        </Box>
+      </TouchableOpacity>
+      
+      {/* More Icon - Sağ Üst Köşe */}
+      {isOwnProfile && (
+        <Pressable
+          position="absolute"
+          top={8}
+          right={8}
+          w={28}
+          h={28}
+          bg={isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.9)'}
+          borderRadius={14}
+          justifyContent="center"
+          alignItems="center"
+          zIndex={10}
+          onPress={handleMenuOpen}
+        >
+          <EllipsisVerticalIcon 
+            width={18} 
+            height={18} 
+            color={isDark ? '#FFFFFF' : '#000000'} 
+          />
+        </Pressable>
+      )}
+      
+      {/* Context Menu Overlay - Item'ın içinde */}
+      {isOwnProfile && isMenuOpen && (
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          bg="rgba(0, 0, 0, 0.6)"
+          borderRadius={5}
+          zIndex={1000}
+        >
+          {/* Overlay - Tıklamayı engelle ve modal kapat */}
+          <RNPressable 
+            style={styles.overlayInItem} 
+            onPress={() => onMenuToggle(false)}
+          >
+            {/* Boş alan - sadece overlay kapanması için */}
+          </RNPressable>
+          
+          {/* Menü - Sağ Üst Köşe */}
+          <View 
+            style={[
+              styles.menuContentInItem, 
+              { 
+                backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: isDark ? '#333333' : '#E9E9E9',
+              }
+            ]}
+          >
+            <RNPressable 
+              onPress={(e) => e.stopPropagation()}
+              style={{ width: '100%' }}
+            >
+              <VStack px={8} py={4} width="100%">
+                {/* Update Experience */}
+                <Pressable
+                  onPress={handleUpdateExperience}
+                  py={6}
+                >
+                  <HStack alignItems="center" justifyContent="flex-start" space="sm">
+                    <PencilIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                    <Text
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize="$xs"
+                      fontWeight="$medium"
+                    >
+                      Update
+                    </Text>
+                  </HStack>
+                </Pressable>
+                <Divider 
+                  bg={isDark ? '#333333' : '#E9E9E9'} 
+                  mx={0}
+                />
+                {/* Delete Product */}
+                <Pressable
+                  onPress={handleDeleteProduct}
+                  py={6}
+                >
+                  <HStack alignItems="center" justifyContent="flex-start" space="sm">
+                    <TrashIcon width={16} height={16} color="#FF3040" />
+                    <Text
+                      color="#FF3040"
+                      fontSize="$xs"
+                      fontWeight="$medium"
+                    >
+                      Delete
+                    </Text>
+                  </HStack>
+                </Pressable>
+              </VStack>
+            </RNPressable>
+          </View>
+        </Box>
       )}
     </Box>
   );
 };
 
 export default InventoryCard;
+
+const styles = StyleSheet.create({
+  overlayInItem: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  menuContentInItem: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 120,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+});

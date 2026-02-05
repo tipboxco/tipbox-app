@@ -95,6 +95,17 @@ export const CreateQuestionPostScreen = () => {
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
   const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
   
+  // Debug: Log boost options state
+  React.useEffect(() => {
+    console.log('[CreateQuestionPostScreen] 🔍 Boost Options State:', {
+      isLoadingBoostOptions,
+      boostOptionsCount: boostOptions.length,
+      boostOptions: boostOptions.map(opt => ({ id: opt.id, title: opt.title, amount: opt.amount })),
+      hasError: !!boostOptionsError,
+      error: boostOptionsError?.message,
+    });
+  }, [boostOptions, isLoadingBoostOptions, boostOptionsError]);
+  
   // Debug: Log context values
   React.useEffect(() => {
     console.log('[CreateQuestionPostScreen] 🔍 Context State:', {
@@ -191,6 +202,7 @@ export const CreateQuestionPostScreen = () => {
   const getBoostOptionId = (selectedBoost: string): string | null => {
     // Return null if boost option is not selected or is empty string
     if (!selectedBoost || selectedBoost.trim() === '') {
+      console.warn('[CreateQuestionPostScreen] No boost option selected');
       return null;
     }
     
@@ -201,7 +213,7 @@ export const CreateQuestionPostScreen = () => {
     }
     
     // Return null if not found (won't be sent to backend)
-    console.warn('[CreateQuestionPostScreen] Boost option not found:', selectedBoost);
+    console.warn('[CreateQuestionPostScreen] Boost option not found in list:', selectedBoost);
     return null;
   };
 

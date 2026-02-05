@@ -233,14 +233,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         )}
       </VStack>
 
-      {/* Images */}
-      {data.images && data.images.length > 0 && (
-        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} paddingHorizontal={12} />
-        </VStack>
-      )}
-
-      {/* Related Post Section */}
+      {/* Related Post Section - Experience Post içeriği */}
       {(data.relatedPost || relatedPostData) && (
         <>
           {/* Related Post Title */}
@@ -406,76 +399,83 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               </Pressable>
             </Box>
           )}
-
-          {/* Stats */}
-          <HStack
-            px={12}
-            py={8}
-            borderRightWidth={1}
-            borderLeftWidth={1}
-            borderBottomWidth={1}
-            borderBottomRightRadius={5}
-            borderBottomLeftRadius={5}
-            borderColor="#E9E9E9"
-            justifyContent="space-between"
-          >
-            <HStack>
-              <Pressable onPress={handleLike}>
-                <HStack mr={10} alignItems="center">
-                  {isLiked ? (
-                    <HeartIconSolid width={24} height={24} color="#FF3040" />
-                  ) : (
-                    <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  )}
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                    {(relatedPostData?.stats || data.stats)?.likes || 0}
-                  </Text>
-                </HStack>
-              </Pressable>
-              <Pressable 
-                onPress={onCommentPress || undefined}
-                disabled={!onCommentPress}
-                opacity={onCommentPress ? 1 : 0.5}
-              >
-                <HStack mr={10} alignItems="center">
-                  <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                    {(relatedPostData?.stats || data.stats)?.comments || 0}
-                  </Text>
-                </HStack>
-              </Pressable>
-              <Pressable onPress={handleShare}>
-                <HStack mr={10} alignItems="center">
-                  <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                    {(relatedPostData?.stats || data.stats)?.shares || 0}
-                  </Text>
-                </HStack>
-              </Pressable>
-              <Pressable onPress={handleBookmark}>
-                <HStack mr={10} alignItems="center">
-                  {isBookmarked ? (
-                    <BookmarkIconSolid width={24} height={24} color="#829905" />
-                  ) : (
-                    <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  )}
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                    {(relatedPostData?.stats || data.stats)?.bookmarks || 0}
-                  </Text>
-                </HStack>
-              </Pressable>
-            </HStack>
-            <Box>
-              <Image
-                source={require('@/assets/common/Vector.png')}
-                alt={'vector'}
-                width={24}
-                height={24}
-              />
-            </Box>
-          </HStack>
         </>
       )}
+
+      {/* Images - Experience post'tan sonra */}
+      {data.images && data.images.length > 0 && (
+        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} paddingHorizontal={12} />
+        </VStack>
+      )}
+
+      {/* Stats - Actions */}
+      <HStack
+        px={12}
+        py={8}
+        borderRightWidth={1}
+        borderLeftWidth={1}
+        borderBottomWidth={1}
+        borderBottomRightRadius={5}
+        borderBottomLeftRadius={5}
+        borderColor="#E9E9E9"
+        justifyContent="space-between"
+      >
+        <HStack>
+          <Pressable onPress={handleLike}>
+            <HStack mr={10} alignItems="center">
+              {isLiked ? (
+                <HeartIconSolid width={24} height={24} color="#FF3040" />
+              ) : (
+                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {(relatedPostData?.stats || data.stats)?.likes || 0}
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable 
+            onPress={onCommentPress || undefined}
+            disabled={!onCommentPress}
+            opacity={onCommentPress ? 1 : 0.5}
+          >
+            <HStack mr={10} alignItems="center">
+              <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {(relatedPostData?.stats || data.stats)?.comments || 0}
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable onPress={handleShare}>
+            <HStack mr={10} alignItems="center">
+              <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {(relatedPostData?.stats || data.stats)?.shares || 0}
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable onPress={handleBookmark}>
+            <HStack mr={10} alignItems="center">
+              {isBookmarked ? (
+                <BookmarkIconSolid width={24} height={24} color="#829905" />
+              ) : (
+                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {(relatedPostData?.stats || data.stats)?.bookmarks || 0}
+              </Text>
+            </HStack>
+          </Pressable>
+        </HStack>
+        <Box>
+          <Image
+            source={require('@/assets/common/Vector.png')}
+            alt={'vector'}
+            width={24}
+            height={24}
+          />
+        </Box>
+      </HStack>
     </VStack>
   );
 };

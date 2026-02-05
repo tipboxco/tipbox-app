@@ -580,7 +580,9 @@ export const PostsScreen = () => {
         product: selectedProductPayload,
       });
     } else if (type === 'update') {
-      navigation.navigate('CreateUpdatePostScreen', {
+      // Update post oluşturmak için önce experience post seçilmeli
+      // SelectExperienceForUpdateScreen'e yönlendir
+      navigation.navigate('SelectExperienceForUpdateScreen', {
         product: selectedProductPayload,
       });
     }

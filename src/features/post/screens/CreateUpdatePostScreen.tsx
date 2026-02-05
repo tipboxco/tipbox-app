@@ -17,7 +17,7 @@ import { ControlledImagePicker } from '../components/FormFields/ControlledImageP
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateUpdatePost, useUpdatePost, usePostDetail } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
-import { mapProductInfoTypeToContextType } from '../types';
+import { mapProductInfoTypeToContextType, type ApiContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys } from '@/src/features/profile/api/hooks';
@@ -192,22 +192,42 @@ export const CreateUpdatePostScreen = () => {
         // Geri dön
         navigation.goBack();
       } else if (isExperienceUpdateMode && experiencePostId) {
-        // Experience post'tan update oluşturma modu: context flow store'da yoksa experiencePost.product'tan al
-        const effectiveContextType = contextType ?? ProductInfoType.PRODUCT;
-        const effectiveContextId = contextId ?? experiencePost?.product?.id;
-        if (!effectiveContextId) {
+        // Experience post'tan update oluşturma modu
+        // Backend'e göre experiencePostId ZORUNLU
+        if (!experiencePostId || experiencePostId.trim() === '') {
+          console.error('[CreateUpdatePostScreen] experiencePostId is missing or empty');
           showCustomToast(toast, {
             title: 'Error',
-            description: 'Context information not found. Please try again.',
+            description: 'Experience post ID is required. Please try again.',
             action: 'error',
           });
           return;
         }
 
-        const apiContextType = mapProductInfoTypeToContextType(effectiveContextType);
+        // Backend kuralı: Update post sadece PRODUCT context'i için oluşturulabilir
+        // contextId opsiyonel - Backend boşsa experience post'taki productId'yi kullanır
+        const effectiveContextId = contextId ?? experiencePost?.product?.id;
+        
+        // contextId tamamen opsiyonel - backend experience post'tan alır
+        // Ama gönderilecekse product ID olmalı
+        if (effectiveContextId && !effectiveContextId.startsWith('prod_')) {
+          console.warn('[CreateUpdatePostScreen] ⚠️ contextId is not a product ID, setting to undefined. Backend will use experience post productId.');
+        }
+        
+        // Backend sadece 'product' contextType kabul ediyor
+        const apiContextType = 'product' as ApiContextType;
+        
+        console.log('[CreateUpdatePostScreen] 📤 Creating update post with:', {
+          contextType: apiContextType, // Her zaman 'product'
+          contextId: effectiveContextId, // Opsiyonel - backend experience post'tan alır
+          experiencePostId: experiencePostId,
+          contentLength: data.description?.length || 0,
+          imagesCount: data.selectedImages?.length || 0,
+        });
+        
         const response = await createUpdatePostMutation.mutateAsync({
-          contextType: apiContextType,
-          contextId: effectiveContextId,
+          contextType: apiContextType, // Her zaman 'product'
+          contextId: effectiveContextId || '', // Boş string gönderilebilir, backend ignore eder
           content: data.description,
           images: data.selectedImages || [],
           experiencePostId: experiencePostId,
@@ -283,110 +303,57 @@ export const CreateUpdatePostScreen = () => {
           );
         }
       } else {
-        // Create modu: Yeni post oluştur (normal flow)
-        // ContextType ve contextId kontrolü
-        if (!contextType || !contextId) {
-          showCustomToast(toast, {
-            title: 'Error',
-            description: 'Context information not found. Please try again.',
-            action: 'error',
-          });
-          return;
-        }
-        
-        // API contextType'a çevir
-        const apiContextType = mapProductInfoTypeToContextType(contextType);
-        
-        const response = await createUpdatePostMutation.mutateAsync({
-          contextType: apiContextType,
-          contextId: contextId,
-          content: data.description, // API'de "content" field'ı kullanılıyor
-          images: data.selectedImages || [],
-        });
-        
-        console.log('[CreateUpdatePostScreen] ✅ API Response:', response);
-        
-        // Başarılı toast göster
+        // Hatalı kullanım: Bu ekran sadece experience update veya post edit için kullanılmalı
+        console.error('[CreateUpdatePostScreen] Invalid usage: experiencePostId or postId required');
         showCustomToast(toast, {
-          title: 'Post Created',
-          description: 'Your update post has been created successfully!',
-          action: 'success',
+          title: 'Error',
+          description: 'Invalid screen usage. Please select an experience post first.',
+          action: 'error',
         });
         
-        // Clear flow context on successful submit
-        clearFlow();
-        
-        // Başarılı olursa ProfileScreen'e yönlendir ve Post stack'ini temizle
-        if (user?.id) {
-          // Profil verilerini invalidate et - yeni post görünsün
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.userPosts(user.id),
-          });
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.profile(user.id),
-          });
-          
-          // CRITICAL: Post stack'ini temizle ve ProfileScreen'e yönlendir
-          // Kullanıcı gönderi oluşturduktan sonra CreatePostScreen'e geri dönmemeli
-          // App'in mevcut state'ini koru (hangi tab açıksa o kalır)
-          const currentState = navigation.getState();
-          const appRoute = currentState?.routes?.find((route) => route.name === 'App');
-          
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 1,
-              routes: [
-                {
-                  name: 'App',
-                  state: appRoute?.state as any, // App'in mevcut state'ini koru
-                },
-                {
-                  name: 'Profile',
-                  params: {
-                    screen: 'ProfileMain',
-                    params: { userId: user.id },
-                  },
-                },
-              ],
-            })
-          );
-        } else {
-          // Fallback: Feed ekranına yönlendir
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'App',
-                  state: {
-                    routes: [
-                      {
-                        name: 'MainTabs',
-                        state: {
-                          routes: [{ name: 'FeedScreen' }],
-                          index: 0,
-                        },
-                      },
-                    ],
-                    index: 0,
-                  },
-                },
-              ],
-            })
-          );
-        }
+        // Geri dön
+        handleBackPress();
       }
     } catch (error: any) {
       console.error('[CreateUpdatePostScreen] ❌ API Error:', error);
       
-      // Hata toast göster
-      const errorMessage = error?.response?.data?.message || 
-                          error?.message || 
-                          'An error occurred while creating the post. Please try again.';
+      // Backend'den gelen hata kodlarını kontrol et
+      const errorCode = error?.response?.data?.code;
+      const errorMessage = error?.response?.data?.message;
+      const errorHint = error?.response?.data?.hint;
+      
+      // Legacy review hatası (backend'den gelen farklı hata kodları)
+      if (errorCode === 'LEGACY_REVIEW_NOT_SUPPORTED' || errorCode === 'LEGACY_INVENTORY_NO_POST') {
+        showCustomToast(toast, {
+          title: 'Legacy Review Not Supported',
+          description: errorHint || 'This is a legacy inventory item without an associated experience post. Please create a new experience post for this product first.',
+          action: 'error',
+        });
+        // Geri dön
+        handleBackPress();
+        return;
+      }
+      
+      // Experience post bulunamadı hatası
+      if (errorCode === 'EXPERIENCE_POST_NOT_FOUND') {
+        showCustomToast(toast, {
+          title: 'Experience Post Not Found',
+          description: errorHint || 'The selected experience post could not be found. Please try again.',
+          action: 'error',
+        });
+        // Geri dön
+        handleBackPress();
+        return;
+      }
+      
+      // Genel hata
+      const fallbackMessage = errorMessage || 
+                              error?.message || 
+                              'An error occurred while creating the post. Please try again.';
       
       showCustomToast(toast, {
         title: 'Error',
-        description: errorMessage,
+        description: fallbackMessage,
         action: 'error',
       });
     }

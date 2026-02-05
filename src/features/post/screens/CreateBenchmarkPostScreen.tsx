@@ -143,6 +143,8 @@ export const CreateBenchmarkPostScreen = () => {
   // Initialize first product from route params (ekrandaki ürün veya dönüşte korunan initial product)
   useEffect(() => {
     if (product) {
+      console.log('[CreateBenchmarkPostScreen] 🔍 Initializing product1 from route params:', product);
+      
       const nameParts = product.name.split(' ');
       const brand = nameParts.length > 1 ? nameParts[0] : (product as any).brand;
       const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
@@ -153,9 +155,11 @@ export const CreateBenchmarkPostScreen = () => {
         name: productName,
         brand: brand,
         subName: subName,
-        image: product.image,
+        image: product.image ?? (product as any).imageUrl ?? product.description, // Try multiple image fields
         isOwned: false,
       };
+      
+      console.log('[CreateBenchmarkPostScreen] ✅ Formatted product1:', initialProduct);
       setValue('selectedProduct1', initialProduct, { shouldValidate: true });
     }
   }, [product, setValue]);
@@ -178,15 +182,22 @@ export const CreateBenchmarkPostScreen = () => {
         if (processedSelectedProductRef.current === selectionKey) {
           return;
         }
+        
+        console.log('[CreateBenchmarkPostScreen] 🔍 Processing selected product from navigation:', {
+          field: selectedProductField,
+          product: selectedProduct,
+        });
 
         const formattedProduct = {
           id: selectedProduct.id,
           name: selectedProduct.name,
           brand: selectedProduct.brand,
           subName: selectedProduct.description || selectedProduct.subName || '',
-          image: selectedProduct.image,
+          image: selectedProduct.image ?? (selectedProduct as any).imageUrl ?? selectedProduct.description,
           isOwned: selectedProductField === 'selectedProduct2' && selectedProduct.brand ? true : false,
         };
+        
+        console.log('[CreateBenchmarkPostScreen] ✅ Formatted product for', selectedProductField, ':', formattedProduct);
 
         if (selectedProductField === 'selectedProduct1') {
           setValue('selectedProduct1', formattedProduct, { shouldValidate: true });

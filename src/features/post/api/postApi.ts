@@ -21,12 +21,17 @@ export interface BoostOption {
  */
 export const getBoostOptions = async (): Promise<BoostOption[]> => {
   try {
+    console.log('[getBoostOptions] 📡 Fetching boost options...');
     const response = await apiService.getClient().get<BoostOption[]>(
       '/posts/boost-options'
     );
+    console.log('[getBoostOptions] ✅ Success:', {
+      count: response.data.length,
+      options: response.data.map(opt => ({ id: opt.id, title: opt.title, amount: opt.amount })),
+    });
     return response.data;
   } catch (error: any) {
-    console.error('[getBoostOptions] API Error:', {
+    console.error('[getBoostOptions] ❌ API Error:', {
       url: '/posts/boost-options',
       method: 'GET',
       status: error.response?.status,
@@ -410,13 +415,14 @@ export const createQuestionPost = async (
 
 /**
  * Create Update Post Request Body
+ * Backend'e göre experiencePostId ZORUNLU alan - Update post sadece experience post'lara eklenir
  */
 export interface CreateUpdatePostRequest {
   contextType: ApiContextType;
   contextId: string;
   content: string;
+  experiencePostId: string; // ZORUNLU - Update post sadece experience post'lara eklenir
   images?: string[];
-  experiencePostId?: string;
   eventId?: string | null;
 }
 
@@ -427,19 +433,39 @@ export interface CreateUpdatePostRequest {
 export const createUpdatePost = async (
   data: CreateUpdatePostRequest
 ): Promise<CreatePostResponse> => {
-  const client = apiService.getClient();
-  
-  const formData = new FormData();
-  formData.append('contextType', data.contextType);
-  formData.append('contextId', data.contextId);
-  formData.append('content', data.content); // "description" değil, "content"!
-  
-  if (data.experiencePostId) {
-    formData.append('experiencePostId', data.experiencePostId);
-  }
-  if (data.eventId != null && data.eventId !== '') {
-    formData.append('eventId', data.eventId);
-  }
+  try {
+    console.log('[createUpdatePost] 📤 Request data:', {
+      contextType: data.contextType,
+      contextId: data.contextId,
+      experiencePostId: data.experiencePostId,
+      contentLength: data.content?.length || 0,
+      imagesCount: data.images?.length || 0,
+      eventId: data.eventId,
+    });
+
+    // Backend'e göre experiencePostId ZORUNLU
+    if (!data.experiencePostId || data.experiencePostId.trim() === '') {
+      const errorMsg = 'experiencePostId is required for update posts';
+      console.error(`[createUpdatePost] ❌ ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+
+    // Backend sadece 'product' contextType kabul ediyor
+    if (data.contextType !== 'product') {
+      console.warn(`[createUpdatePost] ⚠️ contextType '${data.contextType}' is not 'product', forcing to 'product'`);
+    }
+
+    const client = apiService.getClient();
+    
+    const formData = new FormData();
+    formData.append('contextType', 'product'); // Backend sadece 'product' kabul ediyor
+    formData.append('contextId', data.contextId || ''); // Opsiyonel - backend experience post'tan alır
+    formData.append('content', data.content); // "description" değil, "content"!
+    formData.append('experiencePostId', data.experiencePostId); // ZORUNLU alan
+    
+    if (data.eventId != null && data.eventId !== '') {
+      formData.append('eventId', data.eventId);
+    }
 
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {
@@ -466,17 +492,46 @@ export const createUpdatePost = async (
     });
   }
   
-  const response = await client.post<CreatePostResponse>(
-    '/posts/update',
-    formData,
-    {
-      headers: {
-        'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+    console.log('[createUpdatePost] 📤 FormData prepared:', {
+      hasContextType: !!formData.get('contextType'),
+      hasContextId: !!formData.get('contextId'),
+      hasContent: !!formData.get('content'),
+      hasExperiencePostId: !!formData.get('experiencePostId'),
+      imagesCount: data.images?.length || 0,
+    });
+
+    const response = await client.post<CreatePostResponse>(
+      '/posts/update',
+      formData,
+      {
+        headers: {
+          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+        },
+      }
+    );
+    
+    console.log('[createUpdatePost] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[createUpdatePost] ❌ API Error:', {
+      url: '/posts/update',
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        experiencePostId: data.experiencePostId,
+        contentLength: data.content?.length || 0,
+        imagesCount: data.images?.length || 0,
       },
-    }
-  );
-  
-  return response.data;
+      responseData: error.response?.data,
+      responseMessage: error.response?.data?.message,
+      responseError: error.response?.data?.error,
+      errorMessage: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
