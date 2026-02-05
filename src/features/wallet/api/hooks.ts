@@ -74,6 +74,9 @@ export const walletKeys = {
  * Kullanıcının wallet bilgilerini getirir
  * 
  * Backend endpoint: GET /api/wallet/info
+ * 
+ * **PERFORMANCE FIX:**
+ * - Backend hazır değilse fazla retry yapma (1 kez dene)
  */
 export const useWalletInfo = () => {
   return useQuery<WalletInfo, Error>({
@@ -83,7 +86,7 @@ export const useWalletInfo = () => {
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: true,
     refetchOnWindowFocus: false,
-    retry: 2,
+    retry: 1, // ✅ PERFORMANCE FIX: Sadece 1 kez dene (backend hazır değilse fazla deneme)
   });
 };
 
@@ -95,9 +98,13 @@ export const useWalletInfo = () => {
  * Backend endpoint: GET /api/wallet/balance
  * 
  * **Önemli:**
- * - Her 10 saniyede bir refetch eder
+ * - Her 10 saniyede bir refetch eder (sadece başarılıysa)
  * - Backend 10 saniye cache kullanır
  * - Balance asla direkt tutulmaz, transaction'lardan hesaplanır
+ * 
+ * **PERFORMANCE FIX:**
+ * - Backend hazır değilse otomatik refetch yapılmaz
+ * - Error durumunda refetchInterval devre dışı kalır
  */
 export const useWalletBalance = () => {
   const setWalletBalance = useAppStore((state) => state.setWalletBalance);
@@ -112,12 +119,16 @@ export const useWalletBalance = () => {
       }
       return balance;
     },
-    refetchInterval: 10000, // 10 saniye
+    refetchInterval: (query) => {
+      // ✅ PERFORMANCE FIX: Sadece başarılı response varsa refetch yap
+      // Backend hazır değilse veya hata varsa refetch yapma
+      return query.state.status === 'success' ? 10000 : false;
+    },
     staleTime: 5000, // 5 saniye
     gcTime: 30000, // 30 saniye
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: 2,
+    retry: 1, // ✅ PERFORMANCE FIX: Sadece 1 kez dene (backend hazır değilse fazla deneme)
   });
 };
 
@@ -141,6 +152,10 @@ export const useWalletBalance = () => {
  * **Error Handling:**
  * - Backend hatası durumunda boş array döner
  * - UI'da "No transactions" gösterilir
+ * 
+ * **PERFORMANCE FIX:**
+ * - Backend hazır değilse otomatik refetch yapılmaz
+ * - Error durumunda refetchInterval devre dışı kalır
  */
 export const useWalletTransactions = (params?: {
   page?: number;
@@ -169,11 +184,15 @@ export const useWalletTransactions = (params?: {
         };
       }
     },
-    refetchInterval: 10000, // 10 saniye - realtime için
+    refetchInterval: (query) => {
+      // ✅ PERFORMANCE FIX: Sadece başarılı response varsa refetch yap
+      // Backend hazır değilse veya hata varsa refetch yapma
+      return query.state.status === 'success' ? 10000 : false;
+    },
     staleTime: 5000, // 5 saniye
     gcTime: 5 * 60 * 1000, // 5 dakika
     refetchOnMount: true,
-    refetchOnWindowFocus: true, // Focus olduğunda refetch et
+    refetchOnWindowFocus: true,
     retry: false, // Backend hatası varsa retry yapma
   });
 };

@@ -316,7 +316,10 @@ export const TabNavigator = () => {
   
   // PERFORMANCE FIX: Unread messages - inbox badge için
   // Sadece authenticated ve auth ready ise çalıştır
-  const { data: messages } = useMessages();
+  // CRITICAL OPTIMIZATION: Inbox'a girilmeden mesajları yükleme (lazy loading)
+  // Badge için inbox tab'ına en az bir kez girilmesi gerekiyor
+  const [hasVisitedInbox, setHasVisitedInbox] = React.useState(false);
+  const { data: messages } = useMessages(hasVisitedInbox);
   const hasUnreadMessages = useMemo(() => {
     // CRITICAL FIX: messages undefined veya array değilse false döndür
     if (!messages || !Array.isArray(messages) || messages.length === 0) return false;
@@ -471,6 +474,14 @@ export const TabNavigator = () => {
     });
   }, []);
 
+  // PERFORMANCE FIX: Inbox tab press handler
+  // Inbox'a ilk kez girildiğinde mesajları yükle (lazy loading)
+  const handleInboxTabPress = useCallback(() => {
+    if (!hasVisitedInbox) {
+      setHasVisitedInbox(true);
+    }
+  }, [hasVisitedInbox]);
+
   // Heavy tab'ler için freeze rule
   const heavyTabFreezeRule = getHeavyTabFreezeRule();
 
@@ -548,6 +559,9 @@ export const TabNavigator = () => {
           <Tab.Screen
             name="InboxStack"
             component={InboxNavigator}
+            listeners={{
+              tabPress: handleInboxTabPress,
+            }}
           />
         </Tab.Navigator>
       </View>

@@ -27,8 +27,6 @@ const TrusterListContent: React.FC<{
   onClose: () => void;
   isDark: boolean;
 }> = ({ trusterList, isLoadingTrusters, onTrusterSelect, onClose, isDark }) => {
-  console.log('[TrusterList] 🎨 Rendering with', trusterList?.length || 0, 'trusters');
-  
   return (
     <VStack w="100%" h="100%">
       {/* Header - Fixed */}
@@ -65,74 +63,66 @@ const TrusterListContent: React.FC<{
           </VStack>
         ) : trusterList && trusterList.length > 0 ? (
           <VStack space="md">
-            {trusterList.map((truster, index) => {
-              console.log(`[TrusterList] 🎨 Rendering truster ${index + 1}/${trusterList.length}:`, truster.name);
-              
-              return (
-                <Pressable
-                  key={truster.id}
-                  onPress={() => {
-                    console.log('[TrusterList] 🔵 Truster clicked:', truster.name);
-                    console.log('[TrusterList] 🔵 Calling onTrusterSelect directly');
-                    onTrusterSelect(truster);
-                  }}
+            {trusterList.map((truster) => (
+              <Pressable
+                key={truster.id}
+                onPress={() => onTrusterSelect(truster)}
+              >
+                <Box
+                  bg="$backgroundLight0"
+                  $dark-bg="$backgroundDark800"
+                  borderWidth={1}
+                  borderColor="$borderLight200"
+                  $dark-borderColor="$borderDark600"
+                  rounded={10}
+                  p="$4"
                 >
-                  <Box
-                    bg="$backgroundLight0"
-                    $dark-bg="$backgroundDark800"
-                    borderWidth={1}
-                    borderColor="$borderLight200"
-                    $dark-borderColor="$borderDark600"
-                    rounded={10}
-                    p="$4"
-                  >
-                    <HStack space="md" alignItems="center">
-                      <Box w={48} h={48} rounded="$full" overflow="hidden" bg="$backgroundLight200" $dark-bg="$backgroundDark700">
-                        <Image
-                          source={toImageSource(truster.avatar) || DEFAULT_USER_AVATAR}
-                          alt={truster.name}
-                          style={{ width: 48, height: 48 }}
-                          resizeMode="cover"
-                        />
-                      </Box>
+                  <HStack space="md" alignItems="center">
+                    <Box w={48} h={48} rounded="$full" overflow="hidden" bg="$backgroundLight200" $dark-bg="$backgroundDark700">
+                      <Image
+                        source={toImageSource(truster.avatar) || DEFAULT_USER_AVATAR}
+                        alt={truster.name}
+                        style={{ width: 48, height: 48 }}
+                        resizeMode="cover"
+                      />
+                    </Box>
 
-                      <VStack flex={1} space="xs">
+                    <VStack flex={1} space="xs">
+                      <Text 
+                        fontSize={14} 
+                        fontWeight="$bold" 
+                        color="$textLight900" 
+                        $dark-color="$textDark50"
+                      >
+                        {truster.name}
+                      </Text>
+                      <Text 
+                        fontSize={12} 
+                        color="$textLight500" 
+                        $dark-color="$textDark400"
+                      >
+                        @{truster.userName}
+                      </Text>
+                      {truster.titles && truster.titles.length > 0 && (
                         <Text 
-                          fontSize={14} 
-                          fontWeight="$bold" 
-                          color="$textLight900" 
-                          $dark-color="$textDark50"
+                          fontSize={11} 
+                          color="$textLight400" 
+                          $dark-color="$textDark500"
                         >
-                          {truster.name}
+                          {truster.titles[0]}
                         </Text>
-                        <Text 
-                          fontSize={12} 
-                          color="$textLight500" 
-                          $dark-color="$textDark400"
-                        >
-                          @{truster.userName}
-                        </Text>
-                        {truster.titles && truster.titles.length > 0 && (
-                          <Text 
-                            fontSize={11} 
-                            color="$textLight400" 
-                            $dark-color="$textDark500"
-                          >
-                            {truster.titles[0]}
-                          </Text>
-                        )}
-                      </VStack>
-
-                      {truster.isTrusted && (
-                        <Box bg="#C2E607" rounded={6} px="$2" py="$1">
-                          <Text fontSize={10} fontWeight="$bold" color="#111111">Trusted</Text>
-                        </Box>
                       )}
-                    </HStack>
-                  </Box>
-                </Pressable>
-              );
-            })}
+                    </VStack>
+
+                    {truster.isTrusted && (
+                      <Box bg="#C2E607" rounded={6} px="$2" py="$1">
+                        <Text fontSize={10} fontWeight="$bold" color="#111111">Trusted</Text>
+                      </Box>
+                    )}
+                  </HStack>
+                </Box>
+              </Pressable>
+            ))}
           </VStack>
         ) : (
           <VStack alignItems="center" justifyContent="center" py="$8" flex={1}>
@@ -181,9 +171,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   
   // Debug: Log view changes
   React.useEffect(() => {
-    console.log('[SendBottomSheet] 📱 View changed to:', view);
-    console.log('[SendBottomSheet] 📱 Selected friend:', selectedFriend?.name || 'none');
-  }, [view, selectedFriend]);
+    if (view === 'truster-list' || view === 'confirmation') {
+      console.log('[SendBottomSheet] View changed to:', view);
+    }
+  }, [view]);
   
   // Input accessory view ID for keyboard toolbar
   const inputAccessoryViewID = 'amountInputAccessory';
@@ -206,34 +197,12 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   
   // Fetch Truster List
   const { data: trusterList, isLoading: isLoadingTrusters, error: trusterListError } = useTrusterList(user?.id);
-  
-  // Debug: Log truster list state
-  React.useEffect(() => {
-    console.log('[SendBottomSheet] 🔍 Truster List Debug:', {
-      userId: user?.id,
-      isLoading: isLoadingTrusters,
-      hasError: !!trusterListError,
-      error: trusterListError,
-      data: trusterList,
-      dataLength: trusterList?.length || 0,
-    });
-  }, [trusterList, isLoadingTrusters, trusterListError, user?.id]);
 
   // Function to show Truster list view (no nested bottom sheet)
   const openTrusterListBottomSheet = () => {
-    console.log('[SendBottomSheet] 🎯 Opening Truster List View');
-    console.log('[SendBottomSheet] 🎯 User ID:', user?.id);
-    console.log('[SendBottomSheet] 🎯 Is Loading:', isLoadingTrusters);
-    console.log('[SendBottomSheet] 🎯 Has Error:', !!trusterListError);
-    console.log('[SendBottomSheet] 🎯 Total trusters:', trusterList?.length || 0);
-    console.log('[SendBottomSheet] 🎯 Truster List Data:', trusterList);
-    
-    // View'ı değiştirmeden önce parent'a haber ver
-    // Parent bottom sheet'i kapatıp %50 snap point ile yeniden açacak
     setPreviousView('options');
     onViewChange?.('truster-list');
     
-    // Küçük bir delay ile view'ı değiştir (parent'ın bottom sheet'i güncellemesi için)
     setTimeout(() => {
       setView('truster-list');
     }, 100);
@@ -241,9 +210,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   
   // Callback for when a truster is selected from the list
   const handleTrusterSelect = (truster: any) => {
-    console.log('[SendBottomSheet] 🟢 handleTrusterSelect called:', truster.name);
-    
-    // Set the friend data
     const friendData = {
       id: truster.id,
       name: truster.name,
@@ -252,11 +218,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       avatar: truster.avatar,
     };
     
-    console.log('[SendBottomSheet] 🟢 Setting selectedFriend:', friendData);
     setSelectedFriend(friendData);
-    
-    // Directly navigate to amount view (skip friend-selection)
-    console.log('[SendBottomSheet] 🟢 Setting view to amount (skipping friend-selection)');
     setPreviousView('truster-list');
     setView('amount');
     onViewChange?.('amount');
@@ -310,11 +272,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   // Get recent sent transactions (unique addresses)
   const recentAddresses = useMemo(() => {
     if (!transactionsData) {
-      console.log('[SendBottomSheet] No transaction data available');
       return [];
     }
 
-    // Combine all transactions from all time periods
     const allTransactions = [
       ...(transactionsData.today || []),
       ...(transactionsData.yesterday || []),
@@ -322,31 +282,18 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       ...(transactionsData.lastMonth || []),
     ];
 
-    console.log('[SendBottomSheet] Total transactions:', allTransactions.length);
-
-    // Debug: Log first transaction to see structure
-    if (allTransactions.length > 0) {
-      console.log('[SendBottomSheet] First transaction sample:', JSON.stringify(allTransactions[0], null, 2));
-    }
-
-    // Filter only 'sent' transactions with valid 'to' addresses
     const sentTransactions = allTransactions
       .filter((tx: any) => {
         const isSent = tx.type === 'sent';
-        // Check if 'to.walletAddress' exists (new field from backend)
         const hasWalletAddress = tx.to?.walletAddress && typeof tx.to.walletAddress === 'string' && tx.to.walletAddress.length > 0;
         return isSent && hasWalletAddress;
       })
       .sort((a: any, b: any) => {
-        // Sort by date descending (most recent first)
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
         return dateB - dateA;
       });
 
-    console.log('[SendBottomSheet] Sent transactions with addresses:', sentTransactions.length);
-
-    // Get unique addresses (only first occurrence of each address)
     const uniqueAddresses = new Map();
     sentTransactions.forEach((tx: any) => {
       const walletAddress = tx.to?.walletAddress;
@@ -359,10 +306,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       }
     });
 
-    const result = Array.from(uniqueAddresses.values()).slice(0, 3);
-    console.log('[SendBottomSheet] Recent unique addresses:', result.length);
-    
-    return result;
+    return Array.from(uniqueAddresses.values()).slice(0, 3);
   }, [transactionsData]);
 
   // Mock recent addresses (fallback if no transactions)
@@ -410,32 +354,19 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   };
 
   const handleConfirmFromAddress = () => {
-    console.log('[SendBottomSheet] Confirm from address pressed');
-    // Clear selected friend if any (wallet address flow)
     setSelectedFriend(null);
-    // Navigate to amount view
-    // First update local state
     setPreviousView('wallet-address');
     setView('amount');
-    console.log('[SendBottomSheet] View state set to amount');
-    // Then notify parent to update bottom sheet snap point
     onViewChange?.('amount');
-    console.log('[SendBottomSheet] onViewChange callback called');
   };
 
   const handleConfirmFromAmount = () => {
-    console.log('[SendBottomSheet] Confirm from amount pressed');
     const inputValue = parseFloat(amount.replace('$', '').replace(/,/g, '')) || 0;
-    console.log('[SendBottomSheet] Amount value:', inputValue);
     
     if (inputValue > 0) {
-      // Navigate to confirmation view
-      console.log('[SendBottomSheet] Navigating to confirmation view');
       setPreviousView('amount');
       setView('confirmation');
       onViewChange?.('confirmation');
-    } else {
-      console.log('[SendBottomSheet] Invalid amount, cannot proceed');
     }
   };
 
@@ -533,8 +464,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     }
   };
 
-  console.log('[SendBottomSheet] Current view:', view);
-  
   if (view === 'options') {
     return (
       <VStack px="$4" py="$4" space="lg">
@@ -745,10 +674,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   }
 
   if (view === 'truster-list') {
-    // Truster List View - Shows list of friends to select
-    console.log('[SendBottomSheet] 🎨 Rendering truster-list view');
-    console.log('[SendBottomSheet] 🎨 Truster list data:', trusterList);
-    console.log('[SendBottomSheet] 🎨 Is loading:', isLoadingTrusters);
     return (
       <TrusterListContent
         trusterList={trusterList || []}
@@ -864,7 +789,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       {/* Confirm Button */}
       <Pressable
         onPress={() => {
-          console.log('[SendBottomSheet] ✅ Friend confirmed, moving to amount');
           setPreviousView('friend-selection');
           setView('amount');
           onViewChange?.('amount');
@@ -1191,7 +1115,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
   // Confirmation View (view === 'confirmation')
   if (view === 'confirmation') {
-    console.log('[SendBottomSheet] Rendering confirmation view, current view state:', view);
     const transactionDetails = getTransactionDetails();
     
     return (
@@ -1385,59 +1308,33 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       {/* Send Button */}
       <Pressable
         onPress={() => {
-          console.log('[SendBottomSheet] Send button pressed');
-          
-          // Validate recipient - recipientId VEYA walletAddress olmalı
           const recipientId = selectedFriend?.id;
           if (!recipientId && !walletAddress) {
             console.error('[SendBottomSheet] No recipient selected');
-            // TODO: Show error toast to user
             return;
           }
 
           const tipsAmount = transactionDetails.tipsAmount;
           
-          console.log('[SendBottomSheet] Sending transaction:', {
-            recipientId: recipientId || undefined,
-            walletAddress: walletAddress || undefined,
-            amount: tipsAmount,
-            message: 'TIPS transfer',
-          });
-
-          // Call API to send TIPS - Backend hem recipientId hem walletAddress destekliyor
-          console.log('[SendBottomSheet] Sending TIPS:', {
-            recipientId,
-            walletAddress,
-            amount: tipsAmount,
-            hasRecipientId: !!recipientId,
-            hasWalletAddress: !!walletAddress,
-          });
-          
           sendTips(
             {
-              ...(recipientId && { recipientId }),           // Friend ise recipientId gönder
-              ...(walletAddress && { walletAddress }),       // Wallet address ise walletAddress gönder
+              ...(recipientId && { recipientId }),
+              ...(walletAddress && { walletAddress }),
               amount: tipsAmount,
               message: 'TIPS transfer',
             },
             {
               onSuccess: (response) => {
-                console.log('[SendBottomSheet] Send successful:', response);
-
-                // Call onSuccess callback with transaction details
                 onSuccess?.({
                   sentAmount: `${tipsAmount.toLocaleString()} TIPS`,
                   transactionFee: `$${transactionDetails.transactionFee}`,
                   remainingBalance: `${transactionDetails.remainingBalance.toLocaleString()} TIPS`,
                   transactionId: response.transactionId,
                 });
-
-                // Close bottom sheet
                 onClose();
               },
               onError: (error: any) => {
                 console.error('[SendBottomSheet] Send failed:', error);
-                // TODO: Show error toast to user
                 const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
                 console.error('[SendBottomSheet] Error details:', errorMessage);
               },
@@ -1460,8 +1357,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     );
   }
 
-  // Fallback - should never reach here
-  console.warn('[SendBottomSheet] Unknown view state:', view);
   return null;
 };
 

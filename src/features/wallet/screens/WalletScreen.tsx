@@ -95,18 +95,6 @@ export const WalletScreen: React.FC = () => {
     }
   }, [refetchWalletInfo, refetchBalance, refetchTransactions, refetchNFTs]);
   
-  // Debug: Log wallet info
-  React.useEffect(() => {
-    console.log('[WalletScreen] 🔍 Wallet Info Debug:', {
-      isLoading: isLoadingWalletInfo,
-      hasError: !!walletInfoError,
-      error: walletInfoError,
-      data: walletInfo,
-      walletIdentifier: walletInfo?.walletIdentifier,
-      user: user?.fullName,
-    });
-  }, [walletInfo, isLoadingWalletInfo, walletInfoError, user]);
-  
   // Enable/disable navigation gesture based on current page
   // When on first page (TIPS), allow swipe back to FeedScreen
   // When on other pages, disable navigation gesture to prevent conflict with PagerView
@@ -181,20 +169,17 @@ export const WalletScreen: React.FC = () => {
   const [sendBottomSheetContent, setSendBottomSheetContent] = React.useState<React.ReactNode>(null);
   
   const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list') => {
-    console.log('[WalletScreen] View changing to:', view);
-    
     if (!sendBottomSheetContent) return;
 
-    // View'a göre bottom sheet davranışını güncelle (aynı content ile options update)
     const optionsForView =
       view === 'truster-list'
         ? {
             enablePanDownToClose: true,
             enableOverDrag: false,
-            enableHandlePanningGesture: false, // Liste scroll ederken bottom sheet gesture çakışmasını önle
-            enableContentPanningGesture: false, // Liste içeriği scroll edilebilir olsun
-            enableDynamicSizing: false, // Dynamic sizing kapat, fixed snap points kullan
-            snapPoints: ['90%'], // Tam ekrana yakın sabit yükseklik
+            enableHandlePanningGesture: false,
+            enableContentPanningGesture: false,
+            enableDynamicSizing: false,
+            snapPoints: ['90%'],
             animateOnMount: false,
             paddingBottom: bottomInset,
             handleIndicatorStyle: {
@@ -222,8 +207,6 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, bottomInset, isDark, sendBottomSheetContent]);
 
   const handleSendPress = useCallback(() => {
-    console.log('[WalletScreen] Send button pressed');
-    
     const bottomSheetContent = (
       <SendBottomSheet
         onClose={closeBottomSheet}
@@ -241,7 +224,7 @@ export const WalletScreen: React.FC = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true, // Dynamic sizing kullanıyoruz
+        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -254,7 +237,6 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendSuccess, handleSendViewChange]);
 
   const handleSwapPress = useCallback(() => {
-    console.log('[WalletScreen] Swap button pressed');
     openBottomSheet(
       <SwapBottomSheet
         onClose={closeBottomSheet}
@@ -277,7 +259,6 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
   const handleClaimPress = useCallback(() => {
-    console.log('[WalletScreen] Claim button pressed');
     openBottomSheet(
       <ClaimBottomSheet
         onClose={closeBottomSheet}
@@ -300,7 +281,6 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
   const handleReceivePress = useCallback(() => {
-    console.log('[WalletScreen] Receive button pressed');
     openBottomSheet(
       <ReceiveBottomSheet
         onClose={closeBottomSheet}

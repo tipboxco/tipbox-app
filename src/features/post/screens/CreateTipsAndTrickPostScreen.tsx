@@ -268,16 +268,7 @@ export const CreateTipsAndTrickPostScreen = () => {
     }
   };
 
-  // Form'daki category değerini API formatına çevir
-  const mapCategoryToBenefitCategory = (category: string): 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result' => {
-    const mapping: Record<string, 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result'> = {
-      'time-saving': 'time_saving',
-      'energy-efficiency': 'energy_efficiency',
-      'durability': 'durability',
-      'better-result': 'better_result',
-    };
-    return mapping[category] || 'time_saving';
-  };
+  // Not needed - BENEFIT_CATEGORIES already uses snake_case values
 
   const onSubmit = async (data: TipsAndTrickPostFormData) => {
     console.log('[CreateTipsAndTrickPostScreen] Form submitted:', data);
@@ -310,8 +301,8 @@ export const CreateTipsAndTrickPostScreen = () => {
     // API contextType'a çevir
     const apiContextType = mapProductInfoTypeToContextType(contextType);
     
-    // Category'yi API formatına çevir
-    const benefitCategory = mapCategoryToBenefitCategory(data.selectedCategory);
+    // benefitCategory directly from form (already in snake_case format)
+    const benefitCategory = data.selectedCategory;
     
     // Validate contextId before sending
     if (!contextId || contextId.trim() === '') {

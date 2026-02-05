@@ -134,6 +134,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const { user } = useAppStore();
     const targetUserId = data.user.id;
     const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
+    
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);

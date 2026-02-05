@@ -698,7 +698,121 @@ export const unfavoriteNews = async (
 };
 
 /**
+ * Get Catalog Context Posts endpoint function (Smart Endpoint)
+ * /catalog/context/:contextId/posts endpoint'inden context'e ait postları getirir
+ * 
+ * Bu endpoint tüm context tiplerini (sub-category, product-group, product) otomatik olarak algılar.
+ * 
+ * Hiyerarşik Feed Mantığı:
+ * - Context'e ait gönderiler
+ * - Alt context'lerin gönderileri (hiyerarşik)
+ * 
+ * Filter Parametreleri:
+ * - all: Tüm gönderiler (default)
+ * - tips_and_tricks: Sadece Tips & Tricks gönderileri
+ * - questions: Sadece Question gönderileri
+ * - updates: Sadece Update gönderileri
+ * - benchmarks: Sadece Benchmark gönderileri
+ * - reviews: Sadece Experience (Review) gönderileri
+ * 
+ * Sort Parametreleri:
+ * - newest: En yeni önce (default)
+ * - oldest: En eski önce
+ * - most_popular: Beğeni + yorum + kaydetme sayısına göre
+ * 
+ * @param contextId - Context ID'si (sub-category, product-group, product)
+ * @param filter - Post filter - opsiyonel, default: all
+ * @param sort - Sort order - opsiyonel, default: newest
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns FeedApiResponse - Feed items, pagination ve contextType bilgisi
+ * 
+ * @see docs/CATALOG_CONTEXT_QUICK_START.md - Smart endpoint dokümantasyonu
+ */
+export const getCatalogContextPosts = async (
+  contextId: string,
+  filter?: 'all' | 'tips_and_tricks' | 'questions' | 'updates' | 'benchmarks' | 'reviews',
+  sort?: 'newest' | 'oldest' | 'most_popular',
+  cursor?: string,
+  limit: number = 20
+): Promise<FeedApiResponse & { contextType?: string }> => {
+  const params = new URLSearchParams();
+  if (filter && filter !== 'all') {
+    params.append('filter', filter);
+  }
+  if (sort && sort !== 'newest') {
+    params.append('sort', sort);
+  }
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<FeedApiResponse & { contextType?: string }>(
+      `/catalog/context/${contextId}/posts?${params.toString()}`
+    );
+    
+    if (__DEV__ && response.data?.items) {
+      console.log('[getCatalogContextPosts] ✅ Smart endpoint response:', {
+        contextId,
+        contextType: response.data.contextType,
+        filter,
+        sort,
+        itemsCount: response.data.items.length,
+        items: response.data.items.slice(0, 3).map((item: any) => ({
+          type: item.type,
+          dataId: item.data?.id,
+          contextType: item.data?.contextType,
+          contextId: item.data?.contextId,
+        })),
+      });
+    }
+    
+    const safeResponse: FeedApiResponse & { contextType?: string } = {
+      items: Array.isArray(response.data?.items) ? response.data.items : [],
+      pagination: response.data?.pagination || {
+        hasMore: false,
+        limit: limit,
+      },
+      contextType: response.data?.contextType,
+    };
+    
+    return safeResponse;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      if (__DEV__) {
+        console.warn('[getCatalogContextPosts] ⚠️ Context not found (404):', {
+          url: `/catalog/context/${contextId}/posts`,
+          contextId,
+          message: 'Context not found or no posts available.',
+        });
+      }
+      
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    
+    console.error('[getCatalogContextPosts] API Error:', {
+      url: `/catalog/context/${contextId}/posts?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
  * Get Sub Category Posts endpoint function
+ * @deprecated Use getCatalogContextPosts instead - Smart endpoint automatically detects context type
+ * 
  * /catalog/sub-categories/:subCategoryId/posts endpoint'inden sub category postlarını getirir
  * 
  * Hiyerarşik Feed Mantığı:
@@ -733,87 +847,14 @@ export const getSubCategoryPosts = async (
   cursor?: string,
   limit: number = 20
 ): Promise<FeedApiResponse> => {
-  const params = new URLSearchParams();
-  if (filter && filter !== 'all') {
-    params.append('filter', filter);
-  }
-  if (sort && sort !== 'newest') {
-    params.append('sort', sort);
-  }
-  if (cursor) {
-    params.append('cursor', cursor);
-  }
-  params.append('limit', limit.toString());
-
-  try {
-    const response = await apiService.getClient().get<FeedApiResponse>(
-      `/catalog/sub-categories/${subCategoryId}/posts?${params.toString()}`
-    );
-    
-    // TEST: Backend düzeltmesi - Hiyerarşik feed mantığı doğru çalışıyor
-    // Backend'de: Sub category'ye ait gönderiler + Alt product group'ların gönderileri + Alt product'ların gönderileri
-    if (__DEV__ && response.data?.items) {
-      console.log('[getSubCategoryPosts] ✅ Backend düzeltmesi test (hiyerarşik feed):', {
-        subCategoryId,
-        filter,
-        sort,
-        itemsCount: response.data.items.length,
-        items: response.data.items.slice(0, 3).map((item: any) => ({
-          type: item.type,
-          dataId: item.data?.id,
-          // Context kontrolü - hiyerarşik yapı
-          contextType: item.data?.contextType,
-          contextId: item.data?.contextId,
-        })),
-      });
-    }
-    
-    // Ensure items is always an array (defensive programming)
-    const safeResponse: FeedApiResponse = {
-      items: Array.isArray(response.data?.items) ? response.data.items : [],
-      pagination: response.data?.pagination || {
-        hasMore: false,
-        limit: limit,
-      },
-    };
-    
-    return safeResponse;
-  } catch (error: any) {
-    // 404 hatası: Endpoint backend'de mevcut değil
-    if (error.response?.status === 404) {
-      // Sadece debug modunda log bas (production'da sessiz)
-      if (__DEV__) {
-        console.warn('[getSubCategoryPosts] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
-          url: `/catalog/sub-categories/${subCategoryId}/posts`,
-          subCategoryId,
-          message: 'This endpoint is not available on the backend server. Please contact backend team.',
-        });
-      }
-      
-      // Boş response döndür (kullanıcıya hata göstermek yerine boş feed göster)
-      return {
-        items: [],
-        pagination: {
-          hasMore: false,
-          limit: limit,
-        },
-      };
-    }
-    
-    // 404 dışındaki hatalar için error log
-    console.error('[getSubCategoryPosts] API Error:', {
-      url: `/catalog/sub-categories/${subCategoryId}/posts?${params.toString()}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
-    throw error;
-  }
+  // Use smart context endpoint
+  return getCatalogContextPosts(subCategoryId, filter as any, sort, cursor, limit);
 };
 
 /**
  * Get Product Group Posts endpoint function
+ * @deprecated Use getCatalogContextPosts instead - Smart endpoint automatically detects context type
+ * 
  * /catalog/product-groups/:productGroupId/posts endpoint'inden product group postlarını getirir
  * 
  * Hiyerarşik Feed Mantığı:
@@ -847,61 +888,8 @@ export const getProductGroupPosts = async (
   cursor?: string,
   limit: number = 20
 ): Promise<FeedApiResponse> => {
-  const params = new URLSearchParams();
-  if (filter && filter !== 'all') {
-    params.append('filter', filter);
-  }
-  if (sort && sort !== 'newest') {
-    params.append('sort', sort);
-  }
-  if (cursor) {
-    params.append('cursor', cursor);
-  }
-  params.append('limit', limit.toString());
-
-  try {
-    const response = await apiService.getClient().get<FeedApiResponse>(
-      `/catalog/product-groups/${productGroupId}/posts?${params.toString()}`
-    );
-    
-    // TEST: Backend düzeltmesi - Hiyerarşik feed mantığı doğru çalışıyor
-    // Backend'de: Product group'a ait gönderiler + Alt product'ların gönderileri (sadece Free, Tips, Question)
-    if (__DEV__ && response.data?.items) {
-      console.log('[getProductGroupPosts] ✅ Backend düzeltmesi test (hiyerarşik feed):', {
-        productGroupId,
-        filter,
-        sort,
-        itemsCount: response.data.items.length,
-        items: response.data.items.slice(0, 3).map((item: any) => ({
-          type: item.type,
-          dataId: item.data?.id,
-          // Context kontrolü - hiyerarşik yapı
-          contextType: item.data?.contextType,
-          contextId: item.data?.contextId,
-        })),
-      });
-    }
-    
-    // Ensure items is always an array (defensive programming)
-    const safeResponse: FeedApiResponse = {
-      items: Array.isArray(response.data?.items) ? response.data.items : [],
-      pagination: response.data?.pagination || {
-        hasMore: false,
-        limit: limit,
-      },
-    };
-    
-    return safeResponse;
-  } catch (error: any) {
-    console.error('[getProductGroupPosts] API Error:', {
-      url: `/catalog/product-groups/${productGroupId}/posts?${params.toString()}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
-    throw error;
-  }
+  // Use smart context endpoint
+  return getCatalogContextPosts(productGroupId, filter as any, sort, cursor, limit);
 };
 
 /**
@@ -1004,6 +992,8 @@ export const searchGlobalProducts = async (
 
 /**
  * Get Product Posts endpoint function (Catalog API)
+ * @deprecated Use getCatalogContextPosts instead - Smart endpoint automatically detects context type
+ * 
  * /catalog/products/:productId/posts endpoint'inden product postlarını getirir
  * 
  * Filter Parametreleri:
@@ -1039,68 +1029,6 @@ export const getCatalogProductPosts = async (
   cursor?: string,
   limit: number = 20
 ): Promise<FeedApiResponse> => {
-  const params = new URLSearchParams();
-  if (filter && filter !== 'all') {
-    params.append('filter', filter);
-  }
-  if (sort && sort !== 'newest') {
-    params.append('sort', sort);
-  }
-  if (cursor) {
-    params.append('cursor', cursor);
-  }
-  params.append('limit', limit.toString());
-
-  try {
-    const url = `/catalog/products/${productId}/posts?${params.toString()}`;
-    const response = await apiService.getClient().get<FeedApiResponse>(
-      url
-    );
-    
-    // DEBUG: Log API response
-    if (__DEV__) {
-      console.log('[getCatalogProductPosts] 📡 API Response:', {
-        url,
-        productId,
-        filter,
-        sort,
-        limit,
-        responseDataType: typeof response.data,
-        hasItems: !!response.data?.items,
-        itemsCount: response.data?.items?.length || 0,
-        itemsType: Array.isArray(response.data?.items) ? 'array' : typeof response.data?.items,
-        hasPagination: !!response.data?.pagination,
-        responseData: response.data,
-      });
-    }
-    
-    // Ensure items is always an array (defensive programming)
-    const safeResponse: FeedApiResponse = {
-      items: Array.isArray(response.data?.items) ? response.data.items : [],
-      pagination: response.data?.pagination || {
-        hasMore: false,
-        limit: limit,
-      },
-    };
-    
-    if (__DEV__) {
-      console.log('[getCatalogProductPosts] ✅ Parsed Response:', {
-        itemsCount: safeResponse.items.length,
-        pagination: safeResponse.pagination,
-        firstItemType: safeResponse.items[0]?.type,
-        firstItemId: safeResponse.items[0]?.data?.id,
-      });
-    }
-    
-    return safeResponse;
-  } catch (error: any) {
-    console.error('[getCatalogProductPosts] ❌ API Error:', {
-      url: `/catalog/products/${productId}/posts?${params.toString()}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
-    throw error;
-  }
+  // Use smart context endpoint
+  return getCatalogContextPosts(productId, filter, sort, cursor, limit);
 };
