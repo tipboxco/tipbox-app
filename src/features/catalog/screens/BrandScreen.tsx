@@ -346,7 +346,11 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         category.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     } else {
-      const brands = (brandsByCategory || []).map((brand) => mapBrandListItemToBrandCardBrand(brand));
+      // brandsByCategory undefined veya null olabilir - Array.isArray ile kontrol et
+      if (!brandsByCategory || !Array.isArray(brandsByCategory)) {
+        return [];
+      }
+      const brands = brandsByCategory.map((brand) => mapBrandListItemToBrandCardBrand(brand));
       return brands.filter(brand =>
         brand.name.toLowerCase().includes(searchQuery.toLowerCase())
       );

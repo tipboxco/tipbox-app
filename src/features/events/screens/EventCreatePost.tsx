@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -16,6 +16,7 @@ import {
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { EventStackParamList } from '../EventNavigator';
@@ -33,7 +34,7 @@ import { InventoryItem } from '@/src/features/profile/types';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateEventPostWithContext } from '../api/hooks';
+import { useCreateEventPostWithContext, eventsKeys } from '../api/hooks';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventStackParamList, 'EventCreatePost'>;
@@ -55,6 +56,7 @@ const EventCreatePost: React.FC = () => {
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
     const toast = useToast();
+    const queryClient = useQueryClient();
     
     // Safe area insets (tab bar yok, EventNavigator RootNavigator'ın DetailsGroup'unda)
     const insets = useSafeAreaInsets();
@@ -369,6 +371,7 @@ const EventCreatePost: React.FC = () => {
                 onClose={closeBottomSheet}
                 onProductSelect={handleProductSelect}
                 navigation={navigation}
+                eventId={eventId}
             />,
             {
                 enablePanDownToClose: true,
@@ -380,7 +383,7 @@ const EventCreatePost: React.FC = () => {
                 paddingBottom: insets.bottom + 8,
             }
         );
-    }, [openBottomSheet, closeBottomSheet, handleProductSelect, navigation]);
+    }, [openBottomSheet, closeBottomSheet, handleProductSelect, navigation, eventId]);
 
     const handleCatalogProductSelect = (product: Product) => {
         console.log('🔍 [EventCreatePost] Catalog product selected:', {
@@ -468,6 +471,27 @@ const EventCreatePost: React.FC = () => {
         setSelectedImages(prev => prev.filter((_, i) => i !== index));
     };
 
+    // Handle back button press - EventDetailScreen'e dön
+    const handleBackPress = useCallback(() => {
+        if (eventId) {
+            // EventDetailScreen'e geri dön
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        {
+                            name: 'EventDetailScreen',
+                            params: { eventId },
+                        },
+                    ],
+                })
+            );
+        } else {
+            // eventId yoksa normal goBack
+            navigation.goBack();
+        }
+    }, [eventId, navigation]);
+
     const handleShare = async () => {
         try {
             // Validation - Content is required
@@ -546,13 +570,41 @@ const EventCreatePost: React.FC = () => {
 
                 console.log('✅ [EventCreatePost] Post created successfully (JSON):', JSON.stringify(response, null, 2));
 
+                // Mutation'daki onSuccess invalidation yapacak ama biz de manuel refetch tetikleyelim
+                // EventDetailScreen'e döndükten sonra yeni post anında görünsün
+                if (eventId) {
+                    await Promise.all([
+                        queryClient.refetchQueries({
+                            queryKey: ['events', 'posts', eventId],
+                        }),
+                        queryClient.refetchQueries({
+                            queryKey: eventsKeys.detail(eventId),
+                        }),
+                    ]);
+                }
+
                 showCustomToast(toast, {
                     title: 'Success',
                     description: 'Post created successfully!',
                     action: 'success',
                 });
 
-                navigation.goBack();
+                // Event detail ekranına dön - Stack'i reset et
+                if (eventId) {
+                    navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [
+                                {
+                                    name: 'EventDetailScreen',
+                                    params: { eventId },
+                                },
+                            ],
+                        })
+                    );
+                } else {
+                    navigation.goBack();
+                }
                 return;
             }
 
@@ -638,6 +690,19 @@ const EventCreatePost: React.FC = () => {
 
             console.log('✅ [EventCreatePost] Post created successfully (JSON):', JSON.stringify(response, null, 2));
 
+            // Mutation'daki onSuccess invalidation yapacak ama biz de manuel refetch tetikleyelim
+            // EventDetailScreen'e döndükten sonra yeni post anında görünsün
+            if (eventId) {
+                await Promise.all([
+                    queryClient.refetchQueries({
+                        queryKey: ['events', 'posts', eventId],
+                    }),
+                    queryClient.refetchQueries({
+                        queryKey: eventsKeys.detail(eventId),
+                    }),
+                ]);
+            }
+
             // Başarılı toast göster
             showCustomToast(toast, {
                 title: 'Success',
@@ -645,8 +710,22 @@ const EventCreatePost: React.FC = () => {
                 action: 'success',
             });
 
-            // Event detail ekranına geri dön
-            navigation.goBack();
+            // Event detail ekranına dön - Stack'i reset et
+            if (eventId) {
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [
+                            {
+                                name: 'EventDetailScreen',
+                                params: { eventId },
+                            },
+                        ],
+                    })
+                );
+            } else {
+                navigation.goBack();
+            }
         } catch (error: any) {
             const errorJson = {
                 errorType: 'PostCreationError',
@@ -762,7 +841,7 @@ const EventCreatePost: React.FC = () => {
             <Header
                 title="Write a Post"
                 leftAction="back"
-                onLeftActionPress={() => navigation.goBack()}
+                onLeftActionPress={handleBackPress}
                 rightButton={{
                     text: 'Share',
                     backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
