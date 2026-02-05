@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
  * Individual features can override these defaults for their specific needs:
  * - Feed: 2-3 minutes (more dynamic content)
  * - Catalog: 1 hour (static/semi-static content)
- * - Profile: 5 minutes (default)
+ * - Profile: 2 hours (default)
  */
 const queryClient = new QueryClient({
   defaultOptions: {

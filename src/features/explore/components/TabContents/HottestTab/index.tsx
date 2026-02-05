@@ -166,27 +166,43 @@ const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }):
 const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
   const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(item.user.avatar)!;
+  const contextImage = toImageSource(item.contextData.image)!;
 
-  const product: TipsProduct = {
-    id: item.contextData.id,
-    name: item.contextData.name,
-    subName: item.contextData.subName,
-    image: toImageSource(item.contextData.image)!,
-  };
+  // CRITICAL: contextType'a göre product veya category mapping yap
+  let category: TipsCategory;
+  
+  if (item.contextType === 'sub_category') {
+    // SubCategory: sadece category bilgisi, product YOK
+    category = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: contextImage,
+      // product undefined bırak
+    };
+  } else {
+    // Product veya ProductGroup: category.product dolu
+    const product: TipsProduct = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subName: item.contextData.subName,
+      image: contextImage,
+    };
 
-  const category: TipsCategory = {
-    id: item.contextData.id,
-    name: item.contextData.name,
-    subCategory: item.contextData.subName,
-    image: toImageSource(item.contextData.image)!,
-    product,
-  };
+    category = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: contextImage,
+      product,
+    };
+  }
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
   const mappedImages = item.images
     ?.map((img) => toImageSource(img))
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  const images = mappedImages;
 
   return {
     id: item.id,
@@ -209,27 +225,43 @@ const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsC
 const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
   const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(item.user.avatar)!;
+  const contextImage = toImageSource(item.contextData.image)!;
 
-  const product: QuestionCardProduct = {
-    id: item.contextData.id,
-    name: item.contextData.name,
-    subName: item.contextData.subName,
-    image: toImageSource(item.contextData.image)!,
-  };
+  // CRITICAL: contextType'a göre product veya category mapping yap
+  let category: QuestionCardCategory;
+  
+  if (item.contextType === 'sub_category') {
+    // SubCategory: category dolu, product YOK
+    category = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: contextImage,
+      // product undefined bırak
+    };
+  } else {
+    // Product veya ProductGroup: category.product dolu
+    const product: QuestionCardProduct = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subName: item.contextData.subName,
+      image: contextImage,
+    };
 
-  const category: QuestionCardCategory = {
-    id: item.contextData.id,
-    name: item.contextData.name,
-    subCategory: item.contextData.subName,
-    image: toImageSource(item.contextData.image)!,
-    product,
-  };
+    category = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: contextImage,
+      product,
+    };
+  }
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
   const mappedImages = item.images
     ?.map((img) => toImageSource(img))
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  const images = mappedImages;
 
   return {
     id: item.id,

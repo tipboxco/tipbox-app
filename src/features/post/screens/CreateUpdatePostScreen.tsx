@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, View, Image as RNImage } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast, Image } from '@gluestack-ui/themed';
@@ -50,6 +50,7 @@ export const CreateUpdatePostScreen = () => {
   const updatePostMutation = useUpdatePost();
   const { user } = useAppStore();
   const queryClient = useQueryClient();
+  const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
   
   // Update modu kontrolü
   const isUpdateMode = !!postId;
@@ -110,6 +111,7 @@ export const CreateUpdatePostScreen = () => {
 
   const handleImagePicker = async () => {
     try {
+      setIsImagePickerLoading(true);
       const currentImages = getValues('selectedImages') || [];
       const remainingSlots = 10 - currentImages.length;
       
@@ -154,6 +156,8 @@ export const CreateUpdatePostScreen = () => {
         description: errorMessage,
         action: 'error',
       });
+    } finally {
+      setIsImagePickerLoading(false);
     }
   };
 
@@ -526,6 +530,7 @@ export const CreateUpdatePostScreen = () => {
                   maxImages={10}
                   onImagePicker={handleImagePicker}
                   onRemoveImage={handleRemoveImage}
+                  isLoading={isImagePickerLoading}
                 />
               </VStack>
             </VStack>

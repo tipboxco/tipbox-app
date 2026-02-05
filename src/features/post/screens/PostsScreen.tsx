@@ -774,27 +774,43 @@ export const PostsScreen = () => {
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    const product: TipsProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    let category: TipsCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: sadece category bilgisi, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: TipsProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: TipsCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     const mappedImages = Array.isArray(item.images)
       ? item.images
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
-      : [];
+        : [];
     const images = mappedImages;
 
     return {
@@ -854,21 +870,41 @@ export const PostsScreen = () => {
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    const product: QuestionCardProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    // - contextType === 'product' → category.product dolu (product card gösterilir)
+    // - contextType === 'sub_category' → sadece category dolu (sub category card gösterilir)
+    // - contextType === 'product_group' → category.product dolu (product group card gösterilir)
+    
+    let category: QuestionCardCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: category dolu, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak (QuestionPostCard'da category gösterilecek)
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: QuestionCardProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: QuestionCardCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     const mappedImages = Array.isArray(item.images)
       ? item.images
@@ -1040,9 +1076,14 @@ export const PostsScreen = () => {
 
     const itemId = item.data.id;
     
-    // Eğer tüm gönderiler aynı product'a aitse (feedContextType === 'product'), 
-    // product content'ini gizle çünkü zaten üstte ProductInfoCard gösteriliyor
-    const shouldHideProduct = feedContextType === 'product';
+    // CRITICAL: Context-aware content hiding
+    // Eğer zaten o context'in post listesindeyse (sub_category, product_group, product),
+    // content'i gizle çünkü zaten üstte ProductInfoCard gösteriliyor
+    // Ama farklı context'lerde (Feed, Profile, vb.) content gösterilmeli
+    const shouldHideContext = 
+      (feedContextType === 'product') ||
+      (feedContextType === 'product_group') ||
+      (feedContextType === 'sub_category');
     
     if (__DEV__) {
       console.log('[PostsScreen] 🎨 Rendering feed item:', {
@@ -1053,7 +1094,7 @@ export const PostsScreen = () => {
         hasContextData: 'contextData' in item.data,
         hasIsBoosted: 'isBoosted' in item.data,
         feedContextType,
-        shouldHideProduct,
+        shouldHideContext,
       });
     }
 
@@ -1067,7 +1108,7 @@ export const PostsScreen = () => {
             <ExperiencePostCard
               key={itemId}
               data={mapExperienceToCardData(item.data as ExperiencePostApiItem & { type: 'experience' })}
-              hideProduct={shouldHideProduct}
+              hideProduct={shouldHideContext}
             />
           );
         }
@@ -1078,7 +1119,7 @@ export const PostsScreen = () => {
           <PostCard
             key={itemId}
             data={mapFeedToCardData(item.data as ProfilePost)}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       case CardType.BENCHMARK:
@@ -1098,7 +1139,7 @@ export const PostsScreen = () => {
             <QuestionPostCard
               key={itemId}
               data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
-              hideProduct={shouldHideProduct}
+              hideProduct={shouldHideContext}
             />
           );
         }
@@ -1116,7 +1157,7 @@ export const PostsScreen = () => {
           <TipsAndTricksPostCard
             key={itemId}
             data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       case CardType.UPDATE:
@@ -1125,7 +1166,7 @@ export const PostsScreen = () => {
           <UpdatePostCard
             key={itemId}
             data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       default:

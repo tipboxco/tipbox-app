@@ -485,22 +485,37 @@ const FeedScreenInner = React.memo(() => {
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    // Missing product image warning removed for performance
-    const product: TipsProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    let category: TipsCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: sadece category bilgisi, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: TipsProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: TipsCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
@@ -574,23 +589,41 @@ const FeedScreenInner = React.memo(() => {
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    // Missing product image warning removed for performance
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    // - contextType === 'product' → category.product dolu (product card gösterilir)
+    // - contextType === 'sub_category' → sadece category dolu (sub category card gösterilir)
+    // - contextType === 'product_group' → category.product dolu (product group card gösterilir)
+    
+    let category: QuestionCardCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: category dolu, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak (QuestionPostCard'da category gösterilecek)
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: QuestionCardProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const product: QuestionCardProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
-
-    const category: QuestionCardCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli

@@ -355,6 +355,13 @@ export const CreateTipsAndTrickPostScreen = () => {
       imagesCount: data.selectedImages?.length || 0,
     });
     
+    console.log('[CreateTipsAndTrickPostScreen] 📋 Context Details:', {
+      contextType,
+      contextId,
+      productInfoSnapshot,
+      apiContextType,
+    });
+    
     try {
       const response = await createTipsAndTricksPostMutation.mutateAsync({
         contextType: apiContextType,

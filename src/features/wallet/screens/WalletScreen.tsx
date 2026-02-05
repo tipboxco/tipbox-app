@@ -191,11 +191,11 @@ export const WalletScreen: React.FC = () => {
         ? {
             enablePanDownToClose: true,
             enableOverDrag: false,
-            enableHandlePanningGesture: true,
-            enableContentPanningGesture: true,
-            enableDynamicSizing: true,
-            maxDynamicContentSize: 0.5, // %50 ekran yüksekliği - kullanıcı yukarı çekerek tamamını görebilir
-            animateOnMount: false, // hızlı view geçişlerinde daha stabil
+            enableHandlePanningGesture: false, // Liste scroll ederken bottom sheet gesture çakışmasını önle
+            enableContentPanningGesture: false, // Liste içeriği scroll edilebilir olsun
+            enableDynamicSizing: false, // Dynamic sizing kapat, fixed snap points kullan
+            snapPoints: ['90%'], // Tam ekrana yakın sabit yükseklik
+            animateOnMount: false,
             paddingBottom: bottomInset,
             handleIndicatorStyle: {
               backgroundColor: isDark ? '#333333' : '#B8B8B7',

@@ -12,7 +12,7 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, useTrustList, useTrusterList, profileKeys } from '../api/hooks';
+import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -96,11 +96,11 @@ const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
   const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(post.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
   const mappedImages = post.images
     ?.map((img) => toImageSource(img))
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  const images = mappedImages;
 
   return {
     id: post.id,
@@ -279,12 +279,11 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
     product,
   };
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
   const mappedImages = item.images
     ?.map((img) => toImageSource(img))
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  const images = mappedImages;
 
   return {
     id: item.id,
@@ -643,7 +642,9 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
 const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const { user } = useAppStore();
+  // PERFORMANCE FIX: Sadece user.id'yi select et - tüm user objesi yerine
+  const userId = useAppStore(state => state.user?.id);
+  const user = useAppStore(state => state.user);
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const rootNavigation = useNavigation<any>();
   const safeAreaTop = useSafeAreaValues('top');
@@ -680,24 +681,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const profileError = profileQueryResult.error;
   const refetchProfile = profileQueryResult.refetch;
   
-  // CRITICAL FIX: Trust ve Truster sayılarını liste uzunluklarından al
-  // DrawerContent ve Trust_TrusterListScreen ile aynı veriyi kullan (liste uzunluğu = gerçek sayı)
-  const { data: trustListData, isLoading: isTrustListLoading, error: trustListError } = useTrustList(targetUserId || '', undefined);
-  const { data: trusterListData, isLoading: isTrusterListLoading, error: trusterListError } = useTrusterList(targetUserId || '', undefined, undefined);
-  
-  // DEBUG: Truster list verilerini logla
-  useEffect(() => {
-    if (__DEV__ && targetUserId) {
-      console.log('[ProfileScreen] Truster List Debug:', {
-        targetUserId,
-        trusterListData,
-        trusterListLength: trusterListData?.length ?? 0,
-        isTrusterListLoading,
-        trusterListError: trusterListError?.message,
-        userProfileStats: userProfile?.stats,
-      });
-    }
-  }, [targetUserId, trusterListData, isTrusterListLoading, trusterListError, userProfile?.stats]);
+  // PERFORMANCE FIX: Trust/Truster sayıları userProfile.stats'tan alınır
+  // Liste verilerine burada ihtiyaç yok - sadece Trust_TrusterListScreen'de fetch edilir
+  // Bu sayede ProfileScreen'de gereksiz API istekleri önlenir
   
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -1663,7 +1649,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {trustListData?.length ?? 0}
+                  {userProfile?.stats?.trust ?? 0}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1695,7 +1681,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {(trusterListData?.length ?? 0) > 999 ? `${Math.floor((trusterListData?.length ?? 0) / 1000)}K` : (trusterListData?.length ?? 0)}
+                  {(userProfile?.stats?.truster ?? 0) > 999 ? `${Math.floor((userProfile?.stats?.truster ?? 0) / 1000)}K` : (userProfile?.stats?.truster ?? 0)}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}

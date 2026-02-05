@@ -306,6 +306,13 @@ export const CreatePostScreen = () => {
       images: data.selectedImages || [],
     });
     
+    console.log('[CreatePostScreen] 📋 Context Details:', {
+      finalContextType,
+      finalContextId,
+      finalProductInfo,
+      apiContextType,
+    });
+    
     try {
       const response = await createPostMutation.mutateAsync({
         contextType: apiContextType,

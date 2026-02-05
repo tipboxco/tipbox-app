@@ -1709,17 +1709,6 @@ export const getTrusterList = async (
   // Backend response formatı: { success: true, data: [...] } veya direkt array
   const trusterList = (response.data as any)?.data ?? response.data;
   
-  // DEBUG: Truster list response'unu logla
-  if (__DEV__) {
-    console.log(`[getTrusterList] userId: ${userId}`, {
-      url: `/users/${userId}/trusters`,
-      params,
-      responseData: response.data,
-      parsedList: trusterList,
-      listLength: Array.isArray(trusterList) ? trusterList.length : 0,
-    });
-  }
-  
   return trusterList;
 };
 

@@ -10,21 +10,37 @@ import type { ProfileTipsAndTricks } from '../../types';
 
 const mapTipsToCardData = (item: ProfileTipsAndTricks): TipsCardData => {
   const avatarSource = toImageSource(item.user.avatar)!;
+  const contextImage = toImageSource(item.contextData.image)!;
 
-  const product: TipsProduct = {
-    id: item.contextData.id,
-    name: item.contextData.name,
-    subName: item.contextData.subName,
-    image: toImageSource(item.contextData.image)!,
-  };
+  // CRITICAL: contextType'a göre product veya category mapping yap
+  let category: TipsCategory;
+  
+  if (item.contextType === 'sub_category') {
+    // SubCategory: sadece category bilgisi, product YOK
+    category = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: contextImage,
+      // product undefined bırak
+    };
+  } else {
+    // Product veya ProductGroup: category.product dolu
+    const product: TipsProduct = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subName: item.contextData.subName,
+      image: contextImage,
+    };
 
-  const category: TipsCategory = {
-    id: item.contextData.id,
-    name: item.contextData.name,
-    subCategory: item.contextData.subName,
-    image: toImageSource(item.contextData.image)!,
-    product,
-  };
+    category = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: contextImage,
+      product,
+    };
+  }
 
   return {
     id: item.id,

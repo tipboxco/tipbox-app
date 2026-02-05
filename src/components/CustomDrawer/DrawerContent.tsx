@@ -31,7 +31,7 @@ import {
   ArrowRightStartOnRectangleIcon,
 } from 'react-native-heroicons/outline';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUserProfile, useTrustList, useTrusterList } from '@/src/features/profile/api/hooks';
+import { useUserProfile } from '@/src/features/profile/api/hooks';
 import type { UserProfile } from '@/src/features/profile/types';
 import { toImageSource, useBottomOffset  } from '@/src/utils';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
@@ -102,10 +102,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   // Type assertion: React Query'nin generic tip çıkarımı sorunu için
   const typedUserProfile = userProfile as UserProfile | undefined;
   
-  // CRITICAL FIX: Trust ve Truster sayılarını liste uzunluklarından al
-  // Trust_TrusterListScreen ile aynı veriyi kullan (liste uzunluğu = gerçek sayı)
-  const { data: trustListData } = useTrustList(user?.id || '', undefined);
-  const { data: trusterListData } = useTrusterList(user?.id || '', undefined, undefined);
+  // PERFORMANCE FIX: Trust/Truster sayıları userProfile.stats'tan alınır
+  // Liste verilerine burada ihtiyaç yok - sadece Trust_TrusterListScreen'de fetch edilir
   
   // PERFORMANCE FIX: Computed değerleri useMemo ile memoize et
   // Banner source - profile'dan gelen banner URL'i veya fallback
@@ -266,15 +264,13 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const stats = useMemo(() => {
     if (isProfileLoading) return { posts: 0, trust: 0, truster: 0 };
     
-    // Posts sayısı profile'dan gelir
+    // PERFORMANCE FIX: Tüm stats userProfile'dan gelir - gereksiz API isteklerini önler
     const posts = typedUserProfile?.stats?.posts ?? 0;
-    
-    // Trust ve Truster sayıları liste uzunluklarından alınır (Trust_TrusterListScreen ile aynı)
-    const trust = trustListData?.length ?? 0;
-    const truster = trusterListData?.length ?? 0;
+    const trust = typedUserProfile?.stats?.trust ?? 0;
+    const truster = typedUserProfile?.stats?.truster ?? 0;
     
     return { posts, trust, truster };
-  }, [typedUserProfile?.stats?.posts, trustListData?.length, trusterListData?.length, isProfileLoading]);
+  }, [typedUserProfile?.stats, isProfileLoading]);
 
   // PERFORMANCE FIX: Navigation handler'larını useCallback ile memoize et
   // CRITICAL FIX: NavigationService kullan - root navigator ref'ine direkt erişir

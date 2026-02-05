@@ -55,11 +55,25 @@ export const createFreePost = async (
 ): Promise<CreatePostResponse> => {
   const client = apiService.getClient();
   
+  console.log('[postApi] createFreePost - Input data:', {
+    contextType: data.contextType,
+    contextId: data.contextId,
+    description: data.description,
+    images: data.images?.length || 0,
+    eventId: data.eventId,
+  });
+  
   // FormData oluştur (multipart/form-data için)
   const formData = new FormData();
   formData.append('contextType', data.contextType);
   formData.append('contextId', data.contextId);
   formData.append('description', data.description);
+  
+  console.log('[postApi] createFreePost - FormData fields:', {
+    contextType: data.contextType,
+    contextId: data.contextId,
+    description: data.description,
+  });
   
   // Event ID varsa ekle (event'e bağlı post için)
   if (data.eventId) {
@@ -107,6 +121,8 @@ export const createFreePost = async (
       },
     }
   );
+  
+  console.log('[postApi] createFreePost - Backend Response:', response.data);
   
   return response.data;
 };
@@ -273,6 +289,7 @@ export const createTipsAndTricksPost = async (
       }
     );
     
+    console.log('[createTipsAndTricksPost] ✅ Backend Response:', response.data);
     console.log('[createTipsAndTricksPost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -391,6 +408,7 @@ export const createQuestionPost = async (
       }
     );
     
+    console.log('[createQuestionPost] ✅ Backend Response:', response.data);
     console.log('[createQuestionPost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {

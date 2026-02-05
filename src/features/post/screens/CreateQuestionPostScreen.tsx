@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
@@ -77,6 +77,7 @@ export const CreateQuestionPostScreen = () => {
   const toast = useToast();
   const createQuestionPostMutation = useCreateQuestionPost();
   const { user, walletBalance: storeBalance } = useAppStore();
+  const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
   
   // Realtime wallet balance - Store'dan al, yoksa API'den getir
   const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
@@ -151,6 +152,7 @@ export const CreateQuestionPostScreen = () => {
 
   const handleImagePicker = async () => {
     try {
+      setIsImagePickerLoading(true);
       const currentImages = getValues('selectedImages') || [];
       const remainingSlots = 10 - currentImages.length;
       
@@ -195,6 +197,8 @@ export const CreateQuestionPostScreen = () => {
         description: errorMessage,
         action: 'error',
       });
+    } finally {
+      setIsImagePickerLoading(false);
     }
   };
 
@@ -267,6 +271,13 @@ export const CreateQuestionPostScreen = () => {
       description: data.questionText,
       selectedBoostOptionId: selectedBoostOptionId,
       imagesCount: data.selectedImages?.length || 0,
+    });
+    
+    console.log('[CreateQuestionPostScreen] 📋 Context Details:', {
+      contextType,
+      contextId,
+      productInfoSnapshot,
+      apiContextType,
     });
     
     try {
@@ -500,6 +511,7 @@ export const CreateQuestionPostScreen = () => {
                   label="Images"
                   maxImages={10}
                   onImagePicker={handleImagePicker}
+                  isLoading={isImagePickerLoading}
                 />
               </VStack>
 

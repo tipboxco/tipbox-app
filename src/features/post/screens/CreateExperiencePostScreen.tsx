@@ -42,6 +42,7 @@ export const CreateExperiencePostScreen = () => {
     // If product is undefined, start with SelectProduct (step 0), otherwise start with StepOneScreen (step 1)
     const [currentStep, setCurrentStep] = useState<0 | 1 | 2 | 3>(product ? 1 : 0);
     const [editingField, setEditingField] = useState<'price' | 'product' | null>(null);
+    const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
     
     const methods = useExperiencePostForm(
       product ? {
@@ -660,6 +661,7 @@ export const CreateExperiencePostScreen = () => {
 
     const handleImagePicker = async () => {
         try {
+            setIsImagePickerLoading(true);
             const currentImages = getValues('selectedImages') || [];
             const remainingSlots = 10 - currentImages.length;
             
@@ -704,6 +706,8 @@ export const CreateExperiencePostScreen = () => {
                 description: errorMessage,
                 action: 'error',
             });
+        } finally {
+            setIsImagePickerLoading(false);
         }
     };
 
@@ -854,6 +858,7 @@ export const CreateExperiencePostScreen = () => {
                             selectedProduct={selectedProduct}
                             fromInventory={fromInventory}
                             experienceOption={experienceOption}
+                            isImagePickerLoading={isImagePickerLoading}
                         />
 
                         {/* Gönderim sırasında ekran ortasında loading */}

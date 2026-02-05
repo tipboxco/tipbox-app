@@ -1184,10 +1184,28 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             subName: categoryName,
           };
         } else {
-          // SubCategory bulunamadı - bu da bir sorun
-          console.error('[ProductCatalogScreen] ❌ SubCategory not found in currentSubCategories:', selectedSubCategoryId);
-          console.error('[ProductCatalogScreen] ❌ Available subCategories:', currentSubCategories.map(sc => ({ id: sc.id, name: sc.name })));
-          return;
+          // FALLBACK: currentSubCategories'de bulunamadıysa breadcrumbItems'dan al
+          const subCategoryBreadcrumb = breadcrumbItems.find(
+            item => item.type === 'subcategory' && item.id === selectedSubCategoryId
+          );
+          const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
+          
+          if (subCategoryBreadcrumb) {
+            productInfoSnapshot = {
+              image: subCategoryBreadcrumb.data?.image,
+              title: subCategoryBreadcrumb.name,
+              subName: categoryBreadcrumb?.name || '',
+            };
+            console.log('[ProductCatalogScreen] ✅ SubCategory bilgisi breadcrumb\'dan alındı:', productInfoSnapshot);
+          } else {
+            // Son fallback: Minimal bilgi ile devam et
+            console.warn('[ProductCatalogScreen] ⚠️ SubCategory detayları bulunamadı, minimal bilgi ile devam ediliyor');
+            productInfoSnapshot = {
+              image: undefined,
+              title: 'Selected Subcategory', // Placeholder
+              subName: categoryBreadcrumb?.name || '',
+            };
+          }
         }
       }
       
@@ -1264,6 +1282,29 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             title: selectedSubCategory.name,
             subName: categoryName,
           };
+        } else {
+          // FALLBACK: currentSubCategories'de bulunamadıysa breadcrumbItems'dan al
+          const subCategoryBreadcrumb = breadcrumbItems.find(
+            item => item.type === 'subcategory' && item.id === selectedSubCategoryId
+          );
+          const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
+          
+          if (subCategoryBreadcrumb) {
+            productInfoSnapshot = {
+              image: subCategoryBreadcrumb.data?.image,
+              title: subCategoryBreadcrumb.name,
+              subName: categoryBreadcrumb?.name || '',
+            };
+            console.log('[ProductCatalogScreen] ✅ SubCategory bilgisi breadcrumb\'dan alındı:', productInfoSnapshot);
+          } else {
+            // Son fallback: Minimal bilgi ile devam et
+            console.warn('[ProductCatalogScreen] ⚠️ SubCategory detayları bulunamadı, minimal bilgi ile devam ediliyor');
+            productInfoSnapshot = {
+              image: undefined,
+              title: 'Selected Subcategory',
+              subName: categoryBreadcrumb?.name || '',
+            };
+          }
         }
       }
       

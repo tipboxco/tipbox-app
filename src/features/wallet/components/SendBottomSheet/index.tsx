@@ -30,9 +30,9 @@ const TrusterListContent: React.FC<{
   console.log('[TrusterList] 🎨 Rendering with', trusterList?.length || 0, 'trusters');
   
   return (
-    <VStack flex={1} w="100%">
+    <VStack w="100%" h="100%">
       {/* Header - Fixed */}
-      <HStack alignItems="center" space="md" mb="$2" px="$4" pt="$4">
+      <HStack alignItems="center" space="md" mb="$2" px="$4" pt="$4" pb="$2">
         <Pressable onPress={onClose}>
           <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
@@ -45,106 +45,107 @@ const TrusterListContent: React.FC<{
       </HStack>
 
       {/* Truster List - Scrollable */}
-      <Box flex={1}>
-        <ScrollView 
-          contentContainerStyle={{ 
-            paddingHorizontal: 16, 
-            paddingTop: 8,
-            paddingBottom: 16
-          }}
-          showsVerticalScrollIndicator={true}
-        >
-          {isLoadingTrusters ? (
-            <VStack alignItems="center" justifyContent="center" py="$8">
-              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-              <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" mt="$4">
-                Loading friends...
-              </Text>
-            </VStack>
-          ) : trusterList && trusterList.length > 0 ? (
-            <VStack space="md">
-              {trusterList.map((truster, index) => {
-                console.log(`[TrusterList] 🎨 Rendering truster ${index + 1}/${trusterList.length}:`, truster.name);
-                
-                return (
-                  <Pressable
-                    key={truster.id}
-                    onPress={() => {
-                      console.log('[TrusterList] 🔵 Truster clicked:', truster.name);
-                      console.log('[TrusterList] 🔵 Calling onTrusterSelect directly');
-                      onTrusterSelect(truster);
-                    }}
+      <ScrollView 
+        contentContainerStyle={{ 
+          paddingHorizontal: 16, 
+          paddingTop: 8,
+          paddingBottom: 24,
+          flexGrow: 1,
+        }}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+        style={{ flex: 1 }}
+      >
+        {isLoadingTrusters ? (
+          <VStack alignItems="center" justifyContent="center" py="$8">
+            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" mt="$4">
+              Loading friends...
+            </Text>
+          </VStack>
+        ) : trusterList && trusterList.length > 0 ? (
+          <VStack space="md">
+            {trusterList.map((truster, index) => {
+              console.log(`[TrusterList] 🎨 Rendering truster ${index + 1}/${trusterList.length}:`, truster.name);
+              
+              return (
+                <Pressable
+                  key={truster.id}
+                  onPress={() => {
+                    console.log('[TrusterList] 🔵 Truster clicked:', truster.name);
+                    console.log('[TrusterList] 🔵 Calling onTrusterSelect directly');
+                    onTrusterSelect(truster);
+                  }}
+                >
+                  <Box
+                    bg="$backgroundLight0"
+                    $dark-bg="$backgroundDark800"
+                    borderWidth={1}
+                    borderColor="$borderLight200"
+                    $dark-borderColor="$borderDark600"
+                    rounded={10}
+                    p="$4"
                   >
-                    <Box
-                      bg="$backgroundLight0"
-                      $dark-bg="$backgroundDark800"
-                      borderWidth={1}
-                      borderColor="$borderLight200"
-                      $dark-borderColor="$borderDark600"
-                      rounded={10}
-                      p="$4"
-                    >
-                      <HStack space="md" alignItems="center">
-                        <Box w={48} h={48} rounded="$full" overflow="hidden" bg="$backgroundLight200" $dark-bg="$backgroundDark700">
-                          <Image
-                            source={toImageSource(truster.avatar) || DEFAULT_USER_AVATAR}
-                            alt={truster.name}
-                            style={{ width: 48, height: 48 }}
-                            resizeMode="cover"
-                          />
-                        </Box>
+                    <HStack space="md" alignItems="center">
+                      <Box w={48} h={48} rounded="$full" overflow="hidden" bg="$backgroundLight200" $dark-bg="$backgroundDark700">
+                        <Image
+                          source={toImageSource(truster.avatar) || DEFAULT_USER_AVATAR}
+                          alt={truster.name}
+                          style={{ width: 48, height: 48 }}
+                          resizeMode="cover"
+                        />
+                      </Box>
 
-                        <VStack flex={1} space="xs">
+                      <VStack flex={1} space="xs">
+                        <Text 
+                          fontSize={14} 
+                          fontWeight="$bold" 
+                          color="$textLight900" 
+                          $dark-color="$textDark50"
+                        >
+                          {truster.name}
+                        </Text>
+                        <Text 
+                          fontSize={12} 
+                          color="$textLight500" 
+                          $dark-color="$textDark400"
+                        >
+                          @{truster.userName}
+                        </Text>
+                        {truster.titles && truster.titles.length > 0 && (
                           <Text 
-                            fontSize={14} 
-                            fontWeight="$bold" 
-                            color="$textLight900" 
-                            $dark-color="$textDark50"
+                            fontSize={11} 
+                            color="$textLight400" 
+                            $dark-color="$textDark500"
                           >
-                            {truster.name}
+                            {truster.titles[0]}
                           </Text>
-                          <Text 
-                            fontSize={12} 
-                            color="$textLight500" 
-                            $dark-color="$textDark400"
-                          >
-                            @{truster.userName}
-                          </Text>
-                          {truster.titles && truster.titles.length > 0 && (
-                            <Text 
-                              fontSize={11} 
-                              color="$textLight400" 
-                              $dark-color="$textDark500"
-                            >
-                              {truster.titles[0]}
-                            </Text>
-                          )}
-                        </VStack>
-
-                        {truster.isTrusted && (
-                          <Box bg="#C2E607" rounded={6} px="$2" py="$1">
-                            <Text fontSize={10} fontWeight="$bold" color="#111111">Trusted</Text>
-                          </Box>
                         )}
-                      </HStack>
-                    </Box>
-                  </Pressable>
-                );
-              })}
-            </VStack>
-          ) : (
-            <VStack alignItems="center" justifyContent="center" py="$8">
-              <UsersIcon width={64} height={64} color={isDark ? '#666666' : '#CCCCCC'} />
-              <Text fontSize={16} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400" mt="$4">
-                No Friends Found
-              </Text>
-              <Text fontSize={12} color="$textLight400" $dark-color="$textDark500" mt="$2" textAlign="center">
-                You don't have any friends in your trust list yet.
-              </Text>
-            </VStack>
-          )}
-        </ScrollView>
-      </Box>
+                      </VStack>
+
+                      {truster.isTrusted && (
+                        <Box bg="#C2E607" rounded={6} px="$2" py="$1">
+                          <Text fontSize={10} fontWeight="$bold" color="#111111">Trusted</Text>
+                        </Box>
+                      )}
+                    </HStack>
+                  </Box>
+                </Pressable>
+              );
+            })}
+          </VStack>
+        ) : (
+          <VStack alignItems="center" justifyContent="center" py="$8" flex={1}>
+            <UsersIcon width={64} height={64} color={isDark ? '#666666' : '#CCCCCC'} />
+            <Text fontSize={16} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400" mt="$4">
+              No Friends Found
+            </Text>
+            <Text fontSize={12} color="$textLight400" $dark-color="$textDark500" mt="$2" textAlign="center" px="$4">
+              You don't have any friends in your trust list yet.
+            </Text>
+          </VStack>
+        )}
+      </ScrollView>
     </VStack>
   );
 };
