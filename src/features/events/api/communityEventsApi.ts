@@ -938,11 +938,11 @@ export type EventPostProductStatus = 'own' | 'tried';
 
 export type CreateEventPostWithContextRequestV2 =
   | (CreateEventPostWithContextRequest & {
-      inventoryId: string; // ✅ Sadece inventory ID - Backend her şeyi halleder
+      inventoryId: string; // ✅ Envanterden seçildi - Backend inventoryId'den productId bulur
     })
   | (CreateEventPostWithContextRequest & {
-      productId: string; // Roast gibi senaryolarda doğrudan productId
-      productStatus: EventPostProductStatus; // own | tried
+      productId: string; // Katalogdan veya Roast gibi senaryolarda doğrudan productId
+      productStatus?: EventPostProductStatus; // Roast için zorunlu: own | tried
     });
 
 export interface CreateEventPostWithContextResponse {
@@ -966,7 +966,9 @@ export const createEventPostWithContext = async (
     formData.append('inventoryId', data.inventoryId);
   } else {
     formData.append('productId', data.productId);
-    formData.append('productStatus', data.productStatus);
+    if (data.productStatus) {
+      formData.append('productStatus', data.productStatus);
+    }
   }
   
   // Request bilgilerini JSON formatında log'la
@@ -980,7 +982,10 @@ export const createEventPostWithContext = async (
       contextId: data.contextId,
       ...(('inventoryId' in data)
         ? { inventoryId: data.inventoryId }
-        : { productId: data.productId, productStatus: data.productStatus }),
+        : { 
+            productId: data.productId,
+            ...(data.productStatus && { productStatus: data.productStatus })
+          }),
     },
     imageCount: data.images?.length || 0,
     images: data.images?.map((uri, index) => ({

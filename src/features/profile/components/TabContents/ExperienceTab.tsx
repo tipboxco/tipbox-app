@@ -89,8 +89,10 @@ const mapExperienceToCardData = (item: ProfileReview): ExperiencePostCardData =>
     ? toImageSource(item.user.avatar)!
     : DEFAULT_USER_AVATAR;
 
-  const productImage = item.contextData?.image
-    ? toImageSource(item.contextData.image)
+  // API bazen product bazen contextData döner - ikisini de kontrol et
+  const productData = item.product || item.contextData;
+  const productImage = productData?.image
+    ? toImageSource(productData.image)
     : undefined;
 
   const content: ExperiencePostCardContentItem[] = item.content?.map((entry) => ({
@@ -114,11 +116,11 @@ const mapExperienceToCardData = (item: ProfileReview): ExperiencePostCardData =>
       action: item.status === 'own' ? 'Added new product and experiences to inventory!' : undefined,
     },
     contextData: {
-      id: item.contextData?.id || '',
-      name: item.contextData?.name || '',
-      subName: (item.contextData?.subName && !/^Status:\s*(tested|own)$/i.test(String(item.contextData.subName))) ? item.contextData.subName : '',
+      id: productData?.id || '',
+      name: productData?.name || '',
+      subName: (productData?.subName && !/^Status:\s*(tested|own)$/i.test(String(productData.subName))) ? productData.subName : '',
       image: productImage,
-      isOwned: item.status === 'own' || item.contextData?.isOwned,
+      isOwned: item.status === 'own' || productData?.isOwned,
     },
     content,
     tags: item.tags?.slice(0, 3) ?? [],

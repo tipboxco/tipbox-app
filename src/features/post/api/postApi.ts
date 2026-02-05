@@ -558,6 +558,7 @@ export const createUpdatePost = async (
 export interface CreateExperiencePostRequest {
   contextType: ApiContextType;
   contextId: string;
+  productId?: string; // Required when contextType is sub_category or product_group
   experienceSnippetId: string;
   selectedDurationId: string;
   selectedLocationId: string;
@@ -617,6 +618,8 @@ export const createExperiencePost = async (
         experience: data.experience,
         status: data.status,
         experienceSnippetId: data.experienceSnippetId,
+        // productId - Required when contextType is sub_category or product_group
+        ...(data.productId && { productId: data.productId }),
         // camelCase (spec)
         selectedDurationId: data.selectedDurationId,
         selectedLocationId: data.selectedLocationId,
@@ -646,6 +649,9 @@ export const createExperiencePost = async (
     const formData = new FormData();
     formData.append('contextType', data.contextType);
     formData.append('contextId', data.contextId);
+    if (data.productId) {
+      formData.append('productId', data.productId);
+    }
     formData.append('content', data.content);
     formData.append('experience', JSON.stringify(data.experience));
     formData.append('status', data.status);

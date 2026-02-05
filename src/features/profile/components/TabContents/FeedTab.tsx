@@ -77,8 +77,10 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
     ? toImageSource(review.user.avatar)!
     : DEFAULT_USER_AVATAR;
   
-  const productImage = review.contextData?.image
-    ? toImageSource(review.contextData.image)
+  // API bazen product bazen contextData döner - ikisini de kontrol et
+  const productData = review.product || review.contextData;
+  const productImage = productData?.image
+    ? toImageSource(productData.image)
     : undefined;
 
   const content: ExperiencePostCardContentItem[] = review.content?.map((item) => ({
@@ -102,11 +104,11 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
       action: 'wrote a review',
     },
     contextData: {
-      id: review.contextData?.id || '',
-      name: review.contextData?.name || '',
-      subName: review.contextData?.subName || '',
+      id: productData?.id || '',
+      name: productData?.name || '',
+      subName: productData?.subName || '',
       image: productImage,
-      isOwned: review.contextData?.isOwned,
+      isOwned: productData?.isOwned,
     },
     content,
     tags: review.tags?.slice(0, 3) ?? [],

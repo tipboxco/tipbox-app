@@ -556,31 +556,11 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            // Validation - Product seçimi zorunlu (inventoryId için)
+            // Validation - Product seçimi zorunlu
             if (!selectedProduct) {
                 showCustomToast(toast, {
                     title: 'Error',
                     description: 'Please select a product before sharing.',
-                    action: 'error',
-                });
-                return;
-            }
-
-            // Validation - inventoryId zorunlu
-            if (!selectedProduct.inventoryId) {
-                showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Please select a product from inventory.',
-                    action: 'error',
-                });
-                return;
-            }
-
-            // Validation - productId zorunlu (inventory item içinden gelmeli)
-            if (!selectedProduct.productId) {
-                showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Selected inventory product has no productId. Please try another item.',
                     action: 'error',
                 });
                 return;
@@ -596,9 +576,9 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            // Sadece inventoryId gönder - Backend her şeyi halleder
-            const inventoryId = selectedProduct.inventoryId;
-            const productId = selectedProduct.productId;
+            // Katalogdan mı envanterden mi seçildi?
+            const isFromInventory = !!selectedProduct.inventoryId;
+            const productId = selectedProduct.productId || selectedProduct.id;
             
             const requestPayload = {
                 eventId,
@@ -606,7 +586,7 @@ const EventCreatePost: React.FC = () => {
                 contextType: 'product',
                 contextId: productId,
                 productId,
-                inventoryId,
+                ...(isFromInventory && { inventoryId: selectedProduct.inventoryId }),
                 imageCount: selectedImages.length,
                 images: selectedImages.length > 0 ? selectedImages.map((uri, i) => ({
                     index: i,
@@ -617,10 +597,11 @@ const EventCreatePost: React.FC = () => {
             console.log('📤 [EventCreatePost] Request Payload (JSON):', JSON.stringify(requestPayload, null, 2));
             
             console.log('🔍 [EventCreatePost] Request preparation:', {
-                inventoryId: inventoryId,
+                isFromInventory,
+                inventoryId: selectedProduct.inventoryId || 'N/A (Catalog)',
                 productId,
                 selectedProduct: selectedProduct.name,
-                backendWillHandle: 'optional inventoryId cross-check / lookup',
+                backendWillHandle: isFromInventory ? 'inventoryId cross-check' : 'direct productId',
             });
 
             // Debug log - Request data
@@ -628,19 +609,32 @@ const EventCreatePost: React.FC = () => {
                 eventId,
                 body: content.trim().substring(0, 50) + '...',
                 bodyLength: content.trim().length,
-                inventoryId,
+                source: isFromInventory ? 'Inventory' : 'Catalog',
+                productId,
+                inventoryId: selectedProduct.inventoryId || 'N/A',
                 imageCount: selectedImages.length,
             });
 
-            // API çağrısı - Sadece inventoryId gönder
-            const response = await createPostMutation.mutateAsync({
-                eventId,
-                body: content.trim(),
-                contextType: 'product',
-                contextId: productId,
-                inventoryId, // ekstra bilgi (backend isterse doğrulama/lookup yapabilir)
-                images: selectedImages.length > 0 ? selectedImages : undefined,
-            });
+            // API çağrısı
+            const apiPayload = isFromInventory
+                ? {
+                    eventId,
+                    body: content.trim(),
+                    contextType: 'product' as const,
+                    contextId: productId,
+                    inventoryId: selectedProduct.inventoryId!,
+                    images: selectedImages.length > 0 ? selectedImages : undefined,
+                }
+                : {
+                    eventId,
+                    body: content.trim(),
+                    contextType: 'product' as const,
+                    contextId: productId,
+                    productId,
+                    images: selectedImages.length > 0 ? selectedImages : undefined,
+                };
+
+            const response = await createPostMutation.mutateAsync(apiPayload);
 
             console.log('✅ [EventCreatePost] Post created successfully (JSON):', JSON.stringify(response, null, 2));
 
@@ -695,18 +689,16 @@ const EventCreatePost: React.FC = () => {
     // Check if share button should be enabled
     // /posts/{eventId}/post endpoint'i için:
     // - content (body) zorunlu
-    // - selectedProduct zorunlu (inventoryId için)
-    // - selectedProduct.inventoryId zorunlu
+    // - selectedProduct zorunlu
     // - eventId zorunlu
     const hasContent = content.trim().length > 0;
     const hasProduct = !!selectedProduct;
-    const hasInventoryId = !!selectedProduct?.inventoryId;
     const hasEventId = !!eventId;
     const hasProductStatus = !isRoastsEvent || productStatus !== '';
     
     const isShareEnabled = isRoastsEvent
         ? (hasContent && hasProduct && hasEventId && hasProductStatus)
-        : (hasContent && hasProduct && hasInventoryId && hasEventId);
+        : (hasContent && hasProduct && hasEventId);
     
     // Debug log - Share button state kontrolü
     useEffect(() => {
@@ -714,7 +706,6 @@ const EventCreatePost: React.FC = () => {
             isRoastsEvent,
             hasContent,
             hasProduct,
-            hasInventoryId,
             hasEventId,
             hasProductStatus,
             productStatus,
@@ -725,8 +716,8 @@ const EventCreatePost: React.FC = () => {
                 selectedProduct: selectedProduct ? {
                     id: selectedProduct.id,
                     name: selectedProduct.name,
-                    inventoryId: selectedProduct.inventoryId || 'MISSING ❌',
-                    hasInventoryId: !!selectedProduct.inventoryId
+                    source: selectedProduct.inventoryId ? 'Inventory' : 'Catalog',
+                    inventoryId: selectedProduct.inventoryId || 'N/A (Catalog)',
                 } : 'NULL ❌',
                 eventId: eventId || 'MISSING ❌',
             },
@@ -736,7 +727,6 @@ const EventCreatePost: React.FC = () => {
         isRoastsEvent,
         hasContent,
         hasProduct,
-        hasInventoryId,
         hasEventId,
         hasProductStatus,
         productStatus,

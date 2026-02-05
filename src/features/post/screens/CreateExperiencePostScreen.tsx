@@ -409,6 +409,7 @@ export const CreateExperiencePostScreen = () => {
         console.log('[CreateExperiencePostScreen] Submitting with:', {
             contextType: apiContextType,
             contextId: contextId,
+            productId: data.selectedProduct?.id,
             selectedDurationId: selectedDurationId,
             selectedLocationId: selectedLocationId,
             selectedPurposeId: selectedPurposeId,
@@ -495,6 +496,7 @@ export const CreateExperiencePostScreen = () => {
             const response = await createExperiencePostMutation.mutateAsync({
                 contextType: apiContextType,
                 contextId: contextId,
+                productId: data.selectedProduct?.id, // Backend için productId eklendi
                 experienceSnippetId: experienceSnippetId,
                 selectedDurationId: selectedDurationId,
                 selectedLocationId: selectedLocationId,
@@ -526,6 +528,9 @@ export const CreateExperiencePostScreen = () => {
             if (user?.id) {
                 queryClient.invalidateQueries({
                     queryKey: profileKeys.userPosts(user.id),
+                });
+                queryClient.invalidateQueries({
+                    queryKey: profileKeys.userReviews(user.id),
                 });
                 queryClient.invalidateQueries({
                     queryKey: profileKeys.profile(user.id),

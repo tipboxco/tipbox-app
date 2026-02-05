@@ -85,9 +85,8 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
 
     const handleCatalogPress = () => {
         onClose();
-        // Navigate to CatalogScreen with selectMode
-        navigationService.navigateNested('Catalog', 'CatalogScreen' as any, {
-            selectMode: 'event',
+        // Navigate to ProductSelectScreen (FAB yok)
+        navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT as any, {
             returnScreen: 'EventCreatePost',
         });
     };

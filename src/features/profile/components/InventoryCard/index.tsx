@@ -228,17 +228,17 @@ export const InventoryCard = ({ item, width, isMenuOpen, onMenuToggle, onPress, 
               onPress={(e) => e.stopPropagation()}
               style={{ width: '100%' }}
             >
-              <VStack px={8} py={4} width="100%">
+              <VStack px={6} py={4} width="100%">
                 {/* Update Experience */}
                 <Pressable
                   onPress={handleUpdateExperience}
                   py={6}
                 >
-                  <HStack alignItems="center" justifyContent="flex-start" space="sm">
-                    <PencilIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                    <PencilIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                     <Text
                       color={isDark ? '#FFFFFF' : '#000000'}
-                      fontSize="$xs"
+                      fontSize={10}
                       fontWeight="$medium"
                     >
                       Update
@@ -254,11 +254,11 @@ export const InventoryCard = ({ item, width, isMenuOpen, onMenuToggle, onPress, 
                   onPress={handleDeleteProduct}
                   py={6}
                 >
-                  <HStack alignItems="center" justifyContent="flex-start" space="sm">
-                    <TrashIcon width={16} height={16} color="#FF3040" />
+                  <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                    <TrashIcon width={14} height={14} color="#FF3040" />
                     <Text
                       color="#FF3040"
-                      fontSize="$xs"
+                      fontSize={10}
                       fontWeight="$medium"
                     >
                       Delete
@@ -288,7 +288,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 120,
+    minWidth: 100,
+    maxWidth: 110, // Card genişliğinden daha küçük - taşma önleme
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
