@@ -17,6 +17,7 @@ import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostC
 import { BenchmarkPostCard } from '@/src/components/PostCards/BenchmarkPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
+import { UpdatePostCardDetail } from '@/src/features/post/components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
@@ -562,21 +563,12 @@ export const PostDetailScreen = () => {
                     ) : finalType === 'experience' ? (
                         <ExperiencePostCard data={finalExperienceData ?? finalPostData} isDetailMode={true} />
                     ) : finalType === 'update' ? (
-                        <>
-                            <UpdatePostCard 
-                                data={finalPostData} 
-                                isDetailMode={true}
-                                showRelatedPost={false}
-                            />
-                            {updateRelatedAsExperienceCardData && (
-                                <ExperiencePostCard
-                                  data={updateRelatedAsExperienceCardData}
-                                  isDetailMode={true}
-                                  showHeader={false}
-                                  showActions={false}
-                                />
-                            )}
-                        </>
+                        <UpdatePostCardDetail
+                            data={finalPostData}
+                            showRelatedPost={true}
+                            relatedPostData={postData?.relatedPost || relatedPostData}
+                            onCommentPress={handleCommentInputPress}
+                        />
                     ) : (
                         <PostCard data={finalPostData} isDetailMode={true} />
                     )}

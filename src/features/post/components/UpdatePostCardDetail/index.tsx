@@ -404,8 +404,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
 
       {/* Images - Experience post'tan sonra */}
       {data.images && data.images.length > 0 && (
-        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} paddingHorizontal={12} />
+        <VStack borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} paddingHorizontal={0} />
         </VStack>
       )}
 
