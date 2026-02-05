@@ -481,6 +481,7 @@ const FeedScreenInner = React.memo(() => {
         images,
         stats: item.stats,
         tag: item.tag,
+        benefitCategory: item.benefitCategory,
         createdAt: item.createdAt,
       };
     }
@@ -539,6 +540,7 @@ const FeedScreenInner = React.memo(() => {
       images,
       stats: item.stats,
       tag: item.tag,
+      benefitCategory: item.benefitCategory,
       createdAt: item.createdAt,
     };
   };

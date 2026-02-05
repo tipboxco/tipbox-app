@@ -254,6 +254,7 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData | null => {
       .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
     stats: item.stats,
     tag: item.tag,
+    benefitCategory: item.benefitCategory,
     createdAt: item.createdAt,
   };
 };

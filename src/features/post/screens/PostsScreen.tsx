@@ -770,6 +770,7 @@ export const PostsScreen = () => {
         images,
         stats: item.stats,
         tag: item.tag,
+    benefitCategory: item.benefitCategory,
         createdAt: item.createdAt,
       };
     }
@@ -826,6 +827,7 @@ export const PostsScreen = () => {
       images,
       stats: item.stats,
       tag: item.tag,
+    benefitCategory: item.benefitCategory,
       createdAt: item.createdAt,
     };
   }, []);

@@ -27,31 +27,9 @@ import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TipsAndTrickPostFormData } from '../schemas/tipsAndTrickPostSchema';
 
-// ProductInfo will be loaded from store
+import { BENEFIT_CATEGORIES } from '../constants/benefitCategories';
 
-// Categories from Figma
-const categories = [
-  { 
-    label: 'Time Saving', 
-    value: 'time-saving',
-    icon: 'clock' as const
-  },
-  { 
-    label: 'Energy Efficiency', 
-    value: 'energy-efficiency',
-    icon: 'zap' as const
-  },
-  { 
-    label: 'Durability', 
-    value: 'durability',
-    icon: 'shield' as const
-  },
-  { 
-    label: 'Better Result', 
-    value: 'better-result',
-    icon: 'target' as const
-  },
-];
+// ProductInfo will be loaded from store
 
 type CreateTipsAndTrickPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -98,7 +76,7 @@ const CategorySelectorField: React.FC = () => {
                   flex={1}
                 >
                   {selectedCategory
-                    ? categories.find((cat) => cat.value === selectedCategory)?.label
+                    ? BENEFIT_CATEGORIES.find((cat) => cat.value === selectedCategory)?.label
                     : 'Select the category of your Tips & Tricks'}
                 </Text>
                 <Feather
@@ -129,7 +107,7 @@ const CategorySelectorField: React.FC = () => {
               overflow="hidden"
             >
               <VStack>
-                {categories.map((category, index) => (
+                {BENEFIT_CATEGORIES.map((category, index) => (
                   <Box key={category.value}>
                     {index > 0 && (
                       <Box

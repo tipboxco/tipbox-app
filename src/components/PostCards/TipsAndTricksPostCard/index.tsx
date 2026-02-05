@@ -30,6 +30,8 @@ import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
 import type { TipsCardData } from '@/src/types/TipsAndTricksCard';
+import { BENEFIT_CATEGORY_MAP } from '@/src/features/post/constants/benefitCategories';
+import { Feather } from '@expo/vector-icons';
 import {
   useLikePost,
   useUnlikePost,
@@ -599,24 +601,34 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     </Text>
                 </Box>
 
-                <HStack
-                    alignItems="center"
-                    space="xs"
-                    px={8}
-                >
-                    <Text
-                        mr={4}
-                        color={isDark ? '$textDark400' : '#666'}
-                        fontSize={10}
+                {/* Benefit Category Badge with Icon */}
+                {data.benefitCategory && BENEFIT_CATEGORY_MAP[data.benefitCategory] && (
+                    <Box
+                        bg={isDark ? BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor + '20' : BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor}
+                        borderWidth={1}
+                        borderColor={BENEFIT_CATEGORY_MAP[data.benefitCategory].color + '40'}
+                        borderRadius={20}
+                        px={10}
+                        py={6}
+                        flexDirection="row"
+                        alignItems="center"
+                        justifyContent="center"
                     >
-                        {data.tag}
-                    </Text>
-                    <RectangleStackIcon
-                        width={16}
-                        height={16}
-                        color={isDark ? '#fff' : '#666'}
-                    />
-                </HStack>
+                        <Feather
+                            name={BENEFIT_CATEGORY_MAP[data.benefitCategory].icon}
+                            size={14}
+                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
+                        />
+                        <Text
+                            fontSize={10}
+                            fontWeight="$semibold"
+                            ml={6}
+                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
+                        >
+                            {BENEFIT_CATEGORY_MAP[data.benefitCategory].label}
+                        </Text>
+                    </Box>
+                )}
             </HStack>
 
             {/* Content */}

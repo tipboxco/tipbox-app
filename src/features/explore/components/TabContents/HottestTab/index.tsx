@@ -217,6 +217,7 @@ const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsC
     images,
     stats: item.stats,
     tag: item.tag,
+    benefitCategory: item.benefitCategory,
     createdAt: item.createdAt,
   };
 };
