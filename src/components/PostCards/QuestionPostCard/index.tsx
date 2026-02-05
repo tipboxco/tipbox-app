@@ -491,28 +491,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                 <VStack px={8}pl={12} py={2}  width="100%">
                   {isPostOwner ? (
                     <>
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleUpdate();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            Update
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                      <Divider 
-                        bg={isDark ? '#333333' : '#E9E9E9'} 
-                        mx={0}
-                      />
+                      {/* Update butonu kaldırıldı - Sadece experience post'larda update var */}
                       <Pressable
                         onPress={() => {
                           setIsMenuOpen(false);

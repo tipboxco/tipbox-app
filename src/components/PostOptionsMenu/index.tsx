@@ -65,22 +65,23 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   const handleUpdate = useCallback(() => {
     closeBottomSheet();
     
-    // Update post screen'ine navigate et
-    // Post tipine göre uygun create screen'e yönlendir
-    if (postType === 'update' && postContextType && postContextId) {
+    // CRITICAL: Update seçeneği sadece experience post tipinde görünür
+    if (postType === 'experience') {
+      // Experience post için: SelectExperienceForUpdateScreen'e yönlendir
+      // Bu ekranda kullanıcı experience post'unu seçecek ve ardından update oluşturacak
       navigationService.navigate(ROOT_ROUTES.POST, {
-        screen: 'CreateUpdatePostScreen',
+        screen: 'SelectExperienceForUpdateScreen',
         params: {
-          postId, // Mevcut post ID'si (update için)
-          product: postContextType === 'product' ? {
+          product: postContextType === 'product' && postContextId ? {
             id: postContextId,
-            name: '', // Update screen'de post detayından alınacak
+            name: '', // SelectExperience screen'de post detayından alınacak
           } : undefined,
         },
       });
     } else {
-      // Diğer post tipleri için TODO: Update screen'leri eklenebilir
-      Alert.alert('Info', 'Update feature is not yet available for this post type.');
+      // Diğer post tipleri için update özelliği yok
+      // Bu kod bloğuna normalde ulaşılmamalı (showUpdateOption = false)
+      Alert.alert('Info', 'Update feature is only available for experience posts.');
     }
   }, [postId, postType, postContextType, postContextId, closeBottomSheet]);
 
@@ -164,6 +165,9 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     );
   }, [postId, closeBottomSheet]);
 
+  // CRITICAL: Update seçeneği sadece experience post tipinde görünür
+  const showUpdateOption = isPostOwner && postType === 'experience';
+
   return (
     <VStack 
       bg={isDark ? '$backgroundDark900' : '$white'} 
@@ -174,27 +178,29 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
       {/* Post Owner Actions - Sadece post sahibi görür */}
       {isPostOwner && (
         <>
-          {/* Update */}
-          <Pressable
-            onPress={handleUpdate}
-            px={20}
-            py={16}
-            borderBottomWidth={1}
-            borderColor={isDark ? '$borderDark600' : '#E9E9E9'}
-          >
-            <HStack alignItems="center" space="md">
-              <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$md"
-                fontWeight="$medium"
-              >
-                Güncelle
-              </Text>
-            </HStack>
-          </Pressable>
+          {/* Update - SADECE experience post tipinde görünür */}
+          {showUpdateOption && (
+            <Pressable
+              onPress={handleUpdate}
+              px={20}
+              py={16}
+              borderBottomWidth={1}
+              borderColor={isDark ? '$borderDark600' : '#E9E9E9'}
+            >
+              <HStack alignItems="center" space="md">
+                <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize="$md"
+                  fontWeight="$medium"
+                >
+                  Güncelle
+                </Text>
+              </HStack>
+            </Pressable>
+          )}
 
-          {/* Delete */}
+          {/* Delete - Tüm post tiplerinde görünür */}
           <Pressable
             onPress={handleDelete}
             px={20}
