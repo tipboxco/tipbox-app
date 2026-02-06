@@ -38,15 +38,15 @@ export const getBrandsByCategory = async (
   categoryId: string
 ): Promise<BrandListItem[]> => {
   try {
-    const response = await apiService.getClient().get<BrandListItem[]>(
+    const response = await apiService.getClient().get<{ items: BrandListItem[] }>(
       `/brands/categories/${categoryId}/brands`
     );
     console.log('[BrandsByCategory API] Response:', JSON.stringify(response.data, null, 2));
-    console.log('[BrandsByCategory API] Response length:', response.data?.length);
-    if (response.data && response.data.length > 0) {
-      console.log('[BrandsByCategory API] First item:', JSON.stringify(response.data[0], null, 2));
+    console.log('[BrandsByCategory API] Items length:', response.data?.items?.length);
+    if (response.data?.items && response.data.items.length > 0) {
+      console.log('[BrandsByCategory API] First item:', JSON.stringify(response.data.items[0], null, 2));
     }
-    return response.data;
+    return response.data?.items || [];
   } catch (error: any) {
     // 404 hatası: Kategori bulunamadı - bu normal bir durum olabilir (kategori silinmiş veya mevcut değil)
     if (error.response?.status === 404) {
@@ -267,10 +267,38 @@ export const getBrandFeed = async (
   params.append('limit', limit.toString());
 
   try {
-    const response = await apiService.getClient().get<BrandFeedResponse>(
+    const response = await apiService.getClient().get<any>(
       `/brands/${brandId}/feed?${params.toString()}`
     );
-    return response.data;
+    
+    console.log('🔍 [getBrandFeed] Raw API Response:', {
+      url: `/brands/${brandId}/feed?${params.toString()}`,
+      responseKeys: Object.keys(response.data || {}),
+      hasPosts: !!response.data?.posts,
+      postsCount: response.data?.posts?.length || 0,
+      hasPagination: !!response.data?.pagination,
+      rawData: response.data,
+    });
+    
+    // Backend response format: { brandId, name, posts: [...], pagination: {...} }
+    // Frontend expected format: { items: [...], pagination: {...} }
+    const backendData = response.data;
+    
+    const mappedResponse = {
+      items: backendData.posts || [],
+      pagination: backendData.pagination,
+    };
+    
+    console.log('✅ [getBrandFeed] Mapped Response:', {
+      itemsCount: mappedResponse.items.length,
+      hasPagination: !!mappedResponse.pagination,
+      firstItem: mappedResponse.items[0] ? {
+        type: mappedResponse.items[0].type,
+        id: mappedResponse.items[0].data?.id,
+      } : 'No items',
+    });
+    
+    return mappedResponse;
   } catch (error: any) {
     console.error('Brand Feed API Error:', {
       url: `/brands/${brandId}/feed?${params.toString()}`,
@@ -578,6 +606,47 @@ export const getBrandHistory = async (
     console.error('[getBrandHistory] ❌ API Error:', {
       url: `/brands/${brandId}/history`,
       brandId,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand History Feed endpoint function
+ * /brands/{brandId}/history/feed API'sinden markanın geçmiş feed'ini getirir (infinite scroll ile)
+ *
+ * @param brandId - Marka ID'si
+ * @param cursor - Pagination için cursor (ilk istek için undefined)
+ * @param limit - Sayfa başına item sayısı (default: 10)
+ * @returns BrandFeedResponse - Marka history feed'i (posts, benchmarks, vb.)
+ */
+export const getBrandHistoryFeed = async (
+  brandId: string,
+  cursor?: string,
+  limit: number = 10
+): Promise<BrandFeedResponse> => {
+  try {
+    const params = new URLSearchParams();
+    if (cursor) params.append('cursor', cursor);
+    params.append('limit', limit.toString());
+
+    const response = await apiService.getClient().get<any>(
+      `/brands/${brandId}/history/feed?${params.toString()}`
+    );
+
+    // Backend response format: { items: [...], pagination: {...} }
+    // Already matches frontend expected format
+    return {
+      items: response.data.items || [],
+      pagination: response.data.pagination,
+    };
+  } catch (error: any) {
+    console.error('[getBrandHistoryFeed] API Error:', {
+      url: `/brands/${brandId}/history/feed`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

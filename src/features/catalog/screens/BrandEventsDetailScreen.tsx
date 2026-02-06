@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native-safe-area-context';
 import { ScrollView, VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -143,7 +143,7 @@ const BrandEventsDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
@@ -431,7 +431,7 @@ const BrandEventsDetailScreen: React.FC = () => {
           )}
         </ScrollView>
       </VStack>
-    </SafeAreaView>
+    </View>
   );
 };
 

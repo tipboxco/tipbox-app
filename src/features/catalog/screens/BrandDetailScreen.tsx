@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useMemo, useCallback } from 'react';
-import { Dimensions, Animated, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useMemo, useCallback } from 'react';
+import { Dimensions, ActivityIndicator, View, StyleSheet, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -15,13 +15,13 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { CatalogStackParamList } from '../navigation';
+import type { BrandStackParamList } from '../BrandNavigator';
 import { Header } from '@/src/components/Header';
 import {
-  ChevronLeftIcon,
   ArrowTopRightOnSquareIcon,
   UsersIcon,
   ChevronRightIcon,
+  ChevronLeftIcon,
 } from 'react-native-heroicons/outline';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
@@ -40,16 +40,16 @@ import { CardType, ProductInfoType } from '@/src/types/common';
 
 const { width } = Dimensions.get('window');
 
-type BrandDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandDetailScreen'>;
-type BrandDetailScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandDetailScreen'>;
+type BrandDetailScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'BrandDetailScreen'>;
+type BrandDetailScreenRouteProp = RouteProp<BrandStackParamList, 'BrandDetailScreen'>;
 
 const BrandDetailScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<BrandDetailScreenNavigationProp>();
     const route = useRoute<BrandDetailScreenRouteProp>();
-    const scrollY = useRef(new Animated.Value(0)).current;
-    const bottomInset = useSafeAreaValues('bottom');
+    const insets = useSafeAreaInsets();
+    const bottomInset = insets.bottom;
 
     // Route params'dan brandId'yi güvenli şekilde al
     const brandId = route.params?.brandId;
@@ -354,6 +354,47 @@ const BrandDetailScreen: React.FC = () => {
         return Array.from(uniqueItemsMap.values());
     }, [brandFeedData?.pages]);
 
+    // Debug: Log brand feed data
+    useEffect(() => {
+        console.log('🔍 [BrandDetailScreen] Brand Feed Data:', {
+            brandId,
+            brandName: brandCatalog?.name,
+            pagesCount: brandFeedData?.pages?.length || 0,
+            allPostsCount: allPosts.length,
+            isLoading: isBrandFeedLoading,
+            hasError: !!brandFeedError,
+        });
+
+        if (brandFeedData?.pages && brandFeedData.pages.length > 0) {
+            console.log('📊 [BrandDetailScreen] First Page Data:', {
+                itemsCount: brandFeedData.pages[0]?.items?.length || 0,
+                items: brandFeedData.pages[0]?.items,
+                pagination: brandFeedData.pages[0]?.pagination,
+            });
+        }
+
+        if (allPosts.length > 0) {
+            console.log('📝 [BrandDetailScreen] All Posts:', {
+                count: allPosts.length,
+                posts: allPosts.map(post => ({
+                    type: post.type,
+                    id: post.data.id,
+                    userId: post.data.user?.id,
+                    userName: post.data.user?.name,
+                    content: typeof post.data.content === 'string' 
+                        ? post.data.content.substring(0, 50) + '...' 
+                        : 'Array content',
+                })),
+            });
+        } else {
+            console.log('⚠️ [BrandDetailScreen] No posts found');
+        }
+
+        if (brandFeedError) {
+            console.error('❌ [BrandDetailScreen] Brand Feed Error:', brandFeedError);
+        }
+    }, [brandId, brandCatalog?.name, brandFeedData, allPosts, isBrandFeedLoading, brandFeedError]);
+
     // Render feed item based on type (similar to FeedScreen)
     const renderFeedItem = useCallback((item: BrandFeedPost) => {
         console.log(item.type === CardType.EXPERIENCE ? "Experience Rednder Edildi." : "Düz Card");
@@ -422,10 +463,8 @@ const BrandDetailScreen: React.FC = () => {
     const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
     const CONTENT_START = BANNER_HEIGHT - CONTENT_OFFSET; // 230px
 
+    // Infinite scroll handler
     const handleScroll = useCallback((event: any) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
-        scrollY.setValue(offsetY);
-        
         // Infinite scroll: ScrollView'in altına yaklaştığında yeni sayfa yükle
         const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
         const paddingToBottom = 300; // ScrollView'in altına yaklaşma mesafesi
@@ -435,51 +474,26 @@ const BrandDetailScreen: React.FC = () => {
         if (isCloseToBottom && hasNextBrandFeedPage && !isFetchingNextBrandFeedPage) {
             fetchNextBrandFeedPage();
         }
-    }, [hasNextBrandFeedPage, isFetchingNextBrandFeedPage, fetchNextBrandFeedPage, allPosts.length]);
-
-
-    // Header animasyonu: İçeriğin başlangıç noktasına yaklaştığında açılır
-    // 100px'de başlar, 180px'de tamamen görünür olur
-    const headerOpacity = scrollY.interpolate({
-        inputRange: [0, 100, 180],
-        outputRange: [0, 0, 1],
-        extrapolate: 'clamp',
-    });
-    
-    // Debug: Opacity değerini takip et
-    useEffect(() => {
-        const listenerId = scrollY.addListener(({ value }) => {
-            let opacity = 0;
-            if (value >= 100 && value < 180) {
-                opacity = (value - 100) / (180 - 100);
-            } else if (value >= 180) {
-                opacity = 1;
-            }
-        });
-        
-        return () => {
-            scrollY.removeListener(listenerId);
-        };
-    }, [headerOpacity]);
+    }, [hasNextBrandFeedPage, isFetchingNextBrandFeedPage, fetchNextBrandFeedPage]);
 
     // Loading state
     if (isBrandCatalogLoading) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
+            <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                     <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4" fontSize="$sm">
                         Loading...
                     </Text>
                 </Box>
-            </SafeAreaView>
+            </View>
         );
     }
 
     // Error state
     if (brandCatalogError || !brandCatalog) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
+            <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
                         title="Brand Not Found"
@@ -492,59 +506,18 @@ const BrandDetailScreen: React.FC = () => {
                         </Text>
                     </Box>
                 </Box>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            {/* Sticky Animated Header */}
-            <Animated.View
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 9999,
-                    elevation: 10,
-                    pointerEvents: 'box-none',
-                }}
-                collapsable={false}
-            >
-                <Animated.View
-                    style={{
-                        opacity: headerOpacity,
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        width: '100%',
-                        zIndex: 9999,
-                        elevation: 10,
-                    }}
+            <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FAFAFA' }}>
+                <ScrollView
+                    onScroll={handleScroll}
+                    scrollEventThrottle={400}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
                 >
-                    <Box 
-                        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-                        width="100%"
-                    >
-                        <Header
-                            title={brandCatalog.name}
-                            showBackButton={true}
-                            onBackPress={() => navigation.goBack()}
-                            showShare={true}
-                            onSharePress={() => console.log('Share pressed')}
-                        />
-                    </Box>
-                </Animated.View>
-            </Animated.View>
-
-            <Animated.ScrollView
-                onScroll={handleScroll}
-                scrollEventThrottle={400}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
-            >
                 {/* Banner Image */}
                 <Box
                     width={width}
@@ -569,14 +542,15 @@ const BrandDetailScreen: React.FC = () => {
                         bg="rgba(0, 0, 0, 0.6)"
                     />
 
-                    {/* Back and Share Buttons */}
+                    {/* Header Overlay on Banner */}
                     <HStack
                         position="absolute"
-                        top={25}
+                        top={insets.top + 10}
                         left={16}
                         right={16}
                         justifyContent="space-between"
                         alignItems="center"
+                        zIndex={10}
                     >
                         <Pressable
                             onPress={() => navigation.goBack()}
@@ -883,9 +857,8 @@ const BrandDetailScreen: React.FC = () => {
                         )}
                     </VStack>
                 </VStack>
-            </Animated.ScrollView>
-        </Box>
-        </SafeAreaView>
+            </ScrollView>
+            </View>
     );
 };
 

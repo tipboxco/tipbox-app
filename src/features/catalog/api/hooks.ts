@@ -1,7 +1,7 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getCatalogContextPosts, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand } from './brandApi';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandHistoryFeed, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand } from './brandApi';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
 
 /**
@@ -896,6 +896,39 @@ export const useBrandHistory = (brandId: string | undefined) => {
     enabled: !!brandId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand History Feed infinite query hook
+ * /brands/{brandId}/history/feed endpoint'inden marka geçmiş feed'ini getirir (infinite scroll ile)
+ *
+ * @param brandId - Marka ID'si
+ * @param limit - Sayfa başına item sayısı (default: 10)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandHistoryFeed('brand-123');
+ */
+export const useBrandHistoryFeed = (brandId: string | undefined, limit: number = 10) => {
+  return useInfiniteQuery<BrandFeedResponse, Error>({
+    queryKey: brandId ? ['catalog', 'brandHistoryFeed', brandId, limit] : ['catalog', 'brandHistoryFeed', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      return getBrandHistoryFeed(brandId, pageParam as string | undefined, limit);
+    },
+    enabled: !!brandId,
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      return lastPage.pagination?.cursor || undefined;
+    },
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,

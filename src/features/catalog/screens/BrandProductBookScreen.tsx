@@ -245,7 +245,7 @@ const BrandProductBookScreen: React.FC = () => {
     // Loading state
     if (isProductBookLoading) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
                         title="Brand Products Book"
@@ -266,7 +266,7 @@ const BrandProductBookScreen: React.FC = () => {
     // Error state
     if (productBookError) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
                         title="Brand Products Book"
@@ -284,7 +284,7 @@ const BrandProductBookScreen: React.FC = () => {
     }
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 <Header
                     title="Brand Products Book"

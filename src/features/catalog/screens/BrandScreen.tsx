@@ -15,6 +15,8 @@ import type { BrandCardBrand } from '../components/BrandCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { toImageSource } from '@/src/utils';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
 type BrandScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'CatalogScreen'>;
 
@@ -198,7 +200,10 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       return items;
     });
 
-    navigation.navigate('BrandDetailScreen', { brandId: brand.id });
+    navigationService.navigate(ROOT_ROUTES.BRAND, {
+      screen: 'BrandDetailScreen',
+      params: { brandId: brand.id },
+    });
   };
 
   const mapBrandCategoryToCardCategory = (category: BrandCategory): CategoryCardCategory => {
