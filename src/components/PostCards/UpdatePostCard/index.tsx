@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
+import { View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -41,8 +41,6 @@ import type { UserReportCategory } from '@/src/features/profile/api/profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface UpdatePostCardProps {
@@ -64,8 +62,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   const menuTriggerRef = useRef<View>(null);
   const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const { openBottomSheet } = useGlobalBottomSheet();
-  
+
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
@@ -416,106 +413,6 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
             </Pressable>
           </View>
-
-          {/* Menu Modal */}
-          <Modal
-            visible={isMenuOpen}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={() => setIsMenuOpen(false)}
-          >
-            <RNPressable
-              style={{ flex: 1 }}
-              onPress={() => setIsMenuOpen(false)}
-            />
-            <View
-              style={[
-                styles.menuContainer,
-                {
-                  top: menuPosition.top,
-                  left: menuPosition.left,
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: isDark ? '#333333' : '#E9E9E9',
-                  shadowOpacity: isDark ? 0.3 : 0.1,
-                }
-              ]}
-            >
-              <RNPressable 
-                onPress={(e) => e.stopPropagation()}
-                style={{ flex: 1 }}
-              >
-                <VStack px={12} py={8} width="100%">
-                  {isPostOwner ? (
-                    <>
-                      {/* Update butonu kaldırıldı - Update post'lara update yapılamaz (sadece delete) */}
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleDelete();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <TrashIcon width={20} height={20} color="#FF3040" />
-                          <Text
-                            color="#FF3040"
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            Delete
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                    </>
-                  ) : (
-                    <>
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleViewProfile();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            View Profile
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                      <Divider 
-                        bg={isDark ? '#333333' : '#E9E9E9'} 
-                        mx={0}
-                      />
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleReport();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <FlagIcon width={20} height={20} color="#FF3040" />
-                          <Text
-                            color="#FF3040"
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            Report
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                    </>
-                  )}
-                </VStack>
-              </RNPressable>
-            </View>
-          </Modal>
         </HStack>
       </VStack>
 
@@ -896,6 +793,104 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         </HStack>
         </HStack>
 
+      {/* Menu Modal - HStack dışında, diğer post tipleri gibi RN Modal */}
+      <Modal
+        visible={isMenuOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsMenuOpen(false)}
+      >
+        <RNPressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setIsMenuOpen(false)}
+        />
+        <View
+          style={[
+            styles.menuContainer,
+            {
+              top: menuPosition.top,
+              left: menuPosition.left,
+              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              borderWidth: 1,
+              borderColor: isDark ? '#333333' : '#E9E9E9',
+              shadowOpacity: isDark ? 0.3 : 0.1,
+            }
+          ]}
+        >
+          <RNPressable
+            onPress={(e) => e.stopPropagation()}
+            style={{ flex: 1 }}
+          >
+            <VStack px={12} py={8} width="100%">
+              {isPostOwner ? (
+                <>
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleDelete();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <TrashIcon width={20} height={20} color="#FF3040" />
+                      <Text
+                        color="#FF3040"
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Delete
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleViewProfile();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        View Profile
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  <Divider
+                    bg={isDark ? '#333333' : '#E9E9E9'}
+                    mx={0}
+                  />
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleReport();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <FlagIcon width={20} height={20} color="#FF3040" />
+                      <Text
+                        color="#FF3040"
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Report
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </>
+              )}
+            </VStack>
+          </RNPressable>
+        </View>
+      </Modal>
     </View>
     );
 };

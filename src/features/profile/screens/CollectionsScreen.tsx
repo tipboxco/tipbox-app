@@ -1,4 +1,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -7,7 +15,6 @@ import Animated, {
   interpolateColor,
   withTiming,
 } from 'react-native-reanimated';
-import { Box, Text, Pressable, HStack, Input, InputField, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,6 +30,8 @@ import { useSafeAreaValues } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { ProfileStackParamList } from '../navigation';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
@@ -132,33 +141,34 @@ const CollectionsScreen: React.FC = () => {
 
     // Badge detail content'i hazırla
     openBottomSheet(
-      <Box flex={1}>
+      <View style={styles.bottomSheetContainer}>
         {/* Sticky Header */}
-        <Box
-          bg={isDark ? '#1F1F1F' : '#FFFFFF'}
-          borderBottomWidth={1}
-          borderBottomColor={isDark ? '#333333' : '#F0F0F0'}
-          px={15}
-          py={15}
-        >
-          <Box flexDirection="row" alignItems="center">
+        <View style={[
+          styles.bottomSheetHeader,
+          { 
+            backgroundColor: isDark ? '#1F1F1F' : '#FFFFFF',
+            borderBottomColor: isDark ? '#333333' : '#F0F0F0',
+          }
+        ]}>
+          <View style={styles.bottomSheetHeaderContent}>
             <Pressable
               onPress={handleClose}
               hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
             >
               <ChevronLeft size={24} color={isDark ? '#FFFFFF' : '#000000'} />
             </Pressable>
-            <Box flex={1} alignItems="center" mr={24}>
+            <View style={styles.bottomSheetHeaderTitle}>
               <Text
-                fontSize={16}
-                fontWeight="$bold"
-                color={isDark ? '$textDark50' : '#000'}
+                style={[
+                  styles.bottomSheetTitle,
+                  { color: isDark ? '#FFFFFF' : '#000' }
+                ]}
               >
                 {badge.title}
               </Text>
-            </Box>
-          </Box>
-        </Box>
+            </View>
+          </View>
+        </View>
 
         {/* Scrollable Content */}
         <BottomSheetScrollView
@@ -171,18 +181,18 @@ const CollectionsScreen: React.FC = () => {
             hideHeader={true}
           />
         </BottomSheetScrollView>
-      </Box>,
+      </View>,
       {
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
-        enableContentPanningGesture: true,
-        enableDynamicSizing: true,
+        enableContentPanningGesture: false,
         animateOnMount: true,
         backdropOpacity: 0.5,
         backdropPressBehavior: 'close',
         detached: true,
         bottomInset: safeAreaBottom,
+        snapPoints: ['85%'],
         style: {
           marginHorizontal: 4,
           marginBottom: safeAreaBottom + 24,
@@ -213,152 +223,201 @@ const CollectionsScreen: React.FC = () => {
 
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      {/* Header */}
-      <Header
-        title={`${user?.fullName || 'User'}'s Collections`}
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-      />
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.container}>
+      <View style={[
+        styles.mainContainer, 
+        { backgroundColor: isDark ? '#000000' : '#FFFFFF' }
+      ]}>
+        {/* Header */}
+        <Header
+          title={`${user?.fullName || 'User'}'s Collections`}
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+        />
 
-      {/* Search Bar */}
-      <Box px="$4" py="$2">
-        <Box
-          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-          borderRadius={20}
-          height={36}
-          px="$4"
-          justifyContent="center"
-        >
-          <HStack alignItems="center" space="sm">
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={[
+            styles.searchBar,
+            { backgroundColor: isDark ? '#2A2A2A' : '#F2F2F2' }
+          ]}>
             <Feather
               name="search"
               size={20}
               color={isDark ? '#FFFFFF' : '#8C8C8C'}
             />
-            <Input flex={1} borderWidth={0} bg="transparent">
-              <InputField
-                placeholder="Search by badge name"
-                placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={9}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </Input>
-          </HStack>
-        </Box>
-      </Box>
+            <TextInput
+              style={[
+                styles.searchInput,
+                { color: isDark ? '#FFFFFF' : '#000000' }
+              ]}
+              placeholder="Search by badge name"
+              placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+        </View>
 
-      {/* Tab Header */}
-      <VStack pt={0} pb="$2" bg={isDark ? '$backgroundDark900' : '$white'}>
-        <HStack
-          ref={tabContainerRef}
-          borderBottomWidth={1}
-          borderColor={isDark ? '$borderDark800' : '$borderLight200'}
-          p={0}
-          m={0}
-          position="relative"
-          onLayout={(event) => {
-            const width = event.nativeEvent.layout.width;
-            setTabContainerWidth(width);
-          }}
-        >
-          {/* Achievements Tab Label */}
-          <Pressable
-            flex={1}
-            onPress={() => handleTabPress(0)}
-            alignItems="center"
-            pb={8}
+        {/* Tab Header */}
+        <View style={[
+          styles.tabHeader,
+          { 
+            backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+            borderBottomColor: isDark ? '#333333' : '#F0F0F0',
+          }
+        ]}>
+          <View
+            ref={tabContainerRef}
+            style={styles.tabContainer}
+            onLayout={(event) => {
+              const width = event.nativeEvent.layout.width;
+              setTabContainerWidth(width);
+            }}
           >
-            <VStack alignItems="center" space="xs">
-              <Animated.Text
-                style={[
-                  {
-                    fontSize: 14,
-                    fontWeight: 'bold',
-                  },
-                  tab1Style,
-                ]}
-              >
+            {/* Achievements Tab Label */}
+            <Pressable
+              style={styles.tabButton}
+              onPress={() => handleTabPress(0)}
+            >
+              <Animated.Text style={[styles.tabLabel, tab1Style]}>
                 Achievements Badges
               </Animated.Text>
-            </VStack>
-          </Pressable>
+            </Pressable>
 
-          {/* Bridges Tab Label */}
-          <Pressable
-            flex={1}
-            onPress={() => handleTabPress(1)}
-            alignItems="center"
-            pb={8}
-          >
-            <VStack alignItems="center" space="xs">
-              <Animated.Text
-                style={[
-                  {
-                    fontSize: 14,
-                    fontWeight: 'bold',
-                  },
-                  tab2Style,
-                ]}
-              >
+            {/* Bridges Tab Label */}
+            <Pressable
+              style={styles.tabButton}
+              onPress={() => handleTabPress(1)}
+            >
+              <Animated.Text style={[styles.tabLabel, tab2Style]}>
                 Bridge Badges
               </Animated.Text>
-            </VStack>
-          </Pressable>
+            </Pressable>
 
-          {/* Animated Indicator */}
-          {tabWidth > 0 && (
-            <Animated.View
-              style={[
-                {
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  width: indicatorWidth,
-                  height: 2,
-                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
-                },
-                indicatorStyle,
-              ]}
+            {/* Animated Indicator */}
+            {tabWidth > 0 && (
+              <Animated.View
+                style={[
+                  styles.indicator,
+                  {
+                    width: indicatorWidth,
+                    backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                  },
+                  indicatorStyle,
+                ]}
+              />
+            )}
+          </View>
+        </View>
+
+        {/* PagerView - Native swipe tab switching */}
+        <AnimatedPagerView
+          ref={pagerRef}
+          style={styles.pagerView}
+          initialPage={0}
+          onPageScroll={handlePageScroll}
+          onPageSelected={handlePageSelected}
+        >
+          {/* Achievements Tab */}
+          <View key="0" style={styles.page}>
+            <AchievementBadgesTab
+              userId={userId}
+              searchQuery={debouncedSearchQuery}
             />
-          )}
-        </HStack>
-      </VStack>
+          </View>
 
-      {/* PagerView - Native swipe tab switching */}
-      <AnimatedPagerView
-        ref={pagerRef}
-        style={{ flex: 1 }}
-        initialPage={0}
-        onPageScroll={handlePageScroll}
-        onPageSelected={handlePageSelected}
-      >
-        {/* Achievements Tab */}
-        <Box key="0" flex={1}>
-          <AchievementBadgesTab
-            userId={userId}
-            searchQuery={debouncedSearchQuery}
-          />
-        </Box>
-
-        {/* Bridges Tab */}
-        <Box key="1" flex={1}>
-          <BridgeBadgesTab
-            userId={userId}
-            onBadgePress={handleBadgePress}
-            searchQuery={debouncedSearchQuery}
-          />
-        </Box>
-      </AnimatedPagerView>
-
-      </Box>
+          {/* Bridges Tab */}
+          <View key="1" style={styles.page}>
+            <BridgeBadgesTab
+              userId={userId}
+              onBadgePress={handleBadgePress}
+              searchQuery={debouncedSearchQuery}
+            />
+          </View>
+        </AnimatedPagerView>
+      </View>
     </SafeAreaView>
   );
 };
 
 CollectionsScreen.displayName = 'CollectionsScreen';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  mainContainer: {
+    flex: 1,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    height: 36,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 9,
+    height: 36,
+    paddingVertical: 0,
+  },
+  tabHeader: {
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    position: 'relative',
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingBottom: 8,
+  },
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  indicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: 2,
+  },
+  pagerView: {
+    flex: 1,
+  },
+  page: {
+    flex: 1,
+  },
+  bottomSheetContainer: {
+    flex: 1,
+  },
+  bottomSheetHeader: {
+    borderBottomWidth: 1,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+  },
+  bottomSheetHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bottomSheetHeaderTitle: {
+    flex: 1,
+    alignItems: 'center',
+    marginRight: 24,
+  },
+  bottomSheetTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
 
 export default CollectionsScreen;

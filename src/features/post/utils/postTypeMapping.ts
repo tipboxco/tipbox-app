@@ -167,11 +167,11 @@ export const getAllowedPostTypesForContext = (
   switch (contextType) {
     case 'sub_category':
     case 'product_group':
-      // Sadece Free, Tips, Question (Experience, Update, Benchmark hariç)
-      return ['All', 'Generals', 'Tips & Tricks', 'Questions'];
+      // Sıra: Tips & Tricks -> Questions -> Free (Generals) - Create bottom sheet ile uyumlu
+      return ['All', 'Tips & Tricks', 'Questions', 'Generals'];
     case 'product':
-      // Tüm post type'lar
-      return ['All', 'Reviews', 'Tips & Tricks', 'Benchmarks', 'Updates', 'Questions'];
+      // Sıra: Experience (Reviews) -> Tips & Tricks -> Benchmark -> Update -> Question -> Free (Generals)
+      return ['All', 'Reviews', 'Tips & Tricks', 'Benchmarks', 'Updates', 'Questions', 'Generals'];
     default:
       return [];
   }

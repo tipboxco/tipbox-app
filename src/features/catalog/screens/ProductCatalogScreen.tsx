@@ -1348,6 +1348,18 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           } : undefined,
         },
       });
+    } else if (type === 'update') {
+      navigationService.navigate(ROOT_ROUTES.POST, {
+        screen: 'SelectExperienceForUpdateScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+          } : undefined,
+        },
+      });
     }
   }, [navigation, selectedProduct, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId, currentSubCategories, currentProductGroups, breadcrumbItems]);
 

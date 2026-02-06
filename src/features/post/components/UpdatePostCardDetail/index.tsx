@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { View, Modal, Dimensions, StyleSheet, InteractionManager, Pressable as RNPressable } from 'react-native';
 import {
   EllipsisHorizontalIcon,
   InformationCircleIcon,
@@ -33,7 +34,6 @@ import {
 } from '@/src/features/interactions/api/hooks';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 
 interface UpdatePostCardDetailProps {
@@ -74,7 +74,73 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
   const unbookmarkPostMutation = useUnbookmarkPost();
   const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
-  const { openBottomSheet } = useGlobalBottomSheet();
+
+  // Menu modal state (diğer post tipleri gibi RN Modal)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const menuTriggerRef = useRef<View>(null);
+  const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  const handleTriggerLayout = useCallback(() => {
+    if (menuTriggerRef.current) {
+      menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+        if (width > 0 && height > 0) {
+          triggerPositionRef.current = { x, y, width, height };
+        }
+      });
+    }
+  }, []);
+
+  const handleMenuOpen = useCallback((event?: any) => {
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const menuWidth = 260;
+    const menuHeight = 200;
+
+    const calculatePosition = (x: number, y: number, width: number, height: number) => {
+      let left = x + width - menuWidth - 8;
+      let top = y + height + 4;
+      if (left < 12) left = 12;
+      if (left + menuWidth > screenWidth - 12) left = screenWidth - menuWidth - 12;
+      if (top + menuHeight > screenHeight - 12) top = y - menuHeight - 8;
+      if (top < 12) top = 12;
+      return { top, left };
+    };
+
+    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
+      const pageX = event.nativeEvent.pageX;
+      const pageY = event.nativeEvent.pageY;
+      const triggerWidth = 44;
+      const triggerHeight = 44;
+      const pos = calculatePosition(pageX - triggerWidth / 2, pageY - triggerHeight / 2, triggerWidth, triggerHeight);
+      setMenuPosition(pos);
+      setIsMenuOpen(true);
+      return;
+    }
+    if (triggerPositionRef.current) {
+      const { x, y, width, height } = triggerPositionRef.current;
+      setMenuPosition(calculatePosition(x, y, width, height));
+      setIsMenuOpen(true);
+      return;
+    }
+    InteractionManager.runAfterInteractions(() => {
+      if (menuTriggerRef.current) {
+        menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+          if (width > 0 && height > 0) {
+            triggerPositionRef.current = { x, y, width, height };
+            setMenuPosition(calculatePosition(x, y, width, height));
+            setIsMenuOpen(true);
+          } else {
+            setMenuPosition({ top: 56, left: screenWidth - 272 });
+            setIsMenuOpen(true);
+          }
+        });
+      } else {
+        setMenuPosition({ top: 56, left: screenWidth - 272 });
+        setIsMenuOpen(true);
+      }
+    });
+  }, []);
 
   // Sync with post status from API
   useEffect(() => {
@@ -116,23 +182,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
     });
   };
 
-  const handleOptionsPress = () => {
-    // Context bilgilerini relatedPost'tan veya data'dan al
-    const contextType = (data as any).contextType || (data.relatedPost?.product ? 'product' : undefined);
-    const contextId = (data as any).contextId || data.relatedPost?.product?.id || data.product?.id;
-    
-    openBottomSheet(
-      <PostOptionsMenu
-        postId={data.id}
-        postContent={data.content}
-        postAuthorName={data.user.name}
-        postAuthorId={data.user.id}
-        postType="update"
-        postContextType={contextType}
-        postContextId={contextId}
-      />
-    );
-  };
+  const contextType = (data as any).contextType || (data.relatedPost?.product ? 'product' : undefined);
+  const contextId = (data as any).contextId || data.relatedPost?.product?.id || data.product?.id;
 
   return (
     <VStack
@@ -174,11 +225,46 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               {data.user.title}
             </Text>
           </VStack>
-          <Pressable onPress={handleOptionsPress}>
-            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-          </Pressable>
+          <View ref={menuTriggerRef} collapsable={false} onLayout={handleTriggerLayout}>
+            <Pressable onPress={(e) => handleMenuOpen(e)}>
+              <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+            </Pressable>
+          </View>
         </HStack>
       </VStack>
+
+      {/* Menu Modal - diğer post tipleri gibi RN Modal */}
+      <Modal
+        visible={isMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsMenuOpen(false)}
+      >
+        <RNPressable style={StyleSheet.absoluteFill} onPress={() => setIsMenuOpen(false)} />
+        <View
+          style={[
+            detailStyles.menuContainer,
+            {
+              top: menuPosition.top,
+              left: menuPosition.left,
+              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+            },
+          ]}
+        >
+          <RNPressable style={{ flex: 1 }} onPress={(e) => e.stopPropagation()}>
+            <PostOptionsMenu
+              postId={data.id}
+              postContent={data.content}
+              postAuthorName={data.user.name}
+              postAuthorId={data.user.id}
+              postType="update"
+              postContextType={contextType}
+              postContextId={contextId}
+              onClose={() => setIsMenuOpen(false)}
+            />
+          </RNPressable>
+        </View>
+      </Modal>
 
       {/* Badges */}
       <HStack px='$3' py={10} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
@@ -479,4 +565,21 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
     </VStack>
   );
 };
+
+const detailStyles = StyleSheet.create({
+  menuContainer: {
+    position: 'absolute',
+    width: 260,
+    maxHeight: 320,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E9E9E9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+});
 

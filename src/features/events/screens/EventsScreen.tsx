@@ -1,4 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  Pressable, 
+  StyleSheet, 
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -7,15 +15,6 @@ import Animated, {
   interpolateColor,
   withTiming,
 } from 'react-native-reanimated';
-import {
-  Box,
-  VStack,
-  HStack,
-  Pressable,
-  Input,
-  InputField,
-  Text,
-} from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { Bars3Icon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -24,8 +23,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
 import { navigationService } from '@/src/services/NavigationService';
 import { FilterOption } from '../components/AchievementFilter';
-import { CommunityTab, AchievementTab } from '../components/TabContents';
+import { CommunityTab } from '../components/TabContents';
+import CollectionsTab from '../components/TabContents/CollectionsTab';
 import { useDrawerStore } from '@/src/store/drawerStore';
+import FilterBottomSheet, { FilterSelection } from '../components/FilterBottomSheet';
+import CollectionsBottomSheet from '../components/CollectionsBottomSheet';
+import type { CollectionFilters } from '../types/medusa.types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
@@ -72,15 +77,16 @@ const EventsScreen: React.FC = () => {
     openDrawer();
   }, [navigation, openDrawer]);
   
-  // 🎯 CORE: Shared progress value (0 = Community, 1 = Achievement)
+  // 🎯 CORE: Shared progress value (0 = Community Events, 1 = Collections)
   const progress = useSharedValue(0);
   
   // Tab state - currentPage'e göre hesaplanıyor
-  const activeTab: 'community' | 'achievement' = currentPage === 0 ? 'community' : 'achievement';
+  const activeTab: 'community' | 'collections' = currentPage === 0 ? 'community' : 'collections';
   
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
   // Debounce search query for API calls
   useEffect(() => {
@@ -91,12 +97,26 @@ const EventsScreen: React.FC = () => {
   }, [searchQuery]);
 
   // PERFORMANCE FIX: Background colors - direkt hesapla (useMemo overhead'i yok)
-  const backgroundColor = isDark ? '$backgroundDark950' : '#FFFFFF';
+  const backgroundColor = isDark ? '#000000' : '#FFFFFF';
   const tabHeaderBgColor = '#FFFFFF'; // Tab header her zaman beyaz
 
   // Memoize filter change handler to prevent AchievementTab re-renders
   const handleFilterChange = useCallback((filter: FilterOption) => {
     setActiveFilter(filter);
+  }, []);
+  
+  // Filter apply handler
+  const handleFilterApply = useCallback((filters: FilterSelection) => {
+    console.log('[EventsScreen] Filters applied:', filters);
+    // TODO: Backend'e filter parametrelerini gönder
+    setShowFilterSheet(false);
+  }, []);
+  
+  // Collections filter apply handler
+  const handleCollectionsFilterApply = useCallback((filters: CollectionFilters) => {
+    console.log('[EventsScreen] Collections Filters applied:', filters);
+    // TODO: CollectionsTab'a filter parametrelerini geç
+    setShowFilterSheet(false);
   }, []);
 
   const handleEventPress = (eventId: string) => {
@@ -141,7 +161,7 @@ const EventsScreen: React.FC = () => {
     [progress]
   );
 
-  // Tab 1 (Community) label color animation
+  // Tab 1 (Community Events) label color animation
   const tab1Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
@@ -153,7 +173,7 @@ const EventsScreen: React.FC = () => {
     return { color };
   });
 
-  // Tab 2 (Achievement) label color animation
+  // Tab 2 (Collections) label color animation
   const tab2Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
@@ -184,20 +204,13 @@ const EventsScreen: React.FC = () => {
   const HEADER_MIN_HEIGHT = 56;
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={backgroundColor}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.container}>
+      <View style={[styles.mainContainer, { backgroundColor }]}>
         {/* Inline Header - Ekranın içinde, flicker önleme */}
-        {/* PERFORMANCE FIX: Header'ı en üste koy, anında render et */}
-        <Box
-          bg={headerBgColor}
-          px="$4"
-          justifyContent="center"
-          minHeight={HEADER_MIN_HEIGHT}
-          collapsable={false}
-        >
-          <HStack space="md" alignItems="center">
+        <View style={[styles.header, { backgroundColor: headerBgColor }]}>
+          <View style={styles.headerContent}>
             {/* Sol kısım - Menu Icon */}
-            <Box flex={1} alignItems="flex-start" justifyContent="center">
+            <View style={styles.headerLeft}>
               <Pressable 
                 onPress={handleOpenDrawer}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -208,67 +221,59 @@ const EventsScreen: React.FC = () => {
                   color={headerTextColor}
                 />
               </Pressable>
-            </Box>
+            </View>
 
             {/* Orta kısım - Title */}
-            <Box flex={3} alignItems="center" justifyContent="center">
+            <View style={styles.headerCenter}>
               <Text
-                color={headerTextColor}
-                fontSize="$md"
-                fontWeight="$bold"
-                textAlign="center"
+                style={[styles.headerTitle, { color: headerTextColor }]}
               >
                 Events
               </Text>
-            </Box>
+            </View>
 
             {/* Sağ kısım - Boş */}
-            <Box flex={1} />
-          </HStack>
-        </Box>
+            <View style={styles.headerRight} />
+          </View>
+        </View>
 
-        <VStack flex={1}>
+        <View style={styles.contentContainer}>
           {/* Search Bar - Above tabs */}
-          <VStack
-            space="md"
-            pb="$4"
-            px="$4"
-            bg={backgroundColor}
-          >
-            <HStack
-              alignItems="center"
-              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-              borderWidth={1}
-              borderColor="#E9E9E9"
-              borderRadius={20}
-              px={14}
-              space="sm"
-            >
+          <View style={[styles.searchContainer, { backgroundColor }]}>
+            <View style={[styles.searchBar, { backgroundColor: isDark ? '#2A2A2A' : '#F2F2F2' }]}>
               <Feather
                 name="search"
                 size={24}
-                color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
+                color="rgba(60, 60, 67, 0.6)"
               />
-              <Input flex={1} borderWidth={0} bg="transparent">
-                <InputField
-                  placeholder="Search events"
-                  placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                  color={isDark ? '#000' : '#000'}
-                  fontSize="$xs"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-              </Input>
-            </HStack>
-          </VStack>
+              <TextInput
+                style={[styles.searchInput, { color: '#000' }]}
+                placeholder={activeTab === 'community' ? 'Search events' : 'Search Collections'}
+                placeholderTextColor="#B9B9B9"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {/* Filter Icon - Only show in Collections tab */}
+              {activeTab === 'collections' && (
+                <Pressable
+                  onPress={() => setShowFilterSheet(true)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Feather
+                    name="sliders"
+                    size={20}
+                    color={isDark ? '#FFF' : '#000'}
+                  />
+                </Pressable>
+              )}
+            </View>
+          </View>
 
           {/* Tab Header */}
-          <VStack pt={0} pb="$4" bg={tabHeaderBgColor}>
-            <HStack
+          <View style={[styles.tabHeader, { backgroundColor: tabHeaderBgColor }]}>
+            <View
               ref={tabContainerRef}
-              p={0}
-              m={0}
-              position="relative"
+              style={styles.tabContainer}
               onLayout={(event) => {
                 const width = event.nativeEvent.layout.width;
                 setTabContainerWidth(width);
@@ -276,98 +281,165 @@ const EventsScreen: React.FC = () => {
             >
               {/* Community Tab Label */}
               <Pressable
-                flex={1}
+                style={styles.tabButton}
                 onPress={() => handleTabPress(0)}
-                alignItems="center"
-                pb={8}
               >
-                <VStack alignItems="center" space="xs">
-                  <Animated.Text
-                    style={[
-                      {
-                        fontSize: 14,
-                        fontWeight: 'bold',
-                      },
-                      tab1Style,
-                    ]}
-                  >
-                    Community Events
-                  </Animated.Text>
-                </VStack>
+                <Animated.Text style={[styles.tabLabel, tab1Style]}>
+                  Community Events
+                </Animated.Text>
               </Pressable>
 
-              {/* Achievement Tab Label */}
+              {/* Collections Tab Label */}
               <Pressable
-                flex={1}
+                style={styles.tabButton}
                 onPress={() => handleTabPress(1)}
-                alignItems="center"
               >
-                <VStack alignItems="center" space="xs">
-                  <Animated.Text
-                    style={[
-                      {
-                        fontSize: 14,
-                        fontWeight: 'bold',
-                      },
-                      tab2Style,
-                    ]}
-                  >
-                    Achievement Ladder
-                  </Animated.Text>
-                </VStack>
+                <Animated.Text style={[styles.tabLabel, tab2Style]}>
+                  Collections
+                </Animated.Text>
               </Pressable>
 
               {/* Animated Indicator */}
               {tabWidth > 0 && (
                 <Animated.View
                   style={[
+                    styles.indicator,
                     {
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
                       width: indicatorWidth,
-                      height: 2,
                       backgroundColor: isDark ? '#cccccc' : '#000000',
                     },
                     indicatorStyle,
                   ]}
                 />
               )}
-            </HStack>
-          </VStack>
+            </View>
+          </View>
 
           {/* PagerView - Native swipe tab switching */}
           <AnimatedPagerView
             ref={pagerRef}
-            style={{ flex: 1 }}
+            style={styles.pagerView}
             initialPage={0}
             onPageScroll={handlePageScroll}
             onPageSelected={handlePageSelected}
           >
-            {/* Community Tab */}
-            <Box key="0" flex={1}>
+            {/* Community Events Tab */}
+            <View key="0" style={styles.page}>
               <CommunityTab 
                 searchQuery={debouncedSearchQuery}
                 onEventPress={handleEventPress} 
               />
-            </Box>
+            </View>
 
-            {/* Achievement Tab */}
-            <Box key="1" flex={1}>
-              <AchievementTab
+            {/* Collections Tab */}
+            <View key="1" style={styles.page}>
+              <CollectionsTab
                 searchQuery={debouncedSearchQuery}
                 activeFilter={activeFilter}
-                onFilterChange={handleFilterChange}
               />
-            </Box>
+            </View>
           </AnimatedPagerView>
-        </VStack>
-      </Box>
+        </View>
+      </View>
+      
+      {/* Collections Filter Bottom Sheet - Medusa entegrasyonlu */}
+      <CollectionsBottomSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        onApply={handleCollectionsFilterApply}
+        isDark={isDark}
+      />
     </SafeAreaView>
   );
 };
 
 EventsScreen.displayName = 'EventsScreen';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  mainContainer: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    minHeight: 56,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerLeft: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  headerCenter: {
+    flex: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerRight: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  searchContainer: {
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E9E9E9',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 12,
+    height: 44,
+    paddingVertical: 0,
+  },
+  tabHeader: {
+    paddingBottom: 16,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    position: 'relative',
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingBottom: 8,
+  },
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  indicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: 2,
+  },
+  pagerView: {
+    flex: 1,
+  },
+  page: {
+    flex: 1,
+  },
+});
 
 // PERFORMANCE FIX: Memoize EventsScreen to prevent unnecessary re-renders during tab transitions
 export default React.memo(EventsScreen);

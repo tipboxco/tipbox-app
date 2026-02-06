@@ -23,6 +23,8 @@ interface PostOptionsMenuProps {
   postType?: 'post' | 'experience' | 'benchmark' | 'tips_and_tricks' | 'question' | 'update'; // Post tipi (update için gerekli)
   postContextType?: 'product' | 'product_group' | 'sub_category'; // Context type (update için gerekli)
   postContextId?: string; // Context ID (update için gerekli)
+  /** Modal içinde kullanıldığında kapatmak için; verilmezse closeBottomSheet kullanılır */
+  onClose?: () => void;
 }
 
 export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
@@ -33,10 +35,12 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   postType,
   postContextType,
   postContextId,
+  onClose,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { closeBottomSheet } = useGlobalBottomSheet();
+  const close = onClose ?? closeBottomSheet;
   const sharePostMutation = useSharePost();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
@@ -46,7 +50,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   const isPostOwner = user?.id && postAuthorId && user.id === postAuthorId;
 
   const handleExternalShare = useCallback(async () => {
-    closeBottomSheet();
+    close();
     
     try {
       const shareMessage = postContent 
@@ -60,10 +64,10 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     } catch (error) {
       console.error('[PostOptionsMenu] Share error:', error);
     }
-  }, [postId, postContent, postAuthorName, closeBottomSheet]);
+  }, [postId, postContent, postAuthorName, close]);
 
   const handleUpdate = useCallback(() => {
-    closeBottomSheet();
+    close();
     
     // CRITICAL: Update seçeneği sadece experience post tipinde görünür
     if (postType === 'experience') {
@@ -83,7 +87,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
       // Bu kod bloğuna normalde ulaşılmamalı (showUpdateOption = false)
       Alert.alert('Info', 'Update feature is only available for experience posts.');
     }
-  }, [postId, postType, postContextType, postContextId, closeBottomSheet]);
+  }, [postId, postType, postContextType, postContextId, close]);
 
   const handleDelete = useCallback(() => {
     closeBottomSheet();
@@ -139,10 +143,10 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
         },
       ]
     );
-  }, [postId, deletePostMutation, closeBottomSheet]);
+  }, [postId, deletePostMutation, close]);
 
   const handleReport = useCallback(() => {
-    closeBottomSheet();
+    close();
     
     Alert.alert(
       'Report Post',
@@ -163,7 +167,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
         },
       ]
     );
-  }, [postId, closeBottomSheet]);
+  }, [postId, close]);
 
   // CRITICAL: Update seçeneği sadece experience post tipinde görünür
   const showUpdateOption = isPostOwner && postType === 'experience';

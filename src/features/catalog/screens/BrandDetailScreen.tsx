@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useCallback } from 'react';
-import { Dimensions, ActivityIndicator, View, StyleSheet, ScrollView } from 'react-native';
+import { Dimensions, ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
@@ -11,6 +11,14 @@ import {
     Button,
     ButtonText,
 } from '@gluestack-ui/themed';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolate,
+  runOnJS,
+} from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -40,6 +48,10 @@ import { CardType, ProductInfoType } from '@/src/types/common';
 
 const { width } = Dimensions.get('window');
 
+// Banner ve header yükseklikleri
+const BANNER_HEIGHT = 250;
+const HEADER_HEIGHT = 80; // Sticky header yüksekliği
+
 type BrandDetailScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'BrandDetailScreen'>;
 type BrandDetailScreenRouteProp = RouteProp<BrandStackParamList, 'BrandDetailScreen'>;
 
@@ -53,6 +65,9 @@ const BrandDetailScreen: React.FC = () => {
 
     // Route params'dan brandId'yi güvenli şekilde al
     const brandId = route.params?.brandId;
+    
+    // Scroll animation için shared value
+    const scrollY = useSharedValue(0);
     
     // Debug: brandId kontrolü
     useEffect(() => {
@@ -458,23 +473,72 @@ const BrandDetailScreen: React.FC = () => {
         }
     }, [mapBrandPostToPostCardData, mapExperienceToCardData, mapBenchmarkToCardData, mapQuestionToCardData, mapTipsToCardData]);
 
-    // Banner yüksekliği ve içerik başlangıç noktası
-    const BANNER_HEIGHT = 250;
-    const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
-    const CONTENT_START = BANNER_HEIGHT - CONTENT_OFFSET; // 230px
+    // Scroll handler - Reanimated için animasyon + Infinite scroll için sayfa yükleme
+    const scrollHandler = useAnimatedScrollHandler(
+        {
+            onScroll: (event) => {
+                scrollY.value = event.contentOffset.y;
+                
+                // Infinite scroll: ScrollView'in altına yaklaştığında yeni sayfa yükle
+                const { layoutMeasurement, contentOffset, contentSize } = event;
+                const paddingToBottom = 300;
+                const isCloseToBottom =
+                    layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
 
-    // Infinite scroll handler
-    const handleScroll = useCallback((event: any) => {
-        // Infinite scroll: ScrollView'in altına yaklaştığında yeni sayfa yükle
-        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-        const paddingToBottom = 300; // ScrollView'in altına yaklaşma mesafesi
-        const isCloseToBottom =
-            layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+                if (isCloseToBottom && hasNextBrandFeedPage && !isFetchingNextBrandFeedPage) {
+                    runOnJS(fetchNextBrandFeedPage)();
+                }
+            },
+        },
+        [hasNextBrandFeedPage, isFetchingNextBrandFeedPage, fetchNextBrandFeedPage]
+    );
 
-        if (isCloseToBottom && hasNextBrandFeedPage && !isFetchingNextBrandFeedPage) {
-            fetchNextBrandFeedPage();
-        }
-    }, [hasNextBrandFeedPage, isFetchingNextBrandFeedPage, fetchNextBrandFeedPage]);
+    // Banner parallax animation - scroll'a göre yukarı kayar
+    const bannerAnimatedStyle = useAnimatedStyle(() => {
+        const translateY = interpolate(
+            scrollY.value,
+            [0, BANNER_HEIGHT],
+            [0, -BANNER_HEIGHT * 0.5], // Parallax effect - banner yarı hızda kayar
+            Extrapolate.CLAMP
+        );
+
+        const opacity = interpolate(
+            scrollY.value,
+            [0, BANNER_HEIGHT * 0.5, BANNER_HEIGHT],
+            [1, 0.5, 0],
+            Extrapolate.CLAMP
+        );
+
+        return {
+            transform: [{ translateY }],
+            opacity,
+        };
+    });
+
+    // Sticky header animation - scroll belirli noktaya ulaştığında sabitlenir
+    const stickyHeaderAnimatedStyle = useAnimatedStyle(() => {
+        // Banner'ın çoğu kaybolduğunda header sticky olur
+        const threshold = BANNER_HEIGHT - HEADER_HEIGHT - insets.top;
+        
+        const translateY = interpolate(
+            scrollY.value,
+            [threshold - 20, threshold],
+            [-HEADER_HEIGHT, 0],
+            Extrapolate.CLAMP
+        );
+
+        const opacity = interpolate(
+            scrollY.value,
+            [threshold - 20, threshold],
+            [0, 1],
+            Extrapolate.CLAMP
+        );
+
+        return {
+            transform: [{ translateY }],
+            opacity,
+        };
+    });
 
     // Loading state
     if (isBrandCatalogLoading) {
@@ -511,90 +575,161 @@ const BrandDetailScreen: React.FC = () => {
     }
 
     return (
-            <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FAFAFA' }}>
-                <ScrollView
-                    onScroll={handleScroll}
-                    scrollEventThrottle={400}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
+        <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FAFAFA' }}>
+            {/* Sticky Header - Scroll'da yukarı sabitlenir */}
+            <Animated.View
+                style={[
+                    {
+                        position: 'absolute',
+                        top: insets.top,
+                        left: 0,
+                        right: 0,
+                        height: HEADER_HEIGHT,
+                        backgroundColor: isDark ? '#000000' : '#FAFAFA',
+                        zIndex: 100,
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? '#1A1A1A' : '#E9E9E9',
+                    },
+                    stickyHeaderAnimatedStyle,
+                ]}
+            >
+                <HStack
+                    px="$4"
+                    py="$3"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    height="100%"
                 >
-                {/* Banner Image */}
-                <Box
-                    width={width}
-                    height={250}
-                    position="relative"
-                    overflow="hidden"
-                >
-                    <Image
-                        source={toImageSource(brandCatalog.bannerImage) || require('@/assets/defaultImages/default-banner.png')}
-                        alt="Brand Banner"
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                    />
-
-                    {/* Gradient Overlay */}
-                    <Box
-                        position="absolute"
-                        top={0}
-                        left={0}
-                        right={0}
-                        bottom={0}
-                        bg="rgba(0, 0, 0, 0.6)"
-                    />
-
-                    {/* Header Overlay on Banner */}
-                    <HStack
-                        position="absolute"
-                        top={insets.top + 10}
-                        left={16}
-                        right={16}
-                        justifyContent="space-between"
-                        alignItems="center"
-                        zIndex={10}
-                    >
-                        <Pressable
-                            onPress={() => navigation.goBack()}
-                            width={36}
-                            height={36}
-                            borderRadius={18}
-                            bg="rgba(0, 0, 0, 0.6)"
-                            alignItems="center"
-                            justifyContent="center"
-                        >
-                            <ChevronLeftIcon width={20} height={20} color="#FFFFFF" />
-                        </Pressable>
-
-                        <Pressable
-                            width={36}
-                            height={36}
-                            borderRadius={18}
-                            bg="rgba(0, 0, 0, 0.6)"
-                            alignItems="center"
-                            justifyContent="center"
-                        >
-                            <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
-                        </Pressable>
-                    </HStack>
-
-                    {/* Brand Info Overlay */}
-                    <VStack
-                        position="absolute"
-                        bottom={0}
-                        left={0}
-                        right={0}
-                        bg="rgba(0, 0, 0, 0.6)"
-                        p="$4"
-                    >
+                    <VStack flex={1}>
                         <Text
-                            color="#FFFFFF"
-                            fontSize="$2xs"
-                            lineHeight="$sm"
-                            mb="$2"
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontSize="$lg"
+                            fontWeight="$bold"
+                            numberOfLines={1}
                         >
-                            Discover all experiences related to {brandCatalog.name}.
+                            {brandCatalog?.name}
                         </Text>
+                        <HStack alignItems="center" space="sm">
+                            <UsersIcon width={12} height={12} color="#9D9D9D" />
+                            <Text
+                                color="#9D9D9D"
+                                fontSize="$xs"
+                                fontWeight="$medium"
+                            >
+                                {brandCatalog?.followers} Followers
+                            </Text>
+                        </HStack>
                     </VStack>
-                </Box>
+                    <Button
+                        bg={brandCatalog?.isJoined ? "rgba(215, 215, 215, 0.8)" : "#C2E607"}
+                        borderRadius={10}
+                        minWidth={65}
+                        height={24}
+                        onPress={handleJoinLeavePress}
+                        disabled={isJoinLeavePending}
+                        opacity={isJoinLeavePending ? 0.7 : 1}
+                    >
+                        {isJoinLeavePending ? (
+                            <ActivityIndicator size="small" color="#000000" />
+                        ) : (
+                            <ButtonText
+                                color="#000000"
+                                fontSize="$xs"
+                                fontWeight="$bold"
+                                textAlign="center"
+                            >
+                                {brandCatalog?.isJoined ? 'Leave' : 'Join'}
+                            </ButtonText>
+                        )}
+                    </Button>
+                </HStack>
+            </Animated.View>
+
+            <Animated.ScrollView
+                onScroll={scrollHandler}
+                scrollEventThrottle={16}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
+            >
+                {/* Banner Image - Parallax effect */}
+                <Animated.View style={bannerAnimatedStyle}>
+                    <Box
+                        width={width}
+                        height={BANNER_HEIGHT}
+                        position="relative"
+                        overflow="hidden"
+                    >
+                        <Image
+                            source={toImageSource(brandCatalog.bannerImage) || require('@/assets/defaultImages/default-banner.png')}
+                            alt="Brand Banner"
+                            style={{ width: '100%', height: '100%' }}
+                            resizeMode="cover"
+                        />
+
+                        {/* Gradient Overlay */}
+                        <Box
+                            position="absolute"
+                            top={0}
+                            left={0}
+                            right={0}
+                            bottom={0}
+                            bg="rgba(0, 0, 0, 0.6)"
+                        />
+
+                        {/* Header Overlay on Banner */}
+                        <HStack
+                            position="absolute"
+                            top={insets.top + 10}
+                            left={16}
+                            right={16}
+                            justifyContent="space-between"
+                            alignItems="center"
+                            zIndex={10}
+                        >
+                            <Pressable
+                                onPress={() => navigation.goBack()}
+                                width={36}
+                                height={36}
+                                borderRadius={18}
+                                bg="rgba(0, 0, 0, 0.6)"
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                <ChevronLeftIcon width={20} height={20} color="#FFFFFF" />
+                            </Pressable>
+
+                            <Pressable
+                                width={36}
+                                height={36}
+                                borderRadius={18}
+                                bg="rgba(0, 0, 0, 0.6)"
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
+                            </Pressable>
+                        </HStack>
+
+                        {/* Brand Info Overlay */}
+                        <VStack
+                            position="absolute"
+                            bottom={0}
+                            left={0}
+                            right={0}
+                            bg="rgba(0, 0, 0, 0.6)"
+                            p="$4"
+                        >
+                            <Text
+                                color="#FFFFFF"
+                                fontSize="$2xs"
+                                lineHeight="$sm"
+                                mb="$2"
+                            >
+                                Discover all experiences related to {brandCatalog.name}.
+                            </Text>
+                        </VStack>
+                    </Box>
+                </Animated.View>
 
                 {/* Content */}
                 <VStack
@@ -857,8 +992,8 @@ const BrandDetailScreen: React.FC = () => {
                         )}
                     </VStack>
                 </VStack>
-            </ScrollView>
-            </View>
+            </Animated.ScrollView>
+        </View>
     );
 };
 

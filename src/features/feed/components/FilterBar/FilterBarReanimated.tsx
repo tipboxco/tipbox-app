@@ -23,9 +23,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
   interpolate,
   runOnJS,
   useAnimatedReaction,
+  Easing,
   type SharedValue,
 } from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -65,11 +67,17 @@ export const SORT_OPTIONS = [
   { value: 'top', label: 'Top' },
 ] as const;
 
-// Spring configuration for natural feel
+// Spring configuration for open animation (natural feel)
 const SPRING_CONFIG = {
   damping: 20,
   stiffness: 300,
   mass: 0.8,
+};
+
+// Kapanışta overshoot olmasın, tek seferde yerleşsin
+const CLOSE_TIMING_CONFIG = {
+  duration: 220,
+  easing: Easing.out(Easing.cubic),
 };
 
 // Fixed panel height - no calculation needed
@@ -107,7 +115,6 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   // State
   const [openFilterId, setOpenFilterId] = useState<string | null>(null);
   const [lastOpenFilterId, setLastOpenFilterId] = useState<string | null>(null);
-  const filterBarHeight = useSharedValue(0);
 
   // 🎯 CORE: Single progress sharedValue (0 = closed, 1 = open)
   const progress = useSharedValue(0);
@@ -317,16 +324,21 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     }
   }, []);
 
-  // FIX: Panel kapatma fonksiyonu
+  // FIX: Panel kapatma - withTiming ile tek seferde kapanır (spring overshoot = çift sıçrama yok)
+  // lastOpenFilterId bir frame sonra temizlenir, içerik unmount layout tam oturduktan sonra olur
+  const scheduleClearLastFilterId = useCallback(() => {
+    requestAnimationFrame(() => setLastOpenFilterId(null));
+  }, []);
   const closePanel = useCallback(() => {
     setOpenFilterId(null);
     openFilterIdShared.value = null;
-    progress.value = withSpring(0, SPRING_CONFIG);
-    // Kapanma animasyonu tamamlandıktan sonra lastOpenFilterId'yi temizle
-    setTimeout(() => {
-      setLastOpenFilterId(null);
-    }, 400);
-  }, [progress, openFilterIdShared]);
+    progress.value = withTiming(0, CLOSE_TIMING_CONFIG, (finished) => {
+      'worklet';
+      if (finished) {
+        runOnJS(scheduleClearLastFilterId)();
+      }
+    });
+  }, [progress, openFilterIdShared, scheduleClearLastFilterId]);
 
   // FIX: Panel kapatma fonksiyonunu parent'a expose et
   useEffect(() => {
@@ -357,10 +369,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         const optionsCount = getOptionsCount(filterId, allCategories.length);
         const calculatedHeight = calculatePanelHeight(optionsCount, filterId);
         
-        if (__DEV__) {
-          console.log('[FilterBarReanimated] Opening panel:', { filterId, optionsCount, calculatedHeight, filterBarHeight: filterBarHeight.value });
-        }
-        
+       
         // FIX: Önce state'leri güncelle, sonra animasyonu başlat
         // Bu sayede panel render edilir ve animasyon düzgün çalışır
         setLastOpenFilterId(openFilterId || filterId);
@@ -376,7 +385,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         });
       }
     },
-    [openFilterId, progress, openFilterIdShared, panelHeight, filterBarHeight, getOptionsCount, calculatePanelHeight, allCategories.length]
+    [openFilterId, progress, openFilterIdShared, panelHeight, getOptionsCount, calculatePanelHeight, allCategories.length]
   );
 
   // Apply filters (close panel)
@@ -434,25 +443,18 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     [onPanelHeightChange]
   );
 
-  // Panel animated style - absolute positioned, z-index on top
+  // Panel animated style - IN FLOW: aşağı doğru açılır, feed içeriği aşağı kayar (modal/overlay yok)
+  // height 0'ın altına inmesin (overshoot / ikinci layout sıçraması önlenir)
   const panelStyle = useAnimatedStyle(() => {
     'worklet';
-    const height = interpolate(progress.value, [0, 1], [0, panelHeight.value]);
+    const rawHeight = interpolate(progress.value, [0, 1], [0, panelHeight.value]);
+    const height = Math.max(0, rawHeight);
     const opacity = interpolate(progress.value, [0, 1], [0, 1]);
-    // FIX: filterBarHeight 0 ise varsayılan bir değer kullan (filter bar'ın yüksekliği yaklaşık 50px)
-    const topPosition = filterBarHeight.value > 0 ? filterBarHeight.value : 50;
     return {
-      position: 'absolute' as const,
-      top: topPosition,
-      left: 0,
-      right: 0,
       height,
       opacity,
-      overflow: 'hidden' as const, // Animasyon için gerekli
-      zIndex: 1000,
-      elevation: 10, // Android
-      // FIX: Panel içeriği tıklanabilir olmalı (overlay'in üstünde)
-      pointerEvents: 'auto' as const,
+      overflow: 'hidden' as const,
+      width: '100%' as const,
     };
   });
 
@@ -869,16 +871,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
 
   return (
     <Box position="relative">
-      <Box 
-        px="$4" 
-        pb="$2" 
-        mt="$2"
-        onLayout={(event) => {
-          const { height } = event.nativeEvent.layout;
-          // FIX: filterBarHeight'ı hemen güncelle (animasyon başlamadan önce)
-          filterBarHeight.value = height;
-        }}
-      >
+      <Box px="$4" pb="$2" mt="$2">
         <HStack justifyContent="space-between" alignItems="center">
           <HStack space="sm" alignItems="center">
             {renderFilterButton('interest', 'Interests', interestArrowStyle)}
@@ -889,8 +882,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         </HStack>
       </Box>
 
-      {/* Animated Panel - Absolute positioned, z-index on top */}
-      {/* FIX: Panel'i her zaman render et, sadece opacity ve height ile kontrol et */}
+      {/* Animated Panel - IN FLOW: aşağı doğru açılır, feed aşağı kayar (aynı z-index, overlay yok) */}
       <Animated.View
         style={[
           panelStyle,
@@ -906,12 +898,9 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
             shadowRadius: 4,
           },
         ]}
-        pointerEvents={(openFilterId || lastOpenFilterId) ? 'auto' : 'none'}
       >
         {(openFilterId || lastOpenFilterId) && renderFilterPanel()}
       </Animated.View>
-
-      {/* FIX: Overlay kaldırıldı - FeedScreen seviyesinde overlay kullanılıyor */}
     </Box>
   );
 };

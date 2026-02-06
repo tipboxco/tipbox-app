@@ -835,8 +835,8 @@ const EventCreatePost: React.FC = () => {
     }
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FFFFFF'}>
             {/* Header */}
             <Header
                 title="Write a Post"

@@ -43,6 +43,7 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
+import { FilterBarReanimated } from '../components/FilterBar/FilterBarReanimated';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
@@ -98,6 +99,20 @@ const FeedScreenInner = React.memo(() => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
+  // Filtre state'i
+  // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
+  // 
+  // Filtre Parametreleri:
+  // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
+  //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
+  //   Backend'de category ile birleştirilir (OR mantığı)
+  // - tags: Post türleri array'i (Review, Benchmark, Tips, Question, Experience, Update)
+  //   contentPostTags ve tags tablolarında arama yapılır
+  // - category: Tek bir kategori ID'si
+  //   Backend'de interests ile birleştirilir (OR mantığı)
+  // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
+  const [filters, setFilters] = useState<FeedFilterParams>({});
+
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
@@ -124,20 +139,6 @@ const FeedScreenInner = React.memo(() => {
       return () => clearTimeout(timer);
     }
   }, [isDrawerOpen, isDragging]);
-
-  // Filtre state'i
-  // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
-  // 
-  // Filtre Parametreleri:
-  // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
-  //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
-  //   Backend'de category ile birleştirilir (OR mantığı)
-  // - tags: Post türleri array'i (Review, Benchmark, Tips, Question, Experience, Update)
-  //   contentPostTags ve tags tablolarında arama yapılır
-  // - category: Tek bir kategori ID'si
-  //   Backend'de interests ile birleştirilir (OR mantığı)
-  // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
-  const [filters, setFilters] = useState<FeedFilterParams>({});
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
@@ -993,12 +994,17 @@ const FeedScreenInner = React.memo(() => {
           leftAction="menu"
           onSearchPress={handleSearchPress}
         />
-        <View>
+        <View style={{ flexShrink: 0 }}>
           <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
+          {/* FilterBar - panel aşağı doğru açılır, feed içeriği aşağı kayar (modal/overlay yok) */}
+          <FilterBarReanimated
+            filters={filters}
+            onFiltersChange={setFilters}
+          />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minHeight: 0 }}>
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
           ) : error ? (
@@ -1092,8 +1098,6 @@ const FeedScreenInner = React.memo(() => {
           visible={isSearchVisible}
           onClose={handleSearchClose}
         />
-
-
       </View>
     </SafeAreaView>
   );
