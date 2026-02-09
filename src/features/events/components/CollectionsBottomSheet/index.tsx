@@ -6,7 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
-import { BottomSheetModal, BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Feather } from '@expo/vector-icons';
 import { useMainCategories, useSubCategories } from '../../api/hooks';
 import type { CollectionFilters } from '../../types/medusa.types';
@@ -258,23 +258,22 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
       activeOffsetY={[-5, 5]}
       failOffsetX={[-5, 5]}
     >
-      <BottomSheetView style={styles.container}>
-        {/* Header - Filter daima üstte sabit */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: isDark ? '#FFF' : '#000' }]}>Filter</Text>
-        </View>
+      {/* Header - Filter daima üstte sabit */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: isDark ? '#FFF' : '#000' }]}>Filter</Text>
+      </View>
 
-        {/* ScrollView içinde tüm içerik + Footer */}
-        <BottomSheetScrollView
-          ref={scrollViewRef}
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={true}
-          bounces={true}
-          scrollEnabled={true}
-          nestedScrollEnabled={true}
-          keyboardShouldPersistTaps="handled"
-        >
+      {/* ScrollView içinde tüm içerik + Footer */}
+      <BottomSheetScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
+      >
           {/* Main Category */}
           <View ref={mainCategoryRef} style={styles.fieldContainer}>
             <Pressable
@@ -581,28 +580,24 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
           {/* Footer - Done Button - ScrollView içinde */}
           <View style={styles.footer}>
             <Pressable
-              style={({ pressed }) => [styles.doneButton, { opacity: pressed ? 0.8 : 1 }]}
+              style={({ pressed }) => [styles.doneButton, { opacity: pressed ? 0.8 : 1 }, { backgroundColor: '#D8FF08' }]}
               onPress={handleDone}
             >
               <Text style={styles.doneButtonText}>Done</Text>
             </Pressable>
           </View>
         </BottomSheetScrollView>
-      </BottomSheetView>
     </BottomSheetModal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingBottom: 220,
-  },
   header: {
     alignItems: 'center',
     paddingBottom: 18,
     paddingHorizontal: 20,
     paddingTop: 8,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 16,
@@ -674,7 +669,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 16,
     paddingBottom: 40,
-    backgroundColor: 'transparent',
+  
     marginTop: 8,
   },
   doneButton: {
@@ -683,12 +678,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#D8FF08',
+
+   
   },
   doneButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
+    textAlign: 'center',
   },
 });
 
