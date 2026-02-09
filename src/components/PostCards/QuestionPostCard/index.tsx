@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
+import { VStack, HStack, Text, Image, Pressable, Box, Divider, Switch } from '@gluestack-ui/themed';
 import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Keyboard } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
@@ -42,7 +42,7 @@ import type { UserReportCategory } from '@/src/features/profile/api/profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
-import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
+import { useUpdatePost, useDeletePost, useTogglePostBoost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
@@ -74,6 +74,10 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
   
+  // Boost state
+  const [isBoosted, setIsBoosted] = useState(data.isBoosted || false);
+  const [boostPrice, setBoostPrice] = useState(data.boostPrice);
+  
   // Animated counter states
   const [likesCount, setLikesCount] = useState(data.stats.likes);
   const [commentsCount, setCommentsCount] = useState(data.stats.comments);
@@ -90,6 +94,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
   const { mutate: reportUser } = useReportUser();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
+  const toggleBoostMutation = useTogglePostBoost();
 
   // Sync with post status from API
   useEffect(() => {
@@ -99,6 +104,12 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       setIsShared(postStatus.shared);
     }
   }, [postStatus]);
+
+  // Sync boost state with data prop changes
+  useEffect(() => {
+    setIsBoosted(data.isBoosted || false);
+    setBoostPrice(data.boostPrice);
+  }, [data.isBoosted, data.boostPrice]);
 
   // Sync stats with data prop changes
   useEffect(() => {
@@ -264,6 +275,37 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       ]
     );
   }, [data.id, deletePostMutation]);
+
+  // Boost toggle handler
+  const handleBoostToggle = useCallback((value: boolean) => {
+    // Optimistic update
+    setIsBoosted(value);
+    
+    toggleBoostMutation.mutate(
+      { postId: data.id, enabled: value },
+      {
+        onSuccess: (response) => {
+          // Backend'den gelen güncel değerleri ayarla
+          setIsBoosted(response.isBoosted);
+          setBoostPrice(response.boostPrice);
+          
+          Alert.alert(
+            'Başarılı',
+            value 
+              ? `Boost aktif edildi${response.boostPrice ? `. Maliyet: ${response.boostPrice} TIPS` : ''}` 
+              : 'Boost devre dışı bırakıldı.'
+          );
+        },
+        onError: (error: any) => {
+          // Hata durumunda geri al
+          setIsBoosted(!value);
+          
+          const errorMessage = error?.response?.data?.message || error?.message || 'Boost değiştirilirken bir hata oluştu';
+          Alert.alert('Hata', errorMessage);
+        },
+      }
+    );
+  }, [data.id, toggleBoostMutation]);
 
   // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
   // FlatList scroll edildiğinde pozisyon değişir, onLayout her değişiklikte çağrılır
@@ -661,7 +703,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           </Text>
         </Box>
 
-        {data.isBoosted && (
+        {isBoosted && (
           <Box
             borderWidth={2}
             borderColor="#EF4D81"
@@ -691,6 +733,59 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           </Box>
         )}
       </HStack>
+
+      {/* Boost Switch - Sadece post owner'a göster */}
+      {isPostOwner && (
+        <VStack 
+          px={12} 
+          py={12} 
+          borderRightWidth={1} 
+          borderLeftWidth={1} 
+          borderColor="#E9E9E9"
+          space="xs"
+        >
+          <HStack alignItems="center" justifyContent="space-between">
+            <VStack flex={1} mr={12}>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize="$sm"
+                fontWeight="$semibold"
+                mb={4}
+              >
+                Boost Post
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '#787878'}
+                fontSize={11}
+                lineHeight={14}
+              >
+                {isBoosted 
+                  ? `Aktif${boostPrice ? ` - ${boostPrice} TIPS` : ''}` 
+                  : 'Sorunuzun daha fazla kişiye ulaşmasını sağlayın'}
+              </Text>
+            </VStack>
+            <Switch
+              value={isBoosted}
+              onValueChange={handleBoostToggle}
+              trackColor={{ 
+                false: isDark ? '#333333' : '#E9E9E9', 
+                true: '#829905' 
+              }}
+              thumbColor={isBoosted ? '#B8CC04' : (isDark ? '#666666' : '#FFFFFF')}
+              disabled={toggleBoostMutation.isPending}
+            />
+          </HStack>
+          {boostPrice !== undefined && (
+            <Text
+              color={isDark ? '$textDark400' : '#787878'}
+              fontSize={10}
+              fontStyle="italic"
+            >
+              * Boost fiyatı platform aktivitesine göre belirlenir
+            </Text>
+          )}
+        </VStack>
+      )}
 
       {/* Content */}
       <Pressable onPress={() => {

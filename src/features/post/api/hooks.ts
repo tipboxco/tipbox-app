@@ -12,11 +12,16 @@ import {
   searchPosts,
   updatePost,
   deletePost,
+  togglePostBoost,
+  getBoostPrice,
   type PostDetailResponse,
   type SearchPostsResponse,
   type UpdatePostRequest,
   type UpdatePostResponse,
   type DeletePostResponse,
+  type ToggleBoostRequest,
+  type ToggleBoostResponse,
+  type GetBoostPriceResponse,
 } from './postApi';
 import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
 import type { 
@@ -42,6 +47,7 @@ export const postKeys = {
   all: ['posts'] as const,
   free: () => [...postKeys.all, 'free'] as const,
   boostOptions: () => [...postKeys.all, 'boostOptions'] as const,
+  boostPrice: () => [...postKeys.all, 'boostPrice'] as const,
   detail: (postId: string) => [...postKeys.all, 'detail', postId] as const,
   search: (q: string, cursor?: string, limit?: number) => 
     [...postKeys.all, 'search', q, cursor, limit] as const,
@@ -365,6 +371,22 @@ export const useBoostOptions = () => {
 };
 
 /**
+ * Get Boost Price query hook
+ * Dinamik boost fiyatını getirir (platform aktivitesine göre)
+ *
+ * @example
+ * const { data: boostPrice, isLoading } = useBoostPrice();
+ */
+export const useBoostPrice = () => {
+  return useQuery<GetBoostPriceResponse, Error>({
+    queryKey: postKeys.boostPrice(),
+    queryFn: getBoostPrice,
+    staleTime: 1000 * 60 * 5, // 5 dakika - fiyat dinamik, sık güncellenir
+    refetchInterval: 1000 * 60 * 5, // Her 5 dakikada bir yeniden getir
+  });
+};
+
+/**
  * Split Experience mutation hook
  * Gemini AI ile deneyim metnini kategorilere ayırır
  * 
@@ -539,3 +561,47 @@ export const useDeletePost = () => {
     },
   });
 };
+
+/**
+ * Toggle Post Boost mutation hook
+ * Question post için boost'u açar/kapatır
+ *
+ * @example
+ * const toggleBoostMutation = useTogglePostBoost();
+ * toggleBoostMutation.mutate({
+ *   postId: 'post-123',
+ *   enabled: true
+ * });
+ */
+export const useTogglePostBoost = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<ToggleBoostResponse, Error, ToggleBoostRequest>({
+    mutationFn: (data) => togglePostBoost(data),
+    onSuccess: (data, variables) => {
+      console.log('[useTogglePostBoost] ✅ Boost toggled successfully:', {
+        postId: variables.postId,
+        isBoosted: data.isBoosted,
+        boostPrice: data.boostPrice,
+      });
+      
+      // Post detail'i invalidate et
+      queryClient.invalidateQueries({ queryKey: postKeys.detail(variables.postId) });
+      
+      // Tüm feed'leri invalidate et (boost durumu değişti)
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Catalog posts'ları da invalidate et
+      queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+    },
+    onError: (error: any) => {
+      console.error('[useTogglePostBoost] ❌ Failed to toggle boost:', {
+        error: error.message,
+        response: error.response?.data,
+      });
+    },
+  });
+};
+

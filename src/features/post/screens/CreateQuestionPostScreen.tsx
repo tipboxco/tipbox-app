@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, useToast, Switch, Divider } from '@gluestack-ui/themed';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import { InformationCircleIcon } from 'react-native-heroicons/outline';
+import { InformationCircleIcon, ArrowTrendingUpIcon } from 'react-native-heroicons/outline';
 import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import { BoostOptionCard } from '../components/BoostOptionCard';
 import { useQuestionPostForm } from '../hooks/useQuestionPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateQuestionPost, useBoostOptions } from '../api/hooks';
+import { useCreateQuestionPost, useBoostPrice } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
@@ -28,40 +27,119 @@ import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { showCustomToast } from '@/src/components/CustomToast';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { QuestionPostFormData } from '../schemas/questionPostSchema';
-import type { BoostOption } from '../api/postApi';
 
 // ProductInfo will be loaded from store
 
 type CreateQuestionPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Boost Options Component with Controller
-const BoostOptionsField: React.FC<{ boostOptions: BoostOption[] }> = ({ boostOptions }) => {
+/** TIPS to USD display rate (e.g. 100 TIPS = $1) */
+const TIPS_TO_USD_RATE = 100;
+
+// Boost Switch Component with Controller + Available / Boost Price row
+const BoostSwitchField: React.FC<{
+  boostPrice?: number;
+  isLoadingPrice: boolean;
+  availableTips: number;
+}> = ({ boostPrice, isLoadingPrice, availableTips }) => {
   const { control, watch } = useFormContext<QuestionPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const selectedBoost = watch('selectedBoost');
+  const greyLabel = isDark ? '$textDark400' : '#787878';
+  const greyValue = isDark ? '#A3A3A3' : '#A3A3A3';
 
   return (
     <Controller
-      name="selectedBoost"
+      name="boostEnabled"
       control={control}
-      render={({ field: { onChange } }) => (
-        <VStack space="xs">
-          {boostOptions.map((option) => (
-            <BoostOptionCard
-              key={option.id}
-              id={option.id}
-              title={option.title}
-              price={`${option.amount} TIPS`}
-              description={option.description}
-              borderColor="#829905"
-              iconBg="#829905"
-              isPopular={option.isPopular}
-              isSelected={selectedBoost === option.id}
-              onPress={() => onChange(option.id)}
+      render={({ field: { onChange, value } }) => (
+        <Box
+          px={16}
+          py={12}
+          bg={isDark ? '$backgroundDark900' : '$white'}
+          borderRadius={12}
+          borderWidth={1}
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
+        >
+          <HStack alignItems="center" justifyContent="space-between">
+            <Box
+              w={36}
+              h={36}
+              borderRadius={8}
+              bg={isDark ? '#333333' : '#E9E9E9'}
+              alignItems="center"
+              justifyContent="center"
+              mr={12}
+            >
+              <ArrowTrendingUpIcon
+                width={20}
+                height={20}
+                color={isDark ? '#A3A3A3' : '#787878'}
+              />
+            </Box>
+            <VStack flex={1} mr={12}>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize="$sm"
+                fontWeight="$semibold"
+                mb={4}
+              >
+                Boost Question
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '#787878'}
+                fontSize={11}
+                lineHeight={14}
+              >
+                {isLoadingPrice
+                  ? 'Calculating boost price...'
+                  : value
+                    ? `Boost active${boostPrice != null ? ` - ${boostPrice} TIPS` : ''}`
+                    : 'Boost your question for 24 hours to reach more people and get more answers.'}
+              </Text>
+            </VStack>
+            <Switch
+              value={value}
+              onValueChange={onChange}
+              trackColor={{
+                false: isDark ? '#333333' : '#E9E9E9',
+                true: '#829905',
+              }}
+              thumbColor={value ? '#B8CC04' : (isDark ? '#666666' : '#FFFFFF')}
+              disabled={isLoadingPrice}
             />
-          ))}
-        </VStack>
+          </HStack>
+
+          <Divider my={12} bg={isDark ? '#333333' : '#E9E9E9'} />
+
+          <HStack justifyContent="space-between" alignItems="flex-start">
+            <VStack alignItems="flex-start" flex={1}>
+              <Text color={greyLabel} fontSize={10} mb={4}>
+                Available
+              </Text>
+              <Text color={greyValue} fontSize="$sm" fontWeight="$medium">
+                {availableTips} TIPS
+              </Text>
+              <Text color={greyLabel} fontSize={10} mt={2}>
+                (${(availableTips / TIPS_TO_USD_RATE).toFixed(0)})
+              </Text>
+            </VStack>
+            <VStack alignItems="flex-end" flex={1}>
+              <Text color={greyLabel} fontSize={10} mb={4}>
+                Boost Price
+              </Text>
+              <Text
+                color={isLoadingPrice ? greyValue : '#829905'}
+                fontSize="$sm"
+                fontWeight="$semibold"
+              >
+                {isLoadingPrice ? '—' : `${boostPrice ?? 0} TIPS`}
+              </Text>
+              <Text color={greyLabel} fontSize={10} mt={2}>
+                ({isLoadingPrice ? '—' : `$${((boostPrice ?? 0) / TIPS_TO_USD_RATE).toFixed(1)}`})
+              </Text>
+            </VStack>
+          </HStack>
+        </Box>
       )}
     />
   );
@@ -86,8 +164,8 @@ export const CreateQuestionPostScreen = () => {
   
   const queryClient = useQueryClient();
   
-  // Fetch boost options from API
-  const { data: boostOptions = [], isLoading: isLoadingBoostOptions, error: boostOptionsError } = useBoostOptions();
+  // Fetch dynamic boost price from API
+  const { data: boostPriceData, isLoading: isLoadingBoostPrice, error: boostPriceError } = useBoostPrice();
   
   // Get context information from flow store
   const contextType = useCreatePostFlowStore((state) => state.contextType);
@@ -96,16 +174,17 @@ export const CreateQuestionPostScreen = () => {
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
   const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
   
-  // Debug: Log boost options state
+  // Debug: Log boost price state
   React.useEffect(() => {
-    console.log('[CreateQuestionPostScreen] 🔍 Boost Options State:', {
-      isLoadingBoostOptions,
-      boostOptionsCount: boostOptions.length,
-      boostOptions: boostOptions.map(opt => ({ id: opt.id, title: opt.title, amount: opt.amount })),
-      hasError: !!boostOptionsError,
-      error: boostOptionsError?.message,
+    console.log('[CreateQuestionPostScreen] 🔍 Boost Price State:', {
+      isLoadingBoostPrice,
+      boostPrice: boostPriceData?.price,
+      currency: boostPriceData?.currency,
+      factors: boostPriceData?.factors,
+      hasError: !!boostPriceError,
+      error: boostPriceError?.message,
     });
-  }, [boostOptions, isLoadingBoostOptions, boostOptionsError]);
+  }, [boostPriceData, isLoadingBoostPrice, boostPriceError]);
   
   // Debug: Log context values
   React.useEffect(() => {
@@ -202,25 +281,6 @@ export const CreateQuestionPostScreen = () => {
     }
   };
 
-  // Find boost option ID (selectedBoost in form is now the actual boost option ID)
-  const getBoostOptionId = (selectedBoost: string): string | null => {
-    // Return null if boost option is not selected or is empty string
-    if (!selectedBoost || selectedBoost.trim() === '') {
-      console.warn('[CreateQuestionPostScreen] No boost option selected');
-      return null;
-    }
-    
-    // Search for this ID in boost options list
-    const foundOption = boostOptions.find(option => option.id === selectedBoost);
-    if (foundOption) {
-      return foundOption.id; // Actual UUID ID
-    }
-    
-    // Return null if not found (won't be sent to backend)
-    console.warn('[CreateQuestionPostScreen] Boost option not found in list:', selectedBoost);
-    return null;
-  };
-
   const onSubmit: SubmitHandler<QuestionPostFormData> = async (data) => {
     console.log('[CreateQuestionPostScreen] Form submitted:', data);
     
@@ -252,24 +312,11 @@ export const CreateQuestionPostScreen = () => {
     // Convert to API contextType
     const apiContextType = mapProductInfoTypeToContextType(contextType);
     
-    // Get boost option ID (actual UUID)
-    const selectedBoostOptionId = getBoostOptionId(data.selectedBoost);
-    
-    // Boost option ID check (backend requires it)
-    if (!selectedBoostOptionId) {
-      showCustomToast(toast, {
-        title: 'Missing Information',
-        description: 'Boost selection is required.',
-        action: 'error',
-      });
-      return;
-    }
-    
     console.log('[CreateQuestionPostScreen] Submitting with:', {
       contextType: apiContextType,
       contextId: contextId,
       description: data.questionText,
-      selectedBoostOptionId: selectedBoostOptionId,
+      boostEnabled: data.boostEnabled,
       imagesCount: data.selectedImages?.length || 0,
     });
     
@@ -285,7 +332,7 @@ export const CreateQuestionPostScreen = () => {
         contextType: apiContextType,
         contextId: contextId,
         description: data.questionText,
-        selectedBoostOptionId: selectedBoostOptionId,
+        boostEnabled: data.boostEnabled,
         images: data.selectedImages || [],
       });
       
@@ -522,35 +569,28 @@ export const CreateQuestionPostScreen = () => {
                   color={isDark ? '$textDark400' : '#A3A3A3'}
                   fontSize="$sm"
                   fontWeight="$bold"
+                  mb={8}
                 >
                   Boost this Question
                 </Text>
 
-                {/* Boost Options */}
-                {isLoadingBoostOptions ? (
-                  <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize="$sm">
-                      Loading boost options...
-                    </Text>
-                  </Box>
-                ) : boostOptionsError ? (
+                {/* Boost Switch */}
+                {boostPriceError ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '$red500' : '#EF4444'} fontSize="$sm">
-                      Error loading boost options
-                    </Text>
-                  </Box>
-                ) : boostOptions.length === 0 ? (
-                  <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize="$sm">
-                      No boost options found
+                      Error loading boost price
                     </Text>
                   </Box>
                 ) : (
-                  <BoostOptionsField boostOptions={boostOptions} />
+                  <BoostSwitchField
+                    boostPrice={boostPriceData?.price}
+                    isLoadingPrice={isLoadingBoostPrice}
+                    availableTips={availableTips}
+                  />
                 )}
 
                 {/* TIPS Available Info */}
-                <HStack alignItems="center" space="xs">
+                <HStack alignItems="center" space="xs" mt={12}>
                   <InformationCircleIcon
                     width={18}
                     height={18}
