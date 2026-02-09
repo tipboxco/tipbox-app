@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { StatusBar, View } from 'react-native';
-import React from 'react';
-import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image } from '@gluestack-ui/themed';
 import { LogIn, Facebook } from 'lucide-react-native';
@@ -22,44 +20,7 @@ export const WelcomeScreen = () => {
   // Edge-to-Edge Design: Top ve bottom insets için beyaz background
   const backgroundColor = '#FFFFFF';
 
-  const handleGoogleLogin = async () => {
-    try {
-      setIsGoogleLoading(true);
-
-      // Google OAuth ile giriş yap
-      const googleResult = await googleService.login();
-
-      // Backend'e ID token gönder
-      await googleLoginMutation.mutateAsync(googleResult.idToken);
-
-      // Başarılı toast göster
-      showCustomToast(toast, {
-        title: 'Google Login Successful',
-        description: `Welcome, ${googleResult.user.name || googleResult.user.email}!`,
-        action: 'success',
-      });
-
-      // RootNavigator otomatik olarak isAuthenticated=true olduğunda
-      // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
-    } catch (error: any) {
-      console.error('[WelcomeScreen] ❌ Google login error:', error);
-
-      // Hata toast göster
-      const errorMessage =
-        error?.message ||
-        error?.response?.data?.message ||
-        'An error occurred during Google login';
-
-      showCustomToast(toast, {
-        title: 'Google Login Error',
-        description: errorMessage,
-        action: 'error',
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
-
+ 
   return (
     <View style={{ flex: 1, backgroundColor }}>
       {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
