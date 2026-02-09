@@ -21,12 +21,17 @@ export interface BoostOption {
  */
 export const getBoostOptions = async (): Promise<BoostOption[]> => {
   try {
+    console.log('[getBoostOptions] 📡 Fetching boost options...');
     const response = await apiService.getClient().get<BoostOption[]>(
       '/posts/boost-options'
     );
+    console.log('[getBoostOptions] ✅ Success:', {
+      count: response.data.length,
+      options: response.data.map(opt => ({ id: opt.id, title: opt.title, amount: opt.amount })),
+    });
     return response.data;
   } catch (error: any) {
-    console.error('[getBoostOptions] API Error:', {
+    console.error('[getBoostOptions] ❌ API Error:', {
       url: '/posts/boost-options',
       method: 'GET',
       status: error.response?.status,
@@ -50,11 +55,25 @@ export const createFreePost = async (
 ): Promise<CreatePostResponse> => {
   const client = apiService.getClient();
   
+  console.log('[postApi] createFreePost - Input data:', {
+    contextType: data.contextType,
+    contextId: data.contextId,
+    description: data.description,
+    images: data.images?.length || 0,
+    eventId: data.eventId,
+  });
+  
   // FormData oluştur (multipart/form-data için)
   const formData = new FormData();
   formData.append('contextType', data.contextType);
   formData.append('contextId', data.contextId);
   formData.append('description', data.description);
+  
+  console.log('[postApi] createFreePost - FormData fields:', {
+    contextType: data.contextType,
+    contextId: data.contextId,
+    description: data.description,
+  });
   
   // Event ID varsa ekle (event'e bağlı post için)
   if (data.eventId) {
@@ -103,6 +122,8 @@ export const createFreePost = async (
     }
   );
   
+  console.log('[postApi] createFreePost - Backend Response:', response.data);
+  
   return response.data;
 };
 
@@ -131,14 +152,16 @@ export const createBenchmarkPost = async (
   data: CreateBenchmarkPostRequest
 ): Promise<CreatePostResponse> => {
   const client = apiService.getClient();
-  
-  // FormData oluştur (multipart/form-data için)
+
+  // Backend sadece "product" (küçük harf) kabul eder; büyük harf 400 döner
+  const contextType = String(data.contextType ?? 'product').toLowerCase();
+
   const formData = new FormData();
-  formData.append('contextType', data.contextType);
+  formData.append('contextType', contextType);
   formData.append('contextId', data.contextId);
   formData.append('description', data.description);
-  
-  // Products array'ini JSON string olarak ekle
+
+  // Products array'ini JSON string olarak ekle (her iki üründe isSelected: true olmalı)
   formData.append('products', JSON.stringify(data.products));
   
   // Images varsa ekle
@@ -266,6 +289,7 @@ export const createTipsAndTricksPost = async (
       }
     );
     
+    console.log('[createTipsAndTricksPost] ✅ Backend Response:', response.data);
     console.log('[createTipsAndTricksPost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -384,6 +408,7 @@ export const createQuestionPost = async (
       }
     );
     
+    console.log('[createQuestionPost] ✅ Backend Response:', response.data);
     console.log('[createQuestionPost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -408,13 +433,15 @@ export const createQuestionPost = async (
 
 /**
  * Create Update Post Request Body
+ * Backend'e göre experiencePostId ZORUNLU alan - Update post sadece experience post'lara eklenir
  */
 export interface CreateUpdatePostRequest {
   contextType: ApiContextType;
   contextId: string;
-  content: string; // "description" değil, "content"!
+  content: string;
+  experiencePostId: string; // ZORUNLU - Update post sadece experience post'lara eklenir
   images?: string[];
-  experiencePostId?: string; // Experience post ID (update bu post'a bağlanacak)
+  eventId?: string | null;
 }
 
 /**
@@ -424,18 +451,40 @@ export interface CreateUpdatePostRequest {
 export const createUpdatePost = async (
   data: CreateUpdatePostRequest
 ): Promise<CreatePostResponse> => {
-  const client = apiService.getClient();
-  
-  const formData = new FormData();
-  formData.append('contextType', data.contextType);
-  formData.append('contextId', data.contextId);
-  formData.append('content', data.content); // "description" değil, "content"!
-  
-  // Experience post ID varsa ekle (update bu post'a bağlanacak)
-  if (data.experiencePostId) {
-    formData.append('experiencePostId', data.experiencePostId);
-  }
-  
+  try {
+    console.log('[createUpdatePost] 📤 Request data:', {
+      contextType: data.contextType,
+      contextId: data.contextId,
+      experiencePostId: data.experiencePostId,
+      contentLength: data.content?.length || 0,
+      imagesCount: data.images?.length || 0,
+      eventId: data.eventId,
+    });
+
+    // Backend'e göre experiencePostId ZORUNLU
+    if (!data.experiencePostId || data.experiencePostId.trim() === '') {
+      const errorMsg = 'experiencePostId is required for update posts';
+      console.error(`[createUpdatePost] ❌ ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+
+    // Backend sadece 'product' contextType kabul ediyor
+    if (data.contextType !== 'product') {
+      console.warn(`[createUpdatePost] ⚠️ contextType '${data.contextType}' is not 'product', forcing to 'product'`);
+    }
+
+    const client = apiService.getClient();
+    
+    const formData = new FormData();
+    formData.append('contextType', 'product'); // Backend sadece 'product' kabul ediyor
+    formData.append('contextId', data.contextId || ''); // Opsiyonel - backend experience post'tan alır
+    formData.append('content', data.content); // "description" değil, "content"!
+    formData.append('experiencePostId', data.experiencePostId); // ZORUNLU alan
+    
+    if (data.eventId != null && data.eventId !== '') {
+      formData.append('eventId', data.eventId);
+    }
+
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {
       let fileExtension = 'jpg';
@@ -461,17 +510,46 @@ export const createUpdatePost = async (
     });
   }
   
-  const response = await client.post<CreatePostResponse>(
-    '/posts/update',
-    formData,
-    {
-      headers: {
-        'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+    console.log('[createUpdatePost] 📤 FormData prepared:', {
+      hasContextType: !!formData.get('contextType'),
+      hasContextId: !!formData.get('contextId'),
+      hasContent: !!formData.get('content'),
+      hasExperiencePostId: !!formData.get('experiencePostId'),
+      imagesCount: data.images?.length || 0,
+    });
+
+    const response = await client.post<CreatePostResponse>(
+      '/posts/update',
+      formData,
+      {
+        headers: {
+          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+        },
+      }
+    );
+    
+    console.log('[createUpdatePost] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[createUpdatePost] ❌ API Error:', {
+      url: '/posts/update',
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        experiencePostId: data.experiencePostId,
+        contentLength: data.content?.length || 0,
+        imagesCount: data.images?.length || 0,
       },
-    }
-  );
-  
-  return response.data;
+      responseData: error.response?.data,
+      responseMessage: error.response?.data?.message,
+      responseError: error.response?.data?.error,
+      errorMessage: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
@@ -480,6 +558,8 @@ export const createUpdatePost = async (
 export interface CreateExperiencePostRequest {
   contextType: ApiContextType;
   contextId: string;
+  productId?: string; // Required when contextType is sub_category or product_group
+  experienceSnippetId: string;
   selectedDurationId: string;
   selectedLocationId: string;
   selectedPurposeId: string;
@@ -491,7 +571,8 @@ export interface CreateExperiencePostRequest {
   }>;
   status: 'own' | 'tested';
   images?: string[];
-  experienceSnippetId?: string;
+  /** Opsiyonel. Etkinlik ile ilişkili post için event id. */
+  eventId?: string | null;
 }
 
 /**
@@ -511,7 +592,6 @@ export const createExperiencePost = async (
       content: data.content?.substring(0, 50) + '...',
       experience: data.experience,
       status: data.status,
-      experienceSnippetId: data.experienceSnippetId,
       imagesCount: data.images?.length || 0,
     });
     
@@ -527,26 +607,69 @@ export const createExperiencePost = async (
     }
     
     const client = apiService.getClient();
-    
+    const hasImages = data.images && data.images.length > 0;
+
+    if (!hasImages) {
+      // Görsel yoksa application/json gönder. Backend bazen camelCase yerine snake_case bekliyor; her iki formatta gönder.
+      const body = {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        content: data.content,
+        experience: data.experience,
+        status: data.status,
+        experienceSnippetId: data.experienceSnippetId,
+        // productId - Required when contextType is sub_category or product_group
+        ...(data.productId && { productId: data.productId }),
+        // camelCase (spec)
+        selectedDurationId: data.selectedDurationId,
+        selectedLocationId: data.selectedLocationId,
+        selectedPurposeId: data.selectedPurposeId,
+        // snake_case (bazı backend'ler bunu bekliyor)
+        selected_duration_id: data.selectedDurationId,
+        selected_location_id: data.selectedLocationId,
+        selected_purpose_id: data.selectedPurposeId,
+        // kısa isimler (bazı backend validation'ları bunları arıyor)
+        duration: data.selectedDurationId,
+        location: data.selectedLocationId,
+        purpose: data.selectedPurposeId,
+        ...(data.eventId != null && data.eventId !== '' ? { eventId: data.eventId } : {}),
+      };
+      console.log('[createExperiencePost] Request URL: POST /posts/experience (JSON)', {
+        ...body,
+        content: (body as { content?: string }).content?.substring(0, 50) + '...',
+      });
+      const response = await client.post<CreatePostResponse>('/posts/experience', body, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      console.log('[createExperiencePost] ✅ Success:', response.data);
+      return response.data;
+    }
+
+    // Görsel varsa multipart/form-data
     const formData = new FormData();
     formData.append('contextType', data.contextType);
     formData.append('contextId', data.contextId);
-    formData.append('selectedDurationId', data.selectedDurationId);
-    formData.append('selectedLocationId', data.selectedLocationId);
-    formData.append('selectedPurposeId', data.selectedPurposeId);
+    if (data.productId) {
+      formData.append('productId', data.productId);
+    }
     formData.append('content', data.content);
     formData.append('experience', JSON.stringify(data.experience));
     formData.append('status', data.status);
-    
-    if (data.experienceSnippetId) {
-      formData.append('experienceSnippetId', data.experienceSnippetId);
+    formData.append('selectedDurationId', data.selectedDurationId);
+    formData.append('selectedLocationId', data.selectedLocationId);
+    formData.append('selectedPurposeId', data.selectedPurposeId);
+    formData.append('experienceSnippetId', data.experienceSnippetId);
+    if (data.eventId != null && data.eventId !== '') {
+      formData.append('eventId', data.eventId);
     }
-    
-    if (data.images && data.images.length > 0) {
-      data.images.forEach((imageUri, index) => {
+    data.images!.forEach((imageUri, index) => {
+      const isUrl =
+        imageUri.startsWith('http://') || imageUri.startsWith('https://');
+      if (isUrl) {
+        formData.append('images', imageUri);
+      } else {
         let fileExtension = 'jpg';
         let mimeType = 'image/jpeg';
-        
         const uriLower = imageUri.toLowerCase();
         if (uriLower.includes('.')) {
           const ext = imageUri.split('.').pop()?.toLowerCase();
@@ -558,17 +681,15 @@ export const createExperiencePost = async (
             mimeType = 'image/jpeg';
           }
         }
-        
         formData.append('images', {
           uri: imageUri,
           type: mimeType,
           name: `image_${index}.${fileExtension}`,
         } as any);
-      });
-    }
-    
-    console.log('[createExperiencePost] Request URL: POST /posts/experience');
-    console.log('[createExperiencePost] FormData fields:', {
+      }
+    });
+
+    console.log('[createExperiencePost] Request URL: POST /posts/experience (FormData)', {
       contextType: data.contextType,
       contextId: data.contextId,
       selectedDurationId: data.selectedDurationId,
@@ -577,16 +698,15 @@ export const createExperiencePost = async (
       content: data.content?.substring(0, 50) + '...',
       experience: JSON.stringify(data.experience),
       status: data.status,
-      experienceSnippetId: data.experienceSnippetId,
       imagesCount: data.images?.length || 0,
     });
-    
+
     const response = await client.post<CreatePostResponse>(
       '/posts/experience',
       formData,
       {
         headers: {
-          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+          'Content-Type': undefined,
         },
       }
     );
@@ -624,7 +744,7 @@ export const createExperiencePost = async (
  */
 export interface SplitExperienceRequest {
   productId: string;
-  content: string;
+  experienceText: string;
 }
 
 /**
@@ -665,11 +785,11 @@ export const splitExperience = async (
 ): Promise<SplitExperienceResponse> => {
   try {
     console.log('[splitExperience] Request data:', JSON.stringify(data, null, 2));
-    console.log('[splitExperience] Request URL: POST /posts/experience/split');
+    console.log('[splitExperience] Request URL: POST /inventory/split-experience');
     
     // AI işlemleri için timeout'u 60 saniyeye çıkar (default: 10 saniye)
     const response = await apiService.getClient().post<SplitExperienceResponse>(
-      '/posts/experience/split',
+      '/inventory/split-experience',
       data,
       {
         timeout: 60000, // 60 saniye - AI işlemleri daha uzun sürebilir
@@ -680,7 +800,7 @@ export const splitExperience = async (
     return response.data;
   } catch (error: any) {
     console.error('[splitExperience] ❌ API Error:', {
-      url: '/posts/experience/split',
+      url: '/inventory/split-experience',
       method: 'POST',
       status: error.response?.status,
       statusText: error.response?.statusText,

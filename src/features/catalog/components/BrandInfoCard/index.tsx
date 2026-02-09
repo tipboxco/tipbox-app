@@ -2,8 +2,14 @@ import React from 'react';
 import { HStack, VStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BellIcon } from 'react-native-heroicons/outline';
+import { useBrandCatalog } from '../../api/hooks';
+import { toImageSource } from '@/src/utils';
+
+const DEFAULT_CARD_ICON = require('@/assets/events/card-icon.png');
 
 interface BrandInfoCardProps {
+  brandId?: string;
+  categoryName?: string;
   onNotificationPress?: () => void;
   onHistoryPress?: () => void;
   showPoints?: boolean;
@@ -11,6 +17,8 @@ interface BrandInfoCardProps {
 }
 
 const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
+  brandId,
+  categoryName,
   onNotificationPress,
   onHistoryPress,
   showPoints = false,
@@ -18,6 +26,14 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+
+  const { data: catalog, isLoading: isCatalogLoading } = useBrandCatalog(brandId);
+
+  const brandName = catalog?.name ?? '—';
+  const brandImageSource = catalog?.bannerImage
+    ? toImageSource(catalog.bannerImage, DEFAULT_CARD_ICON)
+    : DEFAULT_CARD_ICON;
+  const displayCategory = categoryName ?? catalog?.description ?? '—';
 
   return (
     <HStack space="md">
@@ -41,8 +57,8 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
             overflow="hidden"
           >
             <Image
-              source={require('@/assets/events/card-icon.png')}
-              alt="Apple Logo"
+              source={brandImageSource ?? DEFAULT_CARD_ICON}
+              alt={brandName}
               style={{ width: 52, height: 52 }}
               resizeMode="cover"
             />
@@ -53,15 +69,17 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
               color={isDark ? '#FFFFFF' : '#000000'}
               fontSize={12}
               fontWeight="$bold"
+              numberOfLines={1}
             >
-              Apple
+              {isCatalogLoading && !catalog ? '…' : brandName}
             </Text>
             <Text
               color="#9B9B9B"
               fontSize={12}
               fontWeight="$semibold"
+              numberOfLines={1}
             >
-              Technology
+              {displayCategory}
             </Text>
           </VStack>
 
@@ -114,7 +132,7 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
               textAlign="center"
               numberOfLines={2}
             >
-              {showPoints ? `${points}\nPoints` : 'Marka\nGeçmişim'}
+              {showPoints ? `${points}\nPoints` : 'Brand\nHistory'}
             </Text>
           </VStack>
         </Box>

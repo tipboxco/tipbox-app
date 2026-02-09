@@ -1,4 +1,5 @@
 import React, { memo, useMemo, useCallback } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { Box, HStack, Text, Pressable, VStack, Image } from '@gluestack-ui/themed';
 import {
   ChevronLeftIcon,
@@ -24,6 +25,7 @@ interface RightButtonProps {
   paddingY?: number;
   onPress: () => void;
   disabled?: boolean;
+  loading?: boolean;
 }
 
 interface HeaderProps {
@@ -255,12 +257,13 @@ const HeaderComponent = ({
 
     // Normal Button
     if (rightButton) {
+      const isDisabled = rightButton.disabled || rightButton.loading;
       actions.push(
         <Pressable 
           key="right-button" 
           onPress={rightButton.onPress}
-          disabled={rightButton.disabled}
-          opacity={rightButton.disabled ? 0.5 : 1}
+          disabled={isDisabled}
+          opacity={isDisabled ? 0.5 : 1}
         >
           <Box
             bg={rightButton.backgroundColor || (isDark ? '#8B5CF6' : '#8B5CF6')}
@@ -273,15 +276,19 @@ const HeaderComponent = ({
             justifyContent="center"
             minHeight={32}
           >
-            <Text
-              color={rightButton.textColor || '#FFFFFF'}
-              fontSize={rightButton.fontSize || 14}
-              fontWeight="$semibold"
-              textAlign="center"
-              lineHeight={rightButton.fontSize ? rightButton.fontSize * 1.2 : 16.8}
-            >
-              {rightButton.text}
-            </Text>
+            {rightButton.loading ? (
+              <ActivityIndicator size="small" color={rightButton.textColor || '#FFFFFF'} />
+            ) : (
+              <Text
+                color={rightButton.textColor || '#FFFFFF'}
+                fontSize={rightButton.fontSize || 14}
+                fontWeight="$semibold"
+                textAlign="center"
+                lineHeight={rightButton.fontSize ? rightButton.fontSize * 1.2 : 16.8}
+              >
+                {rightButton.text}
+              </Text>
+            )}
           </Box>
         </Pressable>
       );
@@ -301,8 +308,8 @@ const HeaderComponent = ({
       return (
         <Pressable onPress={onSearchPress}>
           <MagnifyingGlassIcon
-            width={22}
-            height={22}
+            width={24}
+            height={24}
             color={isDark ? '#FFFFFF' : '#000000'}
           />
         </Pressable>
@@ -373,8 +380,14 @@ const HeaderComponent = ({
               ) : null}
             </Box>
 
-            {/* Sağ kısım - Sabit genişlik, flex-end */}
-            <Box width={40} alignItems="flex-end" justifyContent="center">
+            {/* Sağ kısım - Buton varsa içeriğe göre genişler (metin tam görünsün), yoksa 40px */}
+            <Box
+              minWidth={40}
+              flexShrink={0}
+              alignItems="flex-end"
+              justifyContent="center"
+              width={rightButton ? undefined : 40}
+            >
               {renderRightActions}
             </Box>
           </HStack>

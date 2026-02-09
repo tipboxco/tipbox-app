@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native-safe-area-context';
 import { ScrollView, VStack, Text } from '@gluestack-ui/themed';
 import { ActivityIndicator } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -89,7 +89,7 @@ const BrandEventsScreen: React.FC = () => {
   }, [eventsData]);
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
@@ -149,7 +149,7 @@ const BrandEventsScreen: React.FC = () => {
           </VStack>
         </ScrollView>
       </VStack>
-    </SafeAreaView>
+    </View>
   );
 };
 

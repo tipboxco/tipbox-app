@@ -15,6 +15,8 @@ import type { BrandCardBrand } from '../components/BrandCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { toImageSource } from '@/src/utils';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
 type BrandScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'CatalogScreen'>;
 
@@ -198,7 +200,10 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       return items;
     });
 
-    navigation.navigate('BrandDetailScreen', { brandId: brand.id });
+    navigationService.navigate(ROOT_ROUTES.BRAND, {
+      screen: 'BrandDetailScreen',
+      params: { brandId: brand.id },
+    });
   };
 
   const mapBrandCategoryToCardCategory = (category: BrandCategory): CategoryCardCategory => {
@@ -346,7 +351,11 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         category.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     } else {
-      const brands = (brandsByCategory || []).map((brand) => mapBrandListItemToBrandCardBrand(brand));
+      // brandsByCategory undefined veya null olabilir - Array.isArray ile kontrol et
+      if (!brandsByCategory || !Array.isArray(brandsByCategory)) {
+        return [];
+      }
+      const brands = brandsByCategory.map((brand) => mapBrandListItemToBrandCardBrand(brand));
       return brands.filter(brand =>
         brand.name.toLowerCase().includes(searchQuery.toLowerCase())
       );

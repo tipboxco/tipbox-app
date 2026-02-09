@@ -36,6 +36,7 @@ export interface TipsApiItem {
   contextData: TipsApiContextData;
   content: string;
   tag: string;
+  benefitCategory?: 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result';
   images: string[];
   // Interaction states
   isLiked?: boolean;
@@ -85,6 +86,7 @@ export interface TipsCardData {
   images?: ImageSourcePropType[];
   stats: TipsStats;
   tag: string;
+  benefitCategory?: 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result';
   createdAt: string;
 }
 

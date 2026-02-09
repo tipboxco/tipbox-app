@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useMemo, useCallback } from 'react';
-import { Dimensions, Animated, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useMemo, useCallback } from 'react';
+import { Dimensions, ActivityIndicator, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -11,48 +11,63 @@ import {
     Button,
     ButtonText,
 } from '@gluestack-ui/themed';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolate,
+  runOnJS,
+} from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { CatalogStackParamList } from '../navigation';
+import type { BrandStackParamList } from '../BrandNavigator';
 import { Header } from '@/src/components/Header';
 import {
-  ChevronLeftIcon,
   ArrowTopRightOnSquareIcon,
   UsersIcon,
   ChevronRightIcon,
+  ChevronLeftIcon,
 } from 'react-native-heroicons/outline';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
-import { useBrandCatalog, useBrandFeed } from '../api/hooks';
+import { useSafeAreaValues, toImageSource, isSameImageSource } from '@/src/utils';
+import { useBrandCatalog, useBrandFeed, useJoinBrand, useLeaveBrand } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import { CardType, ProductInfoType } from '@/src/types/common';
 
 const { width } = Dimensions.get('window');
 
-type BrandDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandDetailScreen'>;
-type BrandDetailScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandDetailScreen'>;
+// Banner ve header yükseklikleri
+const BANNER_HEIGHT = 250;
+const HEADER_HEIGHT = 80; // Sticky header yüksekliği
+
+type BrandDetailScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'BrandDetailScreen'>;
+type BrandDetailScreenRouteProp = RouteProp<BrandStackParamList, 'BrandDetailScreen'>;
 
 const BrandDetailScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<BrandDetailScreenNavigationProp>();
     const route = useRoute<BrandDetailScreenRouteProp>();
-    const scrollY = useRef(new Animated.Value(0)).current;
-    const bottomInset = useSafeAreaValues('bottom');
+    const insets = useSafeAreaInsets();
+    const bottomInset = insets.bottom;
 
     // Route params'dan brandId'yi güvenli şekilde al
     const brandId = route.params?.brandId;
+    
+    // Scroll animation için shared value
+    const scrollY = useSharedValue(0);
     
     // Debug: brandId kontrolü
     useEffect(() => {
@@ -77,6 +92,20 @@ const BrandDetailScreen: React.FC = () => {
         isLoading: isBrandFeedLoading,
         error: brandFeedError,
     } = useBrandFeed(brandId, 6);
+
+    // Join / Leave brand - optimistic update ile anında UI güncellenir
+    const joinBrandMutation = useJoinBrand();
+    const leaveBrandMutation = useLeaveBrand();
+    const isJoinLeavePending = joinBrandMutation.isPending || leaveBrandMutation.isPending;
+
+    const handleJoinLeavePress = useCallback(() => {
+        if (!brandId || isJoinLeavePending) return;
+        if (brandCatalog?.isJoined) {
+            leaveBrandMutation.mutate(brandId);
+        } else {
+            joinBrandMutation.mutate(brandId);
+        }
+    }, [brandId, brandCatalog?.isJoined, isJoinLeavePending, joinBrandMutation, leaveBrandMutation]);
 
     // Map BrandFeedPost to PostCardData (Post type için)
     const mapBrandPostToPostCardData = useCallback((post: BrandFeedPost): PostCardData => {
@@ -132,49 +161,40 @@ const BrandDetailScreen: React.FC = () => {
         };
     }, []);
 
-    // Map Experience (ReviewApiItem) to ReviewCardData
-    const mapExperienceToCardData = useCallback((item: BrandFeedPost): ReviewCardData => {
+    // Map Experience (ExperiencePostApiItem) to ExperiencePostCardData
+    const mapExperienceToCardData = useCallback((item: BrandFeedPost): ExperiencePostCardData => {
         // Type guard: experience type kontrolü
         if (item.type !== 'experience') {
             throw new Error(`Expected experience type, got ${item.type}`);
         }
         
-        const postData = item.data as import('@/src/types/ReviewsCard').ReviewApiItem;
+        const postData = item.data as import('@/src/types/ExperienceCard').ExperiencePostApiItem;
         const avatarSource = toImageSource(postData.user.avatar)!;
-        const productImage = postData.contextData?.image
-            ? toImageSource(postData.contextData.image)
-            : undefined;
+        const rawProduct = postData.contextData;
+        const productImage = rawProduct?.image ? toImageSource(rawProduct.image) : undefined;
 
-        // Content array'i map et - rating 0-100 arası, 0-5 arasına çevir (her 20 = 1 star)
-        const content: ReviewCardContentItem[] = Array.isArray(postData.content) 
-            ? postData.content.map((contentItem) => {
-                // Rating 0-100 arası, 0-5 arasına çevir
-                const ratingValue = contentItem.rating || 0;
-                const stars = Math.floor(ratingValue / 20); // 0-100 -> 0-5
-                
+        const contentBlocks = postData.experienceContent ?? (Array.isArray(postData.content) ? postData.content : []);
+        const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
+            ? contentBlocks.map((contentItem) => {
+                const ratingVal = contentItem?.rating ?? 0;
+                const stars = ratingVal <= 5 ? Math.min(5, Math.max(0, Math.round(ratingVal))) : Math.floor(ratingVal / 20);
                 return {
                     tag: {
-                        icon: 'tag' as const,
-                        title: contentItem.title || '',
+                        icon: (contentItem?.title?.toLowerCase?.().includes('product') || contentItem?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
+                        title: contentItem?.title || '',
                     },
-                    text: contentItem.content || '',
-                    rating: Array(5)
-                        .fill(false)
-                        .map((_, index) => index < stars),
+                    text: contentItem?.content || '',
+                    rating: Array(5).fill(false).map((_, index) => index < stars),
                 };
             })
             : [];
 
-        // ContextType PRODUCT ise, contextData.id'nin productId olduğundan emin ol
-        // API'den gelen contextData içinde productId alanı varsa onu kullan, yoksa id'yi kullan
-        let contextDataId = postData.contextData?.id || '';
-        if (postData.contextData) {
-            const contextDataAny = postData.contextData as any;
-            if (contextDataAny.productId) {
-                contextDataId = contextDataAny.productId;
-            }
-        }
-        
+        let contextDataId = rawProduct?.id || '';
+        if (rawProduct && (rawProduct as any).productId) contextDataId = (rawProduct as any).productId;
+        const subNameRaw = rawProduct?.subName ?? '';
+        const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
+        const tags = Array.isArray(postData.tags) ? postData.tags : [];
+
         return {
             id: postData.id,
             user: {
@@ -182,20 +202,24 @@ const BrandDetailScreen: React.FC = () => {
                 name: postData.user.name,
                 title: postData.user.title,
                 avatar: avatarSource,
-                action: 'wrote a review',
+                action: (postData.status === 'own' || rawProduct?.isOwned) ? 'Added new product and experiences to inventory!' : undefined,
             },
             contextData: {
                 id: contextDataId,
-                name: postData.contextData?.name || '',
-                subName: postData.contextData?.subName || '',
-                image: productImage,
-                isOwned: postData.contextData?.isOwned,
+                name: rawProduct?.name || '',
+                subName,
+                image: productImage ?? require('@/assets/defaultImages/default-post.png'),
+                isOwned: postData.status === 'own' || rawProduct?.isOwned,
             },
             content,
-            tags: postData.tags || [],
-            images: postData.images
-                ?.map((img: string) => toImageSource(img))
-                .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+            tags,
+            images: (() => {
+                const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+                const mapped = postData.images
+                    ?.map((img: string) => toImageSource(img))
+                    .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+                return mapped.filter((img: any) => !isSameImageSource(img, productImage ?? defaultPostImage));
+            })(),
             stats: postData.stats,
             createdAt: postData.createdAt,
         };
@@ -332,7 +356,7 @@ const BrandDetailScreen: React.FC = () => {
     const allPosts = useMemo(() => {
         if (!brandFeedData?.pages) return [];
         
-        const allItems = brandFeedData.pages.flatMap((page) => page.items || page.posts || []);
+        const allItems = brandFeedData.pages.flatMap((page) => page.items || []);
         
         // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
         const uniqueItemsMap = new Map<string, BrandFeedPost>();
@@ -345,6 +369,47 @@ const BrandDetailScreen: React.FC = () => {
         return Array.from(uniqueItemsMap.values());
     }, [brandFeedData?.pages]);
 
+    // Debug: Log brand feed data
+    useEffect(() => {
+        console.log('🔍 [BrandDetailScreen] Brand Feed Data:', {
+            brandId,
+            brandName: brandCatalog?.name,
+            pagesCount: brandFeedData?.pages?.length || 0,
+            allPostsCount: allPosts.length,
+            isLoading: isBrandFeedLoading,
+            hasError: !!brandFeedError,
+        });
+
+        if (brandFeedData?.pages && brandFeedData.pages.length > 0) {
+            console.log('📊 [BrandDetailScreen] First Page Data:', {
+                itemsCount: brandFeedData.pages[0]?.items?.length || 0,
+                items: brandFeedData.pages[0]?.items,
+                pagination: brandFeedData.pages[0]?.pagination,
+            });
+        }
+
+        if (allPosts.length > 0) {
+            console.log('📝 [BrandDetailScreen] All Posts:', {
+                count: allPosts.length,
+                posts: allPosts.map(post => ({
+                    type: post.type,
+                    id: post.data.id,
+                    userId: post.data.user?.id,
+                    userName: post.data.user?.name,
+                    content: typeof post.data.content === 'string' 
+                        ? post.data.content.substring(0, 50) + '...' 
+                        : 'Array content',
+                })),
+            });
+        } else {
+            console.log('⚠️ [BrandDetailScreen] No posts found');
+        }
+
+        if (brandFeedError) {
+            console.error('❌ [BrandDetailScreen] Brand Feed Error:', brandFeedError);
+        }
+    }, [brandId, brandCatalog?.name, brandFeedData, allPosts, isBrandFeedLoading, brandFeedError]);
+
     // Render feed item based on type (similar to FeedScreen)
     const renderFeedItem = useCallback((item: BrandFeedPost) => {
         console.log(item.type === CardType.EXPERIENCE ? "Experience Rednder Edildi." : "Düz Card");
@@ -352,7 +417,7 @@ const BrandDetailScreen: React.FC = () => {
         switch (item.type) {
             case CardType.EXPERIENCE:
             case 'experience':
-                // Experience type için ReviewApiItem kullan ve ExperiencePostCard render et
+                // Experience type için ExperiencePostApiItem kullan ve ExperiencePostCard render et
                 if ('content' in item.data && Array.isArray(item.data.content)) {
                     return (
                         <ExperiencePostCard
@@ -408,69 +473,91 @@ const BrandDetailScreen: React.FC = () => {
         }
     }, [mapBrandPostToPostCardData, mapExperienceToCardData, mapBenchmarkToCardData, mapQuestionToCardData, mapTipsToCardData]);
 
-    // Banner yüksekliği ve içerik başlangıç noktası
-    const BANNER_HEIGHT = 250;
-    const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
-    const CONTENT_START = BANNER_HEIGHT - CONTENT_OFFSET; // 230px
+    // Scroll handler - Reanimated için animasyon + Infinite scroll için sayfa yükleme
+    const scrollHandler = useAnimatedScrollHandler(
+        {
+            onScroll: (event) => {
+                scrollY.value = event.contentOffset.y;
+                
+                // Infinite scroll: ScrollView'in altına yaklaştığında yeni sayfa yükle
+                const { layoutMeasurement, contentOffset, contentSize } = event;
+                const paddingToBottom = 300;
+                const isCloseToBottom =
+                    layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
 
-    const handleScroll = useCallback((event: any) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
-        scrollY.setValue(offsetY);
-        
-        // Infinite scroll: ScrollView'in altına yaklaştığında yeni sayfa yükle
-        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-        const paddingToBottom = 300; // ScrollView'in altına yaklaşma mesafesi
-        const isCloseToBottom =
-            layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+                if (isCloseToBottom && hasNextBrandFeedPage && !isFetchingNextBrandFeedPage) {
+                    runOnJS(fetchNextBrandFeedPage)();
+                }
+            },
+        },
+        [hasNextBrandFeedPage, isFetchingNextBrandFeedPage, fetchNextBrandFeedPage]
+    );
 
-        if (isCloseToBottom && hasNextBrandFeedPage && !isFetchingNextBrandFeedPage) {
-            fetchNextBrandFeedPage();
-        }
-    }, [hasNextBrandFeedPage, isFetchingNextBrandFeedPage, fetchNextBrandFeedPage, allPosts.length]);
+    // Banner parallax animation - scroll'a göre yukarı kayar
+    const bannerAnimatedStyle = useAnimatedStyle(() => {
+        const translateY = interpolate(
+            scrollY.value,
+            [0, BANNER_HEIGHT],
+            [0, -BANNER_HEIGHT * 0.5], // Parallax effect - banner yarı hızda kayar
+            Extrapolate.CLAMP
+        );
 
+        const opacity = interpolate(
+            scrollY.value,
+            [0, BANNER_HEIGHT * 0.5, BANNER_HEIGHT],
+            [1, 0.5, 0],
+            Extrapolate.CLAMP
+        );
 
-    // Header animasyonu: İçeriğin başlangıç noktasına yaklaştığında açılır
-    // 100px'de başlar, 180px'de tamamen görünür olur
-    const headerOpacity = scrollY.interpolate({
-        inputRange: [0, 100, 180],
-        outputRange: [0, 0, 1],
-        extrapolate: 'clamp',
-    });
-    
-    // Debug: Opacity değerini takip et
-    useEffect(() => {
-        const listenerId = scrollY.addListener(({ value }) => {
-            let opacity = 0;
-            if (value >= 100 && value < 180) {
-                opacity = (value - 100) / (180 - 100);
-            } else if (value >= 180) {
-                opacity = 1;
-            }
-        });
-        
-        return () => {
-            scrollY.removeListener(listenerId);
+        return {
+            transform: [{ translateY }],
+            opacity,
         };
-    }, [headerOpacity]);
+    });
+
+    // Sticky header animation - scroll belirli noktaya ulaştığında sabitlenir
+    const stickyHeaderAnimatedStyle = useAnimatedStyle(() => {
+        // Banner'ın çoğu kaybolduğunda header sticky olur
+        const threshold = BANNER_HEIGHT - HEADER_HEIGHT - insets.top;
+        
+        const translateY = interpolate(
+            scrollY.value,
+            [threshold - 20, threshold],
+            [-HEADER_HEIGHT, 0],
+            Extrapolate.CLAMP
+        );
+
+        const opacity = interpolate(
+            scrollY.value,
+            [threshold - 20, threshold],
+            [0, 1],
+            Extrapolate.CLAMP
+        );
+
+        return {
+            transform: [{ translateY }],
+            opacity,
+        };
+    });
 
     // Loading state
     if (isBrandCatalogLoading) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
+            <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                     <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4" fontSize="$sm">
                         Loading...
                     </Text>
                 </Box>
-            </SafeAreaView>
+            </View>
         );
     }
 
     // Error state
     if (brandCatalogError || !brandCatalog) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
+            <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
                         title="Brand Not Found"
@@ -483,135 +570,166 @@ const BrandDetailScreen: React.FC = () => {
                         </Text>
                     </Box>
                 </Box>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            {/* Sticky Animated Header */}
+        <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FAFAFA' }}>
+            {/* Sticky Header - Scroll'da yukarı sabitlenir */}
             <Animated.View
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 9999,
-                    elevation: 10,
-                    pointerEvents: 'box-none',
-                }}
-                collapsable={false}
-            >
-                <Animated.View
-                    style={{
-                        opacity: headerOpacity,
+                style={[
+                    {
                         position: 'absolute',
-                        top: 0,
+                        top: insets.top,
                         left: 0,
                         right: 0,
-                        width: '100%',
-                        zIndex: 9999,
-                        elevation: 10,
-                    }}
+                        height: HEADER_HEIGHT,
+                        backgroundColor: isDark ? '#000000' : '#FAFAFA',
+                        zIndex: 100,
+                        borderBottomWidth: 1,
+                        borderBottomColor: isDark ? '#1A1A1A' : '#E9E9E9',
+                    },
+                    stickyHeaderAnimatedStyle,
+                ]}
+            >
+                <HStack
+                    px="$4"
+                    py="$3"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    height="100%"
                 >
-                    <Box 
-                        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-                        width="100%"
+                    <VStack flex={1}>
+                        <Text
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontSize="$lg"
+                            fontWeight="$bold"
+                            numberOfLines={1}
+                        >
+                            {brandCatalog?.name}
+                        </Text>
+                        <HStack alignItems="center" space="sm">
+                            <UsersIcon width={12} height={12} color="#9D9D9D" />
+                            <Text
+                                color="#9D9D9D"
+                                fontSize="$xs"
+                                fontWeight="$medium"
+                            >
+                                {brandCatalog?.followers} Followers
+                            </Text>
+                        </HStack>
+                    </VStack>
+                    <Button
+                        bg={brandCatalog?.isJoined ? "rgba(215, 215, 215, 0.8)" : "#C2E607"}
+                        borderRadius={10}
+                        minWidth={65}
+                        height={24}
+                        onPress={handleJoinLeavePress}
+                        disabled={isJoinLeavePending}
+                        opacity={isJoinLeavePending ? 0.7 : 1}
                     >
-                        <Header
-                            title={brandCatalog.name}
-                            showBackButton={true}
-                            onBackPress={() => navigation.goBack()}
-                            showShare={true}
-                            onSharePress={() => console.log('Share pressed')}
-                        />
-                    </Box>
-                </Animated.View>
+                        {isJoinLeavePending ? (
+                            <ActivityIndicator size="small" color="#000000" />
+                        ) : (
+                            <ButtonText
+                                color="#000000"
+                                fontSize="$xs"
+                                fontWeight="$bold"
+                                textAlign="center"
+                            >
+                                {brandCatalog?.isJoined ? 'Leave' : 'Join'}
+                            </ButtonText>
+                        )}
+                    </Button>
+                </HStack>
             </Animated.View>
 
             <Animated.ScrollView
-                onScroll={handleScroll}
-                scrollEventThrottle={400}
+                onScroll={scrollHandler}
+                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
             >
-                {/* Banner Image */}
-                <Box
-                    width={width}
-                    height={250}
-                    position="relative"
-                    overflow="hidden"
-                >
-                    <Image
-                        source={toImageSource(brandCatalog.bannerImage) || require('@/assets/defaultImages/default-banner.png')}
-                        alt="Brand Banner"
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                    />
-
-                    {/* Gradient Overlay */}
+                {/* Banner Image - Parallax effect */}
+                <Animated.View style={bannerAnimatedStyle}>
                     <Box
-                        position="absolute"
-                        top={0}
-                        left={0}
-                        right={0}
-                        bottom={0}
-                        bg="rgba(0, 0, 0, 0.6)"
-                    />
-
-                    {/* Back and Share Buttons */}
-                    <HStack
-                        position="absolute"
-                        top={25}
-                        left={16}
-                        right={16}
-                        justifyContent="space-between"
-                        alignItems="center"
+                        width={width}
+                        height={BANNER_HEIGHT}
+                        position="relative"
+                        overflow="hidden"
                     >
-                        <Pressable
-                            onPress={() => navigation.goBack()}
-                            width={36}
-                            height={36}
-                            borderRadius={18}
-                            bg="rgba(0, 0, 0, 0.6)"
-                            alignItems="center"
-                            justifyContent="center"
-                        >
-                            <ChevronLeftIcon width={20} height={20} color="#FFFFFF" />
-                        </Pressable>
+                        <Image
+                            source={toImageSource(brandCatalog.bannerImage) || require('@/assets/defaultImages/default-banner.png')}
+                            alt="Brand Banner"
+                            style={{ width: '100%', height: '100%' }}
+                            resizeMode="cover"
+                        />
 
-                        <Pressable
-                            width={36}
-                            height={36}
-                            borderRadius={18}
+                        {/* Gradient Overlay */}
+                        <Box
+                            position="absolute"
+                            top={0}
+                            left={0}
+                            right={0}
+                            bottom={0}
                             bg="rgba(0, 0, 0, 0.6)"
-                            alignItems="center"
-                            justifyContent="center"
-                        >
-                            <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
-                        </Pressable>
-                    </HStack>
+                        />
 
-                    {/* Brand Info Overlay */}
-                    <VStack
-                        position="absolute"
-                        bottom={0}
-                        left={0}
-                        right={0}
-                        bg="rgba(0, 0, 0, 0.6)"
-                        p="$4"
-                    >
-                        <Text
-                            color="#FFFFFF"
-                            fontSize="$2xs"
-                            lineHeight="$sm"
-                            mb="$2"
+                        {/* Header Overlay on Banner */}
+                        <HStack
+                            position="absolute"
+                            top={insets.top + 10}
+                            left={16}
+                            right={16}
+                            justifyContent="space-between"
+                            alignItems="center"
+                            zIndex={10}
                         >
-                            Discover all experiences related to {brandCatalog.name}.
-                        </Text>
-                    </VStack>
-                </Box>
+                            <Pressable
+                                onPress={() => navigation.goBack()}
+                                width={36}
+                                height={36}
+                                borderRadius={18}
+                                bg="rgba(0, 0, 0, 0.6)"
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                <ChevronLeftIcon width={20} height={20} color="#FFFFFF" />
+                            </Pressable>
+
+                            <Pressable
+                                width={36}
+                                height={36}
+                                borderRadius={18}
+                                bg="rgba(0, 0, 0, 0.6)"
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
+                            </Pressable>
+                        </HStack>
+
+                        {/* Brand Info Overlay */}
+                        <VStack
+                            position="absolute"
+                            bottom={0}
+                            left={0}
+                            right={0}
+                            bg="rgba(0, 0, 0, 0.6)"
+                            p="$4"
+                        >
+                            <Text
+                                color="#FFFFFF"
+                                fontSize="$2xs"
+                                lineHeight="$sm"
+                                mb="$2"
+                            >
+                                Discover all experiences related to {brandCatalog.name}.
+                            </Text>
+                        </VStack>
+                    </Box>
+                </Animated.View>
 
                 {/* Content */}
                 <VStack
@@ -650,16 +768,22 @@ const BrandDetailScreen: React.FC = () => {
                             borderRadius={10}
                             minWidth={65}
                             height={24}
-                            onPress={() => console.log(brandCatalog.isJoined ? 'Leave' : 'Join')}
+                            onPress={handleJoinLeavePress}
+                            disabled={isJoinLeavePending}
+                            opacity={isJoinLeavePending ? 0.7 : 1}
                         >
-                            <ButtonText
-                                color="#000000"
-                                fontSize="$xs"
-                                fontWeight="$bold"
-                                textAlign="center"
-                            >
-                                {brandCatalog.isJoined ? 'Leave' : 'Join'}
-                            </ButtonText>
+                            {isJoinLeavePending ? (
+                                <ActivityIndicator size="small" color="#000000" />
+                            ) : (
+                                <ButtonText
+                                    color="#000000"
+                                    fontSize="$xs"
+                                    fontWeight="$bold"
+                                    textAlign="center"
+                                >
+                                    {brandCatalog.isJoined ? 'Leave' : 'Join'}
+                                </ButtonText>
+                            )}
                         </Button>
                     </HStack>
 
@@ -732,7 +856,7 @@ const BrandDetailScreen: React.FC = () => {
                                         borderWidth={1}
                                         borderColor="#ADADAD"
                                         borderRadius={10}
-                                        width={65}
+                                        width={75}
                                         height={24}
                                         onPress={() => {
                                             if (brandId) {
@@ -869,8 +993,7 @@ const BrandDetailScreen: React.FC = () => {
                     </VStack>
                 </VStack>
             </Animated.ScrollView>
-        </Box>
-        </SafeAreaView>
+        </View>
     );
 };
 

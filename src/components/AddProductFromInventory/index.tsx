@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FlatList, Dimensions, ActivityIndicator } from 'react-native';
+import { FlatList, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
 import {
     Box,
     VStack,
@@ -12,15 +12,14 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
-import { Header } from '@/src/components/Header';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { InventoryItem } from '@/src/features/profile/types';
 import { useInventory } from '@/src/features/profile/api/hooks';
+import { useBottomOffset } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
-const CARD_GAP = 6;
+const CARD_GAP = 8;
 const CARDS_PER_ROW = 3;
-const HORIZONTAL_PADDING = 15;
+const HORIZONTAL_PADDING = 16;
 const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - (CARD_GAP * (CARDS_PER_ROW - 1))) / CARDS_PER_ROW;
 
 interface AddProductFromInventoryProps {
@@ -35,6 +34,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [searchQuery, setSearchQuery] = useState('');
+    const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
     // Gerçek API'den inventory verilerini çek
     const {
@@ -106,13 +106,13 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                     borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
                     borderRadius={5}
                     w={CARD_WIDTH}
-                    h={175}
+                    h={200}
                     overflow="hidden"
                 >
                     {/* Product Image */}
                     <Box
                         flex={1}
-                        p={15}
+                        p={18}
                         alignItems="center"
                         justifyContent="center"
                     >
@@ -120,14 +120,14 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                             <Image
                                 source={{ uri: item.image }}
                                 alt={`${brandName} ${brandModel}`}
-                                width={100}
-                                height={100}
+                                width={110}
+                                height={110}
                                 resizeMode="contain"
                             />
                         ) : (
                             <Box
-                                width={100}
-                                height={100}
+                                width={110}
+                                height={110}
                                 bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
                                 borderRadius={8}
                                 justifyContent="center"
@@ -135,7 +135,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                             >
                                 <Feather
                                     name="image"
-                                    size={32}
+                                    size={36}
                                     color={isDark ? '#666' : '#CCC'}
                                 />
                             </Box>
@@ -191,21 +191,28 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
     };
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-            <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-                <Header
-                    title="Select from Inventory"
-                    leftAction="back"
-                    onLeftActionPress={onClose}
-                    rightButton={{
-                        icon: 'refresh-cw',
-                        onPress: () => refetch(),
-                        disabled: isLoading || isRefetching,
-                    }}
-                />
+        <Box bg={isDark ? '$backgroundDark950' : '#FDFDFB'} width="100%">
+            <VStack px="$4" py="$3" pb={bottomOffset} space="md" maxHeight="90%">
+                {/* Header */}
+                <HStack alignItems="center" justifyContent="space-between" mb="$1">
+                    <Text
+                        fontSize={16}
+                        fontWeight="$bold"
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                    >
+                        Select from Inventory
+                    </Text>
+                    <Pressable onPress={() => refetch()} disabled={isLoading || isRefetching}>
+                        <Feather
+                            name="refresh-cw"
+                            size={20}
+                            color={isDark ? (isLoading || isRefetching ? '#666666' : '#FFFFFF') : (isLoading || isRefetching ? '#999999' : '#000000')}
+                        />
+                    </Pressable>
+                </HStack>
 
                 {/* Search Bar */}
-                <Box px={HORIZONTAL_PADDING} pt="$3" pb="$2">
+                <Box>
                     <Input
                         bg={isDark ? '$backgroundDark900' : '$white'}
                         borderWidth={1}
@@ -244,97 +251,101 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                     </Input>
                 </Box>
 
-                {/* Loading State */}
-                {isLoading && (
-                    <Box flex={1} justifyContent="center" alignItems="center">
-                        <ActivityIndicator size="large" color={isDark ? '#FFF' : '#000'} />
-                        <Text
-                            mt="$3"
-                            color={isDark ? '$textDark400' : '$textLight500'}
-                            fontSize={14}
-                        >
-                            Loading inventory...
-                        </Text>
-                    </Box>
-                )}
+                {/* Content */}
+                <Box flex={1} minHeight={200}>
+                    {/* Loading State */}
+                    {isLoading && (
+                        <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+                            <ActivityIndicator size="large" color={isDark ? '#FFF' : '#000'} />
+                            <Text
+                                mt="$3"
+                                color={isDark ? '$textDark400' : '$textLight500'}
+                                fontSize={14}
+                            >
+                                Loading inventory...
+                            </Text>
+                        </Box>
+                    )}
 
-                {/* Error State */}
-                {isError && (
-                    <Box flex={1} justifyContent="center" alignItems="center" px="$6">
-                        <Feather
-                            name="alert-circle"
-                            size={48}
-                            color={isDark ? '#999' : '#CCC'}
+                    {/* Error State */}
+                    {isError && (
+                        <Box flex={1} justifyContent="center" alignItems="center" px="$6" py="$8">
+                            <Feather
+                                name="alert-circle"
+                                size={48}
+                                color={isDark ? '#999' : '#CCC'}
+                            />
+                            <Text
+                                mt="$3"
+                                color={isDark ? '$textDark400' : '$textLight500'}
+                                fontSize={14}
+                                textAlign="center"
+                            >
+                                Failed to load inventory
+                            </Text>
+                            <Text
+                                mt="$2"
+                                color={isDark ? '$textDark600' : '$textLight400'}
+                                fontSize={12}
+                                textAlign="center"
+                            >
+                                {error?.message || 'Please try again later'}
+                            </Text>
+                        </Box>
+                    )}
+
+                    {/* Empty State */}
+                    {!isLoading && !isError && filteredInventory.length === 0 && (
+                        <Box flex={1} justifyContent="center" alignItems="center" px="$6" py="$8">
+                            <Feather
+                                name="inbox"
+                                size={48}
+                                color={isDark ? '#999' : '#CCC'}
+                            />
+                            <Text
+                                mt="$3"
+                                color={isDark ? '$textDark400' : '$textLight500'}
+                                fontSize={14}
+                                textAlign="center"
+                            >
+                                {searchQuery.trim() ? 'No products found' : 'Your inventory is empty'}
+                            </Text>
+                            <Text
+                                mt="$2"
+                                color={isDark ? '$textDark600' : '$textLight400'}
+                                fontSize={12}
+                                textAlign="center"
+                            >
+                                {searchQuery.trim() ? 'Try different search terms' : 'Add products to your inventory first'}
+                            </Text>
+                        </Box>
+                    )}
+
+                    {/* Product List */}
+                    {!isLoading && !isError && filteredInventory.length > 0 && (
+                        <FlatList
+                            data={filteredInventory}
+                            renderItem={renderProductCard}
+                            keyExtractor={(item) => item.id}
+                            numColumns={CARDS_PER_ROW}
+                            columnWrapperStyle={{
+                                paddingHorizontal: 0,
+                                justifyContent: 'space-between',
+                                marginBottom: CARD_GAP,
+                            }}
+                            contentContainerStyle={{
+                                paddingTop: 8,
+                                paddingBottom: 20,
+                            }}
+                            showsVerticalScrollIndicator={false}
+                            onEndReached={handleLoadMore}
+                            onEndReachedThreshold={0.5}
+                            ListFooterComponent={renderFooter}
+                            scrollEnabled={true}
                         />
-                        <Text
-                            mt="$3"
-                            color={isDark ? '$textDark400' : '$textLight500'}
-                            fontSize={14}
-                            textAlign="center"
-                        >
-                            Failed to load inventory
-                        </Text>
-                        <Text
-                            mt="$2"
-                            color={isDark ? '$textDark600' : '$textLight400'}
-                            fontSize={12}
-                            textAlign="center"
-                        >
-                            {error?.message || 'Please try again later'}
-                        </Text>
-                    </Box>
-                )}
-
-                {/* Empty State */}
-                {!isLoading && !isError && filteredInventory.length === 0 && (
-                    <Box flex={1} justifyContent="center" alignItems="center" px="$6">
-                        <Feather
-                            name="inbox"
-                            size={48}
-                            color={isDark ? '#999' : '#CCC'}
-                        />
-                        <Text
-                            mt="$3"
-                            color={isDark ? '$textDark400' : '$textLight500'}
-                            fontSize={14}
-                            textAlign="center"
-                        >
-                            {searchQuery.trim() ? 'No products found' : 'Your inventory is empty'}
-                        </Text>
-                        <Text
-                            mt="$2"
-                            color={isDark ? '$textDark600' : '$textLight400'}
-                            fontSize={12}
-                            textAlign="center"
-                        >
-                            {searchQuery.trim() ? 'Try different search terms' : 'Add products to your inventory first'}
-                        </Text>
-                    </Box>
-                )}
-
-                {/* Product List */}
-                {!isLoading && !isError && filteredInventory.length > 0 && (
-                    <FlatList
-                        data={filteredInventory}
-                        renderItem={renderProductCard}
-                        keyExtractor={(item) => item.id}
-                        numColumns={CARDS_PER_ROW}
-                        columnWrapperStyle={{
-                            paddingHorizontal: HORIZONTAL_PADDING,
-                            justifyContent: 'space-between',
-                            marginBottom: CARD_GAP,
-                        }}
-                        contentContainerStyle={{
-                            paddingTop: 8,
-                            paddingBottom: 20,
-                        }}
-                        showsVerticalScrollIndicator={false}
-                        onEndReached={handleLoadMore}
-                        onEndReachedThreshold={0.5}
-                        ListFooterComponent={renderFooter}
-                    />
-                )}
-            </Box>
-        </SafeAreaView>
+                    )}
+                </Box>
+            </VStack>
+        </Box>
     );
 };

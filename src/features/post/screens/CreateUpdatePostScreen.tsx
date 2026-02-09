@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { KeyboardAvoidingView, Platform, View, Image as RNImage } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform, View, Image as RNImage } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast, Image } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
@@ -17,7 +17,7 @@ import { ControlledImagePicker } from '../components/FormFields/ControlledImageP
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateUpdatePost, useUpdatePost, usePostDetail } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
-import { mapProductInfoTypeToContextType } from '../types';
+import { mapProductInfoTypeToContextType, type ApiContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys } from '@/src/features/profile/api/hooks';
@@ -50,6 +50,7 @@ export const CreateUpdatePostScreen = () => {
   const updatePostMutation = useUpdatePost();
   const { user } = useAppStore();
   const queryClient = useQueryClient();
+  const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
   
   // Update modu kontrolü
   const isUpdateMode = !!postId;
@@ -76,7 +77,19 @@ export const CreateUpdatePostScreen = () => {
   // Flow store'dan context bilgilerini al
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
+  const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+
+  // Experience update modunda flow store'da context yoksa experiencePost.product'tan set et
+  useEffect(() => {
+    if (isExperienceUpdateMode && experiencePost?.product?.id && (!contextType || !contextId)) {
+      setFlowContext(ProductInfoType.PRODUCT, experiencePost.product.id, {
+        image: experiencePost.product.image,
+        title: experiencePost.product.name,
+        subName: experiencePost.product.subName,
+      });
+    }
+  }, [isExperienceUpdateMode, experiencePost?.product?.id, experiencePost?.product?.name, experiencePost?.product?.image, experiencePost?.product?.subName, contextType, contextId, setFlowContext]);
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -98,6 +111,7 @@ export const CreateUpdatePostScreen = () => {
 
   const handleImagePicker = async () => {
     try {
+      setIsImagePickerLoading(true);
       const currentImages = getValues('selectedImages') || [];
       const remainingSlots = 10 - currentImages.length;
       
@@ -142,6 +156,8 @@ export const CreateUpdatePostScreen = () => {
         description: errorMessage,
         action: 'error',
       });
+    } finally {
+      setIsImagePickerLoading(false);
     }
   };
 
@@ -181,25 +197,44 @@ export const CreateUpdatePostScreen = () => {
         navigation.goBack();
       } else if (isExperienceUpdateMode && experiencePostId) {
         // Experience post'tan update oluşturma modu
-        // ContextType ve contextId kontrolü
-        if (!contextType || !contextId) {
+        // Backend'e göre experiencePostId ZORUNLU
+        if (!experiencePostId || experiencePostId.trim() === '') {
+          console.error('[CreateUpdatePostScreen] experiencePostId is missing or empty');
           showCustomToast(toast, {
             title: 'Error',
-            description: 'Context information not found. Please try again.',
+            description: 'Experience post ID is required. Please try again.',
             action: 'error',
           });
           return;
         }
+
+        // Backend kuralı: Update post sadece PRODUCT context'i için oluşturulabilir
+        // contextId opsiyonel - Backend boşsa experience post'taki productId'yi kullanır
+        const effectiveContextId = contextId ?? experiencePost?.product?.id;
         
-        // API contextType'a çevir
-        const apiContextType = mapProductInfoTypeToContextType(contextType);
+        // contextId tamamen opsiyonel - backend experience post'tan alır
+        // Ama gönderilecekse product ID olmalı
+        if (effectiveContextId && !effectiveContextId.startsWith('prod_')) {
+          console.warn('[CreateUpdatePostScreen] ⚠️ contextId is not a product ID, setting to undefined. Backend will use experience post productId.');
+        }
+        
+        // Backend sadece 'product' contextType kabul ediyor
+        const apiContextType = 'product' as ApiContextType;
+        
+        console.log('[CreateUpdatePostScreen] 📤 Creating update post with:', {
+          contextType: apiContextType, // Her zaman 'product'
+          contextId: effectiveContextId, // Opsiyonel - backend experience post'tan alır
+          experiencePostId: experiencePostId,
+          contentLength: data.description?.length || 0,
+          imagesCount: data.selectedImages?.length || 0,
+        });
         
         const response = await createUpdatePostMutation.mutateAsync({
-          contextType: apiContextType,
-          contextId: contextId,
-          content: data.description, // API'de "content" field'ı kullanılıyor
+          contextType: apiContextType, // Her zaman 'product'
+          contextId: effectiveContextId || '', // Boş string gönderilebilir, backend ignore eder
+          content: data.description,
           images: data.selectedImages || [],
-          experiencePostId: experiencePostId, // Experience post ID'yi gönder
+          experiencePostId: experiencePostId,
         });
         
         console.log('[CreateUpdatePostScreen] ✅ Update Post Created from Experience:', response);
@@ -272,110 +307,57 @@ export const CreateUpdatePostScreen = () => {
           );
         }
       } else {
-        // Create modu: Yeni post oluştur (normal flow)
-        // ContextType ve contextId kontrolü
-        if (!contextType || !contextId) {
-          showCustomToast(toast, {
-            title: 'Error',
-            description: 'Context information not found. Please try again.',
-            action: 'error',
-          });
-          return;
-        }
-        
-        // API contextType'a çevir
-        const apiContextType = mapProductInfoTypeToContextType(contextType);
-        
-        const response = await createUpdatePostMutation.mutateAsync({
-          contextType: apiContextType,
-          contextId: contextId,
-          content: data.description, // API'de "content" field'ı kullanılıyor
-          images: data.selectedImages || [],
-        });
-        
-        console.log('[CreateUpdatePostScreen] ✅ API Response:', response);
-        
-        // Başarılı toast göster
+        // Hatalı kullanım: Bu ekran sadece experience update veya post edit için kullanılmalı
+        console.error('[CreateUpdatePostScreen] Invalid usage: experiencePostId or postId required');
         showCustomToast(toast, {
-          title: 'Post Created',
-          description: 'Your update post has been created successfully!',
-          action: 'success',
+          title: 'Error',
+          description: 'Invalid screen usage. Please select an experience post first.',
+          action: 'error',
         });
         
-        // Clear flow context on successful submit
-        clearFlow();
-        
-        // Başarılı olursa ProfileScreen'e yönlendir ve Post stack'ini temizle
-        if (user?.id) {
-          // Profil verilerini invalidate et - yeni post görünsün
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.userPosts(user.id),
-          });
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.profile(user.id),
-          });
-          
-          // CRITICAL: Post stack'ini temizle ve ProfileScreen'e yönlendir
-          // Kullanıcı gönderi oluşturduktan sonra CreatePostScreen'e geri dönmemeli
-          // App'in mevcut state'ini koru (hangi tab açıksa o kalır)
-          const currentState = navigation.getState();
-          const appRoute = currentState?.routes?.find((route) => route.name === 'App');
-          
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 1,
-              routes: [
-                {
-                  name: 'App',
-                  state: appRoute?.state as any, // App'in mevcut state'ini koru
-                },
-                {
-                  name: 'Profile',
-                  params: {
-                    screen: 'ProfileMain',
-                    params: { userId: user.id },
-                  },
-                },
-              ],
-            })
-          );
-        } else {
-          // Fallback: Feed ekranına yönlendir
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'App',
-                  state: {
-                    routes: [
-                      {
-                        name: 'MainTabs',
-                        state: {
-                          routes: [{ name: 'FeedScreen' }],
-                          index: 0,
-                        },
-                      },
-                    ],
-                    index: 0,
-                  },
-                },
-              ],
-            })
-          );
-        }
+        // Geri dön
+        handleBackPress();
       }
     } catch (error: any) {
       console.error('[CreateUpdatePostScreen] ❌ API Error:', error);
       
-      // Hata toast göster
-      const errorMessage = error?.response?.data?.message || 
-                          error?.message || 
-                          'An error occurred while creating the post. Please try again.';
+      // Backend'den gelen hata kodlarını kontrol et
+      const errorCode = error?.response?.data?.code;
+      const errorMessage = error?.response?.data?.message;
+      const errorHint = error?.response?.data?.hint;
+      
+      // Legacy review hatası (backend'den gelen farklı hata kodları)
+      if (errorCode === 'LEGACY_REVIEW_NOT_SUPPORTED' || errorCode === 'LEGACY_INVENTORY_NO_POST') {
+        showCustomToast(toast, {
+          title: 'Legacy Review Not Supported',
+          description: errorHint || 'This is a legacy inventory item without an associated experience post. Please create a new experience post for this product first.',
+          action: 'error',
+        });
+        // Geri dön
+        handleBackPress();
+        return;
+      }
+      
+      // Experience post bulunamadı hatası
+      if (errorCode === 'EXPERIENCE_POST_NOT_FOUND') {
+        showCustomToast(toast, {
+          title: 'Experience Post Not Found',
+          description: errorHint || 'The selected experience post could not be found. Please try again.',
+          action: 'error',
+        });
+        // Geri dön
+        handleBackPress();
+        return;
+      }
+      
+      // Genel hata
+      const fallbackMessage = errorMessage || 
+                              error?.message || 
+                              'An error occurred while creating the post. Please try again.';
       
       showCustomToast(toast, {
         title: 'Error',
-        description: errorMessage,
+        description: fallbackMessage,
         action: 'error',
       });
     }
@@ -383,6 +365,12 @@ export const CreateUpdatePostScreen = () => {
 
   // Check if share button should be enabled (product exists and form is valid)
   const isShareEnabled = (product !== undefined || experiencePost !== undefined) && formState.isValid;
+  const isShareLoading = isUpdateMode ? updatePostMutation.isPending : createUpdatePostMutation.isPending;
+
+  const handleSharePress = () => {
+    Keyboard.dismiss();
+    handleSubmit(onSubmit)();
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -400,15 +388,16 @@ export const CreateUpdatePostScreen = () => {
             onLeftActionPress={handleBackPress}
             rightButton={{
               text: 'Share',
-              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
-              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
               paddingX: 10,
               paddingY: 10,
-              onPress: handleSubmit(onSubmit),
+              onPress: handleSharePress,
+              loading: isShareLoading,
             }}
           />
 
@@ -541,6 +530,7 @@ export const CreateUpdatePostScreen = () => {
                   maxImages={10}
                   onImagePicker={handleImagePicker}
                   onRemoveImage={handleRemoveImage}
+                  isLoading={isImagePickerLoading}
                 />
               </VStack>
             </VStack>

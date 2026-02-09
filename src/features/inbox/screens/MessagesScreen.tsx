@@ -49,8 +49,25 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
       threadType: 'DM', // Sadece DM thread'lerini getir
       ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
     };
-    const { data: messages, isLoading, error, refetch } = useMessages(searchParams);
+    const { data: messages, isLoading, error, refetch } = useMessages(true, searchParams);
     const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+    // Özet log (BrandScreen tarzı): mesaj sayısı ve ilk mesaj
+    useEffect(() => {
+        if (messages != null && !isLoading) {
+            const list = Array.isArray(messages) ? messages : [];
+            console.log('[MessagesScreen] Messages Count:', list.length);
+            if (list.length > 0) {
+                console.log('[MessagesScreen] First Message Item:', JSON.stringify({
+                    id: list[0].id,
+                    senderName: list[0].senderName,
+                    lastMessage: list[0].lastMessage?.substring(0, 50),
+                    isUnread: list[0].isUnread,
+                    unreadCount: list[0].unreadCount,
+                }, null, 2));
+            }
+        }
+    }, [messages, isLoading]);
     const queryClient = useQueryClient();
     
   
@@ -102,9 +119,11 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     const thread = oldData[threadIndex];
                     let updated: InboxMessage;
                     
-                    // Image mesajları için lastMessage'i güncelle
-                    const lastMessageText = eventData.messageType === 'image' 
+                    // Image / shared-post mesajları için lastMessage özeti
+                    const lastMessageText = eventData.messageType === 'image'
                         ? '📷 Bir görsel gönderdi'
+                        : eventData.messageType === 'shared-post'
+                        ? '📎 Bir gönderi paylaştı'
                         : (eventData.message || eventData.text || eventData.caption || thread.lastMessage);
                     
                     if (isReceivedMessage) {

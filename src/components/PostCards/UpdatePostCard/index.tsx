@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
+import { View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Platform, Keyboard } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -33,7 +33,6 @@ import {
   useUnlikePost,
   useBookmarkPost,
   useUnbookmarkPost,
-  useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { useReportUser } from '@/src/features/profile/api/hooks';
@@ -42,7 +41,9 @@ import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
+import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
+import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface UpdatePostCardProps {
@@ -64,8 +65,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   const menuTriggerRef = useRef<View>(null);
   const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const { openBottomSheet } = useGlobalBottomSheet();
-  
+
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
@@ -81,8 +81,10 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   const unlikePostMutation = useUnlikePost();
   const bookmarkPostMutation = useBookmarkPost();
   const unbookmarkPostMutation = useUnbookmarkPost();
-  const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
+  const { openBottomSheet } = useGlobalBottomSheet();
+  const { openPostShareSheet } = usePostShare();
+  const insets = useSafeAreaInsets();
   const { mutate: reportUser } = useReportUser();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
@@ -136,14 +138,15 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   };
 
   const handleShare = () => {
-    // Zaten paylaşılmışsa tekrar paylaşma
-    if (isShared) return;
-    
-    setIsShared(true);
-    setSharesCount(prev => prev + 1);
-    sharePostMutation.mutate({
+    // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
+    openPostShareSheet({
       postId: data.id,
-      shareType: 'INTERNAL_REPOST',
+      postContent: data.content,
+      postAuthorName: data.user?.name,
+      onShareSuccess: () => {
+        setIsShared(true);
+        setSharesCount((prev) => prev + 1);
+      },
     });
   };
 
@@ -151,7 +154,12 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
     if (isDetailMode) return; // Detay modunda navigation yapma
     navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
-      params: { postData: data, type: 'update' },
+      params: { 
+        postData: data, 
+        type: 'update',
+        showRelatedPost: true,
+        relatedPostData: data.relatedPost,
+      },
     });
   };
 
@@ -411,127 +419,6 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
             </Pressable>
           </View>
-
-          {/* Menu Modal */}
-          <Modal
-            visible={isMenuOpen}
-            transparent={true}
-            animationType="fade"
-            onRequestClose={() => setIsMenuOpen(false)}
-          >
-            <RNPressable
-              style={{ flex: 1 }}
-              onPress={() => setIsMenuOpen(false)}
-            />
-            <View
-              style={[
-                styles.menuContainer,
-                {
-                  top: menuPosition.top,
-                  left: menuPosition.left,
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: isDark ? '#333333' : '#E9E9E9',
-                  shadowOpacity: isDark ? 0.3 : 0.1,
-                }
-              ]}
-            >
-              <RNPressable 
-                onPress={(e) => e.stopPropagation()}
-                style={{ flex: 1 }}
-              >
-                <VStack px={12} py={8} width="100%">
-                  {isPostOwner ? (
-                    <>
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleUpdate();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            Update
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                      <Divider 
-                        bg={isDark ? '#333333' : '#E9E9E9'} 
-                        mx={0}
-                      />
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleDelete();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <TrashIcon width={20} height={20} color="#FF3040" />
-                          <Text
-                            color="#FF3040"
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            Delete
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                    </>
-                  ) : (
-                    <>
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleViewProfile();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            View Profile
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                      <Divider 
-                        bg={isDark ? '#333333' : '#E9E9E9'} 
-                        mx={0}
-                      />
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleReport();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <FlagIcon width={20} height={20} color="#FF3040" />
-                          <Text
-                            color="#FF3040"
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            Report
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                    </>
-                  )}
-                </VStack>
-              </RNPressable>
-            </View>
-          </Modal>
         </HStack>
       </VStack>
 
@@ -616,20 +503,23 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
             params: { 
               postData: data, 
               type: 'update',
+              showRelatedPost: true,
+              relatedPostData: data.relatedPost,
             }
           });
         }}>
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize="$xs"
+            fontSize="$sm"
+            lineHeight={18}
             numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
           >
             {data.content}
           </Text>
         </Pressable>
 
-        {/* See Related Post Button - Detay sayfasına yönlendirir */}
-        {data.relatedPost && (
+        {/* See Related Post Button - Sadece feed'de göster (detay ekranında showRelatedPost true olduğu için gerek yok) */}
+        {!isDetailMode && data.relatedPost && (
           <Pressable 
             onPress={() => {
               // Detay sayfasına yönlendir (related post detay sayfasında açılacak)
@@ -638,6 +528,8 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
                 params: { 
                   postData: data, 
                   type: 'update',
+                  showRelatedPost: true,
+                  relatedPostData: data.relatedPost,
                 }
               });
             }} 
@@ -665,7 +557,12 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               if (isDetailMode) return; // Detay modunda navigation yapma
               navigationService.navigate(ROOT_ROUTES.POST, {
                 screen: 'PostDetailScreen',
-                params: { postData: data, type: 'update' }
+                params: { 
+                  postData: data, 
+                  type: 'update',
+                  showRelatedPost: true,
+                  relatedPostData: data.relatedPost,
+                }
               });
             }}
           >
@@ -676,7 +573,163 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         );
       })()}
 
-      {/* Related Post Details - Sadece detay sayfasında gösterilecek, burada render edilmiyor */}
+      {/* Related Post Details - Sadece detay sayfasında gösterilecek (showRelatedPost === true) */}
+      {showRelatedPost && (data.relatedPost || relatedPostData) && (
+        <>
+          {/* Related Post Title */}
+          <VStack px={12} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <Text
+              color={isDark ? '$textDark50' : '#A3A3A3'}
+              fontSize="$sm"
+              fontWeight="$bold"
+              textDecorationLine="underline"
+            >
+              Related Post
+            </Text>
+          </VStack>
+
+          {/* Product Info Card */}
+          {(relatedPostData?.product || data.relatedPost?.product) && (
+            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              <ProductInfoCard
+                image={toImageSource((relatedPostData?.product || data.relatedPost?.product)?.image)}
+                title={(relatedPostData?.product || data.relatedPost?.product)?.name || ''}
+                subName={(relatedPostData?.product || data.relatedPost?.product)?.subName}
+                size="big"
+                type={ProductInfoType.PRODUCT}
+                isOwned={(relatedPostData?.product || data.relatedPost?.product)?.isOwned || false}
+              />
+            </VStack>
+          )}
+
+          {/* Content Cards - Experience post content */}
+          {((relatedPostData?.content && Array.isArray(relatedPostData.content) && relatedPostData.content.length > 0) || 
+            (data.relatedPost?.content && Array.isArray(data.relatedPost.content) && data.relatedPost.content.length > 0)) && (
+            <VStack px={16} space="md" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              {(
+                (Array.isArray(relatedPostData?.content) && relatedPostData.content.length > 0) 
+                  ? relatedPostData.content 
+                  : (Array.isArray(data.relatedPost?.content) ? data.relatedPost.content : [])
+              ).map((contentItem: any, index: number) => (
+                <Box
+                  key={index}
+                  bg={isDark ? '$backgroundDark800' : '#FAFAFA'}
+                  borderRadius={10}
+                  overflow="hidden"
+                >
+                  {/* Card Header - Başlık ve Content aynı hizada */}
+                  <HStack px={16} py={8} alignItems="flex-start" space="sm">
+                    <Box
+                      width={18}
+                      height={18}
+                      borderRadius={9}
+                      bg={isDark ? '#571FDD' : '#571FDD'}
+                      alignItems="center"
+                      justifyContent="center"
+                      mt={2}
+                    >
+                      <Text color="#FFFFFF" fontSize={10} fontWeight="$bold">
+                        {contentItem.tag?.icon === 'tag' ? 'T' : 'C'}
+                      </Text>
+                    </Box>
+                    <VStack flex={1} space="xs">
+                      <Text
+                        fontSize={11}
+                        fontWeight="$semibold"
+                        color={isDark ? '$textDark50' : '#3B3B3B'}
+                      >
+                        {contentItem.tag?.title || 'Experience'}
+                      </Text>
+                      <Text
+                        color={isDark ? '$textDark50' : '#000000'}
+                        fontSize="$sm"
+                        lineHeight={18}
+                      >
+                        {contentItem.text}
+                      </Text>
+                    </VStack>
+                  </HStack>
+
+                  {/* Rating Section */}
+                  {contentItem.rating && Array.isArray(contentItem.rating) && (
+                    <HStack px={16} pb={12} alignItems="flex-start" space="sm">
+                      <Box width={18} />
+                      <VStack flex={1} space="xs">
+                        <Text
+                          fontSize={11}
+                          fontWeight="$semibold"
+                          color={isDark ? '$textDark50' : '#3B3B3B'}
+                        >
+                          Rate Experience
+                        </Text>
+                        <HStack space="xs">
+                          {[1, 2, 3, 4, 5].map((star) => {
+                            const rating = contentItem.rating || [];
+                            const isFilled = star <= rating.filter((r: number) => r === 1).length;
+                            return (
+                              <Box key={star}>
+                                <Text color={isFilled ? '#829905' : '#E9E9E9'} fontSize={16}>
+                                  ★
+                                </Text>
+                              </Box>
+                            );
+                          })}
+                        </HStack>
+                      </VStack>
+                    </HStack>
+                  )}
+                </Box>
+              ))}
+            </VStack>
+          )}
+
+          {/* Tags Section */}
+          {((relatedPostData?.tags && Array.isArray(relatedPostData.tags) && relatedPostData.tags.length > 0) || 
+            (data.relatedPost?.tags && Array.isArray(data.relatedPost.tags) && data.relatedPost.tags.length > 0)) && (
+            <HStack px={16} py={10} flexWrap="wrap" gap={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              {(
+                (Array.isArray(relatedPostData?.tags) && relatedPostData.tags.length > 0) 
+                  ? relatedPostData.tags 
+                  : (Array.isArray(data.relatedPost?.tags) ? data.relatedPost.tags : [])
+              ).map((tag: string, index: number) => (
+                <Box
+                  key={index}
+                  bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
+                  borderWidth={1}
+                  borderColor="#EFEFEF"
+                  borderRadius={10}
+                  px={12}
+                  py={3}
+                >
+                  <Text
+                    fontSize="$xs"
+                    fontWeight="$semibold"
+                    color={isDark ? '$textDark50' : '#000000'}
+                  >
+                    {tag}
+                  </Text>
+                </Box>
+              ))}
+            </HStack>
+          )}
+
+          {/* Related Post Images */}
+          {((relatedPostData?.images && Array.isArray(relatedPostData.images) && relatedPostData.images.length > 0) ||
+            (data.relatedPost?.images && Array.isArray(data.relatedPost.images) && data.relatedPost.images.length > 0)) && (
+            <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              <CardImageCarousel 
+                images={(
+                  (Array.isArray(relatedPostData?.images) && relatedPostData.images.length > 0)
+                    ? relatedPostData.images.map((img: any) => toImageSource(img)).filter((img: any): img is NonNullable<typeof img> => !!img)
+                    : (Array.isArray(data.relatedPost?.images) 
+                        ? data.relatedPost.images.map((img: any) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                        : [])
+                )}
+              />
+            </VStack>
+          )}
+        </>
+      )}
 
       {/* Stats */}
       <HStack
@@ -746,6 +799,104 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         </HStack>
         </HStack>
 
+      {/* Menu Modal - HStack dışında, diğer post tipleri gibi RN Modal */}
+      <Modal
+        visible={isMenuOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsMenuOpen(false)}
+      >
+        <RNPressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setIsMenuOpen(false)}
+        />
+        <View
+          style={[
+            styles.menuContainer,
+            {
+              top: menuPosition.top,
+              left: menuPosition.left,
+              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              borderWidth: 1,
+              borderColor: isDark ? '#333333' : '#E9E9E9',
+              shadowOpacity: isDark ? 0.3 : 0.1,
+            }
+          ]}
+        >
+          <RNPressable
+            onPress={(e) => e.stopPropagation()}
+            style={{ flex: 1 }}
+          >
+            <VStack px={12} py={8} width="100%">
+              {isPostOwner ? (
+                <>
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleDelete();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <TrashIcon width={20} height={20} color="#FF3040" />
+                      <Text
+                        color="#FF3040"
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Delete
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleViewProfile();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        View Profile
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  <Divider
+                    bg={isDark ? '#333333' : '#E9E9E9'}
+                    mx={0}
+                  />
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleReport();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <FlagIcon width={20} height={20} color="#FF3040" />
+                      <Text
+                        color="#FF3040"
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Report
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </>
+              )}
+            </VStack>
+          </RNPressable>
+        </View>
+      </Modal>
     </View>
     );
 };

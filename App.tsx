@@ -96,12 +96,14 @@ const AppInner = () => {
   // CRITICAL FIX: GestureHandlerRootView EN DIŞTA olmalı
   // Provider'lar NavigationContainer dışında ama GestureHandlerRootView içinde
   // Bu sayede gesture handler hatası çözülür
-  // CRITICAL ORDER: GluestackProvider -> PortalProvider -> NavigationContainer -> BottomSheetModalProvider -> GlobalBottomSheetProvider
+  // CRITICAL ORDER: GluestackProvider -> PortalProvider -> BottomSheetModalProvider -> NavigationContainer -> GlobalBottomSheetProvider
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackProvider>
         <PortalProvider>
-          <Navigation />
+          <BottomSheetModalProvider>
+            <Navigation />
+          </BottomSheetModalProvider>
         </PortalProvider>
       </GluestackProvider>
     </GestureHandlerRootView>

@@ -1007,17 +1007,15 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         });
       }
       
-      // CatalogUIStore zaten güncellenmiş (handleCategoryPress, handleSubCategoryPress, handleProductGroupPress, handleProductPress içinde)
-      // Burada sadece navigation yapılıyor
-      
+      // contextId'yi route params ile gönder - store'a güvenmeyelim (product group ekranında boş veri sorununu önler)
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'PostsScreen',
         params: {
           stage,
           name,
           productInfo,
-          contextType, // Sadece type gönderiliyor, ID store'dan okunacak
-          // contextId artık gönderilmiyor, store'dan okunacak
+          contextType,
+          contextId,
         },
       });
     }
@@ -1186,10 +1184,28 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             subName: categoryName,
           };
         } else {
-          // SubCategory bulunamadı - bu da bir sorun
-          console.error('[ProductCatalogScreen] ❌ SubCategory not found in currentSubCategories:', selectedSubCategoryId);
-          console.error('[ProductCatalogScreen] ❌ Available subCategories:', currentSubCategories.map(sc => ({ id: sc.id, name: sc.name })));
-          return;
+          // FALLBACK: currentSubCategories'de bulunamadıysa breadcrumbItems'dan al
+          const subCategoryBreadcrumb = breadcrumbItems.find(
+            item => item.type === 'subcategory' && item.id === selectedSubCategoryId
+          );
+          const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
+          
+          if (subCategoryBreadcrumb) {
+            productInfoSnapshot = {
+              image: subCategoryBreadcrumb.data?.image,
+              title: subCategoryBreadcrumb.name,
+              subName: categoryBreadcrumb?.name || '',
+            };
+            console.log('[ProductCatalogScreen] ✅ SubCategory bilgisi breadcrumb\'dan alındı:', productInfoSnapshot);
+          } else {
+            // Son fallback: Minimal bilgi ile devam et
+            console.warn('[ProductCatalogScreen] ⚠️ SubCategory detayları bulunamadı, minimal bilgi ile devam ediliyor');
+            productInfoSnapshot = {
+              image: undefined,
+              title: 'Selected Subcategory', // Placeholder
+              subName: categoryBreadcrumb?.name || '',
+            };
+          }
         }
       }
       
@@ -1266,6 +1282,29 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             title: selectedSubCategory.name,
             subName: categoryName,
           };
+        } else {
+          // FALLBACK: currentSubCategories'de bulunamadıysa breadcrumbItems'dan al
+          const subCategoryBreadcrumb = breadcrumbItems.find(
+            item => item.type === 'subcategory' && item.id === selectedSubCategoryId
+          );
+          const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
+          
+          if (subCategoryBreadcrumb) {
+            productInfoSnapshot = {
+              image: subCategoryBreadcrumb.data?.image,
+              title: subCategoryBreadcrumb.name,
+              subName: categoryBreadcrumb?.name || '',
+            };
+            console.log('[ProductCatalogScreen] ✅ SubCategory bilgisi breadcrumb\'dan alındı:', productInfoSnapshot);
+          } else {
+            // Son fallback: Minimal bilgi ile devam et
+            console.warn('[ProductCatalogScreen] ⚠️ SubCategory detayları bulunamadı, minimal bilgi ile devam ediliyor');
+            productInfoSnapshot = {
+              image: undefined,
+              title: 'Selected Subcategory',
+              subName: categoryBreadcrumb?.name || '',
+            };
+          }
         }
       }
       
@@ -1293,13 +1332,25 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             image: selectedProduct.image,
             brand: selectedProduct.brand,
           } : undefined,
-          fromInventory: experienceOption === 'own',
+          fromInventory: false,
           experienceOption: experienceOption,
         },
       });
     } else if (type === 'benchmark') {
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateBenchmarkPostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+          } : undefined,
+        },
+      });
+    } else if (type === 'update') {
+      navigationService.navigate(ROOT_ROUTES.POST, {
+        screen: 'SelectExperienceForUpdateScreen',
         params: {
           product: selectedProduct ? {
             id: selectedProduct.id,

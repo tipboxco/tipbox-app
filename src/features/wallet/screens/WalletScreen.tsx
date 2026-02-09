@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, Alert, Clipboard } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -94,18 +95,6 @@ export const WalletScreen: React.FC = () => {
     }
   }, [refetchWalletInfo, refetchBalance, refetchTransactions, refetchNFTs]);
   
-  // Debug: Log wallet info
-  React.useEffect(() => {
-    console.log('[WalletScreen] 🔍 Wallet Info Debug:', {
-      isLoading: isLoadingWalletInfo,
-      hasError: !!walletInfoError,
-      error: walletInfoError,
-      data: walletInfo,
-      walletIdentifier: walletInfo?.walletIdentifier,
-      user: user?.fullName,
-    });
-  }, [walletInfo, isLoadingWalletInfo, walletInfoError, user]);
-  
   // Enable/disable navigation gesture based on current page
   // When on first page (TIPS), allow swipe back to FeedScreen
   // When on other pages, disable navigation gesture to prevent conflict with PagerView
@@ -114,9 +103,9 @@ export const WalletScreen: React.FC = () => {
       gestureEnabled: currentPage === 0, // Only enable on first page
     });
   }, [currentPage, navigation]);
-  const handleCopyAddress = useCallback(() => {
+  const handleCopyAddress = useCallback(async () => {
     if (walletInfo?.walletIdentifier) {
-      Clipboard.setString(walletInfo.walletIdentifier);
+      await Clipboard.setStringAsync(walletInfo.walletIdentifier);
       Alert.alert('Copied', 'Wallet address copied to clipboard');
     }
   }, [walletInfo?.walletIdentifier]);
@@ -180,21 +169,18 @@ export const WalletScreen: React.FC = () => {
   const [sendBottomSheetContent, setSendBottomSheetContent] = React.useState<React.ReactNode>(null);
   
   const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list') => {
-    console.log('[WalletScreen] View changing to:', view);
-    
     if (!sendBottomSheetContent) return;
 
-    // View'a göre bottom sheet davranışını güncelle (aynı content ile options update)
     const optionsForView =
       view === 'truster-list'
         ? {
             enablePanDownToClose: true,
             enableOverDrag: false,
-            enableHandlePanningGesture: true,
-            enableContentPanningGesture: true,
-            enableDynamicSizing: true,
-            maxDynamicContentSize: 0.5, // %50 ekran yüksekliği - kullanıcı yukarı çekerek tamamını görebilir
-            animateOnMount: false, // hızlı view geçişlerinde daha stabil
+            enableHandlePanningGesture: false,
+            enableContentPanningGesture: false,
+            enableDynamicSizing: false,
+            snapPoints: ['90%'],
+            animateOnMount: false,
             paddingBottom: bottomInset,
             handleIndicatorStyle: {
               backgroundColor: isDark ? '#333333' : '#B8B8B7',
@@ -221,8 +207,6 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, bottomInset, isDark, sendBottomSheetContent]);
 
   const handleSendPress = useCallback(() => {
-    console.log('[WalletScreen] Send button pressed');
-    
     const bottomSheetContent = (
       <SendBottomSheet
         onClose={closeBottomSheet}
@@ -240,7 +224,7 @@ export const WalletScreen: React.FC = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true, // Dynamic sizing kullanıyoruz
+        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -253,7 +237,6 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendSuccess, handleSendViewChange]);
 
   const handleSwapPress = useCallback(() => {
-    console.log('[WalletScreen] Swap button pressed');
     openBottomSheet(
       <SwapBottomSheet
         onClose={closeBottomSheet}
@@ -276,7 +259,6 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
   const handleClaimPress = useCallback(() => {
-    console.log('[WalletScreen] Claim button pressed');
     openBottomSheet(
       <ClaimBottomSheet
         onClose={closeBottomSheet}
@@ -299,7 +281,6 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
   const handleReceivePress = useCallback(() => {
-    console.log('[WalletScreen] Receive button pressed');
     openBottomSheet(
       <ReceiveBottomSheet
         onClose={closeBottomSheet}

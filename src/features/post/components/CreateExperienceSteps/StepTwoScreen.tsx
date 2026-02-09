@@ -90,7 +90,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                     {/* Section Title */}
                     <Text
                         color={isDark ? '$textDark400' : '#B9B9B9'}
-                        fontSize={10}
+                        fontSize={14}
                         fontWeight="$bold"
                     >
                         Experience
@@ -118,8 +118,8 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                                 placeholder="Type your Experience here..."
                                 placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                 color={isDark ? '$textDark50' : '#343434'}
-                                fontSize={10}
-                                lineHeight={12}
+                                fontSize={14}
+                                lineHeight={20}
                                 value={experienceText}
                                 onChangeText={onExperienceTextChange}
                                 maxLength={maxCharacters}
@@ -141,7 +141,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                         >
                             <Text
                                 color={isDark ? '$textDark400' : '#A3A3A3'}
-                                fontSize={9}
+                                fontSize={12}
                                 fontWeight="$medium"
                             >
                                 {characterCount}/{maxCharacters}
@@ -166,7 +166,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                                     py={3}
                                 >
                                     <Text
-                                        fontSize={8}
+                                        fontSize={12}
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#000000'}
                                     >
@@ -183,7 +183,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                     {/* Section Title */}
                     <Text
                         color={isDark ? '$textDark400' : '#A3A3A3'}
-                        fontSize={10}
+                        fontSize={14}
                         fontWeight="$bold"
                     >
                         Images

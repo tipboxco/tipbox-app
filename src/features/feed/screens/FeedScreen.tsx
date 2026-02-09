@@ -26,7 +26,7 @@ import { useFeed, useFeedFiltered } from '../api/hooks';
 import { getFeed, getFilteredFeed } from '../api/feedApi';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
-import { toImageSource, useBottomOffset } from '@/src/utils';
+import { toImageSource, useBottomOffset, isSameImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
@@ -36,13 +36,14 @@ import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { ProfilePost } from '@/src/features/profile/types';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
-import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostApiItem } from '@/src/types/ExperienceCard';
 import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
+import { FilterBarReanimated } from '../components/FilterBar/FilterBarReanimated';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
@@ -98,6 +99,20 @@ const FeedScreenInner = React.memo(() => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
+  // Filtre state'i
+  // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
+  // 
+  // Filtre Parametreleri:
+  // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
+  //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
+  //   Backend'de category ile birleştirilir (OR mantığı)
+  // - tags: Post türleri array'i (Review, Benchmark, Tips, Question, Experience, Update)
+  //   contentPostTags ve tags tablolarında arama yapılır
+  // - category: Tek bir kategori ID'si
+  //   Backend'de interests ile birleştirilir (OR mantığı)
+  // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
+  const [filters, setFilters] = useState<FeedFilterParams>({});
+
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
@@ -124,20 +139,6 @@ const FeedScreenInner = React.memo(() => {
       return () => clearTimeout(timer);
     }
   }, [isDrawerOpen, isDragging]);
-
-  // Filtre state'i
-  // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
-  // 
-  // Filtre Parametreleri:
-  // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
-  //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
-  //   Backend'de category ile birleştirilir (OR mantığı)
-  // - tags: Post türleri array'i (Review, Benchmark, Tips, Question, Experience, Update)
-  //   contentPostTags ve tags tablolarında arama yapılır
-  // - category: Tek bir kategori ID'si
-  //   Backend'de interests ile birleştirilir (OR mantığı)
-  // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
-  const [filters, setFilters] = useState<FeedFilterParams>({});
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
@@ -337,38 +338,51 @@ const FeedScreenInner = React.memo(() => {
     };
   };
 
-  // Map Experience (ReviewApiItem) to ReviewCardData
-  const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
+  // Map Experience (ExperiencePostApiItem) to ExperiencePostCardData
+  const mapExperienceToCardData = (item: ExperiencePostApiItem & { type: 'experience' }): ExperiencePostCardData => {
     const defaultPostImage = require('@/assets/defaultImages/default-post.png');
     const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
     const avatarSource = toImageSource(item.user?.avatar) || defaultAvatar;
-    const productImage = item.contextData?.image
-      ? toImageSource(item.contextData.image)
+    const ctx = item.contextData as { product?: { id?: string; name?: string; image?: string | null; subName?: string; isOwned?: boolean } } | undefined;
+    const rawProduct = ctx?.product ?? item.contextData ?? item.product;
+    const productImage = rawProduct?.image
+      ? toImageSource(rawProduct.image)
       : defaultPostImage;
 
-    const content: ReviewCardContentItem[] = (item.content && Array.isArray(item.content))
-      ? item.content
-        .filter((contentItem) => contentItem != null) // Filter out null/undefined items
-        .map((contentItem) => ({
-          tag: {
-            icon: 'tag',
-            title: contentItem?.title || '',
-          },
-          text: contentItem?.content || '',
-          rating: Array(5)
-            .fill(false)
-            .map((_, index) => index < (contentItem?.rating || 0)),
-        }))
+    const contentBlocks = item.experienceContent ?? (Array.isArray(item.content) ? item.content : []);
+    const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
+      ? contentBlocks
+        .filter((contentItem) => contentItem != null)
+        .map((contentItem) => {
+          const title = contentItem?.title || '';
+          const icon: 'tag' | 'package' = (title.toLowerCase().includes('product') || title.toLowerCase().includes('usage')) ? 'package' : 'tag';
+          return {
+            tag: { icon, title },
+            text: contentItem?.content || '',
+            rating: Array(5)
+              .fill(false)
+              .map((_, index) => index < (contentItem?.rating || 0)),
+          };
+        })
       : [];
 
-    // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
-    // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
     const mappedImages = Array.isArray(item.images)
       ? item.images
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages;
+    // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+    const images = mappedImages.filter((img) => !isSameImageSource(img, productImage));
+
+    const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
+    const subNameRaw = rawProduct?.subName ?? '';
+    const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
+    // 3 tag: duration, condition (location), purpose. API tags yoksa/eksikse *Name alanlarından doldur.
+    const tagsFromApi = Array.isArray(item.tags) ? item.tags : [];
+    const tags =
+      tagsFromApi.length >= 3
+        ? tagsFromApi
+        : [item.durationName, item.locationName, item.purposeName].filter((s): s is string => !!s);
 
     return {
       id: item.id || '',
@@ -377,17 +391,17 @@ const FeedScreenInner = React.memo(() => {
         name: item.user?.name || '',
         title: item.user?.title || '',
         avatar: avatarSource,
-        action: 'wrote a review',
+        action: isOwned ? 'Added new product and experiences to inventory!' : undefined,
       },
       contextData: {
-        id: item.contextData?.id || '',
-        name: item.contextData?.name || '',
-        subName: item.contextData?.subName || '',
+        id: rawProduct?.id || '',
+        name: rawProduct?.name || '',
+        subName,
         image: productImage || defaultPostImage,
-        isOwned: item.contextData?.isOwned || false,
+        isOwned,
       },
       content,
-      tags: Array.isArray(item.tags) ? item.tags : [],
+      tags,
       images,
       stats: item.stats,
       createdAt: item.createdAt,
@@ -468,26 +482,42 @@ const FeedScreenInner = React.memo(() => {
         images,
         stats: item.stats,
         tag: item.tag,
+        benefitCategory: item.benefitCategory,
         createdAt: item.createdAt,
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    // Missing product image warning removed for performance
-    const product: TipsProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    let category: TipsCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: sadece category bilgisi, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: TipsProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: TipsCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
@@ -511,6 +541,7 @@ const FeedScreenInner = React.memo(() => {
       images,
       stats: item.stats,
       tag: item.tag,
+      benefitCategory: item.benefitCategory,
       createdAt: item.createdAt,
     };
   };
@@ -561,23 +592,41 @@ const FeedScreenInner = React.memo(() => {
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    // Missing product image warning removed for performance
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    // - contextType === 'product' → category.product dolu (product card gösterilir)
+    // - contextType === 'sub_category' → sadece category dolu (sub category card gösterilir)
+    // - contextType === 'product_group' → category.product dolu (product group card gösterilir)
+    
+    let category: QuestionCardCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: category dolu, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak (QuestionPostCard'da category gösterilecek)
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: QuestionCardProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const product: QuestionCardProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
-
-    const category: QuestionCardCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
@@ -745,12 +794,12 @@ const FeedScreenInner = React.memo(() => {
     switch (item.type) {
       case CardType.EXPERIENCE:
       case 'experience':
-        // Experience type için ReviewApiItem kullan ve ExperiencePostCard render et
+        // Experience type için ExperiencePostApiItem kullan ve ExperiencePostCard render et
         if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
           return (
             <ExperiencePostCard
               key={itemId}
-              data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
+              data={mapExperienceToCardData(item.data as ExperiencePostApiItem & { type: 'experience' })}
             />
           );
         }
@@ -758,7 +807,15 @@ const FeedScreenInner = React.memo(() => {
         return null;
       case CardType.POST:
       case 'post':
-        // Post type için ProfilePost kullan ve PostCard render et
+        // relatedPost varsa update post olarak göster (mor UPDATE badge + See Related Post)
+        if ((item.data as any)?.relatedPost != null) {
+          return (
+            <UpdatePostCard
+              key={itemId}
+              data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
+            />
+          );
+        }
         return (
           <PostCard
             key={itemId}
@@ -802,8 +859,8 @@ const FeedScreenInner = React.memo(() => {
         );
       case CardType.UPDATE:
       case 'update':
-        // Update type için UpdateApiItem kullan ve UpdatePostCard render et
-        if ('relatedPost' in item.data && 'contextType' in item.data) {
+        // Update type: relatedPost varsa UpdatePostCard (mor badge + See Related Post)
+        if ((item.data as any)?.relatedPost != null) {
           return (
             <UpdatePostCard
               key={itemId}
@@ -812,7 +869,7 @@ const FeedScreenInner = React.memo(() => {
           );
         }
         if (__DEV__) {
-          console.warn(`[FeedScreen] UPDATE item ${itemId} failed validation checks`);
+          console.warn(`[FeedScreen] UPDATE item missing relatedPost:`, itemId);
         }
         return null;
       default:
@@ -937,12 +994,17 @@ const FeedScreenInner = React.memo(() => {
           leftAction="menu"
           onSearchPress={handleSearchPress}
         />
-        <View>
+        <View style={{ flexShrink: 0 }}>
           <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
+          {/* FilterBar - panel aşağı doğru açılır, feed içeriği aşağı kayar (modal/overlay yok) */}
+          <FilterBarReanimated
+            filters={filters}
+            onFiltersChange={setFilters}
+          />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minHeight: 0 }}>
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
           ) : error ? (
@@ -1036,8 +1098,6 @@ const FeedScreenInner = React.memo(() => {
           visible={isSearchVisible}
           onClose={handleSearchClose}
         />
-
-
       </View>
     </SafeAreaView>
   );

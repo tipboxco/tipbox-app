@@ -2,7 +2,8 @@ import React from 'react';
 import { VStack, HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
 import { XMarkIcon, DocumentDuplicateIcon, ShareIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Alert, Clipboard, Share } from 'react-native';
+import { Alert, Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 // @ts-ignore - QR code library doesn't have type definitions
 import QRCode from 'react-native-qrcode-svg';
@@ -28,8 +29,8 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
     return `${address.substring(0, startLength)}****${address.substring(address.length - endLength)}`;
   };
 
-  const handleCopyAddress = () => {
-    Clipboard.setString(walletAddress);
+  const handleCopyAddress = async () => {
+    await Clipboard.setStringAsync(walletAddress);
     Alert.alert('Copied', 'Wallet address copied to clipboard');
   };
 

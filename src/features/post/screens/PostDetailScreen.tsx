@@ -17,10 +17,11 @@ import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostC
 import { BenchmarkPostCard } from '@/src/components/PostCards/BenchmarkPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
+import { UpdatePostCardDetail } from '@/src/features/post/components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
-import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { useComments, useCreateComment, useDeleteComment, useLikeComment, useUnlikeComment, useUpdateComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
 import { usePostDetail } from '../api/hooks';
@@ -54,7 +55,8 @@ export const PostDetailScreen = () => {
     
     // Type'ı belirle: params'dan veya default 'post'
     const type = params?.type || 'post';
-    const showRelatedPost = params?.showRelatedPost;
+    // Update post için detay ekranında her zaman related post (experience) gösterilmeli
+    const showRelatedPost = params?.showRelatedPost !== undefined ? params.showRelatedPost : (type === 'update' ? true : false);
     const relatedPostData = params?.relatedPostData;
     
     // FIX: postId kontrolü - postId yoksa geri dön (sadece bir kez kontrol et)
@@ -91,11 +93,12 @@ export const PostDetailScreen = () => {
     const isFromNotificationOrDeepLink = !postData || !isPostDataComplete;
     
     // Fetch post detail - Notification/deep link'ten geldiğinde her zaman en güncel veriyi fetch et
-    const { data: fetchedPostData, isLoading: isLoadingPost } = usePostDetail(
+    const { data: fetchedPostData, isLoading: isLoadingPost, isError: isPostDetailError, error: postDetailError } = usePostDetail(
       postId,
       true, // Her zaman enabled
       isFromNotificationOrDeepLink // Notification/deep link'ten geldiğinde force refresh
     );
+    const is404 = isPostDetailError && (postDetailError as any)?.response?.status === 404;
 
     // Use fetched post data if available, otherwise use the passed postData
     // Notification/deep link'ten geldiğinde her zaman fetched data kullan (en güncel)
@@ -112,6 +115,8 @@ export const PostDetailScreen = () => {
       
       if (fetched && post) {
         // Fetched data'yı kullan, ama category/contextData/product bilgilerini postData'dan al (görseller zaten dönüştürülmüş)
+        // Experience post için content (split bloklar), tags (3 durum) ve images postData'dan korunmalı
+        const isExperience = (post.type || fetched.type) === 'experience';
         finalPostData = {
           ...fetched,
           // Category bilgisi (Tips & Tricks, Question, Post için) - postData'dan öncelikli (görseller dönüştürülmüş)
@@ -125,12 +130,154 @@ export const PostDetailScreen = () => {
           products: post.products || fetched.products,
           // RelatedPost bilgisi (Update için) - postData'dan öncelikli
           relatedPost: post.relatedPost || fetched.relatedPost,
+          // Experience: split content, 3 tag ve images postData'dan (zaten kart formatında)
+          ...(isExperience && {
+            content: Array.isArray(post.content) ? post.content : (fetched.content ?? []),
+            tags: Array.isArray(post.tags) ? post.tags : (fetched.tags ?? []),
+            images: post.images ?? fetched.images,
+          }),
         };
       } else {
         finalPostData = fetched || post;
       }
     }
     const finalType = type || (fetchedPostData as any)?.type || 'post';
+
+    // Experience post: API'den gelen veriyi kart formatına çevir (experienceContent -> content array, product/contextData, tags)
+    const finalExperienceData = useMemo(() => {
+      if (finalType !== 'experience' || !finalPostData) return finalPostData;
+      const raw = finalPostData as any;
+      const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
+      const contentBlocks = raw.experienceContent ?? (Array.isArray(raw.content) ? raw.content : []);
+      const content = Array.isArray(contentBlocks)
+        ? contentBlocks.map((item: any) => ({
+            tag: {
+              icon: (item?.title?.toLowerCase?.().includes('product') || item?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
+              title: item?.title ?? '',
+            },
+            text: trimTrailingParen(item?.content ?? item?.text ?? ''),
+            rating: Array(5).fill(false).map((_, i) => i < (Math.min(5, Math.max(0, Number(item?.rating) || 0)))),
+          }))
+        : [];
+      const tags = Array.isArray(raw.tags) ? raw.tags : [];
+      const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+      const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
+      const rawProduct = raw.contextData?.product ?? raw.contextData ?? raw.product;
+      const subNameRaw = rawProduct?.subName ?? '';
+      const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
+      return {
+        ...raw,
+        content,
+        tags,
+        user: raw.user ? {
+          ...raw.user,
+          avatar: toImageSource(raw.user.avatar) ?? defaultAvatar,
+        } : raw.user,
+        contextData: rawProduct ? {
+          id: rawProduct.id ?? '',
+          name: rawProduct.name ?? '',
+          subName,
+          image: toImageSource(rawProduct.image) ?? defaultPostImage,
+          isOwned: raw.status === 'own' || rawProduct.isOwned,
+        } : raw.contextData,
+        // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+        images: (() => {
+          const mapped = Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter(Boolean) : (raw.images ?? []);
+          const productImg = rawProduct ? (toImageSource(rawProduct.image) ?? defaultPostImage) : null;
+          return productImg ? mapped.filter((img: any) => !isSameImageSource(img, productImg)) : mapped;
+        })(),
+      };
+    }, [finalType, finalPostData]);
+
+    // Update post: relatedPost (experience) tam yapısını kart formatına çevir ve detayda tam gösterilsin
+    const finalUpdateRelatedPostData = useMemo(() => {
+      if (finalType !== 'update' || !finalPostData) return undefined;
+      const raw = finalPostData as any;
+      const rp = raw?.relatedPost;
+      if (!rp) return undefined;
+      const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+      // API formatı (title, content, rating) -> kart formatı (tag, text, rating[])
+      const content = (rp.content && Array.isArray(rp.content))
+        ? rp.content
+            .filter((item: any) => item != null)
+            .map((item: any) => {
+              let stars = 0;
+              if (Array.isArray(item?.rating) && item.rating.every((x: unknown) => typeof x === 'number')) {
+                stars = Math.min(5, item.rating.filter((r: number) => r === 1).length);
+              } else if (typeof item?.rating === 'number') {
+                const v = item.rating;
+                stars = v <= 5 ? Math.round(v) : Math.min(5, Math.max(0, Math.round(v / 20)));
+              }
+              const ratingArray: number[] = Array(5).fill(0);
+              for (let i = 0; i < stars; i++) ratingArray[i] = 1;
+              return {
+                tag: {
+                  icon:
+                    item?.tag?.icon ??
+                    (((item?.title ?? '').toLowerCase().includes('product') ||
+                      (item?.title ?? '').toLowerCase().includes('usage'))
+                      ? 'package'
+                      : 'tag'),
+                  title: item?.tag?.title ?? item?.title ?? '',
+                },
+                text: item?.text ?? item?.content ?? '',
+                rating: Array.isArray(item?.rating) && item.rating.every((x: unknown) => typeof x === 'number')
+                  ? item.rating
+                  : ratingArray,
+              };
+            })
+        : [];
+      const product = rp.product
+        ? {
+            id: rp.product.id ?? '',
+            name: rp.product.name ?? '',
+            subName: rp.product.subName ?? '',
+            image: toImageSource(rp.product.image) ?? defaultPostImage,
+            isOwned: rp.product.isOwned ?? false,
+          }
+        : undefined;
+      const tags = Array.isArray(rp.tags) ? rp.tags : [];
+      const images = (rp.images && Array.isArray(rp.images))
+        ? rp.images.map((img: any) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+        : [];
+      return {
+        id: rp.id,
+        product,
+        content,
+        tags,
+        images,
+        stats: rp.stats ?? raw.stats,
+      };
+    }, [finalType, finalPostData]);
+
+    // Update detayda: related post'u ExperiencePostCard olarak göstermek için ExperiencePostCardData
+    const updateRelatedAsExperienceCardData = useMemo(() => {
+      if (finalType !== 'update' || !finalPostData || !finalUpdateRelatedPostData?.product) return undefined;
+      const raw = finalPostData as any;
+      const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+      const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
+      const user = raw.user ? { ...raw.user, avatar: toImageSource(raw.user.avatar) ?? defaultAvatar } : { id: '', name: '', title: '', avatar: defaultAvatar };
+      return {
+        id: finalUpdateRelatedPostData.id ?? raw.id,
+        user,
+        contextData: {
+          id: finalUpdateRelatedPostData.product.id,
+          name: finalUpdateRelatedPostData.product.name,
+          subName: finalUpdateRelatedPostData.product.subName,
+          image: finalUpdateRelatedPostData.product.image ?? defaultPostImage,
+          isOwned: finalUpdateRelatedPostData.product.isOwned ?? false,
+        },
+        content: (finalUpdateRelatedPostData.content ?? []).map((c: any) => ({
+          tag: c.tag ?? { icon: 'tag' as const, title: '' },
+          text: c.text ?? '',
+          rating: Array.isArray(c.rating) ? c.rating.map((r: number) => r === 1) : Array(5).fill(false),
+        })),
+        tags: finalUpdateRelatedPostData.tags ?? [],
+        images: finalUpdateRelatedPostData.images ?? [],
+        stats: finalUpdateRelatedPostData.stats ?? raw.stats,
+        createdAt: raw.createdAt ?? '',
+      };
+    }, [finalType, finalPostData, finalUpdateRelatedPostData]);
 
     // Fetch comments
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
@@ -414,13 +561,13 @@ export const PostDetailScreen = () => {
                     ) : finalType === 'benchmark' ? (
                         <BenchmarkPostCard data={finalPostData} onCommentPress={handleCommentInputPress} isDetailMode={true} />
                     ) : finalType === 'experience' ? (
-                        <ExperiencePostCard data={finalPostData} isDetailMode={true} />
+                        <ExperiencePostCard data={finalExperienceData ?? finalPostData} isDetailMode={true} />
                     ) : finalType === 'update' ? (
-                        <UpdatePostCard 
-                            data={finalPostData} 
-                            isDetailMode={true}
-                            showRelatedPost={showRelatedPost}
-                            relatedPostData={relatedPostData}
+                        <UpdatePostCardDetail
+                            data={finalPostData}
+                            showRelatedPost={true}
+                            relatedPostData={postData?.relatedPost || relatedPostData}
+                            onCommentPress={handleCommentInputPress}
                         />
                     ) : (
                         <PostCard data={finalPostData} isDetailMode={true} />
@@ -476,7 +623,7 @@ export const PostDetailScreen = () => {
                 </Pressable>
             </HStack>
         </>
-    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, showRelatedPost, relatedPostData, isDark, selectedOption, handleSortPress]);
+    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, updateRelatedAsExperienceCardData, isDark, selectedOption, handleSortPress]);
 
     // FlatList render item - useCallback ile memoize edildi
     const renderCommentItem = useCallback(({ item }: { item: typeof flattenedComments[0] }) => (
@@ -522,6 +669,23 @@ export const PostDetailScreen = () => {
             ? keyboardHeight + 80
             : lastKeyboardHeightRef.current + 80
     }), [keyboardHeight]);
+
+    // 404: Post bulunamadı (silinmiş veya geçersiz ID) - yükleme bittikten sonra göster
+    if (!isLoadingPost && is404) {
+        return (
+            <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#fff' }}>
+                <Header title="Post Details" showBackButton onBackPress={() => navigation.goBack()} />
+                <Box flex={1} justifyContent="center" alignItems="center" px="$6">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={16} textAlign="center">
+                        Post bulunamadı.
+                    </Text>
+                    <Text color={isDark ? '#A3A3A3' : '#666'} fontSize={14} mt="$2" textAlign="center">
+                        Bu post silinmiş veya artık mevcut değil.
+                    </Text>
+                </Box>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#fff' }}>

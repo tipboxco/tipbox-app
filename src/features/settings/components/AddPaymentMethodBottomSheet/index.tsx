@@ -1,39 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-    Box,
-    VStack,
-    HStack,
-    Text,
-    Input,
-    InputField,
-    Button,
-    ButtonText,
-    Pressable,
-    ScrollView,
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Input,
+  InputField,
+  Button,
+  ButtonText,
+  Pressable,
+  ScrollView,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
-import {
-  DevicePhoneMobileIcon,
-  CreditCardIcon,
-} from 'react-native-heroicons/outline';
+import { DevicePhoneMobileIcon, CreditCardIcon } from 'react-native-heroicons/outline';
+import { useAddPaymentMethod } from '../../api/hooks';
+import type { PaymentApiErrorResponse } from '../../api/paymentApi';
+import type { AxiosError } from 'axios';
 
 interface AddPaymentMethodBottomSheetProps {
-    onClose: () => void;
+  onClose: () => void;
 }
+
+const ERROR_MESSAGES: Record<string, string> = {
+  INSUFFICIENT_FUNDS: 'Insufficient funds. Please check your card.',
+  INVALID_EXPIRY: 'Invalid expiration date.',
+  CARD_DECLINED: 'Card declined. Please try another card.',
+};
 
 type PaymentMethodType = 'apple-pay' | 'credit-card' | null;
 
 export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomSheetProps) => {
-    const { colorMode } = useColorMode();
-    const isDark = colorMode === 'dark';
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const addPaymentMethodMutation = useAddPaymentMethod();
 
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>(null);
-    const [nameOnCard, setNameOnCard] = useState('');
-    const [cardNumber, setCardNumber] = useState('');
-    const [expirationDate, setExpirationDate] = useState('');
-    const [securityCode, setSecurityCode] = useState('');
-    const [cardName, setCardName] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>(null);
+  const [nameOnCard, setNameOnCard] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expirationDate, setExpirationDate] = useState('');
+  const [securityCode, setSecurityCode] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [apiError, setApiError] = useState<string | null>(null);
 
     const handlePaymentMethodSelect = (method: PaymentMethodType) => {
         if (method === 'apple-pay') {
@@ -72,15 +80,41 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
         setExpirationDate(formatted);
     };
 
-    // Mask card number for display (show first 8 and last 4 digits)
-    const maskCardNumber = (number: string) => {
-        if (number.length <= 8) return number;
-        const cleaned = number.replace(/\s/g, '');
-        if (cleaned.length <= 8) return number;
-        const first8 = cleaned.slice(0, 8);
-        const last4 = cleaned.slice(-4);
-        return `${first8}***${last4}`;
-    };
+  const maskCardNumber = (number: string) => {
+    if (number.length <= 8) return number;
+    const cleaned = number.replace(/\s/g, '');
+    if (cleaned.length <= 8) return number;
+    const first8 = cleaned.slice(0, 8);
+    const last4 = cleaned.slice(-4);
+    return `${first8}***${last4}`;
+  };
+
+  const handleSaveCard = useCallback(() => {
+    setApiError(null);
+    const alias = (cardName || 'My Card').trim();
+    if (!alias) {
+      setApiError('Please enter a card name.');
+      return;
+    }
+    // In production, payment_token is obtained from the payment provider (Stripe/Apple Pay etc.).
+    // Card number/CVV are never sent to the backend.
+    const paymentToken = 'pm_placeholder_' + Date.now();
+    addPaymentMethodMutation.mutate(
+      { payment_token: paymentToken, card_alias: alias },
+      {
+        onSuccess: () => onClose(),
+        onError: (err: Error) => {
+          const axiosErr = err as AxiosError<PaymentApiErrorResponse>;
+          const code = axiosErr.response?.data?.error_code;
+          const msg =
+            (code && ERROR_MESSAGES[code]) ||
+            axiosErr.response?.data?.message ||
+            'An error occurred while adding the card.';
+          setApiError(msg);
+        },
+      }
+    );
+  }, [cardName, addPaymentMethodMutation, onClose]);
 
     // Payment method selection view
     if (!selectedPaymentMethod) {
@@ -373,24 +407,27 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         </Box>
                     </VStack>
 
-                    {/* Save Card Button */}
+                    {apiError && (
+                      <Text fontSize="$xs" color="#DC2626" mt="$2">
+                        {apiError}
+                      </Text>
+                    )}
+
                     <Button
-                        bg="#E2FF46"
-                        borderRadius={8}
-                        onPress={() => {
-                            console.log('Save card requested');
-                            onClose();
-                        }}
-                        mt="$2"
+                      bg="#E2FF46"
+                      borderRadius={8}
+                      onPress={handleSaveCard}
+                      mt="$2"
+                      isDisabled={addPaymentMethodMutation.isPending}
                     >
-                        <ButtonText
-                            color="#000000"
-                            fontSize={14}
-                            fontWeight="$bold"
-                            textAlign="center"
-                        >
-                            Save Card
-                        </ButtonText>
+                      <ButtonText
+                        color="#000000"
+                        fontSize={14}
+                        fontWeight="$bold"
+                        textAlign="center"
+                      >
+                        {addPaymentMethodMutation.isPending ? 'Saving...' : 'Save Card'}
+                      </ButtonText>
                     </Button>
                 </VStack>
             </ScrollView>

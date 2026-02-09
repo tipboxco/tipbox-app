@@ -4,9 +4,8 @@ import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
 import { Post } from '@/src/mock/profile/posts/types';
 
 export const mock_survey_tabs: SurveyTab[] = [
-  { id: '1', name: 'Surveys', isActive: true },
-  { id: '2', name: 'Trends', isActive: false },
-  { id: '3', name: 'Events', isActive: false },
+  { id: '1', name: 'Polls', isActive: true },
+  { id: '2', name: 'Badges', isActive: false },
 ];
 
 export const mock_surveys: Survey[] = [

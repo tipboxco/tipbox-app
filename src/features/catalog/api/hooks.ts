@@ -1,8 +1,8 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getCatalogContextPosts, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandHistoryFeed, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -440,6 +440,78 @@ export const useBrandCatalog = (brandId: string | undefined) => {
   });
 };
 
+type BrandJoinLeaveContext = { previous: BrandCatalogResponse | undefined };
+
+/**
+ * Join Brand (Follow) mutation
+ * POST /brands/:brandId/follow - Optimistic update, başarıda dönen followers ile güncelle, hata durumunda rollback
+ */
+export const useJoinBrand = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<BrandFollowResponse, Error, string, BrandJoinLeaveContext>({
+    mutationFn: (brandId: string) => joinBrand(brandId),
+    onMutate: async (brandId) => {
+      await queryClient.cancelQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
+      const previous = queryClient.getQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId));
+      queryClient.setQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId), (old) => {
+        if (!old) return old;
+        return { ...old, isJoined: true, followers: old.followers + 1 };
+      });
+      return { previous };
+    },
+    onSuccess: (data, brandId) => {
+      queryClient.setQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId), (old) => {
+        if (!old) return old;
+        return { ...old, isJoined: data.isJoined, followers: data.followers };
+      });
+    },
+    onError: (_, brandId, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(catalogKeys.brandCatalog(brandId), context.previous);
+      }
+    },
+    onSettled: (_, __, brandId) => {
+      queryClient.invalidateQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
+    },
+  });
+};
+
+/**
+ * Leave Brand (Unfollow) mutation
+ * DELETE /brands/:brandId/follow - Optimistic update, başarıda dönen followers ile güncelle, hata durumunda rollback
+ */
+export const useLeaveBrand = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<BrandFollowResponse, Error, string, BrandJoinLeaveContext>({
+    mutationFn: (brandId: string) => leaveBrand(brandId),
+    onMutate: async (brandId) => {
+      await queryClient.cancelQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
+      const previous = queryClient.getQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId));
+      queryClient.setQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId), (old) => {
+        if (!old) return old;
+        return { ...old, isJoined: false, followers: Math.max(0, old.followers - 1) };
+      });
+      return { previous };
+    },
+    onSuccess: (data, brandId) => {
+      queryClient.setQueryData<BrandCatalogResponse>(catalogKeys.brandCatalog(brandId), (old) => {
+        if (!old) return old;
+        return { ...old, isJoined: data.isJoined, followers: data.followers };
+      });
+    },
+    onError: (_, brandId, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(catalogKeys.brandCatalog(brandId), context.previous);
+      }
+    },
+    onSettled: (_, __, brandId) => {
+      queryClient.invalidateQueries({ queryKey: catalogKeys.brandCatalog(brandId) });
+    },
+  });
+};
+
 /**
  * Get Brand Feed infinite query hook
  * /brands/{brandId}/feed endpoint'inden marka feed postlarını infinite scroll ile getirir
@@ -824,6 +896,39 @@ export const useBrandHistory = (brandId: string | undefined) => {
     enabled: !!brandId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand History Feed infinite query hook
+ * /brands/{brandId}/history/feed endpoint'inden marka geçmiş feed'ini getirir (infinite scroll ile)
+ *
+ * @param brandId - Marka ID'si
+ * @param limit - Sayfa başına item sayısı (default: 10)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandHistoryFeed('brand-123');
+ */
+export const useBrandHistoryFeed = (brandId: string | undefined, limit: number = 10) => {
+  return useInfiniteQuery<BrandFeedResponse, Error>({
+    queryKey: brandId ? ['catalog', 'brandHistoryFeed', brandId, limit] : ['catalog', 'brandHistoryFeed', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      return getBrandHistoryFeed(brandId, pageParam as string | undefined, limit);
+    },
+    enabled: !!brandId,
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      return lastPage.pagination?.cursor || undefined;
+    },
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,

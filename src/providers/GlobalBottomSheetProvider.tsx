@@ -26,6 +26,9 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
    */
   const cleanupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opIdRef = useRef(0);
+  /** animateOnMount true olan sheet'lerde kapanış animasyonu bitene kadar beklemek için */
+  const optionsRef = useRef<BottomSheetOptions | null>(null);
+  optionsRef.current = state.options;
 
   const bumpOpId = () => {
     opIdRef.current += 1;
@@ -88,7 +91,8 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
         index: -1, // Closed
       };
     });
-    // Content'i temizle (gorhom animasyon süresi: ~250ms)
+    // Content'i temizle. animateOnMount true ise kapanış animasyonu bitene kadar bekle (~400ms).
+    const cleanupDelay = optionsRef.current?.animateOnMount ? 400 : 250;
     cleanupTimeoutRef.current = setTimeout(() => {
       setState(prev => {
         // Eğer bu close'tan sonra başka bir open/close olduysa cleanup yapma
@@ -108,7 +112,7 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
         };
       });
       cleanupTimeoutRef.current = null;
-    }, 250);
+    }, cleanupDelay);
   }, []);
 
   // Context value

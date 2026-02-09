@@ -21,7 +21,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
-import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { useSubCategoryPosts, useProductGroupPosts, useCatalogProductPosts } from '@/src/features/catalog/api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useQueryClient } from '@tanstack/react-query';
@@ -31,13 +31,13 @@ import type { ProfilePost } from '@/src/features/profile/types';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
-import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostApiItem } from '@/src/types/ExperienceCard';
 import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import { CardType } from '@/src/types/common';
 import { FilterSortBottomSheet, type FilterSortState } from '../components/FilterSortBottomSheet';
@@ -379,7 +379,7 @@ export const PostsScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        animateOnMount: false,
+        animateOnMount: true,
         paddingBottom: bottomOffset,
         onChange: (index: number) => {
           if (index === -1) {
@@ -572,7 +572,7 @@ export const PostsScreen = () => {
     } else if (type === 'experience') {
       navigation.navigate('CreateExperiencePostScreen', {
         product: selectedProductPayload,
-        fromInventory: experienceOption === 'own',
+        fromInventory: false,
         experienceOption: experienceOption,
       });
     } else if (type === 'benchmark') {
@@ -580,7 +580,9 @@ export const PostsScreen = () => {
         product: selectedProductPayload,
       });
     } else if (type === 'update') {
-      navigation.navigate('CreateUpdatePostScreen', {
+      // Update post oluşturmak için önce experience post seçilmeli
+      // SelectExperienceForUpdateScreen'e yönlendir
+      navigation.navigate('SelectExperienceForUpdateScreen', {
         product: selectedProductPayload,
       });
     }
@@ -632,27 +634,32 @@ export const PostsScreen = () => {
     };
   }, []);
 
-  const mapExperienceToCardData = useCallback((item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
+  const mapExperienceToCardData = useCallback((item: ExperiencePostApiItem & { type: 'experience' }): ExperiencePostCardData => {
     const defaultPostImage = require('@/assets/defaultImages/default-post.png');
     const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
     const avatarSource = toImageSource(item.user?.avatar) || defaultAvatar;
-    const productImage = item.contextData?.image
-      ? toImageSource(item.contextData.image)
+    const ctx = item.contextData as { product?: { id?: string; name?: string; image?: string | null; subName?: string; isOwned?: boolean } } | undefined;
+    const rawProduct = ctx?.product ?? item.contextData ?? item.product;
+    const productImage = rawProduct?.image
+      ? toImageSource(rawProduct.image)
       : defaultPostImage;
 
-    const content: ReviewCardContentItem[] = (item.content && Array.isArray(item.content))
-      ? item.content
+    const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
+    const contentBlocks = item.experienceContent ?? (Array.isArray(item.content) ? item.content : []);
+    const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
+      ? contentBlocks
         .filter((contentItem) => contentItem != null)
-        .map((contentItem) => ({
-          tag: {
-            icon: 'tag',
-            title: contentItem?.title || '',
-          },
-          text: contentItem?.content || '',
-          rating: Array(5)
-            .fill(false)
-            .map((_, index) => index < (contentItem?.rating || 0)),
-        }))
+        .map((contentItem) => {
+          const title = contentItem?.title || '';
+          const icon: 'tag' | 'package' = (title.toLowerCase().includes('product') || title.toLowerCase().includes('usage')) ? 'package' : 'tag';
+          return {
+            tag: { icon, title },
+            text: trimTrailingParen(contentItem?.content || ''),
+            rating: Array(5)
+              .fill(false)
+              .map((_, index) => index < (contentItem?.rating || 0)),
+          };
+        })
       : [];
 
     const mappedImages = Array.isArray(item.images)
@@ -660,8 +667,18 @@ export const PostsScreen = () => {
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages;
+    // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+    const images = mappedImages.filter((img) => !isSameImageSource(img, productImage));
 
+    const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
+    // 3 tag: duration, condition (location), purpose. API tags yoksa/eksikse *Name alanlarından doldur.
+    const tagsFromApi = Array.isArray(item.tags) ? item.tags : [];
+    const tags =
+      tagsFromApi.length >= 3
+        ? tagsFromApi
+        : [item.durationName, item.locationName, item.purposeName].filter((s): s is string => !!s);
+    const subNameRaw = rawProduct?.subName ?? '';
+    const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
     return {
       id: item.id || '',
       user: {
@@ -669,17 +686,17 @@ export const PostsScreen = () => {
         name: item.user?.name || '',
         title: item.user?.title || '',
         avatar: avatarSource,
-        action: 'wrote a review',
+        action: isOwned ? 'Added new product and experiences to inventory!' : undefined,
       },
       contextData: {
-        id: item.contextData?.id || '',
-        name: item.contextData?.name || '',
-        subName: item.contextData?.subName || '',
+        id: rawProduct?.id || '',
+        name: rawProduct?.name || '',
+        subName,
         image: productImage || defaultPostImage,
-        isOwned: item.contextData?.isOwned || false,
+        isOwned,
       },
       content,
-      tags: Array.isArray(item.tags) ? item.tags : [],
+      tags,
       images,
       stats: item.stats,
       createdAt: item.createdAt,
@@ -753,31 +770,48 @@ export const PostsScreen = () => {
         images,
         stats: item.stats,
         tag: item.tag,
+    benefitCategory: item.benefitCategory,
         createdAt: item.createdAt,
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    const product: TipsProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    let category: TipsCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: sadece category bilgisi, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: TipsProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: TipsCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     const mappedImages = Array.isArray(item.images)
       ? item.images
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
-      : [];
+        : [];
     const images = mappedImages;
 
     return {
@@ -793,6 +827,7 @@ export const PostsScreen = () => {
       images,
       stats: item.stats,
       tag: item.tag,
+    benefitCategory: item.benefitCategory,
       createdAt: item.createdAt,
     };
   }, []);
@@ -837,21 +872,41 @@ export const PostsScreen = () => {
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    const product: QuestionCardProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    // - contextType === 'product' → category.product dolu (product card gösterilir)
+    // - contextType === 'sub_category' → sadece category dolu (sub category card gösterilir)
+    // - contextType === 'product_group' → category.product dolu (product group card gösterilir)
+    
+    let category: QuestionCardCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: category dolu, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak (QuestionPostCard'da category gösterilecek)
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: QuestionCardProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: QuestionCardCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     const mappedImages = Array.isArray(item.images)
       ? item.images
@@ -1023,9 +1078,14 @@ export const PostsScreen = () => {
 
     const itemId = item.data.id;
     
-    // Eğer tüm gönderiler aynı product'a aitse (feedContextType === 'product'), 
-    // product content'ini gizle çünkü zaten üstte ProductInfoCard gösteriliyor
-    const shouldHideProduct = feedContextType === 'product';
+    // CRITICAL: Context-aware content hiding
+    // Eğer zaten o context'in post listesindeyse (sub_category, product_group, product),
+    // content'i gizle çünkü zaten üstte ProductInfoCard gösteriliyor
+    // Ama farklı context'lerde (Feed, Profile, vb.) content gösterilmeli
+    const shouldHideContext = 
+      (feedContextType === 'product') ||
+      (feedContextType === 'product_group') ||
+      (feedContextType === 'sub_category');
     
     if (__DEV__) {
       console.log('[PostsScreen] 🎨 Rendering feed item:', {
@@ -1036,7 +1096,7 @@ export const PostsScreen = () => {
         hasContextData: 'contextData' in item.data,
         hasIsBoosted: 'isBoosted' in item.data,
         feedContextType,
-        shouldHideProduct,
+        shouldHideContext,
       });
     }
 
@@ -1044,12 +1104,13 @@ export const PostsScreen = () => {
     switch (item.type) {
       case CardType.EXPERIENCE:
       case 'experience':
-        if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
+        const expData = item.data as ExperiencePostApiItem;
+        if (('contextData' in item.data || 'product' in item.data) && (Array.isArray(expData.experienceContent) || Array.isArray(expData.content))) {
           return (
             <ExperiencePostCard
               key={itemId}
-              data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
-              hideProduct={shouldHideProduct}
+              data={mapExperienceToCardData(item.data as ExperiencePostApiItem & { type: 'experience' })}
+              hideProduct={shouldHideContext}
             />
           );
         }
@@ -1060,7 +1121,7 @@ export const PostsScreen = () => {
           <PostCard
             key={itemId}
             data={mapFeedToCardData(item.data as ProfilePost)}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       case CardType.BENCHMARK:
@@ -1080,7 +1141,7 @@ export const PostsScreen = () => {
             <QuestionPostCard
               key={itemId}
               data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
-              hideProduct={shouldHideProduct}
+              hideProduct={shouldHideContext}
             />
           );
         }
@@ -1098,7 +1159,7 @@ export const PostsScreen = () => {
           <TipsAndTricksPostCard
             key={itemId}
             data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       case CardType.UPDATE:
@@ -1107,7 +1168,7 @@ export const PostsScreen = () => {
           <UpdatePostCard
             key={itemId}
             data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       default:

@@ -128,7 +128,26 @@ export const toImageSource = (
 
   // String değilse (require() veya zaten ImageSourcePropType) direkt döndür
   return value;
-}
+};
+
+/**
+ * İki görsel kaynağının aynı olup olmadığını kontrol eder.
+ * Experience post carousel'de ürün görselinin kullanıcı görselleri arasında gösterilmesini engellemek için kullanılır.
+ */
+export const isSameImageSource = (
+  a: ImageSourcePropType | string | null | undefined,
+  b: ImageSourcePropType | string | null | undefined,
+): boolean => {
+  if (a == null || b == null) return false;
+  if (a === b) return true;
+  const aObj = typeof a === 'object' && a !== null ? a as { uri?: string } : null;
+  const bObj = typeof b === 'object' && b !== null ? b as { uri?: string } : null;
+  const aUri = aObj?.uri ?? (typeof a === 'string' ? a : undefined);
+  const bUri = bObj?.uri ?? (typeof b === 'string' ? b : undefined);
+  if (aUri && bUri) return aUri === bUri;
+  return false;
+};
+
 /**
  * Verilen ISO timestamp'in şu anki zamana göre ne kadar önce olduğunu
  * kısaltılmış formatta döndürür.

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, View, StyleSheet } from 'react-native';
 import { Box, useToast, VStack, Text } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
@@ -14,7 +14,7 @@ import { SelectProduct } from '../components/CreateExperienceSteps/SelectProduct
 import { useExperiencePostForm } from '../hooks/useExperiencePostForm';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateExperiencePost, useSplitExperience } from '../api/hooks';
-import { useAddInventoryItem } from '@/src/features/profile/api/hooks';
+import { useAddInventoryItem, useInventory } from '@/src/features/profile/api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
@@ -42,6 +42,7 @@ export const CreateExperiencePostScreen = () => {
     // If product is undefined, start with SelectProduct (step 0), otherwise start with StepOneScreen (step 1)
     const [currentStep, setCurrentStep] = useState<0 | 1 | 2 | 3>(product ? 1 : 0);
     const [editingField, setEditingField] = useState<'price' | 'product' | null>(null);
+    const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
     
     const methods = useExperiencePostForm(
       product ? {
@@ -61,18 +62,40 @@ export const CreateExperiencePostScreen = () => {
     const addInventoryItemMutation = useAddInventoryItem();
     const { user } = useAppStore();
     const queryClient = useQueryClient();
+    const { data: inventoryData } = useInventory(100);
+    const inventoryProductIds = React.useMemo(() => {
+        if (!inventoryData?.pages) return new Set<string>();
+        return new Set(
+            inventoryData.pages.flatMap((p) => p.items ?? []).map((item) => item.productId).filter(Boolean)
+        );
+    }, [inventoryData]);
     
     // Flow store'dan context bilgilerini al
     const contextType = useCreatePostFlowStore((state) => state.contextType);
     const contextId = useCreatePostFlowStore((state) => state.contextId);
     const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
+    const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
     const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+    
+    // Context yoksa route'taki product ile set et (örn. Inventory'dan gelince)
+    useEffect(() => {
+        if ((!contextType || !contextId) && product?.id) {
+            setFlowContext(ProductInfoType.PRODUCT, product.id, {
+                image: product.image,
+                title: product.name ?? '',
+                subName: product.brand,
+            });
+        }
+    }, [contextType, contextId, product?.id, product?.image, product?.name, product?.brand, setFlowContext]);
     
     // AI split response'u sakla
     const [experienceSnippetId, setExperienceSnippetId] = useState<string | undefined>(undefined);
     
     // Loading state (sadece spinner için)
     const [isSplitLoading, setIsSplitLoading] = useState(false);
+    
+    // Çift gönderim engeli: aynı anda yalnızca bir submit çalışsın
+    const isSubmittingRef = useRef(false);
     
     const selectedProduct = watch('selectedProduct');
     const step1Duration = watch('step1Duration');
@@ -186,14 +209,16 @@ export const CreateExperiencePostScreen = () => {
                     console.log('[CreateExperiencePostScreen] 📤 Calling split-experience API...');
                     const response = await splitExperienceMutation.mutateAsync({
                         productId: selectedProduct.id,
-                        content: experienceText.trim(),
+                        experienceText: experienceText.trim(),
                     });
 
                     console.log('[CreateExperiencePostScreen] ✅ Split response received:', response);
 
+                    // Cümle sonundaki ekstra "(" kaldır (AI bazen ekliyor)
+                    const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
                     // AI response'u form'a set et
                     if (response.priceAndShopping) {
-                        setValue('priceExperienceText', response.priceAndShopping.content);
+                        setValue('priceExperienceText', trimTrailingParen(response.priceAndShopping.content));
                         setValue('priceRating', response.priceAndShopping.rating);
                     } else {
                         setValue('priceExperienceText', '');
@@ -201,7 +226,7 @@ export const CreateExperiencePostScreen = () => {
                     }
 
                     if (response.productAndUsage) {
-                        setValue('productExperienceText', response.productAndUsage.content);
+                        setValue('productExperienceText', trimTrailingParen(response.productAndUsage.content));
                         setValue('productRating', response.productAndUsage.rating);
                     } else {
                         setValue('productExperienceText', '');
@@ -244,9 +269,23 @@ export const CreateExperiencePostScreen = () => {
         }
     };
 
-    const handleProductSelect = (product: { id: string; name: string; brand?: string; description?: string; image: any }) => {
-        setValue('selectedProduct', product, { shouldValidate: true });
+    const handleProductSelect = (selected: { id: string; name: string; brand?: string; description?: string; image: any }) => {
+        if (!fromInventory && inventoryProductIds.has(selected.id)) {
+            showCustomToast(toast, {
+                title: 'Zaten envanterinizde',
+                description: 'Bu ürün envanterinizde mevcut. Yine de deneyim paylaşımına devam edebilirsiniz.',
+                action: 'info',
+            });
+        }
+        setValue('selectedProduct', selected, { shouldValidate: true });
         setCurrentStep(1);
+        if (!contextType || !contextId) {
+            setFlowContext(ProductInfoType.PRODUCT, selected.id, {
+                image: selected.image,
+                title: selected.name ?? '',
+                subName: selected.brand,
+            });
+        }
     };
 
 
@@ -259,29 +298,34 @@ export const CreateExperiencePostScreen = () => {
     };
 
     const onSubmit: SubmitHandler<ExperiencePostFormData> = async (data) => {
-        console.log('[CreateExperiencePostScreen] Form submitted:', data);
-        
-        // ContextType ve contextId kontrolü
-        if (!contextType || !contextId) {
-            showCustomToast(toast, {
-                title: 'Error',
-                description: 'Context information not found. Please try again.',
-                action: 'error',
-            });
+        if (isSubmittingRef.current) {
             return;
         }
-        
-        // Ürün kontrolü
-        if (!data.selectedProduct) {
-            showCustomToast(toast, {
-                title: 'Error',
-                description: 'Product selection is required.',
-                action: 'error',
-            });
-            return;
-        }
-        
-        // API contextType'a çevir
+        isSubmittingRef.current = true;
+        try {
+            console.log('[CreateExperiencePostScreen] Form submitted:', data);
+            
+            // ContextType ve contextId kontrolü
+            if (!contextType || !contextId) {
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Context information not found. Please try again.',
+                    action: 'error',
+                });
+                return;
+            }
+            
+            // Ürün kontrolü
+            if (!data.selectedProduct) {
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Product selection is required.',
+                    action: 'error',
+                });
+                return;
+            }
+            
+            // API contextType'a çevir
         const apiContextType = mapProductInfoTypeToContextType(contextType);
         
         // Experience array'ini oluştur
@@ -365,6 +409,7 @@ export const CreateExperiencePostScreen = () => {
         console.log('[CreateExperiencePostScreen] Submitting with:', {
             contextType: apiContextType,
             contextId: contextId,
+            productId: data.selectedProduct?.id,
             selectedDurationId: selectedDurationId,
             selectedLocationId: selectedLocationId,
             selectedPurposeId: selectedPurposeId,
@@ -376,32 +421,83 @@ export const CreateExperiencePostScreen = () => {
             experienceOption: experienceOption,
             fromInventory: fromInventory,
         });
+
+        const willAddToInventory = experienceOption === 'own' && !fromInventory && !!data.selectedProduct?.id;
+        console.log('[CreateExperiencePostScreen] 📦 Inventory add check:', {
+            willAddToInventory,
+            experienceOption,
+            fromInventory,
+            selectedProductId: data.selectedProduct?.id,
+            reason: !willAddToInventory
+                ? (experienceOption !== 'own' ? 'experienceOption !== own' : fromInventory ? 'fromInventory=true' : !data.selectedProduct?.id ? 'no selectedProduct.id' : 'unknown')
+                : 'ok',
+        });
         
         try {
             // Eğer experienceOption === 'own' VE fromInventory === false (katalogdan seçildi):
             // Önce envantere ekle, sonra post oluştur
-            if (experienceOption === 'own' && !fromInventory && data.selectedProduct?.id) {
+            if (willAddToInventory) {
                 console.log('[CreateExperiencePostScreen] 📦 Adding product to inventory first...');
-                
-                // Envantere ekle
-                const inventoryResponse = await addInventoryItemMutation.mutateAsync({
-                    productId: data.selectedProduct.id,
-                    selectedDurationId: selectedDurationId,
-                    selectedLocationId: selectedLocationId,
-                    selectedPurposeId: selectedPurposeId,
-                    content: data.experienceText,
-                    experience: experience,
-                    status: 'own',
-                    images: data.selectedImages || [],
-                });
-                
-                console.log('[CreateExperiencePostScreen] ✅ Product added to inventory:', inventoryResponse);
+                try {
+                    // Envanterde ürünün katalog görseli kullanılmalı; post görselleri gönderilmez.
+                    const productImg = data.selectedProduct!.image;
+                    const productImageUrl =
+                        typeof productImg === 'string'
+                            ? productImg
+                            : (productImg as { uri?: string } | undefined)?.uri;
+                    const inventoryResponse = await addInventoryItemMutation.mutateAsync({
+                        productId: data.selectedProduct!.id,
+                        selectedDurationId: selectedDurationId,
+                        selectedLocationId: selectedLocationId,
+                        selectedPurposeId: selectedPurposeId,
+                        content: data.experienceText,
+                        experience: experience,
+                        status: 'own',
+                        // Sadece ürünün katalog görseli; post görselleri (data.selectedImages) eklenmez.
+                        images: productImageUrl ? [productImageUrl] : undefined,
+                    });
+                    console.log('[CreateExperiencePostScreen] ✅ Product added to inventory:', inventoryResponse);
+                } catch (inventoryError: any) {
+                    const errMsg =
+                        inventoryError?.response?.data?.error?.message ||
+                        inventoryError?.response?.data?.message ||
+                        inventoryError?.message ||
+                        '';
+                    const alreadyExists =
+                        /inventory already exists|already exists for this product/i.test(errMsg);
+                    if (alreadyExists) {
+                        // Ürün zaten envanterde; post oluşturmaya devam et
+                        console.log('[CreateExperiencePostScreen] 📦 Product already in inventory, continuing to create post');
+                    } else {
+                        console.error('[CreateExperiencePostScreen] ❌ Add to inventory failed:', {
+                            message: inventoryError?.message,
+                            response: inventoryError?.response?.data,
+                            status: inventoryError?.response?.status,
+                        });
+                        showCustomToast(toast, {
+                            title: 'Envanter hatası',
+                            description: errMsg || 'Ürün envantere eklenemedi.',
+                            action: 'error',
+                        });
+                        isSubmittingRef.current = false;
+                        return;
+                    }
+                }
             }
             
-            // Post oluştur
+            if (!experienceSnippetId || experienceSnippetId.trim() === '') {
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Please use AI split first to structure your experience.',
+                    action: 'error',
+                });
+                return;
+            }
             const response = await createExperiencePostMutation.mutateAsync({
                 contextType: apiContextType,
                 contextId: contextId,
+                productId: data.selectedProduct?.id, // Backend için productId eklendi
+                experienceSnippetId: experienceSnippetId,
                 selectedDurationId: selectedDurationId,
                 selectedLocationId: selectedLocationId,
                 selectedPurposeId: selectedPurposeId,
@@ -409,7 +505,6 @@ export const CreateExperiencePostScreen = () => {
                 experience: experience,
                 status: status,
                 images: data.selectedImages || [],
-                experienceSnippetId: experienceSnippetId, // AI split'ten gelen snippet ID
             });
             
             console.log('[CreateExperiencePostScreen] ✅ API Response:', response);
@@ -421,15 +516,21 @@ export const CreateExperiencePostScreen = () => {
                 action: 'success',
             });
             
-            // Invalidate catalog posts to refresh the feed
+            // Invalidate ve refetch: PostsScreen listesinde yeni post görünsün
             if (apiContextType && contextId) {
                 invalidateCatalogPosts(queryClient, apiContextType, contextId);
+                await queryClient.refetchQueries({
+                    queryKey: ['catalog', 'catalogProductPosts', contextId],
+                });
             }
             
             // Profil verilerini invalidate et - yeni post görünsün
             if (user?.id) {
                 queryClient.invalidateQueries({
                     queryKey: profileKeys.userPosts(user.id),
+                });
+                queryClient.invalidateQueries({
+                    queryKey: profileKeys.userReviews(user.id),
                 });
                 queryClient.invalidateQueries({
                     queryKey: profileKeys.profile(user.id),
@@ -558,10 +659,14 @@ export const CreateExperiencePostScreen = () => {
                 action: 'error',
             });
         }
+        } finally {
+            isSubmittingRef.current = false;
+        }
     };
 
     const handleImagePicker = async () => {
         try {
+            setIsImagePickerLoading(true);
             const currentImages = getValues('selectedImages') || [];
             const remainingSlots = 10 - currentImages.length;
             
@@ -606,6 +711,8 @@ export const CreateExperiencePostScreen = () => {
                 description: errorMessage,
                 action: 'error',
             });
+        } finally {
+            setIsImagePickerLoading(false);
         }
     };
 
@@ -635,6 +742,9 @@ export const CreateExperiencePostScreen = () => {
 
     // Check if Share button should be enabled (Both ratings selected and not editing)
     const isShareEnabled = priceRating > 0 && productRating > 0 && editingField === null;
+    
+    // Submit sırasında butonu devre dışı bırak (çift tıklama engeli)
+    const isSubmitPending = createExperiencePostMutation.isPending || addInventoryItemMutation.isPending;
 
     // Check if Next button should be enabled for SelectProduct (product selected)
     const isSelectProductNextEnabled = selectedProduct !== null;
@@ -656,10 +766,10 @@ export const CreateExperiencePostScreen = () => {
                                 borderWidth: 1,
                                 borderColor: isSelectProductNextEnabled ? '#B8CC04' : '#B1B1B1',
                                 textColor: isSelectProductNextEnabled ? '#111111' : '#B1B1B1',
-                                fontSize: 12,
+                                fontSize: 14,
                                 borderRadius: 25,
-                                paddingX: 10,
-                                paddingY: 10,
+                                paddingX: 12,
+                                paddingY: 8,
                                 onPress: handleNextPress,
                             }}
                         />
@@ -707,22 +817,27 @@ export const CreateExperiencePostScreen = () => {
                                     borderWidth: 0,
                                     borderColor: 'transparent',
                                     textColor: '#000000',
-                                    fontSize: 11,
-                                    borderRadius: 20,
-                                    paddingX: 14,
-                                    paddingY: 4,
+                                    fontSize: 14,
+                                    borderRadius: 25,
+                                    paddingX: 12,
+                                    paddingY: 8,
                                     onPress: handleSavePress,
                                 } : {
                                     text: buttonText,
-                                    backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+                                    backgroundColor: isShareEnabled || isSubmitPending ? '#D0F205' : '#EDEDED',
                                     borderWidth: 1,
-                                    borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-                                    textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-                                    fontSize: 11,
+                                    borderColor: isShareEnabled || isSubmitPending ? '#B8CC04' : '#B1B1B1',
+                                    textColor: isShareEnabled || isSubmitPending ? '#111111' : '#B1B1B1',
+                                    fontSize: 14,
                                     borderRadius: 25,
-                                    paddingX: 10,
-                                    paddingY: 10,
-                                    onPress: handleSubmit(onSubmit),
+                                    paddingX: 12,
+                                    paddingY: 8,
+                                    onPress: () => {
+                                      Keyboard.dismiss();
+                                      handleSubmit(onSubmit)();
+                                    },
+                                    disabled: isSubmitPending,
+                                    loading: isSubmitPending,
                                 }
                             }
                         />
@@ -748,7 +863,20 @@ export const CreateExperiencePostScreen = () => {
                             selectedProduct={selectedProduct}
                             fromInventory={fromInventory}
                             experienceOption={experienceOption}
+                            isImagePickerLoading={isImagePickerLoading}
                         />
+
+                        {/* Gönderim sırasında ekran ortasında loading */}
+                        <Modal visible={isSubmitPending} transparent animationType="fade">
+                            <View style={styles.loadingOverlay}>
+                                <View style={[styles.loadingBox, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }]}>
+                                    <ActivityIndicator size="large" color={isDark ? '#D0F205' : '#829905'} />
+                                    <Text color={isDark ? '$textDark50' : '#000000'} fontSize={14} mt={12}>
+                                        Gönderiliyor...
+                                    </Text>
+                                </View>
+                            </View>
+                        </Modal>
                     </Box>
                 </FormProvider>
             </SafeAreaView>
@@ -775,10 +903,10 @@ export const CreateExperiencePostScreen = () => {
                                 borderWidth: 1,
                                 borderColor: isStep2NextDisabled ? '#B1B1B1' : '#B8CC04',
                                 textColor: isStep2NextDisabled ? '#B1B1B1' : '#111111',
-                                fontSize: 12,
+                                fontSize: 14,
                                 borderRadius: 25,
-                                paddingX: 10,
-                                paddingY: 10,
+                                paddingX: 12,
+                                paddingY: 8,
                                 onPress: handleNextPress,
                                 disabled: isStep2NextDisabled,
                             }}
@@ -846,10 +974,10 @@ export const CreateExperiencePostScreen = () => {
                             borderWidth: 1,
                             borderColor: isStep1NextEnabled ? '#B8CC04' : '#B1B1B1',
                             textColor: isStep1NextEnabled ? '#111111' : '#B1B1B1',
-                            fontSize: 12,
+                            fontSize: 14,
                             borderRadius: 25,
-                            paddingX: 10,
-                            paddingY: 10,
+                            paddingX: 12,
+                            paddingY: 8,
                             onPress: handleNextPress,
                         }}
                     />
@@ -869,3 +997,19 @@ export const CreateExperiencePostScreen = () => {
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    loadingOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingBox: {
+        paddingHorizontal: 32,
+        paddingVertical: 24,
+        borderRadius: 12,
+        alignItems: 'center',
+        minWidth: 160,
+    },
+});

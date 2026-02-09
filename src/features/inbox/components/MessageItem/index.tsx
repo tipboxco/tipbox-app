@@ -3,6 +3,7 @@ import { MessageBubble } from './MessageBubble';
 import { ImageMessage } from './ImageMessage';
 import { TipsMessage } from './TipsMessage';
 import { SupportRequestMessage } from './SupportRequestMessage';
+import { SharedPostMessage } from './SharedPostMessage';
 import { getMessageGroup } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
 
@@ -69,6 +70,13 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           onCancelSupportRequest={onCancelSupportRequest}
           onGoToSupportChat={onGoToSupportChat}
           currentUserId={currentUserId}
+        />
+      ) : item.type === 'sharedpost' && item.sharedPost ? (
+        <SharedPostMessage
+          item={item}
+          isDark={isDark}
+          params={params}
+          isFirstInGroup={isFirstInGroup}
         />
       ) : (
         <MessageBubble

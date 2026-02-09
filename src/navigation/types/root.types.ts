@@ -78,6 +78,10 @@ export type RootStackParamList = {
     eventId?: string;
     eventType?: string;
     experienceOption?: 'own' | 'tried';
+    /** Benchmark: hangi form alanına yazılacak (selectedProduct1 | selectedProduct2) */
+    selectedProductField?: 'selectedProduct1' | 'selectedProduct2';
+    /** Benchmark: dönüşte korunacak ilk ürün */
+    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any };
   };
 };
 

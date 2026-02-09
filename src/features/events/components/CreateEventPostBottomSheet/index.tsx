@@ -29,6 +29,7 @@ interface CreateEventPostBottomSheetProps {
     onClose: () => void;
     onProductSelect: (product: Category) => void;
     navigation: CreateEventPostBottomSheetNavigationProp; // Required: GlobalBottomSheet içinde navigation context yok
+    eventId?: string; // Event ID - ProductSelectScreen'e taşınacak
 }
 
 // Mock categories data
@@ -51,6 +52,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
     onClose,
     onProductSelect,
     navigation,
+    eventId,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -85,10 +87,10 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
 
     const handleCatalogPress = () => {
         onClose();
-        // Navigate to CatalogScreen with selectMode
-        navigationService.navigateNested('Catalog', 'CatalogScreen' as any, {
-            selectMode: 'event',
+        // Navigate to ProductSelectScreen (FAB yok)
+        navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT as any, {
             returnScreen: 'EventCreatePost',
+            eventId,
         });
     };
 

@@ -33,6 +33,8 @@ export const ProductSelectScreen: React.FC = () => {
   const eventId = route.params?.eventId;
   const eventType = route.params?.eventType;
   const experienceOption = route.params?.experienceOption;
+  const selectedProductField = route.params?.selectedProductField;
+  const initialProduct = route.params?.initialProduct;
   
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
@@ -119,6 +121,17 @@ export const ProductSelectScreen: React.FC = () => {
     if (!catalogCategoriesData?.items) return [];
     return catalogCategoriesData.items;
   }, [catalogCategoriesData]);
+
+  // Reset store on mount - EventCreatePost'tan geldiğinde temiz başla
+  useEffect(() => {
+    // Component mount olduğunda store'u temizle
+    setSelectedCategoryId(undefined);
+    setSelectedSubCategory(undefined);
+    setSelectedProductGroup(undefined);
+    setSelectedProduct(undefined);
+    setCurrentView('categories');
+    setBreadcrumbItems([]);
+  }, []); // Empty dependency array - sadece mount'ta çalışır
 
   const catalogSubCategories = useMemo(() => {
     if (!catalogSubCategoriesData?.items) return [];
@@ -345,7 +358,8 @@ export const ProductSelectScreen: React.FC = () => {
         })
       );
     } else if (returnScreen === 'CreateExperiencePostScreen') {
-      // Navigate back to CreateExperiencePostScreen with selected product for inventory
+      // Katalogdan ürün seçildi → fromInventory: false (envanterden değil)
+      // I Owned: önce envantere eklenir sonra post; I Tried: sadece post
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateExperiencePostScreen',
         params: {
@@ -355,8 +369,27 @@ export const ProductSelectScreen: React.FC = () => {
             image: product.image,
             description: product.description || '',
           },
-          fromInventory: experienceOption === 'own', // Only true if "I Own the Product" was selected
+          fromInventory: false,
           experienceOption: experienceOption || 'own',
+        },
+      });
+    } else if (returnScreen === 'CreateBenchmarkPostScreen') {
+      // Navigate back to CreateBenchmarkPostScreen with selected product (benchmark ikinci ürün)
+      const nameParts = product.name.split(' ');
+      const brand = nameParts.length > 1 ? nameParts[0] : undefined;
+      const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
+      navigationService.navigate(ROOT_ROUTES.POST, {
+        screen: 'CreateBenchmarkPostScreen',
+        params: {
+          product: initialProduct,
+          selectedProduct: {
+            id: product.id,
+            name: productName,
+            brand,
+            description: product.description || '',
+            image: product.image,
+          },
+          selectedProductField: selectedProductField || 'selectedProduct2',
         },
       });
     } else {

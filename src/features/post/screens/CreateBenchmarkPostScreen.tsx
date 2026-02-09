@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
@@ -7,7 +8,6 @@ import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCallback } from 'react';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -17,7 +17,6 @@ import { ProductBenchmarkCard } from '../components/ProductBenchmarkCard';
 import { DashedProductCard } from '../components/DashedProductCard';
 import { useCreateBenchmarkPost } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
-import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys } from '@/src/features/profile/api/hooks';
@@ -31,154 +30,24 @@ type CreateBenchmarkPostScreenNavigationProp = NativeStackNavigationProp<RootSta
 
 // Product Benchmark Field Component
 const ProductBenchmarkField: React.FC = () => {
-  const { control, watch, setValue } = useFormContext<BenchmarkPostFormData>();
+  const { control, watch } = useFormContext<BenchmarkPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
   const selectedProduct1 = watch('selectedProduct1');
   const selectedProduct2 = watch('selectedProduct2');
   const selectedChoice = watch('selectedChoice');
 
   const handleProductSelect = () => {
-    openBottomSheet(
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FDFDFB'} px="$4" py="$4">
-        <VStack space="md">
-          <Text
-            fontSize={16}
-            fontWeight="$bold"
-            color={isDark ? '$textDark50' : '#000000'}
-            textAlign="center"
-            mb="$2"
-          >
-            Select Product
-          </Text>
-          <Pressable
-            onPress={() => {
-              closeBottomSheet();
-              // Navigate to AddProductFromInventory screen (full screen)
-              navigationService.navigate(ROOT_ROUTES.POST, {
-                screen: 'AddProductFromInventory',
-                params: {
-                  returnScreen: 'CreateBenchmarkPostScreen',
-                  selectedProductField: 'selectedProduct2',
-                },
-              } as any);
-            }}
-            bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
-            borderWidth={1}
-            borderColor="#E9E9E9"
-            $dark-borderColor="$borderDark600"
-            borderRadius={10}
-            p="$4"
-          >
-            <HStack alignItems="center" space="md">
-              <Box
-                w={40}
-                h={40}
-                bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
-                borderRadius={8}
-                justifyContent="center"
-                alignItems="center"
-              >
-                <Feather
-                  name="package"
-                  size={20}
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                />
-              </Box>
-              <VStack flex={1}>
-                <Text
-                  fontSize={14}
-                  fontWeight="$semibold"
-                  color={isDark ? '$textDark50' : '#000000'}
-                >
-                  Select from Inventory
-                </Text>
-                <Text
-                  fontSize={11}
-                  color={isDark ? '$textDark400' : '#787878'}
-                >
-                  Choose from your inventory
-                </Text>
-              </VStack>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color={isDark ? '#FFFFFF' : '#000000'}
-              />
-            </HStack>
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              closeBottomSheet();
-              // Navigate to AddProductFromCatalog screen (full screen)
-              navigationService.navigate(ROOT_ROUTES.POST, {
-                screen: 'AddProductFromCatalog',
-                params: {
-                  returnScreen: 'CreateBenchmarkPostScreen',
-                  selectedProductField: 'selectedProduct2',
-                },
-              } as any);
-            }}
-            bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
-            borderWidth={1}
-            borderColor="#E9E9E9"
-            $dark-borderColor="$borderDark600"
-            borderRadius={10}
-            p="$4"
-          >
-            <HStack alignItems="center" space="md">
-              <Box
-                w={40}
-                h={40}
-                bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
-                borderRadius={8}
-                justifyContent="center"
-                alignItems="center"
-              >
-                <Feather
-                  name="grid"
-                  size={20}
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                />
-              </Box>
-              <VStack flex={1}>
-                <Text
-                  fontSize={14}
-                  fontWeight="$semibold"
-                  color={isDark ? '$textDark50' : '#000000'}
-                >
-                  Select from Catalog
-                </Text>
-                <Text
-                  fontSize={11}
-                  color={isDark ? '$textDark400' : '#787878'}
-                >
-                  Browse product catalog
-                </Text>
-              </VStack>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color={isDark ? '#FFFFFF' : '#000000'}
-              />
-            </HStack>
-          </Pressable>
-        </VStack>
-      </Box>,
-      {
-        enablePanDownToClose: true,
-        enableOverDrag: false,
-        enableDynamicSizing: true,
-        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
-        handleIndicatorStyle: {
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 70,
-          height: 5,
-        },
-      }
-    );
+    const initialProductForReturn = selectedProduct1
+      ? { id: selectedProduct1.id, name: selectedProduct1.name, brand: selectedProduct1.brand, subName: selectedProduct1.subName, image: selectedProduct1.image }
+      : undefined;
+
+    navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT, {
+      returnScreen: 'CreateBenchmarkPostScreen',
+      selectedProductField: 'selectedProduct2',
+      initialProduct: initialProductForReturn,
+    });
   };
 
   return (
@@ -191,39 +60,46 @@ const ProductBenchmarkField: React.FC = () => {
         Product Benchmark
       </Text>
       <Box position="relative" width="100%">
-        <HStack justifyContent="space-between" width="100%" alignItems="stretch">
-          {selectedProduct1 ? (
-            <Controller
-              name="selectedChoice"
-              control={control}
-              render={({ field: { onChange, value } }) => (
-                <ProductBenchmarkCard
-                  product={selectedProduct1}
-                  isSelected={value === 'product1'}
-                  onPress={() => onChange('product1')}
-                />
-              )}
-            />
-          ) : null}
-          
-          {selectedProduct2 ? (
-            <Controller
-              name="selectedChoice"
-              control={control}
-              render={({ field: { onChange, value } }) => (
-                <ProductBenchmarkCard
-                  product={selectedProduct2}
-                  isSelected={value === 'product2'}
-                  onPress={() => onChange('product2')}
-                />
-              )}
-            />
-          ) : (
-            <DashedProductCard onPress={handleProductSelect} />
-          )}
+        <HStack width="100%" alignItems="stretch" space="md" flex={1}>
+          {/* Sol: Ekrandaki / ilk ürün */}
+          <Box flex={1} minWidth={0}>
+            {selectedProduct1 ? (
+              <Controller
+                name="selectedChoice"
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                  <ProductBenchmarkCard
+                    product={selectedProduct1}
+                    isSelected={value === 'product1'}
+                    onPress={() => onChange('product1')}
+                  />
+                )}
+              />
+            ) : null}
+          </Box>
+
+          {/* Sağ: Artı ile seçilen ikinci ürün veya artı kartı */}
+          <Box flex={1} minWidth={0}>
+            {selectedProduct2 ? (
+              <Controller
+                name="selectedChoice"
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                  <ProductBenchmarkCard
+                    product={selectedProduct2}
+                    isSelected={value === 'product2'}
+                    onPress={() => onChange('product2')}
+                  />
+                )}
+              />
+            ) : (
+              <DashedProductCard onPress={handleProductSelect} />
+            )}
+          </Box>
         </HStack>
-        
-        {(selectedProduct1 || selectedProduct2) && (
+
+        {/* Ortadaki kıyaslama simgesi: sol ürün varken (sağda Add Product olsa bile) göster */}
+        {selectedProduct1 && (
           <Box
             position="absolute"
             top="50%"
@@ -262,26 +138,28 @@ export const CreateBenchmarkPostScreen = () => {
   const { user } = useAppStore();
   const queryClient = useQueryClient();
   
-  // Flow store'dan context bilgilerini al
-  const contextType = useCreatePostFlowStore((state) => state.contextType);
-  const contextId = useCreatePostFlowStore((state) => state.contextId);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
 
-  // Initialize first product from route params
+  // Initialize first product from route params (ekrandaki ürün veya dönüşte korunan initial product)
   useEffect(() => {
     if (product) {
-      const nameParts = product.name.split(' ');
-      const brand = nameParts.length > 1 ? nameParts[0] : undefined;
-      const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
+      console.log('[CreateBenchmarkPostScreen] 🔍 Initializing product1 from route params:', product);
       
+      const nameParts = product.name.split(' ');
+      const brand = nameParts.length > 1 ? nameParts[0] : (product as any).brand;
+      const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
+      const subName = (product as any).subName ?? product.description;
+
       const initialProduct = {
         id: product.id,
         name: productName,
         brand: brand,
-        subName: product.description,
-        image: product.image,
+        subName: subName,
+        image: product.image ?? (product as any).imageUrl ?? product.description, // Try multiple image fields
         isOwned: false,
       };
+      
+      console.log('[CreateBenchmarkPostScreen] ✅ Formatted product1:', initialProduct);
       setValue('selectedProduct1', initialProduct, { shouldValidate: true });
     }
   }, [product, setValue]);
@@ -304,15 +182,22 @@ export const CreateBenchmarkPostScreen = () => {
         if (processedSelectedProductRef.current === selectionKey) {
           return;
         }
+        
+        console.log('[CreateBenchmarkPostScreen] 🔍 Processing selected product from navigation:', {
+          field: selectedProductField,
+          product: selectedProduct,
+        });
 
         const formattedProduct = {
           id: selectedProduct.id,
           name: selectedProduct.name,
           brand: selectedProduct.brand,
           subName: selectedProduct.description || selectedProduct.subName || '',
-          image: selectedProduct.image,
+          image: selectedProduct.image ?? (selectedProduct as any).imageUrl ?? selectedProduct.description,
           isOwned: selectedProductField === 'selectedProduct2' && selectedProduct.brand ? true : false,
         };
+        
+        console.log('[CreateBenchmarkPostScreen] ✅ Formatted product for', selectedProductField, ':', formattedProduct);
 
         if (selectedProductField === 'selectedProduct1') {
           setValue('selectedProduct1', formattedProduct, { shouldValidate: true });
@@ -344,49 +229,39 @@ export const CreateBenchmarkPostScreen = () => {
   const onSubmit: SubmitHandler<BenchmarkPostFormData> = async (data) => {
     console.log('[CreateBenchmarkPostScreen] Form submitted:', data);
     
-    // ContextType ve contextId kontrolü
-    if (!contextType || !contextId) {
+    // Benchmark API: contextType sadece "product" kabul eder; contextId ürün id'lerinden biri olmalı
+    if (!data.selectedProduct1?.id || !data.selectedProduct2?.id) {
       showCustomToast(toast, {
         title: 'Error',
-        description: 'Context information not found. Please try again.',
+        description: 'Two products must be selected.',
         action: 'error',
       });
       return;
     }
-    
-    // API contextType'a çevir
-    const apiContextType = mapProductInfoTypeToContextType(contextType);
-    
-    // Products array'ini oluştur
-    const products = [];
-    if (data.selectedProduct1) {
-      products.push({
-        productId: data.selectedProduct1.id,
-        isSelected: data.selectedChoice === 'product1',
-      });
-    }
-    if (data.selectedProduct2) {
-      products.push({
-        productId: data.selectedProduct2.id,
-        isSelected: data.selectedChoice === 'product2',
-      });
-    }
-    
-    if (products.length < 2) {
+
+    const description = (data.postText || '').trim();
+    if (!description) {
       showCustomToast(toast, {
         title: 'Error',
-        description: 'At least 2 products must be selected.',
+        description: 'Benchmark description is required.',
         action: 'error',
       });
       return;
     }
-    
+
+    // products: backend en az 2 ürün ve ikisinde de isSelected: true istiyor
+    const products = [
+      { productId: data.selectedProduct1.id, isSelected: true },
+      { productId: data.selectedProduct2.id, isSelected: true },
+    ];
+
+    // contextType: "product" (küçük harf), contextId: ürün id'lerinden biri
     try {
       const response = await createBenchmarkPostMutation.mutateAsync({
-        contextType: apiContextType,
-        contextId: contextId,
-        description: data.postText,
-        products: products,
+        contextType: 'product',
+        contextId: data.selectedProduct1.id,
+        description,
+        products,
         images: data.selectedImages || [],
       });
       
@@ -482,7 +357,13 @@ export const CreateBenchmarkPostScreen = () => {
 
   // Check if share button should be enabled (form is valid)
   const isShareEnabled = formState.isValid;
+  const isShareLoading = createBenchmarkPostMutation.isPending;
 
+  const handleSharePress = () => {
+    Keyboard.dismiss();
+    const submitHandler = handleSubmit as unknown as (callback: SubmitHandler<BenchmarkPostFormData>) => () => void;
+    submitHandler(onSubmit)();
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -495,20 +376,16 @@ export const CreateBenchmarkPostScreen = () => {
             onLeftActionPress={handleBackPress}
             rightButton={{
               text: 'Share',
-              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
-              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
               paddingX: 10,
               paddingY: 10,
-              onPress: () => {
-                // TypeScript type inference issue with react-hook-form handleSubmit
-                // useBenchmarkPostForm already uses BenchmarkPostFormData, so this is safe
-                const submitHandler = handleSubmit as unknown as (callback: SubmitHandler<BenchmarkPostFormData>) => () => void;
-                submitHandler(onSubmit)();
-              },
+              onPress: handleSharePress,
+              loading: isShareLoading,
             }}
           />
 
@@ -522,7 +399,7 @@ export const CreateBenchmarkPostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledTextarea
                   name="postText"
-                  placeholder="Type your Benchmark Post here..."
+                  placeholder="Type your Benchmark Description here..."
                   maxLength={500}
                   label="Benchmark Description"
                 />

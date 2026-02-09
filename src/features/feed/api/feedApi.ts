@@ -2,7 +2,7 @@ import { apiService } from '../../../services/ApiService';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
-import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostApiItem } from '@/src/types/ExperienceCard';
 import type { ProfilePost } from '@/src/features/profile/types';
 import type { UpdateApiItem } from '@/src/types/UpdateCard';
 import { CardType } from '@/src/types/common';
@@ -14,7 +14,7 @@ export interface FeedApiItem {
   type: string;
   data: 
     | (ProfilePost & { type: 'post' })
-    | (ReviewApiItem & { type: 'experience' })
+    | (ExperiencePostApiItem & { type: 'experience' })
     | (BenchmarkApiItem & { type: 'benchmark' })
     | (TipsApiItem & { type: 'tipsAndTricks' })
     | (QuestionApiItem & { type: 'question' })

@@ -75,13 +75,6 @@ const CustomTabBar = (props: BottomTabBarProps) => {
   const isPressing = useSharedValue(false);
   const [tabBarWidth, setTabBarWidth] = useState(0);
   
-  // Tab bar gizliyse render etme
-  if (!isTabBarVisible) {
-    return null;
-  }
-  
-  const androidBottomPadding = insets.bottom;
-  const tabBarHeight = Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding;
   const tabCount = props.state.routes.length;
   const tabWidth = tabBarWidth > 0 ? tabBarWidth / tabCount : 0;
   
@@ -165,6 +158,14 @@ const CustomTabBar = (props: BottomTabBarProps) => {
       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
     };
   });
+  
+  // Tab bar gizliyse render etme (tüm hook'lardan sonra)
+  if (!isTabBarVisible) {
+    return null;
+  }
+  
+  const androidBottomPadding = insets.bottom;
+  const tabBarHeight = Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding;
   
   // Liquid Glass için base tint color
   const baseTintColor = isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.5)';
@@ -315,7 +316,10 @@ export const TabNavigator = () => {
   
   // PERFORMANCE FIX: Unread messages - inbox badge için
   // Sadece authenticated ve auth ready ise çalıştır
-  const { data: messages } = useMessages();
+  // CRITICAL OPTIMIZATION: Inbox'a girilmeden mesajları yükleme (lazy loading)
+  // Badge için inbox tab'ına en az bir kez girilmesi gerekiyor
+  const [hasVisitedInbox, setHasVisitedInbox] = React.useState(false);
+  const { data: messages } = useMessages(hasVisitedInbox);
   const hasUnreadMessages = useMemo(() => {
     // CRITICAL FIX: messages undefined veya array değilse false döndür
     if (!messages || !Array.isArray(messages) || messages.length === 0) return false;
@@ -470,6 +474,14 @@ export const TabNavigator = () => {
     });
   }, []);
 
+  // PERFORMANCE FIX: Inbox tab press handler
+  // Inbox'a ilk kez girildiğinde mesajları yükle (lazy loading)
+  const handleInboxTabPress = useCallback(() => {
+    if (!hasVisitedInbox) {
+      setHasVisitedInbox(true);
+    }
+  }, [hasVisitedInbox]);
+
   // Heavy tab'ler için freeze rule
   const heavyTabFreezeRule = getHeavyTabFreezeRule();
 
@@ -547,6 +559,9 @@ export const TabNavigator = () => {
           <Tab.Screen
             name="InboxStack"
             component={InboxNavigator}
+            listeners={{
+              tabPress: handleInboxTabPress,
+            }}
           />
         </Tab.Navigator>
       </View>

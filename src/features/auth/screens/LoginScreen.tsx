@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -287,8 +287,9 @@ export const LoginScreen = () => {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor }}>
-      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={{ flex: 1, backgroundColor }}>
+        {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
       <View 
         style={{ 
           height: insets.top, 
@@ -505,6 +506,7 @@ export const LoginScreen = () => {
           zIndex: 1,
         }} 
       />
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 };

@@ -35,6 +35,8 @@ import {
   type CreateEventPostWithContextRequestV2 as CreateEventPostWithContextRequest,
   type CreateEventPostWithContextResponse,
 } from './communityEventsApi';
+import { getMainCategories, getSubCategories, getCategoryById } from './medusaApi';
+import type { MedusaCategory } from '../types/medusa.types';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgeDetailResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
@@ -67,6 +69,12 @@ export const eventsKeys = {
   achievements: (cursor?: string, limit?: number, search?: string) =>
     [...eventsKeys.all, 'achievements', cursor, limit, search] as const,
   requirements: (eventId: string) => [...eventsKeys.all, 'requirements', eventId] as const,
+  // Medusa Categories
+  mainCategories: () => [...eventsKeys.all, 'categories', 'main'] as const,
+  subCategories: (parentId: string) =>
+    [...eventsKeys.all, 'categories', 'sub', parentId] as const,
+  categoryDetail: (categoryId: string) =>
+    [...eventsKeys.all, 'categories', 'detail', categoryId] as const,
 };
 
 /**
@@ -812,3 +820,67 @@ export const useCreateEventPostWithContext = () => {
   });
 };
 
+
+// ============================================================================
+// MEDUSA CATEGORY HOOKS
+// ============================================================================
+
+/**
+ * Get Main Categories (parent_category_id === null)
+ * Ana kategorileri getiren hook
+ * 
+ * @returns React Query query hook result
+ * 
+ * @example
+ * const { data: mainCategories, isLoading } = useMainCategories();
+ */
+export const useMainCategories = () => {
+  return useQuery<MedusaCategory[], Error>({
+    queryKey: eventsKeys.mainCategories(),
+    queryFn: getMainCategories,
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat - kategoriler sık değişmez
+    gcTime: 48 * 60 * 60 * 1000, // 48 saat
+  });
+};
+
+/**
+ * Get Sub Categories by parent category ID
+ * Belirli bir kategorinin alt kategorilerini getiren hook
+ * 
+ * @param parentCategoryId - Ana kategori ID'si
+ * @param enabled - Query'nin çalışıp çalışmayacağı (default: true)
+ * @returns React Query query hook result
+ * 
+ * @example
+ * const { data: subCategories, isLoading } = useSubCategories('cat-electronics', true);
+ */
+export const useSubCategories = (parentCategoryId: string, enabled: boolean = true) => {
+  return useQuery<MedusaCategory[], Error>({
+    queryKey: eventsKeys.subCategories(parentCategoryId),
+    queryFn: () => getSubCategories(parentCategoryId),
+    enabled: enabled && !!parentCategoryId,
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat
+    gcTime: 48 * 60 * 60 * 1000, // 48 saat
+  });
+};
+
+/**
+ * Get Category by ID
+ * Belirli bir kategoriyi ID ile getiren hook
+ * 
+ * @param categoryId - Kategori ID'si
+ * @param enabled - Query'nin çalışıp çalışmayacağı (default: true)
+ * @returns React Query query hook result
+ * 
+ * @example
+ * const { data: category, isLoading } = useCategoryById('cat-electronics', true);
+ */
+export const useCategoryById = (categoryId: string, enabled: boolean = true) => {
+  return useQuery<MedusaCategory, Error>({
+    queryKey: eventsKeys.categoryDetail(categoryId),
+    queryFn: () => getCategoryById(categoryId),
+    enabled: enabled && !!categoryId,
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat
+    gcTime: 48 * 60 * 60 * 1000, // 48 saat
+  });
+};

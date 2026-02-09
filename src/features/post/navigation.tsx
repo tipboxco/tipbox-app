@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen } from './screens';
+import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectExperienceForUpdateScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
@@ -65,13 +65,18 @@ export type PostStackParamList = {
       product: { id: string; name: string; subName: string; image: any };
     };
   };
+  SelectExperienceForUpdateScreen: {
+    product?: { id: string; name: string; description?: string; image: any; brand?: string };
+  };
   AddProductFromInventory: { 
     returnScreen: 'CreateBenchmarkPostScreen';
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
+    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any };
   };
   AddProductFromCatalog: { 
     returnScreen: 'CreateBenchmarkPostScreen';
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
+    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any };
   };
 };
 
@@ -81,11 +86,12 @@ const Stack = createNativeStackNavigator<PostStackParamList>();
 const AddProductFromInventoryScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<PostStackParamList, 'AddProductFromInventory'>>();
-  const { returnScreen, selectedProductField } = route.params || {};
+  const { returnScreen, selectedProductField, initialProduct } = route.params || {};
 
   const handleProductSelect = (product: InventoryItem) => {
-    // Navigate back to CreateBenchmarkPostScreen with selected product
+    // Navigate back to CreateBenchmarkPostScreen with selected product and preserve initial product
     navigation.navigate(returnScreen as any, {
+      product: initialProduct,
       selectedProduct: {
         id: product.productId || product.id,
         name: product.brand?.model || product.brand?.name || 'Unknown',
@@ -113,15 +119,16 @@ const AddProductFromInventoryScreen: React.FC = () => {
 const AddProductFromCatalogScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<PostStackParamList, 'AddProductFromCatalog'>>();
-  const { returnScreen, selectedProductField } = route.params || {};
+  const { returnScreen, selectedProductField, initialProduct } = route.params || {};
 
   const handleProductSelect = (product: Product) => {
     const nameParts = product.name.split(' ');
     const brand = nameParts.length > 1 ? nameParts[0] : undefined;
     const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
     
-    // Navigate back to CreateBenchmarkPostScreen with selected product
+    // Navigate back to CreateBenchmarkPostScreen with selected product and preserve initial product
     navigation.navigate(returnScreen as any, {
+      product: initialProduct,
       selectedProduct: {
         id: product.id,
         name: productName,
@@ -189,6 +196,10 @@ export const PostNavigator = () => {
       <Stack.Screen
         name="CreateUpdatePostScreen"
         component={CreateUpdatePostScreen}
+      />
+      <Stack.Screen
+        name="SelectExperienceForUpdateScreen"
+        component={SelectExperienceForUpdateScreen}
       />
       <Stack.Screen
         name="AddProductFromInventory"

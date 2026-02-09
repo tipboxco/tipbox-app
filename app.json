@@ -97,7 +97,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/icon.png",
           "color": "#000000",
           "enableBackgroundRemoteNotifications": true
         }
@@ -122,7 +122,8 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-router"
     ],
     "extra": {
       "eas": {

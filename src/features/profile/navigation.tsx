@@ -7,7 +7,8 @@ import {
   InventoryDetailScreen,
   Trust_TrusterListScreen,
   SuggestedUsersScreen,
-  CollectionsScreen
+  CollectionsScreen,
+  EditHighlightBadgesScreen,
 } from './screens';
 import { ChevronLeft } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -16,6 +17,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 export type ProfileStackParamList = {
   ProfileMain: { userId?: string } | undefined;
   ProfileEdit: undefined;
+  EditHighlightBadges: { initialBadgeIds?: string[] } | undefined;
   InventoryList: { userId: string; selectMode?: 'event'; returnScreen?: string };
   InventoryDetail: { itemId: string; userId: string };
   Collections: undefined;
@@ -61,6 +63,10 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="ProfileEdit"
         component={ProfileEditScreen}
+      />
+      <Stack.Screen
+        name="EditHighlightBadges"
+        component={EditHighlightBadgesScreen}
       />
       <Stack.Screen
         name="InventoryList"

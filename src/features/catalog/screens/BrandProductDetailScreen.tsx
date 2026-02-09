@@ -6,18 +6,15 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { CatalogStackParamList } from '../navigation';
+import type { BrandStackParamList } from '../BrandNavigator';
 import { Header } from '@/src/components/Header';
-import BrandProductInfoCard from '../components/BrandProductInfoCard';
 import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCard';
 import NewsCard from '../components/NewsCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import PostCard from '@/src/components/PostCards/PostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
-import { useSafeAreaValues, toImageSource, useBottomOffset, formatRelativeTime } from '@/src/utils';
-import { useAppStore } from '@/src/store/appStore';
-import { useUserProfile } from '@/src/features/profile/api/hooks';
+import { useSafeAreaValues, toImageSource, useBottomOffset, formatRelativeTime, isSameImageSource } from '@/src/utils';
 import { navigationService } from '@/src/services/NavigationService';
 import { 
   useBrandProductDetail, 
@@ -26,12 +23,10 @@ import {
   useBrandProductBenchmarks, 
   useBrandProductTips, 
   useBrandProductQuestions, 
-  useBrandProductNews,
-  useBrandStats,
-  useBrandCatalog
+  useBrandProductNews
 } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import type { BenchmarkCardData } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
@@ -64,8 +59,8 @@ const TABS = [
 
 type TabKey = typeof TABS[number]['key'];
 
-type BrandProductDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandProductDetailScreen'>;
-type BrandProductDetailScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandProductDetailScreen'>;
+type BrandProductDetailScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'BrandProductDetailScreen'>;
+type BrandProductDetailScreenRouteProp = RouteProp<BrandStackParamList, 'BrandProductDetailScreen'>;
 
 // Mapping functions
 const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
@@ -119,45 +114,42 @@ const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
   };
 };
 
-const mapExperienceToCardData = (item: BrandFeedPost): ReviewCardData | null => {
+const mapExperienceToCardData = (item: BrandFeedPost): ExperiencePostCardData | null => {
   if (item.type !== 'experience') {
     return null;
   }
   
-  const postData = item.data as import('@/src/types/ReviewsCard').ReviewApiItem;
-  
-  // Data validation
-  if (!postData || !postData.user || !postData.contextData) {
-    return null;
-  }
-  
-  const avatarSource = toImageSource(postData.user.avatar)!;
-  const productImage = postData.contextData?.image
-    ? toImageSource(postData.contextData.image)
-    : undefined;
+  const postData = item.data as import('@/src/types/ExperienceCard').ExperiencePostApiItem;
 
-  // content array kontrolü - undefined, null veya string olabilir
-  // Backend'den experience type'ında content array olarak gelmeli
-  const content: ReviewCardContentItem[] = 
-    postData.content && Array.isArray(postData.content) && postData.content.length > 0
-      ? postData.content
-          .filter((contentItem) => contentItem != null) // null/undefined item'ları filtrele
-          .map((contentItem) => {
-            const ratingValue = contentItem?.rating || 0;
-        const stars = Math.floor(ratingValue / 20);
-        
-        return {
-          tag: {
-            icon: 'tag' as const,
-                title: contentItem?.title || '',
-          },
-              text: contentItem?.content || '',
-          rating: Array(5)
-            .fill(false)
-            .map((_, index) => index < stars),
-        };
-      })
+  if (!postData || !postData.user) return null;
+  const rawProduct = (postData as any).contextData?.product ?? postData.contextData ?? (postData as any).product;
+  if (!rawProduct) return null;
+
+  const avatarSource = toImageSource(postData.user.avatar)!;
+  const productImage = rawProduct?.image ? toImageSource(rawProduct.image) : undefined;
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+
+  const contentBlocks = postData.experienceContent ?? (Array.isArray(postData.content) ? postData.content : []);
+  const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
+    ? contentBlocks
+        .filter((contentItem) => contentItem != null)
+        .map((contentItem) => {
+          const ratingVal = contentItem?.rating ?? 0;
+          const stars = ratingVal <= 5 ? Math.min(5, Math.max(0, Math.round(ratingVal))) : Math.floor(ratingVal / 20);
+          return {
+            tag: {
+              icon: (contentItem?.title?.toLowerCase?.().includes('product') || contentItem?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
+              title: contentItem?.title || '',
+            },
+            text: contentItem?.content || '',
+            rating: Array(5).fill(false).map((_, index) => index < stars),
+          };
+        })
     : [];
+
+  const subNameRaw = rawProduct?.subName ?? '';
+  const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
+  const tags = Array.isArray(postData.tags) ? postData.tags : [];
 
   return {
     id: postData.id,
@@ -166,20 +158,23 @@ const mapExperienceToCardData = (item: BrandFeedPost): ReviewCardData | null => 
       name: postData.user.name,
       title: postData.user.title,
       avatar: avatarSource,
-      action: 'wrote a review',
+      action: (postData.status === 'own' || rawProduct?.isOwned) ? 'Added new product and experiences to inventory!' : undefined,
     },
     contextData: {
-      id: postData.contextData?.id || '',
-      name: postData.contextData?.name || '',
-      subName: postData.contextData?.subName || '',
-      image: productImage,
-      isOwned: postData.contextData?.isOwned,
+      id: rawProduct?.id || '',
+      name: rawProduct?.name || '',
+      subName,
+      image: productImage ?? defaultPostImage,
+      isOwned: postData.status === 'own' || rawProduct?.isOwned,
     },
     content,
-    tags: postData.tags || [],
-    images: postData.images
-      ?.map((img: string) => toImageSource(img))
-      .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+    tags,
+    images: (() => {
+      const mapped = postData.images
+        ?.map((img: string) => toImageSource(img))
+        .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+      return mapped.filter((img: any) => !isSameImageSource(img, productImage ?? defaultPostImage));
+    })(),
     stats: postData.stats,
     createdAt: postData.createdAt,
   };
@@ -231,7 +226,7 @@ const mapTipsToCardData = (item: FeedApiItem | BrandFeedPost): TipsCardData | nu
   }
   
   // Backend'den contextData veya product gelebilir
-  const contextData = postData.contextData || postData.product;
+  const contextData = postData.contextData || (postData as any).product;
   if (!contextData || !contextData.id) {
     if (__DEV__) {
       console.log('[mapTipsToCardData] Missing contextData or product:', postData);
@@ -351,7 +346,7 @@ const mapQuestionToCardData = (item: FeedApiItem | BrandFeedPost): QuestionCardD
 
 type MappedPost = 
   | { type: 'post'; id: string; data: PostCardData }
-  | { type: 'experience'; id: string; data: ReviewCardData }
+  | { type: 'experience'; id: string; data: ExperiencePostCardData }
   | { type: 'benchmark'; id: string; data: BenchmarkCardData }
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };
@@ -866,25 +861,12 @@ const BrandProductDetailScreen: React.FC = () => {
 
   // API hooks - Brand product detail
   const { data: productDetail, isLoading: isLoadingProduct } = useBrandProductDetail(brandId, productId);
-  const { data: brandStats } = useBrandStats(brandId);
-  const { data: brandCatalog } = useBrandCatalog(brandId);
-  const { user } = useAppStore();
-  const { data: userProfile } = useUserProfile(user?.id);
     
     // Seçilen product bilgisi (navigation'dan gelen veya API'den gelen)
     const displayProductName = productDetail?.name || initialProductName || '';
     const displayProductImage = productDetail?.image 
         ? toImageSource(productDetail.image) 
         : (initialProductImage || require('@/assets/events/card-icon.png'));
-  
-  // Brand bilgisi
-  const brandName = brandCatalog?.name || productDetail?.brand?.name;
-  const brandImage = brandCatalog?.logo || productDetail?.brand?.image;
-  const userPoints = brandStats?.totalPoints;
-  
-  // User bilgisi
-  const userName = userProfile?.name || user?.name || 'User';
-  const userAvatar = userProfile?.avatar || user?.avatar;
 
     // Active tab state
     const [activeTab, setActiveTab] = useState<TabKey>('feed');
@@ -930,7 +912,7 @@ const BrandProductDetailScreen: React.FC = () => {
     }, []);
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
             <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 {/* Header */}
                 <Header
@@ -939,92 +921,48 @@ const BrandProductDetailScreen: React.FC = () => {
                     onBackPress={() => navigation.goBack()}
                 />
 
-        {/* Product Info Card and User Points Card */}
-                    <Box px="$4" pt="$4" pb="$3">
-          <HStack space="sm" alignItems="stretch">
-            {/* Product Info Card */}
-            {(displayProductName || initialProductName) && (
-              <Box flex={1}>
-                        <BrandProductInfoCard
-                            productName={displayProductName}
-                            productImage={displayProductImage}
-                  brandName={brandName}
-                  brandImage={brandImage}
-                        />
+        {/* Product Name */}
+                    <Box px="$3" pt="$2" pb="$2">
+                        {(displayProductName || initialProductName) && (
+                            <Box
+                                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                                borderWidth={1}
+                                borderColor="#E9E9E9"
+                                borderRadius={10}
+                                px="$2.5"
+                                py="$2"
+                            >
+                                <HStack space="sm" alignItems="center">
+                                    {displayProductImage && (
+                                        <Box
+                                            width={44}
+                                            height={44}
+                                            borderRadius={8}
+                                            overflow="hidden"
+                                            bg="#F6F6F6"
+                                        >
+                                            <Image
+                                                source={displayProductImage}
+                                                alt={displayProductName}
+                                                style={{ width: 44, height: 44 }}
+                                                resizeMode="cover"
+                                            />
+                                        </Box>
+                                    )}
+                                    <Box flex={1}>
+                                        <Text
+                                            color={isDark ? '#FFFFFF' : '#000000'}
+                                            fontSize="$sm"
+                                            fontWeight="$semibold"
+                                            numberOfLines={2}
+                                        >
+                                            {displayProductName}
+                                        </Text>
+                                    </Box>
+                                </HStack>
+                            </Box>
+                        )}
                     </Box>
-                )}
-
-            {/* User Points Card */}
-            {userPoints !== undefined && (
-              <Box
-                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                borderRadius={10}
-                px='$3'
-                py='$2'
-                minWidth={80}
-                alignItems="center"
-                justifyContent="center"
-              >
-                <VStack alignItems="center" space="xs">
-                  {/* User Info - Üstte */}
-                  <HStack alignItems="center" space="xs">
-                    {userAvatar && (
-                      <Box
-                        width={20}
-                        height={20}
-                        borderRadius={10}
-                        bg="#F6F6F6"
-                        alignItems="center"
-                        justifyContent="center"
-                        overflow="hidden"
-                      >
-                        <Image
-                          source={toImageSource(userAvatar) || require('@/assets/avatar/default-useravatar.png')}
-                          alt={userName}
-                          style={{
-                            width: 20,
-                            height: 20,
-                          }}
-                          resizeMode="cover"
-                        />
-                      </Box>
-                    )}
-                    <Text
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                      fontSize={9}
-                      fontWeight="$semibold"
-                      numberOfLines={1}
-                    >
-                      {userName}
-                    </Text>
-                  </HStack>
-
-                  {/* Points - Altta */}
-                  <VStack alignItems="center" space={0}>
-                    <Text
-                      color="#3CA241"
-                      fontSize={14}
-                      fontWeight="$bold"
-                      lineHeight={16}
-                    >
-                      {userPoints.toLocaleString()}
-                    </Text>
-                    <Text
-                      color="#3CA241"
-                      fontSize={10}
-                      fontWeight="$bold"
-                      lineHeight={12}
-                    >
-                      Points
-                    </Text>
-                  </VStack>
-                </VStack>
-              </Box>
-            )}
-          </HStack>
-        </Box>
 
                 {/* Tab Bar */}
                 <TabsBar 

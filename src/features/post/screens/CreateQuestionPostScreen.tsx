@@ -1,5 +1,5 @@
-import React from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -77,6 +77,7 @@ export const CreateQuestionPostScreen = () => {
   const toast = useToast();
   const createQuestionPostMutation = useCreateQuestionPost();
   const { user, walletBalance: storeBalance } = useAppStore();
+  const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
   
   // Realtime wallet balance - Store'dan al, yoksa API'den getir
   const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
@@ -94,6 +95,17 @@ export const CreateQuestionPostScreen = () => {
   const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
   const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
+  
+  // Debug: Log boost options state
+  React.useEffect(() => {
+    console.log('[CreateQuestionPostScreen] 🔍 Boost Options State:', {
+      isLoadingBoostOptions,
+      boostOptionsCount: boostOptions.length,
+      boostOptions: boostOptions.map(opt => ({ id: opt.id, title: opt.title, amount: opt.amount })),
+      hasError: !!boostOptionsError,
+      error: boostOptionsError?.message,
+    });
+  }, [boostOptions, isLoadingBoostOptions, boostOptionsError]);
   
   // Debug: Log context values
   React.useEffect(() => {
@@ -140,6 +152,7 @@ export const CreateQuestionPostScreen = () => {
 
   const handleImagePicker = async () => {
     try {
+      setIsImagePickerLoading(true);
       const currentImages = getValues('selectedImages') || [];
       const remainingSlots = 10 - currentImages.length;
       
@@ -184,6 +197,8 @@ export const CreateQuestionPostScreen = () => {
         description: errorMessage,
         action: 'error',
       });
+    } finally {
+      setIsImagePickerLoading(false);
     }
   };
 
@@ -191,6 +206,7 @@ export const CreateQuestionPostScreen = () => {
   const getBoostOptionId = (selectedBoost: string): string | null => {
     // Return null if boost option is not selected or is empty string
     if (!selectedBoost || selectedBoost.trim() === '') {
+      console.warn('[CreateQuestionPostScreen] No boost option selected');
       return null;
     }
     
@@ -201,7 +217,7 @@ export const CreateQuestionPostScreen = () => {
     }
     
     // Return null if not found (won't be sent to backend)
-    console.warn('[CreateQuestionPostScreen] Boost option not found:', selectedBoost);
+    console.warn('[CreateQuestionPostScreen] Boost option not found in list:', selectedBoost);
     return null;
   };
 
@@ -255,6 +271,13 @@ export const CreateQuestionPostScreen = () => {
       description: data.questionText,
       selectedBoostOptionId: selectedBoostOptionId,
       imagesCount: data.selectedImages?.length || 0,
+    });
+    
+    console.log('[CreateQuestionPostScreen] 📋 Context Details:', {
+      contextType,
+      contextId,
+      productInfoSnapshot,
+      apiContextType,
     });
     
     try {
@@ -419,6 +442,12 @@ export const CreateQuestionPostScreen = () => {
 
   // Check if share button should be enabled (form is valid)
   const isShareEnabled = formState.isValid;
+  const isShareLoading = createQuestionPostMutation.isPending;
+
+  const handleSharePress = () => {
+    Keyboard.dismiss();
+    methods.handleSubmit(onSubmit)();
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -436,15 +465,16 @@ export const CreateQuestionPostScreen = () => {
             onLeftActionPress={handleBackPress}
             rightButton={{
               text: 'Share',
-              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
-              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
               paddingX: 10,
               paddingY: 10,
-              onPress: methods.handleSubmit(onSubmit),
+              onPress: handleSharePress,
+              loading: isShareLoading,
             }}
           />
 
@@ -481,6 +511,7 @@ export const CreateQuestionPostScreen = () => {
                   label="Images"
                   maxImages={10}
                   onImagePicker={handleImagePicker}
+                  isLoading={isImagePickerLoading}
                 />
               </VStack>
 

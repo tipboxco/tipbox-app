@@ -10,6 +10,8 @@ import {
     TextareaInput,
     Image
 } from '@gluestack-ui/themed';
+import { ActivityIndicator } from 'react-native';
+import Feather from '@expo/vector-icons/Feather';
 import {
   TagIcon,
   CubeIcon,
@@ -44,6 +46,7 @@ interface StepThreeScreenProps {
     selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any } | null;
     fromInventory?: boolean;
     experienceOption?: 'own' | 'tried';
+    isImagePickerLoading?: boolean;
 }
 
 export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
@@ -66,6 +69,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
     selectedProduct,
     fromInventory,
     experienceOption,
+    isImagePickerLoading = false,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -88,7 +92,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
         return (
             <VStack space="xs">
                 <Text
-                    fontSize={11}
+                    fontSize={14}
                     fontWeight="$semibold"
                     color={isDark ? '$textDark50' : '#3B3B3B'}
                 >
@@ -160,7 +164,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                 <HStack alignItems="center" space="xs">
                                     <TagIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
                                     <Text
-                                        fontSize={11}
+                                        fontSize={14}
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#3B3B3B'}
                                     >
@@ -188,8 +192,8 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     placeholder="Describe your price and shopping experience..."
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '$textDark50' : '#000000'}
-                                    fontSize={10}
-                                    lineHeight={14}
+                                    fontSize={14}
+                                    lineHeight={20}
                                     value={priceExperienceText}
                                     onChangeText={editingField === 'price' ? onPriceExperienceTextChange : undefined}
                                     editable={editingField === 'price'}
@@ -236,7 +240,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                 <HStack alignItems="center" space="xs">
                                     <CubeIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
                                     <Text
-                                        fontSize={11}
+                                        fontSize={14}
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#3B3B3B'}
                                     >
@@ -264,8 +268,8 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     placeholder="Describe your product and usage experience..."
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '$textDark50' : '#000000'}
-                                    fontSize={10}
-                                    lineHeight={14}
+                                    fontSize={14}
+                                    lineHeight={20}
                                     value={productExperienceText}
                                     onChangeText={editingField === 'product' ? onProductExperienceTextChange : undefined}
                                     editable={editingField === 'product'}
@@ -310,7 +314,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     py={3}
                                 >
                                     <Text
-                                        fontSize={8}
+                                        fontSize={12}
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#000000'}
                                     >
@@ -326,7 +330,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                 <VStack px={16} space="xs" opacity={isEditing ? 0.3 : 1} pointerEvents={isEditing ? 'none' : 'auto'}>
                     <Text
                         color={isDark ? '$textDark400' : '#A3A3A3'}
-                        fontSize={10}
+                        fontSize={14}
                         fontWeight="$bold"
                     >
                         Images
@@ -374,7 +378,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
 
                         {/* Add Image Button */}
                         {selectedImages.length < 10 && (
-                            <Pressable onPress={onImagePicker}>
+                            <Pressable onPress={onImagePicker} disabled={isImagePickerLoading}>
                                 <Box
                                     width={64}
                                     height={64}
@@ -385,12 +389,17 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     borderRadius={5}
                                     justifyContent="center"
                                     alignItems="center"
+                                    opacity={isImagePickerLoading ? 0.5 : 1}
                                 >
-                                    <Feather
-                                        name="plus"
-                                        size={24}
-                                        color={isDark ? '#C1BEBF' : '#C1BEBF'}
-                                    />
+                                    {isImagePickerLoading ? (
+                                        <ActivityIndicator size="small" color={isDark ? '#D0F205' : '#829905'} />
+                                    ) : (
+                                        <Feather
+                                            name="plus"
+                                            size={24}
+                                            color={isDark ? '#C1BEBF' : '#C1BEBF'}
+                                        />
+                                    )}
                                 </Box>
                             </Pressable>
                         )}

@@ -161,6 +161,8 @@ const NewsDetailScreenComponent: React.FC = () => {
     openBottomSheet(
       <NewsCommentsBottomSheet
         newsId={newsId}
+        brandId={brandId}
+        productId={productId}
         comments={comments}
         isLoadingComments={isLoadingComments}
         onCommentSubmit={handleCommentSubmit}
@@ -361,6 +363,8 @@ NewsDetailScreen.displayName = 'NewsDetailScreen';
 // News Comments Bottom Sheet Component
 interface NewsCommentsBottomSheetProps {
   newsId: string;
+  brandId?: string;
+  productId?: string;
   comments: NewsComment[];
   isLoadingComments: boolean;
   onCommentSubmit: (comment: string) => void;
@@ -369,6 +373,8 @@ interface NewsCommentsBottomSheetProps {
 
 const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   newsId,
+  brandId,
+  productId,
   comments,
   isLoadingComments,
   onCommentSubmit,
@@ -386,10 +392,6 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   const updateCommentMutation = useUpdateComment();
   const currentUserId = useAppStore((state) => state.user?.id);
   const queryClient = useQueryClient();
-  
-  // Route params'dan brandId ve productId al (NewsDetailScreen'den geçirilmiş olmalı)
-  const route = useRoute<NewsDetailScreenRouteProp>();
-  const { brandId, productId } = route.params || {};
   
   // Auto focus input when bottom sheet opens
   useEffect(() => {

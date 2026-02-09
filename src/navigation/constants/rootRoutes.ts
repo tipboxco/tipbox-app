@@ -23,6 +23,7 @@ export const ROOT_ROUTES = {
   BOOKMARKS: 'Bookmarks',
   MARKETPLACE: 'Marketplace',
   EVENT: 'Event',
+  BRAND: 'Brand',
   MESSAGE_DETAIL: 'MessageDetail',
   SUPPORT_MESSAGE_DETAIL: 'SupportMessageDetail',
   PRODUCT_SELECT: 'ProductSelect',

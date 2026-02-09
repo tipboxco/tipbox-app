@@ -9,15 +9,60 @@ import type { NotificationSetting, UpdateNotificationSettingsRequest, UpdateNoti
  */
 export const getNotificationSettings = async (): Promise<NotificationSetting[]> => {
   try {
-    const response = await apiService.getClient().get<NotificationSetting[]>(
+    const response = await apiService.getClient().get<any>(
       '/users/settings/notifications'
     );
-    // Ensure response.data is an array, otherwise return an empty array
-    if (!Array.isArray(response.data)) {
-      console.warn('[getNotificationSettings] API returned non-array data, returning empty array.');
+    
+    // Handle different response formats
+    let settingsArray: NotificationSetting[] = [];
+    
+    if (Array.isArray(response.data)) {
+      // Direct array response
+      settingsArray = response.data;
+    } else if (response.data && typeof response.data === 'object') {
+      // Object response - check for common patterns
+      if (Array.isArray(response.data.data)) {
+        // Wrapped in { data: [...] }
+        settingsArray = response.data.data;
+      } else if (Array.isArray(response.data.settings)) {
+        // Wrapped in { settings: [...] }
+        settingsArray = response.data.settings;
+      } else if (response.data.success && Array.isArray(response.data.data)) {
+        // Wrapped in { success: true, data: [...] }
+        settingsArray = response.data.data;
+      } else {
+        // Log the actual response format for debugging
+        if (__DEV__) {
+          console.warn('[getNotificationSettings] API returned unexpected format:', {
+            type: typeof response.data,
+            isArray: Array.isArray(response.data),
+            keys: response.data ? Object.keys(response.data) : [],
+            sample: JSON.stringify(response.data).substring(0, 200),
+          });
+        }
+        return [];
+      }
+    } else {
+      // Not an array or object
+      if (__DEV__) {
+        console.warn('[getNotificationSettings] API returned non-array/non-object data:', {
+          type: typeof response.data,
+          value: response.data,
+        });
+      }
       return [];
     }
-    return response.data;
+    
+    // Validate array items have required fields
+    const validSettings = settingsArray.filter((item: any) => 
+      item && typeof item.notificationCode === 'number' && typeof item.value === 'boolean'
+    );
+    
+    if (validSettings.length !== settingsArray.length && __DEV__) {
+      console.warn('[getNotificationSettings] Some items were filtered out due to invalid format');
+    }
+    
+    return validSettings;
   } catch (error: any) {
     console.error('[getNotificationSettings] API Error:', {
       url: '/users/settings/notifications',

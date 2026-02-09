@@ -43,9 +43,9 @@ const BookMarksScreen = () => {
       ? item.content.map((contentItem) => contentItem.content || '').join(' ')
       : (item.content || '');
 
-    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
-    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+    const images = mappedImages;
 
     // contextData.image için fallback
     const contextImage = item.contextData?.image
@@ -137,6 +137,7 @@ const BookMarksScreen = () => {
         .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
       stats: item.stats,
       tag: item.tag,
+    benefitCategory: item.benefitCategory,
       createdAt: item.createdAt,
     };
   };
@@ -160,12 +161,11 @@ const BookMarksScreen = () => {
       product,
     };
 
-    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+    // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     const mappedImages = item.images
       ?.map((img) => toImageSource(img))
       .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+    const images = mappedImages;
 
     return {
       id: item.id,
