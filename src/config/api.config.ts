@@ -1,6 +1,6 @@
 // Environment variable'dan API_BASE_URL al, yoksa default kullan
 // React Native'de @env modülü ile environment variable'lar okunur
-let baseUrl = 'http://10.5.51.157:3000'
+let baseUrl = 'https://api-tipbox.exportergo.com';
 
 try {
   // @env modülünden API_BASE_URL'i oku

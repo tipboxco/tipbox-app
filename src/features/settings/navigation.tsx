@@ -30,7 +30,7 @@ export type SettingsStackParamList = {
   PrivacySettings: undefined;
   SupportSettings: undefined;
   PaymentAndSubscription: undefined;
-  CannyWebView: undefined;
+  CannyWebView: { mode?: 'feedback'; url?: string; title?: string } | undefined;
 };
 
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
