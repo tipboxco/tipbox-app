@@ -8,17 +8,23 @@ import {
   Image,
   Dimensions,
   type ImageSourcePropType,
+  Alert,
 } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   interpolate,
+  withSequence,
+  Easing,
+  runOnJS,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { mediaService } from '@/src/services/MediaService';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface CollectionCardModalProps {
   visible: boolean;
@@ -44,21 +50,34 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
   const isDark = colorMode === 'dark';
   const [isDownloading, setIsDownloading] = useState(false);
   const flipRotation = useSharedValue(0);
+  const cardScale = useSharedValue(1);
 
   // Front side animation
   const frontAnimatedStyle = useAnimatedStyle(() => {
     const rotateY = interpolate(flipRotation.value, [0, 180], [0, 180]);
+    const opacity = interpolate(flipRotation.value, [0, 90, 180], [1, 0, 0]);
     return {
-      transform: [{ perspective: 1000 }, { rotateY: `${rotateY}deg` }],
+      transform: [
+        { perspective: 1500 },
+        { rotateY: `${rotateY}deg` },
+        { scale: cardScale.value },
+      ],
+      opacity,
       backfaceVisibility: 'hidden',
     };
   });
 
   // Back side animation
   const backAnimatedStyle = useAnimatedStyle(() => {
-    const rotateY = interpolate(flipRotation.value, [0, 180], [180, 360]);
+    const rotateY = interpolate(flipRotation.value, [0, 180, 360], [180, 360, 360]);
+    const opacity = interpolate(flipRotation.value, [0, 90, 180], [0, 0, 1]);
     return {
-      transform: [{ perspective: 1000 }, { rotateY: `${rotateY}deg` }],
+      transform: [
+        { perspective: 1500 },
+        { rotateY: `${rotateY}deg` },
+        { scale: cardScale.value },
+      ],
+      opacity,
       backfaceVisibility: 'hidden',
     };
   });
@@ -74,20 +93,66 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
     // TODO: Implement reminder functionality
   };
 
+  const performDownload = async () => {
+    try {
+      if (!badge.icon) {
+        Alert.alert('Hata', 'İndirilecek badge resmi bulunamadı');
+        setIsDownloading(false);
+        return;
+      }
+
+      // MediaService now handles both local require() and remote URLs
+      const result = await mediaService.saveImageToGallery(
+        badge.icon,
+        `${badge.title.replace(/\s+/g, '_')}_badge.png`
+      );
+
+      if (result.success) {
+        Alert.alert('Başarılı!', 'Badge galerinize kaydedildi');
+      } else {
+        Alert.alert('Hata', result.error || 'Badge kaydedilemedi');
+      }
+    } catch (error) {
+      console.error('[CollectionCardModal] Download error:', error);
+      Alert.alert('Hata', 'Badge indirme sırasında bir hata oluştu');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const setBackSide = () => {
+    'worklet';
+    flipRotation.value = 180;
+  };
+
   const handleDownload = () => {
     if (!isCompleted || isDownloading) return;
 
     console.log('[CollectionCardModal] Download badge pressed');
     setIsDownloading(true);
 
-    // Flip animation (0 to 180 degrees)
-    flipRotation.value = withTiming(180, { duration: 600 });
+    // Scale down slightly
+    cardScale.value = withTiming(0.95, { duration: 100 });
 
-    // Simulate download
-    setTimeout(() => {
-      setIsDownloading(false);
-      console.log('[CollectionCardModal] Badge downloaded successfully');
-    }, 2000);
+    // Scale back to normal
+    cardScale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) });
+
+    // 360 degree flip animation - stays on back side
+    flipRotation.value = withTiming(
+      360,
+      {
+        duration: 1200,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+      },
+      (finished) => {
+        if (finished) {
+          // Set to back side after animation
+          setBackSide();
+          // Start download
+          runOnJS(performDownload)();
+        }
+      }
+    );
   };
 
   const handleSeeRewardPool = () => {
@@ -226,7 +291,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
             </Pressable>
           </Animated.View>
 
-          {/* BACK SIDE - Downloaded Badge Card */}
+          {/* BACK SIDE - Badge with Blur Background */}
           <Animated.View
             style={[
               styles.container,
@@ -234,37 +299,65 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
               backAnimatedStyle,
             ]}
           >
-            <Pressable onPress={(e) => e.stopPropagation()}>
-              <View style={styles.backContent}>
-                {/* Badge Image (Larger, Centered) */}
-                <View style={styles.backBadgeContainer}>
-                  {badge.icon ? (
+            <Pressable 
+              onPress={(e) => e.stopPropagation()}
+              style={styles.backContainer}
+            >
+              {/* Blur Background with Badge Image */}
+              <View style={styles.backImageWrapper}>
+                {badge.icon ? (
+                  <>
+                    {/* Background Image (Blurred) */}
                     <Image
                       source={
                         typeof badge.icon === 'string'
                           ? { uri: badge.icon }
                           : badge.icon
                       }
-                      style={styles.backBadgeImage}
+                      style={styles.backBackgroundImage}
                       resizeMode="cover"
+                      blurRadius={50}
                     />
-                  ) : (
-                    <View style={styles.backBadgePlaceholder}>
-                      <Feather name="award" size={120} color="#C1BEBF" />
+                    
+                    {/* BlurView Overlay */}
+                    <BlurView
+                      intensity={80}
+                      tint={isDark ? 'dark' : 'light'}
+                      style={styles.blurOverlay}
+                    />
+
+                    {/* Main Badge Image (Centered, Sharp) */}
+                    <View style={styles.backBadgeContainer}>
+                      <Image
+                        source={
+                          typeof badge.icon === 'string'
+                            ? { uri: badge.icon }
+                            : badge.icon
+                        }
+                        style={styles.backBadgeImage}
+                        resizeMode="contain"
+                      />
                     </View>
-                  )}
-                </View>
+                  </>
+                ) : (
+                  <View style={styles.backBadgePlaceholder}>
+                    <Feather name="award" size={120} color="#C1BEBF" />
+                  </View>
+                )}
+              </View>
 
-                {/* Badge Info */}
-                <View style={styles.backInfo}>
-                  <Text style={styles.backTitle}>{badge.title}</Text>
-                  <Text style={styles.backDescription}>{badge.description}</Text>
-                </View>
+              {/* Badge Info at Bottom */}
+              <View style={styles.backInfo}>
+                <Text style={styles.backTitle}>{badge.title}</Text>
+                <Text style={styles.backSubtitle}>Completed Badge</Text>
+              </View>
 
-                {/* Badge Number (Bottom Right) */}
-                <View style={styles.badgeNumber}>
-                  <Feather name="award" size={40} color="rgba(255, 255, 255, 0.1)" />
-                </View>
+              {/* Decorative Elements */}
+              <View style={styles.backTopLeftDecor}>
+                <Feather name="award" size={24} color="rgba(255, 255, 255, 0.15)" />
+              </View>
+              <View style={styles.backBottomRightDecor}>
+                <Text style={styles.badgeIdText}>#{badge.id}</Text>
               </View>
             </Pressable>
           </Animated.View>
@@ -277,23 +370,28 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   flipContainer: {
     width: SCREEN_WIDTH - 48,
     maxWidth: 400,
+    height: 550,
     position: 'relative',
   },
   container: {
     width: '100%',
-    borderRadius: 20,
+    height: '100%',
+    borderRadius: 24,
     paddingVertical: 24,
     paddingHorizontal: 20,
+    position: 'absolute',
+    overflow: 'hidden',
   },
   contentWrapper: {
     width: '100%',
+    height: '100%',
     position: 'relative',
   },
   closeButtonTop: {
@@ -320,60 +418,10 @@ const styles = StyleSheet.create({
     borderColor: '#E9E9E9',
     marginBottom: 16,
   },
-  backSide: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#2A2A2A',
-    minHeight: 500,
-  },
-  backContent: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    position: 'relative',
-  },
-  backBadgeContainer: {
-    width: 240,
-    height: 240,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    marginBottom: 32,
-  },
-  backBadgeImage: {
-    width: '100%',
-    height: '100%',
-  },
-  backBadgePlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backInfo: {
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-  },
-  backTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFF',
-    textAlign: 'center',
-  },
-  backDescription: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  badgeNumber: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
+  reminderText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
   },
   content: {
     alignItems: 'center',
@@ -450,11 +498,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reminderText: {
-    fontSize: 13,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
   rewardButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -469,6 +512,109 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#8E8E93',
+  },
+
+  // BACK SIDE STYLES
+  backSide: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#1A1A1A',
+  },
+  backContainer: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  backImageWrapper: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  backBackgroundImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  backBadgeContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 200,
+    height: 200,
+    marginTop: -100,
+    marginLeft: -100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backBadgeImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  backBadgePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  backInfo: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    gap: 4,
+  },
+  backTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFF',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  backSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  backTopLeftDecor: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+  },
+  backBottomRightDecor: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+  },
+  badgeIdText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.3)',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
 
