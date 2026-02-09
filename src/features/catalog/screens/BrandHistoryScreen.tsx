@@ -1,314 +1,392 @@
-import React from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
+import { ActivityIndicator, View, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
-import { ActivityIndicator } from 'react-native';
+import PagerView from 'react-native-pager-view';
+import {
+  ScrollView,
+  VStack,
+  HStack,
+  Text,
+  Image,
+  Box,
+  Pressable,
+} from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { CatalogStackParamList } from '../navigation';
+import type { BrandStackParamList } from '../BrandNavigator';
+import { Header } from '@/src/components/Header';
+import PostCard from '@/src/components/PostCards/PostCard';
+import SurveyCard from '../components/SurveyCard';
+import { toImageSource } from '@/src/utils';
+import { useBrandHistory, useBrandFeed, useBrandSurveys } from '../api/hooks';
+import type { BrandFeedPost } from '../types';
+import type { PostCardData } from '@/src/types/PostCard';
+import { CardType } from '@/src/types/common';
 import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
-import { Header } from '@/src/components/Header';
-import {
-  DocumentTextIcon,
-  ChatBubbleLeftIcon,
-  CalendarIcon,
-} from 'react-native-heroicons/outline';
-import BrandInfoCard from '../components/BrandInfoCard';
-import PointsHistoryCard from '../components/PointsHistoryCard';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
-import { useBrandHistory } from '../api/hooks';
 
-type BrandHistoryScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandHistoryScreen'>;
-type BrandHistoryScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandHistoryScreen'>;
+type TabKey = 'posts' | 'polls' | 'badges';
+
+const TAB_KEYS: TabKey[] = ['posts', 'polls', 'badges'];
+
+type BrandHistoryScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'BrandHistoryScreen'>;
+type BrandHistoryScreenRouteProp = RouteProp<BrandStackParamList, 'BrandHistoryScreen'>;
+
+const TAB_LABELS: Record<TabKey, string> = {
+  posts: 'Posts',
+  polls: 'Polls',
+  badges: 'Badges',
+};
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const BrandHistoryScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandHistoryScreenNavigationProp>();
   const route = useRoute<BrandHistoryScreenRouteProp>();
-  const bottomInset = useSafeAreaValues('bottom');
-  
+  const pagerRef = useRef<PagerView>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const activeTab = TAB_KEYS[currentPage] ?? 'posts';
+
   const { brandId } = route.params;
 
-  // API hook
-  const { data: brandHistory, isLoading, error, refetch } = useBrandHistory(brandId);
-  
-  // 🔍 DEBUG: Brand history durumunu logla
-  React.useEffect(() => {
-    console.log('[BrandHistoryScreen] 📋 Brand History Durumu:', {
-      brandId,
-      isLoading,
-      hasError: !!error,
-      hasData: !!brandHistory,
-      data: brandHistory ? {
-        brandId: brandHistory.brandId,
-        name: brandHistory.name,
-        totalPoints: brandHistory.totalPoints,
-        stats: brandHistory.stats,
-        badgesCount: brandHistory.badges?.length || 0,
-        pointsHistoryCount: brandHistory.pointsHistory?.length || 0,
-      } : null,
-    });
-    
-    if (error) {
-      console.error('[BrandHistoryScreen] ❌ Error:', error);
-    }
-    
-    if (brandHistory) {
-      console.log('[BrandHistoryScreen] ✅ Data loaded:', {
-        brandId: brandHistory.brandId,
-        name: brandHistory.name,
-        totalPoints: brandHistory.totalPoints,
-        stats: brandHistory.stats,
-        badges: brandHistory.badges,
-        pointsHistory: brandHistory.pointsHistory,
+  const handleTabPress = useCallback((index: number) => {
+    pagerRef.current?.setPage(index);
+  }, []);
+
+  const handlePageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
+    setCurrentPage(e.nativeEvent.position);
+  }, []);
+
+  const { data: brandHistory, isLoading: isHistoryLoading } = useBrandHistory(brandId);
+  const { data: feedData, isLoading: isFeedLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandFeed(brandId, 20);
+  const { data: surveysData, isLoading: isSurveysLoading, fetchNextPage: fetchSurveysNextPage, hasNextPage: hasSurveysNextPage, isFetchingNextPage: isSurveysFetchingNextPage } = useBrandSurveys(brandId, 20);
+
+  const posts = useMemo(() => {
+    if (!feedData?.pages) return [];
+    const allPosts: PostCardData[] = [];
+    feedData.pages.forEach((page) => {
+      const pagePosts = page.items || page.posts || [];
+      pagePosts.forEach((item: BrandFeedPost) => {
+        if (item.type !== 'post') return;
+        const postData = item.data as import('@/src/features/profile/types').ProfilePost;
+        if (!postData?.id || !postData?.user?.id) return;
+
+        const avatarSource = toImageSource(postData.user.avatar) || require('@/assets/avatar/default-useravatar.png');
+        const contentString = Array.isArray(postData.content)
+          ? postData.content.map((c) => c?.content || '').join(' ')
+          : (postData.content || '');
+        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+        const mappedImages = postData.images
+          ?.map((img: string) => toImageSource(img))
+          .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+        const defaultProductImage = require('@/assets/product/product_01.png');
+        let contextImage: any = defaultProductImage;
+        if (postData.contextData?.image) {
+          const mappedContextImage = toImageSource(postData.contextData.image);
+          if (mappedContextImage) contextImage = mappedContextImage;
+        }
+
+        allPosts.push({
+          id: postData.id,
+          type: 'post' as CardType,
+          user: {
+            id: postData.user.id,
+            name: postData.user.name || '',
+            title: postData.user.title || '',
+            avatar: avatarSource,
+          },
+          content: contentString,
+          images,
+          stats: {
+            likes: postData.stats?.likes || 0,
+            comments: postData.stats?.comments || 0,
+            shares: postData.stats?.shares || 0,
+            bookmarks: postData.stats?.bookmarks || 0,
+          },
+          createdAt: postData.createdAt || new Date().toISOString(),
+          contextType: postData.contextType,
+          contextData: postData.contextData
+            ? {
+                id: postData.contextData.id,
+                name: postData.contextData.name || '',
+                subName: postData.contextData.subName || '',
+                image: contextImage,
+                isOwned: postData.contextData.isOwned || false,
+              }
+            : undefined,
+        });
       });
-    }
-  }, [brandId, isLoading, error, brandHistory]);
+    });
+    return allPosts;
+  }, [feedData]);
 
+  const surveys = useMemo(() => {
+    if (!surveysData?.pages) return [];
+    const all: import('../types').Survey[] = [];
+    surveysData.pages.forEach((page) => {
+      if (page.items) all.push(...page.items);
+    });
+    return all;
+  }, [surveysData]);
 
-  return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
-      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        {/* Header */}
-        <Header
-          title="Brand History"
-          showBackButton={true}
-          onBackPress={() => navigation.goBack()}
-        />
+  const badges = brandHistory?.badges ?? [];
+  const tabBorderColor = isDark ? '#FFFFFF' : '#000000';
+  const tabInactiveColor = isDark ? '#9D9D9D' : '#9D9D9D';
 
-        <ScrollView
+  const renderTabBar = () => (
+    <HStack borderBottomWidth={1} borderColor="#E9E9E9" px="$4" mb="$2">
+      {TAB_KEYS.map((tab, index) => (
+        <Pressable
+          key={tab}
+          onPress={() => handleTabPress(index)}
           flex={1}
-          contentContainerStyle={{ paddingBottom: bottomInset }}
+          py="$3"
+          alignItems="center"
+          borderBottomWidth={2}
+          borderBottomColor={currentPage === index ? tabBorderColor : 'transparent'}
         >
-          {isLoading ? (
-            <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
-              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-              <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                Loading brand history...
-              </Text>
-            </VStack>
-          ) : error || !brandHistory ? (
-            <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
-              <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                Error loading brand history
-              </Text>
-            </VStack>
-          ) : (
-            <VStack space="md" p="$4">
-            {/* Brand Info Card */}
-            <BrandInfoCard
-              brandId={brandId}
-              onNotificationPress={() => console.log('Notification pressed')}
-              onHistoryPress={() => navigation.navigate('BrandHistoryScreen', { brandId })}
-              showPoints={true}
-              points={brandHistory.totalPoints || 0}
-            />
+          <Text
+            fontSize="$sm"
+            fontWeight={currentPage === index ? '$bold' : '$normal'}
+            color={currentPage === index ? (isDark ? '#FFFFFF' : '#000000') : tabInactiveColor}
+          >
+            {TAB_LABELS[tab]}
+          </Text>
+        </Pressable>
+      ))}
+    </HStack>
+  );
 
-          {/* Stats Row */}
-          <HStack space="md">
-            {/* Surveys */}
-            <Pressable
-              onPress={() => navigation.navigate('BrandSurveyListScreen', { brandId })}
-              flex={1}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Box
-                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                borderRadius={10}
-                p="$3"
-                alignItems="center"
-              >
-              <VStack alignItems="center" space="xs">
-                <DocumentTextIcon width={24} height={24} color="#A1A1A1" />
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize="$xs"
-                  fontWeight="$bold"
-                  textAlign="center"
-                >
-                  {brandHistory.stats?.surveys || 0}
-                </Text>
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize="$xs"
-                  fontWeight="$bold"
-                  textAlign="center"
-                >
-                  Survey
-                </Text>
-              </VStack>
-              </Box>
-            </Pressable>
+  const renderPosts = () => {
+    if (isFeedLoading) {
+      return (
+        <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+          <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
+            Loading posts...
+          </Text>
+        </VStack>
+      );
+    }
+    if (posts.length === 0) {
+      return (
+        <VStack alignItems="center" py="$8">
+          <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
+            No posts found
+          </Text>
+        </VStack>
+      );
+    }
+    return (
+      <VStack space="md" p="$4">
+        {posts.map((post) => (
+          <PostCard key={post.id} data={post} hideProduct={true} />
+        ))}
+        {isFetchingNextPage && (
+          <VStack alignItems="center" py="$4">
+            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+          </VStack>
+        )}
+      </VStack>
+    );
+  };
 
-            {/* Shares */}
-            <Pressable
-              onPress={() => navigation.navigate('BrandPostListScreen', { brandId })}
-              flex={1}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Box
-                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                borderRadius={10}
-                p="$3"
-                alignItems="center"
-              >
-              <VStack alignItems="center" space="xs">
-                <ChatBubbleLeftIcon width={24} height={24} color="#A1A1A1" />
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize="$xs"
-                  fontWeight="$bold"
-                  textAlign="center"
-                >
-                  {brandHistory.stats?.shares || 0}
-                </Text>
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize="$xs"
-                  fontWeight="$bold"
-                  textAlign="center"
-                >
-                  Share
-                </Text>
-              </VStack>
-              </Box>
-            </Pressable>
+  const renderPolls = () => {
+    if (isSurveysLoading) {
+      return (
+        <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+          <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
+            Loading surveys...
+          </Text>
+        </VStack>
+      );
+    }
+    if (surveys.length === 0) {
+      return (
+        <VStack alignItems="center" py="$8">
+          <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
+            No surveys found
+          </Text>
+        </VStack>
+      );
+    }
+    return (
+      <VStack p="$4">
+        {surveys.map((survey) => (
+          <SurveyCard
+            key={survey.id}
+            survey={survey}
+            onPress={() => navigation.navigate('SurveyScreen', { brandId })}
+          />
+        ))}
+        {isSurveysFetchingNextPage && (
+          <VStack alignItems="center" py="$4">
+            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+          </VStack>
+        )}
+      </VStack>
+    );
+  };
 
-            {/* Events */}
-            <Pressable
-              onPress={() => navigation.navigate('BrandEventsScreen', { brandId })}
-              flex={1}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Box
-                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                borderRadius={10}
-                p="$3"
-                alignItems="center"
-              >
-              <VStack alignItems="center" space="xs">
-                <CalendarIcon width={24} height={24} color="#A1A1A1" />
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize="$xs"
-                  fontWeight="$bold"
-                  textAlign="center"
-                >
-                  {brandHistory.stats?.events || 0}
-                </Text>
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize="$xs"
-                  fontWeight="$bold"
-                  textAlign="center"
-                >
-                  Event
-                </Text>
-              </VStack>
-              </Box>
-            </Pressable>
-          </HStack>
-
-          {/* Badges Section */}
-          {brandHistory.badges && brandHistory.badges.length > 0 && (
-            <Box
-              bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-              borderWidth={1}
-              borderColor="#E9E9E9"
-              borderRadius={5}
-              p="$4"
-            >
-              <Box
-                borderRadius={5}
-                p="$3.5"
-                h={130}
-              >
-                <HStack space="md" justifyContent="space-between">
-                  {brandHistory.badges.slice(0, 4).map((badge) => (
-                    <VStack key={badge.id} space="xs" alignItems="center" flex={1}>
-                      <Box
-                        w={70}
-                        h={70}
-                        borderRadius={5}
-                        borderWidth={0}
-                        overflow="hidden"
-                        justifyContent="center"
-                        alignItems="center"
-                      >
-                        <Image
-                          source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                          alt={badge.title}
-                          w={60}
-                          h={60}
-                          resizeMode="contain"
-                        />
-                      </Box>
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize="$xs"
-                        fontWeight="$bold"
-                        textAlign="center"
-                      >
-                        {badge.title}
-                      </Text>
-                    </VStack>
-                  ))}
-                </HStack>
-                <Pressable 
-                  onPress={() => {
-                    // RewardsBadgesScreen'e navigate et (Events stack içinde)
-                    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'RewardsBadges', undefined);
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
+  const renderBadges = () => {
+    if (isHistoryLoading) {
+      return (
+        <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+        </VStack>
+      );
+    }
+    if (badges.length === 0) {
+      return (
+        <VStack alignItems="center" py="$8">
+          <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
+            No badges yet
+          </Text>
+        </VStack>
+      );
+    }
+    return (
+      <Box p="$4">
+        <VStack space="lg">
+          {[0, 1].map((rowIndex) => (
+            <HStack key={rowIndex} space="md" justifyContent="flex-start">
+              {badges.slice(rowIndex * 2, rowIndex * 2 + 2).map((badge) => (
+                <VStack key={badge.id} space="xs" alignItems="center" flex={1}>
+                  <Box
+                    w={70}
+                    h={70}
+                    borderRadius={8}
+                    overflow="hidden"
+                    justifyContent="center"
+                    alignItems="center"
+                    bg={isDark ? '#1A1A1A' : '#F5F5F5'}
+                  >
+                    <Image
+                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                      alt={badge.title}
+                      w={60}
+                      h={60}
+                      resizeMode="contain"
+                    />
+                  </Box>
                   <Text
                     color={isDark ? '#FFFFFF' : '#000000'}
                     fontSize="$xs"
+                    fontWeight="$bold"
                     textAlign="center"
-                    mt="$4"
-                    fontWeight="$regular"
+                    numberOfLines={2}
                   >
-                    See More Collections
+                    {badge.title}
                   </Text>
-                </Pressable>
-              </Box>
-            </Box>
-          )}
+                </VStack>
+              ))}
+            </HStack>
+          ))}
+        </VStack>
+        <Pressable
+          onPress={() => navigationService.navigateNested(TAB_ROUTES.EVENTS, 'RewardsBadges', undefined)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          mt="$6"
+        >
+          <Text
+            color={isDark ? '#FFFFFF' : '#000000'}
+            fontSize="$sm"
+            textAlign="center"
+            fontWeight="$normal"
+          >
+            See More Collections
+          </Text>
+        </Pressable>
+      </Box>
+    );
+  };
 
-            {/* Points History Section */}
-            <VStack space="sm">
-              <Text
-                color="#9D9D9D"
-                fontSize="$sm"
-                fontWeight="$bold"
-              >
-                Points History
-              </Text>
-              {brandHistory.pointsHistory && brandHistory.pointsHistory.length > 0 ? (
-                brandHistory.pointsHistory.map((item) => (
-                  <PointsHistoryCard key={item.id} item={item} />
-                ))
-              ) : (
-                <Text fontSize="$xs" color="$textLight500" $dark-color="$textDark400" textAlign="center" py="$4">
-                  No points history found
-                </Text>
-              )}
-            </VStack>
-          </VStack>
-          )}
-        </ScrollView>
+  return (
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        <Header
+          title="Marka Geçmişim"
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+        />
+
+        {renderTabBar()}
+
+        <PagerView
+          ref={pagerRef}
+          style={styles.pagerView}
+          initialPage={0}
+          onPageSelected={handlePageSelected}
+        >
+          {/* Posts */}
+          <View key="0" style={styles.page}>
+            <ScrollView
+              style={styles.scrollPage}
+              contentContainerStyle={styles.scrollContent}
+              onScroll={({ nativeEvent }) => {
+                const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+                const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+                if (isCloseToBottom && hasNextPage && !isFetchingNextPage) fetchNextPage();
+              }}
+              scrollEventThrottle={400}
+            >
+              {renderPosts()}
+            </ScrollView>
+          </View>
+          {/* Polls */}
+          <View key="1" style={styles.page}>
+            <ScrollView
+              style={styles.scrollPage}
+              contentContainerStyle={styles.scrollContent}
+              onScroll={({ nativeEvent }) => {
+                const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+                const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+                if (isCloseToBottom && hasSurveysNextPage && !isSurveysFetchingNextPage) fetchSurveysNextPage();
+              }}
+              scrollEventThrottle={400}
+            >
+              {renderPolls()}
+            </ScrollView>
+          </View>
+          {/* Badges */}
+          <View key="2" style={styles.page}>
+            <ScrollView
+              style={styles.scrollPage}
+              contentContainerStyle={styles.scrollContent}
+            >
+              {renderBadges()}
+            </ScrollView>
+          </View>
+        </PagerView>
       </VStack>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  pagerView: {
+    flex: 1,
+    width: SCREEN_WIDTH,
+  },
+  page: {
+    flex: 1,
+    width: SCREEN_WIDTH,
+  },
+  scrollPage: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+});
 
 export default BrandHistoryScreen;

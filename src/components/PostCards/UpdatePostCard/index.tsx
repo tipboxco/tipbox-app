@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
+import { View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Platform, Keyboard } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -33,7 +33,6 @@ import {
   useUnlikePost,
   useBookmarkPost,
   useUnbookmarkPost,
-  useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { useReportUser } from '@/src/features/profile/api/hooks';
@@ -41,6 +40,10 @@ import type { UserReportCategory } from '@/src/features/profile/api/profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
+import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface UpdatePostCardProps {
@@ -78,8 +81,10 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   const unlikePostMutation = useUnlikePost();
   const bookmarkPostMutation = useBookmarkPost();
   const unbookmarkPostMutation = useUnbookmarkPost();
-  const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
+  const { openBottomSheet } = useGlobalBottomSheet();
+  const { openPostShareSheet } = usePostShare();
+  const insets = useSafeAreaInsets();
   const { mutate: reportUser } = useReportUser();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
@@ -133,14 +138,15 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   };
 
   const handleShare = () => {
-    // Zaten paylaşılmışsa tekrar paylaşma
-    if (isShared) return;
-    
-    setIsShared(true);
-    setSharesCount(prev => prev + 1);
-    sharePostMutation.mutate({
+    // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
+    openPostShareSheet({
       postId: data.id,
-      shareType: 'INTERNAL_REPOST',
+      postContent: data.content,
+      postAuthorName: data.user?.name,
+      onShareSuccess: () => {
+        setIsShared(true);
+        setSharesCount((prev) => prev + 1);
+      },
     });
   };
 

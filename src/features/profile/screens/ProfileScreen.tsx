@@ -43,7 +43,6 @@ import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
-import { LadderTab } from '../components/TabContents';
 import {
   ArrowUpTrayIcon,
   FlagIcon,
@@ -58,6 +57,7 @@ import {
   BellSlashIcon,
   UserMinusIcon,
   UserPlusIcon,
+  PlusIcon,
 } from 'react-native-heroicons/outline';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
@@ -72,7 +72,8 @@ const TABS = [
   { key: 'benchmarks',  title: 'Benchmarks' },
   { key: 'tips',        title: 'Tips & Tricks' },
   { key: 'replies',     title: 'Questions' },
-  { key: 'ladders',     title: 'Ladders' },
+  { key: 'badge',       title: 'Badges' },
+  { key: 'collections', title: 'Collections' },
 ] as const;
 
 type TabKey = typeof TABS[number]['key'];
@@ -390,6 +391,8 @@ interface TabContentProps {
   targetUserId: string;
   isDark: boolean;
   onQueryRef?: (tabKey: TabKey, query: any) => void;
+  profileBadges?: Badge[];
+  onBadgePress?: (badge: Badge) => void;
 }
 
 // TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
@@ -473,8 +476,21 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
   );
 };
 
+// Badges tab filtreleri - Figma: All Badges, Event Badges, Collections
+const BADGE_FILTERS = ['All Badges', 'Event Badges', 'Collections'] as const;
+type BadgeFilterKey = (typeof BADGE_FILTERS)[number];
+
 // Tab Content Component - Sadece içeriği render eder (FlatList yok)
-const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef }) => {
+const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef, profileBadges = [], onBadgePress }) => {
+  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
+  const filteredBadges = useMemo(() => {
+    if (tabKey !== 'badge') return [];
+    if (badgeFilter === 'All Badges') return profileBadges;
+    if (badgeFilter === 'Event Badges') return profileBadges.filter((b) => b.type === 'event');
+    if (badgeFilter === 'Collections') return profileBadges.filter((b) => b.type === 'collection');
+    return profileBadges;
+  }, [tabKey, profileBadges, badgeFilter]);
+
   // API hooks for each tab - sadece aktif tab'ın query'sini enable et
   const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
   const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
@@ -503,7 +519,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
   
   // Flatten and map posts based on active tab
   const mappedPosts = useMemo(() => {
-    if (tabKey === 'ladders') return [];
+    if (tabKey === 'badge' || tabKey === 'collections') return [];
     
     const queryData = activeTabQuery.data as any;
     if (!queryData?.pages) return [];
@@ -590,17 +606,93 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
     }
   }, []);
   
-  // Render LadderTab
-  if (tabKey === 'ladders') {
+  // Render Badges tab: filtreler (All Badges, Event Badges, Collections) + grid (2 per row)
+  if (tabKey === 'badge') {
     return (
-      <Box>
-        <LadderTab 
-          onQueryRef={(query) => {
-            if (onQueryRef) {
-              onQueryRef(tabKey, query);
-            }
-          }}
-        />
+      <Box flex={1} px={16} pt={8}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+          <HStack space="sm" alignItems="center">
+            {BADGE_FILTERS.map((filter) => {
+              const isActive = badgeFilter === filter;
+              return (
+                <Pressable
+                  key={filter}
+                  onPress={() => setBadgeFilter(filter)}
+                  bg={isActive ? (isDark ? '#333' : '#E9E9E9') : (isDark ? '#1A1A1A' : '#FFF')}
+                  borderWidth={1}
+                  borderColor={isDark ? '#444' : '#E9E9E9'}
+                  borderRadius={8}
+                  px="$3"
+                  py="$2"
+                >
+                  <Text
+                    fontSize="$sm"
+                    fontWeight="$semibold"
+                    color={isActive ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666')}
+                  >
+                    {filter}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </HStack>
+        </ScrollView>
+        {filteredBadges.length === 0 ? (
+          <Box py={32} alignItems="center">
+            <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+              {badgeFilter === 'All Badges' ? 'No badges yet' : `No ${badgeFilter.toLowerCase()} yet`}
+            </Text>
+          </Box>
+        ) : (
+          <Box flexDirection="row" flexWrap="wrap" justifyContent="space-between">
+            {filteredBadges.map((badge) => (
+              <Pressable
+                key={badge.id}
+                onPress={() => onBadgePress?.(badge)}
+                width={114}
+                height={130}
+                mb={12}
+                alignItems="center"
+                justifyContent="center"
+                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                borderWidth={1}
+                borderColor={isDark ? '#333' : '#E9E9E9'}
+                borderRadius={5}
+                p="$2"
+              >
+                <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
+                  <Image
+                    source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                    alt={badge.title}
+                    style={{ width: 56, height: 56 }}
+                    resizeMode="contain"
+                  />
+                </Box>
+                <Text
+                  mt="$1"
+                  fontSize="$2xs"
+                  fontWeight="$semibold"
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  textAlign="center"
+                  numberOfLines={2}
+                >
+                  {badge.title}
+                </Text>
+              </Pressable>
+            ))}
+          </Box>
+        )}
+      </Box>
+    );
+  }
+
+  // Render Collections tab (coming soon)
+  if (tabKey === 'collections') {
+    return (
+      <Box py={20} alignItems="center">
+        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+          Collections content coming soon.
+        </Text>
       </Box>
     );
   }
@@ -694,8 +786,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
   const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
   
-  // Badge modal state
+  // Badge modal state: collection badge → Figma 6477-32135 modal, event badge → Figma 6477-32298 modal
   const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
+  const [selectedBadgeType, setSelectedBadgeType] = useState<'collection' | 'event' | null>(null);
   
   // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
   // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
@@ -1288,15 +1381,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     };
   }, []);
 
-  // Handle badge press - open modal
+  // Handle badge press - open modal: collection → Figma 6477-32135, event → Figma 6477-32298
   const handleBadgePress = useCallback((badge: Badge) => {
     const badgeData = mapBadgeToSeeAllReward(badge);
     setSelectedBadge(badgeData);
+    setSelectedBadgeType(badge.type ?? 'event');
   }, [mapBadgeToSeeAllReward]);
 
   // Handle modal close
   const handleCloseModal = useCallback(() => {
     setSelectedBadge(null);
+    setSelectedBadgeType(null);
   }, []);
 
   
@@ -1819,29 +1914,38 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   ))}
                 </HStack>
               ) : (
-                <Box position="relative" flex={1} height={70}>
-                  {/* 1 tane dashed badge placeholder - solda */}
-                  <Box
-                    w={70}
-                    h={70}
-                    borderRadius={5}
-                    borderWidth={2}
-                    borderColor={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
-                    borderStyle="dashed"
-                    justifyContent="center"
-                    alignItems="center"
-                    bg={isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'}
-                  />
-                  {/* "Henüz badge yok" text - ortada (absolute position) */}
-                  <Box
-                    position="absolute"
-                    left={0}
-                    right={0}
-                    top={0}
-                    bottom={0}
-                    justifyContent="center"
-                    alignItems="center"
-                    pointerEvents="none"
+                /* Figma 6498-34134: Badge yoksa 4 dashed kare + "Edit Highlight Badges" */
+                <VStack space="md" alignItems="center" flex={1}>
+                  <HStack space="md" justifyContent="center" alignItems="center">
+                    {[0, 1, 2, 3].map((index) => (
+                      <Box
+                        key={index}
+                        w={70}
+                        h={70}
+                        borderRadius={5}
+                        borderWidth={2}
+                        borderColor={isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'}
+                        borderStyle="dashed"
+                        justifyContent="center"
+                        alignItems="center"
+                        bg={isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'}
+                      >
+                        <PlusIcon
+                          width={28}
+                          height={28}
+                          color={isDark ? '#999999' : '#737373'}
+                        />
+                      </Box>
+                    ))}
+                  </HStack>
+                  <Pressable
+                    onPress={() => {
+                      if (isOwnProfile) {
+                        navigation.navigate('EditHighlightBadges', { initialBadgeIds: [] });
+                      }
+                    }}
+                    disabled={!isOwnProfile}
+                    opacity={isOwnProfile ? 1 : 0.7}
                   >
                     <Text
                       color={isDark ? '$textDark400' : '$textLight600'}
@@ -1849,16 +1953,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       fontWeight="$regular"
                       textAlign="center"
                     >
-                      Henüz badge yok
+                      Edit Highlight Badges
                     </Text>
-                  </Box>
-                </Box>
+                  </Pressable>
+                </VStack>
               )}
               {profile.badges && profile.badges.length > 0 && (
                 <Pressable
                   onPress={() => {
-                    navigation.navigate('Collections');
+                    if (isOwnProfile) {
+                      navigation.navigate('EditHighlightBadges', {
+                        initialBadgeIds: profile.badges?.map((b) => b.id) ?? [],
+                      });
+                    }
                   }}
+                  disabled={!isOwnProfile}
+                  opacity={isOwnProfile ? 1 : 0.7}
                 >
                   <Text
                     color={isDark ? '$textDark400' : '$textLight600'}
@@ -1867,7 +1977,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     mt="$4"
                     fontWeight="$regular"
                   >
-                    See More Collections
+                    {isOwnProfile ? 'Edit Highlight Badges' : 'Highlight Badges'}
                   </Text>
                 </Pressable>
               )}
@@ -1958,6 +2068,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           targetUserId={targetUserId || ''}
           isDark={isDark}
           onQueryRef={handleTabQueryRef}
+          profileBadges={userProfile?.badges ?? []}
+          onBadgePress={handleBadgePress}
         />
       </ScrollView>
 
@@ -2121,15 +2233,61 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         </RNModal>
       )}
 
-      {/* Badge Detail Modal */}
-      <Modal
-        isOpen={!!selectedBadge}
-        onClose={handleCloseModal}
-        size="lg"
-        closeOnOverlayClick={true}
-      >
-        <ModalBackdrop onPress={handleCloseModal} />
-        {selectedBadge ? (
+      {/* Collection Badge Modal - Figma 6477-32135 */}
+      {selectedBadge && selectedBadgeType === 'collection' && (
+        <Modal
+          isOpen={true}
+          onClose={handleCloseModal}
+          size="lg"
+          closeOnOverlayClick={true}
+        >
+          <ModalBackdrop onPress={handleCloseModal} />
+          <ModalContent
+            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
+            borderRadius={20}
+            marginHorizontal={24}
+            marginBottom={safeAreaBottom + 24}
+            maxHeight="80%"
+          >
+            <Box p="$6">
+              <HStack justifyContent="flex-end" mb="$4">
+                <Pressable onPress={handleCloseModal}>
+                  <Text fontSize="$lg" color={isDark ? '#FFF' : '#000'}>✕</Text>
+                </Pressable>
+              </HStack>
+              <VStack space="lg" alignItems="center">
+                <Box w={120} h={120} borderRadius={60} overflow="hidden" bg={isDark ? '#2A2A2A' : '#F0F0F0'} alignItems="center" justifyContent="center">
+                  <Image
+                    source={toImageSource(selectedBadge.image) || require('@/assets/defaultImages/default-badge.png')}
+                    alt={selectedBadge.title}
+                    style={{ width: 96, height: 96 }}
+                    resizeMode="contain"
+                  />
+                </Box>
+                <Text fontSize="$xl" fontWeight="$bold" color={isDark ? '$textDark50' : '$textLight900'} textAlign="center">
+                  {selectedBadge.title}
+                </Text>
+                <Text fontSize="$sm" color={isDark ? '$textDark400' : '$textLight600'} textAlign="center" px="$4">
+                  {selectedBadge.description || `Collection badge: ${selectedBadge.title}`}
+                </Text>
+                <Pressable onPress={handleCloseModal} bg="#D0F205" borderRadius={12} px="$8" py="$3">
+                  <Text fontWeight="$bold" color="#111111">Close</Text>
+                </Pressable>
+              </VStack>
+            </Box>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {/* Event Badge Modal - Figma 6477-32298 (BadgeBottomSheet) */}
+      {selectedBadge && selectedBadgeType === 'event' && (
+        <Modal
+          isOpen={true}
+          onClose={handleCloseModal}
+          size="lg"
+          closeOnOverlayClick={true}
+        >
+          <ModalBackdrop onPress={handleCloseModal} />
           <ModalContent
             bg={isDark ? '#1A1A1A' : '#FDFDFB'}
             borderRadius={20}
@@ -2141,11 +2299,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               data={selectedBadge}
               onClose={handleCloseModal}
               hideFollowLadder={isOwnProfile}
-              eventId="" // Profile badge'leri event'e bağlı değil
+              eventId=""
             />
           </ModalContent>
-        ) : null}
-      </Modal>
+        </Modal>
+      )}
     </Box>
   );
 };

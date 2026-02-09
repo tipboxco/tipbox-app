@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ImageSourcePropType } from 'react-native';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
+import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Keyboard } from 'react-native';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
@@ -38,7 +38,6 @@ import {
   useUnlikePost,
   useBookmarkPost,
   useUnbookmarkPost,
-  useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { useReportUser } from '@/src/features/profile/api/hooks';
@@ -48,6 +47,9 @@ import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
+import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
+import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
@@ -79,6 +81,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const triggerPositionRef = React.useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const { openBottomSheet } = useGlobalBottomSheet();
+  const { openPostShareSheet } = usePostShare();
   
   // Animated counter states
   const [likesCount, setLikesCount] = useState(data.stats.likes);
@@ -91,8 +94,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const unlikePostMutation = useUnlikePost();
   const bookmarkPostMutation = useBookmarkPost();
   const unbookmarkPostMutation = useUnbookmarkPost();
-  const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
+  const insets = useSafeAreaInsets();
   const { mutate: reportUser } = useReportUser();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
@@ -139,17 +142,18 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
     }
   };
 
-  const handleShare = () => {
-    // Zaten paylaşılmışsa tekrar paylaşma
-    if (isShared) return;
-    
-    setIsShared(true);
-    setSharesCount(prev => prev + 1);
-    sharePostMutation.mutate({
+  const handleShare = useCallback(() => {
+    // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
+    openPostShareSheet({
       postId: data.id,
-      shareType: 'INTERNAL_REPOST',
+      postContent: data.content?.[0]?.content ?? '',
+      postAuthorName: data.user?.name,
+      onShareSuccess: () => {
+        setIsShared(true);
+        setSharesCount((prev) => prev + 1);
+      },
     });
-  };
+  }, [data.id, data.content, data.user?.name, openPostShareSheet]);
 
   const handleComment = () => {
     if (isDetailMode) return; // Detay modunda navigation yapma

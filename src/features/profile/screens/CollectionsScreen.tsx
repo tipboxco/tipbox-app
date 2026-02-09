@@ -192,7 +192,7 @@ const CollectionsScreen: React.FC = () => {
         backdropPressBehavior: 'close',
         detached: true,
         bottomInset: safeAreaBottom,
-        snapPoints: ['85%'],
+        snapPoints: ['50%', '85%'],
         style: {
           marginHorizontal: 4,
           marginBottom: safeAreaBottom + 24,

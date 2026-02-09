@@ -35,6 +35,7 @@ import SendTipsBottomSheet from '../components/SendTipsBottomSheet';
 import OneOnOneSupportBottomSheet from '../components/OneOnOneSupportBottomSheet';
 import { ImageMessage } from '../components/MessageItem/ImageMessage';
 import { MessageItem } from '../components/MessageItem';
+import { SharedPostMessage } from '@/src/features/inbox/components/MessageItem/SharedPostMessage';
 
 interface MessageDetailItem {
   id: string;
@@ -45,7 +46,18 @@ interface MessageDetailItem {
   senderId?: string; // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
   senderName?: string;
   senderAvatar?: any;
-  type?: 'message' | 'support_request' | 'tips' | 'image';
+  type?: 'message' | 'support_request' | 'tips' | 'image' | 'sharedpost';
+  sharedPost?: {
+    postId: string;
+    authorName: string;
+    authorTitle?: string;
+    authorAvatar?: any;
+    authorId?: string;
+    productName: string;
+    productImageUrl?: string | null;
+    productDescription?: string;
+    status?: string;
+  };
   supportRequest?: {
     supportType: string;
     message: string;
@@ -310,7 +322,7 @@ const MessageDetailScreen: React.FC = () => {
   const unmuteThreadMutation = useUnmuteThread();
   
   // Thread'in muted durumunu almak için messages listesini kontrol et
-  const { data: messagesList } = useMessages({ threadType: 'ALL' });
+  const { data: messagesList } = useMessages(true, { threadType: 'ALL' });
   const currentThread = messagesList?.find(msg => msg.id === threadId);
   const isMuted = currentThread?.isMuted ?? false;
   
@@ -552,14 +564,16 @@ const MessageDetailScreen: React.FC = () => {
             ? undefined 
             : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : currentParams.senderAvatar);
           
-          let messageType: 'message' | 'image' | 'support_request' | 'tips' = 'message';
-          if (msg.messageType === 'support-request' || msg.supportRequestType) {
+            let messageType: 'message' | 'image' | 'support_request' | 'tips' | 'sharedpost' = 'message';
+            if (msg.messageType === 'support-request' || msg.supportRequestType) {
             messageType = 'support_request';
           } else if (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) {
             // ✅ FIX: amount var ama supportRequestType yoksa ve mediaUrl yoksa -> TIPS mesajı
             messageType = 'tips';
           } else if (msg.messageType === 'image' || msg.mediaUrl) {
             messageType = 'image';
+          } else if (msg.messageType === 'shared-post' || msg.sharedPost) {
+            messageType = 'sharedpost';
           }
           
           return {
@@ -576,6 +590,7 @@ const MessageDetailScreen: React.FC = () => {
             thumbnailUrl: msg.thumbnailUrl,
             // ✅ Image dimensions (backend'den gelebilir)
             dimensions: msg.dimensions || (msg as any).content?.dimensions,
+            sharedPost: (msg.messageType === 'shared-post' || msg.sharedPost) ? msg.sharedPost : undefined,
             tipsAmount: (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) ? (msg.amount || 0) : undefined,
             supportRequest: (msg.messageType === 'support-request' || msg.supportRequestType) ? {
               supportType: msg.supportRequestType || 'GENERAL',
@@ -721,7 +736,7 @@ const MessageDetailScreen: React.FC = () => {
               : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : currentParams.senderAvatar);
             
             // Mesaj tipini belirle
-            let messageType: 'message' | 'image' | 'support_request' | 'tips' = 'message';
+            let messageType: 'message' | 'image' | 'support_request' | 'tips' | 'sharedpost' = 'message';
             if (msg.messageType === 'support-request' || msg.supportRequestType) {
               messageType = 'support_request';
             } else if (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) {
@@ -741,6 +756,8 @@ const MessageDetailScreen: React.FC = () => {
               }
             } else if (msg.messageType === 'image' || msg.mediaUrl) {
               messageType = 'image';
+            } else if (msg.messageType === 'shared-post' || msg.sharedPost) {
+              messageType = 'sharedpost';
             }
 
             const convertedMessage: MessageDetailItem = {
@@ -761,6 +778,7 @@ const MessageDetailScreen: React.FC = () => {
               thumbnailUrl: msg.thumbnailUrl,
               // ✅ Image dimensions (backend'den gelebilir)
               dimensions: msg.dimensions || (msg as any).content?.dimensions,
+              sharedPost: (msg.messageType === 'shared-post' || msg.sharedPost) ? msg.sharedPost : undefined,
               // TIPS mesajı için amount
               tipsAmount: (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) ? (msg.amount || 0) : undefined,
               // Support request için özel alanlar
@@ -1469,6 +1487,52 @@ const MessageDetailScreen: React.FC = () => {
       // Support request mesajı - şu an için sadece log
       console.log('[MessageDetail] Support request received:', eventData);
       // TODO: Support request mesajını UI'da göster
+    } else if (eventData.messageType === 'shared-post') {
+      // Paylaşılan post mesajı - anında local state'e ekle
+      const isSent = String(eventData.senderId) === String(currentUserId);
+      const currentParams = paramsRef.current;
+      const sharedPostPayload = eventData.sharedPost || eventData.sharedPostPayload;
+      if (!sharedPostPayload?.postId) {
+        console.warn('[MessageDetail] shared-post event missing sharedPost.postId');
+        return;
+      }
+      const newSharedPostMessage: MessageDetailItem = {
+        id: eventData.messageId,
+        text: eventData.message || '',
+        timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
+        sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(),
+        isSent,
+        senderId: eventData.senderId,
+        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderAvatar: isSent ? undefined : currentParams.senderAvatar,
+        type: 'sharedpost',
+        sharedPost: {
+          postId: sharedPostPayload.postId,
+          authorName: sharedPostPayload.authorName || currentParams.senderName || 'Unknown',
+          authorTitle: sharedPostPayload.authorTitle,
+          authorAvatar: sharedPostPayload.authorAvatar ?? currentParams.senderAvatar,
+          authorId: sharedPostPayload.authorId,
+          productName: sharedPostPayload.productName || '',
+          productImageUrl: sharedPostPayload.productImageUrl ?? null,
+          productDescription: sharedPostPayload.productDescription,
+          status: sharedPostPayload.status,
+        },
+        isRead: false,
+      };
+      setMessages((prev) => {
+        const existing = prev.find((msg) => msg.id === eventData.messageId);
+        if (existing) return prev;
+        return insertMessageInOrder(prev, newSharedPostMessage);
+      });
+      if (!isSent && isSocketReady && threadId && isMountedRef.current) {
+        socketMarkMessageAsRead(eventData.messageId);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === eventData.messageId ? { ...msg, isRead: true, readAt: new Date().toISOString() } : msg
+          )
+        );
+      }
+      setTimeout(() => safeScrollToEnd(true), 100);
     }
 
     // Mesaj listesini invalidate et (inbox listesini güncelle)
@@ -3731,6 +3795,26 @@ const MessageDetailScreen: React.FC = () => {
             </VStack>
           </HStack>
           </VStack>
+        </VStack>
+      );
+    }
+
+    // Paylaşılan post mesajı (type sharedpost) - Figma tasarımına uygun
+    if (item.type === 'sharedpost' && item.sharedPost) {
+      const prevMessage = index > 0 ? visibleMessages[index - 1] : null;
+      const isFirstInGroup = !prevMessage ||
+        prevMessage.isSent !== item.isSent ||
+        !isSameDay(prevMessage.sentAt, item.sentAt) ||
+        !isWithin5Minutes(prevMessage.sentAt, item.sentAt);
+      return (
+        <VStack space="xs">
+          {DateHeader}
+          <SharedPostMessage
+            item={item}
+            isDark={isDark}
+            params={params}
+            isFirstInGroup={isFirstInGroup}
+          />
         </VStack>
       );
     }

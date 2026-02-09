@@ -15,7 +15,21 @@ import {
 } from '../api/hooks';
 import type { Notification, NotificationType } from '../api/types';
 import { LightBulbIcon } from 'react-native-heroicons/solid';
-import { TrophyIcon, BellIcon, BellSlashIcon, EllipsisVerticalIcon, ArrowUpTrayIcon, NoSymbolIcon, FlagIcon } from 'react-native-heroicons/outline';
+import {
+    TrophyIcon,
+    BellIcon,
+    BellSlashIcon,
+    EllipsisVerticalIcon,
+    ArrowUpTrayIcon,
+    NoSymbolIcon,
+    FlagIcon,
+    HeartIcon,
+    ChatBubbleLeftIcon,
+    GiftIcon,
+    UserPlusIcon,
+    CalendarDaysIcon,
+    DocumentTextIcon,
+} from 'react-native-heroicons/outline';
 import { useMuteUser, useUnmuteUser, useBlockUser, useUnblockUser, useReportUser, useUserProfile, profileKeys } from '@/src/features/profile/api/hooks';
 import type { UserReportCategory } from '@/src/features/profile/api/profileApi';
 import type { UserProfile } from '@/src/features/profile/types';
@@ -86,13 +100,13 @@ const getNotificationMessage = (
         }
     }
     
-    // Tekil bildirimler için standart mesajlar
+    // Tekil bildirimler için standart mesajlar (Figma metinleri)
     switch (type) {
         // POST INTERACTIONS
         case 'POST_LIKED':
-            return `${displayUsername} gönderini beğendi`;
+            return `${displayUsername}, bir gönderini beğendi!`;
         case 'POST_COMMENTED':
-            return `${displayUsername} yorum yaptı`;
+            return `${displayUsername}, bir gönderine yorum yaptı!`;
         case 'POST_SHARED':
             return `${displayUsername} paylaştı`;
         case 'POST_FAVORITED':
@@ -106,9 +120,9 @@ const getNotificationMessage = (
         
         // TRUST/FOLLOW NOTIFICATIONS
         case 'NEW_TRUSTER':
-            return `${displayUsername} seni takip etmeye başladı`;
+            return `${displayUsername} seni trust listesine ekledi!`;
         case 'NEW_TRUSTED_BY':
-            return `${displayUsername} seni takip ediyor`;
+            return `${displayUsername} seni trust listesine ekledi!`;
         
         // MESSAGING NOTIFICATIONS
         case 'DM_REQUEST_RECEIVED':
@@ -122,39 +136,39 @@ const getNotificationMessage = (
             return `${displayUsername} declined your message request`;
         case 'SUPPORT_REQUEST_ACCEPTED':
             const expertName = data?.expertName || displayUsername;
-            return `${expertName} accepted your support request`;
+            return `${expertName} destek talebini kabul etti`;
         case 'NEW_MESSAGE':
-            return `${displayUsername} sent a new message`;
+            return `${displayUsername} yeni mesaj gönderdi`;
         
-        // TIPS NOTIFICATIONS
+        // TIPS NOTIFICATIONS (Figma)
         case 'TIPS_RECEIVED':
-            return `${displayUsername} sent you a tip`;
+            return `${displayUsername}, bahşiş gönderdi!`;
         case 'TIPS_SENT':
-            return `Tip sent to ${displayUsername}`;
+            return `${displayUsername}'e bahşiş gönderildi`;
         
-        // GAMIFICATION NOTIFICATIONS
+        // GAMIFICATION NOTIFICATIONS (Figma: "Tebrikler!, Wishmaker rozetini kazandın!")
         case 'NEW_BADGE':
-            return 'You earned a new badge!';
+            return 'Tebrikler!, Wishmaker rozetini kazandın!';
         case 'ACHIEVEMENT_UNLOCKED':
-            return 'Achievement unlocked!';
+            return 'Tebrikler! Rozet kazandın!';
         case 'REWARD_EARNED':
             const rewardAmount = data?.amount || 0;
-            return `You earned ${rewardAmount} TIPS reward!`;
+            return `${rewardAmount} TIPS kazandın!`;
         
         // EXPERT NOTIFICATIONS
         case 'EXPERT_REQUEST_AVAILABLE':
-            return 'New expert question available';
+            return 'Yeni uzman sorusu mevcut';
         case 'EXPERT_REQUEST_ANSWERED':
             const expertNameAnswered = data?.expertName || displayUsername;
-            return `${expertNameAnswered} answered the question`;
+            return `${expertNameAnswered} soruyu yanıtladı`;
         
-        // EVENT NOTIFICATIONS
+        // EVENT NOTIFICATIONS (Figma: "Weekend Belgrad Walk etkinliği başlıyor!")
         case 'EVENT_STARTED':
-            return 'Event started!';
+            return data?.eventName ? `"${data.eventName}" etkinliği başlıyor!` : 'Etkinlik başladı!';
         case 'EVENT_ENDING_SOON':
-            return 'Event ending soon!';
+            return 'Etkinlik yakında bitiyor!';
         case 'EVENT_REWARD_AVAILABLE':
-            return 'Event reward available!';
+            return 'Etkinlik ödülü mevcut!';
         
         // COLLECTION NOTIFICATIONS
         case 'COLLECTION_POST_ADDED':
@@ -162,12 +176,54 @@ const getNotificationMessage = (
         case 'COLLECTION_SHARED':
             return 'Collection shared';
         
-        // SYSTEM NOTIFICATIONS
+        // SYSTEM NOTIFICATIONS (Figma: "Apple, yeni bir anket yayınladı!")
         case 'SYSTEM_ANNOUNCEMENT':
-            return 'System announcement';
+            return data?.publisherName ? `${data.publisherName}, yeni bir anket yayınladı!` : 'Yeni duyuru';
         
         default:
-            return 'New notification';
+            return 'Yeni bildirim';
+    }
+};
+
+/**
+ * Figma: Bildirim tipine göre sağda gösterilecek küçük gri ikon
+ */
+const getNotificationTypeIcon = (type: NotificationType): React.ComponentType<{ width?: number; height?: number; color?: string }> => {
+    switch (type) {
+        case 'POST_LIKED':
+        case 'COMMENT_LIKED':
+        case 'POST_FAVORITED':
+            return HeartIcon;
+        case 'TIPS_RECEIVED':
+        case 'TIPS_SENT':
+            return GiftIcon;
+        case 'POST_COMMENTED':
+        case 'COMMENT_REPLIED':
+        case 'NEW_MESSAGE':
+        case 'DM_REQUEST_RECEIVED':
+        case 'DM_REQUEST_ACCEPTED':
+        case 'DM_REQUEST_DECLINED':
+        case 'SUPPORT_REQUEST_ACCEPTED':
+        case 'EXPERT_REQUEST_AVAILABLE':
+        case 'EXPERT_REQUEST_ANSWERED':
+            return ChatBubbleLeftIcon;
+        case 'NEW_TRUSTER':
+        case 'NEW_TRUSTED_BY':
+            return UserPlusIcon;
+        case 'NEW_BADGE':
+        case 'ACHIEVEMENT_UNLOCKED':
+        case 'REWARD_EARNED':
+            return TrophyIcon;
+        case 'EVENT_STARTED':
+        case 'EVENT_ENDING_SOON':
+        case 'EVENT_REWARD_AVAILABLE':
+            return CalendarDaysIcon;
+        case 'SYSTEM_ANNOUNCEMENT':
+        case 'COLLECTION_POST_ADDED':
+        case 'COLLECTION_SHARED':
+            return DocumentTextIcon;
+        default:
+            return BellIcon;
     }
 };
 
@@ -331,7 +387,7 @@ const PostCard: React.FC<{
                             </HStack>
                         )}
 
-                        {/* Post içeriği - Truncated */}
+                        {/* Post içeriği - Truncated (Figma: 2 satır gri kutu) */}
                         {postContent && (
                             <Text
                                 color={isDark ? '#666666' : '#666666'}
@@ -340,7 +396,7 @@ const PostCard: React.FC<{
                                 numberOfLines={2}
                                 lineHeight={20}
                             >
-                               vbsdlkhdhlnkhdlsvbkhldfnkhvnsdksldfkngvsdklvgksdghksjdvfghlskghnglsknldk
+                                {postContent}
                             </Text>
                         )}
                     </VStack>
@@ -430,7 +486,7 @@ const TrustCard: React.FC<{
                 fontSize="$xs"
                 fontWeight="$semibold"
             >
-                View Profile
+                Profili Görüntüle
             </Text>
         </Pressable>
     );
@@ -458,7 +514,7 @@ const ChatButton: React.FC<{
                 fontSize="$xs"
                 fontWeight="$semibold"
             >
-                View
+                Görüntüle
             </Text>
         </Pressable>
     );
@@ -469,20 +525,28 @@ const ChatButton: React.FC<{
  * Yorum ve mesaj bildirimleri için özel metin önizlemesi
  * POST_COMMENTED için description, DM_REQUEST için message kullanılır
  */
+/** Figma: yorum önizlemesi gri kutu içinde 2 satır */
 const CommentCard: React.FC<{
     notification: Notification;
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    // POST_COMMENTED için description, DM_REQUEST_RECEIVED için message kullanılır
-    const commentContent = notification.type === 'POST_COMMENTED' 
-        ? data.description 
+    const commentContent = notification.type === 'POST_COMMENTED'
+        ? data.description
         : data.message;
 
     if (!commentContent) return null;
 
     return (
-        <Box mt={4} flex={1} alignSelf="stretch">
+        <Box
+            mt={4}
+            flex={1}
+            alignSelf="stretch"
+            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+            borderRadius={12}
+            px="$3"
+            py="$2"
+        >
             <Text
                 color={isDark ? '#B9B9B9' : '#666666'}
                 fontSize="$xs"
@@ -775,18 +839,28 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const menuTriggerRef = React.useRef<View>(null);
     const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0 });
 
-    // Calculate menu position
-    const handleMenuOpen = React.useCallback(() => {
-        if (menuTriggerRef.current) {
-            menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-                const screenWidth = Dimensions.get('window').width;
-                const menuWidth = 180;
+    // Context menü konumu: long-press event'inden veya fallback
+    const handleMenuOpen = React.useCallback((event?: any) => {
+        const screenWidth = Dimensions.get('window').width;
+        const screenHeight = Dimensions.get('window').height;
+        const menuWidth = 180;
+        const menuHeight = 180;
+        if (event?.nativeEvent?.pageX != null && event?.nativeEvent?.pageY != null) {
+            const x = event.nativeEvent.pageX;
+            const y = event.nativeEvent.pageY;
+            const left = Math.max(12, Math.min(x, screenWidth - menuWidth - 12));
+            const top = Math.max(12, Math.min(y - 8, screenHeight - menuHeight - 12));
+            setMenuPosition({ top, left });
+            setIsMenuOpen(true);
+        } else if (menuTriggerRef.current) {
+            menuTriggerRef.current.measureInWindow((x, y) => {
                 const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
                 const top = Math.max(12, y - 8);
                 setMenuPosition({ top, left });
                 setIsMenuOpen(true);
             });
         } else {
+            setMenuPosition({ top: 80, left: screenWidth - menuWidth - 12 });
             setIsMenuOpen(true);
         }
     }, []);
@@ -1631,9 +1705,16 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         notification.type === 'EVENT_REWARD_AVAILABLE'
     ) && (data.eventName || data.eventId || data.description || data.message);
 
+    // Figma: sağda zaman + tip ikonu (küçük gri)
+    const TypeIcon = getNotificationTypeIcon(notification.type);
+    const iconColor = '#8C8C8C';
+    const avatarBorderColor = '#8B5CF6'; // Figma mor çerçeve
+
     return (
-        <Pressable 
+        <Pressable
             onPress={handlePress}
+            onLongPress={targetUserId && user?.id && targetUserId !== user.id ? (e) => handleMenuOpen(e) : undefined}
+            delayLongPress={400}
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
             p="$3"
             position="relative"
@@ -1644,7 +1725,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         >
             <HStack space="md" alignItems="flex-start" flex={1}>
 
-                    {/* Avatar/Event Image/Badge Image - Sol tarafta */}
+                    {/* Avatar/Event Image/Badge Image - Sol tarafta (Figma: mor çerçeve) */}
                     {shouldShowAvatar ? (
                         <Pressable onPress={handleAvatarPress}>
                             <Box
@@ -1653,13 +1734,12 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                 justifyContent="center"
                                 alignItems="center"
                             >
-                                {/* Primary Avatar */}
                                 <Box
                                     width={48}
                                     height={48}
                                     borderRadius={24}
                                     borderWidth={2}
-                                    borderColor={isDark ? '#333' : '#E9E9E9'}
+                                    borderColor={avatarBorderColor}
                                     justifyContent="center"
                                     alignItems="center"
                                     bg={isDark ? '#2A2A2A' : '#F5F5F5'}
@@ -1680,7 +1760,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             <Box
                                 width={48}
                                 height={48}
-                                borderRadius={24}
+                                borderRadius={10}
                                 overflow="hidden"
                                 borderWidth={2}
                                 borderColor={isDark ? '#333' : '#E9E9E9'}
@@ -1930,7 +2010,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     </VStack>
             </HStack>
 
-                {/* Timestamp, Context Menu and Unread Badge - Position Absolute */}
+                {/* Figma: sağda zaman + tip ikonu + okunmamış nokta (context menü long-press ile açılır) */}
                 <HStack
                     position="absolute"
                     top="$3"
@@ -1938,117 +2018,14 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     space="xs"
                     alignItems="center"
                 >
-                    {/* Context Menu - Sadece kendi profiliniz değilse göster */}
-                    {targetUserId && user?.id && targetUserId !== user.id && (
-                        <Box position="relative" zIndex={2001}>
-                            <View ref={menuTriggerRef} collapsable={false}>
-                                <Pressable onPress={handleMenuOpen}>
-                                    <EllipsisVerticalIcon width={16} height={16} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
-                                </Pressable>
-                            </View>
-                            
-                            <Modal
-                                visible={isMenuOpen}
-                                transparent={true}
-                                animationType="fade"
-                                onRequestClose={() => setIsMenuOpen(false)}
-                            >
-                                <Pressable
-                                    style={{ flex: 1 }}
-                                    onPress={() => setIsMenuOpen(false)}
-                                />
-                                <Box
-                                    position="absolute"
-                                    top={menuPosition.top}
-                                    left={menuPosition.left}
-                                    width={180}
-                                    bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-                                    borderRadius={16}
-                                    shadowColor="#000"
-                                    shadowOffset={{ width: 0, height: 2 }}
-                                    shadowOpacity={0.25}
-                                    shadowRadius={8}
-                                    elevation={8}
-                                    overflow="hidden"
-                                >
-                                    <Pressable
-                                        onPress={() => {
-                                            setIsMenuOpen(false);
-                                            handleShare();
-                                        }}
-                                        px={16}
-                                        py={12}
-                                    >
-                                        <HStack alignItems="center" space="md">
-                                            <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                                            <Text
-                                                color={isDark ? '#FFFFFF' : '#000000'}
-                                                fontSize="$md"
-                                                fontWeight="$medium"
-                                            >
-                                                Share
-                                            </Text>
-                                        </HStack>
-                                    </Pressable>
-                                    <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-                                    <Pressable
-                                        onPress={() => {
-                                            if (!isReporting) {
-                                                setIsMenuOpen(false);
-                                                handleReport();
-                                            }
-                                        }}
-                                        px={16}
-                                        py={12}
-                                        opacity={isReporting ? 0.6 : 1}
-                                    >
-                                        <HStack alignItems="center" space="md">
-                                            <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                                            <Text
-                                                color={isDark ? '#FFFFFF' : '#000000'}
-                                                fontSize="$md"
-                                                fontWeight="$medium"
-                                            >
-                                                {isReporting ? 'Reporting...' : 'Report'}
-                                            </Text>
-                                        </HStack>
-                                    </Pressable>
-                                    <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-                                    <Pressable
-                                        onPress={() => {
-                                            if (!isBlocking && !isUnblocking) {
-                                                setIsMenuOpen(false);
-                                                handleBlock();
-                                            }
-                                        }}
-                                        px={16}
-                                        py={12}
-                                        opacity={(isBlocking || isUnblocking) ? 0.6 : 1}
-                                    >
-                                        <HStack alignItems="center" space="md">
-                                            <NoSymbolIcon width={20} height={20} color={userProfile?.isBlocked ? (isDark ? '#FFFFFF' : '#000000') : '#FF3040'} />
-                                            <Text
-                                                color={userProfile?.isBlocked ? (isDark ? '#FFFFFF' : '#000000') : '#FF3040'}
-                                                fontSize="$md"
-                                                fontWeight="$medium"
-                                            >
-                                                {(isBlocking || isUnblocking)
-                                                    ? (userProfile?.isBlocked ? 'Unblocking...' : 'Blocking...')
-                                                    : (userProfile?.isBlocked ? 'Unblock' : 'Block')}
-                                            </Text>
-                                        </HStack>
-                                    </Pressable>
-                                </Box>
-                            </Modal>
-                        </Box>
-                    )}
                     <Text
-                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        color={iconColor}
                         fontSize="$xs"
                         fontWeight="$medium"
                     >
                         {formatRelativeTime(notification.createdAt)}
                     </Text>
+                    <TypeIcon width={14} height={14} color={iconColor} />
                     {!notification.read && (
                         <Box
                             width={8}
@@ -2060,6 +2037,106 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         />
                     )}
                 </HStack>
+
+                {/* Context Menu - long-press ile açılır, Modal aynı kalır */}
+                {targetUserId && user?.id && targetUserId !== user.id && (
+                    <Box position="relative" zIndex={2001} pointerEvents="box-none">
+                        <View ref={menuTriggerRef} collapsable={false} style={{ position: 'absolute', width: 0, height: 0 }} />
+                        <Modal
+                            visible={isMenuOpen}
+                            transparent={true}
+                            animationType="fade"
+                            onRequestClose={() => setIsMenuOpen(false)}
+                        >
+                            <Pressable
+                                style={{ flex: 1 }}
+                                onPress={() => setIsMenuOpen(false)}
+                            />
+                            <Box
+                                position="absolute"
+                                top={menuPosition.top}
+                                left={menuPosition.left}
+                                width={180}
+                                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                                borderRadius={16}
+                                shadowColor="#000"
+                                shadowOffset={{ width: 0, height: 2 }}
+                                shadowOpacity={0.25}
+                                shadowRadius={8}
+                                elevation={8}
+                                overflow="hidden"
+                            >
+                                <Pressable
+                                    onPress={() => {
+                                        setIsMenuOpen(false);
+                                        handleShare();
+                                    }}
+                                    px={16}
+                                    py={12}
+                                >
+                                    <HStack alignItems="center" space="md">
+                                        <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                        <Text
+                                            color={isDark ? '#FFFFFF' : '#000000'}
+                                            fontSize="$md"
+                                            fontWeight="$medium"
+                                        >
+                                            Share
+                                        </Text>
+                                    </HStack>
+                                </Pressable>
+                                <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                                <Pressable
+                                    onPress={() => {
+                                        if (!isReporting) {
+                                            setIsMenuOpen(false);
+                                            handleReport();
+                                        }
+                                    }}
+                                    px={16}
+                                    py={12}
+                                    opacity={isReporting ? 0.6 : 1}
+                                >
+                                    <HStack alignItems="center" space="md">
+                                        <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                        <Text
+                                            color={isDark ? '#FFFFFF' : '#000000'}
+                                            fontSize="$md"
+                                            fontWeight="$medium"
+                                        >
+                                            {isReporting ? 'Reporting...' : 'Report'}
+                                        </Text>
+                                    </HStack>
+                                </Pressable>
+                                <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                                <Pressable
+                                    onPress={() => {
+                                        if (!isBlocking && !isUnblocking) {
+                                            setIsMenuOpen(false);
+                                            handleBlock();
+                                        }
+                                    }}
+                                    px={16}
+                                    py={12}
+                                    opacity={(isBlocking || isUnblocking) ? 0.6 : 1}
+                                >
+                                    <HStack alignItems="center" space="md">
+                                        <NoSymbolIcon width={20} height={20} color={userProfile?.isBlocked ? (isDark ? '#FFFFFF' : '#000000') : '#FF3040'} />
+                                        <Text
+                                            color={userProfile?.isBlocked ? (isDark ? '#FFFFFF' : '#000000') : '#FF3040'}
+                                            fontSize="$md"
+                                            fontWeight="$medium"
+                                        >
+                                            {(isBlocking || isUnblocking)
+                                                ? (userProfile?.isBlocked ? 'Unblocking...' : 'Blocking...')
+                                                : (userProfile?.isBlocked ? 'Unblock' : 'Block')}
+                                        </Text>
+                                    </HStack>
+                                </Pressable>
+                            </Box>
+                        </Modal>
+                    </Box>
+                )}
                 
         </Pressable>
     );

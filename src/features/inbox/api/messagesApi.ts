@@ -302,7 +302,7 @@ export interface ThreadMessage {
   senderId: string;
   recipientId?: string;
   message: string;
-  messageType: 'message' | 'image' | 'support-request' | 'send-tips'; // ✅ 'image' eklendi
+  messageType: 'message' | 'image' | 'support-request' | 'send-tips' | 'shared-post'; // ✅ 'shared-post' eklendi
   context?: 'DM' | 'SUPPORT'; // Sadece mesajlar için geçerli (type: "message" veya "image")
   isRead: boolean;
   sentAt: string; // ISO 8601
@@ -326,6 +326,18 @@ export interface ThreadMessage {
   requestId?: string;
   fromUserId?: string; // Support request için: Request'i oluşturan kullanıcı ID'si (required)
   toUserId?: string; // Support request için: Request'in gönderildiği kullanıcı ID'si (required)
+  // Shared post (app içinden paylaşılan deneyim postu)
+  sharedPost?: {
+    postId: string; // Experience post ID (Post ekranına gitmek için)
+    authorName: string;
+    authorTitle?: string;
+    authorAvatar?: string | null;
+    authorId?: string;
+    productName: string;
+    productImageUrl?: string | null;
+    productDescription?: string;
+    status?: string; // e.g. "Owned", "Tried"
+  };
 }
 
 /**
@@ -399,6 +411,10 @@ export const convertOptimizedToFlat = (
           threadMessage.requestId = optimizedMsg.content.requestId;
           threadMessage.fromUserId = optimizedMsg.content.fromUserId;
           threadMessage.toUserId = optimizedMsg.content.toUserId;
+        }
+        
+        if (optimizedMsg.type === 'shared-post' && (optimizedMsg as any).content?.sharedPost) {
+          threadMessage.sharedPost = (optimizedMsg as any).content.sharedPost;
         }
         
         allMessages.push(threadMessage);
@@ -598,6 +614,20 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
             fullData: data,
           });
         }
+      }
+      
+      if (type === 'shared-post' && data.sharedPost) {
+        baseMessage.sharedPost = {
+          postId: data.sharedPost.postId || data.sharedPost.experiencePostId || (data.sharedPost as any).postId,
+          authorName: data.sharedPost.authorName || senderInfo.senderName || 'Unknown',
+          authorTitle: data.sharedPost.authorTitle ?? senderInfo.senderTitle,
+          authorAvatar: data.sharedPost.authorAvatar ?? senderInfo.senderAvatar,
+          authorId: data.sharedPost.authorId || senderId,
+          productName: data.sharedPost.productName || '',
+          productImageUrl: data.sharedPost.productImageUrl ?? null,
+          productDescription: data.sharedPost.productDescription,
+          status: data.sharedPost.status,
+        };
       }
       
       // ✅ Grup mesajları ekle (5 dakika içinde aynı kullanıcıdan gelen text mesajlar - tek balonda gösterilecek)

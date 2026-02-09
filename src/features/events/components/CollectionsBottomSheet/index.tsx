@@ -1,27 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  Modal,
-  ScrollView,
-  Dimensions,
   ActivityIndicator,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import { BottomSheetModal, BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Feather } from '@expo/vector-icons';
 import { useMainCategories, useSubCategories } from '../../api/hooks';
 import type { CollectionFilters } from '../../types/medusa.types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const OPTION_ITEM_HEIGHT = 48;
 
-// Dropdown açık olduğunda eklenecek boşluk (dropdown options height)
-const DROPDOWN_OPTIONS_HEIGHT = 200;
+// Mock Data
+const MOCK_MAIN_CATEGORIES = [
+  { id: '1', name: 'Analytics Tools' },
+  { id: '2', name: 'Content Management' },
+  { id: '3', name: 'Customer Support' },
+  { id: '4', name: 'Design Tools' },
+  { id: '5', name: 'Development Tools' },
+  { id: '6', name: 'Finance & Accounting' },
+  { id: '7', name: 'Marketing Automation' },
+  { id: '8', name: 'Project Management' },
+  { id: '9', name: 'Sales CRM' },
+  { id: '10', name: 'Security & Privacy' },
+].sort((a, b) => a.name.localeCompare(b.name));
+
+const MOCK_SUB_CATEGORIES: Record<string, Array<{ id: string; name: string }>> = {
+  '1': [
+    { id: 'sub-1-1', name: 'Business Intelligence' },
+    { id: 'sub-1-2', name: 'Data Visualization' },
+    { id: 'sub-1-3', name: 'Marketing Analytics' },
+    { id: 'sub-1-4', name: 'Web Analytics' },
+  ].sort((a, b) => a.name.localeCompare(b.name)),
+  '2': [
+    { id: 'sub-2-1', name: 'Blogging Platforms' },
+    { id: 'sub-2-2', name: 'CMS Systems' },
+    { id: 'sub-2-3', name: 'Digital Asset Management' },
+    { id: 'sub-2-4', name: 'Documentation Tools' },
+  ].sort((a, b) => a.name.localeCompare(b.name)),
+  '3': [
+    { id: 'sub-3-1', name: 'Chat Support' },
+    { id: 'sub-3-2', name: 'Help Desk Software' },
+    { id: 'sub-3-3', name: 'Knowledge Base' },
+    { id: 'sub-3-4', name: 'Ticketing Systems' },
+  ].sort((a, b) => a.name.localeCompare(b.name)),
+  '4': [
+    { id: 'sub-4-1', name: 'Graphic Design' },
+    { id: 'sub-4-2', name: 'Prototyping Tools' },
+    { id: 'sub-4-3', name: 'UI/UX Design' },
+    { id: 'sub-4-4', name: 'Video Editing' },
+  ].sort((a, b) => a.name.localeCompare(b.name)),
+  '5': [
+    { id: 'sub-5-1', name: 'Code Editors' },
+    { id: 'sub-5-2', name: 'Database Tools' },
+    { id: 'sub-5-3', name: 'DevOps Platforms' },
+    { id: 'sub-5-4', name: 'Version Control' },
+  ].sort((a, b) => a.name.localeCompare(b.name)),
+};
+
+const MOCK_PRODUCT_GROUPS: Record<string, Array<{ id: string; name: string }>> = {
+  'sub-1-1': [
+    { id: 'pg-1-1-1', name: 'Cloud BI Solutions' },
+    { id: 'pg-1-1-2', name: 'Enterprise BI' },
+    { id: 'pg-1-1-3', name: 'Self-Service BI' },
+  ].sort((a, b) => a.name.localeCompare(b.name)),
+  'sub-1-2': [
+    { id: 'pg-1-2-1', name: 'Chart Libraries' },
+    { id: 'pg-1-2-2', name: 'Dashboard Tools' },
+    { id: 'pg-1-2-3', name: 'Infographic Makers' },
+  ].sort((a, b) => a.name.localeCompare(b.name)),
+  'sub-4-1': [
+    { id: 'pg-4-1-1', name: 'Adobe Suite' },
+    { id: 'pg-4-1-2', name: 'Icon Editors' },
+    { id: 'pg-4-1-3', name: 'Illustration Tools' },
+  ].sort((a, b) => a.name.localeCompare(b.name)),
+};
 
 interface CollectionsBottomSheetProps {
   visible: boolean;
@@ -36,76 +92,121 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   onApply,
   isDark = false,
 }) => {
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const insets = useSafeAreaInsets();
   const [mainCategoryId, setMainCategoryId] = useState<string | undefined>();
   const [subCategoryId, setSubCategoryId] = useState<string | undefined>();
+  const [productGroupId, setProductGroupId] = useState<string | undefined>();
   const [showMainDropdown, setShowMainDropdown] = useState(false);
   const [showSubDropdown, setShowSubDropdown] = useState(false);
-  
-  // Reanimated shared values for smooth animations
-  const mainDropdownHeight = useSharedValue(0);
-  const subDropdownHeight = useSharedValue(0);
-  
-  // Dropdown açılma/kapanma animasyonları
+  const [showProductGroupDropdown, setShowProductGroupDropdown] = useState(false);
+
+  const scrollViewRef = useRef<any>(null);
+  const mainCategoryRef = useRef<View>(null);
+  const subCategoryRef = useRef<View>(null);
+  const productGroupRef = useRef<View>(null);
+
+  // Dropdown açık mı kontrolü - herhangi biri açıksa 75%'e snap et
+  const isAnyDropdownOpen = showMainDropdown || showSubDropdown || showProductGroupDropdown;
+
+  // SnapPoints: default 50%, dropdown açıkken 75%
+  const snapPoints = useMemo(() => ['50%', '75%'], []);
+
+  // Mock data usage
+  const mainCategories = MOCK_MAIN_CATEGORIES;
+  const subCategories = mainCategoryId ? MOCK_SUB_CATEGORIES[mainCategoryId] || [] : [];
+  const productGroups = subCategoryId ? MOCK_PRODUCT_GROUPS[subCategoryId] || [] : [];
+  const isLoadingMain = false;
+  const isLoadingSub = false;
+  const isLoadingProductGroup = false;
+
+  // Visible değiştiğinde bottom sheet'i aç/kapat
   useEffect(() => {
-    mainDropdownHeight.value = withSpring(showMainDropdown ? DROPDOWN_OPTIONS_HEIGHT : 0, {
-      damping: 20,
-      stiffness: 300,
-    });
-  }, [showMainDropdown, mainDropdownHeight]);
-  
+    if (visible) {
+      bottomSheetRef.current?.present();
+      // Present sonrası default snap point'e git
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(0);
+      }, 100);
+    } else {
+      bottomSheetRef.current?.dismiss();
+    }
+  }, [visible]);
+
+  // Dropdown açıldığında/kapandığında snap point değiştir
   useEffect(() => {
-    subDropdownHeight.value = withSpring(showSubDropdown ? DROPDOWN_OPTIONS_HEIGHT : 0, {
-      damping: 20,
-      stiffness: 300,
-    });
-  }, [showSubDropdown, subDropdownHeight]);
-  
-  // Sub Category field için animated style (Main dropdown açıldığında aşağı kayacak)
-  const subCategoryAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      marginTop: mainDropdownHeight.value,
-    };
-  });
-  
-  // Product Group field için animated style (Main + Sub dropdown açıldığında aşağı kayacak)
-  const productGroupAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      marginTop: mainDropdownHeight.value + subDropdownHeight.value,
-    };
-  });
+    if (visible) {
+      if (isAnyDropdownOpen) {
+        bottomSheetRef.current?.snapToIndex(1); // 75%'e expand et
+      } else {
+        bottomSheetRef.current?.snapToIndex(0); // 50%'e küçült
+      }
+    }
+  }, [isAnyDropdownOpen, visible]);
 
-  // Main Categories API hook
-  const {
-    data: mainCategories = [],
-    isLoading: isLoadingMain,
-    error: mainError,
-  } = useMainCategories();
-
-  // Sub Categories API hook (only fetch if main category is selected)
-  const {
-    data: subCategories = [],
-    isLoading: isLoadingSub,
-    error: subError,
-  } = useSubCategories(mainCategoryId || '', !!mainCategoryId);
-
-  // Reset sub category when main category changes
   useEffect(() => {
     setSubCategoryId(undefined);
+    setProductGroupId(undefined);
+    setShowSubDropdown(false);
+    setShowProductGroupDropdown(false);
   }, [mainCategoryId]);
 
-  const handleDone = () => {
+  useEffect(() => {
+    setProductGroupId(undefined);
+    setShowProductGroupDropdown(false);
+  }, [subCategoryId]);
+
+  // Auto scroll to opened dropdown
+  useEffect(() => {
+    if (showMainDropdown && mainCategoryRef.current) {
+      setTimeout(() => {
+        mainCategoryRef.current?.measureLayout(
+          scrollViewRef.current as any,
+          (x, y) => {
+            scrollViewRef.current?.scrollTo?.({ y: y - 20, animated: true });
+          },
+          () => {}
+        );
+      }, 100);
+    }
+  }, [showMainDropdown]);
+
+  useEffect(() => {
+    if (showSubDropdown && subCategoryRef.current) {
+      setTimeout(() => {
+        subCategoryRef.current?.measureLayout(
+          scrollViewRef.current as any,
+          (x, y) => {
+            scrollViewRef.current?.scrollTo?.({ y: y - 20, animated: true });
+          },
+          () => {}
+        );
+      }, 100);
+    }
+  }, [showSubDropdown]);
+
+  useEffect(() => {
+    if (showProductGroupDropdown && productGroupRef.current) {
+      setTimeout(() => {
+        productGroupRef.current?.measureLayout(
+          scrollViewRef.current as any,
+          (x, y) => {
+            scrollViewRef.current?.scrollTo?.({ y: y - 20, animated: true });
+          },
+          () => {}
+        );
+      }, 100);
+    }
+  }, [showProductGroupDropdown]);
+
+  const handleDone = useCallback(() => {
     onApply({
       mainCategoryId,
       subCategoryId,
-      productGroupId: undefined, // Coming soon
+      productGroupId,
     });
     onClose();
-  };
-
-  const handleReset = () => {
-    setMainCategoryId(undefined);
-    setSubCategoryId(undefined);
-  };
+  }, [mainCategoryId, subCategoryId, productGroupId, onApply, onClose]);
 
   const getSelectedMainCategoryName = () => {
     if (!mainCategoryId) return 'Main Category';
@@ -119,393 +220,437 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
     return category?.name || 'Sub Category';
   };
 
+  const getSelectedProductGroupName = () => {
+    if (!productGroupId) return 'Product Group';
+    const group = productGroups.find((g) => g.id === productGroupId);
+    return group?.name || 'Product Group';
+  };
+
+  const handleSheetChanges = useCallback((index: number) => {
+    if (index === -1) {
+      onClose();
+    }
+  }, [onClose]);
+
+  if (!visible) return null;
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-      statusBarTranslucent
+    <BottomSheetModal
+      ref={bottomSheetRef}
+      snapPoints={snapPoints}
+      index={0}
+      enablePanDownToClose
+      onDismiss={onClose}
+      onChange={handleSheetChanges}
+      backgroundStyle={{
+        backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+      }}
+      handleIndicatorStyle={{
+        backgroundColor: isDark ? '#666' : '#B8B8B7',
+        width: 70,
+        height: 5,
+      }}
+      bottomInset={insets.bottom}
+      detached={false}
+      enableDynamicSizing={false}
+      enableHandlePanningGesture={true}
+      enableContentPanningGesture={false}
+      activeOffsetY={[-5, 5]}
+      failOffsetX={[-5, 5]}
     >
-      {/* Backdrop */}
-      <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </View>
+      <BottomSheetView style={styles.container}>
+        {/* Header - Filter daima üstte sabit */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: isDark ? '#FFF' : '#000' }]}>Filter</Text>
+        </View>
 
-      {/* Bottom Sheet Container */}
-      <View style={styles.bottomSheetWrapper}>
-        <View
-          style={[
-            styles.container,
-            { 
-              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-            },
-          ]}
+        {/* ScrollView içinde tüm içerik + Footer */}
+        <BottomSheetScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Handle Bar */}
-          <View style={styles.handleBar}>
-            <View style={[styles.handle, { backgroundColor: isDark ? '#666' : '#D1D1D6' }]} />
-          </View>
-
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: isDark ? '#FFF' : '#000' }]}>
-              Filter
-            </Text>
-          </View>
-
-          {/* Filter Fields */}
-          <ScrollView
-            style={styles.contentScrollView}
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled={true}
-          >
-            {/* Main Category Dropdown */}
-            <View style={[styles.fieldContainer, { zIndex: showMainDropdown ? 100 : 1 }]}>
-              <Pressable
+          {/* Main Category */}
+          <View ref={mainCategoryRef} style={styles.fieldContainer}>
+            <Pressable
+              style={[
+                styles.dropdown,
+                {
+                  borderColor: isDark ? '#3A3A3C' : '#BBB',
+                  backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+                },
+              ]}
+              onPress={() => {
+                setShowMainDropdown(!showMainDropdown);
+                setShowSubDropdown(false);
+                setShowProductGroupDropdown(false);
+              }}
+              disabled={isLoadingMain}
+            >
+              <Text
                 style={[
-                  styles.dropdown,
-                  { 
-                    borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
-                    backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-                  },
+                  styles.dropdownText,
+                  { color: mainCategoryId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
                 ]}
-                onPress={() => {
-                  setShowMainDropdown(!showMainDropdown);
-                  setShowSubDropdown(false);
-                }}
-                disabled={isLoadingMain}
+                numberOfLines={1}
               >
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    { color: mainCategoryId ? (isDark ? '#FFF' : '#000') : '#C7C7CC' },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {isLoadingMain ? 'Loading...' : getSelectedMainCategoryName()}
-                </Text>
-                {isLoadingMain ? (
-                  <ActivityIndicator size="small" color="#C7C7CC" />
-                ) : (
-                  <Feather
-                    name="chevron-down"
-                    size={20}
-                    color="#C7C7CC"
-                  />
-                )}
-              </Pressable>
-
-              {/* Main Category Options */}
-              {showMainDropdown && !isLoadingMain && (
+                {isLoadingMain ? 'Loading...' : getSelectedMainCategoryName()}
+              </Text>
+              {isLoadingMain ? (
+                <ActivityIndicator size="small" color="#C7C7CC" />
+              ) : (
                 <View
                   style={[
-                    styles.optionsList,
-                    { 
-                      backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-                      borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
-                    },
+                    styles.chevronIcon,
+                    showMainDropdown && styles.chevronIconRotated,
                   ]}
                 >
-                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                    {mainError ? (
-                      <View style={styles.errorContainer}>
-                        <Text style={[styles.errorText, { color: isDark ? '#FF453A' : '#FF3B30' }]}>
-                          Failed to load categories
-                        </Text>
-                      </View>
-                    ) : mainCategories.length === 0 ? (
-                      <View style={styles.errorContainer}>
-                        <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                          No categories available
-                        </Text>
-                      </View>
-                    ) : (
-                      <>
-                        {/* Clear selection option */}
-                        <Pressable
-                          style={[
-                            styles.optionItem,
-                            { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                          ]}
-                          onPress={() => {
-                            setMainCategoryId(undefined);
-                            setShowMainDropdown(false);
-                          }}
-                        >
-                          <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-                            All Categories
-                          </Text>
-                        </Pressable>
-                        {mainCategories.map((option) => (
-                          <Pressable
-                            key={option.id}
-                            style={[
-                              styles.optionItem,
-                              { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                            ]}
-                            onPress={() => {
-                              setMainCategoryId(option.id);
-                              setShowMainDropdown(false);
-                            }}
-                          >
-                            <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-                              {option.name}
-                            </Text>
-                            {mainCategoryId === option.id && (
-                              <Feather name="check" size={16} color="#007AFF" />
-                            )}
-                          </Pressable>
-                        ))}
-                      </>
-                    )}
-                  </ScrollView>
+                  <Feather name="chevron-left" size={25} color="#C7C7CC" />
                 </View>
               )}
-            </View>
+            </Pressable>
 
-            {/* Sub Category Dropdown - Animated */}
-            <Animated.View style={[styles.fieldContainer, { zIndex: showSubDropdown ? 99 : 1 }, subCategoryAnimatedStyle]}>
-              <Pressable
+            {/* Main Category Options - Inline */}
+            {showMainDropdown && !isLoadingMain && (
+              <View
                 style={[
-                  styles.dropdown,
-                  { 
-                    borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
-                    backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-                    opacity: !mainCategoryId ? 0.5 : 1,
-                  },
-                ]}
-                onPress={() => {
-                  if (mainCategoryId) {
-                    setShowSubDropdown(!showSubDropdown);
-                    setShowMainDropdown(false);
-                  }
-                }}
-                disabled={!mainCategoryId || isLoadingSub}
-              >
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    { color: subCategoryId ? (isDark ? '#FFF' : '#000') : '#C7C7CC' },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {isLoadingSub ? 'Loading...' : getSelectedSubCategoryName()}
-                </Text>
-                {isLoadingSub ? (
-                  <ActivityIndicator size="small" color="#C7C7CC" />
-                ) : (
-                  <Feather
-                    name="chevron-down"
-                    size={20}
-                    color="#C7C7CC"
-                  />
-                )}
-              </Pressable>
-
-              {/* Sub Category Options */}
-              {showSubDropdown && !isLoadingSub && mainCategoryId && (
-                <View
-                  style={[
-                    styles.optionsList,
-                    { 
-                      backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-                      borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
-                    },
-                  ]}
-                >
-                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                    {subError ? (
-                      <View style={styles.errorContainer}>
-                        <Text style={[styles.errorText, { color: isDark ? '#FF453A' : '#FF3B30' }]}>
-                          Failed to load sub categories
-                        </Text>
-                      </View>
-                    ) : subCategories.length === 0 ? (
-                      <View style={styles.errorContainer}>
-                        <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                          No sub categories available
-                        </Text>
-                      </View>
-                    ) : (
-                      <>
-                        {/* Clear selection option */}
-                        <Pressable
-                          style={[
-                            styles.optionItem,
-                            { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                          ]}
-                          onPress={() => {
-                            setSubCategoryId(undefined);
-                            setShowSubDropdown(false);
-                          }}
-                        >
-                          <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-                            All Sub Categories
-                          </Text>
-                        </Pressable>
-                        {subCategories.map((option) => (
-                          <Pressable
-                            key={option.id}
-                            style={[
-                              styles.optionItem,
-                              { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                            ]}
-                            onPress={() => {
-                              setSubCategoryId(option.id);
-                              setShowSubDropdown(false);
-                            }}
-                          >
-                            <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-                              {option.name}
-                            </Text>
-                            {subCategoryId === option.id && (
-                              <Feather name="check" size={16} color="#007AFF" />
-                            )}
-                          </Pressable>
-                        ))}
-                      </>
-                    )}
-                  </ScrollView>
-                </View>
-              )}
-            </Animated.View>
-
-            {/* Product Group Dropdown (Disabled - Coming Soon) - Animated */}
-            <Animated.View style={[styles.fieldContainer, productGroupAnimatedStyle]}>
-              <Pressable
-                style={[
-                  styles.dropdown,
+                  styles.inlineOptionsList,
                   {
-                    borderColor: isDark ? '#3A3A3C' : '#D1D1D6',
                     backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-                    opacity: 0.5,
+                    borderColor: isDark ? '#3A3A3C' : '#BBB',
                   },
                 ]}
-                disabled
               >
-                <Text style={[styles.dropdownText, { color: '#C7C7CC' }]}>
-                  Product Group
-                </Text>
-                <View style={styles.comingSoonBadge}>
-                  <Text style={styles.comingSoonText}>Coming Soon</Text>
-                </View>
-              </Pressable>
-            </Animated.View>
-          </ScrollView>
+                {mainCategories.length === 0 ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
+                      No categories available
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <Pressable
+                      style={[
+                        styles.optionItem,
+                        { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
+                      ]}
+                      onPress={() => {
+                        setMainCategoryId(undefined);
+                        setShowMainDropdown(false);
+                      }}
+                    >
+                      <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        All Categories
+                      </Text>
+                    </Pressable>
+                    {mainCategories.map((option) => (
+                      <Pressable
+                        key={option.id}
+                        style={[
+                          styles.optionItem,
+                          { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
+                        ]}
+                        onPress={() => {
+                          setMainCategoryId(option.id);
+                          setShowMainDropdown(false);
+                        }}
+                      >
+                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                          {option.name}
+                        </Text>
+                        {mainCategoryId === option.id && (
+                          <Feather name="check" size={16} color="#007AFF" />
+                        )}
+                      </Pressable>
+                    ))}
+                  </>
+                )}
+              </View>
+            )}
+          </View>
 
-          {/* Footer - Done Button Only */}
+          {/* Sub Category */}
+          <View ref={subCategoryRef} style={styles.fieldContainer}>
+            <Pressable
+              style={[
+                styles.dropdown,
+                {
+                  borderColor: isDark ? '#3A3A3C' : '#BBB',
+                  backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+                  opacity: !mainCategoryId ? 0.5 : 1,
+                },
+              ]}
+              onPress={() => {
+                if (mainCategoryId) {
+                  setShowSubDropdown(!showSubDropdown);
+                  setShowMainDropdown(false);
+                  setShowProductGroupDropdown(false);
+                }
+              }}
+              disabled={!mainCategoryId || isLoadingSub}
+            >
+              <Text
+                style={[
+                  styles.dropdownText,
+                  { color: subCategoryId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
+                ]}
+                numberOfLines={1}
+              >
+                {isLoadingSub ? 'Loading...' : getSelectedSubCategoryName()}
+              </Text>
+              {isLoadingSub ? (
+                <ActivityIndicator size="small" color="#C7C7CC" />
+              ) : (
+                <View
+                  style={[
+                    styles.chevronIcon,
+                    showSubDropdown && styles.chevronIconRotated,
+                  ]}
+                >
+                  <Feather name="chevron-left" size={25} color="#C7C7CC" />
+                </View>
+              )}
+            </Pressable>
+
+            {/* Sub Category Options - Inline */}
+            {showSubDropdown && !isLoadingSub && mainCategoryId && (
+              <View
+                style={[
+                  styles.inlineOptionsList,
+                  {
+                    backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+                    borderColor: isDark ? '#3A3A3C' : '#BBB',
+                  },
+                ]}
+              >
+                {subCategories.length === 0 ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
+                      No sub categories available
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <Pressable
+                      style={[
+                        styles.optionItem,
+                        { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
+                      ]}
+                      onPress={() => {
+                        setSubCategoryId(undefined);
+                        setShowSubDropdown(false);
+                      }}
+                    >
+                      <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        All Sub Categories
+                      </Text>
+                    </Pressable>
+                    {subCategories.map((option) => (
+                      <Pressable
+                        key={option.id}
+                        style={[
+                          styles.optionItem,
+                          { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
+                        ]}
+                        onPress={() => {
+                          setSubCategoryId(option.id);
+                          setShowSubDropdown(false);
+                        }}
+                      >
+                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                          {option.name}
+                        </Text>
+                        {subCategoryId === option.id && (
+                          <Feather name="check" size={16} color="#007AFF" />
+                        )}
+                      </Pressable>
+                    ))}
+                  </>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Product Group */}
+          <View ref={productGroupRef} style={styles.fieldContainer}>
+            <Pressable
+              style={[
+                styles.dropdown,
+                {
+                  borderColor: isDark ? '#3A3A3C' : '#BBB',
+                  backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+                  opacity: !subCategoryId ? 0.5 : 1,
+                },
+              ]}
+              onPress={() => {
+                if (subCategoryId) {
+                  setShowProductGroupDropdown(!showProductGroupDropdown);
+                  setShowMainDropdown(false);
+                  setShowSubDropdown(false);
+                }
+              }}
+              disabled={!subCategoryId || isLoadingProductGroup}
+            >
+              <Text
+                style={[
+                  styles.dropdownText,
+                  { color: productGroupId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
+                ]}
+                numberOfLines={1}
+              >
+                {isLoadingProductGroup ? 'Loading...' : getSelectedProductGroupName()}
+              </Text>
+              {isLoadingProductGroup ? (
+                <ActivityIndicator size="small" color="#C7C7CC" />
+              ) : (
+                <View
+                  style={[
+                    styles.chevronIcon,
+                    showProductGroupDropdown && styles.chevronIconRotated,
+                  ]}
+                >
+                  <Feather name="chevron-left" size={25} color="#C7C7CC" />
+                </View>
+              )}
+            </Pressable>
+
+            {/* Product Group Options - Inline */}
+            {showProductGroupDropdown && !isLoadingProductGroup && subCategoryId && (
+              <View
+                style={[
+                  styles.inlineOptionsList,
+                  {
+                    backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+                    borderColor: isDark ? '#3A3A3C' : '#BBB',
+                  },
+                ]}
+              >
+                {productGroups.length === 0 ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
+                      No product groups available
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <Pressable
+                      style={[
+                        styles.optionItem,
+                        { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
+                      ]}
+                      onPress={() => {
+                        setProductGroupId(undefined);
+                        setShowProductGroupDropdown(false);
+                      }}
+                    >
+                      <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        All Product Groups
+                      </Text>
+                    </Pressable>
+                    {productGroups.map((option) => (
+                      <Pressable
+                        key={option.id}
+                        style={[
+                          styles.optionItem,
+                          { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
+                        ]}
+                        onPress={() => {
+                          setProductGroupId(option.id);
+                          setShowProductGroupDropdown(false);
+                        }}
+                      >
+                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                          {option.name}
+                        </Text>
+                        {productGroupId === option.id && (
+                          <Feather name="check" size={16} color="#007AFF" />
+                        )}
+                      </Pressable>
+                    ))}
+                  </>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Footer - Done Button - ScrollView içinde */}
           <View style={styles.footer}>
             <Pressable
-              style={({ pressed }) => [
-                styles.doneButton,
-                { opacity: pressed ? 0.8 : 1 },
-              ]}
+              style={({ pressed }) => [styles.doneButton, { opacity: pressed ? 0.8 : 1 }]}
               onPress={handleDone}
             >
               <Text style={styles.doneButtonText}>Done</Text>
             </Pressable>
           </View>
-        </View>
-      </View>
-    </Modal>
+        </BottomSheetScrollView>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  bottomSheetWrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    justifyContent: 'flex-end',
-  },
   container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: SCREEN_HEIGHT * 0.85,
-    paddingTop: 8,
-  },
-  handleBar: {
-    alignItems: 'center',
-    paddingBottom: 16,
-  },
-  handle: {
-    width: 36,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#C6C6C8',
+    flex: 1,
+    paddingBottom: 220,
   },
   header: {
     alignItems: 'center',
-    paddingBottom: 20,
+    paddingBottom: 18,
     paddingHorizontal: 20,
+    paddingTop: 8,
   },
   title: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  contentScrollView: {
-    maxHeight: SCREEN_HEIGHT * 0.5,
+  scrollView: {
+    flex: 1,
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
   fieldContainer: {
-    marginBottom: 12,
-    position: 'relative',
+    marginBottom: 8,
   },
   dropdown: {
-    height: 56,
-    borderWidth: 1.5,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    height: 42,
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   dropdownText: {
-    fontSize: 17,
+    fontSize: 12,
     flex: 1,
+    fontWeight: '500',
   },
-  comingSoonBadge: {
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  chevronIcon: {
+    transform: [{ rotate: '-90deg' }],
+    width: 25,
+    height: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  comingSoonText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#8E8E93',
+  chevronIconRotated: {
+    transform: [{ rotate: '90deg' }],
   },
-  optionsList: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    marginTop: 4,
-    borderWidth: 1.5,
-    borderRadius: 12,
-    zIndex: 1000,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+  inlineOptionsList: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   optionItem: {
-    paddingHorizontal: 16,
+    height: OPTION_ITEM_HEIGHT,
+    paddingHorizontal: 12,
     paddingVertical: 14,
     borderBottomWidth: 0.5,
     flexDirection: 'row',
@@ -513,7 +658,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   optionText: {
-    fontSize: 17,
+    fontSize: 14,
     flex: 1,
   },
   errorContainer: {
@@ -521,23 +666,21 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  errorText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
   emptyText: {
     fontSize: 14,
     textAlign: 'center',
   },
   footer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
     paddingVertical: 16,
-    paddingBottom: 24,
+    paddingBottom: 40,
+    backgroundColor: 'transparent',
+    marginTop: 8,
   },
   doneButton: {
     width: '100%',
     height: 56,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#D8FF08',

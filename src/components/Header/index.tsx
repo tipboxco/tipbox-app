@@ -308,8 +308,8 @@ const HeaderComponent = ({
       return (
         <Pressable onPress={onSearchPress}>
           <MagnifyingGlassIcon
-            width={22}
-            height={22}
+            width={24}
+            height={24}
             color={isDark ? '#FFFFFF' : '#000000'}
           />
         </Pressable>

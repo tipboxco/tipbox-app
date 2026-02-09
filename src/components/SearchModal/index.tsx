@@ -48,11 +48,10 @@ type SearchFilter = 'users' | 'brands' | 'products';
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
-// 🎯 PERFORMANCE: Spring configuration - overshoot olmadan doğrudan yerine oturma
-const SPRING_CONFIG = {
-  damping: 30, // Artırıldı - overshoot'u önlemek için
-  stiffness: 300,
-  mass: 0.8,
+// 🎯 PERFORMANCE: Hızlı ve smooth açılma/kapanma animasyonu
+const ANIMATION_DURATION = 250; // ms - daha hızlı
+const TIMING_CONFIG = {
+  duration: ANIMATION_DURATION,
 };
 
 interface SearchModalProps {
@@ -562,7 +561,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     // lastSelectedTabRef zaten mevcut tab'ı tutuyor, bir sonraki açılışta kullanılacak
   }, [handleClose, progress, panY]);
 
-  // 🎯 PERFORMANCE: FilterBarReanimated gibi single progress SharedValue ile animasyon
+  // 🎯 PERFORMANCE: Hızlı ve smooth animasyon - callback'siz yaklaşım
   useEffect(() => {
     if (visible) {
       dispatch({ type: 'SET_SHOULD_RENDER', payload: true });
@@ -587,38 +586,35 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       // Modal açık olduğunu işaretle (her zaman)
       prevVisibleRef.current = true;
       
-      // 🎯 PERFORMANCE: FilterBarReanimated gibi withSpring kullan
+      // Animasyonu başlat
       const rafId = requestAnimationFrame(() => {
-        progress.value = withSpring(
-          1,
-          SPRING_CONFIG,
-          (finished) => {
-            'worklet';
-            if (finished) {
-              runOnJS(dispatch)({ type: 'SET_IS_ANIMATING', payload: false });
-              runOnJS(focusInput)();
-            }
-          }
-        );
+        progress.value = withTiming(1, TIMING_CONFIG);
       });
 
-      return () => cancelAnimationFrame(rafId);
+      // Animasyon bittiğinde state güncelle
+      const timer = setTimeout(() => {
+        dispatch({ type: 'SET_IS_ANIMATING', payload: false });
+        focusInput();
+      }, ANIMATION_DURATION);
+
+      return () => {
+        cancelAnimationFrame(rafId);
+        clearTimeout(timer);
+      };
     } else if (shouldRender) {
       dispatch({ type: 'SET_IS_ANIMATING', payload: true });
       // Modal kapandı, durumu güncelle
       prevVisibleRef.current = false;
       
-      // 🎯 PERFORMANCE: FilterBarReanimated gibi withSpring kullan
-      progress.value = withSpring(
-        0,
-        SPRING_CONFIG,
-        (finished) => {
-          'worklet';
-          if (finished) {
-            runOnJS(closeModal)();
-          }
-        }
-      );
+      // Animasyonu başlat
+      progress.value = withTiming(0, TIMING_CONFIG);
+
+      // Animasyon bittiğinde modal'ı temizle
+      const timer = setTimeout(() => {
+        closeModal();
+      }, ANIMATION_DURATION);
+
+      return () => clearTimeout(timer);
     }
   }, [visible, progress, panY, shouldRender, focusInput, closeModal, tabProgress]);
 
@@ -665,20 +661,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           if (totalProgress < 0.3 || event.velocityY < -500) {
             // Kapat - animasyonları başlat
             panY.value = 0;
-            progress.value = withSpring(
-              0,
-              SPRING_CONFIG,
-              (finished) => {
-                'worklet';
-                if (finished) {
-                  // JS thread'ine geç - sadece bir kez çağır
-                  runOnJS(closeModal)();
-                }
-              }
-            );
+            progress.value = withTiming(0, TIMING_CONFIG);
+            // Kapanma işlemini handleClose ile yap
+            runOnJS(handleClose)();
           } else {
-            // 🎯 PERFORMANCE: Overshoot olmadan doğrudan yerine oturma
-            panY.value = withSpring(0, SPRING_CONFIG);
+            // 🎯 PERFORMANCE: Hızlı geri dönüş
+            panY.value = withTiming(0, TIMING_CONFIG);
           }
         })
         .enabled(visible && shouldRender && !isAnimating), // Sadece modal açık ve animasyon yokken aktif
