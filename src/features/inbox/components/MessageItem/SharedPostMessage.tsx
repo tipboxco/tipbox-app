@@ -59,6 +59,7 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
   const productDescription = sharedPost.productDescription ?? '';
   const productImageUrl = sharedPost.productImageUrl;
   const productGroupImageUrl = sharedPost.productGroupImageUrl;
+  const contextData = sharedPost.contextData;
   const status = sharedPost.status;
   const postId = sharedPost.postId;
   const postType = sharedPost.postType ?? null;
@@ -67,12 +68,12 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
     (postType && POST_TYPE_BUTTON_LABELS[postType]) ||
     'See Post';
 
-  /** Kart içi başlık: sadece product/group adı veya "Shared post"; post tipi (Compare Post vb.) name alanına yazılmaz */
+  /** Kart içi başlık: productName, contextData.name (contextType product), productGroupName veya "Shared post" */
   const contentTitle =
-    productName || productGroupName || 'Shared post';
+    productName || (sharedPost.contextType === 'product' ? (contextData?.name ?? '') : '') || productGroupName || 'Shared post';
 
-  /** İçerik görseli: sadece ürün/ürün grubu görseli; avatar content alanına basılmaz (header'da zaten var) */
-  const thumbnailSource = productImageUrl ?? productGroupImageUrl ?? null;
+  /** İçerik görseli: productImageUrl, contextData.image (product), productGroupImageUrl; avatar content'ta kullanılmaz */
+  const thumbnailSource = productImageUrl ?? (sharedPost.contextType === 'product' ? (contextData?.image ?? null) : null) ?? productGroupImageUrl ?? null;
   const contentImageSource = thumbnailSource ? toImageSource(thumbnailSource) : null;
 
   const handleSeePost = () => {
@@ -84,26 +85,47 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
     }
   };
 
+  const isSent = item.isSent;
   const separatorColor = isDark ? SEPARATOR_COLOR_DARK : SEPARATOR_COLOR_LIGHT;
   const cardBg = isDark ? '#1A1A1A' : '#FFFFFF';
   const borderColor = isDark ? '#2A2A2A' : '#F0F0F0';
   const textPrimary = isDark ? '#FFFFFF' : '#000000';
   const textSecondary = isDark ? '#8C8C8C' : '#6B7280';
-  const buttonBg = isDark ? '#2A2A2A' : '#E5E5E5';
-  const buttonTextColor = isDark ? '#E5E5E5' : '#374151';
+  const buttonBg = '#C2E607'; // Figma 6390-61042: lime green (request type green)
+  const buttonTextColor = '#111827';
 
   const messageText = (item.text || '').trim();
+  const bubbleBg = isSent ? '#6366F1' : (isDark ? '#1A1A1A' : '#F2F2F2');
+  const bubbleTextColor = isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000');
 
   return (
-    <VStack alignItems="flex-start" px="$4" py="$2" maxWidth="85%">
+    <VStack alignItems={isSent ? 'flex-end' : 'flex-start'} px={isSent ? '$2' : '$4'} py="$2">
+      {messageText ? (
+        <Box
+          alignSelf={isSent ? 'flex-end' : 'flex-start'}
+          maxWidth="60%"
+          mb="$2"
+          px={12}
+          py={8}
+          borderRadius={16}
+          borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
+          borderTopRightRadius={isSent ? (isFirstInGroup ? 16 : 4) : 16}
+          bg={bubbleBg}
+        >
+          <Text fontSize="$sm" fontWeight="$normal" color={bubbleTextColor}>
+            {messageText}
+          </Text>
+        </Box>
+      ) : null}
       <Box
         bg={cardBg}
         borderRadius={16}
         borderTopLeftRadius={isFirstInGroup ? 16 : 4}
         borderTopRightRadius={16}
         overflow="hidden"
-        alignSelf="flex-start"
+        alignSelf={isSent ? 'flex-end' : 'flex-start'}
         width="100%"
+        maxWidth="60%"
         borderWidth={1}
         borderColor={borderColor}
       >
@@ -208,17 +230,6 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
           </Pressable>
         </Box>
       </Box>
-      {messageText ? (
-        <Text
-          color={textSecondary}
-          fontSize="$sm"
-          fontWeight="$normal"
-          mt="$2"
-          numberOfLines={3}
-        >
-          {messageText}
-        </Text>
-      ) : null}
     </VStack>
   );
 };

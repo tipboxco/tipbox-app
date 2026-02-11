@@ -27,6 +27,9 @@ export interface MessageDetailItem {
     productDescription?: string;
     status?: string;
     actionButtonLabel?: string;
+    /** Backend: contextType "product" ise contextData.name + contextData.image kullanılır */
+    contextType?: string | null;
+    contextData?: { id: string; name?: string; image?: string | null } | null;
   };
   supportRequest?: {
     supportType: string;
