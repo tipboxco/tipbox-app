@@ -14,14 +14,19 @@ export interface MessageDetailItem {
   type?: 'message' | 'support_request' | 'tips' | 'image' | 'sharedpost';
   sharedPost?: {
     postId: string;
-    authorName: string;
+    postType?: 'QUESTION' | 'UPDATE' | 'EXPERIENCE' | 'COMPARE' | 'TIPS' | 'FREE' | null;
+    authorName?: string;
     authorTitle?: string;
     authorAvatar?: any;
     authorId?: string;
-    productName: string;
+    productName?: string;
     productImageUrl?: string | null;
+    /** Product group ise: product group adı ve görseli */
+    productGroupName?: string | null;
+    productGroupImageUrl?: string | null;
     productDescription?: string;
     status?: string;
+    actionButtonLabel?: string;
   };
   supportRequest?: {
     supportType: string;
