@@ -194,8 +194,8 @@ export const useTrusterList = (
       return getTrusterList(userId, searchQuery, sort);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 2 * 60 * 60 * 1000, // 2 saat cache (search yoksa)
-    gcTime: hasSearchQuery ? 0 : 4 * 60 * 60 * 1000, // 4 saat garbage collection
+    staleTime: 0, // 2 saat cache (search yoksa)
+    gcTime: 0, // 4 saat garbage collection
     refetchOnMount: hasSearchQuery ? 'always' : false, // Search yoksa cache'den al
     refetchOnWindowFocus: hasSearchQuery, // Sadece search varsa window focus'ta refetch
     placeholderData: undefined,

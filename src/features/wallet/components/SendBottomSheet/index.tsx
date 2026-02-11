@@ -1319,7 +1319,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           sendTips(
             {
               ...(recipientId && { recipientId }),
-              ...(walletAddress && { walletAddress }),
+              ...(walletAddress && {recipientId: walletAddress }),
               amount: tipsAmount,
               message: 'TIPS transfer',
             },

@@ -82,8 +82,8 @@ export const useWalletInfo = () => {
   return useQuery<WalletInfo, Error>({
     queryKey: walletKeys.info(),
     queryFn: () => getWalletInfo(),
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 0, // 5 dakika
+    gcTime: 0, // 10 dakika
     refetchOnMount: true,
     refetchOnWindowFocus: false,
     retry: 1, // ✅ PERFORMANCE FIX: Sadece 1 kez dene (backend hazır değilse fazla deneme)

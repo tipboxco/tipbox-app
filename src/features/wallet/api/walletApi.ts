@@ -193,7 +193,9 @@ export const sendTips = async (data: SendTipRequest): Promise<SendTipResponse> =
   try {
     const response = await apiService.getClient().post<SendTipResponse>(
       '/transactions/send-tip',
-      data
+      data,{
+        timeout: 10000*60,
+      }
     );
     return response.data;
   } catch (error: any) {
