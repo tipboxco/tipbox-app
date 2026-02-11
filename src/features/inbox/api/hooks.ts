@@ -5,6 +5,7 @@ import {
   sendGift,
   createSupportRequest,
   sendDirectMessage,
+  sendSharedPostToDm,
   getThreadMessages,
   getSupportRequests,
   acceptSupportRequest,
@@ -30,6 +31,8 @@ import type {
   SendGiftRequest,
   SupportRequestCreate,
   DirectMessageRequest,
+  SendSharedPostToDmRequest,
+  SendSharedPostToDmResponse,
   ThreadMessage,
   SupportRequest,
   GetSupportRequestsParams,
@@ -219,6 +222,33 @@ export const useSendDirectMessage = () => {
     onSuccess: () => {
       // Mesaj listesini invalidate et (socket event'ten sonra güncellenecek)
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Send Shared Post to DM mutation hook
+ * POST /inbox/share-post – Post'u DM thread'e paylaşır (threadId veya recipientUserId ile).
+ *
+ * @example
+ * const sendShared = useSendSharedPostToDm();
+ * sendShared.mutate({
+ *   recipientUserId: 'user-456',
+ *   messageType: 'shared-post',
+ *   sharedPost: { postId: 'post-123', authorName: 'Ahmet', productName: 'iPhone 15' },
+ *   message: 'Bunu gördün mü?'
+ * });
+ */
+export const useSendSharedPostToDm = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<SendSharedPostToDmResponse, Error, SendSharedPostToDmRequest>({
+    mutationFn: sendSharedPostToDm,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      if (data.threadId) {
+        queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(data.threadId) });
+      }
     },
   });
 };

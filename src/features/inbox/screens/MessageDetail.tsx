@@ -55,6 +55,8 @@ interface MessageDetailItem {
     authorId?: string;
     productName: string;
     productImageUrl?: string | null;
+    productGroupName?: string | null;
+    productGroupImageUrl?: string | null;
     productDescription?: string;
     status?: string;
   };
@@ -1513,7 +1515,9 @@ const MessageDetailScreen: React.FC = () => {
           authorAvatar: sharedPostPayload.authorAvatar ?? currentParams.senderAvatar,
           authorId: sharedPostPayload.authorId,
           productName: sharedPostPayload.productName || '',
-          productImageUrl: sharedPostPayload.productImageUrl ?? null,
+          productImageUrl: sharedPostPayload.productImageUrl ?? (sharedPostPayload as any).imageUrl ?? null,
+          productGroupName: sharedPostPayload.productGroupName ?? undefined,
+          productGroupImageUrl: sharedPostPayload.productGroupImageUrl ?? null,
           productDescription: sharedPostPayload.productDescription,
           status: sharedPostPayload.status,
         },

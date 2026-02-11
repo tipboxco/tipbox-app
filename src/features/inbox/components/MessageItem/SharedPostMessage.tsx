@@ -1,9 +1,9 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Pressable } from 'react-native';
-import { Box, VStack, HStack, Text, Image, Button, ButtonText } from '@gluestack-ui/themed';
+import { Box, VStack, HStack, Text, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { formatMessageTime } from '../../utils/messageHelpers';
 import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import type { MessageItemProps } from './types';
@@ -12,11 +12,34 @@ interface SharedPostMessageProps extends Pick<MessageItemProps, 'item' | 'isDark
   isFirstInGroup: boolean;
 }
 
+const BULLET = ' • ';
+const SEPARATOR_COLOR_LIGHT = '#E5E5E5';
+const SEPARATOR_COLOR_DARK = '#333333';
+
+const POST_TYPE_BUTTON_LABELS: Record<string, string> = {
+  QUESTION: 'See Question Post',
+  UPDATE: 'See Update Post',
+  EXPERIENCE: 'See Experience Post',
+  COMPARE: 'See Compare Post',
+  TIPS: 'See Tips Post',
+  FREE: 'See Post',
+};
+
+/** productName yokken kart başlığı: postType'a göre */
+const POST_TYPE_TITLES: Record<string, string> = {
+  QUESTION: 'Question Post',
+  UPDATE: 'Update Post',
+  EXPERIENCE: 'Experience Post',
+  COMPARE: 'Compare Post',
+  TIPS: 'Tips Post',
+  FREE: 'Post',
+};
+
 /**
- * Paylaşılan post mesajı (type sharedpost) - Figma tasarımına uygun.
- * Başlık: avatar + yazar adı + zaman + subtitle.
- * Post kartı: ürün görseli + başlık + açıklama + status (Owned).
- * Buton: "See Experience Post" -> Post detay ekranına gider.
+ * Paylaşılan post mesajı (type sharedpost) – Kart tasarımı:
+ * 1. Header: avatar + ad • zaman, alt satırda unvan (ince ayırıcı)
+ * 2. Ürün: thumbnail + ürün adı + açıklama + status (ince ayırıcı)
+ * 3. Buton: postType'a göre veya actionButtonLabel / "See Post"
  */
 export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
   item,
@@ -27,77 +50,107 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
   const sharedPost = item.sharedPost;
   if (!sharedPost) return null;
 
-  const authorName = sharedPost.authorName || params.senderName || 'Unknown';
-  const authorTitle = sharedPost.authorTitle ?? params.senderTitle ?? '';
-  const authorAvatar = sharedPost.authorAvatar ?? item.senderAvatar ?? params.senderAvatar;
-  const productName = sharedPost.productName || '';
-  const productDescription = sharedPost.productDescription || '';
+  // Paylaşılan postun sahibinin bilgileri (gönderen değil)
+  const authorName = sharedPost.authorName || 'Unknown';
+  const authorTitle = sharedPost.authorTitle ?? '';
+  const authorAvatar = sharedPost.authorAvatar ?? null;
+  const productName = sharedPost.productName ?? '';
+  const productGroupName = sharedPost.productGroupName ?? '';
+  const productDescription = sharedPost.productDescription ?? '';
   const productImageUrl = sharedPost.productImageUrl;
+  const productGroupImageUrl = sharedPost.productGroupImageUrl;
   const status = sharedPost.status;
   const postId = sharedPost.postId;
+  const postType = sharedPost.postType ?? null;
+  const buttonLabel =
+    sharedPost.actionButtonLabel ||
+    (postType && POST_TYPE_BUTTON_LABELS[postType]) ||
+    'See Post';
 
-  const handleSeeExperiencePost = () => {
+  /** Kart içi başlık: sadece product/group adı veya "Shared post"; post tipi (Compare Post vb.) name alanına yazılmaz */
+  const contentTitle =
+    productName || productGroupName || 'Shared post';
+
+  /** İçerik görseli: sadece ürün/ürün grubu görseli; avatar content alanına basılmaz (header'da zaten var) */
+  const thumbnailSource = productImageUrl ?? productGroupImageUrl ?? null;
+  const contentImageSource = thumbnailSource ? toImageSource(thumbnailSource) : null;
+
+  const handleSeePost = () => {
     if (postId) {
-      navigateToSharedScreenWithPruning(ROOT_ROUTES.POST, { postId });
+      navigateToSharedScreenWithPruning(ROOT_ROUTES.POST, {
+        screen: 'PostDetailScreen',
+        params: { postId },
+      });
     }
   };
 
-  return (
-    <VStack
-      space="xs"
-      alignItems="flex-start"
-      px="$4"
-      py="$2"
-    >
-      {isFirstInGroup && (
-        <HStack space="sm" alignItems="center" mb="$1">
-          <Image
-            source={toImageSource(authorAvatar) || DEFAULT_USER_AVATAR}
-            alt={authorName}
-            width={32}
-            height={32}
-            borderRadius={16}
-          />
-          <Text
-            color={isDark ? '#FFFFFF' : '#000000'}
-            fontSize="$sm"
-            fontWeight="$bold"
-          >
-            {authorName}
-          </Text>
-          <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$2xs" fontWeight="$normal">
-            {item.timestamp}
-          </Text>
-        </HStack>
-      )}
-      {authorTitle ? (
-        <Text
-          color={isDark ? '#8C8C8C' : '#8C8C8C'}
-          fontSize="$xs"
-          fontWeight="$normal"
-          numberOfLines={1}
-          mb="$1"
-        >
-          {authorTitle}
-        </Text>
-      ) : null}
+  const separatorColor = isDark ? SEPARATOR_COLOR_DARK : SEPARATOR_COLOR_LIGHT;
+  const cardBg = isDark ? '#1A1A1A' : '#FFFFFF';
+  const borderColor = isDark ? '#2A2A2A' : '#F0F0F0';
+  const textPrimary = isDark ? '#FFFFFF' : '#000000';
+  const textSecondary = isDark ? '#8C8C8C' : '#6B7280';
+  const buttonBg = isDark ? '#2A2A2A' : '#E5E5E5';
+  const buttonTextColor = isDark ? '#E5E5E5' : '#374151';
 
+  const messageText = (item.text || '').trim();
+
+  return (
+    <VStack alignItems="flex-start" px="$4" py="$2" maxWidth="85%">
       <Box
-        bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+        bg={cardBg}
         borderRadius={16}
         borderTopLeftRadius={isFirstInGroup ? 16 : 4}
         borderTopRightRadius={16}
         overflow="hidden"
-        maxWidth="85%"
         alignSelf="flex-start"
+        width="100%"
+        borderWidth={1}
+        borderColor={borderColor}
       >
-        <VStack space="sm" p="$3">
-          {/* Post kartı: ürün görseli + başlık + açıklama + status */}
+        {/* 1. Header: avatar + ad • zaman, alt satırda unvan */}
+        <Box px="$3" pt="$3" pb="$2" borderBottomWidth={1} borderBottomColor={separatorColor}>
+          <HStack space="sm" alignItems="center">
+            <Image
+              source={toImageSource(authorAvatar) || DEFAULT_USER_AVATAR}
+              alt={authorName}
+              width={36}
+              height={36}
+              borderRadius={18}
+            />
+            <VStack flex={1} space="2xs">
+              <HStack alignItems="center" flexWrap="wrap" gap={4}>
+                <Text color={textPrimary} fontSize="$sm" fontWeight="$bold" numberOfLines={1}>
+                  {authorName}
+                </Text>
+                <Text color={textSecondary} fontSize="$2xs" fontWeight="$normal">
+                  {BULLET}
+                </Text>
+                <Text color={textSecondary} fontSize="$2xs" fontWeight="$normal">
+                  {item.timestamp}
+                </Text>
+              </HStack>
+              {authorTitle ? (
+                <Text
+                  color={textSecondary}
+                  fontSize="$xs"
+                  fontWeight="$normal"
+                  numberOfLines={1}
+                  mt="$0.5"
+                >
+                  {authorTitle}
+                </Text>
+              ) : null}
+            </VStack>
+          </HStack>
+        </Box>
+
+        {/* 2. İçerik: thumbnail (sadece ürün/group görseli veya placeholder) + başlık + opsiyonel açıklama/status */}
+        <Box px="$3" py="$3" borderBottomWidth={1} borderBottomColor={separatorColor}>
           <HStack space="sm" alignItems="flex-start">
-            {productImageUrl ? (
+            {contentImageSource ? (
               <Image
-                source={toImageSource(productImageUrl)}
-                alt={productName}
+                source={contentImageSource}
+                alt={contentTitle}
                 width={56}
                 height={56}
                 borderRadius={8}
@@ -111,21 +164,21 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
                 alignItems="center"
                 justifyContent="center"
               >
-                <Feather name="image" size={24} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
+                <Feather name="file-text" size={24} color={textSecondary} />
               </Box>
             )}
-            <VStack flex={1} space="2xs">
+            <VStack flex={1} space="2xs" minWidth={0}>
               <Text
-                color={isDark ? '#FFFFFF' : '#000000'}
+                color={textPrimary}
                 fontSize="$sm"
-                fontWeight="$bold"
-                numberOfLines={1}
+                fontWeight="$semibold"
+                numberOfLines={2}
               >
-                {productName}
+                {contentTitle}
               </Text>
               {productDescription ? (
                 <Text
-                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  color={textSecondary}
                   fontSize="$xs"
                   fontWeight="$normal"
                   numberOfLines={2}
@@ -135,38 +188,52 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
               ) : null}
               {status ? (
                 <HStack space="xs" alignItems="center" mt="$1">
-                  <Feather
-                    name="monitor"
-                    size={12}
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  />
-                  <Text
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                    fontSize="$2xs"
-                    fontWeight="$medium"
-                  >
+                  <Feather name="box" size={12} color={textSecondary} />
+                  <Text color={textSecondary} fontSize="$2xs" fontWeight="$medium">
                     {status}
                   </Text>
                 </HStack>
               ) : null}
             </VStack>
           </HStack>
+        </Box>
 
-          {/* See Experience Post butonu */}
-          <Button
-            onPress={handleSeeExperiencePost}
-            bg={isDark ? '#2A2A2A' : '#E5E5E5'}
-            borderRadius={8}
-            py="$2"
-            alignSelf="center"
-            size="sm"
+        {/* 3. Buton */}
+        <Box px="$3" py="$3">
+          <Pressable
+            onPress={handleSeePost}
+            style={[styles.button, { backgroundColor: buttonBg }]}
           >
-            <ButtonText color={isDark ? '#FFFFFF' : '#000000'} fontSize="$xs" fontWeight="$semibold">
-              See Experience Post
-            </ButtonText>
-          </Button>
-        </VStack>
+            <Text style={[styles.buttonText, { color: buttonTextColor }]}>{buttonLabel}</Text>
+          </Pressable>
+        </Box>
       </Box>
+      {messageText ? (
+        <Text
+          color={textSecondary}
+          fontSize="$sm"
+          fontWeight="$normal"
+          mt="$2"
+          numberOfLines={3}
+        >
+          {messageText}
+        </Text>
+      ) : null}
     </VStack>
   );
 };
+
+const styles = StyleSheet.create({
+  button: {
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});

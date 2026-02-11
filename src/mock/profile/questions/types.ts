@@ -9,6 +9,7 @@ export interface QuestionPost {
   category?: QuestionCategory; // Optional: contextData yoksa undefined olabilir
   content: string;
   isBoosted?: boolean;
+  boostPrice?: number; // Dinamik boost fiyatı (backend'den gelir)
   images?: any[];
   stats: {
     likes: number;

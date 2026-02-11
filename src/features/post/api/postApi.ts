@@ -336,7 +336,7 @@ export interface CreateQuestionPostRequest {
   contextType: ApiContextType;
   contextId: string;
   description: string;
-  selectedBoostOptionId: string;
+  boostEnabled: boolean; // Boost ON/OFF
   images?: string[];
 }
 
@@ -352,7 +352,7 @@ export const createQuestionPost = async (
       contextType: data.contextType,
       contextId: data.contextId,
       description: data.description?.substring(0, 50) + '...',
-      selectedBoostOptionId: data.selectedBoostOptionId,
+      boostEnabled: data.boostEnabled,
       imagesCount: data.images?.length || 0,
     });
     
@@ -362,7 +362,7 @@ export const createQuestionPost = async (
     formData.append('contextType', data.contextType);
     formData.append('contextId', data.contextId);
     formData.append('description', data.description);
-    formData.append('selectedBoostOptionId', data.selectedBoostOptionId);
+    formData.append('boostEnabled', String(data.boostEnabled)); // Boolean olarak gönder
     
     if (data.images && data.images.length > 0) {
       data.images.forEach((imageUri, index) => {
@@ -394,7 +394,7 @@ export const createQuestionPost = async (
       contextType: data.contextType,
       contextId: data.contextId,
       description: data.description?.substring(0, 50) + '...',
-      selectedBoostOptionId: data.selectedBoostOptionId,
+      boostEnabled: data.boostEnabled,
       imagesCount: data.images?.length || 0,
     });
     
@@ -421,7 +421,7 @@ export const createQuestionPost = async (
         contextType: data.contextType,
         contextId: data.contextId,
         description: data.description?.substring(0, 50) + '...',
-        selectedBoostOptionId: data.selectedBoostOptionId,
+        boostEnabled: data.boostEnabled,
         imagesCount: data.images?.length || 0,
       },
       responseData: error.response?.data,
@@ -988,6 +988,111 @@ export const searchPosts = async (
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Dynamic Boost Price Request/Response
+ * Question post için dinamik boost fiyatını getirir
+ */
+export interface GetBoostPriceResponse {
+  price: number; // Dinamik boost fiyatı (TIPS)
+  currency: string; // "TIPS"
+  factors?: {
+    onlineUsers?: number;
+    activityLevel?: string;
+    timeOfDay?: string;
+  };
+}
+
+/** 404 durumunda kullanılan varsayılan boost fiyatı (backend endpoint yoksa veya route sırası yanlışsa) */
+const BOOST_PRICE_FALLBACK: GetBoostPriceResponse = {
+  price: 0,
+  currency: 'TIPS',
+};
+
+/**
+ * Get Dynamic Boost Price endpoint function
+ * Platform aktivitesine göre güncel boost fiyatını döner.
+ * 404 (Post not found) dönerse backend'de GET /posts/boost-price muhtemelen GET /posts/:postId'den sonra tanımlı;
+ * bu durumda fallback fiyat dönülür, ekran kırılmaz.
+ *
+ * @returns GetBoostPriceResponse - Dinamik boost fiyat bilgisi
+ */
+export const getBoostPrice = async (): Promise<GetBoostPriceResponse> => {
+  try {
+    const response = await apiService.getClient().get<GetBoostPriceResponse>(
+      '/posts/boost-price'
+    );
+    return response.data;
+  } catch (error: any) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message;
+
+    if (status === 404 && message === 'Post not found') {
+      // Backend'de route sırası: GET /posts/boost-price, GET /posts/:postId'den ÖNCE tanımlanmalı
+      console.warn('[getBoostPrice] ⚠️ 404 Post not found – using fallback. Ensure backend route GET /posts/boost-price is defined before GET /posts/:postId.');
+      return BOOST_PRICE_FALLBACK;
+    }
+
+    console.error('[getBoostPrice] ❌ API Error:', {
+      url: '/posts/boost-price',
+      method: 'GET',
+      status,
+      responseData: error.response?.data,
+      errorMessage: error.message,
+    });
+    throw error;
+  }
+};
+export interface ToggleBoostRequest {
+  postId: string;
+  enabled: boolean; // true: boost'u aç, false: boost'u kapat
+}
+
+export interface ToggleBoostResponse {
+  success: boolean;
+  postId: string;
+  isBoosted: boolean;
+  boostPrice?: number; // Backend'den dönen dinamik fiyat (kullanıcı aktivitesine göre)
+  message?: string;
+}
+
+/**
+ * Toggle Boost endpoint function
+ * Question post için boost'u açar veya kapatır
+ * Backend, kullanıcı aktivitesine göre dinamik bir fiyat döner
+ *
+ * @param data - Toggle boost request data
+ * @returns ToggleBoostResponse - Boost durumu ve fiyat bilgisi
+ */
+export const togglePostBoost = async (
+  data: ToggleBoostRequest
+): Promise<ToggleBoostResponse> => {
+  try {
+    console.log('[togglePostBoost] 📤 Request:', {
+      postId: data.postId,
+      enabled: data.enabled,
+    });
+
+    const response = await apiService.getClient().patch<ToggleBoostResponse>(
+      `/posts/${data.postId}/boost`,
+      { enabled: data.enabled }
+    );
+
+    console.log('[togglePostBoost] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[togglePostBoost] ❌ API Error:', {
+      url: `/posts/${data.postId}/boost`,
+      method: 'PATCH',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: data,
+      responseData: error.response?.data,
+      errorMessage: error.message,
     });
     throw error;
   }

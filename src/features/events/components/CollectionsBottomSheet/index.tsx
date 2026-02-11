@@ -109,8 +109,8 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   // Dropdown açık mı kontrolü - herhangi biri açıksa 75%'e snap et
   const isAnyDropdownOpen = showMainDropdown || showSubDropdown || showProductGroupDropdown;
 
-  // SnapPoints: default 50%, dropdown açıkken 75%
-  const snapPoints = useMemo(() => ['50%', '75%'], []);
+  // SnapPoints: default 45%, dropdown açıkken 70%
+  const snapPoints = useMemo(() => ['40%', '70%'], []);
 
   // Mock data usage
   const mainCategories = MOCK_MAIN_CATEGORIES;
@@ -243,12 +243,15 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
       onDismiss={onClose}
       onChange={handleSheetChanges}
       backgroundStyle={{
-        backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+        backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
       }}
       handleIndicatorStyle={{
         backgroundColor: isDark ? '#666' : '#B8B8B7',
         width: 70,
         height: 5,
+        borderRadius: 10,
       }}
       bottomInset={insets.bottom}
       detached={false}
@@ -294,7 +297,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               <Text
                 style={[
                   styles.dropdownText,
-                  { color: mainCategoryId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
+                  { color: mainCategoryId ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666') },
                 ]}
                 numberOfLines={1}
               >
@@ -316,15 +319,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
 
             {/* Main Category Options - Inline */}
             {showMainDropdown && !isLoadingMain && (
-              <View
-                style={[
-                  styles.inlineOptionsList,
-                  {
-                    backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-                    borderColor: isDark ? '#3A3A3C' : '#BBB',
-                  },
-                ]}
-              >
+              <View style={styles.inlineOptionsList}>
                 {mainCategories.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
@@ -334,36 +329,30 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 ) : (
                   <>
                     <Pressable
-                      style={[
-                        styles.optionItem,
-                        { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                      ]}
+                      style={styles.simpleOptionItem}
                       onPress={() => {
                         setMainCategoryId(undefined);
                         setShowMainDropdown(false);
                       }}
                     >
-                      <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                      <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
                         All Categories
                       </Text>
                     </Pressable>
                     {mainCategories.map((option) => (
                       <Pressable
                         key={option.id}
-                        style={[
-                          styles.optionItem,
-                          { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                        ]}
+                        style={styles.simpleOptionItem}
                         onPress={() => {
                           setMainCategoryId(option.id);
                           setShowMainDropdown(false);
                         }}
                       >
-                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
                           {option.name}
                         </Text>
                         {mainCategoryId === option.id && (
-                          <Feather name="check" size={16} color="#007AFF" />
+                          <Feather name="check" size={16} color="#007AFF" style={styles.checkIcon} />
                         )}
                       </Pressable>
                     ))}
@@ -396,7 +385,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               <Text
                 style={[
                   styles.dropdownText,
-                  { color: subCategoryId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
+                  { color: subCategoryId ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666') },
                 ]}
                 numberOfLines={1}
               >
@@ -418,15 +407,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
 
             {/* Sub Category Options - Inline */}
             {showSubDropdown && !isLoadingSub && mainCategoryId && (
-              <View
-                style={[
-                  styles.inlineOptionsList,
-                  {
-                    backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-                    borderColor: isDark ? '#3A3A3C' : '#BBB',
-                  },
-                ]}
-              >
+              <View style={styles.inlineOptionsList}>
                 {subCategories.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
@@ -436,36 +417,30 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 ) : (
                   <>
                     <Pressable
-                      style={[
-                        styles.optionItem,
-                        { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                      ]}
+                      style={styles.simpleOptionItem}
                       onPress={() => {
                         setSubCategoryId(undefined);
                         setShowSubDropdown(false);
                       }}
                     >
-                      <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                      <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
                         All Sub Categories
                       </Text>
                     </Pressable>
                     {subCategories.map((option) => (
                       <Pressable
                         key={option.id}
-                        style={[
-                          styles.optionItem,
-                          { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                        ]}
+                        style={styles.simpleOptionItem}
                         onPress={() => {
                           setSubCategoryId(option.id);
                           setShowSubDropdown(false);
                         }}
                       >
-                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
                           {option.name}
                         </Text>
                         {subCategoryId === option.id && (
-                          <Feather name="check" size={16} color="#007AFF" />
+                          <Feather name="check" size={16} color="#007AFF" style={styles.checkIcon} />
                         )}
                       </Pressable>
                     ))}
@@ -498,7 +473,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               <Text
                 style={[
                   styles.dropdownText,
-                  { color: productGroupId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
+                  { color: productGroupId ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666') },
                 ]}
                 numberOfLines={1}
               >
@@ -520,15 +495,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
 
             {/* Product Group Options - Inline */}
             {showProductGroupDropdown && !isLoadingProductGroup && subCategoryId && (
-              <View
-                style={[
-                  styles.inlineOptionsList,
-                  {
-                    backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-                    borderColor: isDark ? '#3A3A3C' : '#BBB',
-                  },
-                ]}
-              >
+              <View style={styles.inlineOptionsList}>
                 {productGroups.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
@@ -538,36 +505,30 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 ) : (
                   <>
                     <Pressable
-                      style={[
-                        styles.optionItem,
-                        { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                      ]}
+                      style={styles.simpleOptionItem}
                       onPress={() => {
                         setProductGroupId(undefined);
                         setShowProductGroupDropdown(false);
                       }}
                     >
-                      <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                      <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
                         All Product Groups
                       </Text>
                     </Pressable>
                     {productGroups.map((option) => (
                       <Pressable
                         key={option.id}
-                        style={[
-                          styles.optionItem,
-                          { borderBottomColor: isDark ? '#3A3A3C' : '#F2F2F7' },
-                        ]}
+                        style={styles.simpleOptionItem}
                         onPress={() => {
                           setProductGroupId(option.id);
                           setShowProductGroupDropdown(false);
                         }}
                       >
-                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
                           {option.name}
                         </Text>
                         {productGroupId === option.id && (
-                          <Feather name="check" size={16} color="#007AFF" />
+                          <Feather name="check" size={16} color="#007AFF" style={styles.checkIcon} />
                         )}
                       </Pressable>
                     ))}
@@ -580,7 +541,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
           {/* Footer - Done Button - ScrollView içinde */}
           <View style={styles.footer}>
             <Pressable
-              style={({ pressed }) => [styles.doneButton, { opacity: pressed ? 0.8 : 1 }, { backgroundColor: '#D8FF08' }]}
+              style={({ pressed }) => [styles.doneButton, { opacity: pressed ? 0.8 : 1 }]}
               onPress={handleDone}
             >
               <Text style={styles.doneButtonText}>Done</Text>
@@ -596,7 +557,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 18,
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 0,
     backgroundColor: 'transparent',
   },
   title: {
@@ -608,7 +569,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 16,
+    gap: 8,
   },
   fieldContainer: {
     marginBottom: 8,
@@ -639,22 +601,21 @@ const styles = StyleSheet.create({
   },
   inlineOptionsList: {
     marginTop: 8,
-    borderWidth: 1,
-    borderRadius: 5,
-    overflow: 'hidden',
+    paddingVertical: 8,
   },
-  optionItem: {
-    height: OPTION_ITEM_HEIGHT,
+  simpleOptionItem: {
     paddingHorizontal: 12,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  optionText: {
+  simpleOptionText: {
     fontSize: 14,
     flex: 1,
+  },
+  checkIcon: {
+    marginLeft: 8,
   },
   errorContainer: {
     paddingHorizontal: 16,
@@ -667,24 +628,23 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 0,
-    paddingVertical: 16,
-    paddingBottom: 40,
-  
-    marginTop: 8,
+    paddingVertical: 0,
+    paddingTop: 16,
+    paddingBottom: 34,
+    marginTop: 0,
   },
   doneButton: {
     width: '100%',
-    height: 56,
-    borderRadius: 16,
+    height: 44,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-
-   
+    backgroundColor: '#D8FF08',
   },
   doneButtonText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#111',
     textAlign: 'center',
   },
 });

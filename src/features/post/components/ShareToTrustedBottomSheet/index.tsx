@@ -18,7 +18,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useTrustList } from '@/src/features/profile/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
-import { useSharePost } from '@/src/features/interactions/api/hooks';
+import { useSendSharedPostToDm } from '@/src/features/inbox/api/hooks';
 import type { TrustUser } from '@/src/features/profile/types';
 
 const GRID_COLUMNS = 3;
@@ -48,6 +48,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState('');
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   // Track keyboard visibility - keyboardWill* events are faster than keyboardDid*
   React.useEffect(() => {
@@ -84,7 +85,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
     debouncedSearch || undefined
   );
 
-  const sharePostMutation = useSharePost();
+  const sendSharedPostMutation = useSendSharedPostToDm();
   const { width: windowWidth } = useWindowDimensions();
   const gap = 16;
   const paddingH = 20;
@@ -99,23 +100,49 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
     });
   }, []);
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     Keyboard.dismiss();
-    if (sharePostMutation.isPending) return;
+    if (isSending || selectedUserIds.size === 0) return;
 
-    sharePostMutation.mutate(
-      { postId, shareType: 'INTERNAL_REPOST' },
-      {
-        onSuccess: () => {
-          closeBottomSheet();
-          onShareSuccess?.();
-        },
-        onError: (err) => {
-          console.error('[ShareToTrustedBottomSheet] Share error:', err);
-        },
-      }
-    );
-  }, [postId, sharePostMutation, closeBottomSheet, onShareSuccess]);
+    const recipients = Array.from(selectedUserIds);
+    setIsSending(true);
+    try {
+      await Promise.all(
+        recipients.map((recipientUserId) =>
+          sendSharedPostMutation.mutateAsync({
+            recipientUserId,
+            messageType: 'shared-post',
+            sharedPost: {
+              postId,
+              authorName: postAuthorName,
+            },
+            message: message.trim() || undefined,
+          })
+        )
+      );
+      closeBottomSheet();
+      onShareSuccess?.();
+    } catch (err: any) {
+      console.error('[ShareToTrustedBottomSheet] Share error:', {
+        message: err?.message,
+        status: err?.response?.status,
+        responseData: err?.response?.data,
+        postId,
+        recipientCount: recipients.length,
+      });
+    } finally {
+      setIsSending(false);
+    }
+  }, [
+    postId,
+    postAuthorName,
+    message,
+    selectedUserIds,
+    isSending,
+    sendSharedPostMutation,
+    closeBottomSheet,
+    onShareSuccess,
+  ]);
 
   const canSend = selectedUserIds.size > 0;
 
@@ -125,7 +152,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
   const messagePlaceholderColor = isDark ? '#9CA3AF' : '#6B7280';
   const sendButtonBg = isDark ? '#374151' : '#E5E7EB';
   const sendButtonActiveBg = '#C2E607'; // Figma 6390-61042: lime green
-  const sendTextColor = canSend && !sharePostMutation.isPending ? '#111827' : (isDark ? '#9CA3AF' : '#6B7280');
+  const sendTextColor = canSend && !isSending ? '#111827' : (isDark ? '#9CA3AF' : '#6B7280');
 
   const gridTotalWidth = GRID_COLUMNS * itemWidth + gap * (GRID_COLUMNS - 1);
 
@@ -262,13 +289,13 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
         </Input>
         <Pressable
           onPress={handleSend}
-          disabled={sharePostMutation.isPending || !canSend}
-          opacity={sharePostMutation.isPending ? 0.6 : 1}
+          disabled={isSending || !canSend}
+          opacity={isSending ? 0.6 : 1}
           mt="$2"
           py="$3"
           px="$4"
           borderRadius={12}
-          bg={canSend && !sharePostMutation.isPending ? sendButtonActiveBg : sendButtonBg}
+          bg={canSend && !isSending ? sendButtonActiveBg : sendButtonBg}
           width="100%"
           alignItems="center"
           justifyContent="center"
@@ -278,7 +305,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
             fontWeight="$bold"
             color={sendTextColor}
           >
-            {sharePostMutation.isPending ? 'Sending...' : 'Send'}
+            {isSending ? 'Sending...' : 'Send'}
           </Text>
         </Pressable>
       </Box>

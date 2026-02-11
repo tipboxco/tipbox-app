@@ -133,36 +133,34 @@ export interface ThreadParticipant {
  * Backend Response Format - Thread mesajları için (Single Item)
  * ✅ OPTIMIZE: sender objesi yerine sadece senderId gönderilir
  * Sender bilgileri participants'tan alınır
+ *
+ * Shared post örneği (backend bu formatta döner):
+ * { "id": "msg-uuid", "type": "shared_post", "data": { "id": "msg-uuid", "senderId": "...", "message": "Kartın üstündeki metin", "sharedPostId": "01JKP...", "sharedPost": { "postId": "01JKP...", "postType": "UPDATE", "authorName": "...", "authorTitle": "...", "authorAvatar": "..." }, "timestamp": "...", "isUnread": false } }
  */
 export interface ThreadMessageResponseItem {
   id: string;
-  type: 'message' | 'image' | 'support-request' | 'send-tips'; // ✅ 'image' eklendi
+  /** Backend shared_post (snake_case) döner; frontend shared-post olarak normalize eder */
+  type: 'message' | 'image' | 'support-request' | 'send-tips' | 'shared-post' | 'shared_post';
   data: {
     id: string;
-    senderId: string; // ✅ OPTIMIZE: Sadece senderId gönderilir (sender objesi yerine)
-    // ✅ OPTIONAL: Backward compatibility için sender objesi hala gönderilebilir
-    // Ama yeni implementasyonlarda sadece senderId kullanılmalı
+    senderId: string;
     sender?: {
       id: string;
       senderName: string;
       senderTitle: string;
       senderAvatar: string | null;
     };
-    // For message type
     lastMessage?: string;
+    /** Kartın üstündeki metin (shared_post için) */
     message?: string;
     timestamp: string;
+    sentAt?: string; // Backward compatibility / optimize format
     isUnread?: boolean;
-    // ✅ For image type - Görsel mesajlar için
-    mediaUrl?: string;        // Görsel URL'i (CDN'den)
-    thumbnailUrl?: string | null; // Thumbnail URL'i (opsiyonel)
-    caption?: string;         // Görsel altı yazı (opsiyonel)
-    imageUrl?: string;        // Backward compatibility için (mediaUrl yerine)
-    dimensions?: {            // ✅ Görsel boyutları (opsiyonel)
-      width: number;
-      height: number;
-    };
-    // For support-request type
+    mediaUrl?: string;
+    thumbnailUrl?: string | null;
+    caption?: string;
+    imageUrl?: string;
+    dimensions?: { width: number; height: number };
     type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
     amount?: number | string;
     status?: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported';
@@ -170,6 +168,10 @@ export interface ThreadMessageResponseItem {
     requestId?: string;
     fromUserId?: string;
     toUserId?: string;
+    /** shared-post mesajı – DM thread içinde paylaşılan post kartı (postId, postType, authorName, authorTitle, authorAvatar) */
+    sharedPost?: SharedPostPayload;
+    /** Backend bazen sadece sharedPostId dönebilir; frontend bunu shared-post kartına çevirir */
+    sharedPostId?: string;
   };
 }
 
@@ -181,7 +183,7 @@ export interface ThreadMessageResponseItem {
 // Optimize mesaj yapısı (backend'den gelen)
 export interface OptimizedMessage {
   id: string;
-  type: 'message' | 'image' | 'support-request' | 'send-tips';
+  type: 'message' | 'image' | 'support-request' | 'send-tips' | 'shared-post';
   sentAt: string; // ISO 8601
   isRead: boolean;
   readAt?: string; // ISO 8601 (opsiyonel)
@@ -191,10 +193,7 @@ export interface OptimizedMessage {
     thumbnailUrl?: string | null;
     caption?: string;
     fileSize?: number;
-    dimensions?: {
-      width: number;
-      height: number;
-    };
+    dimensions?: { width: number; height: number };
     amount?: number;
     currency?: string;
     supportType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
@@ -202,6 +201,8 @@ export interface OptimizedMessage {
     requestId?: string;
     fromUserId?: string;
     toUserId?: string;
+    /** shared-post için – DM thread içinde paylaşılan post kartı */
+    sharedPost?: SharedPostPayload;
   };
   threadId?: string | null;
 }
@@ -326,17 +327,21 @@ export interface ThreadMessage {
   requestId?: string;
   fromUserId?: string; // Support request için: Request'i oluşturan kullanıcı ID'si (required)
   toUserId?: string; // Support request için: Request'in gönderildiği kullanıcı ID'si (required)
-  // Shared post (app içinden paylaşılan deneyim postu)
+  // Shared post (app içinden paylaşılan deneyim postu); product ise productName+productImageUrl, product group ise productGroupName+productGroupImageUrl
   sharedPost?: {
-    postId: string; // Experience post ID (Post ekranına gitmek için)
-    authorName: string;
+    postId: string;
+    postType?: SharedPostType;
+    authorName?: string;
     authorTitle?: string;
     authorAvatar?: string | null;
     authorId?: string;
-    productName: string;
+    productName?: string;
     productImageUrl?: string | null;
+    productGroupName?: string | null;
+    productGroupImageUrl?: string | null;
     productDescription?: string;
-    status?: string; // e.g. "Owned", "Tried"
+    status?: string;
+    actionButtonLabel?: string;
   };
 }
 
@@ -472,20 +477,23 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     
     // Helper: senderId'ye göre sender bilgilerini participants'tan bul
     const getSenderInfo = (senderId: string) => {
-      if (participants) {
-        if (participants.userOne.id === senderId) {
+      if (participants && 'userOne' in participants && 'userTwo' in participants) {
+        const one = participants.userOne;
+        const two = participants.userTwo;
+        if (one?.id === senderId) {
           return {
-            id: participants.userOne.id,
-            senderName: participants.userOne.name,
-            senderTitle: participants.userOne.title || '',
-            senderAvatar: participants.userOne.avatar,
+            id: one.id,
+            senderName: one.name,
+            senderTitle: one.title || '',
+            senderAvatar: one.avatar,
           };
-        } else if (participants.userTwo.id === senderId) {
+        }
+        if (two?.id === senderId) {
           return {
-            id: participants.userTwo.id,
-            senderName: participants.userTwo.name,
-            senderTitle: participants.userTwo.title || '',
-            senderAvatar: participants.userTwo.avatar,
+            id: two.id,
+            senderName: two.name,
+            senderTitle: two.title || '',
+            senderAvatar: two.avatar,
           };
         }
       }
@@ -503,19 +511,25 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     });
     
     const normalizedMessages: ThreadMessage[] = allMessagesToNormalize.map(({ item, isGrouped, parentId }) => {
-      const { id, type, data } = item;
-      const timestamp = data.timestamp || data.sentAt || (item as any).timestamp || (item as any).sentAt;
+      const { id, type: rawType, data } = item;
+      // Backend shared_post (snake_case) dönebilir; frontend shared-post kullanır
+      const type = rawType === 'shared_post' ? 'shared-post' : rawType;
+      const timestamp =
+        data.timestamp ||
+        (data as { sentAt?: string }).sentAt ||
+        (item as any).timestamp ||
+        (item as any).sentAt;
       
       if (!timestamp) {
         console.warn('[getThreadMessages] Timestamp bulunamadı, mesaj atlanıyor:', { id, type });
         return null;
       }
       
-      const senderId = data.senderId || data.sender?.id;
-      if (!senderId) {
+      const senderId = (data.senderId || data.sender?.id) ?? 'unknown';
+      if (!data.senderId && !data.sender?.id) {
         console.warn('[getThreadMessages] SenderId bulunamadı:', { itemId: id });
       }
-      
+
       // Sender bilgilerini al
       let senderInfo = data.sender ? {
         id: data.sender.id,
@@ -616,20 +630,44 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
         }
       }
       
-      if (type === 'shared-post' && data.sharedPost) {
+      // Backend format: type: "shared_post", data: { message, sharedPostId, sharedPost: { postId, postType, authorName, authorTitle, authorAvatar } }
+      if ((type === 'shared-post' || rawType === 'shared_post') && data.sharedPost) {
+        baseMessage.messageType = 'shared-post';
+        const sp = data.sharedPost as SharedPostPayload;
         baseMessage.sharedPost = {
-          postId: data.sharedPost.postId || data.sharedPost.experiencePostId || (data.sharedPost as any).postId,
-          authorName: data.sharedPost.authorName || senderInfo.senderName || 'Unknown',
-          authorTitle: data.sharedPost.authorTitle ?? senderInfo.senderTitle,
-          authorAvatar: data.sharedPost.authorAvatar ?? senderInfo.senderAvatar,
-          authorId: data.sharedPost.authorId || senderId,
-          productName: data.sharedPost.productName || '',
-          productImageUrl: data.sharedPost.productImageUrl ?? null,
-          productDescription: data.sharedPost.productDescription,
-          status: data.sharedPost.status,
+          postId: sp.postId || sp.experiencePostId || (data.sharedPost as any).postId,
+          postType: sp.postType ?? undefined,
+          authorName: sp.authorName || 'Unknown',
+          authorTitle: (sp.authorTitle ?? undefined) ?? undefined,
+          authorAvatar: sp.authorAvatar ?? undefined,
+          authorId: sp.authorId || senderId,
+          productName: sp.productName ?? '',
+          productImageUrl: sp.productImageUrl ?? sp.imageUrl ?? null,
+          productGroupName: sp.productGroupName ?? undefined,
+          productGroupImageUrl: sp.productGroupImageUrl ?? null,
+          productDescription: sp.productDescription ?? undefined,
+          status: sp.status,
+          actionButtonLabel: sp.actionButtonLabel,
+        };
+      } else if ((type === 'shared-post' || rawType === 'shared_post') && data.sharedPostId) {
+        // Backend sadece sharedPostId döndüyse shared-post kartı olarak göster (fallback)
+        baseMessage.messageType = 'shared-post';
+        baseMessage.sharedPost = {
+          postId: data.sharedPostId,
+          postType: undefined,
+          authorName: senderInfo.senderName ?? 'Unknown',
+          authorTitle: senderInfo.senderTitle ?? undefined,
+          authorAvatar: senderInfo.senderAvatar ?? undefined,
+          authorId: senderId,
+          productName: '',
+          productImageUrl: null,
+          productGroupName: undefined,
+          productGroupImageUrl: null,
+          productDescription: undefined,
+          status: undefined,
         };
       }
-      
+
       // ✅ Grup mesajları ekle (5 dakika içinde aynı kullanıcıdan gelen text mesajlar - tek balonda gösterilecek)
       return baseMessage;
     }).filter((msg): msg is ThreadMessage => msg !== null); // null mesajları filtrele
@@ -730,6 +768,117 @@ export interface DirectMessageRequest {
   recipientUserId: string;
   message: string;
 }
+
+/** Backend shared post tipi – buton metni buna göre belirlenir */
+export type SharedPostType = 'QUESTION' | 'UPDATE' | 'EXPERIENCE' | 'COMPARE' | 'TIPS' | 'FREE' | null;
+
+/**
+ * Shared Post payload – DM thread içinde gösterilen paylaşılan post kartı.
+ * Backend: product ise productName + productImageUrl; product group ise productGroupName + productGroupImageUrl.
+ */
+export interface SharedPostPayload {
+  postId: string;
+  postType?: SharedPostType;
+  experiencePostId?: string;
+  authorName?: string;
+  authorTitle?: string | null;
+  authorAvatar?: string | null;
+  authorId?: string;
+  productName?: string;
+  /** Ürün görseli; backend bazen imageUrl olarak da gönderir, normalizasyonda productImageUrl'e eşlenir */
+  productImageUrl?: string | null;
+  imageUrl?: string | null;
+  productGroupName?: string | null;
+  productGroupImageUrl?: string | null;
+  productDescription?: string | null;
+  status?: string;
+  originalPostTimestamp?: string;
+  actionButtonLabel?: string;
+}
+
+/**
+ * Request – Post paylaşıldıktan sonra DM thread içine shared post mesajı göndermek.
+ * POST /inbox veya POST /inbox/threads/:threadId/messages
+ */
+export interface SendSharedPostToDmRequest {
+  /** Mesajın gideceği thread (veya tek alıcı için recipientUserId) */
+  threadId?: string;
+  /** Tek alıcıya gönderim için; threadId yoksa thread oluşturulur/getirilir */
+  recipientUserId?: string;
+  messageType: 'shared-post';
+  sharedPost: {
+    postId: string;
+    /** Backend postId ile çekebilir; gönderilirse UI anında dolu gelir */
+    authorName?: string;
+    authorTitle?: string | null;
+    authorAvatar?: string | null;
+    authorId?: string;
+    productName?: string;
+    productImageUrl?: string | null;
+    productGroupName?: string | null;
+    productGroupImageUrl?: string | null;
+    productDescription?: string | null;
+    status?: string;
+  };
+  /** Opsiyonel metin (kartın üstünde gösterilebilir) */
+  message?: string;
+}
+
+/**
+ * Response – Shared post mesajı gönderildikten sonra (201 Created).
+ * Backend: { success, threadId, messageId }
+ */
+export interface SendSharedPostToDmResponse {
+  success?: boolean;
+  messageId: string;
+  threadId: string;
+  sentAt?: string; // ISO 8601 (opsiyonel)
+}
+
+/**
+ * POST /inbox/share-post – Post'u DM thread içine paylaşır.
+ * threadId veya recipientUserId ile çağrılır; recipientUserId ile yeni thread oluşturulabilir.
+ */
+export const sendSharedPostToDm = async (
+  data: SendSharedPostToDmRequest
+): Promise<SendSharedPostToDmResponse> => {
+  try {
+    if (__DEV__) {
+      console.log('[sendSharedPostToDm] 📤 Request:', {
+        url: '/inbox/share-post',
+        method: 'POST',
+        body: {
+          threadId: data.threadId,
+          recipientUserId: data.recipientUserId,
+          messageType: data.messageType,
+          sharedPost: data.sharedPost,
+          message: data.message ? `${data.message.slice(0, 50)}${data.message.length > 50 ? '...' : ''}` : undefined,
+        },
+      });
+    }
+    const response = await apiService.getClient().post<SendSharedPostToDmResponse>(
+      '/inbox/share-post',
+      data
+    );
+    if (__DEV__) {
+      console.log('[sendSharedPostToDm] ✅ Response:', {
+        status: response.status,
+        data: response.data,
+      });
+    }
+    return response.data;
+  } catch (error: any) {
+    if (__DEV__) {
+      console.error('[sendSharedPostToDm] ❌ Error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        message: error.message,
+      });
+    }
+    throw error;
+  }
+};
 
 /**
  * Send Direct Message endpoint
@@ -1191,17 +1340,15 @@ export const unmuteThread = async (threadId: string): Promise<void> => {
  * @returns MessageFeedItem[] - Feed item listesi
  */
 export const getMessageFeed = async (limit: number = 50): Promise<MessageFeedItem[]> => {
+  const limitParam = Math.min(limit, 100).toString();
   try {
-    const params = new URLSearchParams();
-    params.append('limit', Math.min(limit, 100).toString());
-
     const response = await apiService.getClient().get<MessageFeedItem[]>(
-      `/inbox/feed?${params.toString()}`
+      `/inbox/feed?limit=${limitParam}`
     );
     return response.data;
   } catch (error: any) {
     console.error('[getMessageFeed] API Error:', {
-      url: `/inbox/feed?${params.toString()}`,
+      url: `/inbox/feed?limit=${limitParam}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

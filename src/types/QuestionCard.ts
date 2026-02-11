@@ -41,6 +41,7 @@ export interface QuestionApiItem {
   contextData: QuestionApiContextData;
   content: string;
   isBoosted: boolean;
+  boostPrice?: number; // Dinamik boost fiyatı (backend'den gelir)
   images: string[];
   // Interaction states
   isLiked?: boolean;
@@ -88,6 +89,7 @@ export interface QuestionCardData {
   category?: QuestionCardCategory; // Optional: contextData yoksa undefined olabilir
   content: string;
   isBoosted?: boolean;
+  boostPrice?: number; // Dinamik boost fiyatı (backend'den gelir)
   images?: ImageSourcePropType[];
   stats: QuestionCardStats;
   createdAt: string;

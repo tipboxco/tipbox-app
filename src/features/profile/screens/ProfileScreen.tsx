@@ -13,6 +13,7 @@ import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-naviga
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
+import { usePaymentDashboard } from '@/src/features/settings/api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -393,7 +394,37 @@ interface TabContentProps {
   onQueryRef?: (tabKey: TabKey, query: any) => void;
   profileBadges?: Badge[];
   onBadgePress?: (badge: Badge) => void;
+  hasPrimePass?: boolean;
 }
+
+// NFT ribbon: Prime Pass kullanıcıları badge'i NFT olarak satabilir; sol üstte gösterilir
+const NFTBadgeRibbon: React.FC = () => (
+  <View
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: 36,
+      height: 36,
+      backgroundColor: '#D0F205',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transform: [{ rotate: '-45deg' }],
+      zIndex: 1,
+    }}
+  >
+    <RNText
+      style={{
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#111111',
+        transform: [{ rotate: '45deg' }],
+      }}
+    >
+      NFT
+    </RNText>
+  </View>
+);
 
 // TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
 interface TabsBarProps {
@@ -481,7 +512,7 @@ const BADGE_FILTERS = ['All Badges', 'Event Badges', 'Collections'] as const;
 type BadgeFilterKey = (typeof BADGE_FILTERS)[number];
 
 // Tab Content Component - Sadece içeriği render eder (FlatList yok)
-const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef, profileBadges = [], onBadgePress }) => {
+const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef, profileBadges = [], onBadgePress, hasPrimePass = false }) => {
   const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
   const filteredBadges = useMemo(() => {
     if (tabKey !== 'badge') return [];
@@ -645,41 +676,53 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
           </Box>
         ) : (
           <Box flexDirection="row" flexWrap="wrap" justifyContent="space-between">
-            {filteredBadges.map((badge) => (
-              <Pressable
-                key={badge.id}
-                onPress={() => onBadgePress?.(badge)}
-                width={114}
-                height={130}
-                mb={12}
-                alignItems="center"
-                justifyContent="center"
-                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                borderWidth={1}
-                borderColor={isDark ? '#333' : '#E9E9E9'}
-                borderRadius={5}
-                p="$2"
-              >
-                <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
-                  <Image
-                    source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                    alt={badge.title}
-                    style={{ width: 56, height: 56 }}
-                    resizeMode="contain"
-                  />
+            {filteredBadges.map((badge) => {
+              const isCollectionCard = badgeFilter === 'Collections';
+              // Collection kısmında card: Figma 6498-33367 (borderRadius 16, aynı bg/border)
+              const cardBorderRadius = isCollectionCard ? 16 : 5;
+              return (
+                <Box key={badge.id} position="relative" width={114} height={130} mb={12}>
+                  {hasPrimePass && <NFTBadgeRibbon />}
+                  <Pressable
+                    onPress={() => onBadgePress?.(badge)}
+                    width={114}
+                    height={130}
+                    alignItems="center"
+                    justifyContent="center"
+                    bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                    borderWidth={1}
+                    borderColor={isDark ? '#333' : '#E9E9E9'}
+                    borderRadius={cardBorderRadius}
+                    p="$2"
+                    overflow="hidden"
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    bottom={0}
+                  >
+                    <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
+                    <Image
+                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                      alt={badge.title}
+                      style={{ width: 56, height: 56 }}
+                      resizeMode="contain"
+                    />
+                  </Box>
+                    <Text
+                      mt="$1"
+                      fontSize="$2xs"
+                      fontWeight="$semibold"
+                      color={isDark ? '$textDark50' : '$textLight900'}
+                      textAlign="center"
+                      numberOfLines={2}
+                    >
+                      {badge.title}
+                    </Text>
+                  </Pressable>
                 </Box>
-                <Text
-                  mt="$1"
-                  fontSize="$2xs"
-                  fontWeight="$semibold"
-                  color={isDark ? '$textDark50' : '$textLight900'}
-                  textAlign="center"
-                  numberOfLines={2}
-                >
-                  {badge.title}
-                </Text>
-              </Pressable>
-            ))}
+              );
+            })}
           </Box>
         )}
       </Box>
@@ -775,6 +818,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const isProfileLoading = profileQueryResult.isLoading;
   const profileError = profileQueryResult.error;
   const refetchProfile = profileQueryResult.refetch;
+
+  // Payment dashboard: Prime Pass kontrolü (badge'leri NFT olarak satabilmek için)
+  const { data: paymentDashboard } = usePaymentDashboard();
   
   // PERFORMANCE FIX: Trust/Truster sayıları userProfile.stats'tan alınır
   // Liste verilerine burada ihtiyaç yok - sadece Trust_TrusterListScreen'de fetch edilir
@@ -927,7 +973,18 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === targetUserId;
-  
+
+  // Prime Pass: aktif abonelik ve plan adında "prime" varsa badge'ler NFT olarak satılabilir
+  const hasPrimePass = useMemo(
+    () =>
+      Boolean(
+        isOwnProfile &&
+          paymentDashboard?.active_subscription?.status === 'active' &&
+          paymentDashboard?.active_subscription?.plan_name?.toLowerCase().includes('prime')
+      ),
+    [isOwnProfile, paymentDashboard?.active_subscription]
+  );
+
   // Context menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -1879,38 +1936,38 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               {profile.badges && profile.badges.length > 0 ? (
                 <HStack space="md" justifyContent="flex-start" alignItems="center" flex={1}>
                   {profile.badges.slice(0, 4).map((badge) => (
-                    <Pressable
-                      key={badge.id}
-                      onPress={() => handleBadgePress(badge)}
-                    >
-                      <VStack space="xs" alignItems="center">
-                        <Box
-                          w={70}
-                          h={70}
-                          borderRadius={5}
-                          borderWidth={0}
-                          overflow="hidden"
-                          justifyContent="center"
-                          alignItems="center"
-                        >
-                          <Image
-                            source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                            alt={badge.title}
-                            w={60}
-                            h={60}
-                            resizeMode="contain"
-                          />
-                        </Box>
-                        <Text
-                          color={isDark ? '$textDark400' : '#000000'}
-                          fontSize="$2xs"
-                          fontWeight="$bold"
-                          textAlign="center"
-                        >
-                          {badge.title}
-                        </Text>
-                      </VStack>
-                    </Pressable>
+                    <Box key={badge.id} position="relative">
+                      {hasPrimePass && <NFTBadgeRibbon />}
+                      <Pressable onPress={() => handleBadgePress(badge)}>
+                        <VStack space="xs" alignItems="center">
+                          <Box
+                            w={70}
+                            h={70}
+                            borderRadius={5}
+                            borderWidth={0}
+                            overflow="hidden"
+                            justifyContent="center"
+                            alignItems="center"
+                          >
+                            <Image
+                              source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                              alt={badge.title}
+                              w={60}
+                              h={60}
+                              resizeMode="contain"
+                            />
+                          </Box>
+                          <Text
+                            color={isDark ? '$textDark400' : '#000000'}
+                            fontSize="$2xs"
+                            fontWeight="$bold"
+                            textAlign="center"
+                          >
+                            {badge.title}
+                          </Text>
+                        </VStack>
+                      </Pressable>
+                    </Box>
                   ))}
                 </HStack>
               ) : (
@@ -1986,8 +2043,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus]);
-  
+  }, [userProfile, isDark, isOwnProfile, hasPrimePass, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus]);
+
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
   const profileHeader = useMemo(() => {
@@ -2070,6 +2127,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           onQueryRef={handleTabQueryRef}
           profileBadges={userProfile?.badges ?? []}
           onBadgePress={handleBadgePress}
+          hasPrimePass={hasPrimePass}
         />
       </ScrollView>
 
