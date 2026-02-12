@@ -25,21 +25,11 @@ const POST_TYPE_BUTTON_LABELS: Record<string, string> = {
   FREE: 'See Post',
 };
 
-/** productName yokken kart başlığı: postType'a göre */
-const POST_TYPE_TITLES: Record<string, string> = {
-  QUESTION: 'Question Post',
-  UPDATE: 'Update Post',
-  EXPERIENCE: 'Experience Post',
-  COMPARE: 'Compare Post',
-  TIPS: 'Tips Post',
-  FREE: 'Post',
-};
-
 /**
  * Paylaşılan post mesajı (type sharedpost) – Kart tasarımı:
  * 1. Header: avatar + ad • zaman, alt satırda unvan (ince ayırıcı)
- * 2. Ürün: thumbnail + ürün adı + açıklama + status (ince ayırıcı)
- * 3. Buton: postType'a göre veya actionButtonLabel / "See Post"
+ * 2. İçerik: imageUrl/contextData görseli + başlık (contextData.name veya COMPARE'da products; yoksa "Shared post")
+ * 3. Buton: postType'a göre / "See Post"
  */
 export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
   item,
@@ -50,30 +40,23 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
   const sharedPost = item.sharedPost;
   if (!sharedPost) return null;
 
-  // Paylaşılan postun sahibinin bilgileri (gönderen değil)
   const authorName = sharedPost.authorName || 'Unknown';
   const authorTitle = sharedPost.authorTitle ?? '';
   const authorAvatar = sharedPost.authorAvatar ?? null;
-  const productName = sharedPost.productName ?? '';
-  const productGroupName = sharedPost.productGroupName ?? '';
-  const productDescription = sharedPost.productDescription ?? '';
-  const productImageUrl = sharedPost.productImageUrl;
-  const productGroupImageUrl = sharedPost.productGroupImageUrl;
   const contextData = sharedPost.contextData;
-  const status = sharedPost.status;
+  const products = sharedPost.products;
   const postId = sharedPost.postId;
   const postType = sharedPost.postType ?? null;
   const buttonLabel =
-    sharedPost.actionButtonLabel ||
-    (postType && POST_TYPE_BUTTON_LABELS[postType]) ||
-    'See Post';
+    (postType && POST_TYPE_BUTTON_LABELS[postType]) || 'See Post';
 
-  /** Kart içi başlık: productName, contextData.name (contextType product), productGroupName veya "Shared post" */
+  /** Kart içi başlık: contextData.name, COMPARE'da products adları, yoksa "Shared post" */
   const contentTitle =
-    productName || (sharedPost.contextType === 'product' ? (contextData?.name ?? '') : '') || productGroupName || 'Shared post';
+    contextData?.name ??
+    ((products?.length ? products.map((p) => p.name).join(' vs ') : '') || 'Shared post');
 
-  /** İçerik görseli: productImageUrl, contextData.image (product), productGroupImageUrl; avatar content'ta kullanılmaz */
-  const thumbnailSource = productImageUrl ?? (sharedPost.contextType === 'product' ? (contextData?.image ?? null) : null) ?? productGroupImageUrl ?? null;
+  /** İçerik görseli: imageUrl (post media > product > productGroup > subCategory) veya contextData.image */
+  const thumbnailSource = sharedPost.imageUrl ?? contextData?.image ?? null;
   const contentImageSource = thumbnailSource ? toImageSource(thumbnailSource) : null;
 
   const handleSeePost = () => {
@@ -166,7 +149,7 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
           </HStack>
         </Box>
 
-        {/* 2. İçerik: thumbnail (sadece ürün/group görseli veya placeholder) + başlık + opsiyonel açıklama/status */}
+        {/* 2. İçerik: thumbnail (imageUrl / contextData.image) + başlık (contextData.name veya COMPARE products) */}
         <Box px="$3" py="$3" borderBottomWidth={1} borderBottomColor={separatorColor}>
           <HStack space="sm" alignItems="flex-start">
             {contentImageSource ? (
@@ -198,24 +181,6 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
               >
                 {contentTitle}
               </Text>
-              {productDescription ? (
-                <Text
-                  color={textSecondary}
-                  fontSize="$xs"
-                  fontWeight="$normal"
-                  numberOfLines={2}
-                >
-                  {productDescription}
-                </Text>
-              ) : null}
-              {status ? (
-                <HStack space="xs" alignItems="center" mt="$1">
-                  <Feather name="box" size={12} color={textSecondary} />
-                  <Text color={textSecondary} fontSize="$2xs" fontWeight="$medium">
-                    {status}
-                  </Text>
-                </HStack>
-              ) : null}
             </VStack>
           </HStack>
         </Box>

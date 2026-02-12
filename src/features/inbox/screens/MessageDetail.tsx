@@ -49,18 +49,22 @@ interface MessageDetailItem {
   type?: 'message' | 'support_request' | 'tips' | 'image' | 'sharedpost';
   sharedPost?: {
     postId: string;
-    authorName: string;
-    authorTitle?: string;
-    authorAvatar?: any;
-    authorId?: string;
-    productName: string;
-    productImageUrl?: string | null;
-    productGroupName?: string | null;
-    productGroupImageUrl?: string | null;
-    productDescription?: string;
-    status?: string;
-    contextType?: string | null;
-    contextData?: { id: string; name?: string; image?: string | null } | null;
+    postType?: string | null;
+    authorName?: string;
+    authorTitle?: string | null;
+    authorAvatar?: string | null;
+    imageUrl?: string | null;
+    contextType?: 'product' | 'productGroup' | 'subCategory' | null;
+    contextData?: {
+      id?: string;
+      name?: string;
+      image?: string | null;
+    };
+    products?: Array<{
+      id: string;
+      name: string;
+      image: string | null;
+    }>;
   };
   supportRequest?: {
     supportType: string;
@@ -1178,22 +1182,16 @@ const MessageDetailScreen: React.FC = () => {
         type: 'sharedpost',
         sharedPost: (() => {
           const sp = sharedPostPayload as any;
-          const ctx = sp.contextData;
-          const isProductContext = sp.contextType === 'product' && ctx;
           return {
             postId: sharedPostPayload.postId,
-            authorName: sharedPostPayload.authorName || currentParams.senderName || 'Unknown',
-            authorTitle: sharedPostPayload.authorTitle,
-            authorAvatar: sharedPostPayload.authorAvatar ?? currentParams.senderAvatar,
-            authorId: sharedPostPayload.authorId,
-            productName: sharedPostPayload.productName || (isProductContext ? (ctx.name ?? '') : ''),
-            productImageUrl: sharedPostPayload.productImageUrl ?? sp.imageUrl ?? (isProductContext ? (ctx?.image ?? null) : null) ?? null,
-            productGroupName: sharedPostPayload.productGroupName ?? undefined,
-            productGroupImageUrl: sharedPostPayload.productGroupImageUrl ?? null,
-            productDescription: sharedPostPayload.productDescription,
-            status: sharedPostPayload.status,
-            contextType: sp.contextType ?? undefined,
+            postType: sp.postType ?? null,
+            authorName: sp.authorName || currentParams.senderName || 'Unknown',
+            authorTitle: sp.authorTitle ?? null,
+            authorAvatar: sp.authorAvatar ?? currentParams.senderAvatar ?? null,
+            imageUrl: sp.imageUrl ?? sp.productImageUrl ?? sp.contextData?.image ?? null,
+            contextType: sp.contextType ?? null,
             contextData: sp.contextData ?? undefined,
+            products: sp.products ?? undefined,
           };
         })(),
         isRead: false,

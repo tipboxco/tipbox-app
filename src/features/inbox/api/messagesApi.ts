@@ -347,24 +347,7 @@ export interface ThreadMessage {
   requestId?: string;
   fromUserId?: string; // Support request için: Request'i oluşturan kullanıcı ID'si (required)
   toUserId?: string; // Support request için: Request'in gönderildiği kullanıcı ID'si (required)
-  // Shared post; backend imageUrl, contextType ("product"), contextData ({ id, name, image }) ile de gelebilir
-  sharedPost?: {
-    postId: string;
-    postType?: SharedPostType;
-    authorName?: string;
-    authorTitle?: string;
-    authorAvatar?: string | null;
-    authorId?: string;
-    productName?: string;
-    productImageUrl?: string | null;
-    productGroupName?: string | null;
-    productGroupImageUrl?: string | null;
-    productDescription?: string;
-    status?: string;
-    actionButtonLabel?: string;
-    contextType?: string | null;
-    contextData?: { id: string; name?: string; image?: string | null } | null;
-  };
+  sharedPost?: SharedPostPayload;
 }
 
 /**
@@ -652,45 +635,30 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
         }
       }
       
-      // Backend format: type: "shared_post", data: { message, sharedPostId, sharedPost: { postId, postType, authorName, authorTitle, authorAvatar } }
+      // Backend format: type: "shared_post", data: { message, sharedPostId, sharedPost: { postId, postType, authorName, imageUrl, contextType, contextData, products } }
       if ((type === 'shared-post' || rawType === 'shared_post') && data.sharedPost) {
         baseMessage.messageType = 'shared-post';
-        const sp = data.sharedPost as SharedPostPayload;
+        const sp = data.sharedPost as any;
         const ctx = sp.contextData;
-        const isProductContext = sp.contextType === 'product' && ctx;
         baseMessage.sharedPost = {
-          postId: sp.postId || sp.experiencePostId || (data.sharedPost as any).postId,
-          postType: sp.postType ?? undefined,
-          authorName: sp.authorName || 'Unknown',
-          authorTitle: (sp.authorTitle ?? undefined) ?? undefined,
-          authorAvatar: sp.authorAvatar ?? undefined,
-          authorId: sp.authorId || senderId,
-          productName: sp.productName ?? (isProductContext ? (ctx.name ?? '') : ''),
-          productImageUrl: sp.productImageUrl ?? sp.imageUrl ?? (isProductContext ? (ctx.image ?? null) : null) ?? null,
-          productGroupName: sp.productGroupName ?? undefined,
-          productGroupImageUrl: sp.productGroupImageUrl ?? null,
-          productDescription: sp.productDescription ?? undefined,
-          status: sp.status,
-          actionButtonLabel: sp.actionButtonLabel,
-          contextType: sp.contextType ?? undefined,
+          postId: sp.postId || sp.experiencePostId || data.sharedPost.postId,
+          postType: sp.postType ?? null,
+          authorName: sp.authorName ?? 'Unknown',
+          authorTitle: sp.authorTitle ?? null,
+          authorAvatar: sp.authorAvatar ?? null,
+          imageUrl: sp.imageUrl ?? sp.productImageUrl ?? (ctx?.image ?? null) ?? null,
+          contextType: sp.contextType ?? null,
           contextData: sp.contextData ?? undefined,
+          products: sp.products ?? undefined,
         };
       } else if ((type === 'shared-post' || rawType === 'shared_post') && data.sharedPostId) {
-        // Backend sadece sharedPostId döndüyse shared-post kartı olarak göster (fallback)
         baseMessage.messageType = 'shared-post';
         baseMessage.sharedPost = {
           postId: data.sharedPostId,
-          postType: undefined,
+          postType: null,
           authorName: senderInfo.senderName ?? 'Unknown',
-          authorTitle: senderInfo.senderTitle ?? undefined,
-          authorAvatar: senderInfo.senderAvatar ?? undefined,
-          authorId: senderId,
-          productName: '',
-          productImageUrl: null,
-          productGroupName: undefined,
-          productGroupImageUrl: null,
-          productDescription: undefined,
-          status: undefined,
+          authorTitle: senderInfo.senderTitle ?? null,
+          authorAvatar: senderInfo.senderAvatar ?? null,
         };
       }
 
@@ -798,37 +766,30 @@ export interface DirectMessageRequest {
 /** Backend shared post tipi – buton metni buna göre belirlenir */
 export type SharedPostType = 'QUESTION' | 'UPDATE' | 'EXPERIENCE' | 'COMPARE' | 'TIPS' | 'FREE' | null;
 
-/** Backend: contextType "product" ise contextData.name + contextData.image kartta kullanılır */
-export interface SharedPostContextData {
-  id: string;
-  name?: string;
-  image?: string | null;
-}
-
 /**
  * Shared Post payload – DM thread içinde gösterilen paylaşılan post kartı.
- * Backend: imageUrl, contextType ("product"), contextData ({ id, name, image }) ile de gelebilir.
+ * imageUrl: post media > product > productGroup > subCategory.
+ * contextType'a göre contextData veya (COMPARE'da) products dolu olur.
  */
 export interface SharedPostPayload {
   postId: string;
-  postType?: SharedPostType;
-  experiencePostId?: string;
+  postType?: string | null;
   authorName?: string;
   authorTitle?: string | null;
   authorAvatar?: string | null;
-  authorId?: string;
-  productName?: string;
-  productImageUrl?: string | null;
   imageUrl?: string | null;
-  productGroupName?: string | null;
-  productGroupImageUrl?: string | null;
-  productDescription?: string | null;
-  status?: string;
-  originalPostTimestamp?: string;
-  actionButtonLabel?: string;
-  /** Backend: "product" | "productGroup" vb.; product ise contextData.name + contextData.image kullanılır */
-  contextType?: string | null;
-  contextData?: SharedPostContextData | null;
+  contextType?: 'product' | 'productGroup' | 'subCategory' | null;
+  contextData?: {
+    id?: string;
+    name?: string;
+    image?: string | null;
+  };
+  /** Sadece COMPARE post'unda: 2 eleman (product1, product2) */
+  products?: Array<{
+    id: string;
+    name: string;
+    image: string | null;
+  }>;
 }
 
 /**
@@ -841,20 +802,7 @@ export interface SendSharedPostToDmRequest {
   /** Tek alıcıya gönderim için; threadId yoksa thread oluşturulur/getirilir */
   recipientUserId?: string;
   messageType: 'shared-post';
-  sharedPost: {
-    postId: string;
-    /** Backend postId ile çekebilir; gönderilirse UI anında dolu gelir */
-    authorName?: string;
-    authorTitle?: string | null;
-    authorAvatar?: string | null;
-    authorId?: string;
-    productName?: string;
-    productImageUrl?: string | null;
-    productGroupName?: string | null;
-    productGroupImageUrl?: string | null;
-    productDescription?: string | null;
-    status?: string;
-  };
+  sharedPost: SharedPostPayload;
   /** Opsiyonel metin (kartın üstünde gösterilebilir) */
   message?: string;
 }

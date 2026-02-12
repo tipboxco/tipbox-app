@@ -14,22 +14,22 @@ export interface MessageDetailItem {
   type?: 'message' | 'support_request' | 'tips' | 'image' | 'sharedpost';
   sharedPost?: {
     postId: string;
-    postType?: 'QUESTION' | 'UPDATE' | 'EXPERIENCE' | 'COMPARE' | 'TIPS' | 'FREE' | null;
+    postType?: string | null;
     authorName?: string;
-    authorTitle?: string;
-    authorAvatar?: any;
-    authorId?: string;
-    productName?: string;
-    productImageUrl?: string | null;
-    /** Product group ise: product group adı ve görseli */
-    productGroupName?: string | null;
-    productGroupImageUrl?: string | null;
-    productDescription?: string;
-    status?: string;
-    actionButtonLabel?: string;
-    /** Backend: contextType "product" ise contextData.name + contextData.image kullanılır */
-    contextType?: string | null;
-    contextData?: { id: string; name?: string; image?: string | null } | null;
+    authorTitle?: string | null;
+    authorAvatar?: string | null;
+    imageUrl?: string | null;
+    contextType?: 'product' | 'productGroup' | 'subCategory' | null;
+    contextData?: {
+      id?: string;
+      name?: string;
+      image?: string | null;
+    };
+    products?: Array<{
+      id: string;
+      name: string;
+      image: string | null;
+    }>;
   };
   supportRequest?: {
     supportType: string;

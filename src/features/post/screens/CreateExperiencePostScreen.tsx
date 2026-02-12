@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Keyboard, Modal, View, StyleSheet } from 'react-native';
 import { Box, useToast, VStack, Text } from '@gluestack-ui/themed';
@@ -13,7 +13,7 @@ import { StepThreeScreen } from '../components/CreateExperienceSteps/StepThreeSc
 import { SelectProduct } from '../components/CreateExperienceSteps/SelectProduct';
 import { useExperiencePostForm } from '../hooks/useExperiencePostForm';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateExperiencePost, useSplitExperience } from '../api/hooks';
+import { useCreateExperiencePost, useSplitExperience, useGetExperienceOptions } from '../api/hooks';
 import { useAddInventoryItem, useInventory } from '@/src/features/profile/api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
@@ -69,7 +69,13 @@ export const CreateExperiencePostScreen = () => {
             inventoryData.pages.flatMap((p) => p.items ?? []).map((item) => item.productId).filter(Boolean)
         );
     }, [inventoryData]);
-    
+
+    // Experience options (duration, location, purpose) from API
+    const { data: experienceOptions } = useGetExperienceOptions();
+    const durations = experienceOptions?.durations ?? [];
+    const locations = experienceOptions?.locations ?? [];
+    const purposes = experienceOptions?.purposes ?? [];
+
     // Flow store'dan context bilgilerini al
     const contextType = useCreatePostFlowStore((state) => state.contextType);
     const contextId = useCreatePostFlowStore((state) => state.contextId);
@@ -104,6 +110,13 @@ export const CreateExperiencePostScreen = () => {
     const experienceText = watch('experienceText');
     const priceRating = watch('priceRating');
     const productRating = watch('productRating');
+
+    // Resolve option IDs to display names for Step2/Step3 tags
+    const resolveName = (options: { id: string; name: string }[], id: string) =>
+        options.find((o) => o.id === id)?.name ?? '';
+    const durationName = useMemo(() => resolveName(durations, step1Duration || ''), [durations, step1Duration]);
+    const locationName = useMemo(() => resolveName(locations, selectedCondition || ''), [locations, selectedCondition]);
+    const purposeName = useMemo(() => resolveName(purposes, selectedFrequency || ''), [purposes, selectedFrequency]);
 
     const handleBackPress = () => {
         if (currentStep === 3) {
@@ -289,14 +302,6 @@ export const CreateExperiencePostScreen = () => {
     };
 
 
-    // Form'daki duration, condition, frequency değerlerini API ID formatına çevir
-    // TODO: Backend'den experience options'ı çekip gerçek ID'leri kullan
-    const mapFormValueToId = (value: string): string => {
-        // Şimdilik form değerini direkt ID olarak kullanıyoruz
-        // Backend'den options çekildiğinde bu mapping güncellenecek
-        return value;
-    };
-
     const onSubmit: SubmitHandler<ExperiencePostFormData> = async (data) => {
         if (isSubmittingRef.current) {
             return;
@@ -364,10 +369,10 @@ export const CreateExperiencePostScreen = () => {
         // - experienceOption === 'tried' → status: 'tested' (ürün envantere eklenmez, sadece post paylaşılır)
         const status: 'own' | 'tested' = experienceOption === 'own' ? 'own' : 'tested';
         
-        // Form değerlerini ID'lere çevir
-        const selectedDurationId = mapFormValueToId(data.step1Duration);
-        const selectedLocationId = mapFormValueToId(data.selectedCondition); // Condition -> Location mapping
-        const selectedPurposeId = mapFormValueToId(data.selectedFrequency); // Frequency -> Purpose mapping
+        // Form already stores IDs from experience options API
+        const selectedDurationId = data.step1Duration;
+        const selectedLocationId = data.selectedCondition;
+        const selectedPurposeId = data.selectedFrequency;
         
         console.log('[CreateExperiencePostScreen] Mapping form values to IDs:', {
             step1Duration: data.step1Duration,
@@ -852,9 +857,9 @@ export const CreateExperiencePostScreen = () => {
                             onProductExperienceTextChange={(text) => setValue('productExperienceText', text)}
                             onPriceRatingChange={(rating) => setValue('priceRating', rating, { shouldValidate: true })}
                             onProductRatingChange={(rating) => setValue('productRating', rating, { shouldValidate: true })}
-                            selectedDuration={step1Duration || ''}
-                            selectedCondition={selectedCondition || ''}
-                            selectedFrequency={selectedFrequency || ''}
+                            selectedDuration={durationName}
+                            selectedCondition={locationName}
+                            selectedFrequency={purposeName}
                             selectedImages={watch('selectedImages') || []}
                             onImagePicker={handleImagePicker}
                             onRemoveImage={handleRemoveImage}
@@ -917,9 +922,9 @@ export const CreateExperiencePostScreen = () => {
                             <StepTwoScreen
                                 experienceText={experienceText || ''}
                                 onExperienceTextChange={(text) => setValue('experienceText', text)}
-                                selectedDuration={step1Duration || ''}
-                                selectedCondition={selectedCondition || ''}
-                                selectedFrequency={selectedFrequency || ''}
+                                selectedDuration={durationName}
+                                selectedCondition={locationName}
+                                selectedFrequency={purposeName}
                                 selectedImages={watch('selectedImages') || []}
                                 onImagePicker={handleImagePicker}
                                 onRemoveImage={handleRemoveImage}
@@ -991,6 +996,9 @@ export const CreateExperiencePostScreen = () => {
                         onConditionChange={(value) => setValue('selectedCondition', value, { shouldValidate: true })}
                         onFrequencyChange={(value) => setValue('selectedFrequency', value, { shouldValidate: true })}
                         selectedProduct={selectedProduct}
+                        durationOptions={durations}
+                        locationOptions={locations}
+                        purposeOptions={purposes}
                     />
                 </Box>
             </FormProvider>

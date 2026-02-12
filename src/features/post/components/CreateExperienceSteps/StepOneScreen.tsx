@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
     Box,
     ScrollView,
@@ -13,45 +13,42 @@ import { useBottomOffset } from '@/src/utils';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { OptionSelectBottomSheet, type OptionSelectBottomSheetOption } from './OptionSelectBottomSheet';
+import type { ExperienceOption } from '../../api/postApi';
 
 const productInfo = {
     image: require('@/assets/product/product_01.png'),
-    title: 'Dyson V15s\nDetect Submarine™ Wet & Dry Cordl...',
+    title: 'Dyson V15s\nDetect Submarine\u2122 Wet & Dry Cordl...',
 };
 
 interface StepOneScreenProps {
+    /** Selected duration option ID */
     selectedDuration: string;
+    /** Selected location option ID */
     selectedCondition: string;
+    /** Selected purpose option ID */
     selectedFrequency: string;
     onDurationChange: (value: string) => void;
     onConditionChange: (value: string) => void;
     onFrequencyChange: (value: string) => void;
     selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any } | null;
+    /** API'den gelen duration seçenekleri */
+    durationOptions?: ExperienceOption[];
+    /** API'den gelen location seçenekleri */
+    locationOptions?: ExperienceOption[];
+    /** API'den gelen purpose seçenekleri */
+    purposeOptions?: ExperienceOption[];
 }
-
-const durationOptions: OptionSelectBottomSheetOption[] = [
-    { label: '2 Weeks', value: '2 Weeks' },
-    { label: '1 Month', value: '1 Month' },
-    { label: '3 Months', value: '3 Months' },
-    { label: '6 Months', value: '6 Months' },
-    { label: '1 Year', value: '1 Year' },
-    { label: 'More than 1 Year', value: 'More than 1 Year' },
-];
-const conditionOptions: OptionSelectBottomSheetOption[] = [
-    { label: 'Could Be Better', value: 'Could Be Better' },
-    { label: 'Good', value: 'Good' },
-    { label: 'Excellent', value: 'Excellent' },
-    { label: 'Perfect', value: 'Perfect' },
-];
-const frequencyOptions: OptionSelectBottomSheetOption[] = [
-    { label: 'Daily Use', value: 'Daily Use' },
-    { label: 'Weekly Use', value: 'Weekly Use' },
-    { label: 'Monthly Use', value: 'Monthly Use' },
-    { label: 'Rarely Use', value: 'Rarely Use' },
-];
 
 const TRIGGER_HEIGHT = 44;
 const TRIGGER_FONT_SIZE = 14;
+
+/** ExperienceOption[] -> OptionSelectBottomSheetOption[] */
+const toSheetOptions = (options: ExperienceOption[]): OptionSelectBottomSheetOption[] =>
+    options.map((opt) => ({ label: opt.name, value: opt.id }));
+
+/** ID'den display name lookup */
+const findName = (options: ExperienceOption[], id: string): string =>
+    options.find((opt) => opt.id === id)?.name ?? '';
 
 export const StepOneScreen: React.FC<StepOneScreenProps> = ({
     selectedDuration,
@@ -61,11 +58,24 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
     onConditionChange,
     onFrequencyChange,
     selectedProduct,
+    durationOptions = [],
+    locationOptions = [],
+    purposeOptions = [],
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
     const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+
+    // API options -> bottom sheet options
+    const durationSheetOptions = useMemo(() => toSheetOptions(durationOptions), [durationOptions]);
+    const locationSheetOptions = useMemo(() => toSheetOptions(locationOptions), [locationOptions]);
+    const purposeSheetOptions = useMemo(() => toSheetOptions(purposeOptions), [purposeOptions]);
+
+    // Resolve ID -> display name
+    const durationDisplayName = useMemo(() => findName(durationOptions, selectedDuration), [durationOptions, selectedDuration]);
+    const locationDisplayName = useMemo(() => findName(locationOptions, selectedCondition), [locationOptions, selectedCondition]);
+    const purposeDisplayName = useMemo(() => findName(purposeOptions, selectedFrequency), [purposeOptions, selectedFrequency]);
 
     const openSelectSheet = useCallback(
         (title: string, options: OptionSelectBottomSheetOption[], value: string, onChange: (v: string) => void) => {
@@ -92,7 +102,7 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
 
     const renderTrigger = (
         label: string,
-        value: string,
+        displayValue: string,
         onPress: () => void
     ) => (
         <Pressable onPress={onPress}>
@@ -111,10 +121,10 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                 <Text
                     fontSize={TRIGGER_FONT_SIZE}
                     fontWeight="$medium"
-                    color={value ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
+                    color={displayValue ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                     flex={1}
                 >
-                    {value || label}
+                    {displayValue || label}
                 </Text>
                 <ChevronDownIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>
@@ -149,24 +159,24 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                     <VStack space="xs">
                         {renderTrigger(
                             'Select duration',
-                            selectedDuration,
-                            () => openSelectSheet('Select duration', durationOptions, selectedDuration, onDurationChange)
+                            durationDisplayName,
+                            () => openSelectSheet('Select duration', durationSheetOptions, selectedDuration, onDurationChange)
                         )}
                     </VStack>
 
                     <VStack space="xs">
                         {renderTrigger(
-                            'Select condition',
-                            selectedCondition,
-                            () => openSelectSheet('Select condition', conditionOptions, selectedCondition, onConditionChange)
+                            'Select location',
+                            locationDisplayName,
+                            () => openSelectSheet('Select location', locationSheetOptions, selectedCondition, onConditionChange)
                         )}
                     </VStack>
 
                     <VStack space="xs">
                         {renderTrigger(
-                            'Select frequency',
-                            selectedFrequency,
-                            () => openSelectSheet('Select frequency', frequencyOptions, selectedFrequency, onFrequencyChange)
+                            'Select purpose',
+                            purposeDisplayName,
+                            () => openSelectSheet('Select purpose', purposeSheetOptions, selectedFrequency, onFrequencyChange)
                         )}
                     </VStack>
                 </VStack>
