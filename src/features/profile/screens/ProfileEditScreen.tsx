@@ -927,31 +927,6 @@ const ProfileEditScreen: React.FC = () => {
                 )}
               </Pressable>
             </Box>
-
-            {/* Cosmetic yoksa: artı + boş dashed buton → MarketPlaceScreen (avatar çerçevesi al) */}
-            {!cosmetic && (
-              <Pressable
-                onPress={() =>
-                  navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
-                    screen: 'MarketPlaceScreen',
-                  })
-                }
-                position="absolute"
-                bottom={-48}
-                left={124}
-                w={56}
-                h={56}
-                borderRadius={28}
-                borderWidth={2}
-                borderStyle="dashed"
-                borderColor={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'}
-                bg={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'}
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Feather name="plus" size={24} color={isDark ? '#999' : '#737373'} />
-              </Pressable>
-            )}
           </Box>
 
           {/* Form Fields */}
