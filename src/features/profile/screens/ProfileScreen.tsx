@@ -1469,12 +1469,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           overflow="hidden" 
           position="relative"
         >
-          <Image
-            source={toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png')}
-            alt="Profile Banner"
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
-          />
+          {(() => {
+            const bannerSource = toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png');
+            const bannerUrlDisplay = profile.bannerUrl ?? '(boş)';
+            const resolvedDisplay = typeof bannerSource === 'object' && bannerSource && 'uri' in bannerSource && bannerSource.uri
+              ? bannerSource.uri
+              : '[varsayılan asset]';
+            console.log('[ProfileScreen] 🖼️ Ekranda kullanılan banner – profile.bannerUrl:', bannerUrlDisplay, '| resolved URL:', resolvedDisplay);
+            return (
+              <Image
+                source={bannerSource}
+                alt="Profile Banner"
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+            );
+          })()}
           {/* Overlay */}
           <Box
             position="absolute"

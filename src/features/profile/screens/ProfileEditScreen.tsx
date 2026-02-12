@@ -30,6 +30,7 @@ import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/the
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '@/src/store/appStore';
 import type { ProfileStackParamList } from '../navigation';
+import type { UserProfile } from '../types';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -334,8 +335,8 @@ const ProfileEditScreen: React.FC = () => {
             fieldName: 'avatar',
             fileFormat: {
               uri: selectedAvatarUri.substring(0, 50) + '...',
-              type: 'image/jpeg' || 'image/png',
-              name: 'avatar.jpg' || 'avatar.png',
+              type: 'image/jpeg',
+              name: 'avatar.jpg',
             },
             headers: {
               'Content-Type': 'multipart/form-data (with boundary)',
@@ -458,8 +459,8 @@ const ProfileEditScreen: React.FC = () => {
             fieldName: 'banner',
             fileFormat: {
               uri: selectedBannerUri.substring(0, 50) + '...',
-              type: 'image/jpeg' || 'image/png',
-              name: 'banner.jpg' || 'banner.png',
+              type: 'image/jpeg',
+              name: 'banner.jpg',
             },
             headers: {
               'Content-Type': 'multipart/form-data (with boundary)',
@@ -482,26 +483,38 @@ const ProfileEditScreen: React.FC = () => {
               bannerUrlLength: bannerUrl.length,
             });
             
-            // CRITICAL FIX: Banner upload başarılı olduktan sonra cache'i invalidate et ve refetch yap
-            // Backend otomatik olarak kullanıcının profilini güncelliyor, cache'i yenile
             if (user?.id) {
-              // Cache'i invalidate et
+              // Cache-bust: aynı URL için Image cache'i eski görseli gösterebilir; query param ile yeni yüklenir
+              const bannerUrlWithCacheBust = bannerUrl.includes('?')
+                ? `${bannerUrl}&_t=${Date.now()}`
+                : `${bannerUrl}?_t=${Date.now()}`;
+              console.log('[ProfileEditScreen] 🖼️ Banner URL (API response):', bannerUrl);
+              console.log('[ProfileEditScreen] 🖼️ Banner URL (cache’e yazılan, cache-bust’lı):', bannerUrlWithCacheBust);
+              const setBannerInCache = () => {
+                queryClient.setQueryData<UserProfile>(profileKeys.profile(user.id), (old) =>
+                  old ? { ...old, bannerUrl: bannerUrlWithCacheBust } : old
+                );
+              };
+              // Optimistic update: ProfileScreen anında yeni banner görsün
+              setBannerInCache();
+              const afterSet = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ Cache’e yazdıktan hemen sonra cache’teki bannerUrl:', afterSet?.bannerUrl);
               await queryClient.invalidateQueries({
                 queryKey: profileKeys.profile(user.id),
                 exact: false,
               });
-              console.log('[ProfileEditScreen] ✅ Profile cache invalidated after banner upload');
-              
-              // CRITICAL: Cache invalidate sonrası hemen refetch yap - ProfileScreen'de güncel banner görünsün
               await queryClient.refetchQueries({
                 queryKey: profileKeys.profile(user.id),
                 exact: false,
               });
-              console.log('[ProfileEditScreen] ✅ Profile cache refetched after banner upload');
+              const afterRefetch = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ Refetch sonrası cache’teki bannerUrl:', afterRefetch?.bannerUrl);
+              // Refetch sunucudan eski bannerUrl dönebilir; cache'i tekrar yeni URL ile zorla güncelle
+              setBannerInCache();
+              const afterFix = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ setBannerInCache tekrar çağrıldıktan sonra cache’teki bannerUrl:', afterFix?.bannerUrl);
             }
             
-            // CRITICAL FIX: Store'daki user bilgisini de güncelle (banner store'da yok ama profil cache'i güncelleniyor)
-            // Banner bilgisi profile cache'inde tutuluyor, store'da user.avatar yok
             console.log('[ProfileEditScreen] ✅ Banner upload completed, profile cache updated and refetched');
           } else {
             console.error('[ProfileEditScreen] ❌ Banner upload başarısız - response formatı hatalı:', {

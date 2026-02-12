@@ -116,7 +116,10 @@ export const getUserProfile = async (
       const v = apiData.avatarUrl ?? apiData.avatar ?? apiData.user?.avatar ?? apiData.user?.avatarUrl ?? '';
       return typeof v === 'string' ? v.trim() : (v ? String(v) : '');
     })(), // Backend avatarUrl/avatar veya user.avatar dönebilir
-    bannerUrl: apiData.bannerUrl || '',
+    bannerUrl: (() => {
+      const v = apiData.bannerUrl ?? apiData.banner ?? '';
+      return typeof v === 'string' ? v.trim() : (v ? String(v) : '');
+    })(), // Backend bannerUrl veya banner dönebilir
     biography: apiData.biography || '',
     titles: apiData.titles || [],
     stats: {
