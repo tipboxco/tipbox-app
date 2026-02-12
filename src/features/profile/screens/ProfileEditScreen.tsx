@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Modal as RNModal, StyleSheet, Pressable as RNPressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -140,9 +140,10 @@ const ProfileEditScreen: React.FC = () => {
   const navigation = useNavigation<ProfileEditScreenNavigationProp>();
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+  const { user, updateUser } = useAppStore();
 
-  // Form state
-  const [name, setName] = useState(mock_user_card.name);
+  // Form state: real user name when available, else mock fallback
+  const [name, setName] = useState(() => user?.fullName ?? mock_user_card.name);
   const [bio, setBio] = useState(mock_user_card.description);
   const [badge1, setBadge1] = useState('');
   const [badge2, setBadge2] = useState('');
@@ -162,7 +163,11 @@ const ProfileEditScreen: React.FC = () => {
   const updateProfileMutation = useUpdateProfile();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { user, updateUser } = useAppStore();
+
+  // Sync form name when user loads (e.g. after auth)
+  useEffect(() => {
+    if (user?.fullName) setName(user.fullName);
+  }, [user?.fullName]);
 
   // Badge seçimi için bottom sheet aç
   const handleBadgeSelect = useCallback((slot: 1 | 2 | 3) => {
@@ -895,7 +900,7 @@ const ProfileEditScreen: React.FC = () => {
               borderColor={cosmetic ? getCosmeticBorderColor(cosmetic) : (isDark ? '$backgroundDark950' : '$backgroundLight0')}
             >
               <Image
-                source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
+                source={selectedAvatarUri ? { uri: selectedAvatarUri } : (user?.avatar ? { uri: user.avatar } : mock_user_card.avatar)}
                 alt={name}
                 w="100%"
                 h="100%"
@@ -1095,7 +1100,7 @@ const ProfileEditScreen: React.FC = () => {
                     overflow="hidden"
                   >
                     <Image
-                      source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
+                      source={selectedAvatarUri ? { uri: selectedAvatarUri } : (user?.avatar ? { uri: user.avatar } : mock_user_card.avatar)}
                       alt={name}
                       style={{ width: '100%', height: '100%' }}
                       resizeMode="cover"
