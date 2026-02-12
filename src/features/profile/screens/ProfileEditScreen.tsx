@@ -16,6 +16,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
@@ -925,6 +927,31 @@ const ProfileEditScreen: React.FC = () => {
                 )}
               </Pressable>
             </Box>
+
+            {/* Cosmetic yoksa: artı + boş dashed buton → MarketPlaceScreen (avatar çerçevesi al) */}
+            {!cosmetic && (
+              <Pressable
+                onPress={() =>
+                  navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
+                    screen: 'MarketPlaceScreen',
+                  })
+                }
+                position="absolute"
+                bottom={-48}
+                left={124}
+                w={56}
+                h={56}
+                borderRadius={28}
+                borderWidth={2}
+                borderStyle="dashed"
+                borderColor={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'}
+                bg={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Feather name="plus" size={24} color={isDark ? '#999' : '#737373'} />
+              </Pressable>
+            )}
           </Box>
 
           {/* Form Fields */}
@@ -1148,9 +1175,18 @@ const ProfileEditScreen: React.FC = () => {
                 Cosmetics
               </Text>
 
-              {/* Figma 6576-32081: border renkleri farklı, ortada renk yok. Sahibi değilse tek dashed + placeholder */}
+              {/* Figma 6576-32081: Cosmetic yoksa tek dashed + plus butonu → MarketPlaceScreen'e yönlendir */}
               {ownedCosmeticsIds.length === 0 ? (
-                <Box alignSelf="flex-start" mt="$1">
+                <Pressable
+                  alignSelf="flex-start"
+                  mt="$1"
+                  onPress={() => {
+                    closeCosmeticModal();
+                    navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
+                      screen: 'MarketPlaceScreen',
+                    });
+                  }}
+                >
                   <Box
                     width={56}
                     height={56}
@@ -1164,7 +1200,7 @@ const ProfileEditScreen: React.FC = () => {
                   >
                     <Feather name="plus" size={24} color={isDark ? '#999' : '#737373'} />
                   </Box>
-                </Box>
+                </Pressable>
               ) : (
                 <VStack space="md" alignItems="center">
                   <HStack space="md" justifyContent="center">
