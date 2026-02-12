@@ -1,8 +1,8 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getCatalogContextPosts, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandHistoryFeed, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandHistoryFeed, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand, getSurveyQuestions, submitSurveyAnswer } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse, SurveyQuestionsResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -18,6 +18,8 @@ export const catalogKeys = {
   brandProductBook: (brandId: string, search?: string) => [...catalogKeys.all, 'brandProductBook', brandId, search] as const,
   brandSurveys: (brandId: string, limit?: number) => 
     [...catalogKeys.all, 'brandSurveys', brandId, limit] as const,
+  surveyQuestions: (brandId: string, surveyId: string) =>
+    [...catalogKeys.all, 'surveyQuestions', brandId, surveyId] as const,
   brandTrends: (brandId: string, limit?: number) => 
     [...catalogKeys.all, 'brandTrends', brandId, limit] as const,
   brandEvents: (brandId: string, limit?: number) => 
@@ -585,6 +587,32 @@ export const useBrandSurveys = (brandId: string | undefined, limit: number = 20)
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
+  });
+};
+
+/**
+ * Get Survey Questions query hook
+ * Anket sorularını getirir (SurveyParticipationScreen)
+ */
+export const useSurveyQuestions = (surveyId: string | undefined, brandId: string | undefined) => {
+  return useQuery<SurveyQuestionsResponse, Error>({
+    queryKey: surveyId && brandId ? catalogKeys.surveyQuestions(brandId, surveyId) : ['catalog', 'surveyQuestions', 'disabled'],
+    queryFn: () => {
+      if (!brandId || !surveyId) throw new Error('brandId and surveyId are required');
+      return getSurveyQuestions(brandId, surveyId);
+    },
+    enabled: !!surveyId && !!brandId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+/**
+ * Submit Survey Answer mutation hook
+ */
+export const useSubmitSurveyAnswer = () => {
+  return useMutation<void, Error, { brandId: string; surveyId: string; questionId: string; answerId: string }>({
+    mutationFn: ({ brandId, surveyId, questionId, answerId }) =>
+      submitSurveyAnswer(brandId, surveyId, { questionId, answerId }),
   });
 };
 

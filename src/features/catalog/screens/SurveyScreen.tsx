@@ -6,7 +6,7 @@ import { ChevronRightIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { CatalogStackParamList } from '../navigation';
+import type { BrandStackParamList } from '../BrandNavigator';
 import { Header } from '@/src/components/Header';
 import { mock_survey_tabs } from '@/src/mock/catalog/brandSurveys';
 import SurveyCard from '../components/SurveyCard';
@@ -14,7 +14,7 @@ import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandSurveys, useBrandHistory } from '../api/hooks';
 import type { Survey } from '../types';
 
-type SurveyScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'SurveyScreen'>;
+type SurveyScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'SurveyScreen'>;
 type SurveyScreenRouteProp = {
   key: string;
   name: string;
@@ -60,14 +60,28 @@ const SurveyScreen: React.FC = () => {
     }
   }, [hasNextSurveysPage, isFetchingNextSurveysPage, fetchNextSurveysPage]);
 
-  const renderSurveyItem = useCallback(({ item }: { item: Survey }) => {
-    return (
-      <SurveyCard
-        survey={item}
-        onPress={() => console.log('Survey action:', item.status)}
-      />
-    );
-  }, []);
+  const handleSurveyPress = useCallback(
+    (item: Survey) => {
+      if (!brandId) return;
+      navigation.navigate('SurveyParticipationScreen', {
+        surveyId: item.id,
+        brandId,
+      });
+    },
+    [brandId, navigation]
+  );
+
+  const renderSurveyItem = useCallback(
+    ({ item }: { item: Survey }) => {
+      return (
+        <SurveyCard
+          survey={item}
+          onPress={() => handleSurveyPress(item)}
+        />
+      );
+    },
+    [handleSurveyPress]
+  );
 
   const renderSurveyFooter = useCallback(() => {
     if (!isFetchingNextSurveysPage) return null;

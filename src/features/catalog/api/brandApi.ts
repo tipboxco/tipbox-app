@@ -11,7 +11,8 @@ import type {
   BrandEventsResponse,
   BrandHistory,
   BrandStats,
-  GlobalBrandSearchResponse
+  GlobalBrandSearchResponse,
+  SurveyQuestionsResponse
 } from '../types';
 
 /**
@@ -453,6 +454,44 @@ export const getBrandSurveys = async (
     });
     throw error;
   }
+};
+
+/**
+ * Get Survey Questions
+ * GET /brands/:brandId/surveys/:surveyId/questions – anket soruları
+ */
+export const getSurveyQuestions = async (
+  brandId: string,
+  surveyId: string
+): Promise<SurveyQuestionsResponse> => {
+  try {
+    const response = await apiService.getClient().get<{ data?: SurveyQuestionsResponse } | SurveyQuestionsResponse>(
+      `/brands/${brandId}/surveys/${surveyId}/questions`
+    );
+    const raw = (response.data as { data?: SurveyQuestionsResponse })?.data ?? response.data;
+    const questions = Array.isArray((raw as SurveyQuestionsResponse)?.questions)
+      ? (raw as SurveyQuestionsResponse).questions
+      : [];
+    return { questions };
+  } catch (error: any) {
+    console.error('[getSurveyQuestions] API Error:', { brandId, surveyId, message: error.message });
+    throw error;
+  }
+};
+
+/**
+ * Submit Survey Answer
+ * POST /brands/:brandId/surveys/:surveyId/answers – anket cevabı gönder
+ */
+export const submitSurveyAnswer = async (
+  brandId: string,
+  surveyId: string,
+  payload: { questionId: string; answerId: string }
+): Promise<void> => {
+  await apiService.getClient().post(
+    `/brands/${brandId}/surveys/${surveyId}/answers`,
+    payload
+  );
 };
 
 /**

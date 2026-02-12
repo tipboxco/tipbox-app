@@ -2,17 +2,29 @@ import React from 'react';
 import { Box, VStack, HStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource } from '@/src/utils';
+import { Feather } from '@expo/vector-icons';
 import type { Badge } from '../../types';
 
 /**
  * Profile Badge Bottom Sheet
- * Figma: https://www.figma.com/design/HPaYxxtzLlG25uvSSnph8d/Tipbox---Screen-Designs?node-id=6594-24141
- * Kullanıcının kendi profilindeki badges bölümünde kazandığı badge'e tıklanınca açılan bottom sheet.
+ * Figma 6594-24141 oran ve ölçü: handle, close, başlık, badge, Claim NFT, Details.
+ * 8pt grid: padding 24, badge 120, buton h 48, detail row h 48.
  */
 export interface ProfileBadgeBottomSheetProps {
   badge: Badge;
   onClose: () => void;
 }
+
+const formatEarnedDate = (earnedAt: string | null | undefined): string => {
+  if (!earnedAt) return '–';
+  try {
+    const d = new Date(earnedAt);
+    if (isNaN(d.getTime())) return '–';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch {
+    return '–';
+  }
+};
 
 const ProfileBadgeBottomSheet: React.FC<ProfileBadgeBottomSheetProps> = ({ badge, onClose }) => {
   const { colorMode } = useColorMode();
@@ -21,77 +33,75 @@ const ProfileBadgeBottomSheet: React.FC<ProfileBadgeBottomSheetProps> = ({ badge
   const imageSource = badge.image
     ? toImageSource(badge.image)
     : require('@/assets/defaultImages/default-badge.png');
-  const description = `You earned the "${badge.title}" badge!`;
+  const earnedDate = formatEarnedDate(badge.earnedAt ?? null);
+  const rarity = badge.rarity?.trim() || 'Usual';
+  const owner = badge.owner?.trim() || '–';
+
+  const detailRowBg = isDark ? '#2A2A2A' : '#F5F5F5';
+  const labelColor = isDark ? '#8C8C8C' : '#6B7280';
+  const valueColor = isDark ? '#FFFFFF' : '#111827';
 
   return (
-    <Box pb="$6" px="$4">
-      {/* Handle bar - Figma bottom sheet üst çizgi (GlobalBottomSheet handle ile birlikte) */}
-      <VStack space="lg" alignItems="center">
-        {/* Close (X) - sağ üst */}
-        <HStack w="100%" justifyContent="flex-end" alignItems="center" mb="-$2">
-          <Pressable onPress={onClose} hitSlop={12} p="$1">
-            <Text fontSize="$xl" color={isDark ? '$textDark400' : '$textLight600'}>
-              ✕
-            </Text>
-          </Pressable>
-        </HStack>
-
-        {/* Badge image - büyük, ortada */}
-        <Box
-          w={140}
-          h={140}
-          borderRadius={70}
-          overflow="hidden"
-          bg={isDark ? '#2A2A2A' : '#F0F0F0'}
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Image
-            source={imageSource}
-            alt={badge.title}
-            style={{ width: 112, height: 112 }}
-            resizeMode="contain"
-          />
-        </Box>
-
-        {/* Title */}
-        <Text
-          fontSize="$xl"
-          fontWeight="$bold"
-          color={isDark ? '$textDark50' : '$textLight900'}
-          textAlign="center"
-          px="$2"
-        >
+    <Box pb="$4" px="$4">
+      {/* Header: sol close, ortada başlık */}
+      <HStack w="100%" alignItems="center" justifyContent="space-between" mb="$2">
+        <Pressable onPress={onClose} hitSlop={12} w={36} h={36} alignItems="center" justifyContent="center" borderRadius={10} bg={isDark ? '#2A2A2A' : '#E5E5E5'}>
+          <Feather name="x" size={18} color={isDark ? '#FFFFFF' : '#374151'} />
+        </Pressable>
+        <Text flex={1} fontSize="$md" fontWeight="$bold" color={valueColor} textAlign="center" numberOfLines={1}>
           {badge.title}
         </Text>
+        <Box w={36} />
+      </HStack>
 
-        {/* Description */}
-        <Text
-          fontSize="$sm"
-          color={isDark ? '$textDark400' : '$textLight600'}
-          textAlign="center"
-          px="$4"
-          lineHeight={20}
-        >
-          {description}
+      {/* Badge görseli - arka plan yok, sadece ikon */}
+      <Box alignSelf="center" alignItems="center" justifyContent="center" mt="$1" mb="$2">
+        <Image
+          source={imageSource}
+          alt={badge.title}
+          style={{ width: 80, height: 80 }}
+          resizeMode="contain"
+        />
+      </Box>
+
+      {/* Claim NFT butonu - küçük kapsül, neon lime yeşil, ince koyu yeşil çerçeve */}
+      <Pressable
+        onPress={onClose}
+        alignSelf="center"
+        alignItems="center"
+        justifyContent="center"
+        px="$5"
+        py="$2.5"
+        minHeight={40}
+        borderRadius={999}
+        bg="#E8FF6B"
+        mt="$2"
+      >
+        <Text color="#111827" fontSize="$sm" fontWeight="$bold">
+          Claim NFT
         </Text>
+      </Pressable>
 
-        {/* CTA - Close / Completed (profilde kazanılmış badge) */}
-        <Pressable
-          onPress={onClose}
-          bg="#C2E607"
-          borderRadius={12}
-          h={52}
-          w="100%"
-          maxWidth={280}
-          alignItems="center"
-          justifyContent="center"
-          mt="$2"
-        >
-          <Text color="#111827" fontSize="$md" fontWeight="$bold">
-            Close
-          </Text>
-        </Pressable>
+      {/* Details bölümü */}
+      <Text fontSize="$sm" fontWeight="$bold" color={labelColor} mt="$5" mb="$3">
+        Details
+      </Text>
+      <VStack borderRadius={12} overflow="hidden" bg={detailRowBg}>
+        <HStack justifyContent="space-between" alignItems="center" px="$4" py="$3" borderBottomWidth={1} borderBottomColor={isDark ? '#333' : '#E5E5E5'}>
+          <Text fontSize="$sm" color={labelColor}>Kazanma Tarihi</Text>
+          <Text fontSize="$sm" color={valueColor}>{earnedDate}</Text>
+        </HStack>
+        <HStack justifyContent="space-between" alignItems="center" px="$4" py="$3" borderBottomWidth={1} borderBottomColor={isDark ? '#333' : '#E5E5E5'}>
+          <Text fontSize="$sm" color={labelColor}>Enderlik</Text>
+          <HStack alignItems="center" bg={isDark ? '#3A3A3A' : '#E5E5E5'} borderRadius={8} px="$2" py="$1">
+            <Feather name="award" size={14} color={valueColor} style={{ marginRight: 6 }} />
+            <Text fontSize="$sm" color={valueColor}>{rarity}</Text>
+          </HStack>
+        </HStack>
+        <HStack justifyContent="space-between" alignItems="center" px="$4" py="$3">
+          <Text fontSize="$sm" color={labelColor}>Sahip</Text>
+          <Text fontSize="$sm" color={valueColor}>{owner}</Text>
+        </HStack>
       </VStack>
     </Box>
   );
