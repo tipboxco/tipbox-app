@@ -783,7 +783,7 @@ export interface SupportRequestCreate {
  * @param data - Support Request data
  * @returns Promise<void> - 201 Created (no body)
  */
-export const createSupportRequest = async (data: SupportRequestCreate): Promise<void> => {
+export const createSupportRequest: (data: SupportRequestCreate) => Promise<void> = async (data) => {
   await apiService.getClient().post('/inbox/support-requests', data);
 };
 

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent, Divider } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, HStack, VStack, Image, Divider } from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -61,8 +61,7 @@ import {
   PlusIcon,
 } from 'react-native-heroicons/outline';
 import { FeedSkeleton } from '@/src/components/Skeletons';
-import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
-import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
+import ProfileBadgeBottomSheet from '@/src/features/profile/components/ProfileBadgeBottomSheet';
 import type { Badge } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -832,10 +831,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
   const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
   
-  // Badge modal state: collection badge → Figma 6477-32135 modal, event badge → Figma 6477-32298 modal
-  const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
-  const [selectedBadgeType, setSelectedBadgeType] = useState<'collection' | 'event' | null>(null);
-  
   // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
   // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
   useFocusEffect(
@@ -1422,34 +1417,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [targetUserId, user?.id, userProfile, muteUser, unmuteUser, toast, isMuting, isUnmuting, queryClient]);
 
-  // Map Badge to SeeAllReward format for BadgeBottomSheet
-  const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
-    const imageSource = badge.image ? toImageSource(badge.image) : require('@/assets/defaultImages/default-badge.png');
-    
-    return {
-      id: badge.id,
-      title: badge.title,
-      image: imageSource,
-      description: `You earned the "${badge.title}" badge!`,
-      category: 'achievement',
-      isUnlocked: true, // Profile'da gösterilen badge'ler zaten kazanılmış
-      completed: 1,
-      task: 1,
-    };
-  }, []);
-
-  // Handle badge press - open modal: collection → Figma 6477-32135, event → Figma 6477-32298
-  const handleBadgePress = useCallback((badge: Badge) => {
-    const badgeData = mapBadgeToSeeAllReward(badge);
-    setSelectedBadge(badgeData);
-    setSelectedBadgeType(badge.type ?? 'event');
-  }, [mapBadgeToSeeAllReward]);
-
-  // Handle modal close
-  const handleCloseModal = useCallback(() => {
-    setSelectedBadge(null);
-    setSelectedBadgeType(null);
-  }, []);
+  // Handle badge press - open bottom sheet (Figma 6594-24141)
+  const handleBadgePress = useCallback(
+    (badge: Badge) => {
+      openBottomSheet(
+        <ProfileBadgeBottomSheet badge={badge} onClose={closeBottomSheet} />,
+        {
+          enableDynamicSizing: true,
+          enablePanDownToClose: true,
+          enableHandle: true,
+          backdropPressBehavior: 'close',
+          animateOnMount: true,
+        }
+      );
+    },
+    [openBottomSheet, closeBottomSheet]
+  );
 
   
   // ListHeaderComponent: Banner + Profile Info
@@ -2291,77 +2274,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         </RNModal>
       )}
 
-      {/* Collection Badge Modal - Figma 6477-32135 */}
-      {selectedBadge && selectedBadgeType === 'collection' && (
-        <Modal
-          isOpen={true}
-          onClose={handleCloseModal}
-          size="lg"
-          closeOnOverlayClick={true}
-        >
-          <ModalBackdrop onPress={handleCloseModal} />
-          <ModalContent
-            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
-            borderRadius={20}
-            marginHorizontal={24}
-            marginBottom={safeAreaBottom + 24}
-            maxHeight="80%"
-          >
-            <Box p="$6">
-              <HStack justifyContent="flex-end" mb="$4">
-                <Pressable onPress={handleCloseModal}>
-                  <Text fontSize="$lg" color={isDark ? '#FFF' : '#000'}>✕</Text>
-                </Pressable>
-              </HStack>
-              <VStack space="lg" alignItems="center">
-                <Box w={120} h={120} borderRadius={60} overflow="hidden" bg={isDark ? '#2A2A2A' : '#F0F0F0'} alignItems="center" justifyContent="center">
-                  <Image
-                    source={toImageSource(selectedBadge.image) || require('@/assets/defaultImages/default-badge.png')}
-                    alt={selectedBadge.title}
-                    style={{ width: 96, height: 96 }}
-                    resizeMode="contain"
-                  />
-                </Box>
-                <Text fontSize="$xl" fontWeight="$bold" color={isDark ? '$textDark50' : '$textLight900'} textAlign="center">
-                  {selectedBadge.title}
-                </Text>
-                <Text fontSize="$sm" color={isDark ? '$textDark400' : '$textLight600'} textAlign="center" px="$4">
-                  {selectedBadge.description || `Collection badge: ${selectedBadge.title}`}
-                </Text>
-                <Pressable onPress={handleCloseModal} bg="#D0F205" borderRadius={12} px="$8" py="$3">
-                  <Text fontWeight="$bold" color="#111111">Close</Text>
-                </Pressable>
-              </VStack>
-            </Box>
-          </ModalContent>
-        </Modal>
-      )}
-
-      {/* Event Badge Modal - Figma 6477-32298 (BadgeBottomSheet) */}
-      {selectedBadge && selectedBadgeType === 'event' && (
-        <Modal
-          isOpen={true}
-          onClose={handleCloseModal}
-          size="lg"
-          closeOnOverlayClick={true}
-        >
-          <ModalBackdrop onPress={handleCloseModal} />
-          <ModalContent
-            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
-            borderRadius={20}
-            marginHorizontal={24}
-            marginBottom={safeAreaBottom + 24}
-            maxHeight="80%"
-          >
-            <BadgeBottomSheet
-              data={selectedBadge}
-              onClose={handleCloseModal}
-              hideFollowLadder={isOwnProfile}
-              eventId=""
-            />
-          </ModalContent>
-        </Modal>
-      )}
     </Box>
   );
 };
