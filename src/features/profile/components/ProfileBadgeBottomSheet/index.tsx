@@ -7,8 +7,8 @@ import type { Badge } from '../../types';
 
 /**
  * Profile Badge Bottom Sheet
- * Figma 6594-24141 oran ve ölçü: handle, close, başlık, badge, Claim NFT, Details.
- * 8pt grid: padding 24, badge 120, buton h 48, detail row h 48.
+ * Figma 6594-24141: handle, close, title, badge, Claim NFT, Details.
+ * 8pt grid: padding 24, badge 120, button h 48, detail row h 48.
  */
 export interface ProfileBadgeBottomSheetProps {
   badge: Badge;
@@ -43,7 +43,7 @@ const ProfileBadgeBottomSheet: React.FC<ProfileBadgeBottomSheetProps> = ({ badge
 
   return (
     <Box pb="$4" px="$4">
-      {/* Header: sol close, ortada başlık */}
+      {/* Header: close left, title center */}
       <HStack w="100%" alignItems="center" justifyContent="space-between" mb="$2">
         <Pressable onPress={onClose} hitSlop={12} w={36} h={36} alignItems="center" justifyContent="center" borderRadius={10} bg={isDark ? '#2A2A2A' : '#E5E5E5'}>
           <Feather name="x" size={18} color={isDark ? '#FFFFFF' : '#374151'} />
@@ -54,7 +54,7 @@ const ProfileBadgeBottomSheet: React.FC<ProfileBadgeBottomSheetProps> = ({ badge
         <Box w={36} />
       </HStack>
 
-      {/* Badge görseli - arka plan yok, sadece ikon */}
+      {/* Badge image - no background, icon only */}
       <Box alignSelf="center" alignItems="center" justifyContent="center" mt="$1" mb="$2">
         <Image
           source={imageSource}
@@ -64,7 +64,7 @@ const ProfileBadgeBottomSheet: React.FC<ProfileBadgeBottomSheetProps> = ({ badge
         />
       </Box>
 
-      {/* Claim NFT butonu - küçük kapsül, neon lime yeşil, ince koyu yeşil çerçeve */}
+      {/* Claim NFT button - small pill */}
       <Pressable
         onPress={onClose}
         alignSelf="center"
@@ -82,24 +82,24 @@ const ProfileBadgeBottomSheet: React.FC<ProfileBadgeBottomSheetProps> = ({ badge
         </Text>
       </Pressable>
 
-      {/* Details bölümü */}
+      {/* Details section */}
       <Text fontSize="$sm" fontWeight="$bold" color={labelColor} mt="$5" mb="$3">
         Details
       </Text>
       <VStack borderRadius={12} overflow="hidden" bg={detailRowBg}>
         <HStack justifyContent="space-between" alignItems="center" px="$4" py="$3" borderBottomWidth={1} borderBottomColor={isDark ? '#333' : '#E5E5E5'}>
-          <Text fontSize="$sm" color={labelColor}>Kazanma Tarihi</Text>
+          <Text fontSize="$sm" color={labelColor}>Earned Date</Text>
           <Text fontSize="$sm" color={valueColor}>{earnedDate}</Text>
         </HStack>
         <HStack justifyContent="space-between" alignItems="center" px="$4" py="$3" borderBottomWidth={1} borderBottomColor={isDark ? '#333' : '#E5E5E5'}>
-          <Text fontSize="$sm" color={labelColor}>Enderlik</Text>
+          <Text fontSize="$sm" color={labelColor}>Rarity</Text>
           <HStack alignItems="center" bg={isDark ? '#3A3A3A' : '#E5E5E5'} borderRadius={8} px="$2" py="$1">
             <Feather name="award" size={14} color={valueColor} style={{ marginRight: 6 }} />
             <Text fontSize="$sm" color={valueColor}>{rarity}</Text>
           </HStack>
         </HStack>
         <HStack justifyContent="space-between" alignItems="center" px="$4" py="$3">
-          <Text fontSize="$sm" color={labelColor}>Sahip</Text>
+          <Text fontSize="$sm" color={labelColor}>Owner</Text>
           <Text fontSize="$sm" color={valueColor}>{owner}</Text>
         </HStack>
       </VStack>
