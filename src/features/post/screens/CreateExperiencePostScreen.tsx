@@ -652,15 +652,31 @@ export const CreateExperiencePostScreen = () => {
             }
         } catch (error: any) {
             console.error('[CreateExperiencePostScreen] ❌ API Error:', error);
-            
-            // Hata toast göster
-            const errorMessage = error?.response?.data?.message || 
-                                error?.message || 
+
+            // Backend hata kodlarını ve mesajlarını kontrol et
+            const errorCode = error?.response?.data?.code;
+            const errorMessage = error?.response?.data?.message;
+
+            // Envanter kontrolü hatası - "I Owned" için ürün envanterde olmalı
+            if (errorMessage?.includes('envanterinizde bulunmuyor') ||
+                errorCode === 'PRODUCT_NOT_IN_INVENTORY') {
+                showCustomToast(toast, {
+                    title: 'Product Not in Inventory',
+                    description:
+                        'To mark this product as "I Owned", it must be in your inventory first. Please add it to your inventory or select "I Tried" instead.',
+                    action: 'error',
+                });
+                return;
+            }
+
+            // Genel hata
+            const fallbackMessage = errorMessage ||
+                                error?.message ||
                                 'An error occurred while creating the post. Please try again.';
-            
+
             showCustomToast(toast, {
                 title: 'Error',
-                description: errorMessage,
+                description: fallbackMessage,
                 action: 'error',
             });
         }

@@ -473,15 +473,29 @@ export const CreateQuestionPostScreen = () => {
       }
     } catch (error: any) {
       console.error('[CreateQuestionPostScreen] ❌ API Error:', error);
-      
-      // Show error toast
-      const errorMessage = error?.response?.data?.message || 
-                          error?.message || 
+
+      // Backend hata kodlarını kontrol et
+      const errorCode = error?.response?.data?.code;
+      const errorMessage = error?.response?.data?.message;
+
+      // Context not found hatası
+      if (errorCode === 'CONTEXT_NOT_FOUND') {
+        showCustomToast(toast, {
+          title: 'Product Not Found',
+          description: 'The selected product could not be found. Please try selecting another product.',
+          action: 'error',
+        });
+        return;
+      }
+
+      // Genel hata
+      const fallbackMessage = errorMessage ||
+                          error?.message ||
                           'An error occurred while creating the post. Please try again.';
-      
+
       showCustomToast(toast, {
         title: 'Error',
-        description: errorMessage,
+        description: fallbackMessage,
         action: 'error',
       });
     }
