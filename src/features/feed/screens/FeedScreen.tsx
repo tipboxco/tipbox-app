@@ -377,12 +377,8 @@ const FeedScreenInner = React.memo(() => {
     const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
     const subNameRaw = rawProduct?.subName ?? '';
     const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
-    // 3 tag: duration, condition (location), purpose. API tags yoksa/eksikse *Name alanlarından doldur.
-    const tagsFromApi = Array.isArray(item.tags) ? item.tags : [];
-    const tags =
-      tagsFromApi.length >= 3
-        ? tagsFromApi
-        : [item.durationName, item.locationName, item.purposeName].filter((s): s is string => !!s);
+    // Tags only from API (duration/location/purpose come from GET options and are sent as IDs; no fallback)
+    const tags = Array.isArray(item.tags) ? item.tags.slice(0, 3) : [];
 
     return {
       id: item.id || '',

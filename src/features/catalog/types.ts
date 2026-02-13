@@ -317,6 +317,30 @@ export interface BrandSurveysResponse {
 }
 
 /**
+ * Survey answer option - anket sorusu şıkkı
+ */
+export interface SurveyAnswerOption {
+  id: string;
+  text: string;
+}
+
+/**
+ * Survey question - anket sorusu (sorular listesi API'den)
+ */
+export interface SurveyQuestion {
+  id: string;
+  text: string;
+  options: SurveyAnswerOption[];
+}
+
+/**
+ * Survey questions response - GET survey questions endpoint response
+ */
+export interface SurveyQuestionsResponse {
+  questions: SurveyQuestion[];
+}
+
+/**
  * Brand Trends Response - /brands/{brandId}/trends endpoint'inden dönen response
  * Feed formatında trend içerikleri (pagination ile)
  */

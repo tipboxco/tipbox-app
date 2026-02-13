@@ -204,7 +204,11 @@ const CollectionDetailScreen: React.FC = () => {
   const renderBadgeItem = useCallback(
     ({ item }: { item: CollectionBadge }) => {
       const isCompleted = item.status === 'completed';
-      
+      const progressPercentage =
+        item.totalProgress > 0
+          ? Math.min((item.currentProgress / item.totalProgress) * 100, 100)
+          : 0;
+
       return (
         <Pressable
           style={[
@@ -253,9 +257,28 @@ const CollectionDetailScreen: React.FC = () => {
             >
               {item.description}
             </Text>
+            {/* Progress Bar */}
+            <View style={styles.progressBarContainer}>
+              <View
+                style={[
+                  styles.progressBarTrack,
+                  { backgroundColor: isDark ? '#2A2A2A' : '#EBEBEB' },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${progressPercentage}%`,
+                      backgroundColor: isCompleted ? '#10B981' : isDark ? '#686868' : '#686868',
+                    },
+                  ]}
+                />
+              </View>
+            </View>
           </View>
 
-          {/* Progress */}
+          {/* Progress (8/10) */}
           <Text
             style={[
               styles.badgeProgress,
@@ -582,6 +605,19 @@ const styles = StyleSheet.create({
   badgeProgress: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  progressBarContainer: {
+    marginTop: 6,
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: 10,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 10,
   },
   emptyContainer: {
     paddingVertical: 48,

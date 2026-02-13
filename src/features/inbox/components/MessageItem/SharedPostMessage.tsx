@@ -25,21 +25,11 @@ const POST_TYPE_BUTTON_LABELS: Record<string, string> = {
   FREE: 'See Post',
 };
 
-/** productName yokken kart başlığı: postType'a göre */
-const POST_TYPE_TITLES: Record<string, string> = {
-  QUESTION: 'Question Post',
-  UPDATE: 'Update Post',
-  EXPERIENCE: 'Experience Post',
-  COMPARE: 'Compare Post',
-  TIPS: 'Tips Post',
-  FREE: 'Post',
-};
-
 /**
  * Paylaşılan post mesajı (type sharedpost) – Kart tasarımı:
  * 1. Header: avatar + ad • zaman, alt satırda unvan (ince ayırıcı)
- * 2. Ürün: thumbnail + ürün adı + açıklama + status (ince ayırıcı)
- * 3. Buton: postType'a göre veya actionButtonLabel / "See Post"
+ * 2. İçerik: imageUrl/contextData görseli + başlık (contextData.name veya COMPARE'da products; yoksa "Shared post")
+ * 3. Buton: postType'a göre / "See Post"
  */
 export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
   item,
@@ -50,29 +40,23 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
   const sharedPost = item.sharedPost;
   if (!sharedPost) return null;
 
-  // Paylaşılan postun sahibinin bilgileri (gönderen değil)
   const authorName = sharedPost.authorName || 'Unknown';
   const authorTitle = sharedPost.authorTitle ?? '';
   const authorAvatar = sharedPost.authorAvatar ?? null;
-  const productName = sharedPost.productName ?? '';
-  const productGroupName = sharedPost.productGroupName ?? '';
-  const productDescription = sharedPost.productDescription ?? '';
-  const productImageUrl = sharedPost.productImageUrl;
-  const productGroupImageUrl = sharedPost.productGroupImageUrl;
-  const status = sharedPost.status;
+  const contextData = sharedPost.contextData;
+  const products = sharedPost.products;
   const postId = sharedPost.postId;
   const postType = sharedPost.postType ?? null;
   const buttonLabel =
-    sharedPost.actionButtonLabel ||
-    (postType && POST_TYPE_BUTTON_LABELS[postType]) ||
-    'See Post';
+    (postType && POST_TYPE_BUTTON_LABELS[postType]) || 'See Post';
 
-  /** Kart içi başlık: sadece product/group adı veya "Shared post"; post tipi (Compare Post vb.) name alanına yazılmaz */
+  /** Kart içi başlık: contextData.name, COMPARE'da products adları, yoksa "Shared post" */
   const contentTitle =
-    productName || productGroupName || 'Shared post';
+    contextData?.name ??
+    ((products?.length ? products.map((p) => p.name).join(' vs ') : '') || 'Shared post');
 
-  /** İçerik görseli: sadece ürün/ürün grubu görseli; avatar content alanına basılmaz (header'da zaten var) */
-  const thumbnailSource = productImageUrl ?? productGroupImageUrl ?? null;
+  /** İçerik görseli: imageUrl (post media > product > productGroup > subCategory) veya contextData.image */
+  const thumbnailSource = sharedPost.imageUrl ?? contextData?.image ?? null;
   const contentImageSource = thumbnailSource ? toImageSource(thumbnailSource) : null;
 
   const handleSeePost = () => {
@@ -84,26 +68,47 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
     }
   };
 
+  const isSent = item.isSent;
   const separatorColor = isDark ? SEPARATOR_COLOR_DARK : SEPARATOR_COLOR_LIGHT;
   const cardBg = isDark ? '#1A1A1A' : '#FFFFFF';
   const borderColor = isDark ? '#2A2A2A' : '#F0F0F0';
   const textPrimary = isDark ? '#FFFFFF' : '#000000';
   const textSecondary = isDark ? '#8C8C8C' : '#6B7280';
-  const buttonBg = isDark ? '#2A2A2A' : '#E5E5E5';
-  const buttonTextColor = isDark ? '#E5E5E5' : '#374151';
+  const buttonBg = '#C2E607'; // Figma 6390-61042: lime green (request type green)
+  const buttonTextColor = '#111827';
 
   const messageText = (item.text || '').trim();
+  const bubbleBg = isSent ? '#6366F1' : (isDark ? '#1A1A1A' : '#F2F2F2');
+  const bubbleTextColor = isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000');
 
   return (
-    <VStack alignItems="flex-start" px="$4" py="$2" maxWidth="85%">
+    <VStack alignItems={isSent ? 'flex-end' : 'flex-start'} px={isSent ? '$2' : '$4'} py="$2">
+      {messageText ? (
+        <Box
+          alignSelf={isSent ? 'flex-end' : 'flex-start'}
+          maxWidth="60%"
+          mb="$2"
+          px={12}
+          py={8}
+          borderRadius={16}
+          borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
+          borderTopRightRadius={isSent ? (isFirstInGroup ? 16 : 4) : 16}
+          bg={bubbleBg}
+        >
+          <Text fontSize="$sm" fontWeight="$normal" color={bubbleTextColor}>
+            {messageText}
+          </Text>
+        </Box>
+      ) : null}
       <Box
         bg={cardBg}
         borderRadius={16}
         borderTopLeftRadius={isFirstInGroup ? 16 : 4}
         borderTopRightRadius={16}
         overflow="hidden"
-        alignSelf="flex-start"
+        alignSelf={isSent ? 'flex-end' : 'flex-start'}
         width="100%"
+        maxWidth="60%"
         borderWidth={1}
         borderColor={borderColor}
       >
@@ -144,7 +149,7 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
           </HStack>
         </Box>
 
-        {/* 2. İçerik: thumbnail (sadece ürün/group görseli veya placeholder) + başlık + opsiyonel açıklama/status */}
+        {/* 2. İçerik: thumbnail (imageUrl / contextData.image) + başlık (contextData.name veya COMPARE products) */}
         <Box px="$3" py="$3" borderBottomWidth={1} borderBottomColor={separatorColor}>
           <HStack space="sm" alignItems="flex-start">
             {contentImageSource ? (
@@ -176,24 +181,6 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
               >
                 {contentTitle}
               </Text>
-              {productDescription ? (
-                <Text
-                  color={textSecondary}
-                  fontSize="$xs"
-                  fontWeight="$normal"
-                  numberOfLines={2}
-                >
-                  {productDescription}
-                </Text>
-              ) : null}
-              {status ? (
-                <HStack space="xs" alignItems="center" mt="$1">
-                  <Feather name="box" size={12} color={textSecondary} />
-                  <Text color={textSecondary} fontSize="$2xs" fontWeight="$medium">
-                    {status}
-                  </Text>
-                </HStack>
-              ) : null}
             </VStack>
           </HStack>
         </Box>
@@ -208,17 +195,6 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
           </Pressable>
         </Box>
       </Box>
-      {messageText ? (
-        <Text
-          color={textSecondary}
-          fontSize="$sm"
-          fontWeight="$normal"
-          mt="$2"
-          numberOfLines={3}
-        >
-          {messageText}
-        </Text>
-      ) : null}
     </VStack>
   );
 };

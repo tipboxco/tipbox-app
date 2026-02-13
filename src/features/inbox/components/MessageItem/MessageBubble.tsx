@@ -377,11 +377,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     };
   });
 
+  const bubbleRowMaxWidth = screenWidth * 0.7;
+  // Avatar (32) + time stack (~52) + space (12) = ~96
+  const bubbleMaxWidth = bubbleRowMaxWidth - 96;
+
   return (
     <VStack
       space="xs"
       alignItems={isSent ? 'flex-end' : 'flex-start'}
-      px={isSent ? "$2" : "$4"} // ✅ FIX: Gönderilen mesajlar için daha az padding (sağ kenara daha yakın)
       py="$2"
     >
       <View
@@ -399,8 +402,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <HStack
             space="sm"
             alignItems="flex-end"
-            maxWidth={isSent ? "90%" : "80%"} // ✅ FIX: Gönderilen text mesajlar için %90 (sağ kenara daha yakın)
+            maxWidth={bubbleRowMaxWidth}
             flexDirection={isSent ? 'row-reverse' : 'row'}
+            alignSelf={isSent ? 'flex-end' : 'flex-start'}
           >
             {/* Avatar - Karşı tarafın mesajlarında balonun solunda */}
             {!isSent && isFirstInGroup && (
@@ -420,6 +424,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               ref={messageBubbleRef}
               collapsable={false}
               style={{
+                maxWidth: bubbleMaxWidth,
+                alignSelf: isSent ? 'flex-end' : 'flex-start',
                 backgroundColor: isDeleted
                   ? (isDark ? '#2A2A2A' : '#E5E5E5')
                   : isSent

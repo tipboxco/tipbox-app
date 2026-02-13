@@ -553,6 +553,56 @@ export const createUpdatePost = async (
 };
 
 /**
+ * Experience Option - Backend'den dönen duration/location/purpose seçenekleri
+ */
+export interface ExperienceOption {
+  id: string;
+  name: string;
+}
+
+/**
+ * Experience Options Response
+ * GET /posts/experience/options endpoint'inden dönen veri
+ */
+export interface ExperienceOptionsResponse {
+  durations: ExperienceOption[];
+  locations: ExperienceOption[];
+  purposes: ExperienceOption[];
+}
+
+/**
+ * Get Experience Options endpoint function
+ * Duration, Location ve Purpose seçeneklerini getirir
+ *
+ * @returns ExperienceOptionsResponse - Seçenek listeleri
+ */
+export const getExperienceOptions = async (): Promise<ExperienceOptionsResponse> => {
+  try {
+    const response = await apiService.getClient().get<ExperienceOptionsResponse>(
+      '/posts/experience/options'
+    );
+    return response.data;
+  } catch (error: any) {
+    const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
+    console.error('[getExperienceOptions] ❌ API Error:', {
+      url: '/posts/experience/options',
+      fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/posts/experience/options` : undefined,
+      method: 'GET',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+    });
+    if (__DEV__ && error) {
+      console.error('[getExperienceOptions] Full error:', error);
+    }
+    throw error;
+  }
+};
+
+/**
  * Create Experience Post Request Body
  */
 export interface CreateExperiencePostRequest {

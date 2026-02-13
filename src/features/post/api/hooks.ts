@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
-import { 
-  createFreePost, 
+import {
+  createFreePost,
   createBenchmarkPost,
   createTipsAndTricksPost,
   createQuestionPost,
@@ -8,6 +8,7 @@ import {
   createExperiencePost,
   splitExperience,
   getBoostOptions,
+  getExperienceOptions,
   getPostDetail,
   searchPosts,
   updatePost,
@@ -22,6 +23,7 @@ import {
   type ToggleBoostRequest,
   type ToggleBoostResponse,
   type GetBoostPriceResponse,
+  type ExperienceOptionsResponse,
 } from './postApi';
 import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
 import type { 
@@ -48,8 +50,9 @@ export const postKeys = {
   free: () => [...postKeys.all, 'free'] as const,
   boostOptions: () => [...postKeys.all, 'boostOptions'] as const,
   boostPrice: () => [...postKeys.all, 'boostPrice'] as const,
+  experienceOptions: () => [...postKeys.all, 'experienceOptions'] as const,
   detail: (postId: string) => [...postKeys.all, 'detail', postId] as const,
-  search: (q: string, cursor?: string, limit?: number) => 
+  search: (q: string, cursor?: string, limit?: number) =>
     [...postKeys.all, 'search', q, cursor, limit] as const,
 };
 
@@ -383,6 +386,25 @@ export const useBoostPrice = () => {
     queryFn: getBoostPrice,
     staleTime: 1000 * 60 * 5, // 5 dakika - fiyat dinamik, sık güncellenir
     refetchInterval: 1000 * 60 * 5, // Her 5 dakikada bir yeniden getir
+  });
+};
+
+/**
+ * Get Experience Options query hook
+ * Duration, Location ve Purpose seçeneklerini getirir
+ *
+ * @example
+ * const { data: options, isLoading } = useGetExperienceOptions();
+ */
+export const useGetExperienceOptions = () => {
+  return useQuery<ExperienceOptionsResponse, Error>({
+    queryKey: postKeys.experienceOptions(),
+    queryFn: getExperienceOptions,
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 };
 

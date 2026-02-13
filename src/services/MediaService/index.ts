@@ -1,13 +1,26 @@
-import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform, Image } from 'react-native';
 import type { ImageSource, SaveImageResult } from './types';
 
+/** Lazy-loaded expo-media-library (native module; not available in Expo Go) */
+const getMediaLibrary = async (): Promise<typeof import('expo-media-library') | null> => {
+  try {
+    return await import('expo-media-library');
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('ExpoMediaLibrary') || msg.includes('native module')) {
+      console.warn('[MediaService] expo-media-library not available (use a development build, not Expo Go).');
+      return null;
+    }
+    throw e;
+  }
+};
+
 /**
  * MediaService
- * 
- * Handles saving images to device gallery/photo library
- * Uses expo-media-library for Android/iOS
+ *
+ * Handles saving images to device gallery/photo library.
+ * Uses expo-media-library for Android/iOS (requires dev build; not available in Expo Go).
  */
 class MediaService {
   private static instance: MediaService;
@@ -26,6 +39,8 @@ class MediaService {
    */
   async requestPermissions(): Promise<boolean> {
     try {
+      const MediaLibrary = await getMediaLibrary();
+      if (!MediaLibrary) return false;
       const { status } = await MediaLibrary.requestPermissionsAsync();
       return status === 'granted';
     } catch (error) {
@@ -67,6 +82,14 @@ class MediaService {
     filename?: string
   ): Promise<SaveImageResult> {
     try {
+      const MediaLibrary = await getMediaLibrary();
+      if (!MediaLibrary) {
+        return {
+          success: false,
+          error: 'Photo library not available. Use a development build (expo run:ios / run:android).',
+        };
+      }
+
       // Request permissions first
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
@@ -101,7 +124,7 @@ class MediaService {
       // Save to gallery
       console.log('[MediaService] Saving image to gallery:', localUri);
       const asset = await MediaLibrary.createAssetAsync(localUri);
-      
+
       // Optional: Create album and add to it
       if (Platform.OS !== 'web') {
         try {
@@ -133,6 +156,8 @@ class MediaService {
    */
   async checkPermissions(): Promise<boolean> {
     try {
+      const MediaLibrary = await getMediaLibrary();
+      if (!MediaLibrary) return false;
       const { status } = await MediaLibrary.getPermissionsAsync();
       return status === 'granted';
     } catch (error) {

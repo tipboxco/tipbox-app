@@ -5,15 +5,15 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { CatalogStackParamList } from '../navigation';
+import type { BrandStackParamList } from '../BrandNavigator';
 import { Header } from '@/src/components/Header';
 import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { useSafeAreaValues } from '@/src/utils';
 import { useSurveyQuestions, useSubmitSurveyAnswer } from '../api/hooks';
 import type { SurveyQuestion, SurveyAnswerOption } from '../types';
 
-type SurveyParticipationScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'SurveyParticipationScreen'>;
-type SurveyParticipationScreenRouteProp = RouteProp<CatalogStackParamList, 'SurveyParticipationScreen'>;
+type SurveyParticipationScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'SurveyParticipationScreen'>;
+type SurveyParticipationScreenRouteProp = RouteProp<BrandStackParamList, 'SurveyParticipationScreen'>;
 
 const SurveyParticipationScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -27,7 +27,7 @@ const SurveyParticipationScreen: React.FC = () => {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
 
   // API hooks
-  const { data: questionsData, isLoading, error } = useSurveyQuestions(surveyId);
+  const { data: questionsData, isLoading, error } = useSurveyQuestions(surveyId, brandId);
   const submitAnswerMutation = useSubmitSurveyAnswer();
 
   const questions = questionsData?.questions || [];
@@ -61,6 +61,7 @@ const SurveyParticipationScreen: React.FC = () => {
     // Cevabı gönder
     try {
       await submitAnswerMutation.mutateAsync({
+        brandId,
         surveyId,
         questionId: currentQuestion.id,
         answerId: selectedAnswerId,
@@ -76,7 +77,7 @@ const SurveyParticipationScreen: React.FC = () => {
     } catch (error) {
       console.error('Error submitting answer:', error);
     }
-  }, [currentQuestion, currentQuestionIndex, totalQuestions, selectedAnswers, surveyId, submitAnswerMutation, navigation]);
+  }, [brandId, currentQuestion, currentQuestionIndex, totalQuestions, selectedAnswers, surveyId, submitAnswerMutation, navigation]);
 
   const selectedAnswerId = currentQuestion ? selectedAnswers[currentQuestion.id] : null;
   const canGoToPrevious = currentQuestionIndex > 0;

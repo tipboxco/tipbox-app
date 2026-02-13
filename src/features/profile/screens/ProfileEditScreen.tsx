@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Modal as RNModal, StyleSheet, Pressable as RNPressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -16,6 +16,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
@@ -28,6 +30,7 @@ import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/the
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '@/src/store/appStore';
 import type { ProfileStackParamList } from '../navigation';
+import type { UserProfile } from '../types';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -138,9 +141,10 @@ const ProfileEditScreen: React.FC = () => {
   const navigation = useNavigation<ProfileEditScreenNavigationProp>();
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+  const { user, updateUser } = useAppStore();
 
-  // Form state
-  const [name, setName] = useState(mock_user_card.name);
+  // Form state: real user name when available, else mock fallback
+  const [name, setName] = useState(() => user?.fullName ?? mock_user_card.name);
   const [bio, setBio] = useState(mock_user_card.description);
   const [badge1, setBadge1] = useState('');
   const [badge2, setBadge2] = useState('');
@@ -160,7 +164,11 @@ const ProfileEditScreen: React.FC = () => {
   const updateProfileMutation = useUpdateProfile();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { user, updateUser } = useAppStore();
+
+  // Sync form name when user loads (e.g. after auth)
+  useEffect(() => {
+    if (user?.fullName) setName(user.fullName);
+  }, [user?.fullName]);
 
   // Badge seçimi için bottom sheet aç
   const handleBadgeSelect = useCallback((slot: 1 | 2 | 3) => {
@@ -327,8 +335,8 @@ const ProfileEditScreen: React.FC = () => {
             fieldName: 'avatar',
             fileFormat: {
               uri: selectedAvatarUri.substring(0, 50) + '...',
-              type: 'image/jpeg' || 'image/png',
-              name: 'avatar.jpg' || 'avatar.png',
+              type: 'image/jpeg',
+              name: 'avatar.jpg',
             },
             headers: {
               'Content-Type': 'multipart/form-data (with boundary)',
@@ -451,8 +459,8 @@ const ProfileEditScreen: React.FC = () => {
             fieldName: 'banner',
             fileFormat: {
               uri: selectedBannerUri.substring(0, 50) + '...',
-              type: 'image/jpeg' || 'image/png',
-              name: 'banner.jpg' || 'banner.png',
+              type: 'image/jpeg',
+              name: 'banner.jpg',
             },
             headers: {
               'Content-Type': 'multipart/form-data (with boundary)',
@@ -475,26 +483,38 @@ const ProfileEditScreen: React.FC = () => {
               bannerUrlLength: bannerUrl.length,
             });
             
-            // CRITICAL FIX: Banner upload başarılı olduktan sonra cache'i invalidate et ve refetch yap
-            // Backend otomatik olarak kullanıcının profilini güncelliyor, cache'i yenile
             if (user?.id) {
-              // Cache'i invalidate et
+              // Cache-bust: aynı URL için Image cache'i eski görseli gösterebilir; query param ile yeni yüklenir
+              const bannerUrlWithCacheBust = bannerUrl.includes('?')
+                ? `${bannerUrl}&_t=${Date.now()}`
+                : `${bannerUrl}?_t=${Date.now()}`;
+              console.log('[ProfileEditScreen] 🖼️ Banner URL (API response):', bannerUrl);
+              console.log('[ProfileEditScreen] 🖼️ Banner URL (cache’e yazılan, cache-bust’lı):', bannerUrlWithCacheBust);
+              const setBannerInCache = () => {
+                queryClient.setQueryData<UserProfile>(profileKeys.profile(user.id), (old) =>
+                  old ? { ...old, bannerUrl: bannerUrlWithCacheBust } : old
+                );
+              };
+              // Optimistic update: ProfileScreen anında yeni banner görsün
+              setBannerInCache();
+              const afterSet = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ Cache’e yazdıktan hemen sonra cache’teki bannerUrl:', afterSet?.bannerUrl);
               await queryClient.invalidateQueries({
                 queryKey: profileKeys.profile(user.id),
                 exact: false,
               });
-              console.log('[ProfileEditScreen] ✅ Profile cache invalidated after banner upload');
-              
-              // CRITICAL: Cache invalidate sonrası hemen refetch yap - ProfileScreen'de güncel banner görünsün
               await queryClient.refetchQueries({
                 queryKey: profileKeys.profile(user.id),
                 exact: false,
               });
-              console.log('[ProfileEditScreen] ✅ Profile cache refetched after banner upload');
+              const afterRefetch = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ Refetch sonrası cache’teki bannerUrl:', afterRefetch?.bannerUrl);
+              // Refetch sunucudan eski bannerUrl dönebilir; cache'i tekrar yeni URL ile zorla güncelle
+              setBannerInCache();
+              const afterFix = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ setBannerInCache tekrar çağrıldıktan sonra cache’teki bannerUrl:', afterFix?.bannerUrl);
             }
             
-            // CRITICAL FIX: Store'daki user bilgisini de güncelle (banner store'da yok ama profil cache'i güncelleniyor)
-            // Banner bilgisi profile cache'inde tutuluyor, store'da user.avatar yok
             console.log('[ProfileEditScreen] ✅ Banner upload completed, profile cache updated and refetched');
           } else {
             console.error('[ProfileEditScreen] ❌ Banner upload başarısız - response formatı hatalı:', {
@@ -893,7 +913,7 @@ const ProfileEditScreen: React.FC = () => {
               borderColor={cosmetic ? getCosmeticBorderColor(cosmetic) : (isDark ? '$backgroundDark950' : '$backgroundLight0')}
             >
               <Image
-                source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
+                source={selectedAvatarUri ? { uri: selectedAvatarUri } : (user?.avatar ? { uri: user.avatar } : mock_user_card.avatar)}
                 alt={name}
                 w="100%"
                 h="100%"
@@ -1093,7 +1113,7 @@ const ProfileEditScreen: React.FC = () => {
                     overflow="hidden"
                   >
                     <Image
-                      source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
+                      source={selectedAvatarUri ? { uri: selectedAvatarUri } : (user?.avatar ? { uri: user.avatar } : mock_user_card.avatar)}
                       alt={name}
                       style={{ width: '100%', height: '100%' }}
                       resizeMode="cover"
@@ -1148,9 +1168,18 @@ const ProfileEditScreen: React.FC = () => {
                 Cosmetics
               </Text>
 
-              {/* Figma 6576-32081: border renkleri farklı, ortada renk yok. Sahibi değilse tek dashed + placeholder */}
+              {/* Figma 6576-32081: Cosmetic yoksa tek dashed + plus butonu → MarketPlaceScreen'e yönlendir */}
               {ownedCosmeticsIds.length === 0 ? (
-                <Box alignSelf="flex-start" mt="$1">
+                <Pressable
+                  alignSelf="flex-start"
+                  mt="$1"
+                  onPress={() => {
+                    closeCosmeticModal();
+                    navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
+                      screen: 'MarketPlaceScreen',
+                    });
+                  }}
+                >
                   <Box
                     width={56}
                     height={56}
@@ -1164,7 +1193,7 @@ const ProfileEditScreen: React.FC = () => {
                   >
                     <Feather name="plus" size={24} color={isDark ? '#999' : '#737373'} />
                   </Box>
-                </Box>
+                </Pressable>
               ) : (
                 <VStack space="md" alignItems="center">
                   <HStack space="md" justifyContent="center">

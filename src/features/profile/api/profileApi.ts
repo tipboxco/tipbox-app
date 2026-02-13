@@ -116,7 +116,10 @@ export const getUserProfile = async (
       const v = apiData.avatarUrl ?? apiData.avatar ?? apiData.user?.avatar ?? apiData.user?.avatarUrl ?? '';
       return typeof v === 'string' ? v.trim() : (v ? String(v) : '');
     })(), // Backend avatarUrl/avatar veya user.avatar dönebilir
-    bannerUrl: apiData.bannerUrl || '',
+    bannerUrl: (() => {
+      const v = apiData.bannerUrl ?? apiData.banner ?? '';
+      return typeof v === 'string' ? v.trim() : (v ? String(v) : '');
+    })(), // Backend bannerUrl veya banner dönebilir
     biography: apiData.biography || '',
     titles: apiData.titles || [],
     stats: {
@@ -543,13 +546,20 @@ export const getInventory = async (
       },
     };
   } catch (error: any) {
+    const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
     console.error('[getInventory] API Error:', {
       url: '/inventory',
+      fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/inventory` : undefined,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+      code: error.code,
+      errno: error.errno,
     });
+    if (__DEV__ && error) {
+      console.error('[getInventory] Full error:', error);
+    }
     throw error;
   }
 };
@@ -648,13 +658,20 @@ export const getExperienceOptions = async (): Promise<ExperienceOptions> => {
     );
     return response.data;
   } catch (error: any) {
+    const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
     console.error('[getExperienceOptions] API Error:', {
       url: '/inventory/experience/options',
+      fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/inventory/experience/options` : undefined,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+      code: error.code,
+      errno: error.errno,
     });
+    if (__DEV__ && error) {
+      console.error('[getExperienceOptions] Full error:', error);
+    }
     throw error;
   }
 };

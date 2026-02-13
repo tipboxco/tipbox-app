@@ -10,6 +10,7 @@ import BrandHistoryScreen from './screens/BrandHistoryScreen';
 import BrandSurveyListScreen from './screens/BrandSurveyListScreen';
 import BrandPostListScreen from './screens/BrandPostListScreen';
 import BrandEventsScreen from './screens/BrandEventsScreen';
+import SurveyParticipationScreen from './screens/SurveyParticipationScreen';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 /**
@@ -22,6 +23,7 @@ export type BrandStackParamList = {
   BrandProductBookScreen: { brandId: string };
   BrandProductDetailScreen: { brandId: string; productId: string; productName?: string; productImage?: any };
   SurveyScreen: { brandId: string };
+  SurveyParticipationScreen: { surveyId: string; brandId: string };
   BrandEventsDetailScreen: { eventId: string };
   BrandEventDetail: { eventId: string };
   BrandHistoryScreen: { brandId: string };
@@ -60,6 +62,10 @@ export const BrandNavigator = () => {
       <BrandStack.Screen
         name="SurveyScreen"
         component={SurveyScreen}
+      />
+      <BrandStack.Screen
+        name="SurveyParticipationScreen"
+        component={SurveyParticipationScreen}
       />
       <BrandStack.Screen
         name="BrandEventsDetailScreen"

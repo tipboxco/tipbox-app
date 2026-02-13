@@ -49,16 +49,22 @@ interface MessageDetailItem {
   type?: 'message' | 'support_request' | 'tips' | 'image' | 'sharedpost';
   sharedPost?: {
     postId: string;
-    authorName: string;
-    authorTitle?: string;
-    authorAvatar?: any;
-    authorId?: string;
-    productName: string;
-    productImageUrl?: string | null;
-    productGroupName?: string | null;
-    productGroupImageUrl?: string | null;
-    productDescription?: string;
-    status?: string;
+    postType?: string | null;
+    authorName?: string;
+    authorTitle?: string | null;
+    authorAvatar?: string | null;
+    imageUrl?: string | null;
+    contextType?: 'product' | 'productGroup' | 'subCategory' | null;
+    contextData?: {
+      id?: string;
+      name?: string;
+      image?: string | null;
+    };
+    products?: Array<{
+      id: string;
+      name: string;
+      image: string | null;
+    }>;
   };
   supportRequest?: {
     supportType: string;
@@ -105,8 +111,6 @@ interface MessageDetailScreenParams {
   senderAvatar: any;
   openSendTips?: boolean; // Send tips bottom sheet'i açılsın mı? (root.types.ts ile uyumlu)
 }
-
-
 
 // Güvenli tarih formatlama fonksiyonu
 const formatMessageTime = (dateInput: string | Date | null | undefined): string => {
@@ -286,15 +290,6 @@ const MessageDetailScreen: React.FC = () => {
   const recipientUserId = routeParams.recipientUserId;
   const initialThreadId = routeParams.threadId || routeParams.messageId;
   
-  // DEBUG: Route params'ı logla
-  console.log('[MessageDetail] 🔍 Route params:', {
-    threadId: routeParams.threadId,
-    messageId: routeParams.messageId,
-    recipientUserId: routeParams.recipientUserId,
-    initialThreadId,
-    allParams: routeParams,
-  });
-
   // Helper: Thread'den diğer kullanıcıyı bul (DM_THREAD.md'ye göre)
   const getOtherUserIdFromThread = useCallback((thread: { userOneId: string; userTwoId: string }, currentUserId: string): string | null => {
     if (thread.userOneId === currentUserId) {
@@ -411,9 +406,6 @@ const MessageDetailScreen: React.FC = () => {
         safeScrollToEnd(true);
       }, 100);
     } catch (error) {
-      if (__DEV__) {
-        console.warn('[MessageDetail] ⚠️ Scroll error, using fallback:', error);
-      }
       // Hata durumunda normal scroll yap
       safeScrollToEnd(true);
     }
@@ -433,38 +425,6 @@ const MessageDetailScreen: React.FC = () => {
     { limit: 50 } // İlk yüklemede 50 mesaj getir
   );
   
-  // DEBUG: ThreadId ve query durumunu logla
-  useEffect(() => {
-    console.log('[MessageDetail] 🔍 Query durumu kontrolü:', {
-      threadId,
-      queryEnabled: !!threadId,
-      isLoadingMessages,
-      isFetching: queryClient.getQueryState([...inboxKeys.threadMessages(threadId || ''), { limit: 50 }])?.fetchStatus,
-      threadMessagesLength: threadMessages?.length || 0,
-      hasThreadMessages: !!threadMessages,
-      threadMessagesType: Array.isArray(threadMessages) ? 'array' : typeof threadMessages,
-    });
-    
-    // Query durumunu kontrol et
-    if (threadId) {
-      const queryKey = [...inboxKeys.threadMessages(threadId), { limit: 50 }];
-      const queryState = queryClient.getQueryState(queryKey);
-      const queryData = queryClient.getQueryData<ThreadMessage[]>(queryKey);
-      
-      console.log('[MessageDetail] 🔍 React Query state:', {
-        queryKey: queryKey.join('/'),
-        status: queryState?.status,
-        fetchStatus: queryState?.fetchStatus,
-        dataUpdatedAt: queryState?.dataUpdatedAt ? new Date(queryState.dataUpdatedAt).toISOString() : null,
-        errorUpdatedAt: queryState?.errorUpdatedAt ? new Date(queryState.errorUpdatedAt).toISOString() : null,
-        error: queryState?.error?.message,
-        hasCachedData: !!queryData,
-        cachedDataLength: queryData?.length || 0,
-      });
-    } else {
-      console.log('[MessageDetail] ⚠️ ThreadId yok, query disabled');
-    }
-  }, [threadId, isLoadingMessages, threadMessages?.length, queryClient]);
 
   // Klavye event listener'ları - scroll ve buton pozisyonu için
   useEffect(() => {
@@ -475,8 +435,6 @@ const MessageDetailScreen: React.FC = () => {
         setKeyboardHeight(height);
         keyboardHeightRef.current = height;
         setIsKeyboardVisible(true);
-        console.log('[MessageDetail] ⌨️ Keyboard opened, height:', height);
-        
         // ✅ Normal FlatList kullanıldığı için klavye açıldığında en son mesaja scroll yap
         setTimeout(() => {
           safeScrollToEnd(true);
@@ -490,8 +448,6 @@ const MessageDetailScreen: React.FC = () => {
         setKeyboardHeight(0);
         keyboardHeightRef.current = 0;
         setIsKeyboardVisible(false);
-        console.log('[MessageDetail] ⌨️ Keyboard closed');
-        
         // Klavye kapandığında: Eğer content tüm ekranı kaplıyorsa en alta scroll yap
         // Yoksa mevcut pozisyonda kalsın
         setTimeout(() => {
@@ -500,10 +456,7 @@ const MessageDetailScreen: React.FC = () => {
           
           // Eğer content height layout height'tan büyükse (tüm ekranı kaplıyorsa)
           if (contentHeight > layoutHeight && messages.length > 0) {
-            console.log('[MessageDetail] 📜 Content fills screen, scrolling to end');
             safeScrollToEnd(true);
-          } else {
-            console.log('[MessageDetail] 📜 Content does not fill screen, keeping position');
           }
         }, 100);
       }
@@ -549,16 +502,6 @@ const MessageDetailScreen: React.FC = () => {
           // user?.id kontrolü ekle - eğer user henüz yüklenmemişse false döndür
           const isSent = user?.id ? String(msg.senderId) === String(user.id) : false;
           
-          // ✅ DEBUG: isSent hesaplamasını kontrol et
-          if (__DEV__) {
-            console.log('[MessageDetail] 🔍 isSent hesaplaması (older messages):', {
-              messageId: msg.id,
-              senderId: msg.senderId,
-              userId: user?.id,
-              isSent,
-              hasUser: !!user,
-            });
-          }
           const senderName = isSent 
             ? undefined 
             : (msg.senderName || currentParams.senderName || 'Unknown');
@@ -625,7 +568,7 @@ const MessageDetailScreen: React.FC = () => {
         return merged;
       });
     } catch (error) {
-      console.error('[MessageDetail] ❌ Error loading older messages:', error);
+      // Error loading older messages - silent
     } finally {
       setIsLoadingMoreMessages(false);
     }
@@ -637,11 +580,6 @@ const MessageDetailScreen: React.FC = () => {
     if (threadId) {
       // ✅ FIX: Thread değiştiğinde eski thread'in cache'ini temizle
       if (prevThreadIdRef.current && prevThreadIdRef.current !== threadId) {
-        console.log('[MessageDetail] 🔄 Thread değişti, eski thread cache temizleniyor:', {
-          oldThreadId: prevThreadIdRef.current,
-          newThreadId: threadId,
-        });
-        
         // Eski thread'in tüm cache'ini temizle (tüm params kombinasyonları için)
         queryClient.removeQueries({ 
           queryKey: inboxKeys.threadMessages(prevThreadIdRef.current),
@@ -668,12 +606,6 @@ const MessageDetailScreen: React.FC = () => {
       
       // Eğer mesajlar mevcut thread'e ait değilse, göz ardı et
       if (messageThreadId && messageThreadId !== threadId) {
-        console.log('[MessageDetail] ⚠️ Thread ID eşleşmiyor, mesajlar göz ardı ediliyor:', {
-          currentThreadId: threadId,
-          messageThreadId,
-          messageCount: threadMessages.length,
-          firstMessageId: firstMessage.id,
-        });
         // Cache'i temizle ve mesajları sıfırla
         queryClient.removeQueries({ 
           queryKey: inboxKeys.threadMessages(threadId),
@@ -685,50 +617,14 @@ const MessageDetailScreen: React.FC = () => {
     
     if (threadMessages && Array.isArray(threadMessages)) {
       if (threadMessages.length > 0) {
-        console.log('[MessageDetail] 📥 Thread messages loaded:', threadMessages.length);
-        console.log('[MessageDetail] 📥 Sample message:', JSON.stringify(threadMessages[0], null, 2));
-        console.log('[MessageDetail] 📥 Params:', { senderName: params.senderName, hasAvatar: !!params.senderAvatar });
-        
-        // ✅ Backend iyileştirmesi: GET /inbox/:threadId çağrıldığında backend otomatik olarak
-        // tüm okunmamış mesajları isRead: true yapıyor ve thread_read socket event'i gönderiyor.
-        // Bu yüzden frontend'de manuel olarak markThreadRead çağırmaya gerek yok.
-        // thread_read event'i geldiğinde inbox listesi otomatik güncellenecek.
-        console.log('[MessageDetail] ✅ Thread messages loaded. Backend automatically marks messages as read when GET /inbox/:threadId is called.');
-        
         // Normal FlatList için mesajları normal sırada tut (en eski başta, en yeni sonda)
         const currentParams = paramsRef.current;
         const convertedMessages: MessageDetailItem[] = threadMessages
           .map((msg) => {
-            // ✅ DEBUG: TIPS mesajları için özel log
-            if (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) {
-              console.log('[MessageDetail] 💰 TIPS mesajı parse ediliyor:', {
-                messageId: msg.id,
-                messageType: msg.messageType,
-                amount: msg.amount,
-                message: msg.message,
-                supportRequestType: msg.supportRequestType,
-                mediaUrl: msg.mediaUrl,
-                senderId: msg.senderId,
-              });
-            }
-            
             // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
             // user?.id kontrolü ekle - eğer user henüz yüklenmemişse false döndür
             const isSent = user?.id ? String(msg.senderId) === String(user.id) : false;
             
-            // ✅ DEBUG: isSent hesaplamasını kontrol et (her zaman logla)
-            if (__DEV__) {
-              console.log('[MessageDetail] 🔍 isSent hesaplaması (thread messages):', {
-                messageId: msg.id,
-                senderId: msg.senderId,
-                userId: user?.id,
-                isSent,
-                senderIdType: typeof msg.senderId,
-                userIdType: typeof user?.id,
-                areEqual: user?.id ? String(msg.senderId) === String(user.id) : false,
-                hasUser: !!user,
-              });
-            }
             // Backend'den gelen sender bilgilerini kullan (varsa), yoksa params'dan al
             const senderName = isSent 
               ? undefined 
@@ -745,17 +641,6 @@ const MessageDetailScreen: React.FC = () => {
               // ✅ FIX: amount var ama supportRequestType yoksa ve mediaUrl yoksa -> TIPS mesajı
               messageType = 'tips';
               // ✅ DEBUG: TIPS mesajı tespit edildi
-              if (__DEV__) {
-                console.log('[MessageDetail] 💰 TIPS mesajı tespit edildi:', {
-                  messageId: msg.id,
-                  messageType: msg.messageType,
-                  amount: msg.amount,
-                  message: msg.message,
-                  supportRequestType: msg.supportRequestType,
-                  mediaUrl: msg.mediaUrl,
-                  finalMessageType: messageType,
-                });
-              }
             } else if (msg.messageType === 'image' || msg.mediaUrl) {
               messageType = 'image';
             } else if (msg.messageType === 'shared-post' || msg.sharedPost) {
@@ -794,20 +679,6 @@ const MessageDetailScreen: React.FC = () => {
                   ? backendStatus as 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported'
                   : 'pending';
                 
-                if (__DEV__) {
-                  console.log('[MessageDetail] 🔍 Support Request Status Debug:', {
-                    messageId: msg.id,
-                    messageType: msg.messageType,
-                    supportRequestType: msg.supportRequestType,
-                    backendStatus,
-                    finalStatus,
-                    requestId: msg.requestId,
-                    threadId: msg.threadId,
-                    fromUserId: msg.fromUserId,
-                    toUserId: msg.toUserId,
-                  });
-                }
-                
                 return {
                   supportType: msg.supportRequestType || 'GENERAL',
                   message: msg.message,
@@ -820,18 +691,6 @@ const MessageDetailScreen: React.FC = () => {
                 };
               })() : undefined,
             };
-            
-            // ✅ DEBUG: TIPS mesajları için convert sonrası log
-            if (messageType === 'tips') {
-              console.log('[MessageDetail] 💰 TIPS mesajı convert edildi:', {
-                messageId: convertedMessage.id,
-                type: convertedMessage.type,
-                tipsAmount: convertedMessage.tipsAmount,
-                text: convertedMessage.text,
-                isSent: convertedMessage.isSent,
-                senderId: convertedMessage.senderId,
-              });
-            }
             
             return convertedMessage;
           });
@@ -859,12 +718,6 @@ const MessageDetailScreen: React.FC = () => {
               return textMatch && timeMatch;
             });
             
-            if (existsInBackend) {
-              console.log('[MessageDetail] 📥 Pending message found in backend, will use backend version:', pendingMsg.text);
-            } else {
-              console.log('[MessageDetail] 📥 Pending message not found in backend, keeping optimistic:', pendingMsg.text);
-            }
-            
             return !existsInBackend; // Backend'de yoksa koru
           });
           
@@ -878,13 +731,6 @@ const MessageDetailScreen: React.FC = () => {
             const timeA = new Date(a.sentAt).getTime();
             const timeB = new Date(b.sentAt).getTime();
             return timeB - timeA; // Descending (en yeni başta, en eski sonda) - inverted FlashList için
-          });
-          
-          console.log('[MessageDetail] 📥 Merged messages:', {
-            backend: convertedMessages.length,
-            pending: pendingMessages.length,
-            kept: pendingMessagesToKeep.length,
-            total: merged.length,
           });
           
           // ✅ WhatsApp Engine: En eski mesaj ID'sini kaydet (pagination için - inverted FlashList'te en eski mesaj dizinin sonunda)
@@ -908,12 +754,10 @@ const MessageDetailScreen: React.FC = () => {
         // ✅ Normal FlatList kullanıldığı için en yeni mesajlara scroll yap
         // Manuel scroll mantığına gerek yok - inverted prop otomatik hallediyor
       } else {
-        console.log('[MessageDetail] 📭 No messages in thread yet');
         // Pending mesajları koru (henüz backend'e gitmemiş olanlar)
         setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
       }
     } else if (!isLoadingMessages) {
-      console.log('[MessageDetail] ⚠️ Thread messages is null/undefined');
       // Pending mesajları koru
       setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
     }
@@ -933,9 +777,6 @@ const MessageDetailScreen: React.FC = () => {
     const currentRecipientUserId = effectiveRecipientUserId || recipientUserId || initialThreadId;
     
     if (!currentRecipientUserId) {
-      if (__DEV__) {
-        console.warn('[MessageDetail] No recipientUserId or threadId found');
-      }
       return;
     }
 
@@ -948,11 +789,6 @@ const MessageDetailScreen: React.FC = () => {
         // (Inbox listesinden gelen threadId'yi kullan)
         if (initialThreadId && initialThreadId !== currentRecipientUserId && initialThreadId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
           // Thread ID zaten var (inbox listesinden geldi), direkt kullan
-          console.log('[MessageDetail] ✅ Using existing threadId from inbox:', {
-            initialThreadId,
-            currentRecipientUserId,
-            threadIdMatch: initialThreadId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ? 'valid UUID' : 'invalid UUID',
-          });
           currentThreadId = initialThreadId;
           setThreadId(initialThreadId);
           // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
@@ -964,12 +800,6 @@ const MessageDetailScreen: React.FC = () => {
           try {
             thread = await getOrCreateThread(currentRecipientUserId);
             currentThreadId = thread.id;
-            console.log('[MessageDetail] ✅ Thread oluşturuldu/getirildi:', {
-              threadId: thread.id,
-              userOneId: thread.userOneId,
-              userTwoId: thread.userTwoId,
-              isSupportThread: thread.isSupportThread,
-            });
             setThreadId(thread.id);
             // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
             setActiveThreadId(thread.id);
@@ -980,20 +810,16 @@ const MessageDetailScreen: React.FC = () => {
               const otherUserId = getOtherUserIdFromThread(thread, user.id);
               if (otherUserId) {
                 setEffectiveRecipientUserId(otherUserId);
-                console.log('[MessageDetail] Extracted recipientUserId from thread:', otherUserId);
               }
             }
           } catch (error: any) {
             // 404 hatası: Thread endpoint backend'de henüz implement edilmemiş
             if (error?.response?.status === 404 || error?.isThreadEndpointNotFound) {
-              console.info('[MessageDetail] Thread endpoint not available, using currentRecipientUserId as threadId (fallback mode)');
               currentThreadId = currentRecipientUserId;
               setThreadId(currentRecipientUserId);
               // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
               setActiveThreadId(currentRecipientUserId);
             } else if (error?.response?.status === 500) {
-              // 500 hatası: Backend hatası, fallback olarak currentRecipientUserId'yi threadId olarak kullan
-              console.error('[MessageDetail] ⚠️ Backend error (500) when creating/getting thread, using fallback:', error?.response?.data);
               currentThreadId = currentRecipientUserId;
               setThreadId(currentRecipientUserId);
               // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
@@ -1007,7 +833,6 @@ const MessageDetailScreen: React.FC = () => {
 
         // 2. Socket bağlantısı kontrolü ve thread join
         if (isConnected && currentThreadId) {
-          console.log('[MessageDetail] ✅ Socket connected, joining thread:', currentThreadId);
           joinThread(currentThreadId);
           setIsSocketReady(true);
           
@@ -1016,7 +841,6 @@ const MessageDetailScreen: React.FC = () => {
           // Bu yüzden frontend'de manuel olarak markThreadRead çağırmaya gerek yok.
           // thread_read event'i geldiğinde inbox listesi otomatik güncellenecek.
         } else {
-          console.log('[MessageDetail] ⚠️ Socket not connected, will join when connected');
           setIsSocketReady(false);
         }
         
@@ -1025,39 +849,14 @@ const MessageDetailScreen: React.FC = () => {
         // Bu yüzden inbox listesinde de optimistic update yapalım (yeşil tik anında kaybolsun)
         const queryKey = [...inboxKeys.messages(), undefined];
         
-        console.log('[MessageDetail] 📥 THREAD MESSAGES YÜKLENDİ - Inbox listesi güncelleniyor');
-        console.log(`[MessageDetail]   Thread ID: ${currentThreadId}`);
-        console.log(`[MessageDetail]   Yüklenen mesaj sayısı: ${threadMessages?.length || 0}`);
-        
         queryClient.setQueryData(queryKey, (oldData: any[] | undefined) => {
-          if (!oldData) {
-            console.log('[MessageDetail]   ⚠️ Inbox cache boş, güncelleme yapılamıyor');
-            return oldData;
-          }
-          
-          const threadBefore = oldData.find((m: any) => m.id === currentThreadId);
-          if (threadBefore) {
-            console.log('[MessageDetail]   Thread önceki durumu:');
-            console.log(`[MessageDetail]     Thread ID: ${threadBefore.id}`);
-            console.log(`[MessageDetail]     Sender: ${threadBefore.senderName || 'Unknown'}`);
-            console.log(`[MessageDetail]     isUnread: ${threadBefore.isUnread}`);
-            console.log(`[MessageDetail]     unreadCount: ${threadBefore.unreadCount || 0}`);
-          }
-          
+          if (!oldData) return oldData;
           const updatedData = oldData.map((msg: any) => 
             msg.id === currentThreadId 
               ? { ...msg, isUnread: false, unreadCount: 0 }
               : msg
           );
           
-          const threadAfter = updatedData.find((m: any) => m.id === currentThreadId);
-          if (threadAfter) {
-            console.log('[MessageDetail]   Thread sonraki durumu:');
-            console.log(`[MessageDetail]     isUnread: ${threadAfter.isUnread} (ÖNCE: ${threadBefore?.isUnread})`);
-            console.log(`[MessageDetail]     unreadCount: ${threadAfter.unreadCount || 0} (ÖNCE: ${threadBefore?.unreadCount || 0})`);
-          }
-          
-          console.log('[MessageDetail] ✅ Inbox listesi güncellendi');
           return updatedData;
         });
         
@@ -1067,35 +866,16 @@ const MessageDetailScreen: React.FC = () => {
         // 5. Mesaj geçmişini yükle (REST API)
         // useThreadMessages hook'u otomatik olarak yükleyecek
         if (currentThreadId) {
-          console.log('[MessageDetail] 🔄 Refetching thread messages for thread:', currentThreadId);
           try {
             await refetchMessages();
           } catch (error: any) {
-            // Thread mesajları yüklenemezse, sadece log'la ama ekranı açmaya devam et
-            console.error('[MessageDetail] ⚠️ Failed to load thread messages:', {
-              status: error?.response?.status,
-              data: error?.response?.data,
-              threadId: currentThreadId,
-            });
             // Ekran açık kalır, sadece mesajlar yüklenmez (kullanıcı yeni mesaj gönderebilir)
           }
         }
       } catch (error: any) {
-        console.error('[MessageDetail] Chat initialization error:', error);
-        console.error('[MessageDetail] Error details:', {
-          message: error?.message,
-          status: error?.response?.status,
-          data: error?.response?.data,
-          recipientUserId: currentRecipientUserId,
-          initialThreadId,
-        });
-        
         // Fallback: currentRecipientUserId'yi threadId olarak kullan
         // Bu sayede en azından mesaj gönderme çalışabilir
         if (currentRecipientUserId) {
-          if (__DEV__) {
-            console.warn('[MessageDetail] Using fallback threadId:', currentRecipientUserId);
-          }
           currentThreadId = currentRecipientUserId;
           setThreadId(currentRecipientUserId);
           // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
@@ -1117,7 +897,6 @@ const MessageDetailScreen: React.FC = () => {
       setActiveThreadId(null);
       
       if (currentThreadId && isConnected) {
-        console.log('[MessageDetail] 🔌 Leaving thread on unmount:', currentThreadId);
         leaveThread(currentThreadId);
       }
     };
@@ -1126,7 +905,6 @@ const MessageDetailScreen: React.FC = () => {
   // Socket bağlantısı hazır olduğunda thread'e join et
   useEffect(() => {
     if (isConnected && threadId && !isSocketReady) {
-      console.log('[MessageDetail] ✅ Socket connected, joining thread:', threadId);
       joinThread(threadId);
       setIsSocketReady(true);
       // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
@@ -1136,32 +914,12 @@ const MessageDetailScreen: React.FC = () => {
 
   // 9️⃣ SOCKET EVENT'LERİ ALINIR - new_message event handler
   const handleNewMessage = useCallback((eventData: any) => {
-    console.log('[MessageDetail] 📨 New message received:', {
-      threadId: eventData.threadId,
-      currentThreadId: threadId,
-      messageId: eventData.messageId,
-      messageType: eventData.messageType,
-      senderId: eventData.senderId,
-    });
-
     const currentUserId = user?.id;
     const currentThreadId = threadId;
 
     // Bu mesaj bu thread'e ait mi kontrol et
-    if (!currentThreadId) {
-      console.log('[MessageDetail] ⚠️ No threadId yet, ignoring message');
-      return;
-    }
-
-    if (eventData.threadId !== currentThreadId) {
-      console.log('[MessageDetail] ⚠️ Thread ID mismatch, ignoring message:', {
-        eventThreadId: eventData.threadId,
-        currentThreadId,
-      });
-      return;
-    }
-    
-    console.log('[MessageDetail] ✅ Processing message for current thread');
+    if (!currentThreadId) return;
+    if (eventData.threadId !== currentThreadId) return;
 
     // Mesaj tipine göre işle
     if (eventData.messageType === 'message') {
@@ -1169,15 +927,6 @@ const MessageDetailScreen: React.FC = () => {
       // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
       const isSent = String(eventData.senderId) === String(currentUserId);
       const currentParams = paramsRef.current;
-      console.log('[MessageDetail] 📨 New message event data:', {
-        messageId: eventData.messageId,
-        message: eventData.message,
-        senderId: eventData.senderId,
-        currentUserId,
-        isSent,
-        senderName: currentParams.senderName,
-        hasAvatar: !!currentParams.senderAvatar,
-      });
       const newMessage: MessageDetailItem = {
         id: eventData.messageId,
         text: eventData.message || eventData.text || '', // Fallback için birden fazla field kontrol et
@@ -1189,22 +938,12 @@ const MessageDetailScreen: React.FC = () => {
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         isRead: false, // Yeni mesaj henüz okunmadı
       };
-      console.log('[MessageDetail] 📨 Created message item:', {
-        id: newMessage.id,
-        text: newMessage.text,
-        isSent: newMessage.isSent,
-        senderName: newMessage.senderName,
-        hasAvatar: !!newMessage.senderAvatar,
-      });
 
       setMessages((prev) => {
         // ✅ OPTIMIZE: Optimize format mantığı ile mesajı doğru pozisyona ekle
         // Duplicate kontrolü - eğer mesaj zaten varsa (gerçek ID ile), optimistic mesajı (pending- ile başlayan) gerçek mesajla değiştir
         const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
-        if (existingMessage) {
-          console.log('[MessageDetail] 📨 Message already exists, skipping duplicate');
-          return prev;
-        }
+        if (existingMessage) return prev;
         
         // Optimistic mesajı (pending- ile başlayan) gerçek mesajla değiştir
         const optimisticMessageIndex = prev.findIndex(
@@ -1214,10 +953,6 @@ const MessageDetailScreen: React.FC = () => {
         );
         
         if (optimisticMessageIndex !== -1) {
-          console.log('[MessageDetail] 📨 Replacing optimistic message with real message:', {
-            optimisticId: prev[optimisticMessageIndex].id,
-            realId: eventData.messageId,
-          });
           // Optimistic mesajı gerçek mesajla değiştir ve doğru pozisyona taşı
           const updated = prev.filter((_, idx) => idx !== optimisticMessageIndex);
           return insertMessageInOrder(updated, newMessage);
@@ -1230,8 +965,6 @@ const MessageDetailScreen: React.FC = () => {
       // Mesaj geldiğinde anında okundu işaretle (eğer kullanıcı ekrandaysa ve mesaj alıcı tarafından gönderildiyse)
       // Not: Gönderilen mesajlar zaten isSent=true, alınan mesajlar isSent=false
       if (!isSent && isSocketReady && threadId && isMountedRef.current) {
-        // Alınan mesaj anında okundu işaretlenmeli (kullanıcı ekranda olduğu için)
-        console.log('[MessageDetail] 📖 Marking received message as read immediately:', eventData.messageId);
         socketMarkMessageAsRead(eventData.messageId);
         
         // Optimistic update: Local state'te mesajı okundu olarak işaretle (sadece component mount ise)
@@ -1259,15 +992,6 @@ const MessageDetailScreen: React.FC = () => {
       // Image/Video/Audio/File mesajı - Backend'den gelen new_message event'i
       // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
       const isSent = String(eventData.senderId) === String(currentUserId);
-      console.log('[MessageDetail] 📷 Media message received:', {
-        messageId: eventData.messageId,
-        messageType: eventData.messageType,
-        mediaUrl: eventData.mediaUrl,
-        senderId: eventData.senderId,
-        currentUserId,
-        isSent,
-      });
-      
       const currentParams = paramsRef.current;
       const newMediaMessage: MessageDetailItem = {
         id: eventData.messageId,
@@ -1292,7 +1016,7 @@ const MessageDetailScreen: React.FC = () => {
         // Duplicate kontrolü
         const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
         if (existingMessage) {
-          console.log('[MessageDetail] 📷 Media message already exists, skipping duplicate');
+
           return prev;
         }
         
@@ -1304,10 +1028,7 @@ const MessageDetailScreen: React.FC = () => {
         );
         
         if (optimisticMessageIndex !== -1) {
-          console.log('[MessageDetail] 📷 Replacing optimistic image message with real message:', {
-            optimisticId: prev[optimisticMessageIndex].id,
-            realId: eventData.messageId,
-          });
+
           // ✅ FIX: Optimistic mesajı gerçek mesajla değiştir, pozisyonu koru
           // Sadece optimistic mesajı gerçek mesajla değiştir, tüm listeyi yeniden sıralama
           const updated = [...prev];
@@ -1329,7 +1050,7 @@ const MessageDetailScreen: React.FC = () => {
       
       // Mesaj geldiğinde anında okundu işaretle
       if (!isSent && isSocketReady && threadId && isMountedRef.current) {
-        console.log('[MessageDetail] 📖 Marking received media message as read immediately:', eventData.messageId);
+
         socketMarkMessageAsRead(eventData.messageId);
         
         if (isMountedRef.current) {
@@ -1356,15 +1077,7 @@ const MessageDetailScreen: React.FC = () => {
       // TIPS mesajı - anında local state'e ekle
       // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
       const isSent = String(eventData.senderId) === String(currentUserId);
-      console.log('[MessageDetail] 💰 TIPS message received:', {
-        messageId: eventData.messageId,
-        amount: eventData.amount,
-        message: eventData.message,
-        senderId: eventData.senderId,
-        currentUserId,
-        isSent,
-      });
-      
+
       // TIPS mesajını formatla
       const tipsAmount = eventData.amount || 0;
       const tipsMessageText = eventData.message || '';
@@ -1389,7 +1102,7 @@ const MessageDetailScreen: React.FC = () => {
         // Duplicate kontrolü
         const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
         if (existingMessage) {
-          console.log('[MessageDetail] 💰 TIPS message already exists, skipping duplicate');
+
           return prev;
         }
         
@@ -1403,66 +1116,25 @@ const MessageDetailScreen: React.FC = () => {
         );
         
         if (optimisticMessageIndex !== -1) {
-          console.log('[MessageDetail] 💰 Replacing optimistic TIPS message with real message:', {
-            optimisticId: prev[optimisticMessageIndex].id,
-            realId: eventData.messageId,
-            optimisticAmount: prev[optimisticMessageIndex].tipsAmount,
-            realAmount: tipsAmount,
-            optimisticText: prev[optimisticMessageIndex].text,
-            realText: tipsMessageText,
-          });
+
           // Optimistic mesajı gerçek mesajla değiştir ve doğru pozisyona taşı
           const updated = prev.filter((_, idx) => idx !== optimisticMessageIndex);
           const finalMessages = insertMessageInOrder(updated, newTipsMessage);
           
           // ✅ TIPS sonrası detaylı log - Socket event geldiğinde
-          console.log('[MessageDetail] 💰 TIPS SOCKET EVENT - Full Details:', {
-            eventData: eventData,
-            messageId: eventData.messageId,
-            amount: tipsAmount,
-            message: tipsMessageText,
-            senderId: eventData.senderId,
-            currentUserId: currentUserId,
-            isSent: isSent,
-            threadId: eventData.threadId,
-            currentThreadId: currentThreadId,
-            timestamp: eventData.timestamp || eventData.sentAt,
-            optimisticMessageIndex: optimisticMessageIndex,
-            optimisticMessageId: prev[optimisticMessageIndex]?.id,
-            messagesCountBefore: prev.length,
-            messagesCountAfter: finalMessages.length,
-            optimisticMessageReplaced: true,
-          });
-          
+
           return finalMessages;
         }
         
         // ✅ OPTIMIZE: Yeni mesajı sentAt'a göre doğru pozisyona ekle
         const finalMessages = insertMessageInOrder(prev, newTipsMessage);
         
-        // ✅ TIPS sonrası detaylı log - Socket event geldiğinde (optimistic mesaj bulunamadı)
-        console.log('[MessageDetail] 💰 TIPS SOCKET EVENT - Full Details (No Optimistic):', {
-          eventData: eventData,
-          messageId: eventData.messageId,
-          amount: tipsAmount,
-          message: tipsMessageText,
-          senderId: eventData.senderId,
-          currentUserId: currentUserId,
-          isSent: isSent,
-          threadId: eventData.threadId,
-          currentThreadId: currentThreadId,
-          timestamp: eventData.timestamp || eventData.sentAt,
-          messagesCountBefore: prev.length,
-          messagesCountAfter: finalMessages.length,
-          optimisticMessageReplaced: false,
-        });
-        
         return finalMessages;
       });
       
       // Mesaj geldiğinde anında okundu işaretle (eğer kullanıcı ekrandaysa ve mesaj alıcı tarafından gönderildiyse)
       if (!isSent && isSocketReady && threadId && isMountedRef.current) {
-        console.log('[MessageDetail] 📖 Marking received TIPS message as read immediately:', eventData.messageId);
+
         socketMarkMessageAsRead(eventData.messageId);
         
         if (isMountedRef.current) {
@@ -1487,7 +1159,7 @@ const MessageDetailScreen: React.FC = () => {
       }, 100);
     } else if (eventData.messageType === 'support-request') {
       // Support request mesajı - şu an için sadece log
-      console.log('[MessageDetail] Support request received:', eventData);
+
       // TODO: Support request mesajını UI'da göster
     } else if (eventData.messageType === 'shared-post') {
       // Paylaşılan post mesajı - anında local state'e ekle
@@ -1495,7 +1167,7 @@ const MessageDetailScreen: React.FC = () => {
       const currentParams = paramsRef.current;
       const sharedPostPayload = eventData.sharedPost || eventData.sharedPostPayload;
       if (!sharedPostPayload?.postId) {
-        console.warn('[MessageDetail] shared-post event missing sharedPost.postId');
+
         return;
       }
       const newSharedPostMessage: MessageDetailItem = {
@@ -1508,19 +1180,20 @@ const MessageDetailScreen: React.FC = () => {
         senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: 'sharedpost',
-        sharedPost: {
-          postId: sharedPostPayload.postId,
-          authorName: sharedPostPayload.authorName || currentParams.senderName || 'Unknown',
-          authorTitle: sharedPostPayload.authorTitle,
-          authorAvatar: sharedPostPayload.authorAvatar ?? currentParams.senderAvatar,
-          authorId: sharedPostPayload.authorId,
-          productName: sharedPostPayload.productName || '',
-          productImageUrl: sharedPostPayload.productImageUrl ?? (sharedPostPayload as any).imageUrl ?? null,
-          productGroupName: sharedPostPayload.productGroupName ?? undefined,
-          productGroupImageUrl: sharedPostPayload.productGroupImageUrl ?? null,
-          productDescription: sharedPostPayload.productDescription,
-          status: sharedPostPayload.status,
-        },
+        sharedPost: (() => {
+          const sp = sharedPostPayload as any;
+          return {
+            postId: sharedPostPayload.postId,
+            postType: sp.postType ?? null,
+            authorName: sp.authorName || currentParams.senderName || 'Unknown',
+            authorTitle: sp.authorTitle ?? null,
+            authorAvatar: sp.authorAvatar ?? currentParams.senderAvatar ?? null,
+            imageUrl: sp.imageUrl ?? sp.productImageUrl ?? sp.contextData?.image ?? null,
+            contextType: sp.contextType ?? null,
+            contextData: sp.contextData ?? undefined,
+            products: sp.products ?? undefined,
+          };
+        })(),
         isRead: false,
       };
       setMessages((prev) => {
@@ -1551,8 +1224,7 @@ const MessageDetailScreen: React.FC = () => {
 
   // 9️⃣ SOCKET EVENT'LERİ ALINIR - message_sent event handler (gönderici onayı)
   const handleMessageSent = useCallback((eventData: any) => {
-    console.log('[MessageDetail] ✅ Message sent confirmation:', eventData);
-    
+
     // Thread ID kontrolü - eventData'da threadId yoksa recipientId ile kontrol et
     const eventThreadId = eventData.threadId;
     if (eventThreadId && eventThreadId !== threadId) {
@@ -1565,20 +1237,12 @@ const MessageDetailScreen: React.FC = () => {
     const tipsAmount = eventData.amount || 0;
     
     if (!messageId) {
-      if (__DEV__) {
-        console.warn('[MessageDetail] ⚠️ message_sent event missing messageId');
-      }
       return;
     }
 
     // ✅ FIX: TIPS mesajları için özel işlem
     if (messageType === 'send-tips') {
-      console.log('[MessageDetail] 💰 TIPS message_sent event received:', {
-        messageId,
-        amount: tipsAmount,
-        message: messageText,
-      });
-      
+
       setMessages((prev) => {
         if (!prev || !Array.isArray(prev)) {
           return prev || [];
@@ -1587,7 +1251,7 @@ const MessageDetailScreen: React.FC = () => {
         // Eğer mesaj zaten gerçek ID ile varsa (new_message event'i önce gelmiş), hiçbir şey yapma
         const alreadyExists = prev.some(msg => msg.id === messageId);
         if (alreadyExists) {
-          console.log('[MessageDetail] ✅ TIPS message already exists with real ID, skipping update');
+
           return prev;
         }
 
@@ -1601,7 +1265,7 @@ const MessageDetailScreen: React.FC = () => {
         );
 
         if (optimisticIndex !== -1) {
-          console.log('[MessageDetail] ✅ Updating optimistic TIPS message with real ID:', messageId);
+
           const updated = [...prev];
           updated[optimisticIndex] = {
             ...updated[optimisticIndex],
@@ -1611,7 +1275,7 @@ const MessageDetailScreen: React.FC = () => {
         }
 
         // Optimistic mesaj bulunamadı, yeni TIPS mesajı ekle
-        console.log('[MessageDetail] ⚠️ Optimistic TIPS message not found, adding new TIPS message');
+
         const newTipsMessage: MessageDetailItem = {
           id: messageId,
           text: messageText,
@@ -1644,7 +1308,7 @@ const MessageDetailScreen: React.FC = () => {
       // Eğer mesaj zaten gerçek ID ile varsa (new_message event'i önce gelmiş), hiçbir şey yapma
       const alreadyExists = prev.some(msg => msg.id === messageId);
       if (alreadyExists) {
-        console.log('[MessageDetail] ✅ Message already exists with real ID, skipping update');
+
         return prev;
       }
 
@@ -1658,7 +1322,7 @@ const MessageDetailScreen: React.FC = () => {
       );
 
       if (optimisticIndex !== -1) {
-        console.log('[MessageDetail] ✅ Updating optimistic message with real ID:', messageId);
+
         // ✅ FIX: Sadece ID'yi güncelle, pozisyonu koru (zaten doğru pozisyonda)
         // Optimistic mesaj zaten insertMessageInOrder ile doğru pozisyona eklenmişti
         const updated = [...prev];
@@ -1679,7 +1343,7 @@ const MessageDetailScreen: React.FC = () => {
       // CRITICAL FIX: prev array kontrolü (yukarıda zaten yapıldı ama yine de güvenli olmak için)
       const messageExists = Array.isArray(prev) && prev.some(msg => msg.text === messageText && msg.isSent);
       if (!messageExists && messageText) {
-        console.log('[MessageDetail] ⚠️ Optimistic message not found, adding new message');
+
         const newMessage: MessageDetailItem = {
           id: messageId,
           text: messageText,
@@ -1708,35 +1372,28 @@ const MessageDetailScreen: React.FC = () => {
 
   // Thread event handlers
   const handleThreadJoined = useCallback((data: { threadId: string }) => {
-    console.log('[MessageDetail] ========================================');
-    console.log('[MessageDetail] ✅ THREAD JOINED EVENT RECEIVED');
-    console.log('[MessageDetail] ========================================');
-    console.log('[MessageDetail]    - Thread ID:', data.threadId);
-    console.log('[MessageDetail]    - Current Thread ID:', threadId);
-    console.log('[MessageDetail]    - Match:', data.threadId === threadId ? '✅' : '❌');
-    
+
     // ✅ Backend iyileştirmesi: GET /inbox/:threadId çağrıldığında backend otomatik olarak
     // tüm okunmamış mesajları isRead: true yapıyor ve thread_read socket event'i gönderiyor.
     // Bu yüzden frontend'de manuel olarak markThreadRead çağırmaya gerek yok.
     // thread_read event'i geldiğinde inbox listesi otomatik güncellenecek.
     if (data.threadId === threadId) {
-      console.log('[MessageDetail] ✅ Thread joined. Backend automatically marks messages as read when GET /inbox/:threadId is called.');
-      console.log('[MessageDetail] 🔄 Waiting for thread_read event to update inbox list...');
+
     }
     // CRITICAL FIX: queryClient, socketMarkThreadRead, markThreadAsReadMutation stable olduğu için dependency'den çıkarıldı
   }, [threadId]);
 
   const handleThreadLeft = useCallback((data: { threadId: string }) => {
-    console.log('[MessageDetail] Thread left:', data.threadId);
+
   }, []);
 
   const handleThreadJoinError = useCallback((error: { threadId: string; reason: string }) => {
-    console.error('[MessageDetail] Thread join error:', error.reason);
+
     Alert.alert('Error', `Failed to join thread: ${error.reason}`);
   }, []);
 
   const handleMessageSendError = useCallback((error: { reason: string }) => {
-    console.error('[MessageDetail] Message send error:', error.reason);
+
     Alert.alert('Error', `Failed to send message: ${error.reason}`);
   }, []);
 
@@ -1746,24 +1403,16 @@ const MessageDetailScreen: React.FC = () => {
     if (!isMountedRef.current) {
           return;
         }
-        
-    console.log('[MessageDetail] 👤 User typing event received:', {
-      userId: data.userId,
-      threadId: data.threadId,
-      currentThreadId: threadId,
-      isTyping: data.isTyping,
-      currentUserId: user?.id,
-    });
-    
+
     // Thread ID kontrolü
     if (data.threadId !== threadId) {
-      console.log('[MessageDetail] ⚠️ Thread ID mismatch, ignoring typing event');
+
       return;
     }
     
     // Sadece karşı kullanıcının typing durumunu göster (kendi typing durumumuzu gösterme)
     if (data.userId === user?.id) {
-      console.log('[MessageDetail] ⚠️ Ignoring own typing event');
+
       return;
     }
     
@@ -1798,25 +1447,13 @@ const MessageDetailScreen: React.FC = () => {
     unreadCount?: number;  // YENİ - Backend'den gelen unreadCount
     isUnread?: boolean;    // YENİ - Backend'den gelen isUnread
   }) => {
-    console.log('[MessageDetail] 📖 THREAD_READ EVENT ALINDI:', {
-      eventThreadId: data.threadId,
-      currentThreadId: threadId,
-      readBy: data.readBy,
-      timestamp: data.timestamp,
-      unreadCount: data.unreadCount,
-      isUnread: data.isUnread,
-      matches: data.threadId === threadId,
-      isMounted: isMountedRef.current,
-    });
-    
+
     // Thread ID kontrolü
     if (data.threadId !== threadId) {
-      console.log('[MessageDetail] ⚠️ Thread ID mismatch, ignoring event');
+
       return;
     }
-    
-    console.log('[MessageDetail] ✅ Thread ID matches, processing thread_read event');
-    
+
     // ✅ Backend'den gelen unreadCount ve isUnread değerlerini kullan
     const unreadCount = data.unreadCount !== undefined ? data.unreadCount : 0;
     const isUnread = data.isUnread !== undefined ? data.isUnread : false;
@@ -1829,44 +1466,16 @@ const MessageDetailScreen: React.FC = () => {
       queryKey: inboxKeys.messages(),
     });
     
-    console.log('[MessageDetail] 🔑 Found query keys for thread_read event:', allQueryKeys.map(q => q.queryKey));
-    
     // Tüm query key'leri güncelle
     allQueryKeys.forEach((query) => {
       queryClient.setQueryData(query.queryKey, (oldData: any[] | undefined) => {
-      console.log('[MessageDetail] 📊 THREAD_READ UPDATE - Önceki durum:', oldData?.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
-      if (!oldData) {
-        if (__DEV__) {
-          console.warn('[MessageDetail] ⚠️ Old data is null/undefined in thread_read handler');
-        }
-        return oldData;
-      }
-      
-      const threadBefore = oldData.find((m: any) => m.id === data.threadId);
-      if (threadBefore) {
-        console.log('[MessageDetail]   Thread önceki durumu:');
-        console.log(`[MessageDetail]     Thread ID: ${threadBefore.id}`);
-        console.log(`[MessageDetail]     Sender: ${threadBefore.senderName || 'Unknown'}`);
-        console.log(`[MessageDetail]     isUnread: ${threadBefore.isUnread}`);
-        console.log(`[MessageDetail]     unreadCount: ${threadBefore.unreadCount || 0}`);
-      }
-      
-      // ✅ Backend'den gelen değerleri kullan
-      const updatedData = oldData.map((msg: any) => 
+      if (!oldData) return oldData;
+      const updatedData = oldData.map((msg: any) =>
         msg.id === data.threadId 
           ? { ...msg, isUnread, unreadCount }
           : msg
       );
-      
-      const threadAfter = updatedData.find((m: any) => m.id === data.threadId);
-      if (threadAfter) {
-        console.log(`[MessageDetail]   Thread sonraki durumu (Backend'den gelen değerler):`);
-        console.log(`[MessageDetail]     isUnread: ${threadAfter.isUnread} (ÖNCE: ${threadBefore?.isUnread}, Backend: ${isUnread})`);
-        console.log(`[MessageDetail]     unreadCount: ${threadAfter.unreadCount || 0} (ÖNCE: ${threadBefore?.unreadCount || 0}, Backend: ${unreadCount})`);
-      }
-      
-        console.log('[MessageDetail] ✅ THREAD_READ UPDATE - Sonraki durum:', updatedData.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
-        return updatedData;
+      return updatedData;
       });
     });
     
@@ -1942,15 +1551,6 @@ const MessageDetailScreen: React.FC = () => {
     const userTitle = ''; // User interface'inde title yok
     const userAvatar = user?.avatar ? toImageSource(user.avatar) : DEFAULT_USER_AVATAR;
 
-    console.log('[MessageDetail] 🔗 Navigating to support chat:', { 
-      threadId: supportThreadId, 
-      requestId,
-      expertName,
-      expertTitle,
-      userName,
-      userTitle,
-    });
-    
     navigateToSharedScreenWithPruning(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
       threadId: supportThreadId,
       requestId: requestId,
@@ -1966,8 +1566,7 @@ const MessageDetailScreen: React.FC = () => {
 
   // Support Request Event Handlers
   const handleSupportRequestAccepted = useCallback((data: { requestId: string; threadId: string }) => {
-    console.log('[MessageDetail] ✅ Support request accepted event:', data);
-    
+
     // Local state'te support request'i accepted olarak güncelle
     if (isMountedRef.current) {
       setMessages((prev) =>
@@ -2002,8 +1601,7 @@ const MessageDetailScreen: React.FC = () => {
   }, [handleGoToSupportChat, queryClient]);
 
   const handleSupportRequestRejected = useCallback((data: { requestId: string }) => {
-    console.log('[MessageDetail] ❌ Support request rejected event:', data);
-    
+
     // Local state'te support request'i rejected olarak güncelle
     if (isMountedRef.current) {
       setMessages((prev) =>
@@ -2030,8 +1628,7 @@ const MessageDetailScreen: React.FC = () => {
   }, [queryClient]);
 
   const handleSupportRequestCancelled = useCallback((data: { requestId: string }) => {
-    console.log('[MessageDetail] 🚫 Support request cancelled event:', data);
-    
+
     // Local state'te support request'i canceled olarak güncelle
     if (isMountedRef.current) {
       setMessages((prev) =>
@@ -2059,8 +1656,7 @@ const MessageDetailScreen: React.FC = () => {
 
   // Handle Message Deleted (socket event)
   const handleMessageDeleted = useCallback((eventData: { messageId: string; threadId?: string }) => {
-    console.log('[MessageDetail] 🗑️ Message deleted event:', eventData);
-    
+
     const currentThreadId = threadId;
     
     // Thread ID kontrolü
@@ -2078,8 +1674,7 @@ const MessageDetailScreen: React.FC = () => {
 
   // Handle Message Reaction Event (from socket)
   const handleMessageReaction = useCallback((eventData: { messageId: string; emoji: string; userId: string; count?: number; users?: string[] }) => {
-    console.log('[MessageDetail] 😀 Message reaction event:', eventData);
-    
+
     if (!eventData.messageId || !eventData.emoji) {
       return;
     }
@@ -2141,8 +1736,7 @@ const MessageDetailScreen: React.FC = () => {
           if (!isMountedRef.current) {
             return;
           }
-          
-          console.log('[MessageDetail] 👁️ Marking message as read:', item.id);
+
           // Local state'i güncelle
           setMessages((prev) =>
             prev.map((msg) => {
@@ -2200,11 +1794,9 @@ const MessageDetailScreen: React.FC = () => {
   // Thread ID yoksa bile genel event'leri dinle (thread ID geldiğinde zaten thread'e özel event'ler çalışacak)
   useEffect(() => {
     if (!isConnected) {
-      console.log('[MessageDetail] ⚠️ Socket not connected, skipping event listeners');
+
       return;
     }
-
-    console.log('[MessageDetail] 📡 Adding socket event listeners (threadId:', threadId, 'isSocketReady:', isSocketReady, ')');
 
     // Event listener'ları ekle (threadId yoksa bile ekle, threadId geldiğinde zaten çalışacak)
     on('new_message', handleNewMessage);
@@ -2226,8 +1818,7 @@ const MessageDetailScreen: React.FC = () => {
     on('message_deleted', handleMessageDeleted);
 
     return () => {
-      console.log('[MessageDetail] 🧹 Removing socket event listeners');
-      
+
       off('new_message', handleNewMessage);
       off('message_sent', handleMessageSent);
       off('thread_joined', handleThreadJoined);
@@ -2271,7 +1862,7 @@ const MessageDetailScreen: React.FC = () => {
         url: `tipboxapp://profile/user/${effectiveRecipientUserId}`,
       });
     } catch (error) {
-      console.error('[MessageDetail] Share error:', error);
+
     }
   }, [effectiveRecipientUserId, params.senderName]);
 
@@ -2390,7 +1981,7 @@ const MessageDetailScreen: React.FC = () => {
 
     if (!finalRecipientUserId) {
       Alert.alert('Error', 'Recipient user information not found. Please try again from message detail.');
-      console.error('[MessageDetail] recipientUserId not found for send tips:', { routeParams, effectiveRecipientUserId });
+
       return;
     }
 
@@ -2414,14 +2005,6 @@ const MessageDetailScreen: React.FC = () => {
       amount: amount,
       timestamp: new Date().toISOString(),
     };
-
-    console.log('[MessageDetail] 📤 Sending TIPS Request:', {
-      ...requestData,
-      messagePreview: finalMessage.substring(0, 50) + '...',
-      amountType: typeof amount,
-      amountValue: amount,
-      timestampISO: requestData.timestamp,
-    });
 
     // Thread ID yoksa finalRecipientUserId'yi kullan (fallback)
     const effectiveThreadId = threadId || finalRecipientUserId;
@@ -2452,30 +2035,10 @@ const MessageDetailScreen: React.FC = () => {
       requestData,
       {
         onSuccess: () => {
-          console.log('[MessageDetail] ✅ TIPS sent successfully:', {
-            amount: amount,
-            message: finalMessage.substring(0, 50),
-            recipientUserId: finalRecipientUserId,
-            timestamp: new Date().toISOString(),
-          });
-          
+
           // ✅ TIPS sonrası detaylı log
           const currentMessages = messages; // State'i capture et
-          console.log('[MessageDetail] 💰 TIPS SENT - Full Details:', {
-            optimisticMessageId: optimisticMessageId,
-            amount: amount,
-            message: finalMessage,
-            messageLength: finalMessage.length,
-            recipientUserId: finalRecipientUserId,
-            threadId: effectiveThreadId,
-            currentThreadId: threadId,
-            timestamp: new Date().toISOString(),
-            messagesCount: Array.isArray(currentMessages) ? currentMessages.length : 0,
-            optimisticMessageExists: Array.isArray(currentMessages) ? currentMessages.some(msg => msg.id === optimisticMessageId) : false,
-            socketConnected: isConnected,
-            socketReady: isSocketReady,
-          });
-          
+
           Alert.alert(
             'Success', 
             `${amount} TIPS sent successfully!`,
@@ -2492,18 +2055,7 @@ const MessageDetailScreen: React.FC = () => {
           // }
         },
         onError: (error: any) => {
-          console.error('[MessageDetail] ❌ TIPS send error:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            requestData: {
-              ...requestData,
-              messagePreview: finalMessage.substring(0, 50),
-            },
-            errorStack: error.stack,
-          });
-          
+
           // Hata durumunda optimistic mesajı geri al
           setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
           
@@ -2569,7 +2121,7 @@ const MessageDetailScreen: React.FC = () => {
 
     if (!finalRecipientUserId) {
       Alert.alert('Error', 'Recipient user information not found. Please try again from message detail.');
-      console.error('[MessageDetail] recipientUserId not found:', { routeParams, effectiveRecipientUserId });
+
       return;
     }
 
@@ -2593,15 +2145,6 @@ const MessageDetailScreen: React.FC = () => {
       Alert.alert('Error', 'Message cannot be empty');
       return;
     }
-
-    console.log('[MessageDetail] Creating support request:', {
-      senderUserId: user.id,
-      recipientUserId: finalRecipientUserId,
-      type: apiSupportType,
-      message: message.substring(0, 50) + '...',
-      amount: amount.toString(),
-      timestamp: new Date().toISOString(),
-    });
 
     createSupportRequestMutation.mutate(
       {
@@ -2689,8 +2232,6 @@ const MessageDetailScreen: React.FC = () => {
     );
   };
 
-
-
   // 6️⃣ KULLANICI MESAJ GÖNDERİR - Socket üzerinden mesaj gönder
   const handleSendMessage = useCallback((messageText: string) => {
     // 1. Validasyon
@@ -2741,12 +2282,7 @@ const MessageDetailScreen: React.FC = () => {
     // 3. Socket bağlantısı kontrolü - Socket bağlıysa socket ile gönder
     // Dokümana göre: send_message event'i recipientId bekliyor (threadId değil)
     if (isConnected && isSocketReady && finalRecipientUserId) {
-      console.log('[MessageDetail] 📤 Sending message via socket:', {
-        message: messageText.trim(),
-        recipientId: finalRecipientUserId,
-        threadId: effectiveThreadId,
-        optimisticId: optimisticMessageId,
-      });
+
       socketSendMessage(finalRecipientUserId, messageText.trim());
       
       // Thread mesajlarını invalidate et (mesaj backend'e kaydedildikten sonra refetch yapılsın)
@@ -2760,9 +2296,6 @@ const MessageDetailScreen: React.FC = () => {
       }
     } else {
       // Fallback: REST API ile mesaj gönder
-      if (__DEV__) {
-        console.warn('[MessageDetail] ⚠️ Socket not ready, using REST API fallback');
-      }
       if (finalRecipientUserId) {
         sendDirectMessageMutation.mutate(
           {
@@ -2771,14 +2304,14 @@ const MessageDetailScreen: React.FC = () => {
           },
           {
             onSuccess: () => {
-              console.log('[MessageDetail] ✅ Message sent via REST API, refetching...');
+
               // Mesaj listesini invalidate et ve refetch yap
               queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
               queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(effectiveThreadId) });
               refetchMessages();
             },
             onError: (error) => {
-              console.error('[MessageDetail] ❌ Message send error:', error);
+
               // Hata durumunda mesajı geri al
               setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
               Alert.alert('Error', error.message || 'An error occurred while sending the message');
@@ -2849,15 +2382,14 @@ const MessageDetailScreen: React.FC = () => {
 
     if (isConnected && isSocketReady) {
       // Socket ile accept et
-      console.log('[MessageDetail] ✅ Accepting support request via socket:', requestId);
+
       socketAcceptSupportRequest(requestId);
     } else {
       // REST API ile accept et
-      console.log('[MessageDetail] ✅ Accepting support request via REST API:', requestId);
+
       acceptSupportRequestMutation.mutate(requestId, {
         onSuccess: (data) => {
-          console.log('[MessageDetail] ✅ Support request accepted, threadId:', data.threadId);
-          
+
           // ✅ CRITICAL FIX: ThreadId'yi optimistic update'e ekle
           setMessages((prev) =>
             prev.map((msg) => {
@@ -2886,8 +2418,7 @@ const MessageDetailScreen: React.FC = () => {
           }
         },
         onError: (error: any) => {
-          console.error('[MessageDetail] ❌ Support request accept error:', error);
-          
+
           // ✅ CRITICAL FIX: Hata durumunda optimistic update'i geri al
           setMessages((prev) =>
             prev.map((msg) => {
@@ -2928,18 +2459,18 @@ const MessageDetailScreen: React.FC = () => {
           onPress: () => {
             if (isConnected && isSocketReady) {
               // Socket ile reject et
-              console.log('[MessageDetail] ❌ Rejecting support request via socket:', requestId);
+
               socketRejectSupportRequest(requestId);
             } else {
               // REST API ile reject et
-              console.log('[MessageDetail] ❌ Rejecting support request via REST API:', requestId);
+
               rejectSupportRequestMutation.mutate(requestId, {
                 onSuccess: () => {
-                  console.log('[MessageDetail] ✅ Support request rejected');
+
                   Alert.alert('Success', 'Support request rejected');
                 },
                 onError: (error: any) => {
-                  console.error('[MessageDetail] ❌ Support request reject error:', error);
+
                   Alert.alert('Error', error.message || 'Support request could not be rejected');
                 },
               });
@@ -2990,21 +2521,21 @@ const MessageDetailScreen: React.FC = () => {
 
             if (isConnected && isSocketReady) {
               // Socket ile cancel et
-              console.log('[MessageDetail] 🚫 Canceling support request via socket:', requestId);
+
               socketCancelSupportRequest(requestId);
             } else {
               // REST API ile cancel et
-              console.log('[MessageDetail] 🚫 Canceling support request via REST API:', requestId);
+
               cancelSupportRequestMutation.mutate(requestId, {
                 onSuccess: () => {
-                  console.log('[MessageDetail] ✅ Support request canceled');
+
                   // Local state zaten güncellendi (optimistic update)
                   // Inbox listesini invalidate et
                   queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
                   queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
                 },
                 onError: (error: any) => {
-                  console.error('[MessageDetail] ❌ Support request cancel error:', error);
+
                   // Hata durumunda optimistic update'i geri al
                   setMessages((prev) =>
                     prev.map((msg) => {
@@ -3065,14 +2596,14 @@ const MessageDetailScreen: React.FC = () => {
     // API'ye silme isteği gönder
     deleteMessageMutation.mutate(messageId, {
       onSuccess: () => {
-        console.log('[MessageDetail] ✅ Message deleted successfully:', messageId);
+
         // ✅ FIX: Silinen mesajı ekrandan tamamen kaldır (silindi olarak gösterme)
         setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
         // ✅ FIX: Query invalidation kaldırıldı - socket event'leri zaten state'i güncelleyecek
         // Socket event'i (message_deleted) geldiğinde mesaj tamamen kaldırılacak
       },
       onError: (error: any) => {
-        console.error('[MessageDetail] ❌ Message delete error:', error);
+
         // Hata durumunda optimistic update'i geri al
         setMessages((prev) =>
           prev.map((msg) => {
@@ -3106,7 +2637,7 @@ const MessageDetailScreen: React.FC = () => {
         // Remove reaction - find reactionId from backend
         // For now, we'll just call the API and let backend handle it
         // TODO: Get reactionId from message reactions
-        console.log('[MessageDetail] Removing reaction:', { messageId, emoji });
+
         // Optimistic update
         setMessages((prev) =>
           prev.map((msg) => {
@@ -3154,8 +2685,7 @@ const MessageDetailScreen: React.FC = () => {
         );
       } else {
         // Add reaction
-        console.log('[MessageDetail] Adding reaction:', { messageId, emoji });
-        
+
         // Optimistic update
         setMessages((prev) =>
           prev.map((msg) => {
@@ -3223,8 +2753,7 @@ const MessageDetailScreen: React.FC = () => {
       const result = await imagePickerService.pickFromGallery();
       
       if (result.success && result.asset) {
-        console.log('[MessageDetail] 📷 Image selected:', result.asset.uri);
-        
+
         // File extension ve mime type belirle
         let fileExtension = 'jpg';
         let mimeType = 'image/jpeg';
@@ -3253,7 +2782,7 @@ const MessageDetailScreen: React.FC = () => {
         }
       }
     } catch (error: any) {
-      console.error('[MessageDetail] ❌ Image picker error:', error);
+
       Alert.alert('Error', 'An error occurred while selecting image');
     }
   }, []);
@@ -3286,28 +2815,7 @@ const MessageDetailScreen: React.FC = () => {
       }
         
         // 🔍 REQUEST YAPISI LOG'U
-        console.log('[MessageDetail] 📤 BACKEND REQUEST YAPISI:', {
-          endpoint: `POST /inbox/threads/${threadId}/media`,
-          method: 'POST',
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': 'Bearer <token>', // Token otomatik ekleniyor
-          },
-          formData: {
-            media: {
-              uri: image.uri,
-              type: image.type,
-              name: image.name,
-              fileSize: image.fileSize,
-            },
-            mediaType: 'image',
-            caption: caption.trim() || undefined,
-            fileSize: image.fileSize?.toString(),
-          },
-          threadId,
-          recipientUserId: effectiveRecipientUserId,
-        });
-        
+
         // Optimistic update: Görsel mesajını anında local state'e ekle
         const optimisticMessageId = `pending-image-${Date.now()}`;
         const optimisticImageMessage: MessageDetailItem = {
@@ -3323,24 +2831,11 @@ const MessageDetailScreen: React.FC = () => {
           uploadProgress: 0,
           isRead: false,
         };
-        
-        console.log('[MessageDetail] 📝 Optimistic image message oluşturuluyor:', {
-          id: optimisticMessageId,
-          type: optimisticImageMessage.type,
-          mediaUrl: optimisticImageMessage.mediaUrl,
-          caption: caption.trim(),
-          uploadStatus: optimisticImageMessage.uploadStatus,
-        });
-        
+
         // ✅ FIX: Optimistic görsel mesajını doğru pozisyona ekle (sentAt'a göre sıralı)
         setMessages((prev) => {
           const newMessages = insertMessageInOrder(prev, optimisticImageMessage);
-          console.log('[MessageDetail] 📋 Messages state güncellendi:', {
-            prevLength: prev.length,
-            newLength: newMessages.length,
-            lastMessage: newMessages[newMessages.length - 1],
-            optimisticId: optimisticMessageId,
-          });
+
           return newMessages;
         });
         setTimeout(() => safeScrollToEnd(true), 100);
@@ -3357,7 +2852,7 @@ const MessageDetailScreen: React.FC = () => {
           onUploadProgress: (progressEvent) => {
             if (progressEvent.total) {
               const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              console.log('[MessageDetail] 📊 Upload progress:', progress + '%');
+
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === optimisticMessageId
@@ -3368,30 +2863,14 @@ const MessageDetailScreen: React.FC = () => {
             }
           },
         });
-        
-        console.log('[MessageDetail] ✅ Image upload response:', {
-          status: response.status,
-          data: response.data,
-          messageId: response.data?.messageId,
-          mediaUrl: response.data?.mediaUrl,
-          thumbnailUrl: response.data?.thumbnailUrl,
-          caption: response.data?.caption,
-        });
-        
+
         // Optimistic mesajı gerçek mesajla değiştir
         if (response.data?.messageId) {
-          console.log('[MessageDetail] 🔄 Optimistic mesaj gerçek mesajla değiştiriliyor:', {
-            optimisticId: optimisticMessageId,
-            realId: response.data.messageId,
-            mediaUrl: response.data.mediaUrl,
-            caption: response.data?.caption || caption.trim(),
-          });
-          
+
           setMessages((prev) => {
             // ✅ FIX: Duplicate kontrolü - eğer mesaj zaten varsa (new_message event'i önce gelmiş), sadece optimistic mesajı kaldır
             const existingMessage = prev.find((msg) => msg.id === response.data.messageId);
             if (existingMessage) {
-              console.log('[MessageDetail] ✅ Message already exists (from new_message event), removing optimistic message only');
               return prev.filter((msg) => msg.id !== optimisticMessageId);
             }
             
@@ -3399,9 +2878,6 @@ const MessageDetailScreen: React.FC = () => {
             // Backend'den gelen timestamp'i kullan (eğer varsa) ve pozisyonu güncelle
             const optimisticIndex = prev.findIndex((msg) => msg.id === optimisticMessageId);
             if (optimisticIndex === -1) {
-              if (__DEV__) {
-                console.warn('[MessageDetail] ⚠️ Optimistic message not found');
-              }
               return prev;
             }
             
@@ -3423,10 +2899,7 @@ const MessageDetailScreen: React.FC = () => {
             
             // ✅ FIX: Eğer timestamp değiştiyse, mesajı doğru pozisyona taşı
             if (backendTimestamp && backendTimestamp !== optimisticMsg.sentAt) {
-              console.log('[MessageDetail] 🔄 Timestamp changed, repositioning message:', {
-                oldSentAt: optimisticMsg.sentAt,
-                newSentAt: backendTimestamp,
-              });
+
               // Optimistic mesajı kaldır ve yeni pozisyona ekle
               const withoutOptimistic = prev.filter((msg) => msg.id !== optimisticMessageId);
               return insertMessageInOrder(withoutOptimistic, updatedMessage);
@@ -3438,19 +2911,9 @@ const MessageDetailScreen: React.FC = () => {
             );
           });
         } else {
-          if (__DEV__) {
-            console.warn('[MessageDetail] ⚠️ Response\'da messageId yok!', response.data);
-          }
         }
       } catch (error: any) {
-        console.error('[MessageDetail] ❌ Image upload error:', {
-          message: error.message,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          error: error,
-        });
-        
+
         // ✅ FIX: Optimistic mesajı direkt kaldır (failed olarak işaretlemek yerine)
         // Gönderilemeyen mesajlar ekranda görünmemeli
         setMessages((prev) =>
@@ -3464,13 +2927,10 @@ const MessageDetailScreen: React.FC = () => {
                             error.response?.data?.message || 
                             error.message || 
                             'An error occurred while uploading image';
-        
-        console.error('[MessageDetail] ❌ Image upload failed, showing alert:', errorMessage);
+
         Alert.alert('Error', errorMessage);
       }
     }, [threadId, effectiveRecipientUserId, safeScrollToEnd]);
-
-
 
   // Mesaj öğesi render fonksiyonu
   // ✅ FIX: useCallback ile memoize et - flicker'ı önlemek için
@@ -3552,11 +3012,6 @@ const MessageDetailScreen: React.FC = () => {
       const currentDate = item.sentAt;
       
       if (!currentDate) {
-        if (__DEV__) {
-          console.warn('[MessageDetail] ⚠️ Missing sentAt for current message:', { 
-            currentId: item.id,
-          });
-        }
         return false;
       }
       
@@ -3578,11 +3033,6 @@ const MessageDetailScreen: React.FC = () => {
       
       // If sentAt is missing, skip date header (shouldn't happen but safety check)
       if (!nextDate) {
-        if (__DEV__) {
-          console.warn('[MessageDetail] ⚠️ Missing sentAt for next message:', { 
-            nextId: nextItem.id,
-          });
-        }
         return false;
       }
       
@@ -4183,17 +3633,13 @@ const MessageDetailScreen: React.FC = () => {
                 initialNumToRender={15}
                 // ✅ WhatsApp Engine: Content container style
                 contentContainerStyle={{ 
+                  paddingHorizontal: 8, // px-2: ekran yatay padding
                   // ✅ Inverted FlatList: paddingTop = en yeni mesajların (ekranın altındaki) altına padding ekler
-                  // En yeni mesajın altından 20px yukarıda sonlanması için paddingTop: 20
                   paddingTop:isKeyboardVisible ? 80 : 120,
                   // CRITICAL FIX: Butonların üstüne 10px ekstra padding ekle
-                  // Butonlar: bottom={isKeyboardVisible ? keyboardHeight + 60 : 60 + insets.bottom}
-                  // Buton yüksekliği: ~100px (2 buton + space="sm")
-                  // Mesajlar butonların 10px üzerine kadar gelebilir
                   paddingBottom: isKeyboardVisible 
-                    ? keyboardHeight + 0  // Klavye + Input (~60px) + Butonlar (~100px) + 10px ekstra
-                    : 0 , // Input (~60px) + Bottom inset + Butonlar (~100px) + 10px ekstra
-                  // Empty state için: Mesaj yoksa ekranın tamamını kapla ve ortala
+                    ? keyboardHeight + 0 
+                    : 0 ,
                   flexGrow: visibleMessages.length === 0 ? 1 : 0,
                 }}
                 showsVerticalScrollIndicator={false}
@@ -4245,7 +3691,7 @@ const MessageDetailScreen: React.FC = () => {
           {/* Typing Indicator */}
           {isTyping && typingUserId && typingUserId !== user?.id && (
             <Box 
-              px="$4" 
+              px="$2" 
               py="$2" 
               bg={isDark ? '#1A1A1A' : '#FFFFFF'}
               zIndex={1002}
