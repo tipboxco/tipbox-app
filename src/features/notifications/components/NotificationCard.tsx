@@ -140,11 +140,28 @@ const getNotificationMessage = (
         case 'NEW_MESSAGE':
             return `${displayUsername} yeni mesaj gönderdi`;
         
-        // TIPS NOTIFICATIONS (Figma)
-        case 'TIPS_RECEIVED':
-            return `${displayUsername}, bahşiş gönderdi!`;
+        // TIPS NOTIFICATIONS – use API fields when present
+        case 'TIPS_RECEIVED': {
+            const senderUsername = data?.senderUsername || displayUsername;
+            const amount = data?.amount;
+            if (amount != null) return `${senderUsername} sent you ${amount} TIPS`;
+            return `${senderUsername} sent you a tip`;
+        }
         case 'TIPS_SENT':
             return `${displayUsername}'e bahşiş gönderildi`;
+        case 'TRANSACTION_CONFIRMED':
+            if (data?.actionType === 'DEPOSIT') {
+                const title = data?.title || notification.title;
+                const msg = data?.message || notification.message;
+                if (title) return title;
+                if (msg) return msg;
+                const amt = data?.amount;
+                const from = data?.senderUsername || (data?.fromAddress ? 'External wallet' : null);
+                if (amt != null && from) return `${from}: +${amt} TIPS`;
+                if (amt != null) return `Deposit: +${amt} TIPS`;
+                return 'Deposit received';
+            }
+            return data?.title || data?.message || 'Transaction confirmed';
         
         // GAMIFICATION NOTIFICATIONS (Figma: "Tebrikler!, Wishmaker rozetini kazandın!")
         case 'NEW_BADGE':
@@ -196,6 +213,7 @@ const getNotificationTypeIcon = (type: NotificationType): React.ComponentType<{ 
             return HeartIcon;
         case 'TIPS_RECEIVED':
         case 'TIPS_SENT':
+        case 'TRANSACTION_CONFIRMED':
             return GiftIcon;
         case 'POST_COMMENTED':
         case 'COMMENT_REPLIED':
@@ -253,8 +271,9 @@ const getNotificationCategory = (type: NotificationType): 'post' | 'comment' | '
         
         case 'TIPS_RECEIVED':
         case 'TIPS_SENT':
+        case 'TRANSACTION_CONFIRMED':
             return 'tips';
-        
+
         case 'EVENT_STARTED':
         case 'EVENT_ENDING_SOON':
         case 'EVENT_REWARD_AVAILABLE':
@@ -773,6 +792,92 @@ const GamificationCard: React.FC<{
 };
 
 /**
+ * Truncate wallet address for display (e.g. 0x1234...abcd)
+ */
+const truncateAddress = (address: string | undefined, start = 6, end = 4): string => {
+    if (!address || typeof address !== 'string') return '';
+    if (address.length <= start + end) return address;
+    return `${address.slice(0, start)}...${address.slice(-end)}`;
+};
+
+/**
+ * Deposit Card Component
+ * TRANSACTION_CONFIRMED with actionType DEPOSIT: avatar, title, message, amount (TIPS), fromAddress (truncated).
+ * Show senderUsername if present; else "External wallet" with fromAddress.
+ */
+const DepositCard: React.FC<{
+    notification: Notification;
+    isDark: boolean;
+}> = ({ notification, isDark }) => {
+    const data = notification.data || notification.metadata || {};
+    const amount = data.amount;
+    const fromAddress = data.fromAddress;
+    const senderUsername = data.senderUsername;
+    const title = data.title || notification.title;
+    const message = data.message || notification.message;
+
+    const senderLabel = senderUsername || (fromAddress ? `External wallet (${truncateAddress(fromAddress)})` : 'External wallet');
+
+    return (
+        <Box
+            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+            borderRadius={12}
+            px="$3"
+            py="$3"
+            mt={6}
+            alignSelf="stretch"
+        >
+            <VStack space="sm">
+                {title && (
+                    <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$bold"
+                    >
+                        {title}
+                    </Text>
+                )}
+                {message && (
+                    <Text
+                        color={isDark ? '#B9B9B9' : '#666666'}
+                        fontSize="$sm"
+                        fontWeight="$normal"
+                        numberOfLines={2}
+                    >
+                        {message}
+                    </Text>
+                )}
+                <HStack alignItems="center" justifyContent="space-between" flexWrap="wrap">
+                    <Text
+                        color={isDark ? '#8C8C8C' : '#6B6B6B'}
+                        fontSize="$xs"
+                        fontWeight="$medium"
+                    >
+                        {senderLabel}
+                    </Text>
+                    {amount != null && (
+                        <Box bg="#E8FF6B" borderRadius={8} px="$2" py="$1">
+                            <Text color="#000000" fontSize="$xs" fontWeight="$bold">
+                                +{amount} TIPS
+                            </Text>
+                        </Box>
+                    )}
+                </HStack>
+                {fromAddress && !senderUsername && (
+                    <Text
+                        color={isDark ? '#8C8C8C' : '#6B6B6B'}
+                        fontSize="$xs"
+                        fontWeight="$normal"
+                    >
+                        {truncateAddress(fromAddress)}
+                    </Text>
+                )}
+            </VStack>
+        </Box>
+    );
+};
+
+/**
  * Main Notification Card Component
  * Tüm bildirim tipleri için tek bir component
  */
@@ -907,13 +1012,23 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             });
         }
 
-        // CRITICAL: Tips, Sohbeti Görüntüle ve Profili Görüntüle butonları olan bildirimlerde
-        // item'e tıklanınca navigation yapılmasın, sadece butonlara tıklanınca yapılsın
         const type = notification.type;
-        if (type === 'TIPS_RECEIVED' || type === 'TIPS_SENT' || 
-            type === 'DM_REQUEST_ACCEPTED' || 
+        const data = notification.data || notification.metadata || {};
+        const transactionId = data.transactionId;
+
+        // TIPS_RECEIVED / TRANSACTION_CONFIRMED (deposit): card press → Wallet (optional transactionId)
+        if (type === 'TIPS_RECEIVED' || (type === 'TRANSACTION_CONFIRMED' && data.actionType === 'DEPOSIT')) {
+            navigationService.navigate(ROOT_ROUTES.WALLET, {
+                screen: 'WalletScreen',
+                params: transactionId ? { transactionId } : undefined,
+            }, { priority: 'high', force: false });
+            if (onPress) onPress();
+            return;
+        }
+
+        // Sohbeti Görüntüle ve Profili Görüntüle butonları olan bildirimlerde sadece butonlara tıklanınca navigation
+        if (type === 'TIPS_SENT' || type === 'DM_REQUEST_ACCEPTED' ||
             type === 'NEW_TRUSTER' || type === 'NEW_TRUSTED_BY') {
-            // Bu bildirimlerde sadece butonlara tıklanınca navigation yapılacak
             return;
         }
 
@@ -1705,6 +1820,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         notification.type === 'EVENT_REWARD_AVAILABLE'
     ) && (data.eventName || data.eventId || data.description || data.message);
 
+    // Deposit card – TRANSACTION_CONFIRMED with actionType DEPOSIT
+    const showDepositCard = notification.type === 'TRANSACTION_CONFIRMED' && data.actionType === 'DEPOSIT';
+
     // Figma: sağda zaman + tip ikonu (küçük gri)
     const TypeIcon = getNotificationTypeIcon(notification.type);
     const iconColor = '#8C8C8C';
@@ -1832,11 +1950,11 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                         username = notificationData.userName;
                                     } else if (notificationData.senderName) {
                                         username = notificationData.senderName;
+                                    } else if ((notification.type === 'TIPS_RECEIVED' || notification.type === 'TRANSACTION_CONFIRMED') && notificationData.senderUsername) {
+                                        username = notificationData.senderUsername;
                                     }
                                 }
-                                
-                              
-                                
+
                                 // Dokümana göre: message field'ı yok, type, username ve data'ya göre mesaj oluştur
                                 const message = getNotificationMessage(
                                     notification.type, 
@@ -1973,6 +2091,13 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                     notification={notification} 
                                     isDark={isDark}
                                 />
+                            </Box>
+                        )}
+
+                        {/* Deposit Card - TRANSACTION_CONFIRMED (DEPOSIT) */}
+                        {showDepositCard && (
+                            <Box flex={1} alignSelf="stretch">
+                                <DepositCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 

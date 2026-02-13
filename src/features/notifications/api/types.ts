@@ -68,8 +68,16 @@ export interface NotificationData {
   shareType?: string; // POST_SHARED için share tipi
   amount?: number;
   rewardAmount?: number;
-  // Support Request fields
+  // TIPS_RECEIVED: sender avatar at root (notification.avatar), below in data
   senderUserId?: string;
+  senderUsername?: string;
+  transactionId?: string;
+  title?: string;
+  message?: string;
+  // TRANSACTION_CONFIRMED (DEPOSIT): optional sender if registered
+  fromAddress?: string;
+  actionType?: string; // e.g. 'DEPOSIT'
+  // Support Request fields
   recipientUserId?: string;
   requestType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT'; // Request type
   requestStatus?: 'pending' | 'accepted' | 'declined' | 'completed';
@@ -99,6 +107,7 @@ export type NotificationType =
   | 'SYSTEM_ANNOUNCEMENT'
   | 'TIPS_RECEIVED'
   | 'TIPS_SENT'
+  | 'TRANSACTION_CONFIRMED'
   | 'EVENT_STARTED'
   | 'EVENT_ENDING_SOON'
   | 'EVENT_REWARD_AVAILABLE'

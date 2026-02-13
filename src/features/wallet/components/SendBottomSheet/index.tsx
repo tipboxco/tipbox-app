@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '@gluestack-ui/themed';
-import { Keyboard, TouchableWithoutFeedback, InputAccessoryView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { Keyboard, TouchableWithoutFeedback, InputAccessoryView, Platform, ScrollView, ActivityIndicator, Clipboard } from 'react-native';
 import {
   ChevronLeftIcon,
   CreditCardIcon,
@@ -10,12 +10,15 @@ import {
   ArrowsRightLeftIcon,
   UserIcon,
   UsersIcon,
+  XCircleIcon,
+  ClockIcon,
 } from 'react-native-heroicons/outline';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { useWalletTransactions, useWalletBalance, useSendTips } from '../../api/hooks';
+import { useWalletTransactions, useWalletBalance, useSendTips, useTransactionById, useCancelTransaction } from '../../api/hooks';
+import type { SendTipResponse } from '../../api/walletApi';
 import { useAppStore } from '@/src/store/appStore';
 import { useTrusterList } from '@/src/features/profile/api/hooks';
 
@@ -168,6 +171,78 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   const [isSwapped, setIsSwapped] = useState(false); // false = TIPS mode, true = USD mode
   const [selectedFriend, setSelectedFriend] = useState<{ id: string; name: string; title?: string; bio?: string; avatar: any } | null>(null);
   const [previousView, setPreviousView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | null>(null);
+  /** Send-tip API response; used for status-based UI and polling */
+  const [sendResult, setSendResult] = useState<SendTipResponse | null>(null);
+  const sendResultTipsAmountRef = useRef<number>(0);
+  const sendResultDetailsRef = useRef<{ transactionFee: string; remainingBalance: string } | null>(null);
+  /** Transaction id (backend returns `id`; alias transactionId for compat) */
+  const transactionIdForPoll = sendResult ? (sendResult.id ?? sendResult.transactionId) : null;
+  
+  // Polling: created/pending ise GET /transactions/:id ile periyodik sorgula
+  const shouldPoll = sendResult != null && (sendResult.status === 'created' || sendResult.status === 'pending');
+  const { data: polledTx } = useTransactionById(
+    shouldPoll ? transactionIdForPoll ?? null : null,
+    { pollUntilFinal: true }
+  );
+  const effectiveStatus = polledTx?.status ?? sendResult?.status;
+  const effectiveTxHash = (polledTx?.txHash ?? sendResult?.txHash) || undefined;
+  const effectiveErrorMessage = (polledTx as any)?.errorMessage ?? sendResult?.errorMessage;
+  
+  const { mutate: cancelTx, isPending: isCancelling } = useCancelTransaction();
+  const [cancelCountdown, setCancelCountdown] = useState<number | null>(null);
+  const cancelCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownTxIdRef = useRef<string | null>(null);
+  
+  // 5 second window: countdown when status is created (start once); disable cancel button when time runs out
+  useEffect(() => {
+    if (effectiveStatus !== 'created' || !transactionIdForPoll) {
+      countdownTxIdRef.current = null;
+      if (cancelCountdownRef.current) {
+        clearInterval(cancelCountdownRef.current);
+        cancelCountdownRef.current = null;
+      }
+      setCancelCountdown(null);
+      return;
+    }
+    if (countdownTxIdRef.current === transactionIdForPoll) return;
+    countdownTxIdRef.current = transactionIdForPoll;
+    setCancelCountdown(5);
+    cancelCountdownRef.current = setInterval(() => {
+      setCancelCountdown((prev) => {
+        if (prev == null || prev <= 1) {
+          if (cancelCountdownRef.current) {
+            clearInterval(cancelCountdownRef.current);
+            cancelCountdownRef.current = null;
+          }
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (cancelCountdownRef.current) {
+        clearInterval(cancelCountdownRef.current);
+        cancelCountdownRef.current = null;
+      }
+    };
+  }, [effectiveStatus, transactionIdForPoll]);
+  
+  // confirmed olunca onSuccess + onClose (bir kez)
+  const confirmedHandledRef = useRef(false);
+  useEffect(() => {
+    if (sendResult == null || effectiveStatus !== 'confirmed' || confirmedHandledRef.current) return;
+    confirmedHandledRef.current = true;
+    const tipsAmount = sendResultTipsAmountRef.current;
+    const details = sendResultDetailsRef.current;
+    onSuccess?.({
+      sentAmount: `${tipsAmount.toLocaleString()} TIPS`,
+      transactionFee: details?.transactionFee ?? '',
+      remainingBalance: details?.remainingBalance ?? '',
+      transactionId: transactionIdForPoll ?? undefined,
+    });
+    setSendResult(null);
+    onClose();
+  }, [sendResult, effectiveStatus, onSuccess, onClose, transactionIdForPoll]);
   
   // Debug: Log view changes
   React.useEffect(() => {
@@ -504,7 +579,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                     Send to Wallet Address
                   </Text>
                   <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" lineHeight={14}>
-                    TIPS Yollamak istediğiniz cüzdan adresini yapıştırarak gönderim sağlayın.
+                    Paste the wallet address you want to send TIPS to.
                   </Text>
                 </VStack>
               </HStack>
@@ -1116,6 +1191,131 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   // Confirmation View (view === 'confirmation')
   if (view === 'confirmation') {
     const transactionDetails = getTransactionDetails();
+
+    // Result screen after send (status: created | pending | confirmed | failed)
+    if (sendResult != null && effectiveStatus !== 'confirmed') {
+      const isCancelled = effectiveStatus === 'failed' && effectiveErrorMessage === 'Cancelled by user';
+      const statusMessage =
+        effectiveStatus === 'created'
+          ? 'Your transaction has been queued. Confirmation will start shortly. You can cancel within 5 seconds if you wish.'
+          : effectiveStatus === 'pending'
+            ? 'Processing on network…'
+            : effectiveStatus === 'failed'
+              ? isCancelled
+                ? 'Transaction cancelled.'
+                : (effectiveErrorMessage || 'Transaction failed.')
+              : 'Processing…';
+      const isFailed = effectiveStatus === 'failed';
+      const isPendingOrCreated = effectiveStatus === 'created' || effectiveStatus === 'pending';
+      const showCancelButton = effectiveStatus === 'created' && transactionIdForPoll && (cancelCountdown == null || cancelCountdown > 0) && !isCancelling;
+
+      return (
+        <VStack px="$4" py="$4" space="md" flex={1}>
+          <HStack alignItems="center" space="md" mb="$2">
+            <Pressable
+              onPress={() => {
+                setSendResult(null);
+                setView('amount');
+                onViewChange?.('amount');
+              }}
+            >
+              <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+            </Pressable>
+            <HStack flex={1} justifyContent="center" alignItems="center">
+              {isFailed ? (
+                <XCircleIcon width={24} height={24} color="#CE4A4A" />
+              ) : isPendingOrCreated ? (
+                <ClockIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+              ) : (
+                <PaperAirplaneIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+              )}
+              <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
+                {isFailed ? (isCancelled ? 'Transaction Cancelled' : 'Send Failed') : 'Send Tip'}
+              </Text>
+            </HStack>
+            <Box w={24} />
+          </HStack>
+          <VStack flex={1} space="md" alignItems="center" justifyContent="center" py="$6">
+            <Text fontSize={16} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
+              {statusMessage}
+            </Text>
+            {effectiveStatus === 'created' && cancelCountdown != null && cancelCountdown > 0 && (
+              <Text fontSize={12} color="$textLight500" $dark-color="$textDark400" textAlign="center">
+                You have {cancelCountdown} seconds to cancel.
+              </Text>
+            )}
+            {effectiveTxHash && (
+              <VStack w="100%" space="xs" mt="$2">
+                <Text fontSize={11} fontWeight="$semibold" color="#6B6B6B" $dark-color="$textDark300">
+                  Transaction hash
+                </Text>
+                <HStack alignItems="center" space="sm">
+                  <Text fontSize={10} color="$textLight700" $dark-color="$textDark400" flex={1} numberOfLines={1}>
+                    {effectiveTxHash}
+                  </Text>
+                  <Pressable
+                    onPress={() => Clipboard.setString(effectiveTxHash!)}
+                    bg="$backgroundLight200"
+                    $dark-bg="$backgroundDark600"
+                    rounded={6}
+                    px="$2"
+                    py="$1"
+                  >
+                    <DocumentDuplicateIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                  </Pressable>
+                </HStack>
+              </VStack>
+            )}
+            {isPendingOrCreated && (
+              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} style={{ marginTop: 8 }} />
+            )}
+          </VStack>
+          {showCancelButton && (
+            <Pressable
+              onPress={() => {
+                if (!transactionIdForPoll) return;
+                cancelTx(transactionIdForPoll, {
+                  onSuccess: (data) => {
+                    setSendResult((prev) =>
+                      prev ? { ...prev, status: 'failed', errorMessage: data.errorMessage || 'Cancelled by user' } : null
+                    );
+                  },
+                });
+              }}
+              bg="#CE4A4A"
+              $dark-bg="#CE4A4A"
+              rounded={8}
+              py="$3"
+              opacity={isCancelling ? 0.6 : 1}
+              disabled={isCancelling}
+            >
+              <Text fontSize={14} fontWeight="$bold" color="#FFFFFF" textAlign="center">
+                {isCancelling ? 'Cancelling…' : 'Cancel'}
+              </Text>
+            </Pressable>
+          )}
+          <Pressable
+            onPress={() => {
+              setSendResult(null);
+              if (isFailed) onClose();
+              else {
+                setView('amount');
+                onViewChange?.('amount');
+              }
+            }}
+            bg={isFailed ? '#CE4A4A' : '#D8FF08'}
+            $dark-bg={isFailed ? '#CE4A4A' : '#D8FF08'}
+            rounded={8}
+            py="$3"
+            mt="auto"
+          >
+            <Text fontSize={14} fontWeight="$bold" color={isFailed ? '#FFFFFF' : '#111111'} textAlign="center">
+              {isFailed ? 'Close' : 'Back'}
+            </Text>
+          </Pressable>
+        </VStack>
+      );
+    }
     
     return (
     <VStack px="$4" py="$4" space="md" flex={1}>
@@ -1316,22 +1516,22 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
           const tipsAmount = transactionDetails.tipsAmount;
           
+          sendResultTipsAmountRef.current = tipsAmount;
+          sendResultDetailsRef.current = {
+            transactionFee: `$${transactionDetails.transactionFee}`,
+            remainingBalance: `${transactionDetails.remainingBalance.toLocaleString()} TIPS`,
+          };
           sendTips(
             {
               ...(recipientId && { recipientId }),
-              ...(walletAddress && {recipientId: walletAddress }),
+              ...(walletAddress && { recipientId: walletAddress }),
               amount: tipsAmount,
               message: 'TIPS transfer',
             },
             {
               onSuccess: (response) => {
-                onSuccess?.({
-                  sentAmount: `${tipsAmount.toLocaleString()} TIPS`,
-                  transactionFee: `$${transactionDetails.transactionFee}`,
-                  remainingBalance: `${transactionDetails.remainingBalance.toLocaleString()} TIPS`,
-                  transactionId: response.transactionId,
-                });
-                onClose();
+                setSendResult(response);
+                // confirmed is handled by useEffect when effectiveStatus becomes confirmed (e.g. after polling)
               },
               onError: (error: any) => {
                 console.error('[SendBottomSheet] Send failed:', error);
@@ -1353,6 +1553,11 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           {isSending ? 'Sending...' : 'Send'}
         </Text>
       </Pressable>
+      {isSending && (
+        <Text fontSize={11} color="$textLight500" $dark-color="$textDark400" textAlign="center" mt="$2">
+          Please wait if the request takes a moment.
+        </Text>
+      )}
     </VStack>
     );
   }

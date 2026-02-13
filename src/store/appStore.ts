@@ -300,7 +300,7 @@ export const useAppStore = create<AppState>()(
             // CRITICAL: React Query cache'i temizle (user-specific data)
             // Lazy import to break circular dependency
             try {
-              const { queryClient } = require('../../providers/QueryProvider');
+              const { queryClient } = require('../providers/QueryProvider');
               queryClient.clear(); // Tüm cache'i temizle (logout sonrası eski kullanıcı verileri görünmemeli)
             } catch (queryError) {
               // QueryClient yüklenemezse silent fail (kritik değil)

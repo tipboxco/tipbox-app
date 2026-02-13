@@ -171,6 +171,7 @@ export enum NotificationCode {
   EMAIL = 0,
   PUSH = 1,
   IN_APP = 2,
+  DEPOSIT = 3,
 }
 
 // Privacy Codes Enum
