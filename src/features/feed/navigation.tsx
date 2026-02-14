@@ -12,8 +12,8 @@ import type { NftItem } from '@/src/features/wallet/navigation';
 
 export type FeedStackParamList = {
   FeedScreen: undefined;
-  ReviewDetail: undefined;
-  CreatePost: undefined;
+  // ReviewDetail: removed - component commented out, dead navigation target
+  // CreatePost: removed - no component defined, dead navigation target
   WalletConnection: undefined;
   WalletScreen: undefined;
   SwapScreen: undefined;
