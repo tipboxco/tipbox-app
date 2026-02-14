@@ -298,6 +298,8 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
   // Modal'ın önceki açık/kapalı durumunu takip et
   const prevVisibleRef = useRef(false);
   const prevInternalVisibleRef = useRef(false);
+  // Kapanma durumunu takip et - sync effect'in müdahale etmesini önler
+  const isClosingRef = useRef(false);
   // Modal kapandığında son seçili tab'ı sakla (bir sonraki açılışta kullanılacak)
   const lastSelectedTabRef = useRef<number>(0);
 
@@ -399,6 +401,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
   // Close callback - internal state ile animasyonu başlat
   const handleClose = useCallback(() => {
     Keyboard.dismiss();
+    isClosingRef.current = true; // Closing flag set - sync effect müdahale etmesin
     setInternalVisible(false); // Kapanma animasyonu başlat
   }, []);
 
@@ -507,15 +510,21 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     dispatch({ type: 'SET_IS_ANIMATING', payload: false });
     dispatch({ type: 'RESET_SEARCH' });
     progress.value = 0;
+    isClosingRef.current = false; // Closing flag reset
     onClose(); // Parent'a haber ver
   }, [onClose, progress]);
 
   // 🎯 PERFORMANCE FIX: shouldRender pattern kaldırıldı - instant render
   // Component her zaman mount, sadece animation ile göster/gizle
   // 🎯 SYNC: Parent visible prop'u ile internal state'i senkronize et
+  // isClosingRef kontrol et - kullanıcı manuel kapatıyorsa sync yapma
   useEffect(() => {
-    if (visible && !internalVisible) {
+    if (visible && !internalVisible && !isClosingRef.current) {
+      // Parent açtı ve kapanma süreci değil - aç
       setInternalVisible(true);
+    } else if (!visible && internalVisible) {
+      // Parent kapattı - kapat (ama normal close flow'dan bu gelmez)
+      setInternalVisible(false);
     }
   }, [visible, internalVisible]);
 
@@ -750,13 +759,13 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       if (searchError) return ErrorView;
       if (searchData?.userData && searchData.userData.length > 0) {
         return (
-          <VStack flex={1} justifyContent="space-evenly" py="$2">
-            {searchData.userData.map((user: any) => (
-              <Box key={user.id} flex={1}>
-                <UserItem user={user} isDark={isDark} onPress={handleUserPress} />
-              </Box>
-            ))}
-          </VStack>
+          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+            <VStack space="sm" py="$2" px="$4">
+              {searchData.userData.map((user: any) => (
+                <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
+              ))}
+            </VStack>
+          </ScrollView>
         );
       }
       return EmptyView;
@@ -765,17 +774,17 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     if (loadingByTab.users) return LoadingView;
     if (defaultDataByTab.users && defaultDataByTab.users.length > 0) {
       return (
-        <VStack flex={1} justifyContent="space-evenly" py="$2">
-          {defaultDataByTab.users.map((user: any) => (
-            <Box key={user.id} flex={1}>
-              <UserItem user={user} isDark={isDark} onPress={handleUserPress} />
-            </Box>
-          ))}
-        </VStack>
+        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+          <VStack space="sm" py="$2" px="$4">
+            {defaultDataByTab.users.map((user: any) => (
+              <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
+            ))}
+          </VStack>
+        </ScrollView>
       );
     }
-    return null;
-  }, [debouncedQuery, isSearching, searchError, searchData?.userData, loadingByTab.users, defaultDataByTab.users, isDark, handleUserPress]);
+    return EmptyView;
+  }, [debouncedQuery, isSearching, searchError, searchData?.userData, loadingByTab.users, defaultDataByTab.users, isDark, handleUserPress, LoadingView, ErrorView, EmptyView]);
 
   const renderBrandsTab = useCallback(() => {
     // Arama yapıldığında
@@ -784,13 +793,13 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       if (searchError) return ErrorView;
       if (searchData?.brandData && searchData.brandData.length > 0) {
         return (
-          <VStack flex={1} justifyContent="space-evenly" py="$2">
-            {searchData.brandData.map((brand: any) => (
-              <Box key={brand.id} flex={1}>
-                <BrandItem brand={brand} isDark={isDark} onPress={handleBrandPress} />
-              </Box>
-            ))}
-          </VStack>
+          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+            <VStack space="sm" py="$2" px="$4">
+              {searchData.brandData.map((brand: any) => (
+                <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
+              ))}
+            </VStack>
+          </ScrollView>
         );
       }
       return EmptyView;
@@ -799,17 +808,17 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     if (loadingByTab.brands) return LoadingView;
     if (defaultDataByTab.brands && defaultDataByTab.brands.length > 0) {
       return (
-        <VStack flex={1} justifyContent="space-evenly" py="$2">
-          {defaultDataByTab.brands.map((brand: any) => (
-            <Box key={brand.id} flex={1}>
-              <BrandItem brand={brand} isDark={isDark} onPress={handleBrandPress} />
-            </Box>
-          ))}
-        </VStack>
+        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+          <VStack space="sm" py="$2" px="$4">
+            {defaultDataByTab.brands.map((brand: any) => (
+              <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
+            ))}
+          </VStack>
+        </ScrollView>
       );
     }
-    return null;
-  }, [debouncedQuery, isSearching, searchError, searchData?.brandData, loadingByTab.brands, defaultDataByTab.brands, isDark, handleBrandPress]);
+    return EmptyView;
+  }, [debouncedQuery, isSearching, searchError, searchData?.brandData, loadingByTab.brands, defaultDataByTab.brands, isDark, handleBrandPress, LoadingView, ErrorView, EmptyView]);
 
   const renderProductsTab = useCallback(() => {
     // Arama yapıldığında
@@ -818,13 +827,13 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       if (searchError) return ErrorView;
       if (searchData?.productData && searchData.productData.length > 0) {
         return (
-          <VStack flex={1} justifyContent="space-evenly" py="$2">
-            {searchData.productData.map((product: any) => (
-              <Box key={product.id} flex={1}>
-                <ProductItem product={product} onPress={handleProductPress} />
-              </Box>
-            ))}
-          </VStack>
+          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+            <VStack space="sm" py="$2" px="$4">
+              {searchData.productData.map((product: any) => (
+                <ProductItem key={product.id} product={product} onPress={handleProductPress} />
+              ))}
+            </VStack>
+          </ScrollView>
         );
       }
       return EmptyView;
@@ -833,17 +842,17 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     if (loadingByTab.products) return LoadingView;
     if (defaultDataByTab.products && defaultDataByTab.products.length > 0) {
       return (
-        <VStack flex={1} justifyContent="space-evenly" py="$2">
-          {defaultDataByTab.products.map((product: any) => (
-            <Box key={product.id} flex={1}>
-              <ProductItem product={product} onPress={handleProductPress} />
-            </Box>
-          ))}
-        </VStack>
+        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+          <VStack space="sm" py="$2" px="$4">
+            {defaultDataByTab.products.map((product: any) => (
+              <ProductItem key={product.id} product={product} onPress={handleProductPress} />
+            ))}
+          </VStack>
+        </ScrollView>
       );
     }
-    return null;
-  }, [debouncedQuery, isSearching, searchError, searchData?.productData, loadingByTab.products, defaultDataByTab.products, handleProductPress]);
+    return EmptyView;
+  }, [debouncedQuery, isSearching, searchError, searchData?.productData, loadingByTab.products, defaultDataByTab.products, handleProductPress, LoadingView, ErrorView, EmptyView]);
 
 
   // 🎯 PERFORMANCE FIX: shouldRender kaldırıldı - component her zaman render

@@ -69,8 +69,8 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress, rootLabel }
                                         color={items.length === 0 ? (isDark ? '#FFFFFF' : '#1A1A1A') : '#8C8C8C'}
                                         fontSize={14}
                                         fontWeight={items.length === 0 ? '$bold' : '$normal'}
-                                        numberOfLines={1}
                                         mb={8}
+                                        style={{ flexShrink: 0 }}
                                     >
                                         {rootLabel}
                                     </Text>
@@ -115,8 +115,8 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress, rootLabel }
                                             color={isLast ? (isDark ? '#FFFFFF' : '#1A1A1A') : '#8C8C8C'}
                                             fontSize={14}
                                             fontWeight={isLast ? '$bold' : '$normal'}
-                                            numberOfLines={1}
                                             mb={8}
+                                            style={{ flexShrink: 0 }}
                                         >
                                             {item.name}
                                         </Text>
