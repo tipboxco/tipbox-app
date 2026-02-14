@@ -1110,35 +1110,40 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 </VStack>
 
                 {/* PagerView - Native swipe tab switching - BASIT YAKLAŞIM */}
-                <AnimatedPagerView
-                  ref={pagerRef}
-                  style={{ flex: 1 }}
-                  initialPage={lastSelectedTabRef.current}
-                  onPageScroll={handlePageScroll}
-                  onPageSelected={handlePageSelected}
-                  pointerEvents="auto"
-                >
-                  {/* Users Tab */}
-                  <Box key="users-tab" flex={1}>
-                    <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-                      {renderUsersTab()}
-                    </ScrollView>
-                  </Box>
+                {/* OPTIMIZATION 4: Lazy Rendering - animasyon bitene kadar ağır component'leri render etme */}
+                {!isAnimating ? (
+                  <AnimatedPagerView
+                    ref={pagerRef}
+                    style={{ flex: 1 }}
+                    initialPage={lastSelectedTabRef.current}
+                    onPageScroll={handlePageScroll}
+                    onPageSelected={handlePageSelected}
+                    pointerEvents="auto"
+                  >
+                    {/* Users Tab */}
+                    <Box key="users-tab" flex={1}>
+                      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+                        {renderUsersTab()}
+                      </ScrollView>
+                    </Box>
 
-                  {/* Brands Tab */}
-                  <Box key="brands-tab" flex={1}>
-                    <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-                      {renderBrandsTab()}
-                    </ScrollView>
-                  </Box>
+                    {/* Brands Tab */}
+                    <Box key="brands-tab" flex={1}>
+                      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+                        {renderBrandsTab()}
+                      </ScrollView>
+                    </Box>
 
-                  {/* Products Tab */}
-                  <Box key="products-tab" flex={1}>
-                    <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-                      {renderProductsTab()}
-                    </ScrollView>
-                  </Box>
-                </AnimatedPagerView>
+                    {/* Products Tab */}
+                    <Box key="products-tab" flex={1}>
+                      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+                        {renderProductsTab()}
+                      </ScrollView>
+                    </Box>
+                  </AnimatedPagerView>
+                ) : (
+                  <Box flex={1} />
+                )}
 
               {/* Handler - Altta, sadece buradan sürüklenebilir (alttan yukarı çekme) */}
               <GestureDetector gesture={panGesture}>
