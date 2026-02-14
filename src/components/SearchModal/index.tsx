@@ -654,7 +654,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
 
   const overlayAnimatedStyle = useAnimatedStyle(() => {
     'worklet';
-    const opacity = interpolate(progress.value, [0, 1], [0, 0.5]);
+    // FIX: Opacity 0.6'ya çıkarıldı - daha koyu arka plan
+    const opacity = interpolate(progress.value, [0, 1], [0, 0.6]);
     return {
       opacity,
     };
@@ -796,6 +797,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   ), [isDark, debouncedQuery]);
 
   // 🎯 BASIT YAKLAŞIM: Her tab için ayrı render fonksiyonları
+  // FIX: Flex-based layout ile 4 item'i responsive olarak sığdır
   const renderUsersTab = useCallback(() => {
     // Arama yapıldığında
     if (debouncedQuery.length > 0) {
@@ -803,9 +805,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       if (searchError) return ErrorView;
       if (searchData?.userData && searchData.userData.length > 0) {
         return (
-          <VStack space="sm" flex={1}>
+          <VStack flex={1} justifyContent="space-evenly" py="$2">
             {searchData.userData.map((user: any) => (
-              <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
+              <Box key={user.id} flex={1}>
+                <UserItem user={user} isDark={isDark} onPress={handleUserPress} />
+              </Box>
             ))}
           </VStack>
         );
@@ -816,9 +820,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     if (loadingByTab.users) return LoadingView;
     if (defaultDataByTab.users && defaultDataByTab.users.length > 0) {
       return (
-        <VStack space="sm" flex={1}>
+        <VStack flex={1} justifyContent="space-evenly" py="$2">
           {defaultDataByTab.users.map((user: any) => (
-            <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
+            <Box key={user.id} flex={1}>
+              <UserItem user={user} isDark={isDark} onPress={handleUserPress} />
+            </Box>
           ))}
         </VStack>
       );
@@ -833,9 +839,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       if (searchError) return ErrorView;
       if (searchData?.brandData && searchData.brandData.length > 0) {
         return (
-          <VStack space="sm" flex={1}>
+          <VStack flex={1} justifyContent="space-evenly" py="$2">
             {searchData.brandData.map((brand: any) => (
-              <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
+              <Box key={brand.id} flex={1}>
+                <BrandItem brand={brand} isDark={isDark} onPress={handleBrandPress} />
+              </Box>
             ))}
           </VStack>
         );
@@ -846,9 +854,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     if (loadingByTab.brands) return LoadingView;
     if (defaultDataByTab.brands && defaultDataByTab.brands.length > 0) {
       return (
-        <VStack space="sm" flex={1}>
+        <VStack flex={1} justifyContent="space-evenly" py="$2">
           {defaultDataByTab.brands.map((brand: any) => (
-            <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
+            <Box key={brand.id} flex={1}>
+              <BrandItem brand={brand} isDark={isDark} onPress={handleBrandPress} />
+            </Box>
           ))}
         </VStack>
       );
@@ -863,9 +873,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       if (searchError) return ErrorView;
       if (searchData?.productData && searchData.productData.length > 0) {
         return (
-          <VStack space="sm" flex={1}>
+          <VStack flex={1} justifyContent="space-evenly" py="$2">
             {searchData.productData.map((product: any) => (
-              <ProductItem key={product.id} product={product} onPress={handleProductPress} />
+              <Box key={product.id} flex={1}>
+                <ProductItem product={product} onPress={handleProductPress} />
+              </Box>
             ))}
           </VStack>
         );
@@ -876,9 +888,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     if (loadingByTab.products) return LoadingView;
     if (defaultDataByTab.products && defaultDataByTab.products.length > 0) {
       return (
-        <VStack space="sm" flex={1}>
+        <VStack flex={1} justifyContent="space-evenly" py="$2">
           {defaultDataByTab.products.map((product: any) => (
-            <ProductItem key={product.id} product={product} onPress={handleProductPress} />
+            <Box key={product.id} flex={1}>
+              <ProductItem product={product} onPress={handleProductPress} />
+            </Box>
           ))}
         </VStack>
       );
@@ -896,8 +910,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     // OPTIMIZATION 5: GestureHandlerRootView kaldırıldı - sadece View kullanıldı
     // Swipe-to-close özelliği kaldırıldı, overlay click ile kapatma yeterli
     // 50-100ms GestureHandler initialization kazancı
-    <View style={{ flex: 1, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
+    // FIX: Z-index 9999 - Bottom tab bar'ın önüne geçmesi için
+    <View style={{ flex: 1, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
       {/* Overlay Background - FilterBarReanimated gibi */}
+      {/* FIX: Overlay opacity 0.6'ya çıkarıldı - daha koyu arka plan */}
       <Animated.View
         style={[
           {
@@ -906,7 +922,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
           },
           overlayAnimatedStyle,
         ]}
@@ -920,6 +936,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       </Animated.View>
 
       {/* Search Panel - FilterBarReanimated gibi absolute positioned - StatusBar'ın altında */}
+      {/* FIX: Z-index 10000 - Overlay'in önüne geçmesi için */}
       <Animated.View
         style={[
           {
@@ -932,8 +949,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             borderBottomLeftRadius: 24,
             borderBottomRightRadius: 24,
             overflow: 'hidden',
-            zIndex: 1001,
-            elevation: 10, // Android
+            zIndex: 10000,
+            elevation: 20, // Android - daha yüksek elevation
           },
           modalAnimatedStyle,
         ]}
@@ -1075,6 +1092,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
 
                 {/* PagerView - Native swipe tab switching - BASIT YAKLAŞIM */}
                 {/* FIX: Re-render sorunu - PagerView'i mount et ama animasyon sırasında gizle */}
+                {/* FIX: ScrollView kaldırıldı - flex layout ile 4 item responsive olarak sığdırılıyor */}
                 <Box flex={1} opacity={isAnimating ? 0 : 1}>
                   <AnimatedPagerView
                     ref={pagerRef}
@@ -1086,23 +1104,17 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                   >
                     {/* Users Tab */}
                     <Box key="users-tab" flex={1}>
-                      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-                        {renderUsersTab()}
-                      </ScrollView>
+                      {renderUsersTab()}
                     </Box>
 
                     {/* Brands Tab */}
                     <Box key="brands-tab" flex={1}>
-                      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-                        {renderBrandsTab()}
-                      </ScrollView>
+                      {renderBrandsTab()}
                     </Box>
 
                     {/* Products Tab */}
                     <Box key="products-tab" flex={1}>
-                      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-                        {renderProductsTab()}
-                      </ScrollView>
+                      {renderProductsTab()}
                     </Box>
                   </AnimatedPagerView>
                 </Box>
