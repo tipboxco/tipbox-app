@@ -8,6 +8,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ScrollRegistry } from '@/src/services/ScrollRegistry';
+import { navigationService } from '@/src/services/NavigationService';
 import { AssetAccessCard } from '../components/AssetAccessCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -276,16 +277,13 @@ const FeedScreenInner = React.memo(() => {
     } else if (tab === 'inventory') {
       if (user?.id) {
         // Inventory ekranına git - InventoryScreen mount olduğunda useInventory hook'u otomatik olarak /inventory endpoint'ine GET isteği atacak
-        // Type-safe navigation to Profile stack's InventoryList screen
-        const rootNavigation = navigation.getParent();
-        if (rootNavigation) {
-          rootNavigation.navigate('Profile', {
-            screen: 'InventoryList',
-            params: {
-              userId: user.id,
-            },
-          });
-        }
+        // Use navigationService for cross-stack navigation (same pattern as DrawerContent)
+        navigationService.navigate('Profile', {
+          screen: 'InventoryList',
+          params: {
+            userId: user.id,
+          },
+        });
       }
     }
   };
