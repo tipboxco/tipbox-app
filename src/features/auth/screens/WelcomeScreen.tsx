@@ -79,7 +79,7 @@ export const WelcomeScreen = () => {
         bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
         alignItems="center"
         justifyContent="center"
-        style={{ marginTop: -insets.top }}
+        style={{ marginTop: -2.5*insets.top }}
       >
         <Image
           source={require('@/src/Onboarding/onboarding0.png')}
