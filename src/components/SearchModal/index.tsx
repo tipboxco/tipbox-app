@@ -49,7 +49,8 @@ type SearchFilter = 'users' | 'brands' | 'products';
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 // 🎯 PERFORMANCE: Hızlı ve smooth açılma/kapanma animasyonu
-const ANIMATION_DURATION = 250; // ms - daha hızlı
+// OPTIMIZATION 2: 250ms → 150ms (100ms kazanç, hala smooth)
+const ANIMATION_DURATION = 150; // ms - daha hızlı
 const TIMING_CONFIG = {
   duration: ANIMATION_DURATION,
 };
