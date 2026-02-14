@@ -41,7 +41,7 @@ import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MODAL_HEIGHT = SCREEN_HEIGHT * 0.5; // %50
+const MODAL_HEIGHT = SCREEN_HEIGHT * 0.5; // %50 - sabit height
 const SWIPE_THRESHOLD = 100; // Kapatma için minimum kayma mesafesi
 
 type SearchFilter = 'users' | 'brands' | 'products';
@@ -133,10 +133,10 @@ const UserItem = memo<UserItemProps>(({ user, isDark, onPress }) => {
 
   return (
     <Pressable onPress={() => onPress(user.id)}>
-      <HStack alignItems="center" space="md" py="$2" px="$4">
+      <HStack alignItems="center" space="sm" py="$2" px="$4">
         <Box
-          width={56}
-          height={56}
+          width={52}
+          height={52}
           borderRadius={100}
           borderWidth={2}
           borderColor="#CE4A4A"
@@ -145,7 +145,7 @@ const UserItem = memo<UserItemProps>(({ user, isDark, onPress }) => {
           overflow="hidden"
           bg={isDark ? '#1C1C1E' : '#F2F2F7'}
         >
-          <Image source={avatarSource} alt={user.name} width={52} height={52} resizeMode="cover" />
+          <Image source={avatarSource} alt={user.name} width={48} height={48} resizeMode="cover" />
         </Box>
         <VStack flex={1} space="xs">
           <Text
@@ -201,9 +201,9 @@ const BrandItem = memo<BrandItemProps>(({ brand, isDark, onPress }) => {
 
   return (
     <Pressable onPress={() => onPress(brand.id)}>
-      <HStack alignItems="center" space="md" py="$2" px="$4">
-        <Box width={54} height={54} borderRadius={8} overflow="hidden">
-          <Image source={logoSource} alt={brand.name} width={54} height={54} resizeMode="contain" />
+      <HStack alignItems="center" space="sm" py="$2" px="$4">
+        <Box width={52} height={52} borderRadius={8} overflow="hidden">
+          <Image source={logoSource} alt={brand.name} width={52} height={52} resizeMode="contain" />
         </Box>
         <VStack flex={1} space="xs">
           <Text
@@ -246,7 +246,7 @@ const ProductItem = memo<ProductItemProps>(({ product, onPress }) => {
   return (
     <Box py="$2" px="$4">
       <ProductInfoCard
-        size="big"
+        size="small"
         type={ProductInfoType.PRODUCT}
         image={imageSource}
         title={product.name}
@@ -759,13 +759,15 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       if (searchError) return ErrorView;
       if (searchData?.userData && searchData.userData.length > 0) {
         return (
-          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-            <VStack space="sm" py="$2" px="$4">
-              {searchData.userData.map((user: any) => (
-                <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
-              ))}
-            </VStack>
-          </ScrollView>
+          <View style={{ flex: 1 }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <VStack space="xs" pt="$2" pb="$0.5" px="$4">
+                {searchData.userData.map((user: any) => (
+                  <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
+                ))}
+              </VStack>
+            </ScrollView>
+          </View>
         );
       }
       return EmptyView;
@@ -774,13 +776,15 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     if (loadingByTab.users) return LoadingView;
     if (defaultDataByTab.users && defaultDataByTab.users.length > 0) {
       return (
-        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-          <VStack space="sm" py="$2" px="$4">
-            {defaultDataByTab.users.map((user: any) => (
-              <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
-            ))}
-          </VStack>
-        </ScrollView>
+        <View style={{ flex: 1 }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <VStack space="xs" pt="$2" pb="$0.5" px="$4">
+              {defaultDataByTab.users.map((user: any) => (
+                <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
+              ))}
+            </VStack>
+          </ScrollView>
+        </View>
       );
     }
     return EmptyView;
@@ -793,13 +797,15 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       if (searchError) return ErrorView;
       if (searchData?.brandData && searchData.brandData.length > 0) {
         return (
-          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-            <VStack space="sm" py="$2" px="$4">
-              {searchData.brandData.map((brand: any) => (
-                <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
-              ))}
-            </VStack>
-          </ScrollView>
+          <View style={{ flex: 1 }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <VStack space="xs" pt="$2" pb="$0.5" px="$4">
+                {searchData.brandData.map((brand: any) => (
+                  <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
+                ))}
+              </VStack>
+            </ScrollView>
+          </View>
         );
       }
       return EmptyView;
@@ -808,13 +814,15 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     if (loadingByTab.brands) return LoadingView;
     if (defaultDataByTab.brands && defaultDataByTab.brands.length > 0) {
       return (
-        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-          <VStack space="sm" py="$2" px="$4">
-            {defaultDataByTab.brands.map((brand: any) => (
-              <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
-            ))}
-          </VStack>
-        </ScrollView>
+        <View style={{ flex: 1 }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <VStack space="xs" pt="$2" pb="$0.5" px="$4">
+              {defaultDataByTab.brands.map((brand: any) => (
+                <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
+              ))}
+            </VStack>
+          </ScrollView>
+        </View>
       );
     }
     return EmptyView;
@@ -827,13 +835,15 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       if (searchError) return ErrorView;
       if (searchData?.productData && searchData.productData.length > 0) {
         return (
-          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-            <VStack space="sm" py="$2" px="$4">
-              {searchData.productData.map((product: any) => (
-                <ProductItem key={product.id} product={product} onPress={handleProductPress} />
-              ))}
-            </VStack>
-          </ScrollView>
+          <View style={{ flex: 1 }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <VStack space="xs" pt="$2" pb="$0.5" px="$4">
+                {searchData.productData.map((product: any) => (
+                  <ProductItem key={product.id} product={product} onPress={handleProductPress} />
+                ))}
+              </VStack>
+            </ScrollView>
+          </View>
         );
       }
       return EmptyView;
@@ -842,13 +852,15 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     if (loadingByTab.products) return LoadingView;
     if (defaultDataByTab.products && defaultDataByTab.products.length > 0) {
       return (
-        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-          <VStack space="sm" py="$2" px="$4">
-            {defaultDataByTab.products.map((product: any) => (
-              <ProductItem key={product.id} product={product} onPress={handleProductPress} />
-            ))}
-          </VStack>
-        </ScrollView>
+        <View style={{ flex: 1 }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <VStack space="xs" pt="$2" pb="$0.5" px="$4">
+              {defaultDataByTab.products.map((product: any) => (
+                <ProductItem key={product.id} product={product} onPress={handleProductPress} />
+              ))}
+            </VStack>
+          </ScrollView>
+        </View>
       );
     }
     return EmptyView;
@@ -972,7 +984,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
                         <Animated.Text
                           style={[
                             {
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight: 'bold',
                             },
                             tab1Style,
@@ -994,7 +1006,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
                         <Animated.Text
                           style={[
                             {
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight: 'bold',
                             },
                             tab2Style,
@@ -1016,7 +1028,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
                         <Animated.Text
                           style={[
                             {
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight: 'bold',
                             },
                             tab3Style,

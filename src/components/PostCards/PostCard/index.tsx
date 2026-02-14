@@ -582,10 +582,14 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // Product için PostsScreen'e navigate et
-                  if (!context.id || !data.contextType) {
+                  // FIX: Use data.contextId instead of context.id for correct ID
+                  const contextId = (data as any).contextId || context.id;
+
+                  if (!contextId || !data.contextType) {
+                    console.warn('[PostCard] Missing contextId or contextType:', { contextId, contextType: data.contextType });
                     return;
                   }
-                  
+
                   navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostsScreen',
                     params: {
@@ -597,13 +601,13 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                         subName: context.subName,
                       },
                       selectedProduct: {
-                        id: context.id,
+                        id: contextId, // FIX: Use corrected contextId
                         name: context.name,
                         description: context.subName,
                         image: imageSource,
                       },
                       contextType: data.contextType,
-                      contextId: context.id,
+                      contextId: contextId, // FIX: Use corrected contextId
                     },
                   });
                 }}
@@ -628,14 +632,18 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // ProductGroup veya SubCategory için PostsScreen'e navigate et
-                  if (!context.id || !data.contextType) {
+                  // FIX: Use data.contextId instead of context.id for correct ID
+                  const contextId = (data as any).contextId || context.id;
+
+                  if (!contextId || !data.contextType) {
+                    console.warn('[PostCard] Missing contextId or contextType:', { contextId, contextType: data.contextType });
                     return;
                   }
-                  
-                  const stage = data.contextType === ProductInfoType.PRODUCT_GROUP 
-                    ? 'ProductGroup' 
+
+                  const stage = data.contextType === ProductInfoType.PRODUCT_GROUP
+                    ? 'ProductGroup'
                     : 'SubCategories';
-                  
+
                   navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostsScreen',
                     params: {
@@ -647,7 +655,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                         subName: context.subName,
                       },
                       contextType: data.contextType,
-                      contextId: context.id,
+                      contextId: contextId, // FIX: Use corrected contextId
                     },
                   });
                 }}
