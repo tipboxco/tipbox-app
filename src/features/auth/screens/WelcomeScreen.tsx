@@ -65,20 +65,8 @@ export const WelcomeScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor }}>
-      {/* Üst Güvenli Alan - Status Bar theme-aware */}
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <View
-        style={{
-          height: insets.top,
-          backgroundColor: isDark ? '#000000' : '#FFFFFF',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }}
-      />
-     
+      {/* Status Bar - Translucent for banner image */}
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* Ana İçerik */}
       <View style={{ flex: 1 }}>
@@ -86,8 +74,13 @@ export const WelcomeScreen = () => {
           flex={1}
           bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
         >
-      {/* Hero Image - Tipbox Logo */}
-      <Box bg={isDark ? '$backgroundDark50' : '$backgroundLight0'} mt="-$20" alignItems="center" justifyContent="center">
+      {/* Hero Image - Tipbox Logo - Extends under status bar */}
+      <Box
+        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+        alignItems="center"
+        justifyContent="center"
+        style={{ marginTop: -insets.top }}
+      >
         <Image
           source={require('@/src/Onboarding/onboarding0.png')}
           alt="Tipbox Logo"
@@ -190,19 +183,6 @@ export const WelcomeScreen = () => {
       </VStack>
       </Box>
       </View>
-
-      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
-      <View 
-        style={{ 
-          height: insets.bottom, 
-          backgroundColor,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }} 
-      />
     </View>
   );
 };
