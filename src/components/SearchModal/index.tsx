@@ -1074,15 +1074,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 </VStack>
 
                 {/* PagerView - Native swipe tab switching - BASIT YAKLAŞIM */}
-                {/* OPTIMIZATION 4: Lazy Rendering - animasyon bitene kadar ağır component'leri render etme */}
-                {!isAnimating ? (
+                {/* FIX: Re-render sorunu - PagerView'i mount et ama animasyon sırasında gizle */}
+                <Box flex={1} opacity={isAnimating ? 0 : 1}>
                   <AnimatedPagerView
                     ref={pagerRef}
                     style={{ flex: 1 }}
                     initialPage={lastSelectedTabRef.current}
                     onPageScroll={handlePageScroll}
                     onPageSelected={handlePageSelected}
-                    pointerEvents="auto"
+                    pointerEvents={isAnimating ? 'none' : 'auto'}
                   >
                     {/* Users Tab */}
                     <Box key="users-tab" flex={1}>
@@ -1105,9 +1105,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                       </ScrollView>
                     </Box>
                   </AnimatedPagerView>
-                ) : (
-                  <Box flex={1} />
-                )}
+                </Box>
 
               {/* OPTIMIZATION 5: GestureDetector kaldırıldı - swipe-to-close özelliği removed */}
               {/* Handler - Visual indicator only, no gesture */}

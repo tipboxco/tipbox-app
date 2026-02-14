@@ -65,7 +65,8 @@ const FeedScreenInner = React.memo(() => {
 
   // 🚀 OPTIMIZATION 1: API Preloading - SearchModal için default verileri önceden cache'le
   // Modal açılmadan önce veri hazır olduğu için 100-500ms kazanç
-  useSearch(
+  // FIX: Silent error handling - network hatası olursa sessizce devam et
+  const preloadQuery = useSearch(
     {
       keyword: '',
       types: ['user', 'brand', 'product'],
@@ -73,6 +74,16 @@ const FeedScreenInner = React.memo(() => {
     },
     true // Her zaman aktif, cache'lenir ve SearchModal açıldığında hazır
   );
+
+  // FIX: Network hatasını log'la ama UI'ı bloke etme
+  useEffect(() => {
+    if (preloadQuery.error) {
+      if (__DEV__) {
+        console.warn('[FeedScreen] Search preload failed (silent):', preloadQuery.error.message);
+      }
+      // Hata olsa bile devam et, SearchModal kendi loading state'ini handle eder
+    }
+  }, [preloadQuery.error]);
 
   // FEATURE: Pull-to-refresh için son görülen post ID'sini takip et
   // Kullanıcı en alta geldiğinde bu ID güncellenir, refresh'te cursor olarak kullanılır
