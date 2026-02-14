@@ -231,26 +231,26 @@ export const SelectCategoriesScreen = () => {
           bottom={0}
           left={0}
           right={0}
-          bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
+          bg="#000000"
           borderTopWidth={1}
-          borderTopColor={isDark ? '$borderDark100' : '$borderLight100'}
+          borderTopColor="#333333"
           px="$4"
           py="$4"
-          pb={insets.bottom }
+          pb="$0"
         >
           <HStack alignItems="center" justifyContent="space-between">
             <VStack space="xs">
               <Text
                 fontSize="$sm"
                 fontWeight="$medium"
-                color={isDark ? '$textDark50' : '$textLight900'}
+                color="$white"
               >
                 {selectedCount}/{MIN_SELECTED} Selected
               </Text>
               {selectedCount < MIN_SELECTED && (
                 <Text
                   fontSize="$xs"
-                  color={isDark ? '$textDark300' : '$textLight600'}
+                  color="#CCCCCC"
                 >
                   Select at least {MIN_SELECTED} categories to continue
                 </Text>

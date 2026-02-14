@@ -104,8 +104,13 @@ export const SelectAvatarScreen = () => {
       const avatarData = uploadedImage
         ? { type: 'upload' as const, uri: uploadedImage }
         : { type: 'avatar' as const, id: selectedAvatarId!, url: selectedAvatar?.url };
+
+      // Form data'yı params'tan al ve geri gönder
+      const params = route.params as any;
       navigation.navigate('SetupProfile', {
         avatarData,
+        fullName: params?.fullName,
+        username: params?.username,
       });
     }
   };

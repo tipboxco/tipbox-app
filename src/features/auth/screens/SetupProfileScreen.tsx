@@ -95,10 +95,18 @@ export const SetupProfileScreen = () => {
       .matches(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   });
 
-  // SelectAvatar ekranından dönen verileri al
+  // SelectAvatar ekranından dönen verileri al ve form data'yı geri yükle
   useFocusEffect(
     React.useCallback(() => {
       const params = route.params as any;
+
+      // Form data'yı geri yükle (SelectAvatar'dan dönerken)
+      if (params?.fullName !== undefined && params.fullName !== fullName) {
+        setFullName(params.fullName);
+      }
+      if (params?.username !== undefined && params.username !== username) {
+        setUsername(params.username);
+      }
 
       // Avatar data'yı al (SelectAvatar'dan: API avatarı veya upload foto)
       if (params?.avatarData) {
@@ -112,6 +120,8 @@ export const SetupProfileScreen = () => {
         navigation.setParams({
           ...params,
           avatarData: undefined,
+          fullName: undefined,
+          username: undefined,
         } as any);
       }
     }, [route.params, navigation])
@@ -165,8 +175,11 @@ export const SetupProfileScreen = () => {
   };
 
   const handleSelectAvatar = () => {
-    // Avatar seçim ekranına yönlendir
-    navigation.navigate('SelectAvatar');
+    // Avatar seçim ekranına yönlendir - form data'yı params ile koru
+    navigation.navigate('SelectAvatar', {
+      fullName,
+      username,
+    } as any);
   };
 
   const handleNext = async () => {
@@ -248,6 +261,8 @@ export const SetupProfileScreen = () => {
               justifyContent="center"
               alignItems="center"
               bg="$gray100"
+              borderWidth={2}
+              borderColor="$gray300"
               overflow="hidden"
               style={{ width: 120, height: 120 }}
             >
