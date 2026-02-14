@@ -3,6 +3,7 @@ import { Animated, Platform, Text as RNText, Easing } from 'react-native';
 import { HStack, Pressable, Text, Box, VStack, ScrollView } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckIcon } from 'react-native-heroicons/solid';
+import { Feather } from '@expo/vector-icons';
 import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/catalog/api/hooks';
 import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
 import type { FeedFilterParams } from '../../api/feedApi';
@@ -227,16 +228,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
     });
   }, [filters, onFiltersChange]);
 
-  // Category - multiple selection
+  // Category - single selection (matches FeedFilterParams type: category?: string)
   const handleCategoryToggle = useCallback((categoryId: string) => {
-    const currentCategories = filters.category || [];
-    const newCategories = currentCategories.includes(categoryId)
-      ? currentCategories.filter((id) => id !== categoryId)
-      : [...currentCategories, categoryId];
-    
+    // Category is a single string, not an array
+    // If same category is selected, clear it; otherwise set new category
+    const newCategory = filters.category === categoryId ? undefined : categoryId;
+
     onFiltersChange({
       ...filters,
-      category: newCategories.length > 0 ? newCategories : undefined,
+      category: newCategory,
     });
   }, [filters, onFiltersChange]);
 
@@ -319,7 +319,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
       case 'tag':
         return filters.tags?.length || 0;
       case 'category':
-        return filters.category?.length || 0;
+        return filters.category ? 1 : 0; // Category is single string, not array
       case 'sort':
         return filters.sort ? 1 : 0;
       default:
@@ -363,7 +363,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
         case 'tag':
           return filters.tags?.includes(value) || false;
         case 'category':
-          return filters.category?.includes(value) || false;
+          return filters.category === value; // Category is single string, use === not includes()
         case 'sort':
           return filters.sort === value;
         default:
@@ -389,7 +389,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
       case 'category':
         options = allCategories.map(cat => ({ value: cat.id, label: cat.name }));
         onSelect = handleCategoryToggle;
-        isMultipleSelection = true;
+        isMultipleSelection = false; // Category is single selection, not multiple
         break;
       case 'sort':
         options = [...SORT_OPTIONS];
@@ -431,7 +431,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
                 fontWeight: '500',
               }}
             >
-              Yükleniyor...
+              Loading...
             </RNText>
           </VStack>
         ) : (
@@ -530,7 +530,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
                     color: isDark ? '#FFFFFF' : '#666666',
                   }}
                 >
-                  Temizle
+                  Clear
                 </RNText>
               </Box>
             </Pressable>
@@ -553,7 +553,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
                     color: '#FFFFFF',
                   }}
                 >
-                  Uygula
+                  Apply
                 </RNText>
               </Box>
             </Pressable>

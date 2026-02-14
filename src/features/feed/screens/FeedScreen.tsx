@@ -1007,12 +1007,12 @@ const FeedScreenInner = React.memo(() => {
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
               <View style={{ gap: 16, alignItems: 'center' }}>
                 <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
-                  Feed Yüklenemedi
+                  Failed to Load Feed
                 </Text>
                 {(error as any)?.response?.status === 500 ? (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.
+                      Server error occurred. Please try again later.
                     </Text>
                     {(error as any)?.response?.data?.error?.message && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center" mt="$2">
@@ -1023,7 +1023,7 @@ const FeedScreenInner = React.memo(() => {
                 ) : (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      {error.message || 'Bilinmeyen bir hata oluştu'}
+                      {error.message || 'An unknown error occurred'}
                     </Text>
                     {(error as any)?.response?.status && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
