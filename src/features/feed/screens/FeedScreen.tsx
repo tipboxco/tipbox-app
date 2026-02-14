@@ -276,12 +276,16 @@ const FeedScreenInner = React.memo(() => {
     } else if (tab === 'inventory') {
       if (user?.id) {
         // Inventory ekranına git - InventoryScreen mount olduğunda useInventory hook'u otomatik olarak /inventory endpoint'ine GET isteği atacak
-        (navigation as any).navigate('Profile', {
-          screen: 'InventoryList',
-          params: {
-            userId: user.id,
-          },
-        });
+        // Type-safe navigation to Profile stack's InventoryList screen
+        const rootNavigation = navigation.getParent();
+        if (rootNavigation) {
+          rootNavigation.navigate('Profile', {
+            screen: 'InventoryList',
+            params: {
+              userId: user.id,
+            },
+          });
+        }
       }
     }
   };

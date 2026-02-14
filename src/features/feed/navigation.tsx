@@ -8,12 +8,9 @@ import { NftAssetsScreen } from '@/src/features/wallet/screens/NftAssetsScreen';
 import { NftAssetDetailScreen } from '@/src/features/wallet/screens/NftAssetDetailScreen';
 import { NftTransferScreen } from '@/src/features/wallet/screens/NftTransferScreen';
 import type { NftItem } from '@/src/features/wallet/navigation';
-//import { ReviewDetail } from '@/src/components/ReviewDetail';
 
 export type FeedStackParamList = {
   FeedScreen: undefined;
-  // ReviewDetail: removed - component commented out, dead navigation target
-  // CreatePost: removed - no component defined, dead navigation target
   WalletConnection: undefined;
   WalletScreen: undefined;
   SwapScreen: undefined;
@@ -68,14 +65,6 @@ export const FeedNavigator = () => {
           gestureDirection: 'vertical',
         }}
       />
-      {/* <FeedStack.Screen
-        name="ReviewDetail"
-        component={ReviewDetail}
-        options={{
-          presentation: 'modal',
-          animation: 'slide_from_bottom'
-        }}
-      /> */}
     </FeedStack.Navigator>
   );
 };
