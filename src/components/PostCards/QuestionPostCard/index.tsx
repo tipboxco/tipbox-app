@@ -500,10 +500,11 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
             visible={isMenuOpen}
             transparent={true}
             animationType="fade"
+            presentationStyle="overFullScreen"
             onRequestClose={() => setIsMenuOpen(false)}
           >
             <RNPressable
-              style={{ flex: 1 }}
+              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
               onPress={() => setIsMenuOpen(false)}
             />
             <View

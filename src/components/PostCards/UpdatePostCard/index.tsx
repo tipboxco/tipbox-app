@@ -804,10 +804,11 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         visible={isMenuOpen}
         transparent={true}
         animationType="fade"
+        presentationStyle="overFullScreen"
         onRequestClose={() => setIsMenuOpen(false)}
       >
         <RNPressable
-          style={StyleSheet.absoluteFill}
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}
           onPress={() => setIsMenuOpen(false)}
         />
         <View
