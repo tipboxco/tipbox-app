@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, ActivityIndicator, FlatList, View } from 'react-native';
+import { Platform, ActivityIndicator, FlatList, View, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@/src/components/ui';
@@ -101,7 +101,7 @@ const FeedScreenInner = React.memo(() => {
 
   // Filtre state'i
   // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
-  // 
+  //
   // Filtre Parametreleri:
   // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
   //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
@@ -112,6 +112,10 @@ const FeedScreenInner = React.memo(() => {
   //   Backend'de interests ile birleştirilir (OR mantığı)
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
+
+  // FEATURE: Filter panel overlay - panel açıkken dışarıya tıklayınca kapat
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const closePanelRef = useRef<(() => void) | null>(null);
 
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -127,18 +131,19 @@ const FeedScreenInner = React.memo(() => {
 
   // Drawer açıkken veya swipe sırasında scroll'u disable et
   // CRITICAL: isDragging kontrolü ile swipe sırasında re-render önleme
+  // FEATURE: Filter panel açıkken de scroll'u disable et
   useEffect(() => {
-    if (isDrawerOpen || isDragging) {
+    if (isDrawerOpen || isDragging || isFilterPanelOpen) {
       setIsScrollEnabled(false);
     } else {
-      // Drawer kapandıktan sonra kısa bir delay ile scroll'u enable et
-      // Bu, drawer kapanma animasyonunun tamamlanmasını bekler ve titreme önler
+      // Drawer/panel kapandıktan sonra kısa bir delay ile scroll'u enable et
+      // Bu, kapanma animasyonunun tamamlanmasını bekler ve titreme önler
       const timer = setTimeout(() => {
         setIsScrollEnabled(true);
-      }, 150); // 150ms delay - drawer kapanma animasyonu tamamlandıktan sonra
+      }, 150); // 150ms delay - animasyon tamamlandıktan sonra
       return () => clearTimeout(timer);
     }
-  }, [isDrawerOpen, isDragging]);
+  }, [isDrawerOpen, isDragging, isFilterPanelOpen]);
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
@@ -994,10 +999,14 @@ const FeedScreenInner = React.memo(() => {
           <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
-          {/* FilterBar - panel aşağı doğru açılır, feed içeriği aşağı kayar (modal/overlay yok) */}
+          {/* FilterBar - panel aşağı doğru açılır, feed içeriği aşağı kayar */}
           <FilterBarReanimated
             filters={filters}
             onFiltersChange={setFilters}
+            onPanelStateChange={setIsFilterPanelOpen}
+            onClosePanelRef={(closeFn) => {
+              closePanelRef.current = closeFn;
+            }}
           />
         </View>
         <View style={{ flex: 1, minHeight: 0 }}>
@@ -1089,6 +1098,27 @@ const FeedScreenInner = React.memo(() => {
             />
           )}
         </View>
+
+        {/* FEATURE: Filter Panel Overlay - panel açıkken dışarıya tıklayınca kapat */}
+        {isFilterPanelOpen && (
+          <Pressable
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              zIndex: 10,
+            }}
+            onPress={() => {
+              if (closePanelRef.current) {
+                closePanelRef.current();
+              }
+            }}
+          />
+        )}
+
         {/* Search Modal */}
         <SearchModal
           visible={isSearchVisible}
