@@ -49,8 +49,8 @@ type SearchFilter = 'users' | 'brands' | 'products';
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 // 🎯 PERFORMANCE: Hızlı ve smooth açılma/kapanma animasyonu
-// OPTIMIZATION 2: 250ms → 150ms (100ms kazanç, hala smooth)
-const ANIMATION_DURATION = 150; // ms - daha hızlı
+// OPTIMIZATION 2: 250ms → 150ms → 100ms (instant feel)
+const ANIMATION_DURATION = 100; // ms - çok hızlı, native feel
 const TIMING_CONFIG = {
   duration: ANIMATION_DURATION,
 };
@@ -65,7 +65,6 @@ interface ModalState {
   searchQuery: string;
   debouncedQuery: string;
   selectedFilter: SearchFilter;
-  shouldRender: boolean;
   isAnimating: boolean;
   tabContainerWidth: number;
   currentPage: number;
@@ -75,7 +74,6 @@ type ModalAction =
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_DEBOUNCED_QUERY'; payload: string }
   | { type: 'SET_SELECTED_FILTER'; payload: SearchFilter }
-  | { type: 'SET_SHOULD_RENDER'; payload: boolean }
   | { type: 'SET_IS_ANIMATING'; payload: boolean }
   | { type: 'SET_TAB_CONTAINER_WIDTH'; payload: number }
   | { type: 'SET_CURRENT_PAGE'; payload: number }
@@ -85,7 +83,6 @@ const initialState: ModalState = {
   searchQuery: '',
   debouncedQuery: '',
   selectedFilter: 'users',
-  shouldRender: false,
   isAnimating: false,
   tabContainerWidth: 0,
   currentPage: 0,
@@ -99,8 +96,6 @@ const modalReducer = (state: ModalState, action: ModalAction): ModalState => {
       return { ...state, debouncedQuery: action.payload };
     case 'SET_SELECTED_FILTER':
       return { ...state, selectedFilter: action.payload };
-    case 'SET_SHOULD_RENDER':
-      return { ...state, shouldRender: action.payload };
     case 'SET_IS_ANIMATING':
       return { ...state, isAnimating: action.payload };
     case 'SET_TAB_CONTAINER_WIDTH':
@@ -281,30 +276,35 @@ ProductItem.displayName = 'ProductItem';
  * 4. Absolute positioned overlay (Modal yerine)
  * 5. Single progress SharedValue ile animasyon kontrolü
  */
-export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) => {
+export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  // 🎯 PERFORMANCE: Internal visible state - animasyon kontrolü için
+  // Parent'tan gelen visible prop'u ile senkronize, ama kapanma animasyonunu kontrol eder
+  const [internalVisible, setInternalVisible] = useState(false);
+
   // 🎯 OPTIMIZATION: useReducer ile state birleştirme
   const [state, dispatch] = useReducer(modalReducer, initialState);
-  const { searchQuery, debouncedQuery, selectedFilter, shouldRender, isAnimating, tabContainerWidth, currentPage } = state;
+  const { searchQuery, debouncedQuery, selectedFilter, isAnimating, tabContainerWidth, currentPage } = state;
 
   const inputRef = useRef<any>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pagerRef = useRef<PagerView>(null);
   const tabContainerRef = useRef<any>(null);
-  
+
   // Modal'ın önceki açık/kapalı durumunu takip et
   const prevVisibleRef = useRef(false);
+  const prevInternalVisibleRef = useRef(false);
   // Modal kapandığında son seçili tab'ı sakla (bir sonraki açılışta kullanılacak)
   const lastSelectedTabRef = useRef<number>(0);
 
   // 🎯 CORE: Single progress SharedValue (0 = closed, 1 = open) - FilterBarReanimated gibi
   const progress = useSharedValue(0);
   // OPTIMIZATION 5: panY removed - no swipe gesture needed
-  
+
   // 🎯 CORE: Tab progress value (0 = Users, 1 = Brands, 2 = Products)
   const tabProgress = useSharedValue(0);
 
@@ -396,12 +396,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     };
   }, [searchQuery]);
 
-  // Close callback
+  // Close callback - internal state ile animasyonu başlat
   const handleClose = useCallback(() => {
     Keyboard.dismiss();
-    dispatch({ type: 'RESET_SEARCH' });
-    onClose();
-  }, [onClose]);
+    setInternalVisible(false); // Kapanma animasyonu başlat
+  }, []);
 
   // Tab press handler - PagerView native animasyonu ile geçiş
   const handleTabPress = useCallback((index: number) => {
@@ -503,32 +502,34 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     });
   }, []);
 
-  // Close callback - worklet dışında tanımla (thread safety için)
-  // useEffect'ten önce tanımlanmalı (hoisting sorunu için)
-  const closeModal = useCallback(() => {
-    handleClose();
-    dispatch({ type: 'SET_SHOULD_RENDER', payload: false });
+  // Close callback - animasyon tamamlandıktan sonra çağrılır
+  const finalizeClose = useCallback(() => {
     dispatch({ type: 'SET_IS_ANIMATING', payload: false });
-    // Shared value'ları reset et (worklet dışında direkt erişim)
-    progress.value = 0;
-    // OPTIMIZATION 5: panY removed
-    // Modal kapandığında search query'yi temizle ama tab state'ini koru
     dispatch({ type: 'RESET_SEARCH' });
-    // lastSelectedTabRef zaten mevcut tab'ı tutuyor, bir sonraki açılışta kullanılacak
-  }, [handleClose, progress]);
+    progress.value = 0;
+    onClose(); // Parent'a haber ver
+  }, [onClose, progress]);
 
-  // 🎯 PERFORMANCE FIX: setTimeout kaldırıldı - withTiming callback kullanıldı
-  // JS thread kullanımı minimize edildi
+  // 🎯 PERFORMANCE FIX: shouldRender pattern kaldırıldı - instant render
+  // Component her zaman mount, sadece animation ile göster/gizle
+  // 🎯 SYNC: Parent visible prop'u ile internal state'i senkronize et
   useEffect(() => {
-    if (visible) {
-      dispatch({ type: 'SET_SHOULD_RENDER', payload: true });
+    if (visible && !internalVisible) {
+      setInternalVisible(true);
+    }
+  }, [visible, internalVisible]);
+
+  // 🎯 ANIMATION: Internal visible state değiştiğinde animasyon başlat
+  useEffect(() => {
+    if (internalVisible) {
+      // Açılma animasyonu
       dispatch({ type: 'SET_IS_ANIMATING', payload: true });
 
       // Reset values immediately
       progress.value = 0;
 
       // Sadece modal kapalıdan açığa geçtiğinde son seçili tab'ı göster
-      const wasClosed = !prevVisibleRef.current;
+      const wasClosed = !prevInternalVisibleRef.current;
       if (wasClosed) {
         const tabToShow = lastSelectedTabRef.current;
         const filters: SearchFilter[] = ['users', 'brands', 'products'];
@@ -537,36 +538,34 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
         dispatch({ type: 'SET_CURRENT_PAGE', payload: tabToShow });
         dispatch({ type: 'SET_SELECTED_FILTER', payload: filters[tabToShow] });
       }
-      prevVisibleRef.current = true;
+      prevInternalVisibleRef.current = true;
 
       // Animasyonu başlat - callback ile animasyon bitince state güncelle
-      requestAnimationFrame(() => {
-        progress.value = withTiming(1, TIMING_CONFIG, (finished) => {
-          'worklet';
-          if (finished) {
-            runOnJS(dispatch)({ type: 'SET_IS_ANIMATING', payload: false });
-            runOnJS(focusInput)();
-          }
-        });
+      progress.value = withTiming(1, TIMING_CONFIG, (finished) => {
+        'worklet';
+        if (finished) {
+          runOnJS(dispatch)({ type: 'SET_IS_ANIMATING', payload: false });
+          runOnJS(focusInput)();
+        }
       });
-    } else if (shouldRender) {
+    } else if (prevInternalVisibleRef.current) {
+      // Kapanma animasyonu
       dispatch({ type: 'SET_IS_ANIMATING', payload: true });
-      prevVisibleRef.current = false;
+      prevInternalVisibleRef.current = false;
 
       // Animasyonu başlat - callback ile animasyon bitince modal'ı kapat
       progress.value = withTiming(0, TIMING_CONFIG, (finished) => {
         'worklet';
         if (finished) {
-          runOnJS(closeModal)();
+          runOnJS(finalizeClose)();
         }
       });
     }
-  }, [visible, progress, shouldRender, focusInput, closeModal, tabProgress]);
+  }, [internalVisible, progress, focusInput, finalizeClose, tabProgress]);
 
   // Modal açıldığında ve PagerView mount olduktan sonra doğru sayfayı ayarla
-  // OPTIMIZATION 3: setTimeout kaldırıldı, requestAnimationFrame kullanıldı (100ms kazanç)
   useEffect(() => {
-    if (visible && shouldRender && !isAnimating) {
+    if (internalVisible && !isAnimating) {
       // PagerView mount olduktan sonra son seçili tab'a git
       const tabToShow = lastSelectedTabRef.current;
       // requestAnimationFrame ile PagerView'in mount olmasını bekle
@@ -577,7 +576,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       });
       return () => cancelAnimationFrame(rafId);
     }
-  }, [visible, shouldRender, isAnimating]);
+  }, [internalVisible, isAnimating]);
 
   // OPTIMIZATION 5: panGesture removed - swipe-to-close feature removed for better performance
   // Overlay click is sufficient for closing modal
@@ -847,17 +846,19 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   }, [debouncedQuery, isSearching, searchError, searchData?.productData, loadingByTab.products, defaultDataByTab.products, handleProductPress]);
 
 
-  // 🎯 PERFORMANCE: FilterBarReanimated gibi - Modal yerine absolute positioned overlay
-  if (!shouldRender && !visible) {
-    return null;
-  }
+  // 🎯 PERFORMANCE FIX: shouldRender kaldırıldı - component her zaman render
+  // Sadece animation ile görünürlük kontrol ediliyor (instant open için)
 
   return (
     // OPTIMIZATION 5: GestureHandlerRootView kaldırıldı - sadece View kullanıldı
     // Swipe-to-close özelliği kaldırıldı, overlay click ile kapatma yeterli
     // 50-100ms GestureHandler initialization kazancı
     // FIX: Z-index 9999 - Bottom tab bar'ın önüne geçmesi için
-    <View style={{ flex: 1, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
+    // PERFORMANCE: pointerEvents ile touch olaylarını kontrol et
+    <View
+      style={{ flex: 1, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}
+      pointerEvents={internalVisible ? 'auto' : 'none'}
+    >
       {/* Overlay Background - FilterBarReanimated gibi */}
       {/* FIX: Overlay opacity 0.6'ya çıkarıldı - daha koyu arka plan */}
       <Animated.View
@@ -872,7 +873,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           },
           overlayAnimatedStyle,
         ]}
-        pointerEvents={visible ? 'auto' : 'none'}
+        pointerEvents={internalVisible ? 'auto' : 'none'}
       >
         <RNPressable
           style={{ flex: 1 }}
@@ -1084,6 +1085,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           </Animated.View>
       </View>
   );
-};
+});
+
+SearchModal.displayName = 'SearchModal';
 
 export default SearchModal;

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
     HStack,
     Text,
@@ -20,6 +20,15 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress, rootLabel }
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const scrollViewRef = useRef<ScrollView>(null);
+
+    // Auto scroll to end when items change
+    useEffect(() => {
+        // Small delay to ensure layout is complete
+        const timer = setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [items]);
 
     // Scroll to end when content size changes (triggered when layout completes)
     const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
