@@ -50,49 +50,42 @@ export const login = async (
     const client = apiService.getClient();
     const baseURL = client.defaults.baseURL;
     const fullURL = `${baseURL}/auth/login`;
-
-    if (__DEV__) {
-      console.log('[login] Request details:', {
-        baseURL,
-        endpoint: '/auth/login',
-        fullURL,
-        method: 'POST',
-        credentials: {
-          email: credentials.email,
-          password: '***', // Güvenlik için password'ü gizle
-        },
-      });
-    }
-
+    
+    console.log('[login] Request details:', {
+      baseURL,
+      endpoint: '/auth/login',
+      fullURL,
+      method: 'POST',
+      credentials: {
+        email: credentials.email,
+        password: '***', // Güvenlik için password'ü gizle
+      },
+    });
+    
     const response = await client.post<ApiLoginResponse>(
       '/auth/login',
       credentials
     );
 
-    if (__DEV__) {
-      console.log('[login] ✅ Success:', {
-        status: response.status,
-        userId: response.data.id,
-        email: response.data.email,
-      });
-    }
+    console.log('[login] ✅ Success:', {
+      status: response.status,
+      userId: response.data.id,
+      email: response.data.email,
+    });
 
     // Backend'den gelen ham response'u direkt döndür (store'da transform edilecek)
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[login] ❌ API Error:', {
-    }
-        url: '/auth/login',
-        baseURL: apiService.getClient().defaults.baseURL,
-        fullURL: `${apiService.getClient().defaults.baseURL}/auth/login`,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        code: error.code,
-      });
-    }
+    console.error('[login] ❌ API Error:', {
+      url: '/auth/login',
+      baseURL: apiService.getClient().defaults.baseURL,
+      fullURL: `${apiService.getClient().defaults.baseURL}/auth/login`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code,
+    });
     throw error;
   }
 };
@@ -127,15 +120,13 @@ export const verifyEmail = async (
     );
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[verifyEmail] API Error:', {
-        url: '/auth/verify-email',
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      });
-    }
+    console.error('[verifyEmail] API Error:', {
+      url: '/auth/verify-email',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
     throw error;
   }
 };
@@ -163,9 +154,7 @@ export const getCurrentUser = async (): Promise<CurrentUser> => {
     const response = await apiService.getClient().get<CurrentUser>('/auth/me');
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[getCurrentUser] API Error:', {
-    }
+    console.error('[getCurrentUser] API Error:', {
       url: '/auth/me',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -202,9 +191,7 @@ export const forgotPassword = async (
     );
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[forgotPassword] API Error:', {
-    }
+    console.error('[forgotPassword] API Error:', {
       url: '/auth/forgot-password',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -243,9 +230,7 @@ export const verifyResetCode = async (
     );
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[verifyResetCode] API Error:', {
-    }
+    console.error('[verifyResetCode] API Error:', {
       url: '/auth/verify-reset-code',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -284,9 +269,7 @@ export const resetPassword = async (
     );
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[resetPassword] API Error:', {
-    }
+    console.error('[resetPassword] API Error:', {
       url: '/auth/reset-password',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -313,9 +296,7 @@ export const logout = async (): Promise<LogoutResponse> => {
     const response = await apiService.getClient().post<LogoutResponse>('/auth/logout');
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[logout] API Error:', {
-    }
+    console.error('[logout] API Error:', {
       url: '/auth/logout',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -439,17 +420,15 @@ export const setupProfile = async (
         name: filename,
       } as any);
     }
-
-    if (__DEV__) {
-      console.log('[setupProfile] Request data:', {
-        fullName: data.fullName,
-        username: data.username,
-        hasAvatar: !!data.profileImage,
-        hasBanner: !!data.banner,
-        categoriesCount: data.selectCategories.length,
-      });
-    }
-
+    
+    console.log('[setupProfile] Request data:', {
+      fullName: data.fullName,
+      username: data.username,
+      hasAvatar: !!data.profileImage,
+      hasBanner: !!data.banner,
+      categoriesCount: data.selectCategories.length,
+    });
+    
     const response = await apiService.getClient().post<SetupProfileResponse>(
       '/users/setup-profile',
       formData,
@@ -459,27 +438,22 @@ export const setupProfile = async (
         },
       }
     );
-
-    if (__DEV__) {
-      console.log('[setupProfile] ✅ Success:', {
-        success: response.data.success,
-        message: response.data.message,
-        user: response.data.user,
-      });
-    }
-
+    
+    console.log('[setupProfile] ✅ Success:', {
+      success: response.data.success,
+      message: response.data.message,
+      user: response.data.user,
+    });
+    
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[setupProfile] ❌ API Error:', {
-    }
-        url: '/users/setup-profile',
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      });
-    }
+    console.error('[setupProfile] ❌ API Error:', {
+      url: '/users/setup-profile',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
     throw error;
   }
 };
@@ -506,9 +480,7 @@ export const checkUsernameAvailability = async (
     );
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[checkUsernameAvailability] API Error:', {
-    }
+    console.error('[checkUsernameAvailability] API Error:', {
       url: '/users/username/check',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -541,9 +513,7 @@ export const getUsernameSuggestions = async (
     );
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[getUsernameSuggestions] API Error:', {
-    }
+    console.error('[getUsernameSuggestions] API Error:', {
       url: '/users/username/suggestions',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -582,9 +552,7 @@ export const updateUserInterests = async (
     
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[updateUserInterests] API Error:', {
-    }
+    console.error('[updateUserInterests] API Error:', {
       url: '/users/interests',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -618,9 +586,7 @@ export const googleLogin = async (
     // Backend'den gelen ham response'u direkt döndür (store'da transform edilecek)
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[googleLogin] API Error:', {
-    }
+    console.error('[googleLogin] API Error:', {
       url: '/auth/google',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -671,25 +637,20 @@ export const getUserAvatars = async (): Promise<GetUserAvatarsResponse> => {
     const response = await apiService.getClient().get<GetUserAvatarsResponse>(
       '/users/avatars'
     );
-    if (__DEV__) {
-      console.log('[getUserAvatars] Response:', {
-        success: response.data?.success,
-        avatarsCount: response.data?.avatars?.length ?? 0,
-        avatars: response.data?.avatars,
-      });
-    }
+    console.log('[getUserAvatars] Response:', {
+      success: response.data?.success,
+      avatarsCount: response.data?.avatars?.length ?? 0,
+      avatars: response.data?.avatars,
+    });
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[getUserAvatars] API Error:', {
-    }
-        url: '/users/avatars',
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      });
-    }
+    console.error('[getUserAvatars] API Error:', {
+      url: '/users/avatars',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
     throw error;
   }
 };
@@ -708,9 +669,7 @@ export const getUserCategories = async (): Promise<UserCategory[]> => {
     );
     return response.data;
   } catch (error: any) {
-    if (__DEV__) {
-      console.error('[getUserCategories] API Error:', {
-    }
+    console.error('[getUserCategories] API Error:', {
       url: '/users/categories',
       status: error.response?.status,
       statusText: error.response?.statusText,
