@@ -21,9 +21,9 @@ export const WelcomeScreen = () => {
   const toast = useToast();
   const googleLoginMutation = useGoogleLogin();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
+
+  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
   const handleGoogleLogin = async () => {
     try {
@@ -65,18 +65,18 @@ export const WelcomeScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor }}>
-      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
-<StatusBar barStyle="light-content" />
-      <View 
-        style={{ 
-          height: insets.top, 
-          backgroundColor: '#000000',
+      {/* Üst Güvenli Alan - Status Bar theme-aware */}
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View
+        style={{
+          height: insets.top,
+          backgroundColor: isDark ? '#000000' : '#FFFFFF',
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           zIndex: 1,
-        }} 
+        }}
       />
      
 

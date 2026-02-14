@@ -23,23 +23,25 @@ export const SelectAvatarScreen = () => {
   const navigation = useNavigation<SelectAvatarScreenNavigationProp>();
   const route = useRoute<SelectAvatarScreenRouteProp>();
   const insets = useSafeAreaInsets();
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
+
+  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
   const { data: avatarsData, isLoading: isLoadingAvatars, error: avatarsError } = useUserAvatars();
   const avatars = avatarsData?.avatars ?? [];
 
   useEffect(() => {
-    if (avatarsData) {
-      console.log('[SelectAvatarScreen] Avatars data:', {
-        success: avatarsData.success,
-        count: avatars.length,
-        avatars: avatarsData.avatars,
-      });
-    }
-    if (avatarsError) {
-      console.warn('[SelectAvatarScreen] Avatars error:', avatarsError);
+    if (__DEV__) {
+      if (avatarsData) {
+        console.log('[SelectAvatarScreen] Avatars data:', {
+          success: avatarsData.success,
+          count: avatars.length,
+          avatars: avatarsData.avatars,
+        });
+      }
+      if (avatarsError) {
+        console.warn('[SelectAvatarScreen] Avatars error:', avatarsError);
+      }
     }
   }, [avatarsData, avatars.length, avatarsError]);
 
@@ -65,7 +67,9 @@ export const SelectAvatarScreen = () => {
         Alert.alert('Error', result.error || 'An error occurred while selecting photo');
       }
     } catch (error: any) {
-      console.error('[SelectAvatarScreen] Gallery pick error:', error);
+      if (__DEV__) {
+        console.error('[SelectAvatarScreen] Gallery pick error:', error);
+      }
       Alert.alert('Error', 'An error occurred while selecting photo');
     } finally {
       setIsUploading(false);
@@ -84,7 +88,9 @@ export const SelectAvatarScreen = () => {
         Alert.alert('Error', result.error || 'An error occurred while taking photo');
       }
     } catch (error: any) {
-      console.error('[SelectAvatarScreen] Camera error:', error);
+      if (__DEV__) {
+        console.error('[SelectAvatarScreen] Camera error:', error);
+      }
       Alert.alert('Error', 'An error occurred while taking photo');
     } finally {
       setIsUploading(false);
@@ -98,10 +104,8 @@ export const SelectAvatarScreen = () => {
       const avatarData = uploadedImage
         ? { type: 'upload' as const, uri: uploadedImage }
         : { type: 'avatar' as const, id: selectedAvatarId!, url: selectedAvatar?.url };
-      const currentParams = route.params as any;
       navigation.navigate('SetupProfile', {
         avatarData,
-        selectedCategories: currentParams?.selectedCategories,
       });
     }
   };
@@ -170,20 +174,20 @@ export const SelectAvatarScreen = () => {
                 <Box mt="$4">
                   {avatarsError && (
                     <Text color="$error500" fontSize="$sm" textAlign="center" mb="$2">
-                      Avatarlar yüklenemedi. Tekrar deneyin.
+                      Failed to load avatars. Please try again.
                     </Text>
                   )}
                   {isLoadingAvatars ? (
                     <Box py="$12" alignItems="center" justifyContent="center">
                       <Spinner size="large" color={isDark ? '$textDark50' : '$primary500'} />
                       <Text color={isDark ? '$textDark300' : '$textLight600'} mt="$2" fontSize="$sm">
-                        Avatarlar yükleniyor...
+                        Loading avatars...
                       </Text>
                     </Box>
                   ) : avatars.length === 0 ? (
                     <Box py="$12" alignItems="center">
                       <Text color={isDark ? '$textDark300' : '$textLight600'} fontSize="$sm" textAlign="center">
-                        Avatar listesi boş veya yüklenemedi.
+                        No avatars available.
                       </Text>
                     </Box>
                   ) : (

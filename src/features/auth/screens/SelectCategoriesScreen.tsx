@@ -9,6 +9,7 @@ import type { AuthStackParamList } from '../navigation';
 import { useUserCategories } from '../api/hooks';
 import type { UserCategory } from '../api/authApi';
 import { Alert } from 'react-native';
+import { useAppStore } from '@/src/store/appStore';
 
 type SelectCategoriesScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectCategories'>;
 
@@ -81,13 +82,14 @@ export const SelectCategoriesScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
   const insets = useSafeAreaInsets();
+  const setSelectedCategories = useAppStore((state) => state.setSelectedCategories);
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
   
   // API'den kategorileri getir
   const { data: categories, isLoading, error } = useUserCategories();
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
+
+  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
   const handleSelectSubCategory = (subCategoryId: string) => {
     setSelectedSubCategories((prev) => {
@@ -119,13 +121,16 @@ export const SelectCategoriesScreen = () => {
       });
 
       // Backend formatına çevir
-      const selectedCategories = Array.from(categoriesMap.entries()).map(([categoryId, subCategoryIds]) => ({
+      const formattedCategories = Array.from(categoriesMap.entries()).map(([categoryId, subCategoryIds]) => ({
         categoryId,
         subCategoryIds,
       }));
 
-      // SetupProfile ekranına yönlendir ve seçilen kategorileri gönder
-      navigation.navigate('SetupProfile', { selectedCategories });
+      // Global state'e kaydet (route params yerine)
+      setSelectedCategories(formattedCategories);
+
+      // SetupProfile ekranına yönlendir (params olmadan)
+      navigation.navigate('SetupProfile');
     } else {
       Alert.alert('Error', `Please select at least ${MIN_SELECTED} categories`);
     }

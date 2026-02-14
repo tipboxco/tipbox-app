@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useRegister } from '../api/hooks';
-import { CustomToast } from '@/src/components/CustomToast';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -19,9 +19,9 @@ export const RegisterScreen = () => {
   const toast = useToast();
   const registerMutation = useRegister();
   const insets = useSafeAreaInsets();
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
+
+  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,48 +45,47 @@ export const RegisterScreen = () => {
     if (isEmailValid && isPasswordValid) {
       try {
         // React Query mutation kullanarak register işlemi
+        // Email'den name oluştur - capitalize ve özel karakterleri temizle
+        const namePart = email.split('@')[0];
+        const cleanName = namePart.replace(/[._-]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
         const result = await registerMutation.mutateAsync({
           email,
           password,
-          name: email.split('@')[0], // Geçici olarak email'den name oluştur
+          name: cleanName,
         });
 
         // Console'da tam response'u göster
-        console.log('=== REGISTER API RESPONSE ===');
-        console.log('Full Response:', JSON.stringify(result, null, 2));
-        console.log('Response Type:', typeof result);
-        console.log('Response Keys:', Object.keys(result));
-        console.log('============================');
+        if (__DEV__) {
+          console.log('=== REGISTER API RESPONSE ===');
+          console.log('Full Response:', JSON.stringify(result, null, 2));
+          console.log('Response Type:', typeof result);
+          console.log('Response Keys:', Object.keys(result));
+          console.log('============================');
+        }
 
         // Başarılı toast göster
-        toast.show({
-          placement: 'top',
+        showCustomToast(toast, {
+          title: 'Registration successful',
+          description: result.message || 'Your account has been created successfully!',
+          action: 'success',
           duration: 3000,
-          render: ({ id }) => {
-            return (
-              <CustomToast
-                id={id}
-                title="Registration successful"
-                description={result.message || 'Your account has been created successfully!'}
-                action="success"
-                duration={3000}
-              />
-            );
-          },
         });
 
         // Başarılı kayıt sonrası verify code ekranına yönlendir
         navigation.navigate('VerifyCode', { email, context: 'signUp' });
       } catch (error: any) {
         // Console'da tam error'u göster
-        console.error('=== REGISTER API ERROR ===');
-        console.error('Error Object:', error);
-        console.error('Error Message:', error?.message);
-        console.error('Error Response:', error?.response);
-        console.error('Error Response Data:', error?.response?.data);
-        console.error('Error Response Status:', error?.response?.status);
-        console.error('Full Error JSON:', JSON.stringify(error, null, 2));
-        console.error('========================');
+        if (__DEV__) {
+          console.error('=== REGISTER API ERROR ===');
+          console.error('Error Object:', error);
+          console.error('Error Message:', error?.message);
+          console.error('Error Response:', error?.response);
+          console.error('Error Response Data:', error?.response?.data);
+          console.error('Error Response Status:', error?.response?.status);
+          console.error('Full Error JSON:', JSON.stringify(error, null, 2));
+          console.error('========================');
+        }
 
         // Hata toast göster
         const errorMessage =
@@ -94,20 +93,11 @@ export const RegisterScreen = () => {
           error?.message ||
           'An error occurred during registration';
 
-        toast.show({
-          placement: 'top',
+        showCustomToast(toast, {
+          title: 'Registration failed',
+          description: errorMessage,
+          action: 'error',
           duration: 4000,
-          render: ({ id }) => {
-            return (
-              <CustomToast
-                id={id}
-                title="Registration failed"
-                description={errorMessage}
-                action="error"
-                duration={4000}
-              />
-            );
-          },
         });
       }
     }
