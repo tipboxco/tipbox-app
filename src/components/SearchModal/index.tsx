@@ -540,12 +540,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   });
 
   // Focus input callback - worklet dışında tanımla
+  // OPTIMIZATION 3: setTimeout kaldırıldı, requestAnimationFrame kullanıldı (100ms kazanç)
   const focusInput = useCallback(() => {
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       if (inputRef.current) {
         inputRef.current.focus();
       }
-    }, 100);
+    });
   }, []);
 
   // Close callback - worklet dışında tanımla (thread safety için)
@@ -620,17 +621,18 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   }, [visible, progress, panY, shouldRender, focusInput, closeModal, tabProgress]);
 
   // Modal açıldığında ve PagerView mount olduktan sonra doğru sayfayı ayarla
+  // OPTIMIZATION 3: setTimeout kaldırıldı, requestAnimationFrame kullanıldı (100ms kazanç)
   useEffect(() => {
     if (visible && shouldRender && !isAnimating) {
       // PagerView mount olduktan sonra son seçili tab'a git
       const tabToShow = lastSelectedTabRef.current;
-      // Kısa bir gecikme ile PagerView'in mount olmasını bekle
-      const timer = setTimeout(() => {
+      // requestAnimationFrame ile PagerView'in mount olmasını bekle
+      const rafId = requestAnimationFrame(() => {
         if (pagerRef.current) {
           pagerRef.current.setPage(tabToShow);
         }
-      }, 100);
-      return () => clearTimeout(timer);
+      });
+      return () => cancelAnimationFrame(rafId);
     }
   }, [visible, shouldRender, isAnimating]);
 
