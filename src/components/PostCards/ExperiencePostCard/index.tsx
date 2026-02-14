@@ -404,9 +404,9 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               </Pressable>
             )}
             <Pressable flex={1} onPress={handleViewProfile}>
-              <VStack 
+              <VStack
                 flex={1}
-                justifyContent={data.user?.title ? 'flex-start' : 'center'}
+                justifyContent="center"
               >
                 {data.user?.action ? (
                   <Text

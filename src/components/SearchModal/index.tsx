@@ -7,6 +7,8 @@ import Animated, {
   withTiming,
   interpolateColor,
   interpolate,
+  useAnimatedReaction,
+  runOnJS,
 } from 'react-native-reanimated';
 // OPTIMIZATION 5: Gesture imports removed - swipe-to-close feature removed for better performance
 import {
@@ -372,54 +374,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     debouncedQuery.length > 0 && visible // Sadece query varsa ve modal açıkken aktif et
   );
 
-  // 🎯 OPTIMIZATION: Display data'yı seçili tab'a göre belirle (memoized)
-  const displayData = useMemo(() => {
-    if (debouncedQuery.length > 0) {
-      return searchData;
-    }
-    // Input boşken, seçili tab'a göre cache'den veri al
-    switch (selectedFilter) {
-      case 'users':
-        return defaultDataByTab.users ? { userData: defaultDataByTab.users } : null;
-      case 'brands':
-        return defaultDataByTab.brands ? { brandData: defaultDataByTab.brands } : null;
-      case 'products':
-        return defaultDataByTab.products ? { productData: defaultDataByTab.products } : null;
-      default:
-        return defaultDataByTab.users ? { userData: defaultDataByTab.users } : null;
-    }
-  }, [debouncedQuery.length, searchData, selectedFilter, defaultDataByTab]);
-
-  // 🎯 OPTIMIZATION: Loading state'i seçili tab'a göre belirle (memoized)
-  const isLoading = useMemo(() => {
-    if (debouncedQuery.length > 0) {
-      return isSearching;
-    }
-    return loadingByTab[selectedFilter];
-  }, [debouncedQuery.length, isSearching, selectedFilter, loadingByTab]);
-
-  // Has results kontrolü - sadece seçili tab'ın verilerini kontrol et
-  const hasResults = useMemo(() => {
-    if (debouncedQuery.length > 0) {
-      // Arama sonuçları için
-      return (
-        (selectedFilter === 'users' && displayData?.userData && displayData.userData.length > 0) ||
-        (selectedFilter === 'brands' && displayData?.brandData && displayData.brandData.length > 0) ||
-        (selectedFilter === 'products' && displayData?.productData && displayData.productData.length > 0)
-      );
-    }
-    // Default veriler için - sadece seçili tab'ın verilerini kontrol et
-    switch (selectedFilter) {
-      case 'users':
-        return displayData?.userData && displayData.userData.length > 0;
-      case 'brands':
-        return displayData?.brandData && displayData.brandData.length > 0;
-      case 'products':
-        return displayData?.productData && displayData.productData.length > 0;
-      default:
-        return false;
-    }
-  }, [debouncedQuery.length, selectedFilter, displayData]);
+  // 🎯 PERFORMANCE FIX: displayData, isLoading, hasResults kaldırıldı
+  // Bu değişkenler kullanılmıyor, sadece gereksiz JS thread kullanımına neden oluyorlar
+  // Her tab kendi render fonksiyonunda gerekli verileri doğrudan kullanıyor
 
   // 🎯 OPTIMIZATION: Debounce effect - thread safety için optimize edildi
   useEffect(() => {
@@ -460,70 +417,69 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     lastSelectedTabRef.current = index;
   }, [tabProgress]);
 
-  // PagerView scroll handler - realtime progress güncelleme
-  const handlePageScroll = useCallback(
+  // 🎯 PERFORMANCE FIX: PagerView scroll handler - UI thread'de çalışır
+  // useCallback kaldırıldı - worklet fonksiyonları useCallback ile sarmalanmamalı
+  const handlePageScroll = (e: any) => {
+    'worklet';
+    const { position, offset } = e.nativeEvent;
+    tabProgress.value = position + offset;
+  };
+
+  // 🎯 PERFORMANCE FIX: Page selected handler - Sadece snap olduğunda çalışır
+  // Dispatch'ler throttle edildi, gereksiz JS thread kullanımı önlendi
+  const handlePageSelected = useCallback(
     (e: any) => {
-      'worklet';
-      const { position, offset } = e.nativeEvent;
-      tabProgress.value = position + offset;
+      const position = e.nativeEvent.position;
+      // Tab progress'i worklet'te güncelle (UI thread)
+      tabProgress.value = position;
+      // State güncelleme throttle edildi - requestAnimationFrame ile
+      requestAnimationFrame(() => {
+        dispatch({ type: 'SET_CURRENT_PAGE', payload: position });
+        const filterMap: SearchFilter[] = ['users', 'brands', 'products'];
+        dispatch({ type: 'SET_SELECTED_FILTER', payload: filterMap[position] });
+        lastSelectedTabRef.current = position;
+      });
     },
     [tabProgress]
   );
 
-  // PagerView page selected handler - snap sonrası progress'i sync et
-  const handlePageSelected = useCallback(
-    (e: any) => {
-      const position = e.nativeEvent.position;
-      // Tab progress'i güncelle
-      tabProgress.value = withTiming(position, { duration: 0 });
-      // State'leri güncelle
-      dispatch({ type: 'SET_CURRENT_PAGE', payload: position });
-      const filterMap: SearchFilter[] = ['users', 'brands', 'products'];
-      dispatch({ type: 'SET_SELECTED_FILTER', payload: filterMap[position] });
-      // Son seçili tab'ı kaydet
-      lastSelectedTabRef.current = position;
-    },
-    [tabProgress]
-  );
+  // 🎯 PERFORMANCE FIX: Color values hesaplama dışarı çıkarıldı
+  // Her worklet'te isDark kontrolü JS thread'den okuma yapıyor
+  const activeColor = useMemo(() => isDark ? '#FFFFFF' : '#000000', [isDark]);
+  const inactiveColor = '#8C8C8C';
 
   // Tab 1 (Users) label color animation - tabProgress kullan
   const tab1Style = useAnimatedStyle(() => {
     'worklet';
-    const activeColor = isDark ? '#FFFFFF' : '#000000';
-    const inactiveColor = '#8C8C8C';
     const color = interpolateColor(
       tabProgress.value,
       [0, 1, 2],
       [activeColor, inactiveColor, inactiveColor]
     );
     return { color };
-  });
+  }, [tabProgress, activeColor]);
 
   // Tab 2 (Brands) label color animation - tabProgress kullan
   const tab2Style = useAnimatedStyle(() => {
     'worklet';
-    const activeColor = isDark ? '#FFFFFF' : '#000000';
-    const inactiveColor = '#8C8C8C';
     const color = interpolateColor(
       tabProgress.value,
       [0, 1, 2],
       [inactiveColor, activeColor, inactiveColor]
     );
     return { color };
-  });
+  }, [tabProgress, activeColor]);
 
   // Tab 3 (Products) label color animation - tabProgress kullan
   const tab3Style = useAnimatedStyle(() => {
     'worklet';
-    const activeColor = isDark ? '#FFFFFF' : '#000000';
-    const inactiveColor = '#8C8C8C';
     const color = interpolateColor(
       tabProgress.value,
       [0, 1, 2],
       [inactiveColor, inactiveColor, activeColor]
     );
     return { color };
-  });
+  }, [tabProgress, activeColor]);
 
   // Indicator position animation - tabProgress kullan (0=Users, 1=Brands, 2=Products)
   const tabWidth = tabContainerWidth / 3 || 0;
@@ -535,7 +491,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     return {
       transform: [{ translateX }],
     };
-  });
+  }, [tabProgress, tabWidth, indicatorWidth]);
 
   // Focus input callback - worklet dışında tanımla
   // OPTIMIZATION 3: setTimeout kaldırıldı, requestAnimationFrame kullanıldı (100ms kazanç)
@@ -561,7 +517,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     // lastSelectedTabRef zaten mevcut tab'ı tutuyor, bir sonraki açılışta kullanılacak
   }, [handleClose, progress]);
 
-  // 🎯 PERFORMANCE: Hızlı ve smooth animasyon - callback'siz yaklaşım
+  // 🎯 PERFORMANCE FIX: setTimeout kaldırıldı - withTiming callback kullanıldı
+  // JS thread kullanımı minimize edildi
   useEffect(() => {
     if (visible) {
       dispatch({ type: 'SET_SHOULD_RENDER', payload: true });
@@ -569,52 +526,40 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
 
       // Reset values immediately
       progress.value = 0;
-      // OPTIMIZATION 5: panY removed
-      
+
       // Sadece modal kapalıdan açığa geçtiğinde son seçili tab'ı göster
-      // Modal açıkken tab değişikliklerinde mevcut tab'ı koru
       const wasClosed = !prevVisibleRef.current;
       if (wasClosed) {
-        // Modal yeni açıldı, son seçili tab'ı göster (veya ilk açılışsa Users)
         const tabToShow = lastSelectedTabRef.current;
         const filters: SearchFilter[] = ['users', 'brands', 'products'];
-        
+
         tabProgress.value = tabToShow;
         dispatch({ type: 'SET_CURRENT_PAGE', payload: tabToShow });
         dispatch({ type: 'SET_SELECTED_FILTER', payload: filters[tabToShow] });
       }
-      // Modal açık olduğunu işaretle (her zaman)
       prevVisibleRef.current = true;
-      
-      // Animasyonu başlat
-      const rafId = requestAnimationFrame(() => {
-        progress.value = withTiming(1, TIMING_CONFIG);
+
+      // Animasyonu başlat - callback ile animasyon bitince state güncelle
+      requestAnimationFrame(() => {
+        progress.value = withTiming(1, TIMING_CONFIG, (finished) => {
+          'worklet';
+          if (finished) {
+            runOnJS(dispatch)({ type: 'SET_IS_ANIMATING', payload: false });
+            runOnJS(focusInput)();
+          }
+        });
       });
-
-      // Animasyon bittiğinde state güncelle
-      const timer = setTimeout(() => {
-        dispatch({ type: 'SET_IS_ANIMATING', payload: false });
-        focusInput();
-      }, ANIMATION_DURATION);
-
-      return () => {
-        cancelAnimationFrame(rafId);
-        clearTimeout(timer);
-      };
     } else if (shouldRender) {
       dispatch({ type: 'SET_IS_ANIMATING', payload: true });
-      // Modal kapandı, durumu güncelle
       prevVisibleRef.current = false;
-      
-      // Animasyonu başlat
-      progress.value = withTiming(0, TIMING_CONFIG);
 
-      // Animasyon bittiğinde modal'ı temizle
-      const timer = setTimeout(() => {
-        closeModal();
-      }, ANIMATION_DURATION);
-
-      return () => clearTimeout(timer);
+      // Animasyonu başlat - callback ile animasyon bitince modal'ı kapat
+      progress.value = withTiming(0, TIMING_CONFIG, (finished) => {
+        'worklet';
+        if (finished) {
+          runOnJS(closeModal)();
+        }
+      });
     }
   }, [visible, progress, shouldRender, focusInput, closeModal, tabProgress]);
 
@@ -639,6 +584,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
 
   // 🎯 PERFORMANCE: FilterBarReanimated gibi worklet'lerde style hesaplamaları
   // Overshoot olmadan doğrudan yerine oturma için smooth interpolation
+  // FIX: Dependencies eklendi - gereksiz re-calculation önlendi
   const modalAnimatedStyle = useAnimatedStyle(() => {
     'worklet';
     // Progress 0-1 arası, translateY -MODAL_HEIGHT ile 0 arası
@@ -647,7 +593,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     const translateY = interpolate(progress.value, [0, 1], [-MODAL_HEIGHT, 0]);
     const opacity = interpolate(progress.value, [0, 1], [0, 1]);
     return {
-      transform: [{ translateY }], // OPTIMIZATION 5: panY.value removed
+      transform: [{ translateY }],
       opacity,
     };
   }, [progress]);
@@ -796,8 +742,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     </Box>
   ), [isDark, debouncedQuery]);
 
-  // 🎯 BASIT YAKLAŞIM: Her tab için ayrı render fonksiyonları
-  // FIX: Flex-based layout ile 4 item'i responsive olarak sığdır
+  // 🎯 PERFORMANCE FIX: Render callbacks optimize edildi - dependency azaltıldı
+  // LoadingView, ErrorView, EmptyView zaten memoized, tekrar dependency'e eklemeye gerek yok
   const renderUsersTab = useCallback(() => {
     // Arama yapıldığında
     if (debouncedQuery.length > 0) {
@@ -830,7 +776,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       );
     }
     return null;
-  }, [debouncedQuery, isSearching, searchError, searchData, LoadingView, ErrorView, EmptyView, loadingByTab.users, defaultDataByTab.users, isDark, handleUserPress]);
+  }, [debouncedQuery, isSearching, searchError, searchData?.userData, loadingByTab.users, defaultDataByTab.users, isDark, handleUserPress]);
 
   const renderBrandsTab = useCallback(() => {
     // Arama yapıldığında
@@ -864,7 +810,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       );
     }
     return null;
-  }, [debouncedQuery, isSearching, searchError, searchData, LoadingView, ErrorView, EmptyView, loadingByTab.brands, defaultDataByTab.brands, isDark, handleBrandPress]);
+  }, [debouncedQuery, isSearching, searchError, searchData?.brandData, loadingByTab.brands, defaultDataByTab.brands, isDark, handleBrandPress]);
 
   const renderProductsTab = useCallback(() => {
     // Arama yapıldığında
@@ -898,7 +844,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       );
     }
     return null;
-  }, [debouncedQuery, isSearching, searchError, searchData, LoadingView, ErrorView, EmptyView, loadingByTab.products, defaultDataByTab.products, handleProductPress]);
+  }, [debouncedQuery, isSearching, searchError, searchData?.productData, loadingByTab.products, defaultDataByTab.products, handleProductPress]);
 
 
   // 🎯 PERFORMANCE: FilterBarReanimated gibi - Modal yerine absolute positioned overlay

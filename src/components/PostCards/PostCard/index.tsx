@@ -430,9 +430,9 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             </Pressable>
           )}
           <Pressable flex={1} onPress={handleAvatarPress}>
-            <VStack 
+            <VStack
               flex={1}
-              justifyContent={data.user?.title ? 'flex-start' : 'center'}
+              justifyContent="center"
             >
               <Text
                 color={isDark ? '$textDark50' : '#000'}

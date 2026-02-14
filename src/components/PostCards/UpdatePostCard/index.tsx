@@ -387,9 +387,9 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
             </Pressable>
           )}
           <Pressable flex={1} onPress={handleViewProfile}>
-            <VStack 
+            <VStack
               flex={1}
-              justifyContent={data.user?.title ? 'flex-start' : 'center'}
+              justifyContent="center"
             >
               <Text
                 color={isDark ? '$textDark50' : '#000'}
