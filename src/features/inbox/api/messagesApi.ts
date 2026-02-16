@@ -826,10 +826,18 @@ export const sendSharedPostToDm = async (
   data: SendSharedPostToDmRequest
 ): Promise<SendSharedPostToDmResponse> => {
   try {
+    const client = apiService.getClient();
+    const baseURL = client.defaults.baseURL;
+    const fullURL = `${baseURL}/inbox/share-post`;
+
     if (__DEV__) {
-      console.log('[sendSharedPostToDm] 📤 Request:', {
-        url: '/inbox/share-post',
+      console.log('[sendSharedPostToDm] 📤 Request Details:', {
+        baseURL,
+        endpoint: '/inbox/share-post',
+        fullURL,
         method: 'POST',
+        headers: client.defaults.headers,
+        timeout: client.defaults.timeout,
         body: {
           threadId: data.threadId,
           recipientUserId: data.recipientUserId,
@@ -839,24 +847,45 @@ export const sendSharedPostToDm = async (
         },
       });
     }
-    const response = await apiService.getClient().post<SendSharedPostToDmResponse>(
+
+    const response = await client.post<SendSharedPostToDmResponse>(
       '/inbox/share-post',
       data
     );
+
     if (__DEV__) {
       console.log('[sendSharedPostToDm] ✅ Response:', {
         status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
         data: response.data,
       });
     }
     return response.data;
   } catch (error: any) {
     if (__DEV__) {
-      console.error('[sendSharedPostToDm] ❌ Error:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        responseData: error.response?.data,
+      console.error('[sendSharedPostToDm] ❌ Detailed Error:', {
         message: error.message,
+        config: {
+          baseURL: error.config?.baseURL,
+          url: error.config?.url,
+          method: error.config?.method,
+          fullURL: error.config?.baseURL + error.config?.url,
+          headers: error.config?.headers,
+          timeout: error.config?.timeout,
+        },
+        request: {
+          url: error.request?._url || error.request?.responseURL,
+          method: error.request?._method,
+        },
+        response: {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          headers: error.response?.headers,
+          data: error.response?.data,
+        },
+        isAxiosError: error.isAxiosError,
+        code: error.code,
       });
     }
     throw error;

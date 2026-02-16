@@ -123,12 +123,33 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
       closeBottomSheet();
       onShareSuccess?.();
     } catch (err: any) {
-      console.error('[ShareToTrustedBottomSheet] Share error:', {
+      console.error('[ShareToTrustedBottomSheet] ❌ Share Error Details:', {
         message: err?.message,
-        status: err?.response?.status,
-        responseData: err?.response?.data,
+        isAxiosError: err?.isAxiosError,
+        code: err?.code,
+        config: {
+          baseURL: err?.config?.baseURL,
+          url: err?.config?.url,
+          method: err?.config?.method,
+          fullURL: err?.config?.baseURL ? `${err?.config?.baseURL}${err?.config?.url}` : undefined,
+          headers: err?.config?.headers,
+          data: err?.config?.data,
+        },
+        request: {
+          url: err?.request?._url || err?.request?.responseURL,
+          method: err?.request?._method,
+        },
+        response: {
+          status: err?.response?.status,
+          statusText: err?.response?.statusText,
+          headers: err?.response?.headers,
+          data: typeof err?.response?.data === 'string'
+            ? err?.response?.data.substring(0, 500)
+            : err?.response?.data,
+        },
         postId,
         recipientCount: recipients.length,
+        recipients: recipients.map(id => id.substring(0, 10)),
       });
     } finally {
       setIsSending(false);
