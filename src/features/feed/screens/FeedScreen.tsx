@@ -1124,26 +1124,6 @@ const FeedScreenInner = React.memo(() => {
           )}
         </View>
 
-        {/* FEATURE: Filter Panel Overlay - panel açıkken dışarıya tıklayınca kapat */}
-        {isFilterPanelOpen && (
-          <Pressable
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              zIndex: 10,
-            }}
-            onPress={() => {
-              if (closePanelRef.current) {
-                closePanelRef.current();
-              }
-            }}
-          />
-        )}
-
         {/* Search Modal */}
         <SearchModal
           visible={isSearchVisible}
