@@ -137,9 +137,16 @@ const FeedScreenInner = React.memo(() => {
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
 
-  // FEATURE: Filter panel overlay - panel açıkken dışarıya tıklayınca kapat
+  // FEATURE: Filter panel state - panel açıkken dışarıya tıklama için
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const closePanelRef = useRef<(() => void) | null>(null);
+
+  // Handle click outside filter panel to close it
+  const handleOverlayPress = useCallback(() => {
+    if (closePanelRef.current) {
+      closePanelRef.current();
+    }
+  }, []);
 
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -1034,7 +1041,23 @@ const FeedScreenInner = React.memo(() => {
             }}
           />
         </View>
-        <View style={{ flex: 1, minHeight: 0 }}>
+        <View style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+          {/* Overlay for closing filter panel - only covers feed area */}
+          {isFilterPanelOpen && (
+            <Pressable
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 5,
+                backgroundColor: 'transparent',
+              }}
+              onPress={handleOverlayPress}
+            />
+          )}
+
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
           ) : error ? (
