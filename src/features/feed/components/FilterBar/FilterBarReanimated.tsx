@@ -573,14 +573,14 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
               </RNText>
             </VStack>
           ) : (
-            <VStack px={12} py="$2.5" width="100%" style={{ paddingBottom: 0 }}>
+            <VStack px={12} py="$2" width="100%" style={{ paddingBottom: 0 }}>
               {/* Tek satır yatay scrollable liste */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingRight: 12 }}
               >
-                <HStack space="sm" alignItems="center">
+                <HStack space="xs" alignItems="center">
                   {options.map((option) => {
                     const selected = isSelected(option.value);
                     return (
@@ -589,31 +589,31 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                           bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
                           borderWidth={selected ? 1 : 0}
                           borderColor={selected ? '#829905' : 'transparent'}
-                          borderRadius={8}
-                          px="$2.5"
-                          py="$1.5"
-                          minHeight={36}
+                          borderRadius={7}
+                          px="$2"
+                          py="$1"
+                          minHeight={32}
                         >
-                          <HStack alignItems="center" space="sm">
+                          <HStack alignItems="center" space="xs">
                             <Box
-                              width={20}
-                              height={20}
-                              borderWidth={2}
+                              width={18}
+                              height={18}
+                              borderWidth={1.5}
                               borderColor={selected ? '#829905' : isDark ? '#444444' : '#CCCCCC'}
-                              borderRadius={5}
+                              borderRadius={4}
                               bg={selected ? '#829905' : 'transparent'}
                               justifyContent="center"
                               alignItems="center"
                               flexShrink={0}
                             >
-                              {selected && <CheckIconSolid width={12} height={12} color="#FFFFFF" />}
+                              {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                             </Box>
                             <RNText
                               style={{
                                 color: isDark ? '#FFFFFF' : '#000000',
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: selected ? '600' : '500',
-                                lineHeight: 18,
+                                lineHeight: 16,
                               }}
                               numberOfLines={1}
                             >
@@ -630,22 +630,22 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           )}
 
           {/* Clear ve Apply butonları */}
-          <Box px={12} pt="$2" pb="$3" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 8, paddingBottom: 12 }}>
-            <HStack space="sm" justifyContent="space-between" width="100%">
+          <Box px={12} pt="$1.5" pb="$2.5" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 6, paddingBottom: 10 }}>
+            <HStack space="xs" justifyContent="space-between" width="100%">
               <Pressable onPress={handleClear} flex={1}>
                 <Box
-                  py="$2"
+                  py="$1.5"
                   bg="transparent"
-                  borderWidth={1.5}
+                  borderWidth={1}
                   borderColor={isDark ? '#444444' : '#E9E9E9'}
-                  borderRadius={8}
+                  borderRadius={7}
                   alignItems="center"
                   justifyContent="center"
-                  minHeight={40}
+                  minHeight={36}
                 >
                   <RNText
                     style={{
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: '600',
                       color: isDark ? '#FFFFFF' : '#666666',
                     }}
@@ -656,16 +656,16 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
               </Pressable>
               <Pressable onPress={handleApply} flex={1}>
                 <Box
-                  py="$2"
+                  py="$1.5"
                   bg="#829905"
-                  borderRadius={8}
+                  borderRadius={7}
                   alignItems="center"
                   justifyContent="center"
-                  minHeight={40}
+                  minHeight={36}
                 >
                   <RNText
                     style={{
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: '700',
                       color: '#FFFFFF',
                     }}
@@ -704,43 +704,43 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
             </RNText>
           </VStack>
         ) : (
-          <VStack px={12} py="$2.5" space="sm" width="100%">
+          <VStack px={12} py="$2" space="xs" width="100%">
             {displayRows.map((row, rowIndex) => (
-              <HStack key={rowIndex} space="sm" justifyContent="space-between" width="100%">
+              <HStack key={rowIndex} space="xs" justifyContent="space-between" width="100%">
                 {row.map((option) => {
                   const selected = isSelected(option.value);
                   return (
-                    <Pressable key={option.value} onPress={() => onSelect(option.value)} flex={1} style={{ minHeight: 38 }}>
+                    <Pressable key={option.value} onPress={() => onSelect(option.value)} flex={1} style={{ minHeight: 34 }}>
                       <Box
                         flex={1}
                         bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
                         borderWidth={selected ? 1 : 0}
                         borderColor={selected ? '#829905' : 'transparent'}
-                        borderRadius={8}
+                        borderRadius={7}
                         px="$1.5"
-                        py="$1"
+                        py="$0.5"
                       >
                         <HStack alignItems="center" space="xs" flex={1} justifyContent="flex-start">
                           <Box
-                            width={20}
-                            height={20}
-                            borderWidth={2}
+                            width={18}
+                            height={18}
+                            borderWidth={1.5}
                             borderColor={selected ? '#829905' : isDark ? '#444444' : '#CCCCCC'}
-                            borderRadius={5}
+                            borderRadius={4}
                             bg={selected ? '#829905' : 'transparent'}
                             justifyContent="center"
                             alignItems="center"
                             flexShrink={0}
                           >
-                            {selected && <CheckIconSolid width={12} height={12} color="#FFFFFF" />}
+                            {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                           </Box>
                           <Box flex={1} justifyContent="center">
                             <RNText
                               style={{
                                 color: isDark ? '#FFFFFF' : '#000000',
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: selected ? '600' : '500',
-                                lineHeight: 18,
+                                lineHeight: 16,
                               }}
                               numberOfLines={2}
                             >
@@ -824,30 +824,30 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           flexDirection="row"
           alignItems="center"
           justifyContent="space-between"
-          gap={6}
-          px="$3.5"
+          gap={5}
+          px="$3"
 
           bg={isActive ? '#E2FF46' : '#FDFDFD'}
           borderWidth={1}
           borderColor={isActive ? '#E2FF46' : '#E9E9E9'}
-          borderRadius={12}
-          height={30}
+          borderRadius={10}
+          height={26}
         >
           <HStack alignItems="center" space="xs">
-            <Text color={isActive ? '#000000' : '#000000'} fontSize="$sm" fontWeight="$semibold">
+            <Text color={isActive ? '#000000' : '#000000'} fontSize="$xs" fontWeight="$semibold">
               {label}
             </Text>
             {count > 0 && (
               <Box
                 bg={isActive ? '#000000' : '#E2FF46'}
-                borderRadius={10}
-                px={7}
-                minWidth={20}
-                height={20}
+                borderRadius={9}
+                px={6}
+                minWidth={18}
+                height={18}
                 alignItems="center"
                 justifyContent="center"
               >
-                <Text color={isActive ? '#FFFFFF' : '#000000'} fontSize="$sm" fontWeight="$semibold">
+                <Text color={isActive ? '#FFFFFF' : '#000000'} fontSize="$xs" fontWeight="$semibold">
                   {count}
                 </Text>
               </Box>
@@ -855,13 +855,13 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           </HStack>
           {arrowStyle ? (
             <Animated.View style={arrowStyle}>
-              <Box width={14} height={14} alignItems="center" justifyContent="center">
-                <ChevronDownIcon width={10} height={10} color={isActive ? '#000000' : '#000000'} />
+              <Box width={12} height={12} alignItems="center" justifyContent="center">
+                <ChevronDownIcon width={9} height={9} color={isActive ? '#000000' : '#000000'} />
               </Box>
             </Animated.View>
           ) : (
-            <Box width={14} height={14} alignItems="center" justifyContent="center">
-              <ChevronDownIcon width={10} height={10} color={isActive ? '#000000' : '#000000'} />
+            <Box width={12} height={12} alignItems="center" justifyContent="center">
+              <ChevronDownIcon width={9} height={9} color={isActive ? '#000000' : '#000000'} />
             </Box>
           )}
         </Box>
