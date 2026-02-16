@@ -142,7 +142,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
 
     // Tags için 2 satır grid (3 sütun)
     if (filterId === 'tag') {
-      const rowHeight = 34; // minHeight of each option (updated to 34)
+      const rowHeight = 44; // minHeight increased for potential 2-line text wrapping
       const rowSpacing = 4; // space="xs" between rows (VStack space="xs")
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
       const buttonTopPadding = 6; // pt="$1.5" = 6px
@@ -158,7 +158,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
 
     // Interest için dinamik yükseklik (grid, 3 sütun)
     const rows = Math.ceil(optionsCount / 3);
-    const rowHeight = 34; // minHeight of each option (updated to 34)
+    const rowHeight = 44; // minHeight increased for potential 2-line text wrapping
     const rowSpacing = 4; // space="xs" between rows
     const topMargin = 16; // mt="$4"
     const topPadding = 8; // py="$2"
@@ -597,7 +597,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                           py="$1"
                           minHeight={32}
                         >
-                          <HStack alignItems="center" space="xs">
+                          <HStack alignItems="flex-start" space="xs">
                             <Box
                               width={18}
                               height={18}
@@ -608,20 +608,22 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                               justifyContent="center"
                               alignItems="center"
                               flexShrink={0}
+                              mt={-1}
                             >
                               {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                             </Box>
-                            <RNText
-                              style={{
-                                color: isDark ? '#FFFFFF' : '#000000',
-                                fontSize: 12,
-                                fontWeight: selected ? '600' : '500',
-                                lineHeight: 16,
-                              }}
-                              numberOfLines={1}
-                            >
-                              {option.label}
-                            </RNText>
+                            <Box flex={1}>
+                              <RNText
+                                style={{
+                                  color: isDark ? '#FFFFFF' : '#000000',
+                                  fontSize: 12,
+                                  fontWeight: selected ? '600' : '500',
+                                  lineHeight: 16,
+                                }}
+                              >
+                                {option.label}
+                              </RNText>
+                            </Box>
                           </HStack>
                         </Box>
                       </Pressable>
@@ -721,9 +723,9 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                         borderColor={selected ? '#829905' : 'transparent'}
                         borderRadius={7}
                         px="$1.5"
-                        py="$0.5"
+                        py="$1"
                       >
-                        <HStack alignItems="center" space="xs" flex={1} justifyContent="flex-start">
+                        <HStack alignItems="flex-start" space="xs" flex={1}>
                           <Box
                             width={18}
                             height={18}
@@ -734,10 +736,11 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                             justifyContent="center"
                             alignItems="center"
                             flexShrink={0}
+                            mt={-1}
                           >
                             {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                           </Box>
-                          <Box flex={1} justifyContent="center">
+                          <Box flex={1}>
                             <RNText
                               style={{
                                 color: isDark ? '#FFFFFF' : '#000000',
@@ -745,7 +748,6 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                                 fontWeight: selected ? '600' : '500',
                                 lineHeight: 16,
                               }}
-                              numberOfLines={2}
                             >
                               {option.label}
                             </RNText>
