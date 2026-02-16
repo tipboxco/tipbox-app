@@ -128,43 +128,46 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   const calculatePanelHeight = useCallback((optionsCount: number, filterId: string) => {
     // Category ve Sort için tek satır yatay scrollable liste
     if (filterId === 'category' || filterId === 'sort') {
-      const rowHeight = 28; // minHeight of each option
+      const rowHeight = 32; // minHeight of each option (updated to 32)
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const buttonTopPadding = 4; // pt="$1" = 4px
-      const buttonBottomPadding = 8; // pb="$2" = 8px
-      const buttonHeight = 32; // button minHeight
-      
-      // Total height = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding
-      const totalHeight = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding;
+      const buttonTopPadding = 6; // pt="$1.5" = 6px
+      const buttonBottomPadding = 10; // pb="$2.5" = 10px
+      const buttonHeight = 36; // button minHeight (updated to 36)
+      const extraBottomPadding = 8; // Extra padding at the very bottom
+
+      // Total height = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding
+      const totalHeight = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding;
       return totalHeight;
     }
-    
+
     // Tags için 2 satır grid (3 sütun)
     if (filterId === 'tag') {
-      const rowHeight = 28; // minHeight of each option
+      const rowHeight = 34; // minHeight of each option (updated to 34)
       const rowSpacing = 4; // space="xs" between rows (VStack space="xs")
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const buttonTopPadding = 4; // pt="$1" = 4px
-      const buttonBottomPadding = 8; // pb="$2" = 8px
-      const buttonHeight = 32; // button minHeight
+      const buttonTopPadding = 6; // pt="$1.5" = 6px
+      const buttonBottomPadding = 10; // pb="$2.5" = 10px
+      const buttonHeight = 36; // button minHeight (updated to 36)
       const rows = 2; // Tags için sabit 2 satır (6 seçenek = 2 satır x 3 sütun)
-      
-      // Total height = topPadding + (2 rows * rowHeight) + (1 spacing) + buttonTopPadding + buttonHeight + buttonBottomPadding
-      const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + buttonTopPadding + buttonHeight + buttonBottomPadding;
+      const extraBottomPadding = 8; // Extra padding at the very bottom
+
+      // Total height = topPadding + (2 rows * rowHeight) + (1 spacing) + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding
+      const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding;
       return totalHeight;
     }
-    
+
     // Interest için dinamik yükseklik (grid, 3 sütun)
     const rows = Math.ceil(optionsCount / 3);
-    const rowHeight = 28; // minHeight of each option
+    const rowHeight = 34; // minHeight of each option (updated to 34)
     const rowSpacing = 4; // space="xs" between rows
     const topMargin = 16; // mt="$4"
     const topPadding = 8; // py="$2"
     const bottomPadding = 8; // py="$2"
-    const buttonArea = 44; // pt="$1" + pb="$2" + button height (32px)
-    
-    // Total height = margin + padding + (rows * rowHeight) + (spacing between rows) + padding + button area
-    const totalHeight = topMargin + topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonArea;
+    const buttonArea = 52; // pt="$1.5" (6px) + pb="$2.5" (10px) + button height (36px)
+    const extraBottomPadding = 8; // Extra padding at the very bottom
+
+    // Total height = margin + padding + (rows * rowHeight) + (spacing between rows) + padding + button area + extraBottomPadding
+    const totalHeight = topMargin + topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonArea + extraBottomPadding;
     return totalHeight;
   }, []);
 
