@@ -598,7 +598,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                           minHeight={32}
                           maxWidth={140}
                         >
-                          <HStack alignItems="flex-start" space="xs">
+                          <HStack alignItems="center" space="xs">
                             <Box
                               width={18}
                               height={18}
@@ -609,7 +609,6 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                               justifyContent="center"
                               alignItems="center"
                               flexShrink={0}
-                              mt={-1}
                             >
                               {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                             </Box>
@@ -637,7 +636,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           )}
 
           {/* Clear ve Apply butonları */}
-          <Box px={12} pt="$1.5" pb="$2.5" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 6, paddingBottom: 10 }}>
+          <Box px={12} pt="$1.5" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 6, paddingBottom: 5, marginBottom: 5 }}>
             <HStack space="xs" justifyContent="space-between" width="100%">
               <Pressable onPress={handleClear} flex={1}>
                 <Box
@@ -711,7 +710,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
             </RNText>
           </VStack>
         ) : (
-          <VStack px={12} py="$2" space="xs" width="100%">
+          <VStack px={12} py="$2" space="$0.5" width="100%">
             {displayRows.map((row, rowIndex) => (
               <HStack key={rowIndex} space="xs" justifyContent="space-between" width="100%">
                 {row.map((option) => {
@@ -727,7 +726,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                         px="$1.5"
                         py="$1"
                       >
-                        <HStack alignItems="flex-start" space="xs" flex={1}>
+                        <HStack alignItems="center" space="xs" flex={1}>
                           <Box
                             width={18}
                             height={18}
@@ -738,7 +737,6 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                             justifyContent="center"
                             alignItems="center"
                             flexShrink={0}
-                            mt={-1}
                           >
                             {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                           </Box>
@@ -766,7 +764,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           </VStack>
         )}
 
-        <Box px={12} pt="$1" pb="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 8 }}>
+        <Box px={12} pt="$1" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 5, marginBottom: 5 }}>
           <HStack space="xs" justifyContent="space-between" width="100%">
             <Pressable onPress={handleClear} flex={1}>
               <Box
