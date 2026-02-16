@@ -636,7 +636,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           )}
 
           {/* Clear ve Apply butonları */}
-          <Box px={12} pt="$1.5" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 6, paddingBottom: 5, marginBottom: 5 }}>
+          <Box px={12} pt="$1.5" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 6, paddingBottom: 2 }}>
             <HStack space="xs" justifyContent="space-between" width="100%">
               <Pressable onPress={handleClear} flex={1}>
                 <Box
@@ -764,7 +764,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           </VStack>
         )}
 
-        <Box px={12} pt="$1" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 5, marginBottom: 5 }}>
+        <Box px={12} pt="$1" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 2 }}>
           <HStack space="xs" justifyContent="space-between" width="100%">
             <Pressable onPress={handleClear} flex={1}>
               <Box
