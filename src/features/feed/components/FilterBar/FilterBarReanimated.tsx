@@ -596,6 +596,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                           px="$2"
                           py="$1"
                           minHeight={32}
+                          maxWidth={140}
                         >
                           <HStack alignItems="flex-start" space="xs">
                             <Box
@@ -612,13 +613,14 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                             >
                               {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                             </Box>
-                            <Box flex={1}>
+                            <Box flexShrink={1} style={{ maxWidth: 110 }}>
                               <RNText
                                 style={{
                                   color: isDark ? '#FFFFFF' : '#000000',
                                   fontSize: 12,
                                   fontWeight: selected ? '600' : '500',
                                   lineHeight: 16,
+                                  flexWrap: 'wrap',
                                 }}
                               >
                                 {option.label}
@@ -715,7 +717,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                 {row.map((option) => {
                   const selected = isSelected(option.value);
                   return (
-                    <Pressable key={option.value} onPress={() => onSelect(option.value)} flex={1} style={{ minHeight: 34 }}>
+                    <Pressable key={option.value} onPress={() => onSelect(option.value)} flex={1} style={{ minHeight: 44 }}>
                       <Box
                         flex={1}
                         bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
@@ -740,13 +742,14 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                           >
                             {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                           </Box>
-                          <Box flex={1}>
+                          <Box flex={1} flexShrink={1}>
                             <RNText
                               style={{
                                 color: isDark ? '#FFFFFF' : '#000000',
                                 fontSize: 12,
                                 fontWeight: selected ? '600' : '500',
                                 lineHeight: 16,
+                                flexWrap: 'wrap',
                               }}
                             >
                               {option.label}
