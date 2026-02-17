@@ -40,7 +40,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: WINDOW_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.5; // 50% - fixed height
 const SWIPE_THRESHOLD = 100; // Minimum swipe distance to close
 
@@ -608,8 +608,8 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
 
   const overlayAnimatedStyle = useAnimatedStyle(() => {
     'worklet';
-    // FIX: Opacity increased to 0.6 - darker background
-    const opacity = interpolate(progress.value, [0, 1], [0, 0.6]);
+    // Overlay hafif karartma (post modalları ile aynı: 0.25), bottom bar dahil tüm ekran
+    const opacity = interpolate(progress.value, [0, 1], [0, 0.25]);
     return {
       opacity,
     };
@@ -874,14 +874,20 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     // OPTIMIZATION 5: GestureHandlerRootView kaldırıldı - sadece View kullanıldı
     // Swipe-to-close özelliği kaldırıldı, overlay click ile kapatma yeterli
     // 50-100ms GestureHandler initialization kazancı
-    // FIX: Z-index 9999 - Bottom tab bar'ın önüne geçmesi için
+    // FIX: Tam ekran (bottom bar dahil) - position + window dimensions
     // PERFORMANCE: pointerEvents ile touch olaylarını kontrol et
     <View
-      style={{ flex: 1, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: WINDOW_WIDTH,
+        height: SCREEN_HEIGHT,
+        zIndex: 9999,
+      }}
       pointerEvents={internalVisible ? 'auto' : 'none'}
     >
-      {/* Overlay Background - like FilterBarReanimated */}
-      {/* FIX: Overlay opacity increased to 0.6 - darker background */}
+      {/* Overlay Background - bottom bar dahil tüm ekran, hafif karartma (0.25) */}
       <Animated.View
         style={[
           {
@@ -890,7 +896,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backgroundColor: 'rgba(0, 0, 0, 0.25)',
           },
           overlayAnimatedStyle,
         ]}
