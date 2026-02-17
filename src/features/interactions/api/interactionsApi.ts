@@ -117,22 +117,27 @@ export const createComment = async (
   return response.data;
 };
 
+/** Comment sort options - backend ile uyumlu */
+export type CommentSortBy = 'newest' | 'oldest' | 'popular';
+
 /**
  * Get Comments endpoint function
  * Post'un yorumlarını getirir
  *
  * @param postId - Yorumları getirilecek post'un ID'si
  * @param limit - Sayfa başına kayıt sayısı (default: 50, max: 100)
+ * @param sortBy - Sıralama: newest | oldest | popular (default: newest)
  * @returns ApiResponse<CommentsResponse>
  */
 export const getComments = async (
   postId: string,
-  limit: number = 50
+  limit: number = 50,
+  sortBy: CommentSortBy = 'newest'
 ): Promise<ApiResponse<CommentsResponse>> => {
   const client = apiService.getClient();
   const params = new URLSearchParams();
   params.append('limit', limit.toString());
-  
+  params.append('sortBy', sortBy);
   const response = await client.get<ApiResponse<CommentsResponse>>(
     `/interactions/posts/${postId}/comments?${params.toString()}`
   );

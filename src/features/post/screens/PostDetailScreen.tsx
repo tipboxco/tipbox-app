@@ -279,8 +279,18 @@ export const PostDetailScreen = () => {
       };
     }, [finalType, finalPostData, finalUpdateRelatedPostData]);
 
-    // Fetch comments
-    const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
+    // Yorum sıralaması: UI (Newest/Oldest/Popular) -> API (newest/oldest/popular)
+    const commentSortBy = useMemo(() => {
+      const map: Record<string, 'newest' | 'oldest' | 'popular'> = {
+        Newest: 'newest',
+        Oldest: 'oldest',
+        Popular: 'popular',
+      };
+      return map[selectedOption] ?? 'newest';
+    }, [selectedOption]);
+
+    // Fetch comments (sortBy API'ye gönderilir)
+    const { data: commentsData, isLoading: isLoadingComments } = useComments(postId, 50, commentSortBy);
     const createCommentMutation = useCreateComment();
     const deleteCommentMutation = useDeleteComment();
     const likeCommentMutation = useLikeComment();
@@ -384,7 +394,6 @@ export const PostDetailScreen = () => {
                             onPress={() => {
                                 setSelectedOption(option.value);
                                 closeBottomSheet();
-                                // TODO: Implement actual sorting logic
                             }}
                             py="$3"
                             px="$2"

@@ -33,10 +33,15 @@ import type { ProfileFeedItem } from '@/src/features/profile/types';
 /**
  * Query Keys - Interactions feature için cache key pattern'leri
  */
+export type CommentSortBy = 'newest' | 'oldest' | 'popular';
+
 export const interactionKeys = {
   all: ['interactions'] as const,
   postStatus: (postId: string) => [...interactionKeys.all, 'status', postId] as const,
-  comments: (postId: string) => [...interactionKeys.all, 'comments', postId] as const,
+  comments: (postId: string, sortBy: CommentSortBy = 'newest') =>
+    [...interactionKeys.all, 'comments', postId, sortBy] as const,
+  /** Tüm sort varyantlarını invalidate/cancel için prefix */
+  commentsPrefix: (postId: string) => [...interactionKeys.all, 'comments', postId] as const,
   bookmarks: () => [...interactionKeys.all, 'bookmarks'] as const,
 };
 
@@ -158,13 +163,18 @@ export const usePostStatus = (postId: string) => {
  *
  * @param postId - Post ID'si
  * @param limit - Sayfa başına kayıt sayısı (default: 50)
+ * @param sortBy - Sıralama: newest | oldest | popular (default: newest)
  * @returns React Query hook result
  */
-export const useComments = (postId: string, limit: number = 50) => {
+export const useComments = (
+  postId: string,
+  limit: number = 50,
+  sortBy: CommentSortBy = 'newest'
+) => {
   return useQuery<CommentsResponse, Error>({
-    queryKey: interactionKeys.comments(postId),
+    queryKey: interactionKeys.comments(postId, sortBy),
     queryFn: async () => {
-      const response = await getComments(postId, limit);
+      const response = await getComments(postId, limit, sortBy);
       return response.data!;
     },
     enabled: !!postId,
@@ -784,11 +794,11 @@ export const useCreateComment = () => {
   >({
     mutationFn: ({ postId, comment, parentId }) => createComment(postId, comment, parentId),
     onMutate: async ({ postId }) => {
-      await queryClient.cancelQueries({ queryKey: interactionKeys.comments(postId) });
+      await queryClient.cancelQueries({ queryKey: interactionKeys.commentsPrefix(postId) });
       await queryClient.cancelQueries({ queryKey: feedKeys.all });
 
       const previousComments = queryClient.getQueryData<CommentsResponse>(
-        interactionKeys.comments(postId)
+        interactionKeys.commentsPrefix(postId)
       );
 
       // Feed'deki comment sayısını artır
@@ -877,19 +887,14 @@ export const useCreateComment = () => {
 
       return { previousComments };
     },
-    onError: (err, variables, context) => {
-      if (context?.previousComments) {
-        queryClient.setQueryData(
-          interactionKeys.comments(variables.postId),
-          context.previousComments
-        );
-      }
-      // Error logging
+    onError: (err, variables) => {
+      // SortBy ile cache key değiştiği için rollback yerine refetch
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
       console.error('[useCreateComment] Error:', err);
     },
     onSuccess: (data, variables) => {
       // Comments'i invalidate et (yeni yorum eklendi)
-      queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
       // Feed'i invalidate etme - optimistic update zaten comment sayısını artırdı
     },
   });
@@ -912,27 +917,21 @@ export const useUpdateComment = () => {
   >({
     mutationFn: ({ commentId, comment }) => updateComment(commentId, comment),
     onMutate: async ({ postId }) => {
-      await queryClient.cancelQueries({ queryKey: interactionKeys.comments(postId) });
+      await queryClient.cancelQueries({ queryKey: interactionKeys.commentsPrefix(postId) });
 
       const previousComments = queryClient.getQueryData<CommentsResponse>(
-        interactionKeys.comments(postId)
+        interactionKeys.commentsPrefix(postId)
       );
 
       return { previousComments };
     },
-    onError: (err, variables, context) => {
-      if (context?.previousComments) {
-        queryClient.setQueryData(
-          interactionKeys.comments(variables.postId),
-          context.previousComments
-        );
-      }
-      // Error logging
+    onError: (err, variables) => {
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
       console.error('[useUpdateComment] Error:', err);
     },
     onSuccess: (data, variables) => {
       // Comments'i invalidate et (yorum güncellendi)
-      queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
     },
   });
 };
@@ -949,11 +948,11 @@ export const useDeleteComment = () => {
   return useMutation<ApiResponse<void>, Error, { commentId: string; postId: string }, { previousComments?: CommentsResponse }>({
     mutationFn: ({ commentId }) => deleteComment(commentId),
     onMutate: async ({ postId }) => {
-      await queryClient.cancelQueries({ queryKey: interactionKeys.comments(postId) });
+      await queryClient.cancelQueries({ queryKey: interactionKeys.commentsPrefix(postId) });
       await queryClient.cancelQueries({ queryKey: feedKeys.all });
 
       const previousComments = queryClient.getQueryData<CommentsResponse>(
-        interactionKeys.comments(postId)
+        interactionKeys.commentsPrefix(postId)
       );
 
       // Feed'deki comment sayısını azalt
@@ -970,19 +969,13 @@ export const useDeleteComment = () => {
 
       return { previousComments };
     },
-    onError: (err, variables, context) => {
-      if (context?.previousComments) {
-        queryClient.setQueryData(
-          interactionKeys.comments(variables.postId),
-          context.previousComments
-        );
-      }
-      // Error logging
+    onError: (err, variables) => {
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
       console.error('[useDeleteComment] Error:', err);
     },
     onSuccess: (data, variables) => {
       // Comments'i invalidate et (yorum silindi)
-      queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
       // Feed'i invalidate etme - optimistic update zaten comment sayısını azalttı
     },
   });
@@ -1001,7 +994,7 @@ export const useLikeComment = () => {
     mutationFn: ({ commentId }) => likeComment(commentId),
     onSuccess: (data, variables) => {
       // Invalidate comments query to get updated like status from backend
-      queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
     },
     onError: (err) => {
       console.error('[useLikeComment] Error:', err);
@@ -1022,7 +1015,7 @@ export const useUnlikeComment = () => {
     mutationFn: ({ commentId }) => unlikeComment(commentId),
     onSuccess: (data, variables) => {
       // Invalidate comments query to get updated like status from backend
-      queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
     },
     onError: (err) => {
       console.error('[useUnlikeComment] Error:', err);
