@@ -541,9 +541,9 @@ export const PostDetailScreen = () => {
 
     // FlatList için data hazırla
     const listData = flattenedComments;
-    
-    // Post detail header component - useMemo ile memoize edildi (keyboardHeight değişikliğinde re-render olmaz)
-    const renderHeader = useMemo(() => (
+
+    // Post kartı ve Comments başlığı FlatList DIŞINDA render edilir; böylece Update post detayda like/comment/share dokunmaları scroll ile çakışmaz.
+    const postCardAndCommentsHeader = useMemo(() => (
         <>
             {/* Detail Card */}
             {isLoadingPost && (!postData || !isPostDataComplete) ? (
@@ -623,7 +623,7 @@ export const PostDetailScreen = () => {
                 </Pressable>
             </HStack>
         </>
-    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, updateRelatedAsExperienceCardData, isDark, selectedOption, handleSortPress]);
+    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, isDark, selectedOption, handleSortPress]);
 
     // FlatList render item - useCallback ile memoize edildi
     const renderCommentItem = useCallback(({ item }: { item: typeof flattenedComments[0] }) => (
@@ -711,12 +711,18 @@ export const PostDetailScreen = () => {
                 onBackPress={() => navigation.goBack()}
             />
 
-            {/* FlatList for Comments */}
+            {/* Post card + Comments header: FlatList DIŞINDA, böylece like/comment/share dokunmaları çalışır */}
+            <View style={styles.postCardSection}>
+                {postCardAndCommentsHeader}
+            </View>
+
+            {/* FlatList sadece yorum listesi */}
             <FlatList
+                style={styles.commentsList}
                 data={listData}
                 renderItem={renderCommentItem}
                 keyExtractor={keyExtractor}
-                ListHeaderComponent={renderHeader}
+                ListHeaderComponent={null}
                 ListEmptyComponent={renderEmpty}
                 contentContainerStyle={contentContainerStyle}
                 keyboardShouldPersistTaps="handled"
@@ -795,3 +801,12 @@ export const PostDetailScreen = () => {
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    postCardSection: {
+        flex: 0,
+    },
+    commentsList: {
+        flex: 1,
+    },
+});

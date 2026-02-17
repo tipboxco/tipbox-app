@@ -240,7 +240,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         animationType="fade"
         onRequestClose={() => setIsMenuOpen(false)}
       >
-        <RNPressable style={StyleSheet.absoluteFill} onPress={() => setIsMenuOpen(false)} />
+        <RNPressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.25)' }]} onPress={() => setIsMenuOpen(false)} />
         <View
           style={[
             detailStyles.menuContainer,
@@ -248,6 +248,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               top: menuPosition.top,
               left: menuPosition.left,
               backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              zIndex: 1,
+              elevation: 10,
             },
           ]}
         >

@@ -39,8 +39,6 @@ import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { ProductInfoType } from '@/src/types/common';
 import * as Linking from 'expo-linking';
-import { useSearchHistoryStore } from '../store/searchHistoryStore';
-
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 // Banner Carousel Component (CardImageCarousel style)
@@ -306,11 +304,7 @@ const ExploreScreen: React.FC = () => {
   const [tabsHeight, setTabsHeight] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [showSearchHistory, setShowSearchHistory] = useState(false);
 
-  // Search History Store
-  const { history: searchHistory, addSearchQuery, removeSearchQuery, clearHistory } = useSearchHistoryStore();
-  
   // PERFORMANCE FIX: Background colors - direkt hesapla (useMemo overhead'i yok)
   const backgroundColor = isDark ? '$backgroundDark950' : '#FFFFFF';
   const tabHeaderBgColor = isDark ? '#000' : '#FFF';
@@ -328,31 +322,6 @@ const ExploreScreen: React.FC = () => {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  // Handle search query submission
-  const handleSearchSubmit = useCallback((query: string) => {
-    const trimmedQuery = query.trim();
-    if (trimmedQuery) {
-      addSearchQuery(trimmedQuery);
-      setShowSearchHistory(false);
-    }
-  }, [addSearchQuery]);
-
-  // Handle search bar focus
-  const handleSearchFocus = useCallback(() => {
-    setShowSearchHistory(true);
-  }, []);
-
-  // Handle search history item selection
-  const handleHistoryItemPress = useCallback((query: string) => {
-    setSearchQuery(query);
-    handleSearchSubmit(query);
-  }, [handleSearchSubmit]);
-
-  // Handle clear individual history item
-  const handleRemoveHistoryItem = useCallback((query: string) => {
-    removeSearchQuery(query);
-  }, [removeSearchQuery]);
 
   // Marketplace Banners API hook
   const {
@@ -664,66 +633,10 @@ const ExploreScreen: React.FC = () => {
                   fontSize="$xs"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  onFocus={handleSearchFocus}
-                  onEndEditing={() => {
-                    if (searchQuery.trim()) {
-                      handleSearchSubmit(searchQuery);
-                    }
-                  }}
                 />
               </Input>
             </HStack>
           </VStack>
-
-          {/* Search History Dropdown */}
-          {showSearchHistory && searchHistory.length > 0 && (
-            <VStack
-              bg={isDark ? '#1A1A1A' : '#FAFAFA'}
-              borderBottomWidth={1}
-              borderColor="#E9E9E9"
-              px="$4"
-              py="$2"
-              space="xs"
-            >
-              <Text fontSize="$xs" color={isDark ? '#FFFFFF' : '#000000'} fontWeight="$semibold" px="$2">
-                Recent Searches
-              </Text>
-              {searchHistory.slice(0, 5).map((query, index) => (
-                <HStack
-                  key={`${query}-${index}`}
-                  justifyContent="space-between"
-                  alignItems="center"
-                  px="$2"
-                  py="$2"
-                  bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                  borderRadius={8}
-                >
-                  <Pressable flex={1} onPress={() => handleHistoryItemPress(query)}>
-                    <Text fontSize="$sm" color={isDark ? '#FFFFFF' : '#000000'}>
-                      {query}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => handleRemoveHistoryItem(query)}
-                    p="$1"
-                  >
-                    <Feather name="x" size={16} color={isDark ? '#FFFFFF' : '#666666'} />
-                  </Pressable>
-                </HStack>
-              ))}
-              {searchHistory.length > 5 && (
-                <Pressable
-                  onPress={clearHistory}
-                  py="$2"
-                  px="$2"
-                >
-                  <Text fontSize="$xs" color="#999999">
-                    Clear all searches
-                  </Text>
-                </Pressable>
-              )}
-            </VStack>
-          )}
 
           {/* Category Tabs - Fixed */}
           <VStack

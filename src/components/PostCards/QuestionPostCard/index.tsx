@@ -502,7 +502,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
             onRequestClose={() => setIsMenuOpen(false)}
           >
             <RNPressable
-              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
               onPress={() => setIsMenuOpen(false)}
             />
             <View
@@ -515,6 +515,8 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                   borderWidth: 1,
                   borderColor: isDark ? '#333333' : '#E9E9E9',
                   shadowOpacity: isDark ? 0.3 : 0.1,
+                  zIndex: 1,
+                  elevation: 10,
                 }
               ]}
               onLayout={(event) => {

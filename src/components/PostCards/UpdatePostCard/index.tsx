@@ -808,7 +808,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         onRequestClose={() => setIsMenuOpen(false)}
       >
         <RNPressable
-          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.25)' }]}
           onPress={() => setIsMenuOpen(false)}
         />
         <View
@@ -821,6 +821,8 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               borderWidth: 1,
               borderColor: isDark ? '#333333' : '#E9E9E9',
               shadowOpacity: isDark ? 0.3 : 0.1,
+              zIndex: 1,
+              elevation: 10,
             }
           ]}
         >
