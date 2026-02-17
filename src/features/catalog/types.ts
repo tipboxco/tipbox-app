@@ -28,6 +28,20 @@ export interface BrandListItem {
 }
 
 /**
+ * Unified Brand Card Model - Catalog ve Explore screens'da kullanılan unified brand model
+ * Both catalog BrandCard and explore BrandCard components use this interface
+ */
+export interface BrandCardModel {
+  id: string;
+  name: string;
+  description: string; // Explore'da zorunlu, Catalog'da default empty string
+  followers: string;
+  logo: any;
+  bannerImage?: any;
+  isJoined: boolean;
+}
+
+/**
  * Global Brand Search - Category Item
  * /brands/search endpoint'inden dönen category bazında gruplanmış brand bilgisi
  */

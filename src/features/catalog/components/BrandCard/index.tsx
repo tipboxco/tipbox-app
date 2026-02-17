@@ -1,19 +1,10 @@
 import React from 'react';
 import { Box, Text, Image, Pressable, VStack, HStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-
-export interface BrandCardBrand {
-  id: string;
-  name: string;
-  followers: string;
-  logo: any;
-  bannerImage?: any;
-  isJoined: boolean;
-  description?: string;
-}
+import { BrandCardModel } from '../../types';
 
 interface BrandCardProps {
-  brand: BrandCardBrand;
+  brand: BrandCardModel;
   onPress: () => void;
 }
 
@@ -70,3 +61,6 @@ export const BrandCard: React.FC<BrandCardProps> = ({ brand, onPress }) => {
     </Pressable>
   );
 };
+
+// Backward compatibility export for BrandCardBrand
+export type BrandCardBrand = BrandCardModel;

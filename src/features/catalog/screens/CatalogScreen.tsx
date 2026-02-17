@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useReducer, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Pressable, Image, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
+import { Box, Pressable, Image, HStack, VStack, Input, InputField, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Search } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -74,6 +74,7 @@ const CatalogScreenComponent = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CatalogScreenNavigationProp>();
   const route = useRoute<CatalogScreenRouteProp>();
+  const toast = useToast();
   
   // Catalog Navigation Store - persist edilmiş state
   const {
@@ -164,6 +165,23 @@ const CatalogScreenComponent = () => {
   
   // Create Post Flow Store
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
+
+  // Helper function to show error toast
+  const showErrorToast = useCallback((title: string, message: string) => {
+    toast.show({
+      placement: 'top',
+      render: ({ id }) => {
+        return (
+          <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+              <ToastTitle>{title}</ToastTitle>
+              <ToastDescription>{message}</ToastDescription>
+            </Toast>
+          </Box>
+        );
+      },
+    });
+  }, [toast]);
   
   // Catalog UI Store
   // PERFORMANCE FIX: Use getState() in callbacks instead of subscribing to prevent re-renders
@@ -329,7 +347,7 @@ const CatalogScreenComponent = () => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[CatalogScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId);
-        // TODO: Show error toast/modal to user
+        showErrorToast('Hata', 'Lütfen öncelikle bir kategori, ürün grubu veya ürün seçiniz.');
         return;
       }
       
@@ -401,7 +419,7 @@ const CatalogScreenComponent = () => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[CatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
-        // TODO: Show error toast/modal to user
+        showErrorToast('Hata', 'Lütfen öncelikle bir kategori, ürün grubu veya ürün seçiniz.');
         return;
       }
       
@@ -495,7 +513,7 @@ const CatalogScreenComponent = () => {
         },
       });
     }
-  }, [navigation, selectedProductLocal, closeBottomSheet, setFlowContext, breadcrumbItems]);
+  }, [navigation, selectedProductLocal, closeBottomSheet, setFlowContext, breadcrumbItems, showErrorToast]);
 
   const handleCreatePost = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view

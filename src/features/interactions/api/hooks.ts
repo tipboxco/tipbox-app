@@ -1163,12 +1163,128 @@ export const useSharePost = () => {
 };
 
 export const useSharePostToDm = () => {
+  const queryClient = useQueryClient();
+
   return useMutation<
     { messageId: string; threadId: string },
     Error,
     { postId: string; toUserId: string; message?: string }
   >({
     mutationFn: ({ postId, toUserId, message }) => sharePostToDm(postId, toUserId, message),
+    onSuccess: (data, variables) => {
+      // Sadece backend başarılı olduğunda feed'i güncelle
+      queryClient.setQueriesData<FeedApiResponse>(
+        { queryKey: feedKeys.all },
+        (old) => {
+          if (!old) return old;
+          return updatePostInFeed(old, variables.postId, (post) => ({
+            ...post,
+            stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+            isShared: true,
+          }));
+        }
+      );
+
+      // Infinite query pages için de güncelle
+      queryClient.setQueriesData(
+        { queryKey: feedKeys.all },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
+      // Infinite query pages için güncelle
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.posts() },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.reviews() },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.benchmarks() },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.tips() },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.replies() },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      // Post status'u invalidate et
+      queryClient.invalidateQueries({ queryKey: interactionKeys.postStatus(variables.postId) });
+    },
+    onError: (err, variables) => {
+      // Error logging
+      console.error('[useSharePostToDm] Error:', err);
+    },
   });
 };
 

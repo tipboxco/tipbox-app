@@ -9,9 +9,8 @@ import { BrandCard } from '../components/BrandCard';
 import CategoryCard from '../components/CategoryCard';
 import { Header } from '@/src/components/Header';
 import { useBrandCategories, useBrandsByCategory, useGlobalBrandSearch } from '../api/hooks';
-import type { BrandCategory, BrandListItem } from '../types';
+import type { BrandCategory, BrandListItem, BrandCardModel } from '../types';
 import type { CategoryCardCategory } from '../components/CategoryCard';
-import type { BrandCardBrand } from '../components/BrandCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { toImageSource } from '@/src/utils';
@@ -174,7 +173,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     ]);
   };
 
-  const handleBrandPress = (brand: BrandCardBrand) => {
+  const handleBrandPress = (brand: BrandCardModel) => {
     setBreadcrumbItems((prev) => {
       const categoryItem =
         prev.find((item) => item.type === 'category') ||
@@ -215,10 +214,10 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     };
   };
 
-  const mapBrandListItemToBrandCardBrand = (brand: BrandListItem): BrandCardBrand => {
+  const mapBrandListItemToBrandCardBrand = (brand: BrandListItem): BrandCardModel => {
     // brandId veya id alanını kullan, yoksa categoryId-name kombinasyonu kullan
     const brandId = brand.brandId || brand.id || `${brand.categoryId}-${brand.name}`;
-    
+
     // PERFORMANCE FIX: Remove console.log to prevent performance issues
     // Only log in development if needed for debugging
     if (__DEV__ && false) { // Disabled by default, enable only when debugging
@@ -227,10 +226,11 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         mappedId: brandId,
       });
     }
-    
+
     return {
       id: brandId,
       name: brand.name,
+      description: '', // Empty description for API catalog items (Explore shows descriptions from mock data)
       followers: '',
       logo: toImageSource(brand.image) || require('@/assets/avatar/default-useravatar.png'),
       bannerImage: require('@/assets/events/banner.png'),

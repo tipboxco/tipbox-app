@@ -10,8 +10,6 @@ import {
   HeartIcon,
   ChatBubbleLeftIcon,
   BookmarkIcon,
-  ChevronDoubleUpIcon,
-  PencilIcon,
   TrashIcon,
   UserIcon,
   FlagIcon,
@@ -679,60 +677,59 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       }
 
       {/* Badges */}
-      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-        <Box
-          borderWidth={2}
-          borderColor="#B8CC04"
-          bgColor="#758600"
-          borderRadius={20}
-          width={90}
-          px={10}
-          py={6}
-          mr={16}
-          flexDirection="row"
-          alignItems="center"
-          justifyContent="space-evenly"
-        >
-          <QuestionMarkCircleIcon width={12} height={12} color={'#fff'} />
-          <Text
-            fontSize={8}
-            fontWeight="$semibold"
-            ml={5}
-            color={'#fff'}
-          >
-            Question
-          </Text>
-        </Box>
-
-        {isBoosted && (
+      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs" alignItems="center">
+        <HStack space={8} alignItems="center">
           <Box
             borderWidth={2}
-            borderColor="#EF4D81"
-            bgColor="#E0195B"
+            borderColor="#B8CC04"
+            bgColor="#758600"
             borderRadius={20}
-            width={90}
             px={10}
             py={6}
             flexDirection="row"
             alignItems="center"
-            justifyContent="space-evenly"
+            justifyContent="center"
           >
-            <Image
-              source={require('@/assets/boost.svg')}
-              alt="boost"
-              width={12}
-              height={12}
-            />
+            <QuestionMarkCircleIcon width={12} height={12} color={'#fff'} />
             <Text
               fontSize={8}
               fontWeight="$semibold"
               ml={5}
-              color="#fff"
+              color={'#fff'}
             >
-              Boosted
+              Question
             </Text>
           </Box>
-        )}
+
+          {isBoosted && (
+            <Box
+              borderWidth={2}
+              borderColor="#EF4D81"
+              bgColor="#E0195B"
+              borderRadius={20}
+              px={10}
+              py={6}
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Image
+                source={require('@/assets/boost.svg')}
+                alt="boost"
+                width={12}
+                height={12}
+              />
+              <Text
+                fontSize={8}
+                fontWeight="$semibold"
+                ml={5}
+                color="#fff"
+              >
+                Boosted
+              </Text>
+            </Box>
+          )}
+        </HStack>
       </HStack>
 
       {/* Boost Switch - Sadece post owner'a göster */}
@@ -889,15 +886,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           </HStack>
           </Pressable>
         </HStack>
-        {data.isBoosted && (
-          <Box>
-            <ChevronDoubleUpIcon
-              width={24}
-              height={24}
-              color="#22C55E"
-            />
-          </Box>
-        )}
       </HStack>
 
     </View>
