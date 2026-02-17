@@ -201,6 +201,7 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
   // DEBUG: React Query response'unu log'la
   if (__DEV__) {
     useEffect(() => {
+      // Log summary only; avoid nesting objects so console doesn't show "[Object]"
       console.log('[useCatalogSubCategories] 🔍 React Query State:', {
         categoryId,
         limit,
@@ -212,7 +213,6 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
         hasData: !!query.data,
         dataType: typeof query.data,
         itemsCount: query.data?.items?.length || 0,
-        data: query.data,
       });
       
       if (query.data) {

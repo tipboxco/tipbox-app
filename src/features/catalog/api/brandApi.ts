@@ -482,6 +482,10 @@ export const getSurveyQuestions = async (
 /**
  * Submit Survey Answer
  * POST /brands/:brandId/surveys/:surveyId/answers – anket cevabı gönder
+ *
+ * Backend beklentisi: Anket tamamlandığında (son soru cevaplandığında) response body'de
+ * SurveyCompletionResponse dönebilir: { awardedPoints, newTotalPoints }. Bu sayede UI'da
+ * "X puan kazandınız" gösterilebilir. Şu an response void; backend hazır olunca tip güncellenebilir.
  */
 export const submitSurveyAnswer = async (
   brandId: string,

@@ -355,6 +355,18 @@ export interface SurveyQuestionsResponse {
 }
 
 /**
+ * Survey tamamlandığında backend'in döndürmesi beklenen cevap (opsiyonel).
+ * POST .../surveys/:surveyId/answers son cevap gönderildiğinde backend bu alanları dönebilir.
+ * Böylece kullanıcı anket bitince kazandığı puanı anında gösteririz.
+ */
+export interface SurveyCompletionResponse {
+  /** Bu anket tamamlandığında kazanılan puan */
+  awardedPoints: number;
+  /** İşlem sonrası güncel toplam puan (marka bazlı) */
+  newTotalPoints?: number;
+}
+
+/**
  * Brand Trends Response - /brands/{brandId}/trends endpoint'inden dönen response
  * Feed formatında trend içerikleri (pagination ile)
  */

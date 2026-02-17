@@ -2,6 +2,14 @@ import { apiService } from '../../../services/ApiService';
 import type { EventApiItem, EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgesApiResponse, EventBadgeDetailResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
+import type { CollectionDetailResponse } from '../types/collection.types';
+
+/** Community events filter - FilterBottomSheet ile uyumlu */
+export type CommunityEventsFilter = {
+  mainCategory?: string;
+  subCategory?: string;
+  productGroup?: string;
+};
 
 /**
  * Get Active Events endpoint function
@@ -10,12 +18,14 @@ import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @param search - Event başlığı veya açıklamasında arama (opsiyonel)
+ * @param filters - Kategori filtreleri (mainCategory, subCategory, productGroup) - backend destekliyorsa uygulanır
  * @returns EventsApiResponse - Events items ve pagination bilgisi
  */
 export const getActiveEvents = async (
   cursor?: string,
   limit: number = 20,
-  search?: string
+  search?: string,
+  filters?: CommunityEventsFilter
 ): Promise<EventsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
@@ -24,6 +34,15 @@ export const getActiveEvents = async (
   params.append('limit', limit.toString());
   if (search) {
     params.append('search', search);
+  }
+  if (filters?.mainCategory && filters.mainCategory !== 'all') {
+    params.append('mainCategory', filters.mainCategory);
+  }
+  if (filters?.subCategory && filters.subCategory !== 'all') {
+    params.append('subCategory', filters.subCategory);
+  }
+  if (filters?.productGroup && filters.productGroup !== 'all') {
+    params.append('productGroup', filters.productGroup);
   }
 
   try {
@@ -50,12 +69,14 @@ export const getActiveEvents = async (
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @param search - Event başlığı veya açıklamasında arama (opsiyonel)
+ * @param filters - Kategori filtreleri - backend destekliyorsa uygulanır
  * @returns UpcomingEventsApiResponse - Events items ve pagination bilgisi (interaction ve participants yok)
  */
 export const getUpcomingEvents = async (
   cursor?: string,
   limit: number = 20,
-  search?: string
+  search?: string,
+  filters?: CommunityEventsFilter
 ): Promise<UpcomingEventsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
@@ -64,6 +85,15 @@ export const getUpcomingEvents = async (
   params.append('limit', limit.toString());
   if (search) {
     params.append('search', search);
+  }
+  if (filters?.mainCategory && filters.mainCategory !== 'all') {
+    params.append('mainCategory', filters.mainCategory);
+  }
+  if (filters?.subCategory && filters.subCategory !== 'all') {
+    params.append('subCategory', filters.subCategory);
+  }
+  if (filters?.productGroup && filters.productGroup !== 'all') {
+    params.append('productGroup', filters.productGroup);
   }
 
   try {
@@ -101,6 +131,33 @@ export const getEventDetail = async (
   } catch (error: any) {
     console.error('Event Detail API Error:', {
       url: `/events/${eventId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Collection Detail endpoint function
+ * Belirli bir collection'ın detayını ve badge listesini getirir
+ *
+ * @param collectionId - Collection ID
+ * @returns CollectionDetailResponse - Collection detay + badges
+ */
+export const getCollectionDetail = async (
+  collectionId: string
+): Promise<CollectionDetailResponse> => {
+  try {
+    const response = await apiService.getClient().get<CollectionDetailResponse>(
+      `/events/collections/${collectionId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Collection Detail API Error:', {
+      url: `/events/collections/${collectionId}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

@@ -15,6 +15,7 @@ import type { EventsStackParamList } from '../../navigation';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import CollectionCard from '../CollectionCard';
 import type { Collection } from '../../types/collection.types';
+import type { CollectionFilters } from '../../types/medusa.types';
 import { useSafeAreaValues } from '@/src/utils';
 
 // Mock data - Backend'den gelecek
@@ -106,6 +107,8 @@ type CollectionsTabProps = {
   searchQuery?: string;
   activeFilter?: string;
   onFilterChange?: (filter: string) => void;
+  /** CollectionsBottomSheet'ten uygulanan filtreler - liste filtreleme / ileride API'ye gönderilir */
+  collectionFilters?: CollectionFilters | null;
 };
 
 type CollectionsTabNavigationProp = NativeStackNavigationProp<
@@ -117,6 +120,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   searchQuery,
   activeFilter = 'All',
   onFilterChange,
+  collectionFilters,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -125,7 +129,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const navigation = useNavigation<CollectionsTabNavigationProp>();
 
-  // Filter collections based on search and active filter
+  // Filter collections based on search, active filter, and collectionFilters (from bottom sheet)
   const filteredCollections = useMemo(() => {
     let filtered = MOCK_COLLECTIONS;
 
@@ -139,15 +143,20 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
       );
     }
 
-    // Apply category filter
+    // Apply category filter (chips)
     if (selectedCategory && selectedCategory !== 'All') {
       filtered = filtered.filter(
         (collection) => collection.category === selectedCategory.toLowerCase().replace(' ', '_')
       );
     }
 
+    // Apply collectionFilters from bottom sheet (mainCategoryId / subCategoryId) - mock'ta category id yok, ileride API'de kullanılacak
+    if (collectionFilters?.mainCategoryId) {
+      // Backend'den liste çekildiğinde mainCategoryId ile filtre uygulanacak; mock'ta atlanıyor
+    }
+
     return filtered;
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, collectionFilters]);
 
   // Pull-to-Refresh handler
   const handleRefresh = useCallback(async () => {

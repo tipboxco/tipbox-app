@@ -18,9 +18,10 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import type { EventsStackParamList } from '../navigation';
-import type { Collection } from '../types/collection.types';
+import type { Collection, CollectionBadge as CollectionBadgeType } from '../types/collection.types';
+import { useCollectionDetail } from '../api/hooks';
 import CollectionCardModal from '../components/CollectionCardModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -143,14 +144,34 @@ const CollectionDetailScreen: React.FC = () => {
   const bottomInset = useSafeAreaValues('bottom');
   
   const { collectionId } = route.params;
-  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All');
   const [selectedBadge, setSelectedBadge] = useState<CollectionBadge | null>(null);
 
-  // TODO: Backend'den collection detayını çek
-  const collection = MOCK_COLLECTION;
-  const allBadges = MOCK_BADGES;
+  // Backend'den collection detayını çek; 404/error'da mock fallback
+  const { data: collectionDetail, isLoading: isLoadingCollection } = useCollectionDetail(collectionId);
+
+  const collection: Collection = useMemo(() => {
+    if (collectionDetail?.collection) {
+      return collectionDetail.collection;
+    }
+    return MOCK_COLLECTION;
+  }, [collectionDetail?.collection]);
+
+  const allBadges: CollectionBadge[] = useMemo(() => {
+    if (collectionDetail?.badges && collectionDetail.badges.length > 0) {
+      return collectionDetail.badges.map((b: CollectionBadgeType): CollectionBadge => ({
+        id: b.id,
+        title: b.title,
+        description: b.description,
+        icon: typeof b.icon === 'string' ? (toImageSource(b.icon) ?? b.icon) : b.icon,
+        currentProgress: b.currentProgress,
+        totalProgress: b.totalProgress,
+        status: b.status,
+      }));
+    }
+    return MOCK_BADGES;
+  }, [collectionDetail?.badges]);
 
   // Filter badges based on active filter
   const filteredBadges = useMemo(() => {
@@ -298,7 +319,7 @@ const CollectionDetailScreen: React.FC = () => {
   // Filter tabs
   const filterTabs: FilterTab[] = ['All', 'Not Started', 'In Progress', 'Completed'];
 
-  if (isLoading) {
+  if (isLoadingCollection) {
     return (
       <SafeAreaView
         style={[

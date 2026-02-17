@@ -245,9 +245,25 @@ export const cleanNewlines = (text: string | null | undefined, replacement: stri
 export type CountdownFormat = string;
 
 /**
+ * Boost bitiş tarihine göre kalan süreyi okunabilir metne çevirir (badge için).
+ * @param boostedUntil - ISO string bitiş tarihi
+ * @returns "X gün Y saat kaldı", "Y saat kaldı" veya "Süresi doldu"
+ */
+export const getBoostRemainingTime = (boostedUntil: string): string => {
+  const now = new Date();
+  const end = new Date(boostedUntil);
+  const diffMs = end.getTime() - now.getTime();
+  if (diffMs <= 0) return 'Süresi doldu';
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  if (days > 0) return `${days} gün ${hours} saat kaldı`;
+  return `${hours} saat kaldı`;
+};
+
+/**
  * End date'e göre kalan süreyi hesaplar ve formatlar
  * Performans için: Her saniye güncellenir ama component re-render olmaz
- * 
+ *
  * @param endDate - ISO string formatında bitiş tarihi
  * @returns Formatlanmış countdown string (DDD:HH:MM:SS) veya null (süre dolmuşsa)
  */

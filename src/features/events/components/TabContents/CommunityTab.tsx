@@ -24,6 +24,8 @@ const CARD_WIDTH = width * 0.55; // Ekranın %55'i = çok daha kompakt ve peek e
 type CommunityTabProps = {
   searchQuery?: string;
   onEventPress: (eventId: string) => void;
+  /** Kategori filtreleri (FilterBottomSheet) - backend'e gönderilir */
+  communityFilters?: { mainCategory?: string; subCategory?: string; productGroup?: string } | null;
 };
 
 // Format date range from startDate and endDate
@@ -74,17 +76,21 @@ const mapUpcomingEventToCardData = (event: UpcomingEventApiItem): UpcomingEventC
   };
 };
 
-export const CommunityTab: React.FC<CommunityTabProps> = ({ searchQuery, onEventPress }) => {
+export const CommunityTab: React.FC<CommunityTabProps> = ({
+  searchQuery,
+  onEventPress,
+  communityFilters,
+}) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
   const queryClient = useQueryClient();
-  
+
   // Current scroll position for pagination dots
   const [currentActiveIndex, setCurrentActiveIndex] = useState(0);
   const activeEventsListRef = useRef<FlatList>(null);
 
-  // Active Events API hook
+  // Active Events API hook (filter parametreleri backend'e gönderilir)
   const {
     data: activeEventsData,
     fetchNextPage: fetchNextActivePage,
@@ -92,10 +98,10 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ searchQuery, onEvent
     isFetchingNextPage: isFetchingNextActivePage,
     isLoading: isActiveEventsLoading,
     error: activeEventsError,
-    isRefetching: isRefetchingActiveEvents, // Refresh durumu
-  } = useActiveEvents(20, searchQuery);
+    isRefetching: isRefetchingActiveEvents,
+  } = useActiveEvents(20, searchQuery, communityFilters ?? undefined);
 
-  // Upcoming Events API hook - 4'erli veri gelecek
+  // Upcoming Events API hook - 4'erli veri (filter parametreleri backend'e gönderilir)
   const {
     data: upcomingEventsData,
     fetchNextPage: fetchNextUpcomingPageOriginal,
@@ -103,8 +109,8 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ searchQuery, onEvent
     isFetchingNextPage: isFetchingNextUpcomingPage,
     isLoading: isUpcomingEventsLoading,
     error: upcomingEventsError,
-    isRefetching: isRefetchingUpcomingEvents, // Refresh durumu
-  } = useUpcomingEvents(4, searchQuery);
+    isRefetching: isRefetchingUpcomingEvents,
+  } = useUpcomingEvents(4, searchQuery, communityFilters ?? undefined);
 
   // Transform events data for display (flatten all pages and remove duplicates)
   const activeEvents = useMemo(() => {

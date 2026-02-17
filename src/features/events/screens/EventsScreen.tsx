@@ -87,6 +87,10 @@ const EventsScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showFilterSheet, setShowFilterSheet] = useState(false);
+  /** Community tab filter (FilterBottomSheet) - backend'e gönderilir / ileride API desteği */
+  const [communityFilters, setCommunityFilters] = useState<FilterSelection | null>(null);
+  /** Collections tab filter (CollectionsBottomSheet) - CollectionsTab'a geçirilir */
+  const [collectionFilters, setCollectionFilters] = useState<CollectionFilters | null>(null);
 
   // Debounce search query for API calls
   useEffect(() => {
@@ -105,17 +109,15 @@ const EventsScreen: React.FC = () => {
     setActiveFilter(filter);
   }, []);
   
-  // Filter apply handler
+  // Filter apply handler (Community tab - FilterBottomSheet)
   const handleFilterApply = useCallback((filters: FilterSelection) => {
-    console.log('[EventsScreen] Filters applied:', filters);
-    // TODO: Backend'e filter parametrelerini gönder
+    setCommunityFilters(filters);
     setShowFilterSheet(false);
   }, []);
-  
-  // Collections filter apply handler
+
+  // Collections filter apply handler (Collections tab - CollectionsBottomSheet)
   const handleCollectionsFilterApply = useCallback((filters: CollectionFilters) => {
-    console.log('[EventsScreen] Collections Filters applied:', filters);
-    // TODO: CollectionsTab'a filter parametrelerini geç
+    setCollectionFilters(filters);
     setShowFilterSheet(false);
   }, []);
 
@@ -325,9 +327,10 @@ const EventsScreen: React.FC = () => {
           >
             {/* Community Events Tab */}
             <View key="0" style={styles.page}>
-              <CommunityTab 
+              <CommunityTab
                 searchQuery={debouncedSearchQuery}
-                onEventPress={handleEventPress} 
+                onEventPress={handleEventPress}
+                communityFilters={communityFilters}
               />
             </View>
 
@@ -336,6 +339,7 @@ const EventsScreen: React.FC = () => {
               <CollectionsTab
                 searchQuery={debouncedSearchQuery}
                 activeFilter={activeFilter}
+                collectionFilters={collectionFilters}
               />
             </View>
           </AnimatedPagerView>
