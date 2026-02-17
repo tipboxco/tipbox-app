@@ -12,6 +12,7 @@ import {
   likeComment,
   unlikeComment,
   sharePost,
+  sharePostToDm,
   getPostStatus,
 } from './interactionsApi';
 import type {
@@ -1158,6 +1159,16 @@ export const useSharePost = () => {
       // Error logging
       console.error('[useSharePost] Error:', err);
     },
+  });
+};
+
+export const useSharePostToDm = () => {
+  return useMutation<
+    { messageId: string; threadId: string },
+    Error,
+    { postId: string; toUserId: string; message?: string }
+  >({
+    mutationFn: ({ postId, toUserId, message }) => sharePostToDm(postId, toUserId, message),
   });
 };
 

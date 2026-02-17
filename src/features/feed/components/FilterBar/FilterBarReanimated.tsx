@@ -160,14 +160,13 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     const rows = Math.ceil(optionsCount / 3);
     const rowHeight = 44; // minHeight increased for potential 2-line text wrapping
     const rowSpacing = 4; // space="xs" between rows
-    const topMargin = 16; // mt="$4"
     const topPadding = 8; // py="$2"
     const bottomPadding = 8; // py="$2"
-    const buttonArea = 52; // pt="$1.5" (6px) + pb="$2.5" (10px) + button height (36px)
-    const extraBottomPadding = 8; // Extra padding at the very bottom
+    const buttonArea = 38; // paddingTop(4) + minHeight(32) + paddingBottom(2)
+    const extraBottomPadding = 4; // Small visual breathing room
 
-    // Total height = margin + padding + (rows * rowHeight) + (spacing between rows) + padding + button area + extraBottomPadding
-    const totalHeight = topMargin + topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonArea + extraBottomPadding;
+    // Total height = padding + (rows * rowHeight) + (spacing between rows) + padding + button area + extraBottomPadding
+    const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonArea + extraBottomPadding;
     return totalHeight;
   }, []);
 
@@ -381,11 +380,9 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         
         // Panel height'ı güncelle (animasyon başlamadan önce)
         panelHeight.value = calculatedHeight;
-        
-        // FIX: requestAnimationFrame ile animasyonu başlat - DOM'un hazır olmasını bekle
-        requestAnimationFrame(() => {
-          progress.value = withSpring(1, SPRING_CONFIG);
-        });
+
+        // Animasyonu anında başlat - shared value'lar UI thread'de çalıştığı için rAF gerekmez
+        progress.value = withSpring(1, SPRING_CONFIG);
       }
     },
     [openFilterId, progress, openFilterIdShared, panelHeight, getOptionsCount, calculatePanelHeight, allCategories.length]
@@ -710,7 +707,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
             </RNText>
           </VStack>
         ) : (
-          <VStack px={12} py="$2" space="$0.5" width="100%">
+          <VStack px={12} py="$2" width="100%">
             {displayRows.map((row, rowIndex) => (
               <HStack key={rowIndex} space="xs" justifyContent="space-between" width="100%">
                 {row.map((option) => {

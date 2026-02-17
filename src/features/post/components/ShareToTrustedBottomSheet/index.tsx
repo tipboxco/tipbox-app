@@ -13,12 +13,14 @@ import {
 import { ActivityIndicator, Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useTrustList } from '@/src/features/profile/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
-import { useSendSharedPostToDm } from '@/src/features/inbox/api/hooks';
+import { useSharePostToDm } from '@/src/features/interactions/api/hooks';
+import { showCustomToast } from '@/src/components/CustomToast';
 import type { TrustUser } from '@/src/features/profile/types';
 
 const GRID_COLUMNS = 3;
@@ -41,6 +43,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { closeBottomSheet } = useGlobalBottomSheet();
+  const toast = useToast();
   const user = useAppStore((state) => state.user);
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,7 +88,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
     debouncedSearch || undefined
   );
 
-  const sendSharedPostMutation = useSendSharedPostToDm();
+  const sendSharedPostMutation = useSharePostToDm();
   const { width: windowWidth } = useWindowDimensions();
   const gap = 16;
   const paddingH = 20;
@@ -108,19 +111,20 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
     setIsSending(true);
     try {
       await Promise.all(
-        recipients.map((recipientUserId) =>
+        recipients.map((toUserId) =>
           sendSharedPostMutation.mutateAsync({
-            recipientUserId,
-            messageType: 'shared-post',
-            sharedPost: {
-              postId,
-              authorName: postAuthorName,
-            },
+            postId,
+            toUserId,
             message: message.trim() || undefined,
           })
         )
       );
       closeBottomSheet();
+      showCustomToast(toast, {
+        title: 'Post Shared',
+        description: 'Your post has been shared successfully!',
+        action: 'success',
+      });
       onShareSuccess?.();
     } catch (err: any) {
       console.error('[ShareToTrustedBottomSheet] ❌ Share Error Details:', {

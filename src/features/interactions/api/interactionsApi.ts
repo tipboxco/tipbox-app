@@ -236,6 +236,23 @@ export const sharePost = async (
 };
 
 /**
+ * Share Post to DM endpoint function
+ * POST /interactions/posts/{postId}/share-to-dm
+ */
+export const sharePostToDm = async (
+  postId: string,
+  toUserId: string,
+  message?: string
+): Promise<{ messageId: string; threadId: string }> => {
+  const client = apiService.getClient();
+  const response = await client.post<{ messageId: string; threadId: string }>(
+    `/interactions/posts/${postId}/share-to-dm`,
+    { toUserId, ...(message && { message }) }
+  );
+  return response.data;
+};
+
+/**
  * Get Post Status endpoint function
  * Kullanıcının post ile etkileşim durumunu getirir
  *
