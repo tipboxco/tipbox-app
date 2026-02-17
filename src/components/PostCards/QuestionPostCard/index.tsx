@@ -13,6 +13,7 @@ import {
   TrashIcon,
   UserIcon,
   FlagIcon,
+  RocketLaunchIcon,
 } from 'react-native-heroicons/outline';
 import {
   HeartIcon as HeartIconSolid,
@@ -27,7 +28,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import { toImageSource, getBoostRemainingTime } from '@/src/utils';
+import { toImageSource } from '@/src/utils';
 import {
   useLikePost,
   useUnlikePost,
@@ -716,8 +717,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       }
 
       {/* Badges */}
-      <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space={6}>
-        <HStack space={8} alignItems="center">
+      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space={8} alignItems="center">
           <Box
             borderWidth={2}
             borderColor="#B8CC04"
@@ -752,24 +752,13 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               alignItems="center"
               justifyContent="center"
             >
-              <Image
-                source={require('@/assets/boost.svg')}
-                alt="boost"
-                width={12}
-                height={12}
-              />
+              <RocketLaunchIcon width={12} height={12} color="#fff" />
               <Text fontSize={8} fontWeight="$semibold" ml={5} color="#fff">
                 Boosted
               </Text>
             </Box>
           )}
-        </HStack>
-        {isBoostActive && boostedUntil && (
-          <Text fontSize={11} color={isDark ? '$textDark400' : '#787878'}>
-            {getBoostRemainingTime(boostedUntil)}
-          </Text>
-        )}
-      </VStack>
+      </HStack>
 
       {/* Content - Boost Post sadece 3 nokta menüde (doğru tasarım: badge ile içerik arasında değil) */}
       <Pressable onPress={() => {
