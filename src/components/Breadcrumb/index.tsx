@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import {
     HStack,
     Text,
@@ -20,21 +20,29 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress, rootLabel }
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const scrollViewRef = useRef<ScrollView>(null);
+    const t1 = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const t2 = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Auto scroll to end when items change
+    const scrollToEnd = useCallback((animated = false) => {
+        scrollViewRef.current?.scrollToEnd({ animated });
+    }, []);
+
+    // Scroll to end whenever items change – fire immediately (no animation)
+    // and again after a short delay to catch late layout passes.
     useEffect(() => {
-        // Small delay to ensure layout is complete
-        const timer = setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-        return () => clearTimeout(timer);
-    }, [items]);
+        scrollToEnd(false);
+        t1.current = setTimeout(() => scrollToEnd(false), 50);
+        t2.current = setTimeout(() => scrollToEnd(false), 200);
+        return () => {
+            if (t1.current) clearTimeout(t1.current);
+            if (t2.current) clearTimeout(t2.current);
+        };
+    }, [items, rootLabel, scrollToEnd]);
 
-    // Scroll to end when content size changes (triggered when layout completes)
-    const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
-        // Scroll to end immediately when content changes
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-    };
+    // Also scroll to end on every content-size change (handles initial mount)
+    const handleContentSizeChange = useCallback(() => {
+        scrollToEnd(false);
+    }, [scrollToEnd]);
 
     return (
         <Box 
@@ -42,7 +50,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress, rootLabel }
             bg={isDark ? '#000' : '#FFF'}
             borderBottomWidth={1}
             borderBottomColor="#E9E9E9"
-          
         >
             <ScrollView
                 ref={scrollViewRef}
@@ -54,6 +61,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress, rootLabel }
                     alignItems: 'center',
                 }}
                 onContentSizeChange={handleContentSizeChange}
+                onLayout={() => scrollToEnd(false)}
             >
                 <HStack alignItems="center" space="xs">
                     {rootLabel && (

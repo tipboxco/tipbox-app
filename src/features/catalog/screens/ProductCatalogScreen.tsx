@@ -64,7 +64,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   const navigation = useNavigation<ProductCatalogScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>(initialBreadcrumbItems || []);
-  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const toast = useToast();
 
   // Helper function to show error toast
@@ -492,64 +491,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     return finalGroups;
   }, [globalSearchData, debouncedSearchQuery]);
 
-  // Search suggestions - filter local data based on search query
-  const searchSuggestions = useMemo(() => {
-    const trimmedQuery = searchQuery.trim().toLowerCase();
-    if (!trimmedQuery) return [];
-
-    const suggestions: Array<{
-      type: 'category' | 'subcategory' | 'productgroup' | 'product';
-      id: string;
-      name: string;
-      description?: string;
-    }> = [];
-
-    // Filter categories
-    if (catalogCategoriesData?.items) {
-      catalogCategoriesData.items
-        .filter(cat => cat.name.toLowerCase().includes(trimmedQuery))
-        .slice(0, 3)
-        .forEach(cat => {
-          suggestions.push({
-            type: 'category',
-            id: cat.categoryId,
-            name: cat.name,
-          });
-        });
-    }
-
-    // Filter subcategories
-    if (catalogSubCategoriesData?.items) {
-      catalogSubCategoriesData.items
-        .filter(sub => sub.name.toLowerCase().includes(trimmedQuery))
-        .slice(0, 3)
-        .forEach(sub => {
-          suggestions.push({
-            type: 'subcategory',
-            id: sub.subCategoryId,
-            name: sub.name,
-          });
-        });
-    }
-
-    // Filter product groups
-    if (catalogProductGroupsData?.items) {
-      catalogProductGroupsData.items
-        .filter(group => group.name.toLowerCase().includes(trimmedQuery))
-        .slice(0, 3)
-        .forEach(group => {
-          suggestions.push({
-            type: 'productgroup',
-            id: group.productGroupId,
-            name: group.name,
-          });
-        });
-    }
-
-    // Limit total suggestions to 8
-    return suggestions.slice(0, 8);
-  }, [searchQuery, catalogCategoriesData, catalogSubCategoriesData, catalogProductGroupsData]);
-
   // Local state for product object (for UI display only)
   const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
@@ -710,48 +651,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       ].filter(Boolean) as BreadcrumbItem[]
     );
     setCurrentView('products');
-  };
-
-  const handleSuggestionPress = (suggestion: {
-    type: 'category' | 'subcategory' | 'productgroup' | 'product';
-    id: string;
-    name: string;
-  }) => {
-    setShowSearchSuggestions(false);
-    setSearchQuery('');
-
-    switch (suggestion.type) {
-      case 'category':
-        const category = catalogCategoriesData?.items?.find(cat => cat.categoryId === suggestion.id);
-        if (category) {
-          handleCategoryPress({
-            id: category.categoryId,
-            name: category.name,
-            image: category.image,
-          });
-        }
-        break;
-      case 'subcategory':
-        const subCategory = catalogSubCategoriesData?.items?.find(sub => sub.subCategoryId === suggestion.id);
-        if (subCategory) {
-          handleSubCategoryPress({
-            ...subCategory,
-            id: subCategory.subCategoryId,
-            image: subCategory.image,
-          });
-        }
-        break;
-      case 'productgroup':
-        const productGroup = catalogProductGroupsData?.items?.find(group => group.productGroupId === suggestion.id);
-        if (productGroup) {
-          handleProductGroupPress({
-            ...productGroup,
-            id: productGroup.productGroupId,
-            image: productGroup.image,
-          });
-        }
-        break;
-    }
   };
 
   const handleProductPress = (product: CatalogProduct & { id: string; image: any; description?: string }) => {
@@ -1621,48 +1520,10 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
               fontSize="$xs"
               value={searchQuery}
               onChangeText={setSearchQuery}
-              onFocus={() => setShowSearchSuggestions(true)}
             />
           </Input>
         </HStack>
       </VStack>
-
-      {/* Search Suggestions Dropdown */}
-      {showSearchSuggestions && searchSuggestions.length > 0 && (
-        <VStack
-          bg={isDark ? '#1A1A1A' : '#FAFAFA'}
-          borderBottomWidth={1}
-          borderColor="#E9E9E9"
-          px="$4"
-          py="$2"
-          space="xs"
-          maxHeight={300}
-        >
-          {searchSuggestions.map((suggestion) => (
-            <Pressable
-              key={`${suggestion.type}-${suggestion.id}`}
-              onPress={() => handleSuggestionPress(suggestion)}
-              px="$3"
-              py="$3"
-              bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-              borderRadius={8}
-              flexDirection="row"
-              alignItems="center"
-              space="sm"
-            >
-              <Text fontSize="$xs" color={isDark ? '#B9B9B9' : '#999999'} fontWeight="$medium">
-                {suggestion.type === 'category' && '📁'}
-                {suggestion.type === 'subcategory' && '📂'}
-                {suggestion.type === 'productgroup' && '📦'}
-                {suggestion.type === 'product' && '🛍️'}
-              </Text>
-              <Text fontSize="$sm" color={isDark ? '#FFFFFF' : '#000000'} fontWeight="$semibold" flex={1}>
-                {suggestion.name}
-              </Text>
-            </Pressable>
-          ))}
-        </VStack>
-      )}
 
       {/* Breadcrumb */}
       <Breadcrumb
