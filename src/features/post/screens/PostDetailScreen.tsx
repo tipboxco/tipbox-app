@@ -707,10 +707,9 @@ export const PostDetailScreen = () => {
             {/* Status Bar & Header */}
             <Header
                 title={
-                    showRelatedPost ? "Related Post" :
                     type === 'post' ? "Post Details" :
-                    type === 'tipsAndTricks' ? "Tips & Tricks Details" : 
-                    type === 'question' ? "Question Details" : 
+                    type === 'tipsAndTricks' ? "Tips & Tricks Details" :
+                    type === 'question' ? "Question Details" :
                     type === 'benchmark' ? "Benchmark Details" :
                     type === 'experience' ? "Experience Details" :
                     type === 'update' ? "Update Details" :
