@@ -461,7 +461,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         ) : globalBrandSearchResults.length === 0 ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
             <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
-              Arama sonucu bulunamadı
+              No search results
             </Text>
           </Box>
         ) : (

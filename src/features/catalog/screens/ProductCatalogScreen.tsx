@@ -205,7 +205,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   }, [searchQuery]);
 
   // Her seviyede yerel filtre: arama yazıldığında mevcut liste searchQuery ile filtrelenir.
-  // Global ürün araması kullanılmıyor - API boş dönünce "Arama sonucu bulunamadı" yerine listeyi gösteriyoruz.
+  // Global product search disabled - we show locally filtered list instead of "No search results" from API.
   const showGlobalSearchResults = false;
 
   const {
@@ -1704,7 +1704,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             ) : globalSearchResults.length === 0 ? (
               <Box py="$8" alignItems="center">
                 <Text color={isDark ? '#999' : '#666'} fontSize="$sm">
-                  Arama sonucu bulunamadı
+                  No search results
                 </Text>
               </Box>
             ) : (
@@ -1945,7 +1945,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
               ) : currentData && currentData.length === 0 && searchQuery.trim().length > 0 ? (
                 <Box py="$8" alignItems="center" px="$4">
                   <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
-                    "{searchQuery.trim()}" için sonuç bulunamadı
+                    No results for "{searchQuery.trim()}"
                   </Text>
                 </Box>
               ) : null}

@@ -555,7 +555,7 @@ export const ProductSelectScreen: React.FC = () => {
               ) : globalSearchResults.length === 0 ? (
                 <Box py="$8" alignItems="center">
                   <Text color={isDark ? '#999' : '#666'} fontSize="$sm">
-                    Arama sonucu bulunamadı
+                    No search results
                   </Text>
                 </Box>
               ) : (

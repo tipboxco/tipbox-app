@@ -331,7 +331,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                 ) : activeEventsFiltered.length === 0 ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                      {searchQuery?.trim() ? `"${searchQuery.trim()}" için sonuç yok` : 'No active events yet'}
+                      {searchQuery?.trim() ? `No results for "${searchQuery.trim()}"` : 'No active events yet'}
                     </Text>
                   </Box>
                 ) : (
@@ -448,7 +448,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
             {!isUpcomingEventsLoading && upcomingEventsFiltered.length === 0 && !upcomingEventsError && (
               <Box pt="$4" alignItems="center" px="$4">
                   <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                  {searchQuery?.trim() ? `"${searchQuery.trim()}" için sonuç yok` : 'No upcoming events yet'}
+                  {searchQuery?.trim() ? `No results for "${searchQuery.trim()}"` : 'No upcoming events yet'}
                 </Text>
               </Box>
             )}
