@@ -204,20 +204,22 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Global product search - tüm product group'lar arasında arama
-  const hasGlobalSearch = debouncedSearchQuery && debouncedSearchQuery.length > 0;
-  const { 
-    data: globalSearchData, 
+  // Her seviyede yerel filtre: arama yazıldığında mevcut liste searchQuery ile filtrelenir.
+  // Global ürün araması kullanılmıyor - API boş dönünce "Arama sonucu bulunamadı" yerine listeyi gösteriyoruz.
+  const showGlobalSearchResults = false;
+
+  const {
+    data: globalSearchData,
     isLoading: isLoadingGlobalSearch,
     fetchNextPage: fetchNextGlobalSearchPage,
     hasNextPage: hasNextGlobalSearchPage,
     isFetchingNextPage: isFetchingNextGlobalSearchPage
-  } = useGlobalProductSearch(hasGlobalSearch ? debouncedSearchQuery : undefined, 20);
+  } = useGlobalProductSearch(undefined, 20); // Disabled - yerel filtre kullanılıyor
 
-  // API'den seçili ürün grubuna ait products'ı getir (search ile) - sadece global search yoksa
+  // API'den seçili ürün grubuna ait products'ı getir (yerel filtre getCurrentData'da yapılıyor)
   const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(
-    hasGlobalSearch ? undefined : selectedProductGroupId, // Global search varsa productGroupId gönderme
-    hasGlobalSearch ? undefined : (debouncedSearchQuery || undefined) // Global search varsa search query gönderme
+    selectedProductGroupId ?? undefined,
+    undefined
   );
   
   // API'den gelen verileri formatla
@@ -1543,11 +1545,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
   }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect]);
 
   const getCurrentData = () => {
-    // Global search aktifse, global search sonuçlarını döndür
-    if (hasGlobalSearch) {
-      return null; // Global search için özel render mantığı kullanılacak
-    }
-    
+    // Her seviyede yerel filtre: searchQuery ile mevcut liste filtrelenir (API araması yok)
     const data = (() => {
       switch (currentView) {
         case 'categories':
@@ -1658,17 +1656,9 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                 {suggestion.type === 'productgroup' && '📦'}
                 {suggestion.type === 'product' && '🛍️'}
               </Text>
-              <VStack flex={1}>
-                <Text fontSize="$sm" color={isDark ? '#FFFFFF' : '#000000'} fontWeight="$semibold">
-                  {suggestion.name}
-                </Text>
-                <Text fontSize="$xs" color={isDark ? '#999999' : '#CCCCCC'}>
-                  {suggestion.type === 'category' && 'Category'}
-                  {suggestion.type === 'subcategory' && 'Sub Category'}
-                  {suggestion.type === 'productgroup' && 'Product Group'}
-                  {suggestion.type === 'product' && 'Product'}
-                </Text>
-              </VStack>
+              <Text fontSize="$sm" color={isDark ? '#FFFFFF' : '#000000'} fontWeight="$semibold" flex={1}>
+                {suggestion.name}
+              </Text>
             </Pressable>
           ))}
         </VStack>
@@ -1695,8 +1685,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         flex={1} 
         px="$4"
         onScroll={(event) => {
-          // Global search için infinite scroll
-          if (hasGlobalSearch && hasNextGlobalSearchPage && !isFetchingNextGlobalSearchPage) {
+          // Global search için infinite scroll (sadece global sonuçlar gösterilirken)
+          if (showGlobalSearchResults && hasNextGlobalSearchPage && !isFetchingNextGlobalSearchPage) {
             const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
             const paddingToBottom = 20;
             if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
@@ -1707,8 +1697,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         scrollEventThrottle={400}
       >
         <VStack space="md" pt="$4" pb={scrollViewPaddingBottom}>
-          {/* Global Search Results */}
-          {hasGlobalSearch ? (
+          {/* Global Search Results - Categories view'da yerel filtre kullanılır (Be → Beauty) */}
+          {showGlobalSearchResults ? (
             isLoadingGlobalSearch ? (
               <ProductSkeleton count={9} />
             ) : globalSearchResults.length === 0 ? (
@@ -1952,6 +1942,12 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                     );
                   })}
                 </>
+              ) : currentData && currentData.length === 0 && searchQuery.trim().length > 0 ? (
+                <Box py="$8" alignItems="center" px="$4">
+                  <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
+                    "{searchQuery.trim()}" için sonuç bulunamadı
+                  </Text>
+                </Box>
               ) : null}
             </>
           )}

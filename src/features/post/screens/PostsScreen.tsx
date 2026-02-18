@@ -20,6 +20,7 @@ import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useInventoryProductCheck } from '../hooks/useInventoryProductCheck';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
 import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { useSubCategoryPosts, useProductGroupPosts, useCatalogProductPosts } from '@/src/features/catalog/api/hooks';
@@ -51,6 +52,9 @@ export const PostsScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
+
+  // Inventory check hook for quick product lookups
+  const { checkProduct } = useInventoryProductCheck();
   
   // PERFORMANCE FIX: Memoize route params to prevent unnecessary re-renders
   const routeParams = useMemo(() => route.params, [route.params]);
@@ -151,6 +155,14 @@ export const PostsScreen = () => {
     
     return result;
   }, [contextId, feedContextType, selectedProduct]);
+
+  // Inventory check - only for PRODUCT level context
+  const isProductInInventory = useMemo(() => {
+    if (feedContextType !== 'product' || !feedContextId) {
+      return undefined; // Not applicable for other context types
+    }
+    return checkProduct(feedContextId);
+  }, [feedContextType, feedContextId, checkProduct]);
 
   // Determine which API to use based on context type
   // Use catalog posts endpoints for better hierarchical feed support
@@ -1337,7 +1349,10 @@ export const PostsScreen = () => {
 
       {/* Create Button - Sadece Product stage'inde göster */}
       {stage === 'Product' && (
-        <CreateButton onPress={handleCreatePress} />
+        <CreateButton
+          onPress={handleCreatePress}
+          isProductInInventory={isProductInInventory}
+        />
       )}
 
       </Box>

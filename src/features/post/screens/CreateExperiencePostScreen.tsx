@@ -16,6 +16,9 @@ import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateExperiencePost, useSplitExperience, useGetExperienceOptions } from '../api/hooks';
 import { useAddInventoryItem, useInventory } from '@/src/features/profile/api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useInventoryProductCheck } from '../hooks/useInventoryProductCheck';
+import { useSyncInventoryToStore } from '../hooks/useSyncInventoryToStore';
+import { getInventoryDecision } from '../utils/inventoryDecision';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,6 +41,12 @@ export const CreateExperiencePostScreen = () => {
     const navigation = useNavigation<CreateExperiencePostScreenNavigationProp>();
     const route = useRoute<CreateExperiencePostScreenRouteProp>();
     const { product, fromInventory, experienceOption } = route.params || {};
+
+    // Sync inventory to store
+    useSyncInventoryToStore();
+
+    // Get inventory product check hook
+    const { inventoryProductIds } = useInventoryProductCheck();
     
     // If product is undefined, start with SelectProduct (step 0), otherwise start with StepOneScreen (step 1)
     const [currentStep, setCurrentStep] = useState<0 | 1 | 2 | 3>(product ? 1 : 0);
@@ -62,13 +71,6 @@ export const CreateExperiencePostScreen = () => {
     const addInventoryItemMutation = useAddInventoryItem();
     const { user } = useAppStore();
     const queryClient = useQueryClient();
-    const { data: inventoryData } = useInventory(100);
-    const inventoryProductIds = React.useMemo(() => {
-        if (!inventoryData?.pages) return new Set<string>();
-        return new Set(
-            inventoryData.pages.flatMap((p) => p.items ?? []).map((item) => item.productId).filter(Boolean)
-        );
-    }, [inventoryData]);
 
     // Experience options (duration, location, purpose) from API
     const { data: experienceOptions } = useGetExperienceOptions();

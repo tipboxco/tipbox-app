@@ -164,6 +164,28 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
     return Array.from(uniqueEventsMap.values());
   }, [upcomingEventsData?.pages]);
 
+  // Yerel filtre: arama yazıldığında sadece başlık/açıklamada arama kelimesi geçen eventler (backend bazen filtrelemiyor)
+  const matchesSearch = useCallback(
+    (title: string, description?: string | null): boolean => {
+      const q = (searchQuery ?? '').trim().toLowerCase();
+      if (!q) return true;
+      const t = (title ?? '').toLowerCase();
+      const d = (description ?? '').toLowerCase();
+      return t.includes(q) || d.includes(q);
+    },
+    [searchQuery]
+  );
+
+  const activeEventsFiltered = useMemo(() => {
+    if (!(searchQuery ?? '').trim()) return activeEvents;
+    return activeEvents.filter((e) => matchesSearch(e.title, e.description));
+  }, [activeEvents, searchQuery, matchesSearch]);
+
+  const upcomingEventsFiltered = useMemo(() => {
+    if (!(searchQuery ?? '').trim()) return upcomingEvents;
+    return upcomingEvents.filter((e) => matchesSearch(e.title, e.description));
+  }, [upcomingEvents, searchQuery, matchesSearch]);
+
   // Handle active events scroll for pagination dots
   const handleActiveEventsScroll = useCallback((event: any) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
@@ -190,7 +212,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
     setTimeout(() => {
       isLoadingMoreRef.current = false;
     }, 1000);
-  }, [fetchNextUpcomingPageOriginal, hasNextUpcomingPage, isFetchingNextUpcomingPage, upcomingEvents.length]);
+  }, [fetchNextUpcomingPageOriginal, hasNextUpcomingPage, isFetchingNextUpcomingPage, upcomingEventsFiltered.length]);
 
   // Pull-to-Refresh handler - Cache'i invalidate et, fresh data fetch et
   // CRITICAL: Cache'i bypass ederek her zaman fresh data getir
@@ -263,7 +285,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
   return (
     <VStack flex={1}>
       <FlatList
-        data={upcomingEvents}
+        data={upcomingEventsFiltered}
         numColumns={2}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: 0, paddingBottom: bottomInset + 24, paddingHorizontal: 16 }}
@@ -306,10 +328,10 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                       Hata: {activeEventsError.message}
                     </Text>
                   </Box>
-                ) : activeEvents.length === 0 ? (
+                ) : activeEventsFiltered.length === 0 ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                      No active events yet
+                      {searchQuery?.trim() ? `"${searchQuery.trim()}" için sonuç yok` : 'No active events yet'}
                     </Text>
                   </Box>
                 ) : (
@@ -318,7 +340,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                     <Box position="relative">
                       <FlatList
                         ref={activeEventsListRef}
-                        data={activeEvents}
+                        data={activeEventsFiltered}
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         ItemSeparatorComponent={() => <Box width={CARD_GAP} />}
@@ -369,14 +391,14 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                     </Box>
 
                     {/* Pagination Dots - Active event sayısı kadar */}
-                    {activeEvents.length > 1 && (
+                    {activeEventsFiltered.length > 1 && (
                       <HStack
                         justifyContent="center"
                         space="xs"
                         pt="$2"
                         flexWrap="wrap"
                       >
-                        {activeEvents.map((event, index) => (
+                        {activeEventsFiltered.map((event, index) => (
                           <Box
                             key={event.id}
                             width={currentActiveIndex === index ? 20 : 6}
@@ -423,10 +445,10 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
             )}
 
             {/* Upcoming Events Empty State */}
-            {!isUpcomingEventsLoading && upcomingEvents.length === 0 && !upcomingEventsError && (
+            {!isUpcomingEventsLoading && upcomingEventsFiltered.length === 0 && !upcomingEventsError && (
               <Box pt="$4" alignItems="center" px="$4">
                   <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                  No upcoming events yet
+                  {searchQuery?.trim() ? `"${searchQuery.trim()}" için sonuç yok` : 'No upcoming events yet'}
                 </Text>
               </Box>
             )}

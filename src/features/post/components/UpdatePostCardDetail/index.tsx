@@ -340,6 +340,33 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         )}
       </VStack>
 
+      {/* Translate Button */}
+      {shouldTranslate && (
+        <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <Pressable onPress={toggleTranslation}>
+            <HStack alignItems="center" space="xs">
+              <Image
+                source={require('@/assets/translate.png')}
+                alt="translate"
+                width={16}
+                height={16}
+              />
+              <Text
+                color="#829905"
+                fontSize="$sm"
+                textDecorationLine="underline"
+              >
+                {isTranslating
+                  ? 'Çeviriliyor...'
+                  : showTranslation
+                  ? 'Hide Translation'
+                  : 'Translate'}
+              </Text>
+            </HStack>
+          </Pressable>
+        </Box>
+      )}
+
       {/* Related Post Section - Render using ExperiencePostCard for consistent display */}
       {transformedRelatedPost && (
         <ExperiencePostCard
