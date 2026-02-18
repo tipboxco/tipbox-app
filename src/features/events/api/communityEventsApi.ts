@@ -142,22 +142,34 @@ export const getEventDetail = async (
 
 /**
  * Get Collection Detail endpoint function
- * Belirli bir collection'ın detayını ve badge listesini getirir
+ * Belirli bir collection'ın detayını ve badge listesini getirir.
+ * badgeSearch verilirse sadece o koleksiyondaki badge'lerde name/description üzerinde arama yapılır (GET /api/collections/:id?search=... veya ?q=...).
  *
  * @param collectionId - Collection ID
- * @returns CollectionDetailResponse - Collection detay + badges
+ * @param options - badgeSearch: badge name/description'da aranacak metin (opsiyonel)
+ * @returns CollectionDetailResponse - Collection detay + (aranmışsa filtrelenmiş) badges
  */
 export const getCollectionDetail = async (
-  collectionId: string
+  collectionId: string,
+  options?: { badgeSearch?: string }
 ): Promise<CollectionDetailResponse> => {
+  const params = new URLSearchParams();
+  const search = (options?.badgeSearch ?? '').trim();
+  if (search) {
+    params.append('search', search);
+  }
+
+  const queryString = params.toString();
+  const url = queryString
+    ? `/events/collections/${collectionId}?${queryString}`
+    : `/events/collections/${collectionId}`;
+
   try {
-    const response = await apiService.getClient().get<CollectionDetailResponse>(
-      `/events/collections/${collectionId}`
-    );
+    const response = await apiService.getClient().get<CollectionDetailResponse>(url);
     return response.data;
   } catch (error: any) {
     console.error('Collection Detail API Error:', {
-      url: `/events/collections/${collectionId}`,
+      url,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

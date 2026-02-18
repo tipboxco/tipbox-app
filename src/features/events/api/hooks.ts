@@ -71,8 +71,8 @@ export const eventsKeys = {
   badgeDetail: (eventId: string, badgeId: string) =>
     [...eventsKeys.all, 'badges', 'detail', eventId, badgeId] as const,
   limited: () => [...eventsKeys.all, 'limited'] as const,
-  collectionDetail: (collectionId: string) =>
-    [...eventsKeys.all, 'collections', 'detail', collectionId] as const,
+  collectionDetail: (collectionId: string, badgeSearch?: string) =>
+    [...eventsKeys.all, 'collections', 'detail', collectionId, badgeSearch ?? ''] as const,
   surveyQuestions: (surveyId: string) =>
     [...eventsKeys.all, 'surveys', 'questions', surveyId] as const,
   achievements: (cursor?: string, limit?: number, search?: string) =>
@@ -320,15 +320,17 @@ export const useLimitedEvent = () => {
 
 /**
  * Get Collection Detail query hook
- * Backend'den collection detayı ve badge listesini getirir (404/error'da mock fallback ekran tarafında)
+ * Backend'den collection detayı ve badge listesini getirir (404/error'da mock fallback ekran tarafında).
+ * badgeSearch verilirse GET /api/collections/:id?search=... ile sadece eşleşen badge'ler döner.
  *
  * @param collectionId - Collection ID
+ * @param badgeSearch - Badge name/description'da aranacak metin (opsiyonel)
  * @returns React Query hook result
  */
-export const useCollectionDetail = (collectionId: string) => {
+export const useCollectionDetail = (collectionId: string, badgeSearch?: string) => {
   return useQuery<CollectionDetailResponse, Error>({
-    queryKey: eventsKeys.collectionDetail(collectionId),
-    queryFn: () => getCollectionDetail(collectionId),
+    queryKey: eventsKeys.collectionDetail(collectionId, badgeSearch),
+    queryFn: () => getCollectionDetail(collectionId, { badgeSearch: badgeSearch?.trim() || undefined }),
     enabled: !!collectionId,
     staleTime: 5 * 60 * 1000,  // 5 dakika
     gcTime: 10 * 60 * 1000,    // 10 dakika

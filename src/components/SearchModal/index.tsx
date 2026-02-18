@@ -407,6 +407,8 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
 
   // Tab press handler - transition with PagerView native animation
   const handleTabPress = useCallback((index: number) => {
+    // Clear search input when switching tabs
+    dispatch({ type: 'RESET_SEARCH' });
     // Update tab progress (for animation)
     tabProgress.value = withTiming(index, { duration: 200 });
     // Update PagerView
@@ -436,6 +438,8 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       tabProgress.value = position;
       // State update throttled - with requestAnimationFrame
       requestAnimationFrame(() => {
+        // Clear search input when switching tabs (swipe)
+        dispatch({ type: 'RESET_SEARCH' });
         dispatch({ type: 'SET_CURRENT_PAGE', payload: position });
         const filterMap: SearchFilter[] = ['users', 'brands', 'products'];
         dispatch({ type: 'SET_SELECTED_FILTER', payload: filterMap[position] });

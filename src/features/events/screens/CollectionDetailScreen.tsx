@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -145,11 +145,23 @@ const CollectionDetailScreen: React.FC = () => {
   
   const { collectionId } = route.params;
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedBadgeSearch, setDebouncedBadgeSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All');
   const [selectedBadge, setSelectedBadge] = useState<CollectionBadge | null>(null);
 
-  // Backend'den collection detayını çek; 404/error'da mock fallback
-  const { data: collectionDetail, isLoading: isLoadingCollection } = useCollectionDetail(collectionId);
+  // Debounce search for badge API (GET /api/collections/:id?search=...)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedBadgeSearch(searchQuery.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Backend'den collection detayını çek; badgeSearch ile badge'ler name/description'da filtrelenir
+  const { data: collectionDetail, isLoading: isLoadingCollection } = useCollectionDetail(
+    collectionId,
+    debouncedBadgeSearch || undefined
+  );
 
   const collection: Collection = useMemo(() => {
     if (collectionDetail?.collection) {
@@ -173,33 +185,20 @@ const CollectionDetailScreen: React.FC = () => {
     return MOCK_BADGES;
   }, [collectionDetail?.badges]);
 
-  // Filter badges based on active filter
+  // Filter badges: arama API'de yapılıyor (badgeSearch); burada sadece status filtresi uygulanıyor
   const filteredBadges = useMemo(() => {
-    let filtered = allBadges;
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (badge) =>
-          badge.title.toLowerCase().includes(query) ||
-          badge.description.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply status filter
     switch (activeFilter) {
       case 'Not Started':
-        return filtered.filter((b) => b.status === 'not_started');
+        return allBadges.filter((b) => b.status === 'not_started');
       case 'In Progress':
-        return filtered.filter((b) => b.status === 'in_progress');
+        return allBadges.filter((b) => b.status === 'in_progress');
       case 'Completed':
-        return filtered.filter((b) => b.status === 'completed');
+        return allBadges.filter((b) => b.status === 'completed');
       case 'All':
       default:
-        return filtered;
+        return allBadges;
     }
-  }, [allBadges, activeFilter, searchQuery]);
+  }, [allBadges, activeFilter]);
 
   const handleGoBack = useCallback(() => {
     navigation.goBack();

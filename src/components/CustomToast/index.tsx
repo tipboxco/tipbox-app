@@ -163,10 +163,10 @@ export const CustomToast: React.FC<CustomToastProps> = ({
       shadowRadius={8}
       elevation={5}
       width={358}
-      height={48}
+      minHeight={48}
       overflow="hidden"
     >
-      <HStack space="sm" alignItems="center" position="relative" flex={1}>
+      <HStack space="sm" alignItems="flex-start" position="relative" flex={1}>
         {/* Sol tarafta dairesel ikon */}
         <Box
           width={20}
@@ -182,6 +182,7 @@ export const CustomToast: React.FC<CustomToastProps> = ({
             shadowRadius: 6,
             elevation: 4,
           }}
+          mt={2}
         >
           <IconComponent
             width={10}
@@ -190,8 +191,8 @@ export const CustomToast: React.FC<CustomToastProps> = ({
           />
         </Box>
 
-        {/* Orta kısım - Mesaj metni */}
-        <Box flex={1}>
+        {/* Orta kısım - Mesaj metni (açıklama alt satırda devam eder) */}
+        <Box flex={1} minWidth={0}>
           <Text
             fontSize="$xs"
             fontWeight="$medium"
@@ -205,7 +206,7 @@ export const CustomToast: React.FC<CustomToastProps> = ({
               fontSize="$xs"
               color={config.textColor}
               opacity={0.8}
-              numberOfLines={1}
+              flexWrap="wrap"
             >
               {description}
             </Text>
