@@ -1,4 +1,5 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { walletKeys } from '@/src/features/wallet/api/hooks';
 import {
   getExpertBalance,
   getExpertRequests,
@@ -111,6 +112,9 @@ export const useCreateExpertRequest = () => {
     onSuccess: () => {
       // Expert requests listesini invalidate et
       queryClient.invalidateQueries({ queryKey: expertKeys.requests() });
+      // Wallet balance invalidate et - expert request TIPS harcıyor
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
     },
   });
 };
@@ -131,6 +135,10 @@ export const useAnswerExpertRequest = () => {
       queryClient.invalidateQueries({ queryKey: expertKeys.requestDetail(variables.requestId) });
       // Requests listesini invalidate et
       queryClient.invalidateQueries({ queryKey: expertKeys.requests() });
+      // Expert balance invalidate et - cevap sonrası TIPS kazanılıyor
+      queryClient.invalidateQueries({ queryKey: expertKeys.balance() });
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
     },
   });
 };

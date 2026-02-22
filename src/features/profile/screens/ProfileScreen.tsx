@@ -829,76 +829,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
   const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
   
-  // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
-  // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
+  // PERFORMANCE FIX: Ekran focus olduğunda profil verilerini invalidate et
+  // invalidateQueries ile broad key kullanarak tek bir çağrıda tüm profile cache'ini invalidate et
+  // React Query otomatik olarak sadece aktif (mounted) query'leri refetch eder
   useFocusEffect(
     useCallback(() => {
-      // Sadece kendi profilimizdeysek (targetUserId === user?.id) refetch et
       if (targetUserId && user?.id && targetUserId === user.id) {
-        // Activity indicator göster
         setIsRefreshingOnFocus(true);
-        
-        // Tüm profil verilerini invalidate et ve backend'den yeni veriyi çek
-        // CreatePostScreen'lerde zaten invalidate yapılıyor ama burada da yapıyoruz
-        // çünkü diğer yerlerden de ProfileScreen'e yönlendirilebilir
-        Promise.all([
-          // Cache'i invalidate et - yeni gönderi için cache'i temizle
-          queryClient.invalidateQueries({ 
-            queryKey: profileKeys.userPosts(targetUserId),
-            exact: false 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: profileKeys.profile(targetUserId),
-            exact: false 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: profileKeys.userReviews(targetUserId),
-            exact: false 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: profileKeys.userBenchmarks(targetUserId),
-            exact: false 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: profileKeys.userTipsAndTricks(targetUserId),
-            exact: false 
-          }),
-          queryClient.invalidateQueries({ 
-            queryKey: profileKeys.userReplies(targetUserId),
-            exact: false 
-          }),
-        ]).then(() => {
-          // Cache invalidate edildikten sonra backend'den yeni veriyi çek
-          return Promise.all([
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userPosts(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.profile(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userReviews(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userBenchmarks(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userTipsAndTricks(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userReplies(targetUserId),
-              exact: false 
-            }),
-          ]);
+
+        // Tek bir invalidate çağrısı: profileKeys.all tüm profile query'lerini kapsar
+        // React Query sadece aktif query'leri refetch eder (6 yerine sadece görünen tab'ınki)
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.all,
+          exact: false,
         }).then(() => {
-          // Refetch tamamlandıktan sonra activity indicator'ı kapat
           setIsRefreshingOnFocus(false);
-        }).catch((error) => {
+        }).catch(() => {
           setIsRefreshingOnFocus(false);
         });
       }

@@ -39,6 +39,7 @@ import {
   type AddInventoryItemResponse,
 } from './profileApi';
 import { useAppStore } from '@/src/store/appStore';
+import { feedKeys } from '@/src/features/feed/api/hooks';
 import type {
   TrustUser,
   TrusterUser,
@@ -136,8 +137,8 @@ export const useTrustList = (
       return getTrustList(userId, searchQuery);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 2 * 60 * 60 * 1000, // 2 saat cache (search yoksa)
-    gcTime: hasSearchQuery ? 0 : 4 * 60 * 60 * 1000, // 4 saat garbage collection
+    staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000, // 5 dakika cache (search yoksa)
+    gcTime: hasSearchQuery ? 0 : 10 * 60 * 1000, // 10 dakika garbage collection
     refetchOnMount: hasSearchQuery ? 'always' : false, // Search yoksa cache'den al
     refetchOnWindowFocus: hasSearchQuery, // Sadece search varsa window focus'ta refetch
     placeholderData: undefined,
@@ -194,8 +195,8 @@ export const useTrusterList = (
       return getTrusterList(userId, searchQuery, sort);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 2 * 60 * 60 * 1000, // 2 saat cache (search yoksa)
-    gcTime: hasSearchQuery ? 0 : 4 * 60 * 60 * 1000, // 4 saat garbage collection
+    staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000, // 5 dakika cache (search yoksa)
+    gcTime: hasSearchQuery ? 0 : 10 * 60 * 1000, // 10 dakika garbage collection
     refetchOnMount: hasSearchQuery ? 'always' : false, // Search yoksa cache'den al
     refetchOnWindowFocus: hasSearchQuery, // Sadece search varsa window focus'ta refetch
     placeholderData: undefined,
@@ -246,8 +247,8 @@ export const useUserProfile = (userId: string | undefined) => {
       return getUserProfile(userId.trim());
     },
     enabled: Boolean(isValidUserId),
-    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
+    staleTime: 5 * 60 * 1000, // 5 dakika - daha sık fresh data
+    gcTime: 10 * 60 * 1000, // 10 dakika - memory-friendly garbage collection
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -334,8 +335,8 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3, opti
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
+    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: (failureCount, error: any) => {
@@ -383,8 +384,8 @@ export const useUserReviews = (userId: string | undefined, limit: number = 5, op
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
+    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -424,8 +425,8 @@ export const useUserBenchmarks = (userId: string | undefined, limit: number = 5,
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
+    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -465,8 +466,8 @@ export const useUserTipsAndTricks = (userId: string | undefined, limit: number =
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
+    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -546,8 +547,8 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5, op
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
+    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -592,8 +593,8 @@ export const useUserCollectionAchievements = (
     },
     enabled: !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
+    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -634,8 +635,8 @@ export const useUserCollectionBridges = (
     },
     enabled: !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
+    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -957,9 +958,6 @@ export const useMuteUser = () => {
       return { previousProfile };
     },
     onSuccess: (_, variables) => {
-      // Invalidate yapmıyoruz çünkü optimistic update zaten doğru değeri set etti
-      // Invalidate yaparsak query refetch edilir ve backend'den gelen veri optimistic update'i ezer
-      // Sadece cache'i güncellemek yeterli (optimistic update zaten yaptı)
       console.log('[useMuteUser] ✅ User muted successfully');
     },
     onError: (error, variables, context) => {
@@ -971,6 +969,10 @@ export const useMuteUser = () => {
         );
       }
       console.error('[useMuteUser] ❌ Mutation error:', error);
+    },
+    onSettled: (_, __, variables) => {
+      // Safety-net: Backend ile senkronizasyonu garanti et
+      queryClient.invalidateQueries({ queryKey: profileKeys.profile(variables.targetUserId) });
     },
   });
 };
@@ -1059,6 +1061,10 @@ export const useUnmuteUser = () => {
       }
       console.error('[useUnmuteUser] ❌ Mutation error:', error);
     },
+    onSettled: (_, __, variables) => {
+      // Safety-net: Backend ile senkronizasyonu garanti et
+      queryClient.invalidateQueries({ queryKey: profileKeys.profile(variables.targetUserId) });
+    },
   });
 };
 
@@ -1124,6 +1130,12 @@ export const useBlockUser = () => {
         );
       }
       console.error('[useBlockUser] ❌ Mutation error:', error);
+    },
+    onSettled: (_, __, variables) => {
+      // Safety-net: Backend ile senkronizasyonu garanti et
+      queryClient.invalidateQueries({ queryKey: profileKeys.profile(variables.targetUserId) });
+      // Block sonrası feed'i invalidate et - engellenen kullanıcının postları gizlenmeli
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
     },
   });
 };
@@ -1208,6 +1220,12 @@ export const useUnblockUser = () => {
         );
       }
       console.error('[useUnblockUser] ❌ Mutation error:', error);
+    },
+    onSettled: (_, __, variables) => {
+      // Safety-net: Backend ile senkronizasyonu garanti et
+      queryClient.invalidateQueries({ queryKey: profileKeys.profile(variables.targetUserId) });
+      // Unblock sonrası feed'i invalidate et - kullanıcının postları tekrar görünmeli
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
     },
   });
 };

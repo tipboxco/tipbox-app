@@ -21,6 +21,7 @@ import { mapProductInfoTypeToContextType, type ApiContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys } from '@/src/features/profile/api/hooks';
+import * as ImageManipulator from 'expo-image-manipulator';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -115,7 +116,7 @@ export const CreateUpdatePostScreen = () => {
       setIsImagePickerLoading(true);
       const currentImages = getValues('selectedImages') || [];
       const remainingSlots = 10 - currentImages.length;
-      
+
       if (remainingSlots <= 0) {
         showCustomToast(toast, {
           title: 'Limit Exceeded',
@@ -126,15 +127,35 @@ export const CreateUpdatePostScreen = () => {
       }
 
       const result = await imagePickerService.pickMultipleFromGallery(remainingSlots);
-      
+
       if (result.success && result.assets && result.assets.length > 0) {
         const newImageUris = result.assets
           .map(asset => asset.uri)
           .filter((uri): uri is string => !!uri); // URI'leri filtrele
-        
+
         if (newImageUris.length > 0) {
-          const updatedImages = [...currentImages, ...newImageUris];
-          setValue('selectedImages', updatedImages, { shouldValidate: true });
+          // PERFORMANCE FIX: Image compression - max 2MB, max 1920px, quality 0.8
+          // 5-10x küçük dosya boyutu = daha hızlı upload
+          const compressedImageUris = await Promise.all(
+            newImageUris.map(async (uri) => {
+              try {
+                const compressedImage = await ImageManipulator.manipulateAsync(
+                  uri,
+                  [{ resize: { width: 1920 } }], // Max width 1920px (aspect ratio korunur)
+                  { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+                );
+                return compressedImage.uri;
+              } catch (error) {
+                console.error('[CreateUpdatePostScreen] Image compression error:', error);
+                // Hata durumunda orijinal resmi kullan
+                return uri;
+              }
+            })
+          );
+
+          const updatedImages = [...currentImages, ...compressedImageUris];
+          // PERFORMANCE FIX: shouldValidate: false - validation sadece submit'te
+          setValue('selectedImages', updatedImages, { shouldValidate: false });
         } else {
         showCustomToast(toast, {
           title: 'Error',

@@ -412,14 +412,33 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const handleLogout = useCallback(async () => {
     // Drawer'ı hemen kapat
     handleCloseDrawer();
-    
-    // Logout işlemini başlat
-    // State güncellenince RootNavigator otomatik olarak Auth'a yönlendirecek
-    // (RootNavigator'da isAuthenticated=false olduğunda Auth screen'i gösteriliyor)
-    // Manuel reset yapmaya gerek yok - RootNavigator otomatik yönetiyor
-    logout().catch((error) => {
-      console.error('❌ Logout hatası (arka plan):', error);
-    });
+
+    // CRITICAL SECURITY FIX: Logout sonrası navigation stack'i tamamen temizle
+    // Authenticated screen'lerin memory'de kalmamasını garanti et
+    try {
+      // Logout işlemini çağır
+      await logout();
+
+      // CRITICAL: Navigation stack'i sıfırla ve Auth screen'e yönlendir
+      // Bu sayede authenticated screen'ler memory'den temizlenir
+      navigationService.navigate('Auth', {
+        screen: 'Onboarding',
+      });
+
+      // Alternative: CommonActions.reset ile navigation state'i sıfırla
+      // props.navigation.dispatch(
+      //   CommonActions.reset({
+      //     index: 0,
+      //     routes: [{ name: 'Auth' }],
+      //   })
+      // );
+    } catch (error) {
+      console.error('❌ Logout hatası:', error);
+      // Hata olsa bile Auth screen'e yönlendir (security önlemi)
+      navigationService.navigate('Auth', {
+        screen: 'Onboarding',
+      });
+    }
   }, [handleCloseDrawer, logout]);
 
   // PERFORMANCE FIX: MENU_ITEMS array'ini useMemo ile memoize et

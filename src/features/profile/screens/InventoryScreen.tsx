@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { FlatList, Dimensions, Modal as RNModal, Pressable as RNPressable, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
@@ -42,15 +42,35 @@ const InventoryScreen = () => {
   const isDark = colorMode === 'dark';
   const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(''); // PERFORMANCE FIX: Debounced search
   const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null); // Track which card has open menu
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const navigation = useNavigation<InventoryScreenNavigationProp>();
   const route = useRoute<InventoryScreenRouteProp>();
   const insets = useSafeAreaInsets();
   const { user } = useAppStore();
-  
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+
+  // PERFORMANCE FIX: Debounce search query - 500ms delay
+  // 1000+ item'da her keystroke'da filter çok yavaş (500ms+ lag)
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500); // 500ms debounce
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
   
   // Route params'tan userId, selectMode ve returnScreen al
   const { userId, selectMode, returnScreen } = route.params;
@@ -91,20 +111,23 @@ const InventoryScreen = () => {
     });
   }, [data]);
 
-  // API'den gelen verileri filtrele
+  // PERFORMANCE FIX: API'den gelen verileri filtrele (debounced search query ile)
+  // 500ms debounce ile 1000+ item'da filter performansı optimize edildi
   const filteredInventory = useMemo(() => {
     if (!allInventoryItems || allInventoryItems.length === 0) return [];
 
+    // Search query boşsa tüm listeyi döndür - filter yapma (PERFORMANCE)
+    if (!debouncedSearchQuery.trim()) return allInventoryItems;
+
+    const query = debouncedSearchQuery.toLowerCase();
     return allInventoryItems.filter((item) => {
-      if (!searchQuery.trim()) return true;
-      const query = searchQuery.toLowerCase();
       return (
         item.brand.name.toLowerCase().includes(query) ||
         item.brand.model.toLowerCase().includes(query) ||
         item.brand.specs.toLowerCase().includes(query)
       );
     });
-  }, [allInventoryItems, searchQuery]);
+  }, [allInventoryItems, debouncedSearchQuery]);
 
   // Infinite scroll handler
   const handleLoadMore = useCallback(() => {

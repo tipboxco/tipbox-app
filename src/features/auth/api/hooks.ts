@@ -6,6 +6,7 @@ import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResp
 import { useAppStore } from '../../../store/appStore';
 import { notificationService } from '@/src/services/ExpoNotificationService';
 import { notificationKeys } from '@/src/features/notifications/api/hooks';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 import { TokenService } from '@/src/services/TokenService';
 import { updateTokenCache } from '@/src/services/ApiService/interceptors';
 
@@ -306,6 +307,9 @@ export const useUpdateUserInterests = () => {
 
       // User interests query'sini invalidate et (varsa)
       queryClient.invalidateQueries({ queryKey: ['user', 'interests'] });
+      // Current user ve profile cache'ini invalidate et - interests profilde gösteriliyor
+      queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      queryClient.invalidateQueries({ queryKey: profileKeys.all });
     },
     onError: (error) => {
       console.error('[useUpdateUserInterests] ❌ Update interests error:', error);

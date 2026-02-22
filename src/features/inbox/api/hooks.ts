@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { walletKeys } from '@/src/features/wallet/api/hooks';
 import {
   getMessages,
   sendGift,
@@ -168,6 +169,9 @@ export const useSendGift = () => {
     onSuccess: () => {
       // Mesaj listesini invalidate et (socket event'ten sonra güncellenecek)
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      // Wallet balance ve transactions invalidate et - bakiye değişti
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
     },
   });
 };
@@ -198,6 +202,11 @@ export const useCreateSupportRequest = () => {
     onSuccess: () => {
       // Mesaj listesini invalidate et (socket event'ten sonra güncellenecek)
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      // Support requests listesini invalidate et - yeni talep listede görünmeli
+      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+      // Wallet balance invalidate et - support request TIPS harcıyor
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
     },
   });
 };
