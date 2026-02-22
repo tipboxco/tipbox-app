@@ -57,9 +57,9 @@ export const RootNavigator = () => {
     <RootStack.Navigator
       screenOptions={{
         headerShown: false,
-        // NOTE: Native Stack Navigator automatically optimizes inactive screens
-        // detachInactiveScreens is not available for Native Stack (only for Stack Navigator)
-        // Native Stack uses native screen management which is already optimized
+        // PERFORMANCE FIX: Freeze inactive screens to reduce memory usage
+        // Native Stack uses react-native-screens which supports freezeOnBlur
+        freezeOnBlur: true,
       }}
     >
       {!isAuthenticated ? (

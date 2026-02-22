@@ -237,30 +237,34 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         }
     }, [user?.id, messages]);
 
-    // Socket event listeners
-    useEffect(() => {
-        if (!isConnected) {
-            console.log('[MessagesScreen] ⚠️ Socket not connected, skipping event listeners');
-            return;
-        }
+    // PERFORMANCE FIX: Socket event listeners only active when screen is focused
+    // Prevents inactive screen from processing socket events and causing unnecessary re-renders
+    useFocusEffect(
+        useCallback(() => {
+            if (!isConnected) {
+                console.log('[MessagesScreen] ⚠️ Socket not connected, skipping event listeners');
+                return;
+            }
 
-        console.log('[MessagesScreen] ✅ Socket connected, registering event listeners');
-        on('new_message', handleNewMessage);
-        on('thread_read', handleThreadRead);
-        on('user_typing', handleUserTyping);
+            console.log('[MessagesScreen] ✅ Screen focused & socket connected, registering event listeners');
+            on('new_message', handleNewMessage);
+            on('thread_read', handleThreadRead);
+            on('user_typing', handleUserTyping);
 
-        return () => {
-            off('new_message', handleNewMessage);
-            off('thread_read', handleThreadRead);
-            off('user_typing', handleUserTyping);
-            
-            // Typing timeout'larını temizle
-            Object.values(typingTimeoutsRef.current).forEach((timeout) => {
-                clearTimeout(timeout);
-            });
-            typingTimeoutsRef.current = {};
-        };
-    }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping]);
+            return () => {
+                console.log('[MessagesScreen] 🔇 Screen blurred, unregistering socket listeners');
+                off('new_message', handleNewMessage);
+                off('thread_read', handleThreadRead);
+                off('user_typing', handleUserTyping);
+
+                // Typing timeout'larını temizle
+                Object.values(typingTimeoutsRef.current).forEach((timeout) => {
+                    clearTimeout(timeout);
+                });
+                typingTimeoutsRef.current = {};
+            };
+        }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping])
+    );
 
     // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
     // ✅ FIX: Screen focus olduğunda cache'i kontrol et ve gerekirse refetch yap

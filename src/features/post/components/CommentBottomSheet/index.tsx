@@ -36,22 +36,14 @@ export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
 
   useEffect(() => {
     if (autoFocus) {
-      // Bottom sheet açıldıktan sonra input'a focus yapmak için delay ekle
-      // Bottom sheet animasyonu tamamlanana kadar bekle
-      // İlk focus denemesi (hızlı)
-      const firstTimeout = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-      
-      // İkinci focus denemesi (güvenli, bottom sheet tamamen açıldıktan sonra)
-      const secondTimeout = setTimeout(() => {
-        inputRef.current?.focus();
-      }, Platform.OS === 'ios' ? 500 : 400);
-      
-      return () => {
-        clearTimeout(firstTimeout);
-        clearTimeout(secondTimeout);
-      };
+      // Wait for bottom sheet animation to complete, then focus on next frame
+      const interaction = InteractionManager.runAfterInteractions(() => {
+        requestAnimationFrame(() => {
+          inputRef.current?.focus();
+        });
+      });
+
+      return () => interaction.cancel();
     }
   }, [autoFocus]);
 

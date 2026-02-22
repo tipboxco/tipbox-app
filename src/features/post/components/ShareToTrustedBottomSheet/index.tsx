@@ -8,9 +8,8 @@ import {
   Input,
   InputField,
   Image,
-  ScrollView,
 } from '@gluestack-ui/themed';
-import { ActivityIndicator, Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@gluestack-ui/themed';
@@ -26,6 +25,54 @@ import type { TrustUser } from '@/src/features/profile/types';
 const GRID_COLUMNS = 3;
 const AVATAR_SIZE = 72;
 const SEARCH_DEBOUNCE_MS = 300;
+
+interface TrustUserGridItemProps {
+  trustUser: TrustUser;
+  selected: boolean;
+  onToggle: (userId: string) => void;
+  itemWidth: number;
+  isDark: boolean;
+}
+
+const TrustUserGridItem = React.memo<TrustUserGridItemProps>(
+  ({ trustUser, selected, onToggle, itemWidth, isDark }) => (
+    <Pressable
+      onPress={() => onToggle(trustUser.id)}
+      style={[styles.gridItem, { width: itemWidth }]}
+    >
+      <Box
+        w={AVATAR_SIZE}
+        h={AVATAR_SIZE}
+        rounded="$full"
+        overflow="hidden"
+        borderWidth={2}
+        borderColor={selected ? '#E11D48' : 'transparent'}
+        bg={isDark ? '$backgroundDark700' : '#E5E7EB'}
+        position="relative"
+      >
+        <Image
+          source={toImageSource(trustUser.avatar) || DEFAULT_USER_AVATAR}
+          alt={trustUser.name}
+          style={styles.avatarImage}
+          resizeMode="cover"
+        />
+      </Box>
+      <Text
+        mt="$1.5"
+        fontSize={12}
+        fontWeight="$medium"
+        color={isDark ? '$textDark50' : '#111827'}
+        numberOfLines={1}
+        textAlign="center"
+        maxWidth={itemWidth}
+      >
+        {trustUser.name}
+      </Text>
+    </Pressable>
+  )
+);
+
+TrustUserGridItem.displayName = 'TrustUserGridItem';
 
 export interface ShareToTrustedBottomSheetProps {
   postId: string;
@@ -208,73 +255,44 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
         </HStack>
       </Box>
 
-      {/* Trust list - Grid: itemler ortalı (her öğe sütununda yatay ortalı, sütunlar eşit aralıklı) */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator
-        keyboardShouldPersistTaps="handled"
-      >
-        {isLoadingTrustList ? (
-          <VStack alignItems="center" justifyContent="center" py="$12">
-            <ActivityIndicator size="large" color={isDark ? '#fff' : '#000'} />
-            <Text mt="$3" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-              Loading...
-            </Text>
-          </VStack>
-        ) : trustList.length === 0 ? (
-          <VStack alignItems="center" py="$12">
-            <Text fontSize="$md" fontWeight="$semibold" color="$textLight500" $dark-color="$textDark400">
-              {debouncedSearch ? 'No results found' : 'Trust list is empty'}
-            </Text>
-            <Text fontSize="$sm" color="$textLight400" $dark-color="$textDark500" mt="$1" textAlign="center" px="$4">
-              {debouncedSearch ? 'Try a different search.' : 'Add people to your trust list to share with them.'}
-            </Text>
-          </VStack>
-        ) : (
-          <View style={[styles.gridContainer, { width: gridTotalWidth }]}>
-            {trustList.map((trustUser: TrustUser) => {
-              const selected = selectedUserIds.has(trustUser.id);
-              return (
-                <Pressable
-                  key={trustUser.id}
-                  onPress={() => toggleUser(trustUser.id)}
-                  style={[styles.gridItem, { width: itemWidth }]}
-                >
-                  <Box
-                    w={AVATAR_SIZE}
-                    h={AVATAR_SIZE}
-                    rounded="$full"
-                    overflow="hidden"
-                    borderWidth={2}
-                    borderColor={selected ? '#E11D48' : 'transparent'}
-                    bg={isDark ? '$backgroundDark700' : '#E5E7EB'}
-                    position="relative"
-                  >
-                    <Image
-                      source={toImageSource(trustUser.avatar) || DEFAULT_USER_AVATAR}
-                      alt={trustUser.name}
-                      style={styles.avatarImage}
-                      resizeMode="cover"
-                    />
-                  </Box>
-                  <Text
-                    mt="$1.5"
-                    fontSize={12}
-                    fontWeight="$medium"
-                    color={isDark ? '$textDark50' : '#111827'}
-                    numberOfLines={1}
-                    textAlign="center"
-                    maxWidth={itemWidth}
-                  >
-                    {trustUser.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
+      {/* Trust list - Virtualized grid */}
+      {isLoadingTrustList ? (
+        <VStack alignItems="center" justifyContent="center" py="$12">
+          <ActivityIndicator size="large" color={isDark ? '#fff' : '#000'} />
+          <Text mt="$3" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
+            Loading...
+          </Text>
+        </VStack>
+      ) : trustList.length === 0 ? (
+        <VStack alignItems="center" py="$12">
+          <Text fontSize="$md" fontWeight="$semibold" color="$textLight500" $dark-color="$textDark400">
+            {debouncedSearch ? 'No results found' : 'Trust list is empty'}
+          </Text>
+          <Text fontSize="$sm" color="$textLight400" $dark-color="$textDark500" mt="$1" textAlign="center" px="$4">
+            {debouncedSearch ? 'Try a different search.' : 'Add people to your trust list to share with them.'}
+          </Text>
+        </VStack>
+      ) : (
+        <FlatList
+          data={trustList}
+          keyExtractor={(item: TrustUser) => item.id}
+          numColumns={GRID_COLUMNS}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          columnWrapperStyle={{ width: gridTotalWidth, justifyContent: 'space-between', alignSelf: 'center' }}
+          showsVerticalScrollIndicator
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }: { item: TrustUser }) => (
+            <TrustUserGridItem
+              trustUser={item}
+              selected={selectedUserIds.has(item.id)}
+              onToggle={toggleUser}
+              itemWidth={itemWidth}
+              isDark={isDark}
+            />
+          )}
+        />
+      )}
 
       {/* Message input + Send - Absolute positioned, user listesinin üzerinde */}
       <Box
@@ -357,11 +375,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     flexGrow: 1,
     alignItems: 'center',
-  },
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
   },
   gridItem: {
     marginBottom: 10,

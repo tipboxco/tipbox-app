@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { Platform, View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps, BottomTabBar } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +22,7 @@ import { useAppStore } from '@/src/store/appStore';
 import { useNotificationStore } from '@/src/store/notificationStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
-import { getHeavyTabFreezeRule } from './rules/freezeRules';
+// freezeOnBlur is now set globally in screenOptions for all tabs
 import { ScrollRegistry } from '@/src/services/ScrollRegistry';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 // Heroicons imports
@@ -453,22 +453,28 @@ export const TabNavigator = () => {
     }
   }, [unreadCount, markAllAsReadMutation]);
 
+  // PERFORMANCE FIX: Timeout ref for cleanup on unmount
+  const feedScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (feedScrollTimeoutRef.current) {
+        clearTimeout(feedScrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // CRITICAL FIX: Instagram-style scroll-to-top handler
-  // Home icon'a tıklandığında Feed'i en üste scroll et
-  // React Navigation'ın useScrollToTop hook'u sadece aktif tab için çalışır
-  // Bu handler hem aktif hem inactive durumda çalışır
-  // 
-  // IMPORTANT: Tab press event'i zaten FeedStack'e navigate edecek
-  // Bu handler sadece scroll yapmak için - navigation otomatik
   const handleFeedTabPress = useCallback(() => {
-    // CRITICAL FIX: Double requestAnimationFrame - native view'in mount olmasını bekle
-    // React Navigation tab press event'i FeedStack'e navigate edecek
-    // Navigate tamamlandıktan sonra scroll yapmak için delay ekle
+    // Clear any previous pending timeout
+    if (feedScrollTimeoutRef.current) {
+      clearTimeout(feedScrollTimeoutRef.current);
+    }
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        // Ekstra delay - screen transition tamamlanmasını bekle
-        setTimeout(() => {
+        feedScrollTimeoutRef.current = setTimeout(() => {
           ScrollRegistry.scrollToTop('feed', true);
+          feedScrollTimeoutRef.current = null;
         }, 50);
       });
     });
@@ -481,9 +487,6 @@ export const TabNavigator = () => {
       setHasVisitedInbox(true);
     }
   }, [hasVisitedInbox]);
-
-  // Heavy tab'ler için freeze rule
-  const heavyTabFreezeRule = getHeavyTabFreezeRule();
 
   // ARCHITECTURE FIX: Edge-to-Edge Design Pattern
   // Manual inset management for full-bleed design with controlled background colors
@@ -511,8 +514,10 @@ export const TabNavigator = () => {
         <Tab.Navigator
           tabBar={(props) => <CustomTabBar {...props} />}
           screenOptions={({ route }) => ({
-            // ARCHITECTURE FIX: Tab state persistence
-            // Prevent tabs from unmounting on blur to preserve scroll position and state
+            // PERFORMANCE FIX: Freeze inactive tabs to stop rendering while preserving state
+            // freezeOnBlur: true uses react-native-screens to suspend inactive tab rendering
+            // This prevents 6 tabs from consuming CPU/memory simultaneously
+            freezeOnBlur: true,
             unmountOnBlur: false,
             headerShown: false,
             tabBarIcon: ({ focused, color, size }) => renderTabBarIcon({ route, focused, color, size }),
@@ -536,18 +541,10 @@ export const TabNavigator = () => {
           <Tab.Screen
             name="CatalogStack"
             component={CatalogNavigator}
-            options={{
-              // Heavy tab: freeze on blur
-              freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
-            }}
           />
           <Tab.Screen
             name="EventsStack"
             component={EventsNavigator}
-            options={{
-              // Heavy tab: freeze on blur
-              freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
-            }}
           />
           <Tab.Screen
             name="NotificationStack"
