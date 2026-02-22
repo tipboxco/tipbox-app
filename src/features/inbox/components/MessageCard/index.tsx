@@ -22,14 +22,31 @@ function getAvatarBgColor(name: string): string {
   return AVATAR_BG_COLORS[code % AVATAR_BG_COLORS.length];
 }
 
-interface MessageCardProps {
+export interface MessageCardProps {
   data: InboxMessage;
   onPress?: (messageId: string) => void;
   isTyping?: boolean; // Kullanıcı typing yapıyor mu?
   typingUserName?: string; // Typing yapan kullanıcının adı (opsiyonel)
 }
 
-export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTyping = false, typingUserName }) => {
+function messageCardPropsAreEqual(prev: MessageCardProps, next: MessageCardProps): boolean {
+  const a = prev.data;
+  const b = next.data;
+  return (
+    a.id === b.id &&
+    a.lastMessage === b.lastMessage &&
+    a.timestamp === b.timestamp &&
+    a.isUnread === b.isUnread &&
+    (a.unreadCount ?? 0) === (b.unreadCount ?? 0) &&
+    a.senderName === b.senderName &&
+    a.senderAvatar === b.senderAvatar &&
+    prev.isTyping === next.isTyping &&
+    prev.typingUserName === next.typingUserName &&
+    prev.onPress === next.onPress
+  );
+}
+
+const MessageCardInner: React.FC<MessageCardProps> = ({ data, onPress, isTyping = false, typingUserName }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -60,7 +77,8 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
             placeholder={DEFAULT_USER_AVATAR}
             style={{ width: 48, height: 48, borderRadius: 24 }}
             contentFit="cover"
-            cachePolicy="memory-disk"
+            cachePolicy="disk"
+            recyclingKey={data.id}
             priority="high"
           />
         ) : (
@@ -232,5 +250,8 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
     </Pressable>
   );
 };
+
+export const MessageCard = React.memo(MessageCardInner, messageCardPropsAreEqual);
+MessageCard.displayName = 'MessageCard';
 
 export default MessageCard;

@@ -275,28 +275,44 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     socketService.cancelSupportRequest(requestId);
   }, []);
 
-  // Connection operations
+  // Connection operations – Promise-based event listener (no polling / UI freeze)
   const connect = useCallback(async () => {
     setIsConnecting(true);
     try {
       await socketService.connect();
       const socketInstance = socketService.getSocket();
+      if (!socketInstance) {
+        setIsConnected(false);
+        throw new Error('Socket not available');
+      }
+
+      // Resolve when 'connect' fires or already connected; reject on timeout (no blocking loop)
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          socketInstance.off('connect', onConnect);
+          reject(new Error('Socket connection timeout'));
+        }, 5000);
+        const onConnect = () => {
+          clearTimeout(timeout);
+          socketInstance.off('connect', onConnect);
+          resolve();
+        };
+        socketInstance.on('connect', onConnect);
+        if (socketInstance.connected) {
+          clearTimeout(timeout);
+          socketInstance.off('connect', onConnect);
+          resolve();
+        }
+      });
+
+      // Disconnect handler: connection drop tespiti ve reconnection UI için state güncelle
+      socketInstance.on('disconnect', () => {
+        setIsConnected(false);
+        setSocket(null);
+      });
+
       setSocket(socketInstance);
-      
-      // Socket bağlantısını bekle (max 5 saniye)
-      let attempts = 0;
-      const maxAttempts = 50; // 5 saniye (100ms * 50)
-      
-      while (!socketService.isConnected() && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      
-      setIsConnected(socketService.isConnected());
-      
-      if (!socketService.isConnected()) {
-        throw new Error('Socket connection timeout');
-      }
+      setIsConnected(true);
     } catch (error) {
       setIsConnected(false);
       throw error; // Hata fırlat ki retry mekanizması çalışsın

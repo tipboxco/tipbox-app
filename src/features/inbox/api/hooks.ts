@@ -40,6 +40,7 @@ import type {
   CloseSupportRequestRequest,
   FinalizeSupportRequestRequest,
   ReportSupportRequestRequest,
+  type GetMessageReactionsResponse,
 } from './messagesApi';
 
 /**
@@ -281,7 +282,7 @@ export const useThreadMessages = (threadId: string | null, params?: GetThreadMes
     // ✅ FIX: Cache ayarları - Thread bazlı veri çekilmesi için refetchOnMount: true
     // Yeni thread açıldığında her zaman backend'den veri çek (cache'deki eski thread verilerini gösterme)
     staleTime: 0,  // Veri her zaman stale olsun, böylece thread değiştiğinde yeni veri çekilsin
-    gcTime: 5 * 60 * 1000,     // 5 dakika sonra garbage collect et (eski thread'lerin cache'i temizlensin)
+    gcTime: 2 * 60 * 1000,     // 2 dakika – 50 thread × 5 dk bellek tüketimini azaltmak için
     refetchOnMount: true,     // ✅ FIX: Thread açıldığında her zaman backend'den veri çek
     refetchOnWindowFocus: false,
     retry: 1,
@@ -538,32 +539,55 @@ export const useMarkThreadAsRead = () => {
 
 /**
  * Add reaction mutation hook
+ * Uses setQueryData only for this message's reactions – no full inbox invalidation.
  */
 export const useAddReaction = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
       addReaction(messageId, { emoji }),
     onSuccess: (data, variables) => {
-      // Invalidate thread messages to refetch with updated reactions
-      queryClient.invalidateQueries({ queryKey: inboxKeys.all });
+      const queryKey = [...inboxKeys.all, 'reactions', variables.messageId];
+      queryClient.setQueryData<GetMessageReactionsResponse>(queryKey, (old) => {
+        const messageId = variables.messageId;
+        const { emoji, userId } = data;
+        if (!old) {
+          return { messageId, reactions: [{ emoji, count: 1, users: [userId] }] };
+        }
+        const idx = old.reactions.findIndex((r) => r.emoji === emoji);
+        if (idx >= 0) {
+          const r = old.reactions[idx];
+          return {
+            ...old,
+            reactions: old.reactions.map((x, i) =>
+              i === idx ? { ...x, count: x.count + 1, users: [...x.users, userId] } : x
+            ),
+          };
+        }
+        return {
+          ...old,
+          reactions: [...old.reactions, { emoji, count: 1, users: [userId] }],
+        };
+      });
     },
   });
 };
 
 /**
  * Remove reaction mutation hook
+ * Invalidates only this message's reactions query (no full inbox refetch).
  */
 export const useRemoveReaction = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ messageId, reactionId }: { messageId: string; reactionId: string }) =>
       removeReaction(messageId, reactionId),
-    onSuccess: () => {
-      // Invalidate thread messages to refetch with updated reactions
-      queryClient.invalidateQueries({ queryKey: inboxKeys.all });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...inboxKeys.all, 'reactions', variables.messageId],
+      });
     },
   });
 };

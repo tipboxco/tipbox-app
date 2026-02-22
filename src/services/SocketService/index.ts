@@ -93,7 +93,8 @@ class SocketService {
       });
 
       this.socket.on('disconnect', () => {
-        // Disconnected
+        // Connection lost – SocketProvider (and other consumers) listen to this socket instance
+        // and set isConnected = false / show reconnection UI via their own 'disconnect' listener.
       });
 
       this.socket.once('connect_error', () => {

@@ -865,5 +865,6 @@ const styles = StyleSheet.create({
   },
 });
 
+export { MemoizedPostCard as PostCard };
 export default MemoizedPostCard;
 

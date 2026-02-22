@@ -12,7 +12,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import MessageCard from '../components/MessageCard/index';
+import { MessageCardRow } from '../components/MessageCard/MessageCardRow';
 import MessagesFilterGroup from '../components/MessagesFilterGroup/index';
 import type { InboxStackParamList } from '../navigation';
 import { useSafeAreaValues } from '@/src/utils';
@@ -27,6 +27,7 @@ import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/shared
 import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { MessageSkeleton } from '@/src/components/Skeletons';
+import { inboxTypingStore } from '../store/typingStore';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -76,10 +77,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const { closeBottomSheet } = useGlobalBottomSheet();
     const markThreadAsReadMutation = useMarkThreadAsRead();
     
-    // Typing state: Hangi thread'de hangi kullanıcı typing yapıyor?
-    // Format: { [threadId]: { userId: string, userName?: string } }
-    const [typingUsers, setTypingUsers] = useState<{ [threadId: string]: { userId: string; userName?: string } }>({});
-    // Typing timeout'ları için ref (cleanup için)
+    // Typing timeout'ları için ref (cleanup için). Typing state artık inboxTypingStore'da; sadece ilgili row re-render olur.
     const typingTimeoutsRef = useRef<{ [threadId: string]: NodeJS.Timeout }>({});
 
     // Socket event handler - new_message event
@@ -164,8 +162,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 
                 return oldData;
             });
-            
-            queryClient.invalidateQueries({ queryKey: baseKey });
+            // Trust optimistic update; no invalidate to avoid cache flicker and redundant network
         }
     }, [queryClient, user?.id]);
 
@@ -199,70 +196,45 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 msg.id === eventData.threadId ? { ...msg, isUnread, unreadCount } : msg
             );
         });
-
-        // Tüm messages varyantlarını (farklı search params dahil) invalidate et
-        queryClient.invalidateQueries({ queryKey: baseKey });
+        // Trust optimistic update; no invalidate to avoid cache flicker and redundant network
     }, [queryClient, searchParams]);
 
     // Socket event handler - user_typing event (kullanıcı typing yapıyor)
+    // Store kullanıldığı için sadece ilgili MessageCardRow re-render olur, tüm ekran değil
     const handleUserTyping = useCallback((eventData: { userId: string; threadId: string; isTyping: boolean }) => {
-        console.log('[MessagesScreen] 👤 User typing event received:', {
-            userId: eventData.userId,
-            threadId: eventData.threadId,
-            isTyping: eventData.isTyping,
-            currentUserId: user?.id,
-        });
-        
-        // Kendi typing durumumuzu gösterme (sadece karşı kullanıcının typing durumunu göster)
-        if (eventData.userId === user?.id) {
-            return;
+        if (__DEV__) {
+            console.log('[MessagesScreen] 👤 User typing event received:', {
+                userId: eventData.userId,
+                threadId: eventData.threadId,
+                isTyping: eventData.isTyping,
+                currentUserId: user?.id,
+            });
         }
-        
-        // Typing state'i güncelle
-        setTypingUsers((prev) => {
-            if (eventData.isTyping) {
-                // Typing başladı: Mevcut timeout'u temizle
-                if (typingTimeoutsRef.current[eventData.threadId]) {
-                    clearTimeout(typingTimeoutsRef.current[eventData.threadId]);
-                    delete typingTimeoutsRef.current[eventData.threadId];
-                }
-                
-                // Thread'deki kullanıcıyı bul ve typing state'e ekle
-                // CRITICAL FIX: messages array kontrolü
-                const messagesArray = Array.isArray(messages) ? messages : [];
-                const thread = messagesArray.find((msg) => msg.id === eventData.threadId);
-                const typingUserName = thread?.senderName;
-                
-                // 3 saniye sonra otomatik olarak typing'i durdur (güvenlik için)
-                const timeout = setTimeout(() => {
-                    setTypingUsers((prevState) => {
-                        const newState = { ...prevState };
-                        delete newState[eventData.threadId];
-                        return newState;
-                    });
-                    delete typingTimeoutsRef.current[eventData.threadId];
-                }, 3000);
-                typingTimeoutsRef.current[eventData.threadId] = timeout;
-                
-                return {
-                    ...prev,
-                    [eventData.threadId]: {
-                        userId: eventData.userId,
-                        userName: typingUserName,
-                    },
-                };
-            } else {
-                // Typing durdu: Mevcut timeout'u temizle ve typing state'i kaldır
-                if (typingTimeoutsRef.current[eventData.threadId]) {
-                    clearTimeout(typingTimeoutsRef.current[eventData.threadId]);
-                    delete typingTimeoutsRef.current[eventData.threadId];
-                }
-                
-                const newState = { ...prev };
-                delete newState[eventData.threadId];
-                return newState;
+        if (eventData.userId === user?.id) return;
+
+        if (eventData.isTyping) {
+            if (typingTimeoutsRef.current[eventData.threadId]) {
+                clearTimeout(typingTimeoutsRef.current[eventData.threadId]);
+                delete typingTimeoutsRef.current[eventData.threadId];
             }
-        });
+            const messagesArray = Array.isArray(messages) ? messages : [];
+            const thread = messagesArray.find((msg) => msg.id === eventData.threadId);
+            inboxTypingStore.setTyping(eventData.threadId, {
+                userId: eventData.userId,
+                userName: thread?.senderName,
+            });
+            const timeout = setTimeout(() => {
+                inboxTypingStore.setTyping(eventData.threadId, null);
+                delete typingTimeoutsRef.current[eventData.threadId];
+            }, 3000);
+            typingTimeoutsRef.current[eventData.threadId] = timeout;
+        } else {
+            if (typingTimeoutsRef.current[eventData.threadId]) {
+                clearTimeout(typingTimeoutsRef.current[eventData.threadId]);
+                delete typingTimeoutsRef.current[eventData.threadId];
+            }
+            inboxTypingStore.setTyping(eventData.threadId, null);
+        }
     }, [user?.id, messages]);
 
     // Socket event listeners
@@ -588,20 +560,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 <FlatList
                     data={getFilteredMessages()}
                     showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => {
-                        const typingInfo = typingUsers[item.id];
-                        const isTyping = !!typingInfo;
-                        const typingUserName = typingInfo?.userName;
-                        
-                        return (
-                            <MessageCard
-                                data={item}
-                                onPress={handleMessagePress}
-                                isTyping={isTyping}
-                                typingUserName={typingUserName}
-                            />
-                        );
-                    }}
+                    renderItem={({ item }) => (
+                        <MessageCardRow item={item} onPress={handleMessagePress} />
+                    )}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={{ 
                         paddingHorizontal: 16, 

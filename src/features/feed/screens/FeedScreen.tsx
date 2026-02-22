@@ -49,6 +49,8 @@ import { FilterBarReanimated } from '../components/FilterBar/FilterBarReanimated
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
+const ESTIMATED_FEED_ITEM_HEIGHT = 420;
+
 /**
  * FeedScreen Inner Component
  * FeedListContext içinde render edilir, feedListRef'e erişebilir
@@ -995,12 +997,21 @@ const FeedScreenInner = React.memo(() => {
 
   // Static style - paddingHorizontal, paddingTop ve paddingBottom için
   const contentContainerStyle = useMemo(
-    () => ({ 
+    () => ({
       paddingHorizontal: 16,
       paddingTop: 8,
-      paddingBottom: bottomPadding 
+      paddingBottom: bottomPadding
     }),
     [bottomPadding]
+  );
+
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: ESTIMATED_FEED_ITEM_HEIGHT,
+      offset: ESTIMATED_FEED_ITEM_HEIGHT * index,
+      index,
+    }),
+    []
   );
 
   // FEATURE: Handle scrollToIndex failures - fallback to scrollToOffset
@@ -1115,6 +1126,7 @@ const FeedScreenInner = React.memo(() => {
               ListFooterComponent={renderFooter}
               contentContainerStyle={contentContainerStyle}
               showsVerticalScrollIndicator={false}
+              getItemLayout={getItemLayout}
               // CRITICAL FIX: removeClippedSubviews={false} - scrollToOffset çalışması için gerekli
               // removeClippedSubviews={true} olduğunda native view detached olabilir ve scroll çalışmaz
               removeClippedSubviews={false}

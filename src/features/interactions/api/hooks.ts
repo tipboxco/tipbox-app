@@ -203,10 +203,31 @@ export const useBookmarks = (limit: number = 50) => {
 };
 
 /**
+ * Tek setQueriesData ile feed cache güncelle (single + infinite tek geçiş; profile skip - refetch on open)
+ */
+const setFeedPostUpdate = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  postId: string,
+  updater: (post: FeedApiItem['data']) => FeedApiItem['data']
+) => {
+  queryClient.setQueriesData(
+    { queryKey: feedKeys.all },
+    (old: any) => {
+      if (!old) return old;
+      if (old.pages && Array.isArray(old.pages)) {
+        return {
+          ...old,
+          pages: updatePostInInfiniteFeed(old.pages, postId, updater),
+        };
+      }
+      return updatePostInFeed(old, postId, updater);
+    }
+  );
+};
+
+/**
  * Like Post mutation hook
- * Post'u beğenir (optimistic update ile)
- *
- * @returns React Query mutation hook result
+ * Post'u beğenir (optimistic update: sadece feed cache, profile refetch on open)
  */
 export const useLikePost = () => {
   const queryClient = useQueryClient();
@@ -214,120 +235,18 @@ export const useLikePost = () => {
   return useMutation<ApiResponse<void>, Error, string, { previousFeedPages?: FeedApiResponse[] }>({
     mutationFn: likePost,
     onMutate: async (postId) => {
-      // Tüm ilgili query'leri cancel et
       await queryClient.cancelQueries({ queryKey: feedKeys.all });
       await queryClient.cancelQueries({ queryKey: profileKeys.all });
 
-      // Mevcut feed cache'lerini al
       const previousFeedPages = queryClient.getQueryData<FeedApiResponse[]>(
         feedKeys.feed(undefined, 20)
       );
 
-      // Optimistic update: Feed'deki post'u güncelle
-      queryClient.setQueriesData<FeedApiResponse>(
-        { queryKey: feedKeys.all },
-        (old) => {
-          if (!old) return old;
-          return updatePostInFeed(old, postId, (post) => ({
-            ...post,
-            stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
-            isLiked: true,
-          }));
-        }
-      );
-
-      // Infinite query pages için de güncelle
-      queryClient.setQueriesData(
-        { queryKey: feedKeys.all },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
-              isLiked: true,
-            })),
-          };
-        }
-      );
-
-      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
-      // Infinite query pages için güncelle
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.posts() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
-              isLiked: true,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
-              isLiked: true,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
-              isLiked: true,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.tips() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
-              isLiked: true,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.replies() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
-              isLiked: true,
-            })),
-          };
-        }
-      );
+      setFeedPostUpdate(queryClient, postId, (post) => ({
+        ...post,
+        stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
+        isLiked: true,
+      }));
 
       return { previousFeedPages };
     },
@@ -366,110 +285,11 @@ export const useUnlikePost = () => {
         feedKeys.feed(undefined, 20)
       );
 
-      // Optimistic update
-      queryClient.setQueriesData<FeedApiResponse>(
-        { queryKey: feedKeys.all },
-        (old) => {
-          if (!old) return old;
-          return updatePostInFeed(old, postId, (post) => ({
-            ...post,
-            stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
-            isLiked: false,
-          }));
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: feedKeys.all },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
-              isLiked: false,
-            })),
-          };
-        }
-      );
-
-      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
-      // Infinite query pages için güncelle
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.posts() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
-              isLiked: false,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
-              isLiked: false,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
-              isLiked: false,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.tips() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
-              isLiked: false,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.replies() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
-              isLiked: false,
-            })),
-          };
-        }
-      );
+      setFeedPostUpdate(queryClient, postId, (post) => ({
+        ...post,
+        stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
+        isLiked: false,
+      }));
 
       return { previousFeedPages };
     },
@@ -507,110 +327,11 @@ export const useBookmarkPost = () => {
         feedKeys.feed(undefined, 20)
       );
 
-      // Optimistic update
-      queryClient.setQueriesData<FeedApiResponse>(
-        { queryKey: feedKeys.all },
-        (old) => {
-          if (!old) return old;
-          return updatePostInFeed(old, postId, (post) => ({
-            ...post,
-            stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
-            isBookmarked: true,
-          }));
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: feedKeys.all },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
-              isBookmarked: true,
-            })),
-          };
-        }
-      );
-
-      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
-      // Infinite query pages için güncelle
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.posts() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
-              isBookmarked: true,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
-              isBookmarked: true,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
-              isBookmarked: true,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.tips() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
-              isBookmarked: true,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.replies() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
-              isBookmarked: true,
-            })),
-          };
-        }
-      );
+      setFeedPostUpdate(queryClient, postId, (post) => ({
+        ...post,
+        stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
+        isBookmarked: true,
+      }));
 
       return { previousFeedPages };
     },
@@ -618,7 +339,6 @@ export const useBookmarkPost = () => {
       if (context?.previousFeedPages) {
         queryClient.setQueryData(feedKeys.feed(undefined, 20), context.previousFeedPages);
       }
-      // Error logging
       console.error('[useBookmarkPost] Error:', err);
     },
     onSuccess: (data, postId) => {
@@ -652,110 +372,11 @@ export const useUnbookmarkPost = () => {
         feedKeys.feed(undefined, 20)
       );
 
-      // Optimistic update
-      queryClient.setQueriesData<FeedApiResponse>(
-        { queryKey: feedKeys.all },
-        (old) => {
-          if (!old) return old;
-          return updatePostInFeed(old, postId, (post) => ({
-            ...post,
-            stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
-            isBookmarked: false,
-          }));
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: feedKeys.all },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
-              isBookmarked: false,
-            })),
-          };
-        }
-      );
-
-      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
-      // Infinite query pages için güncelle
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.posts() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
-              isBookmarked: false,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
-              isBookmarked: false,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
-              isBookmarked: false,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.tips() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
-              isBookmarked: false,
-            })),
-          };
-        }
-      );
-
-      queryClient.setQueriesData(
-        { queryKey: profileKeys.replies() },
-        (old: any) => {
-          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
-          return {
-            ...old,
-            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
-              ...post,
-              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
-              isBookmarked: false,
-            })),
-          };
-        }
-      );
+      setFeedPostUpdate(queryClient, postId, (post) => ({
+        ...post,
+        stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
+        isBookmarked: false,
+      }));
 
       return { previousFeedPages };
     },
@@ -763,7 +384,6 @@ export const useUnbookmarkPost = () => {
       if (context?.previousFeedPages) {
         queryClient.setQueryData(feedKeys.feed(undefined, 20), context.previousFeedPages);
       }
-      // Error logging
       console.error('[useUnbookmarkPost] Error:', err);
     },
     onSuccess: (data, postId) => {

@@ -53,9 +53,10 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
 
   const handleClose = useCallback(() => {
     bottomSheetRef.current?.close();
-    setTimeout(() => {
-      onClose();
-    }, 300);
+  }, []);
+
+  const handleSheetClose = useCallback(() => {
+    onClose();
   }, [onClose]);
 
   const renderBackdrop = useCallback(
@@ -81,7 +82,7 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
       index={0}
       snapPoints={snapPoints}
       enablePanDownToClose
-      onClose={handleClose}
+      onClose={handleSheetClose}
       backdropComponent={renderBackdrop}
       backgroundStyle={{
         backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
