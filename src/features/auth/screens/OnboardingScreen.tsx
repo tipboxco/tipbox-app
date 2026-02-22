@@ -56,7 +56,8 @@ export const OnboardingScreen = () => {
 
   const backgroundColor = '#FFFFFF';
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  // Sync index only when scroll settles (avoids race with scroll position during swipe)
+  const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
     const index = Math.round(scrollPosition / SCREEN_WIDTH);
     setCurrentIndex(index);
@@ -168,13 +169,17 @@ export const OnboardingScreen = () => {
 
       {/* Ana İçerik */}
       <View style={{ flex: 1 }}>
-        {/* Skip Button */}
-        <Box position="absolute" top={insets.top } right="$6" zIndex={2}>
-          <Button
-            variant="link"
-            onPress={handleSkip}
-            p="$2"
-          >
+        {/* Skip Button - safe area margins to avoid overlap on small screens */}
+        <Box
+          position="absolute"
+          top={insets.top}
+          left={insets.left}
+          right={insets.right}
+          zIndex={2}
+          px="$4"
+          alignItems="flex-end"
+        >
+          <Button variant="link" onPress={handleSkip} p="$2">
             <ButtonText
               fontSize="$sm"
               color={isDark ? '$textDark300' : '$textLight600'}
@@ -194,9 +199,7 @@ export const OnboardingScreen = () => {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          onMomentumScrollEnd={handleScroll}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
           onScrollToIndexFailed={handleScrollToIndexFailed}
           contentContainerStyle={{ paddingBottom: 0 }}
           getItemLayout={(_, index) => ({
@@ -207,7 +210,7 @@ export const OnboardingScreen = () => {
           decelerationRate="fast"
         />
 
-        {/* Bottom Section - zIndex so FlatList touch doesn't block Next/Continue button */}
+        {/* Bottom Section - zIndex so FlatList touch doesn't block; safe area to avoid overlap with Skip */}
         <Box
           position="absolute"
           bottom={0}
@@ -215,8 +218,10 @@ export const OnboardingScreen = () => {
           right={0}
           zIndex={10}
           bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+          pt={Math.max(12, insets.top / 2)}
           pb={insets.bottom + 16}
-          pt="$4"
+          pl={Math.max(16, insets.left)}
+          pr={Math.max(16, insets.right)}
         >
           {renderPagination()}
           <Box px="$6">

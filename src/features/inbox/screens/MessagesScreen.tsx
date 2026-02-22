@@ -94,14 +94,10 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 currentUserId: user?.id,
             });
             
-            // ✅ FIX: Doğru query key'i kullan - searchParams ile eşleştir
-            const queryKey = [...inboxKeys.messages(), searchParams];
-            queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
-                if (!oldData) {
-                    // Eğer data yoksa, backend'den çekilecek (invalidate ile)
-                    console.log('[MessagesScreen] ⚠️ Old data is null, will fetch from backend');
-                    return oldData;
-                }
+            // Search param'dan bağımsız TÜM messages cache varyantlarını güncelle
+            const baseKey = inboxKeys.messages();
+            queryClient.setQueriesData<InboxMessage[]>({ queryKey: baseKey }, (oldData) => {
+                if (!oldData) return oldData;
                 
                 const currentUserId = user?.id;
                 const isReceivedMessage = eventData.senderId && eventData.senderId !== currentUserId;
@@ -169,11 +165,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 return oldData;
             });
             
-            // ✅ FIX: Query'yi invalidate et ki React Query cache'i güncellesin ve UI yenilensin
-            // Ancak optimistic update zaten yapıldı, bu sadece UI'ın güncellenmesini sağlar
-            queryClient.invalidateQueries({ queryKey: [...inboxKeys.messages(), searchParams] });
+            queryClient.invalidateQueries({ queryKey: baseKey });
         }
-    }, [queryClient, user?.id, searchParams]);
+    }, [queryClient, user?.id]);
 
     // Socket event handler - thread_read event (thread okundu olarak işaretlendiğinde)
     // ✅ Backend iyileştirmesi: thread_read event'ine unreadCount ve isUnread eklendi
@@ -196,52 +190,18 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         const unreadCount = eventData.unreadCount !== undefined ? eventData.unreadCount : 0;
         const isUnread = eventData.isUnread !== undefined ? eventData.isUnread : false;
         
-        // Optimistic update: Local state'te thread'i okundu olarak işaretle (hemen UI'da göster)
-        // ✅ FIX: Doğru query key'i kullan - searchParams ile eşleştir
-        const queryKey = [...inboxKeys.messages(), searchParams];
-        console.log('[MessagesScreen] 🔑 Query key for thread_read event:', queryKey);
-        
-        queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
-            console.log('[MessagesScreen] 📊 THREAD_READ UPDATE - Önceki durum:', oldData?.map(m => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
-            if (!oldData) {
-                console.warn('[MessagesScreen] ⚠️ Old data is null/undefined in thread_read handler');
-                return oldData;
-            }
-            
-            const threadBefore = oldData.find(m => m.id === eventData.threadId);
-            if (threadBefore) {
-                console.log('[MessagesScreen]   Thread önceki durumu:');
-                console.log(`[MessagesScreen]     Thread ID: ${threadBefore.id}`);
-                console.log(`[MessagesScreen]     Sender: ${threadBefore.senderName || 'Unknown'}`);
-                console.log(`[MessagesScreen]     isUnread: ${threadBefore.isUnread}`);
-                console.log(`[MessagesScreen]     unreadCount: ${threadBefore.unreadCount || 0}`);
-            }
-            
-            // ✅ Backend'den gelen değerleri kullan
-            const updatedData = oldData.map((msg) => 
-                msg.id === eventData.threadId 
-                    ? { ...msg, isUnread, unreadCount }
-                    : msg
+        // Optimistic update: search query key'inden bağımsız olarak TÜM messages cache'ini güncelle.
+        // searchParams'ı key'e dahil etmek, farklı arama sorgusu aktifken gelen olayları orphan bırakıyordu.
+        const baseKey = inboxKeys.messages();
+        queryClient.setQueriesData<InboxMessage[]>({ queryKey: baseKey }, (oldData) => {
+            if (!oldData) return oldData;
+            return oldData.map((msg) =>
+                msg.id === eventData.threadId ? { ...msg, isUnread, unreadCount } : msg
             );
-            
-            const threadAfter = updatedData.find(m => m.id === eventData.threadId);
-            if (threadAfter) {
-                console.log(`[MessagesScreen]   Thread sonraki durumu (Backend'den gelen değerler):`);
-                console.log(`[MessagesScreen]     Thread ID: ${threadAfter.id}`);
-                console.log(`[MessagesScreen]     isUnread: ${threadAfter.isUnread} (ÖNCE: ${threadBefore?.isUnread}, Backend: ${isUnread})`);
-                console.log(`[MessagesScreen]     unreadCount: ${threadAfter.unreadCount || 0} (ÖNCE: ${threadBefore?.unreadCount || 0}, Backend: ${unreadCount})`);
-            }
-            
-            console.log('[MessagesScreen] ✅ THREAD_READ UPDATE - Sonraki durum:', updatedData.map(m => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
-            return updatedData;
         });
-        
-        // Query data'yı tekrar kontrol et
-        const currentData = queryClient.getQueryData<InboxMessage[]>(queryKey);
-        console.log('[MessagesScreen] 🔍 Cache kontrolü - thread_read setQueryData sonrası:', currentData?.map(m => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
-        
-        // ✅ FIX: Query'yi invalidate et ki React Query cache'i güncellesin ve UI yenilensin
-        queryClient.invalidateQueries({ queryKey: [...inboxKeys.messages(), searchParams] });
+
+        // Tüm messages varyantlarını (farklı search params dahil) invalidate et
+        queryClient.invalidateQueries({ queryKey: baseKey });
     }, [queryClient, searchParams]);
 
     // Socket event handler - user_typing event (kullanıcı typing yapıyor)
@@ -395,10 +355,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             console.log('[MessagesScreen]   ⚠️ Mesaj listesi boş');
         }
         
-        // Query cache'deki mevcut durumu logla
-        // ✅ FIX: Doğru query key'i kullan - searchParams ile eşleştir
-        const queryKey = [...inboxKeys.messages(), searchParams];
-        const currentCacheData = queryClient.getQueryData<InboxMessage[]>(queryKey);
+        // Tüm messages cache varyantlarını (search params dahil) kapsayan base key kullan
+        const baseKey = inboxKeys.messages();
+        const currentCacheData = queryClient.getQueriesData<InboxMessage[]>({ queryKey: baseKey })?.[0]?.[1];
         console.log(`[MessagesScreen] 📋 CACHE'DEKİ TÜM MESAJLAR (ÖNCE):`);
         if (currentCacheData && currentCacheData.length > 0) {
             currentCacheData.forEach((msg, index) => {

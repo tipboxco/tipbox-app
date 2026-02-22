@@ -61,44 +61,27 @@ export const CreatePostScreen = () => {
     };
   }, [showCamera, setCameraOpen]);
   
-  // Flow store'dan context bilgilerini al (route params yerine)
+  // Context resolution: explicit priority order (flow store has TTL/expiration)
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
   const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
   const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
-  
-  // CatalogUIStore'dan ID'leri al (type'a göre)
-  const selectedProductId = useCatalogUIStore((state) => state.selectedProductId);
-  const selectedSubCategoryId = useCatalogUIStore((state) => state.selectedSubCategoryId);
-  const selectedProductGroupId = useCatalogUIStore((state) => state.selectedProductGroupId);
-  const getContextIdFromStore = useCatalogUIStore((state) => state.getContextId);
-  
-  // Route params'dan da al (fallback için, backward compatibility)
+
   const routeParams = route.params || {};
   const routeContextType = routeParams.contextType;
   const routeContextId = routeParams.contextId;
   const routeProductInfo = routeParams.productInfo;
-  
-  // Store'dan gelen değerler varsa onları kullan, yoksa route params'ı kullan
-  const finalContextType = contextType || routeContextType;
-  
-  // ID'yi önce CreatePostFlowStore'dan al, yoksa CatalogUIStore'dan type'a göre al, yoksa route params'tan al
-  let finalContextId = contextId;
-  if (!finalContextId && finalContextType) {
-    // Type'a göre CatalogUIStore'dan ID'yi al
-    const apiContextType = finalContextType === ProductInfoType.PRODUCT ? 'product' :
-                          finalContextType === ProductInfoType.PRODUCT_GROUP ? 'product_group' :
-                          'sub_category';
-    finalContextId = getContextIdFromStore(apiContextType);
-  }
-  // Son fallback: route params
-  if (!finalContextId) {
-    finalContextId = routeContextId;
-  }
-  
-  const finalProductInfo = productInfoSnapshot || routeProductInfo;
-  
+
+  // Priority 1: CreatePostFlowStore (valid and not expired). Priority 2: route params.
+  const finalContextType = isValidFlow && contextType ? contextType : routeContextType;
+  const finalContextId = isValidFlow && contextId ? contextId : routeContextId;
+  const finalProductInfo = isValidFlow && productInfoSnapshot ? productInfoSnapshot : routeProductInfo;
+
+  const selectedProductId = useCatalogUIStore((state) => state.selectedProductId);
+  const selectedSubCategoryId = useCatalogUIStore((state) => state.selectedSubCategoryId);
+  const selectedProductGroupId = useCatalogUIStore((state) => state.selectedProductGroupId);
+
   // Debug: Store durumunu logla (component mount olduğunda)
   useEffect(() => {
     console.log('🔍 [CreatePostScreen] Store State Check:', {
@@ -491,13 +474,22 @@ export const CreatePostScreen = () => {
     const allValues = getValues();
     console.log('[CreatePostScreen] 📋 All Form Values (getValues()):', allValues);
     
-    // Manual validation trigger
+    // Manual validation trigger – show toast when validation fails
     trigger().then((isValid) => {
-      console.log('[CreatePostScreen] ✅ Manual validation result:', isValid);
       if (isValid) {
         handleSubmit(onSubmit)();
       } else {
-        console.log('[CreatePostScreen] ❌ Form validation failed, errors:', formState.errors);
+        const errors = formState.errors as Record<string, { message?: string } | undefined>;
+        const firstError = errors?.postText?.message
+          || errors?.selectedImages?.message
+          || (Object.values(errors).find((e) => e?.message) as { message?: string } | undefined)?.message
+          || 'Please check your post and try again.';
+        showCustomToast(toast, {
+          title: 'Validation',
+          description: firstError,
+          action: 'error',
+          duration: 3000,
+        });
       }
     });
   };

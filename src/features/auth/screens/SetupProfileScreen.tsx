@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Image, Pressable, Spinner, ScrollView } from '@gluestack-ui/themed';
@@ -127,62 +127,53 @@ export const SetupProfileScreen = () => {
     }, [route.params, navigation])
   );
 
-  const validateUsername = (text: string) => {
-    // @ işaretini kaldır ve sadece alfanumerik karakterleri kabul et
+  const validateUsername = useCallback((text: string) => {
     const cleanText = text.replace(/^@+/, '').replace(/[^a-zA-Z0-9_]/g, '');
     setUsername(cleanText);
     setShowSuggestions(false);
 
-    // Yup validation (format kontrolü)
     validationSchema
       .validateAt('username', { username: cleanText })
       .then(() => {
-        // Format geçerli, availability check debounce ile yapılacak
         if (cleanText.length < 3) {
           setIsUsernameValid(false);
           setIsUsernameAvailable(null);
           setErrors((prev) => ({ ...prev, username: undefined }));
-        } else {
-          // Username değiştiğinde loading state'e geç (debounce tamamlanana kadar)
-          // isUsernameAvailable'ı null yapma, çünkü önceki değer geçerli olabilir
-          // Sadece yeni check başladığında güncelleme yapılacak
         }
       })
-      .catch((err) => {
+      .catch((err: { message?: string }) => {
         setIsUsernameValid(false);
         setIsUsernameAvailable(null);
         setErrors((prev) => ({ ...prev, username: err.message }));
       });
-  };
-  
-  const handleSelectSuggestion = (suggestedUsername: string) => {
+  }, [validationSchema]);
+
+  const handleSelectSuggestion = useCallback((suggestedUsername: string) => {
     setUsername(suggestedUsername);
     setShowSuggestions(false);
-  };
+  }, []);
 
-  const validateFullName = (text: string) => {
+  const validateFullName = useCallback((text: string) => {
     setFullName(text);
-    
-    // Yup validation
+
     validationSchema
       .validateAt('fullName', { fullName: text })
       .then(() => {
         setErrors((prev) => ({ ...prev, fullName: undefined }));
       })
-      .catch((err) => {
+      .catch((err: { message?: string }) => {
         setErrors((prev) => ({ ...prev, fullName: err.message }));
       });
-  };
+  }, [validationSchema]);
 
-  const handleSelectAvatar = () => {
-    // Avatar seçim ekranına yönlendir - form data'yı params ile koru
+  const handleSelectAvatar = useCallback(() => {
     navigation.navigate('SelectAvatar', {
       fullName,
       username,
     } as any);
-  };
+  }, [navigation, fullName, username]);
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     // Yup validation
     try {
       await validationSchema.validate({ fullName: fullName.trim(), username: username.trim() }, { abortEarly: false });
@@ -232,7 +223,7 @@ export const SetupProfileScreen = () => {
         Alert.alert('Validation Error', validationErrors.username);
       }
     }
-  };
+  }, [validationSchema, fullName, username, profileImage, selectedCategories, setupProfileMutation, navigation]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor }} edges={['top', 'bottom']}>

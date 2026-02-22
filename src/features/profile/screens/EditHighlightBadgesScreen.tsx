@@ -2,6 +2,13 @@ import React, { useState, useCallback, useRef } from 'react';
 import { View, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import {
   VStack,
   HStack,
@@ -37,6 +44,8 @@ const EditHighlightBadgesScreen: React.FC = () => {
   const route = useRoute<ProfileEditHighlightBadgesRouteProp>();
   const pagerRef = useRef<PagerView>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  // Smooth drag-aware progress: 0 = tab 0, 1 = tab 1
+  const progress = useSharedValue(0);
 
   const initialBadgeIds = route.params?.initialBadgeIds ?? [];
   const initialSlots = Array.isArray(initialBadgeIds) ? initialBadgeIds : [];
@@ -116,11 +125,30 @@ const EditHighlightBadgesScreen: React.FC = () => {
   }, []);
 
   const handlePageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
-    setCurrentPage(e.nativeEvent.position);
-  }, []);
+    const pos = e.nativeEvent.position;
+    setCurrentPage(pos);
+    progress.value = withTiming(pos, { duration: 150 });
+  }, [progress]);
+
+  const handlePageScroll = useCallback((e: { nativeEvent: { position: number; offset: number } }) => {
+    const { position, offset } = e.nativeEvent;
+    progress.value = position + offset;
+  }, [progress]);
 
   const tabBorderColor = isDark ? '#FFFFFF' : '#000000';
   const tabInactiveColor = '#9D9D9D';
+
+  // Animated styles for tab underline indicators
+  const tab0IndicatorStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 1], [1, 0], Extrapolation.CLAMP),
+    borderBottomWidth: 2,
+    borderBottomColor: tabBorderColor,
+  }));
+  const tab1IndicatorStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+    borderBottomWidth: 2,
+    borderBottomColor: tabBorderColor,
+  }));
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
@@ -229,8 +257,6 @@ const EditHighlightBadgesScreen: React.FC = () => {
           flex={1}
           py="$3"
           alignItems="center"
-          borderBottomWidth={2}
-          borderBottomColor={currentPage === 0 ? tabBorderColor : 'transparent'}
           onPress={() => handleTabPress(0)}
         >
           <Text
@@ -240,13 +266,12 @@ const EditHighlightBadgesScreen: React.FC = () => {
           >
             Event Badges
           </Text>
+          <Animated.View style={[{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 }, tab0IndicatorStyle]} />
         </Pressable>
         <Pressable
           flex={1}
           py="$3"
           alignItems="center"
-          borderBottomWidth={2}
-          borderBottomColor={currentPage === 1 ? tabBorderColor : 'transparent'}
           onPress={() => handleTabPress(1)}
         >
           <Text
@@ -256,6 +281,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
           >
             Collections
           </Text>
+          <Animated.View style={[{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 }, tab1IndicatorStyle]} />
         </Pressable>
       </HStack>
 
@@ -265,6 +291,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
         style={styles.pagerView}
         initialPage={0}
         onPageSelected={handlePageSelected}
+        onPageScroll={handlePageScroll}
       >
         <View key="0" style={styles.page}>
           <ScrollView

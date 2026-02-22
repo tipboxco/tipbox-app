@@ -33,12 +33,19 @@ import { BENEFIT_CATEGORIES } from '../constants/benefitCategories';
 
 type CreateTipsAndTrickPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Category Selector Component with Controller
-const CategorySelectorField: React.FC = () => {
+// Category Selector – state lifted to screen for single source of truth
+type CategorySelectorFieldProps = {
+  showCategoryModal: boolean;
+  setShowCategoryModal: (show: boolean) => void;
+};
+
+const CategorySelectorField: React.FC<CategorySelectorFieldProps> = ({
+  showCategoryModal,
+  setShowCategoryModal,
+}) => {
   const { control, watch } = useFormContext<TipsAndTrickPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const selectedCategory = watch('selectedCategory');
 
   return (
@@ -165,6 +172,7 @@ export const CreateTipsAndTrickPostScreen = () => {
   const methods = useTipsAndTrickPostForm();
   const { handleSubmit, formState, getValues, setValue } = methods;
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
   const toast = useToast();
   const isSubmittingRef = useRef(false);
   const createTipsAndTricksPostMutation = useCreateTipsAndTricksPost();
@@ -221,10 +229,11 @@ export const CreateTipsAndTrickPostScreen = () => {
   };
 
   const handleImagePicker = async () => {
+    setIsImagePickerLoading(true);
     try {
       const currentImages = getValues('selectedImages') || [];
       const remainingSlots = 10 - currentImages.length;
-      
+
       if (remainingSlots <= 0) {
         showCustomToast(toast, {
           title: 'Limit Exceeded',
@@ -235,12 +244,12 @@ export const CreateTipsAndTrickPostScreen = () => {
       }
 
       const result = await imagePickerService.pickMultipleFromGallery(remainingSlots);
-      
+
       if (result.success && result.assets && result.assets.length > 0) {
         const newImageUris = result.assets
           .map(asset => asset.uri)
           .filter((uri): uri is string => !!uri);
-        
+
         if (newImageUris.length > 0) {
           const updatedImages = [...currentImages, ...newImageUris];
           setValue('selectedImages', updatedImages, { shouldValidate: true });
@@ -266,6 +275,8 @@ export const CreateTipsAndTrickPostScreen = () => {
         description: errorMessage,
         action: 'error',
       });
+    } finally {
+      setIsImagePickerLoading(false);
     }
   };
 
@@ -601,9 +612,12 @@ export const CreateTipsAndTrickPostScreen = () => {
                 />
               </VStack>
 
-              {/* Tips & Tricks Category Section */}
+              {/* Tips & Tricks Category Section - single state from screen */}
               <VStack px={16} space="xs" mt="$2">
-                <CategorySelectorField />
+                <CategorySelectorField
+                  showCategoryModal={showCategoryModal}
+                  setShowCategoryModal={setShowCategoryModal}
+                />
               </VStack>
 
               {/* Images Section */}
@@ -613,6 +627,7 @@ export const CreateTipsAndTrickPostScreen = () => {
                   label="Images"
                   maxImages={10}
                   onImagePicker={handleImagePicker}
+                  isLoading={isImagePickerLoading}
                 />
               </VStack>
             </VStack>

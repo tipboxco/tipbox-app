@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable, Spinner } from '@gluestack-ui/themed';
@@ -20,7 +20,7 @@ interface CategoryItemProps {
   isDark: boolean;
 }
 
-const CategoryItem: React.FC<CategoryItemProps> = ({
+const CategoryItemInner: React.FC<CategoryItemProps> = ({
   category,
   selectedSubCategories,
   onSelectSubCategory,
@@ -77,6 +77,8 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
   );
 };
 
+export const CategoryItem = React.memo(CategoryItemInner);
+
 export const SelectCategoriesScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -91,16 +93,16 @@ export const SelectCategoriesScreen = () => {
   // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
   const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
-  const handleSelectSubCategory = (subCategoryId: string) => {
+  const handleSelectSubCategory = useCallback((subCategoryId: string) => {
     setSelectedSubCategories((prev) => {
       if (prev.includes(subCategoryId)) {
         return prev.filter(id => id !== subCategoryId);
       }
       return [...prev, subCategoryId];
     });
-  };
+  }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const MIN_SELECTED = 3;
     if (!categories) {
       Alert.alert('Error', 'Categories not loaded. Please try again.');
@@ -134,7 +136,7 @@ export const SelectCategoriesScreen = () => {
     } else {
       Alert.alert('Error', `Please select at least ${MIN_SELECTED} categories`);
     }
-  };
+  }, [categories, selectedSubCategories, setSelectedCategories, navigation]);
 
   // Minimum 3 kategori seçilmesi gerekiyor (görseldeki tasarıma göre)
   const MIN_SELECTED = 3;

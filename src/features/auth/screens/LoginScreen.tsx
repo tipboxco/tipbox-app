@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Keyboard, TouchableWithoutFeedback } from 'react-native';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -95,19 +97,18 @@ export const LoginScreen = () => {
     checkBiometric();
   }, []);
 
-  const validateEmail = (text: string) => {
+  const validateEmail = useCallback((text: string) => {
     const lowerText = text.toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     setEmail(lowerText);
-    setIsEmailValid(emailRegex.test(lowerText));
-  };
+    setIsEmailValid(EMAIL_REGEX.test(lowerText));
+  }, []);
 
-  const validatePassword = (text: string) => {
+  const validatePassword = useCallback((text: string) => {
     setPassword(text);
     setIsPasswordValid(text.length >= 8);
-  };
+  }, []);
 
-  const handleSignIn = async () => {
+  const handleSignIn = useCallback(async () => {
     if (isEmailValid && isPasswordValid) {
       try {
         // React Query mutation kullanarak login işlemi
@@ -179,24 +180,23 @@ export const LoginScreen = () => {
         });
       }
     }
-  };
+  }, [email, isEmailValid, isPasswordValid, password, loginMutation, toast]);
 
-  const handleEmailInputFocus = () => {
+  const handleEmailInputFocus = useCallback(() => {
     if (savedEmail && !email) {
       setShowEmailSuggestions(true);
     }
-  };
+  }, [savedEmail, email]);
 
-  const handleEmailSuggestionPress = () => {
+  const handleEmailSuggestionPress = useCallback(() => {
     if (savedEmail) {
       setEmail(savedEmail);
       validateEmail(savedEmail);
       setShowEmailSuggestions(false);
-      // Biometric sadece kullanıcı parmak izi ikonuna bastığında tetiklenir (explicit action)
     }
-  };
+  }, [savedEmail, validateEmail]);
 
-  const handleBiometricLogin = async (skipEmailSet = false) => {
+  const handleBiometricLogin = useCallback(async (skipEmailSet = false) => {
     try {
       const savedPassword = await BiometricService.authenticateAndGetPassword();
       if (savedPassword) {
@@ -228,13 +228,13 @@ export const LoginScreen = () => {
         duration: 3000,
       });
     }
-  };
+  }, [savedEmail, toast, validateEmail, validatePassword, handleSignIn]);
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = useCallback(() => {
     navigation.navigate('ForgotPassword' as never);
-  };
+  }, [navigation]);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = useCallback(async () => {
     try {
       setIsGoogleLoading(true);
 
@@ -271,7 +271,7 @@ export const LoginScreen = () => {
     } finally {
       setIsGoogleLoading(false);
     }
-  };
+  }, [toast, googleLoginMutation]);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

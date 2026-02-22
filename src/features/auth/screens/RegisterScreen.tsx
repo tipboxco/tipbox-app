@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
@@ -9,6 +9,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useRegister } from '../api/hooks';
 import { showCustomToast } from '@/src/components/CustomToast';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -29,19 +31,18 @@ export const RegisterScreen = () => {
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const validateEmail = (text: string) => {
+  const validateEmail = useCallback((text: string) => {
     const lowerText = text.toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     setEmail(lowerText);
-    setIsEmailValid(emailRegex.test(lowerText));
-  };
+    setIsEmailValid(EMAIL_REGEX.test(lowerText));
+  }, []);
 
-  const validatePassword = (text: string) => {
+  const validatePassword = useCallback((text: string) => {
     setPassword(text);
     setIsPasswordValid(text.length >= 8);
-  };
+  }, []);
 
-  const handleConfirm = async () => {
+  const handleConfirm = useCallback(async () => {
     if (isEmailValid && isPasswordValid) {
       try {
         // React Query mutation kullanarak register işlemi
@@ -101,7 +102,7 @@ export const RegisterScreen = () => {
         });
       }
     }
-  };
+  }, [email, isEmailValid, isPasswordValid, password, registerMutation, toast, navigation]);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

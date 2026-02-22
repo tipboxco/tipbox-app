@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Pressable } from '@gluestack-ui/themed';
@@ -9,6 +9,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useForgotPassword } from '../api/hooks';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
@@ -26,14 +28,13 @@ export const ForgotPasswordScreen = () => {
   const [isEmailValid, setIsEmailValid] = useState(false);
   const forgotPasswordMutation = useForgotPassword();
 
-  const validateEmail = (text: string) => {
+  const validateEmail = useCallback((text: string) => {
     const lowerText = text.toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     setEmail(lowerText);
-    setIsEmailValid(emailRegex.test(lowerText));
-  };
+    setIsEmailValid(EMAIL_REGEX.test(lowerText));
+  }, []);
 
-  const handleSendCode = async () => {
+  const handleSendCode = useCallback(async () => {
     if (!isEmailValid) {
       showCustomToast(toast, {
         title: 'Invalid email',
@@ -74,7 +75,7 @@ export const ForgotPasswordScreen = () => {
         duration: 3000,
       });
     }
-  };
+  }, [isEmailValid, email, toast, forgotPasswordMutation, navigation]);
 
   return (
     <View style={{ flex: 1, backgroundColor }}>

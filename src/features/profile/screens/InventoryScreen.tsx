@@ -113,6 +113,12 @@ const InventoryScreen = () => {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // Menu toggle: close any currently open menu, then open the requested one.
+  // Using functional updater to avoid stale closure when two cards are tapped quickly.
+  const handleMenuToggle = useCallback((itemId: string, isOpen: boolean) => {
+    setOpenMenuItemId(() => (isOpen ? itemId : null));
+  }, []);
+
   const handleCreatePress = () => {
     console.log('Create button pressed');
     openBottomSheet(
@@ -258,12 +264,13 @@ const InventoryScreen = () => {
       ) : (
         <FlatList
           data={filteredInventory}
+          extraData={openMenuItemId}
           renderItem={({ item }) => (
             <InventoryCard
               item={item}
               width={CARD_WIDTH}
               isMenuOpen={openMenuItemId === item.id}
-              onMenuToggle={(isOpen) => setOpenMenuItemId(isOpen ? item.id : null)}
+              onMenuToggle={(isOpen) => handleMenuToggle(item.id, isOpen)}
               isDeleting={deletingItemId === item.id}
               onPress={() => {
                 // If selectMode is 'event', navigate back to EventCreatePost with product
