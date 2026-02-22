@@ -138,9 +138,7 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
     return null;
   }
   
-  const avatarSource = review.user?.avatar
-    ? toImageSource(review.user.avatar)!
-      : require('@/assets/avatar/default-useravatar.png');
+  const avatarSource = toImageSource(review.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
   
   // API bazen product bazen contextData döner - ikisini de kontrol et
   const productData = review.product || review.contextData;
@@ -1076,7 +1074,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         <SendTipsBottomSheet
           senderName={userProfile.name || 'Unknown'}
           senderTitle={userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : ''}
-          senderAvatar={userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png')}
+          senderAvatar={toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')}
           onClose={closeBottomSheet}
           onSend={handleSendTips}
         />,
@@ -1115,7 +1113,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       recipientUserId: targetUserId,
       senderName: userProfile.name || 'Unknown',
       senderTitle: userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : '',
-      senderAvatar: userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png'),
+      senderAvatar: toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png'),
     });
   }, [user?.id, targetUserId, userProfile]);
 

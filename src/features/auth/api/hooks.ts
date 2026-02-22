@@ -98,9 +98,10 @@ export const useLogin = () => {
         // Hata olsa bile login devam etsin
       });
       
-      // Notification query'lerini invalidate et - login sonrası bildirimler yüklensin
-      console.log('📋 Step 4: Notification query\'leri invalidate ediliyor...');
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      // Sadece list ve unreadCount invalidate et (cache'i tamamen silmeden refetch)
+      console.log('📋 Step 4: Notification list ve unreadCount refetch...');
+      queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
       console.log('✅ Notification query\'leri invalidate edildi');
       
       // Socket sistemi SocketProvider tarafından otomatik olarak yönetiliyor
@@ -219,8 +220,8 @@ export const useCheckUsernameAvailability = (username: string, enabled: boolean 
     queryKey: ['username', 'check', username],
     queryFn: () => checkUsernameAvailability(username),
     enabled: Boolean(enabled && username.length >= 3 && /^[a-zA-Z0-9_]+$/.test(username)),
-    staleTime: 0, // Her zaman fresh data al
-    gcTime: 0, // Cache'de tutma
+    staleTime: 60 * 1000, // 1 dakika aynı username için tekrar istek atma
+    gcTime: 5 * 60 * 1000, // 5 dakika cache'de tut
   });
 };
 
@@ -239,8 +240,8 @@ export const useUsernameSuggestions = (username: string, limit: number = 5, enab
     queryKey: ['username', 'suggestions', username, limit],
     queryFn: () => getUsernameSuggestions(username, limit),
     enabled: Boolean(enabled && username.length >= 3),
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 
@@ -367,9 +368,10 @@ export const useGoogleLogin = () => {
         // Hata olsa bile login devam etsin
       });
       
-      // Notification query'lerini invalidate et - login sonrası bildirimler yüklensin
-      console.log('📋 Step 3: Notification query\'leri invalidate ediliyor...');
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      // Sadece list ve unreadCount invalidate et (cache'i tamamen silmeden refetch)
+      console.log('📋 Step 3: Notification list ve unreadCount refetch...');
+      queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
       console.log('✅ Notification query\'leri invalidate edildi');
       
       // Socket sistemi SocketProvider tarafından otomatik olarak yönetiliyor

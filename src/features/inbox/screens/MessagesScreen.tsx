@@ -396,46 +396,15 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         console.log('[MessagesScreen]   Önceki isUnread:', message.isUnread);
         console.log('[MessagesScreen]   Önceki unreadCount:', message.unreadCount || 0);
         
-        // Optimistic update: Local state'i güncelle (hemen UI'da göster - yeşil nokta anında kaybolsun)
-        queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
-            console.log('[MessagesScreen] 📊 setQueryData callback - Önceki durum:');
-            if (!oldData) {
-                console.warn('[MessagesScreen] ⚠️ Old data is null/undefined, cannot update');
-                return oldData;
-            }
-            
-            // Önceki durumu detaylı logla
-            console.log('[MessagesScreen]   Önceki cache durumu (tüm mesajlar):');
-            oldData.forEach((msg, index) => {
-                const isTarget = msg.id === messageId;
-                console.log(`[MessagesScreen]     [${index}] ${isTarget ? '👉 TARGET' : '   '} Thread ID: ${msg.id}`);
-                console.log(`[MessagesScreen]         Sender: ${msg.senderName || 'Unknown'}`);
-                console.log(`[MessagesScreen]         isUnread: ${msg.isUnread}`);
-                console.log(`[MessagesScreen]         unreadCount: ${msg.unreadCount || 0}`);
-            });
-            
-            const updatedData = oldData.map((msg) => 
-                msg.id === messageId 
-                    ? { ...msg, isUnread: false, unreadCount: 0 }
-                    : msg
+        // Optimistic update: search param'dan bağımsız TÜM messages cache varyantlarını güncelle
+        queryClient.setQueriesData<InboxMessage[]>({ queryKey: baseKey }, (oldData) => {
+            if (!oldData) return oldData;
+            return oldData.map((msg) =>
+                msg.id === messageId ? { ...msg, isUnread: false, unreadCount: 0 } : msg
             );
-            
-            // Sonraki durumu detaylı logla
-            console.log('[MessagesScreen] ✅ setQueryData callback - Sonraki durum:');
-            updatedData.forEach((msg, index) => {
-                const isTarget = msg.id === messageId;
-                const changed = oldData[index]?.isUnread !== msg.isUnread || oldData[index]?.unreadCount !== msg.unreadCount;
-                console.log(`[MessagesScreen]     [${index}] ${isTarget ? '👉 TARGET' : '   '} ${changed ? '🔄 CHANGED' : '   '} Thread ID: ${msg.id}`);
-                console.log(`[MessagesScreen]         Sender: ${msg.senderName || 'Unknown'}`);
-                console.log(`[MessagesScreen]         isUnread: ${msg.isUnread} ${isTarget ? `(ÖNCE: ${oldData.find(m => m.id === messageId)?.isUnread})` : ''}`);
-                console.log(`[MessagesScreen]         unreadCount: ${msg.unreadCount || 0} ${isTarget ? `(ÖNCE: ${oldData.find(m => m.id === messageId)?.unreadCount || 0})` : ''}`);
-            });
-            
-            return updatedData;
         });
         
-        // Query data'yı tekrar kontrol et
-        const currentData = queryClient.getQueryData<InboxMessage[]>(queryKey);
+        const currentData = queryClient.getQueriesData<InboxMessage[]>({ queryKey: baseKey })?.[0]?.[1];
         console.log('[MessagesScreen] ========================================');
         console.log('[MessagesScreen] 🔍 CACHE KONTROLÜ - setQueryData SONRASI');
         console.log('[MessagesScreen] ========================================');
@@ -461,10 +430,10 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 onError: (error: Error) => {
                     console.error('[MessagesScreen] ❌ Failed to mark thread as read via API:', error);
                     // Hata durumunda optimistic update'i geri al
-                    queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
+                    queryClient.setQueriesData<InboxMessage[]>({ queryKey: baseKey }, (oldData) => {
                         if (!oldData) return oldData;
-                        return oldData.map((msg) => 
-                            msg.id === messageId 
+                        return oldData.map((msg) =>
+                            msg.id === messageId
                                 ? { ...msg, isUnread: message.isUnread, unreadCount: message.unreadCount || 0 }
                                 : msg
                         );

@@ -13,6 +13,47 @@ import { useAppStore } from '@/src/store/appStore';
 
 type SelectCategoriesScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectCategories'>;
 
+interface SubCategoryChipProps {
+  subCategoryId: string;
+  name: string;
+  isSelected: boolean;
+  isDark: boolean;
+  onSelectSubCategory: (subCategoryId: string) => void;
+}
+
+const SubCategoryChip = React.memo<SubCategoryChipProps>(({ subCategoryId, name, isSelected, isDark, onSelectSubCategory }) => (
+  <Box
+    style={{
+      width: '48%',
+      marginHorizontal: '1%',
+      marginBottom: 8,
+    }}
+  >
+    <Pressable
+      onPress={() => onSelectSubCategory(subCategoryId)}
+      bg={isSelected ? '$buttonPrimary' : isDark ? '$backgroundDark100' : '$backgroundLight100'}
+      borderWidth={1}
+      borderColor={isSelected ? '$buttonPrimary' : isDark ? '$borderDark100' : '$borderLight100'}
+      px="$3"
+      py="$2.5"
+      rounded="$lg"
+      w="$full"
+    >
+      <Text
+        color={isSelected ? '$textLight900' : isDark ? '$textDark50' : '$textLight900'}
+        fontSize="$sm"
+        fontWeight={isSelected ? '$medium' : '$normal'}
+        textAlign="center"
+        numberOfLines={2}
+      >
+        {name}
+      </Text>
+    </Pressable>
+  </Box>
+));
+
+SubCategoryChip.displayName = 'SubCategoryChip';
+
 interface CategoryItemProps {
   category: UserCategory;
   selectedSubCategories: string[];
@@ -36,41 +77,20 @@ const CategoryItemInner: React.FC<CategoryItemProps> = ({
       >
         {category.name}
       </Text>
-      <Box 
-        flexDirection="row" 
+      <Box
+        flexDirection="row"
         flexWrap="wrap"
         style={{ marginHorizontal: -4 }}
       >
         {category.subCategories.map((subCategory) => (
-          <Box
+          <SubCategoryChip
             key={subCategory.subCategoryId}
-            style={{ 
-              width: '48%',
-              marginHorizontal: '1%',
-              marginBottom: 8,
-            }}
-          >
-            <Pressable
-              onPress={() => onSelectSubCategory(subCategory.subCategoryId)}
-              bg={selectedSubCategories.includes(subCategory.subCategoryId) ? '$buttonPrimary' : isDark ? '$backgroundDark100' : '$backgroundLight100'}
-              borderWidth={1}
-              borderColor={selectedSubCategories.includes(subCategory.subCategoryId) ? '$buttonPrimary' : isDark ? '$borderDark100' : '$borderLight100'}
-              px="$3"
-              py="$2.5"
-              rounded="$lg"
-              w="$full"
-            >
-              <Text
-                color={selectedSubCategories.includes(subCategory.subCategoryId) ? '$textLight900' : isDark ? '$textDark50' : '$textLight900'}
-                fontSize="$sm"
-                fontWeight={selectedSubCategories.includes(subCategory.subCategoryId) ? '$medium' : '$normal'}
-                textAlign="center"
-                numberOfLines={2}
-              >
-                {subCategory.name}
-              </Text>
-            </Pressable>
-          </Box>
+            subCategoryId={subCategory.subCategoryId}
+            name={subCategory.name}
+            isSelected={selectedSubCategories.includes(subCategory.subCategoryId)}
+            isDark={isDark}
+            onSelectSubCategory={onSelectSubCategory}
+          />
         ))}
       </Box>
     </VStack>

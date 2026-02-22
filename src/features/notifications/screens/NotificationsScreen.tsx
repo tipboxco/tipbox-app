@@ -112,11 +112,11 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, allQueryEnabled);
 
-    // Filter 1: Replies (Figma sırası)
+    // Filter 1: Replies – sadece bu tab aktifken enable et
     const repliesFilter = filters[1];
     const repliesUnreadOnly = repliesFilter?.id === 'unread';
     const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
-    const repliesQueryEnabled = shouldFetchNotifications;
+    const repliesQueryEnabled = shouldFetchNotifications && currentPage === 1;
     const repliesQuery = useNotifications({
         limit: 20,
         unreadOnly: repliesUnreadOnly,
@@ -124,11 +124,11 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, repliesQueryEnabled);
 
-    // Filter 2: Trust - Truster
+    // Filter 2: Trust - Truster – sadece bu tab aktifken enable et
     const trustFilter = filters[2];
     const trustUnreadOnly = trustFilter?.id === 'unread';
     const trustNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'truster';
-    const trustQueryEnabled = shouldFetchNotifications;
+    const trustQueryEnabled = shouldFetchNotifications && currentPage === 2;
     const trustQuery = useNotifications({
         limit: 20,
         unreadOnly: trustUnreadOnly,
@@ -136,11 +136,11 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, trustQueryEnabled);
 
-    // Filter 3: TIPS
+    // Filter 3: TIPS – sadece bu tab aktifken enable et
     const tipsFilter = filters[3];
     const tipsUnreadOnly = tipsFilter?.id === 'unread';
     const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
-    const tipsQueryEnabled = shouldFetchNotifications;
+    const tipsQueryEnabled = shouldFetchNotifications && currentPage === 3;
     const tipsQuery = useNotifications({
         limit: 20,
         unreadOnly: tipsUnreadOnly,
