@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, useToast } from '@gluestack-ui/themed';
@@ -166,6 +166,7 @@ export const CreateTipsAndTrickPostScreen = () => {
   const { handleSubmit, formState, getValues, setValue } = methods;
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const toast = useToast();
+  const isSubmittingRef = useRef(false);
   const createTipsAndTricksPostMutation = useCreateTipsAndTricksPost();
   const { user } = useAppStore();
   const queryClient = useQueryClient();
@@ -271,6 +272,9 @@ export const CreateTipsAndTrickPostScreen = () => {
   // Not needed - BENEFIT_CATEGORIES already uses snake_case values
 
   const onSubmit = async (data: TipsAndTrickPostFormData) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
     console.log('[CreateTipsAndTrickPostScreen] Form submitted:', data);
     
     // Debug: Store state'i kontrol et
@@ -522,6 +526,9 @@ export const CreateTipsAndTrickPostScreen = () => {
         description: errorMessage,
         action: 'error',
       });
+    }
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 

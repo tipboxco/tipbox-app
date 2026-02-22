@@ -42,6 +42,7 @@ export const CreatePostScreen = () => {
   const { handleSubmit, formState, watch, trigger, getValues } = methods;
   const createPostMutation = useCreateFreePost();
   const toast = useToast();
+  const isSubmittingRef = useRef(false);
   const { user } = useAppStore();
   const queryClient = useQueryClient();
   const [showCamera, setShowCamera] = useState(false);
@@ -469,6 +470,9 @@ export const CreatePostScreen = () => {
         action: 'error',
       });
       // TODO: Error handling UI göster
+    }
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 

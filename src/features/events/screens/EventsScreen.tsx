@@ -87,7 +87,8 @@ const EventsScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showFilterSheet, setShowFilterSheet] = useState(false);
-  /** Community tab filter (FilterBottomSheet) - backend'e gönderilir / ileride API desteği */
+  const [showCommunityFilterSheet, setShowCommunityFilterSheet] = useState(false);
+  /** Community tab filter (FilterBottomSheet) - CommunityTab'a geçirilir, query params ile API'ye gider */
   const [communityFilters, setCommunityFilters] = useState<FilterSelection | null>(null);
   /** Collections tab filter (CollectionsBottomSheet) - CollectionsTab'a geçirilir */
   const [collectionFilters, setCollectionFilters] = useState<CollectionFilters | null>(null);
@@ -255,19 +256,21 @@ const EventsScreen: React.FC = () => {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
-              {/* Filter Icon - Only show in Collections tab */}
-              {activeTab === 'collections' && (
-                <Pressable
-                  onPress={() => setShowFilterSheet(true)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Feather
-                    name="sliders"
-                    size={20}
-                    color={isDark ? '#FFF' : '#000'}
-                  />
-                </Pressable>
-              )}
+              {/* Filter Icon - Community tab: FilterBottomSheet, Collections tab: CollectionsBottomSheet */}
+              <Pressable
+                onPress={() =>
+                  activeTab === 'community'
+                    ? setShowCommunityFilterSheet(true)
+                    : setShowFilterSheet(true)
+                }
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather
+                  name="sliders"
+                  size={20}
+                  color={isDark ? '#FFF' : '#000'}
+                />
+              </Pressable>
             </View>
           </View>
 
@@ -346,6 +349,13 @@ const EventsScreen: React.FC = () => {
         </View>
       </View>
       
+      {/* Community tab filter - state CommunityTab'a geçer (useActiveEvents/useUpcomingEvents query params) */}
+      <FilterBottomSheet
+        visible={showCommunityFilterSheet}
+        onClose={() => setShowCommunityFilterSheet(false)}
+        onApply={handleFilterApply}
+        isDark={isDark}
+      />
       {/* Collections Filter Bottom Sheet - Medusa entegrasyonlu */}
       <CollectionsBottomSheet
         visible={showFilterSheet}

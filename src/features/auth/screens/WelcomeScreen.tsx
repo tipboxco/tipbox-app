@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image, useToast } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image, useToast, Pressable } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { LogIn, Mail, Facebook } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -66,7 +66,7 @@ export const WelcomeScreen = () => {
   return (
     <View style={{ flex: 1, backgroundColor }}>
       {/* Status Bar - Translucent for banner image */}
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       {/* Ana İçerik */}
       <View style={{ flex: 1 }}>
@@ -171,14 +171,15 @@ export const WelcomeScreen = () => {
           >
             Already have an account?
           </Text>
-          <Text
-            fontSize="$xs"
-            color={isDark ? '$textDark50' : '$textLight900'}
-            fontWeight="$bold"
-            onPress={() => navigation.navigate('Login', {})}
-          >
-            Sign In
-          </Text>
+          <Pressable onPress={() => navigation.navigate('Login', {})}>
+            <Text
+              fontSize="$xs"
+              color={isDark ? '$textDark50' : '$textLight900'}
+              fontWeight="$bold"
+            >
+              Sign In
+            </Text>
+          </Pressable>
         </HStack>
       </VStack>
       </Box>

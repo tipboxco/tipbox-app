@@ -1,9 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect, useReducer, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Pressable, Image, HStack, VStack, Input, InputField, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Box, Pressable, Image, HStack, VStack, Text, Input, InputField, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Search } from 'lucide-react-native';
+import { Search, X, Clock } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
@@ -156,6 +157,40 @@ const CatalogScreenComponent = () => {
   // UI-specific state (keep as useState for simplicity)
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  const RECENT_SEARCHES_KEY = '@catalog_recent_searches';
+  const MAX_RECENT = 5;
+
+  useEffect(() => {
+    AsyncStorage.getItem(RECENT_SEARCHES_KEY)
+      .then((raw) => { if (raw) setRecentSearches(JSON.parse(raw)); })
+      .catch(() => {});
+  }, []);
+
+  const saveRecentSearch = useCallback(async (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    setRecentSearches((prev) => {
+      const updated = [trimmed, ...prev.filter((q) => q !== trimmed)].slice(0, MAX_RECENT);
+      AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
+  }, []);
+
+  const removeRecentSearch = useCallback((query: string) => {
+    setRecentSearches((prev) => {
+      const updated = prev.filter((q) => q !== query);
+      AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
+  }, []);
+
+  const handleSearchBlur = useCallback(() => {
+    setIsSearchFocused(false);
+    if (searchQuery.trim()) saveRecentSearch(searchQuery);
+  }, [searchQuery, saveRecentSearch]);
   
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -797,9 +832,48 @@ const CatalogScreenComponent = () => {
                   fontSize="$xs"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={handleSearchBlur}
                 />
               </Input>
+              {searchQuery.length > 0 && (
+                <Pressable onPress={() => setSearchQuery('')}>
+                  <X size={16} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
+                </Pressable>
+              )}
             </HStack>
+
+            {/* Recent Searches – shown when focused and query is empty */}
+            {isSearchFocused && searchQuery.trim() === '' && recentSearches.length > 0 && (
+              <VStack
+                mt={4}
+                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                borderWidth={1}
+                borderColor={isDark ? '#333' : '#E9E9E9'}
+                borderRadius={12}
+                overflow="hidden"
+              >
+                {recentSearches.map((item) => (
+                  <HStack
+                    key={item}
+                    alignItems="center"
+                    px={14}
+                    py={10}
+                    borderBottomWidth={1}
+                    borderBottomColor={isDark ? '#2A2A2A' : '#F2F2F2'}
+                    space="sm"
+                  >
+                    <Clock size={14} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
+                    <Pressable flex={1} onPress={() => { setSearchQuery(item); setIsSearchFocused(false); }}>
+                      <Text fontSize="$xs" color={isDark ? '#FFFFFF' : '#1A1A1A'}>{item}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => removeRecentSearch(item)}>
+                      <X size={14} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
+                    </Pressable>
+                  </HStack>
+                ))}
+              </VStack>
+            )}
           </VStack>
         )}
 

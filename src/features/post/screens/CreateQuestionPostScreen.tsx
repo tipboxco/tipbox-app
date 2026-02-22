@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast, Switch, Divider } from '@gluestack-ui/themed';
@@ -154,6 +154,7 @@ export const CreateQuestionPostScreen = () => {
   const handleSubmit = methods.handleSubmit;
   const toast = useToast();
   const createQuestionPostMutation = useCreateQuestionPost();
+  const isSubmittingRef = useRef(false);
   const { user, walletBalance: storeBalance } = useAppStore();
   const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
   
@@ -282,6 +283,9 @@ export const CreateQuestionPostScreen = () => {
   };
 
   const onSubmit: SubmitHandler<QuestionPostFormData> = async (data) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
     console.log('[CreateQuestionPostScreen] Form submitted:', data);
     
     // Debug: Check store state
@@ -498,6 +502,9 @@ export const CreateQuestionPostScreen = () => {
         description: fallbackMessage,
         action: 'error',
       });
+    }
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 

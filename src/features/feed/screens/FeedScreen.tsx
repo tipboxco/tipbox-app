@@ -24,7 +24,7 @@ import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useFeed, useFeedFiltered } from '../api/hooks';
+import { useFeed, useFeedFiltered, feedKeys } from '../api/hooks';
 import { getFeed, getFilteredFeed } from '../api/feedApi';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
@@ -949,11 +949,11 @@ const FeedScreenInner = React.memo(() => {
       }
       
       if (newData.items.length > 0) {
-        // ESKİ query cache'ini tamamen temizle ve YENİ veriyi set et
-        const queryKey = hasActiveFilters 
-          ? ['feed', 'filtered', undefined, 10, filters]
-          : ['feed', undefined, 10, undefined, undefined];
-        
+        // ESKİ query cache'ini tamamen temizle ve YENİ veriyi set et (useFeed/useFeedFiltered ile aynı key)
+        const queryKey = hasActiveFilters
+          ? feedKeys.filtered(undefined, 10, filters, undefined, undefined)
+          : feedKeys.feed(undefined, 10, undefined, undefined);
+
         // Query cache'ini yeni veri ile değiştir (eski veriler silinir)
         queryClient.setQueryData(queryKey, {
           pages: [newData],

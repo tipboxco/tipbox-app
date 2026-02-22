@@ -12,6 +12,16 @@ import { formatRelativeTime, toImageSource, DEFAULT_USER_AVATAR } from '@/src/ut
 import { CachedImage } from '@/src/components/CachedImage';
 import type { InboxMessage } from '../../types';
 
+const AVATAR_BG_COLORS = [
+  '#5B4FE9', '#E9694F', '#4FB5E9', '#4FE96B', '#E9C84F',
+  '#E94F9A', '#4FE9D8', '#9A4FE9', '#E9834F', '#4F7AE9',
+];
+
+function getAvatarBgColor(name: string): string {
+  const code = name.charCodeAt(0) || 0;
+  return AVATAR_BG_COLORS[code % AVATAR_BG_COLORS.length];
+}
+
 interface MessageCardProps {
   data: InboxMessage;
   onPress?: (messageId: string) => void;
@@ -29,10 +39,9 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
     }
   };
 
-  // Avatar yoksa default avatar kullan
-  const avatarSource = data.senderAvatar 
-    ? (toImageSource(data.senderAvatar) || DEFAULT_USER_AVATAR)
-    : DEFAULT_USER_AVATAR;
+  const avatarSource = data.senderAvatar ? toImageSource(data.senderAvatar) : null;
+  const senderInitial = (data.senderName || '?').charAt(0).toUpperCase();
+  const avatarBg = getAvatarBgColor(data.senderName || '?');
 
   return (
     <Pressable
@@ -44,19 +53,30 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
       borderColor={isDark ? '#333' : '#E9E9E9'}
     >
       <HStack space="md" alignItems="center">
-        {/* Avatar */}
-        <CachedImage
-          source={avatarSource}
-          placeholder={DEFAULT_USER_AVATAR}
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-          }}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          priority="high"
-        />
+        {/* Avatar – image if available, else sender initial */}
+        {avatarSource ? (
+          <CachedImage
+            source={avatarSource}
+            placeholder={DEFAULT_USER_AVATAR}
+            style={{ width: 48, height: 48, borderRadius: 24 }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
+          />
+        ) : (
+          <Box
+            width={48}
+            height={48}
+            borderRadius={24}
+            bg={avatarBg}
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Text color="#FFFFFF" fontSize={18} fontWeight="$bold">
+              {senderInitial}
+            </Text>
+          </Box>
+        )}
 
         {/* Message Content */}
         <VStack flex={1} space="xs">

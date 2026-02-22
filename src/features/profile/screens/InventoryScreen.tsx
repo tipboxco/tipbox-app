@@ -6,12 +6,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Search } from 'lucide-react-native';
-import { VStack, HStack, Box, Input, InputField, Pressable, Text } from '@gluestack-ui/themed';
+import { VStack, HStack, Box, Input, InputField, Pressable, Text, useToast } from '@gluestack-ui/themed';
 import { PlusIcon } from 'react-native-heroicons/outline';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { Platform } from 'react-native';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { Header } from '@/src/components/Header';
 import { ProfileStackParamList } from '../navigation';
 import type { InventoryItem } from '../types';
@@ -39,8 +40,10 @@ type InventoryScreenRouteProp = RouteProp<ProfileStackParamList, 'InventoryList'
 const InventoryScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null); // Track which card has open menu
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const navigation = useNavigation<InventoryScreenNavigationProp>();
   const route = useRoute<InventoryScreenRouteProp>();
   const insets = useSafeAreaInsets();
@@ -182,12 +185,29 @@ const InventoryScreen = () => {
           text: 'Sil',
           style: 'destructive',
           onPress: () => {
-            deleteInventoryItem(item.id);
+            setDeletingItemId(item.id);
+            deleteInventoryItem(item.id, {
+              onError: (error: any) => {
+                const message =
+                  error?.response?.data?.message ||
+                  error?.response?.data?.error?.message ||
+                  error?.message ||
+                  'Ürün silinirken bir hata oluştu.';
+                showCustomToast(toast, {
+                  title: 'Silme hatası',
+                  description: message,
+                  action: 'error',
+                });
+              },
+              onSettled: () => {
+                setDeletingItemId(null);
+              },
+            });
           },
         },
       ]
     );
-  }, [deleteInventoryItem]);
+  }, [deleteInventoryItem, toast]);
 
 
   return (
@@ -244,6 +264,7 @@ const InventoryScreen = () => {
               width={CARD_WIDTH}
               isMenuOpen={openMenuItemId === item.id}
               onMenuToggle={(isOpen) => setOpenMenuItemId(isOpen ? item.id : null)}
+              isDeleting={deletingItemId === item.id}
               onPress={() => {
                 // If selectMode is 'event', navigate back to EventCreatePost with product
                 if (selectMode === 'event' && returnScreen === 'EventCreatePost') {

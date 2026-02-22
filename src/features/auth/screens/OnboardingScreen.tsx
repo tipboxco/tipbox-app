@@ -207,12 +207,13 @@ export const OnboardingScreen = () => {
           decelerationRate="fast"
         />
 
-        {/* Bottom Section */}
+        {/* Bottom Section - zIndex so FlatList touch doesn't block Next/Continue button */}
         <Box
           position="absolute"
           bottom={0}
           left={0}
           right={0}
+          zIndex={10}
           bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
           pb={insets.bottom + 16}
           pt="$4"

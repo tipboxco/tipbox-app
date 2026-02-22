@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { TouchableOpacity, Pressable as RNPressable, View, StyleSheet } from 'react-native';
+import { TouchableOpacity, Pressable as RNPressable, View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Box, VStack, Text, Pressable, HStack, Divider } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { InventoryItem } from '../../types';
@@ -19,9 +19,10 @@ interface InventoryCardProps {
   onUpdateExperience?: (item: InventoryItem) => void;
   onDeleteProduct?: (item: InventoryItem) => void;
   isOwnProfile?: boolean;
+  isDeleting?: boolean;
 }
 
-export const InventoryCard = ({ item, width, isMenuOpen, onMenuToggle, onPress, onUpdateExperience, onDeleteProduct, isOwnProfile = false }: InventoryCardProps) => {
+export const InventoryCard = ({ item, width, isMenuOpen, onMenuToggle, onPress, onUpdateExperience, onDeleteProduct, isOwnProfile = false, isDeleting = false }: InventoryCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   
@@ -122,9 +123,15 @@ export const InventoryCard = ({ item, width, isMenuOpen, onMenuToggle, onPress, 
       w={width}
       mb={10}
     >
+      {isDeleting && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 5, justifyContent: 'center', alignItems: 'center', zIndex: 20 }]}>
+          <ActivityIndicator size="small" color="#fff" />
+        </View>
+      )}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={onPress}
+        disabled={isDeleting}
       >
         <Box
           bg={isDark ? '$backgroundDark800' : '$white'}

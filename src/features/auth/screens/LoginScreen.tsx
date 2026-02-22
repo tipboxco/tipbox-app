@@ -175,7 +175,7 @@ export const LoginScreen = () => {
           title: 'Login Failed',
           description: errorMessage,
           action: 'error',
-          duration: 4000,
+          duration: 3000,
         });
       }
     }
@@ -187,38 +187,12 @@ export const LoginScreen = () => {
     }
   };
 
-  const handleEmailSuggestionPress = async () => {
+  const handleEmailSuggestionPress = () => {
     if (savedEmail) {
       setEmail(savedEmail);
       validateEmail(savedEmail);
       setShowEmailSuggestions(false);
-      
-      // Email seçildiğinde, eğer biometrik şifre varsa otomatik Face ID tetikle
-      if (__DEV__) {
-        console.log('[LoginScreen] 📧 Email suggestion pressed:', {
-          isBiometricAvailable,
-          hasBiometricPassword,
-          savedEmail,
-        });
-      }
-      
-      if (isBiometricAvailable && hasBiometricPassword) {
-        // Kısa bir gecikme sonrası Face ID'i tetikle (kullanıcı deneyimi için)
-        // skipEmailSet=true çünkü email zaten set edildi
-        if (__DEV__) {
-          console.log('[LoginScreen] 🔐 Triggering Face ID...');
-        }
-        setTimeout(async () => {
-          await handleBiometricLogin(true);
-        }, 300);
-      } else {
-        if (__DEV__) {
-          console.log('[LoginScreen] ⚠️ Face ID not available or password not saved:', {
-            isBiometricAvailable,
-            hasBiometricPassword,
-          });
-        }
-      }
+      // Biometric sadece kullanıcı parmak izi ikonuna bastığında tetiklenir (explicit action)
     }
   };
 
@@ -233,16 +207,26 @@ export const LoginScreen = () => {
         }
         setPassword(savedPassword);
         validatePassword(savedPassword);
-        // Otomatik login yap
         setTimeout(() => {
           handleSignIn();
         }, 300);
       } else {
-        // Şifre bulunamadıysa kullanıcıya bilgi ver
-        console.log('[LoginScreen] ⚠️ No saved password found');
+        showCustomToast(toast, {
+          title: 'Biometric Login',
+          description: 'No saved password found. Sign in with your password first and enable "Remember me".',
+          action: 'error',
+          duration: 3000,
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[LoginScreen] ❌ Biometric login error:', error);
+      const message = error?.message ?? 'Biometric authentication failed. Try signing in with your password.';
+      showCustomToast(toast, {
+        title: 'Biometric Failed',
+        description: message,
+        action: 'error',
+        duration: 3000,
+      });
     }
   };
 
@@ -282,7 +266,7 @@ export const LoginScreen = () => {
         title: 'Google Login Failed',
         description: errorMessage,
         action: 'error',
-        duration: 4000,
+        duration: 3000,
       });
     } finally {
       setIsGoogleLoading(false);
@@ -392,22 +376,22 @@ export const LoginScreen = () => {
                 value={password}
                 onChangeText={validatePassword}
               />
-              <HStack space="sm" alignItems="center" mr="$2">
+              <HStack space="md" alignItems="center" mr="$2" flexShrink={0}>
                 {isBiometricAvailable && savedEmail && hasBiometricPassword && (
-                  <Pressable onPress={() => handleBiometricLogin()}>
-                    <Icon 
-                      as={Fingerprint} 
-                      color={isDark ? '$primary400' : '$primary600'} 
-                      size="md" 
+                  <Pressable hitSlop={8} style={{ minWidth: 32 }} onPress={() => handleBiometricLogin()}>
+                    <Icon
+                      as={Fingerprint}
+                      color={isDark ? '$primary400' : '$primary600'}
+                      size="md"
                       alignSelf="center"
                     />
                   </Pressable>
                 )}
-                <Pressable onPress={() => setShowPassword(!showPassword)}>
-                  <Icon 
-                    as={showPassword ? EyeOff : Eye} 
-                    color={isDark ? '$textDark300' : '$textLight600'} 
-                    size="md" 
+                <Pressable hitSlop={8} style={{ minWidth: 32 }} onPress={() => setShowPassword(!showPassword)}>
+                  <Icon
+                    as={showPassword ? EyeOff : Eye}
+                    color={isDark ? '$textDark300' : '$textLight600'}
+                    size="md"
                     alignSelf="center"
                   />
                 </Pressable>

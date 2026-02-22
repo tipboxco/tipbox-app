@@ -249,7 +249,19 @@ export const CreateExperiencePostScreen = () => {
                     }
 
                     // experienceSnippetId'yi sakla (son adımda kullanılacak)
-                    setExperienceSnippetId(response.experienceSnippetId);
+                    const snippetId = response.experienceSnippetId;
+                    const hasValidSnippetId =
+                        typeof snippetId === 'string' && snippetId.trim().length > 0;
+                    if (!hasValidSnippetId) {
+                        setIsSplitLoading(false);
+                        showCustomToast(toast, {
+                            title: 'Error',
+                            description: 'AI could not structure your experience. Please try again or continue manually.',
+                            action: 'error',
+                        });
+                        return;
+                    }
+                    setExperienceSnippetId(snippetId);
 
                     // Step 3'e geç
                     setIsSplitLoading(false);

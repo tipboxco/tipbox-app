@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -71,7 +71,7 @@ export const ForgotPasswordScreen = () => {
         title: 'Error',
         description: errorMessage,
         action: 'error',
-        duration: 4000,
+        duration: 3000,
       });
     }
   };
@@ -160,16 +160,20 @@ export const ForgotPasswordScreen = () => {
             </ButtonText>
           </Button>
 
-          <Text
-            fontSize="$xs"
-            color={isDark ? '$textDark300' : '$textLight600'}
-            textAlign="center"
+          <Pressable
             mt="auto"
             mb={insets.bottom + 16}
+            alignSelf="center"
             onPress={() => navigation.goBack()}
           >
-            Go Back
-          </Text>
+            <Text
+              fontSize="$xs"
+              color={isDark ? '$textDark300' : '$textLight600'}
+              textAlign="center"
+            >
+              Go Back
+            </Text>
+          </Pressable>
         </VStack>
       </Box>
       </View>

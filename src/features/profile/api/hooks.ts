@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient, useInfiniteQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useInfiniteQuery, useMutation, type InfiniteData } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import {
   getUserProfile,
@@ -1303,15 +1303,37 @@ export const useDeleteInventoryItem = () => {
 
   return useMutation<DeleteInventoryItemResponse, Error, string>({
     mutationFn: (inventoryId) => deleteInventoryItem(inventoryId),
-    onSuccess: (data, inventoryId) => {
-      // Inventory listesini invalidate et
-      queryClient.invalidateQueries({ queryKey: profileKeys.inventory() });
-      // Cache'i tamamen temizle
-      queryClient.removeQueries({ queryKey: profileKeys.inventory() });
-      console.log('[useDeleteInventoryItem] ✅ Inventory item deleted successfully', { inventoryId });
+    onMutate: async (inventoryId) => {
+      await queryClient.cancelQueries({ queryKey: profileKeys.inventory() });
+      const previous = queryClient.getQueriesData<InfiniteData<InventoryApiResponse>>({
+        queryKey: profileKeys.inventory(),
+      });
+      queryClient.setQueriesData<InfiniteData<InventoryApiResponse>>(
+        { queryKey: profileKeys.inventory(), exact: false },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              items: page.items.filter((item) => item.id !== inventoryId),
+            })),
+          };
+        }
+      );
+      return { previous };
     },
-    onError: (error) => {
+    onError: (error, inventoryId, context) => {
       console.error('[useDeleteInventoryItem] ❌ Mutation error:', error);
+      if (context?.previous) {
+        context.previous.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSuccess: (data, inventoryId) => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.inventory() });
+      console.log('[useDeleteInventoryItem] ✅ Inventory item deleted successfully', { inventoryId });
     },
   });
 };

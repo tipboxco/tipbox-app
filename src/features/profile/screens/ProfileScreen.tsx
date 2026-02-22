@@ -1711,10 +1711,24 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     gap={2}
                     onPress={() => {
                       if (!targetUserId) return;
+                      const onTrustError = (error: any) => {
+                        const msg =
+                          error?.response?.data?.message ||
+                          error?.message ||
+                          (error?.message === 'Network Error'
+                            ? 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.'
+                            : 'İşlem başarısız. Lütfen tekrar deneyin.');
+                        showCustomToast(toast, {
+                          title: 'Hata',
+                          description: msg,
+                          action: 'error',
+                          duration: 4000,
+                        });
+                      };
                       if (profile.isTrusted) {
-                        untrustUser(targetUserId);
+                        untrustUser(targetUserId, { onError: onTrustError });
                       } else {
-                        trustUser(targetUserId);
+                        trustUser(targetUserId, { onError: onTrustError });
                       }
                     }}
                     disabled={isTrusting || isUntrusting}

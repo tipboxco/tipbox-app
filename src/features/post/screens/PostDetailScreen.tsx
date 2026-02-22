@@ -40,6 +40,7 @@ export const PostDetailScreen = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
     const [isSortBottomSheetOpen, setIsSortBottomSheetOpen] = useState(false);
+    const [likedCommentIds, setLikedCommentIds] = useState<Set<string>>(new Set());
     
     // FIX: route.params undefined kontrolü - güvenli erişim
     // Deep link veya notification'dan gelen durumlarda params undefined olabilir
@@ -432,8 +433,8 @@ export const PostDetailScreen = () => {
         inputRef.current?.blur();
     };
 
-    // Flatten comments with replies for display
-    const flattenedComments: Array<{
+    // Flatten comments with replies for display, then sort by selectedOption
+    type FlattenedCommentItem = {
         id: string;
         commentId: string;
         userId: string;
@@ -444,29 +445,31 @@ export const PostDetailScreen = () => {
         content: string;
         likesCount: number;
         isLiked: boolean;
-    }> = [];
+        createdAt: string;
+    };
 
-    if (commentsData?.comments) {
+    const flattenedComments = useMemo(() => {
+        const flat: FlattenedCommentItem[] = [];
+        if (!commentsData?.comments) return flat;
+
         commentsData.comments.forEach((item: CommentWithReplies) => {
-            // Main comment
-            flattenedComments.push({
+            flat.push({
                 id: item.comment.id,
                 commentId: item.comment.id,
                 userId: item.comment.userId,
                 userName: item.user.name || 'Anonymous',
-                userTitle: item.user.avatar ? '' : '', // API'de title yok, boş bırakıyoruz
+                userTitle: item.user.avatar ? '' : '',
                 avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
                 timeAgo: formatRelativeTime(item.comment.createdAt),
                 content: item.comment.comment,
                 likesCount: item.comment.likesCount || 0,
-                isLiked: false, // Backend doesn't provide isLiked, will be updated after like/unlike via query invalidation
+                isLiked: likedCommentIds.has(item.comment.id),
+                createdAt: item.comment.createdAt,
             });
 
-            // Replies
             if (item.replies && item.replies.length > 0) {
                 item.replies.forEach((reply) => {
-                    // Reply'ler için user bilgisi yok, main comment'in user'ını kullanıyoruz
-                    flattenedComments.push({
+                    flat.push({
                         id: reply.id,
                         commentId: reply.id,
                         userId: reply.userId,
@@ -476,12 +479,24 @@ export const PostDetailScreen = () => {
                         timeAgo: formatRelativeTime(reply.createdAt),
                         content: reply.comment,
                         likesCount: reply.likesCount || 0,
-                        isLiked: false, // Backend doesn't provide isLiked, will be updated after like/unlike via query invalidation
+                        isLiked: likedCommentIds.has(reply.id),
+                        createdAt: reply.createdAt,
                     });
                 });
             }
         });
-    }
+
+        // Sort by selectedOption
+        const sorted = [...flat];
+        if (selectedOption === 'Newest') {
+            sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        } else if (selectedOption === 'Oldest') {
+            sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        } else if (selectedOption === 'Popular') {
+            sorted.sort((a, b) => (b.likesCount ?? 0) - (a.likesCount ?? 0));
+        }
+        return sorted;
+    }, [commentsData?.comments, selectedOption, likedCommentIds]);
 
     // Handle delete comment
     const handleDeleteComment = useCallback((commentId: string, postId: string) => {
@@ -500,34 +515,42 @@ export const PostDetailScreen = () => {
         );
     }, [deleteCommentMutation]);
 
-    // Handle like comment - no optimistic update, wait for backend response
+    // Handle like comment - optimistic local tracking, backend confirms via query invalidation
     const handleLikeComment = useCallback((commentId: string, postId: string) => {
         if (!commentId || !postId) return;
-        
+
+        setLikedCommentIds(prev => new Set(prev).add(commentId));
+
         likeCommentMutation.mutate(
             { commentId, postId },
             {
-                onSuccess: () => {
-                    // Backend response will update the UI via query invalidation
-                },
                 onError: (error) => {
+                    setLikedCommentIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(commentId);
+                        return next;
+                    });
                     console.error('[PostDetailScreen] Like comment error:', error);
                 },
             }
         );
     }, [likeCommentMutation]);
 
-    // Handle unlike comment - no optimistic update, wait for backend response
+    // Handle unlike comment - optimistic local tracking, backend confirms via query invalidation
     const handleUnlikeComment = useCallback((commentId: string, postId: string) => {
         if (!commentId || !postId) return;
-        
+
+        setLikedCommentIds(prev => {
+            const next = new Set(prev);
+            next.delete(commentId);
+            return next;
+        });
+
         unlikeCommentMutation.mutate(
             { commentId, postId },
             {
-                onSuccess: () => {
-                    // Backend response will update the UI via query invalidation
-                },
                 onError: (error) => {
+                    setLikedCommentIds(prev => new Set(prev).add(commentId));
                     console.error('[PostDetailScreen] Unlike comment error:', error);
                 },
             }

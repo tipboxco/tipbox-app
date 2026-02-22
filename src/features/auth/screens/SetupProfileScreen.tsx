@@ -253,9 +253,9 @@ export const SetupProfileScreen = () => {
             Enter Your Profile Information
           </Text>
 
-          {/* Profile Photo */}
-          <Box alignItems="center" mt="$4">
-          <Box position="relative">
+          {/* Profile Photo - wrapper overflow visible so camera button stays tappable */}
+          <Box alignItems="center" mt="$4" style={{ overflow: 'visible' }}>
+          <Box position="relative" style={{ width: 120, height: 120, overflow: 'visible' }}>
             <Box
               rounded="$full"
               justifyContent="center"
@@ -293,13 +293,13 @@ export const SetupProfileScreen = () => {
             </Box>
             <Pressable
               position="absolute"
-              top={80}
-              right={-5}
-              bg="$white"
-              p="$3"
+              bottom={0}
+              right={0}
+              bg={isDark ? '$backgroundDark100' : '$white'}
+              p="$2.5"
               rounded="$full"
               borderWidth={1}
-              borderColor="$gray200"
+              borderColor={isDark ? '$borderDark200' : '$gray200'}
               onPress={handleSelectAvatar}
               style={{
                 shadowColor: '#000',
@@ -309,7 +309,7 @@ export const SetupProfileScreen = () => {
                 elevation: 5,
               }}
             >
-              <Icon as={Camera} size="lg" color="$gray800" />
+              <Icon as={Camera} size="md" color={isDark ? '$textDark50' : '$gray800'} />
             </Pressable>
           </Box>
         </Box>
@@ -420,22 +420,36 @@ export const SetupProfileScreen = () => {
           </FormControl>
         </VStack>
 
-          <Button
-            bg="$buttonPrimary"
-            py="$1"
-            rounded="$lg"
-            mt="auto"
-            mb="$4"
-            onPress={handleNext}
-            opacity={fullName.trim() && isUsernameValid && isUsernameAvailable === true && username.trim().length >= 3 && !setupProfileMutation.isPending && !errors.fullName && !errors.username ? 1 : 0.5}
-            disabled={!fullName.trim() || !isUsernameValid || isUsernameAvailable !== true || username.trim().length < 3 || setupProfileMutation.isPending || !!errors.fullName || !!errors.username}
-          >
-            {setupProfileMutation.isPending ? (
-              <Spinner size="small" color="$textLight900" />
-            ) : (
-              <ButtonText color="$textLight900">Continue</ButtonText>
-            )}
-          </Button>
+          {(() => {
+            const isCheckingUsername = usernameCheck.isLoading || (username !== debouncedUsername && username.length >= 3);
+            const isDisabled = !fullName.trim() || !isUsernameValid || isUsernameAvailable !== true || username.trim().length < 3 || setupProfileMutation.isPending || !!errors.fullName || !!errors.username;
+            return (
+              <Button
+                bg="$buttonPrimary"
+                py="$1"
+                rounded="$lg"
+                mt="auto"
+                mb={Math.max(insets.bottom, 16)}
+                onPress={handleNext}
+                opacity={!isDisabled ? 1 : 0.5}
+                disabled={isDisabled}
+              >
+                {setupProfileMutation.isPending ? (
+                  <HStack alignItems="center" space="sm">
+                    <Spinner size="small" color="$textLight900" />
+                    <ButtonText color="$textLight900">Saving...</ButtonText>
+                  </HStack>
+                ) : isCheckingUsername && username.trim().length >= 3 ? (
+                  <HStack alignItems="center" space="sm">
+                    <Spinner size="small" color="$textLight900" />
+                    <ButtonText color="$textLight900">Checking...</ButtonText>
+                  </HStack>
+                ) : (
+                  <ButtonText color="$textLight900">Continue</ButtonText>
+                )}
+              </Button>
+            );
+          })()}
         </VStack>
       </ScrollView>
       </Box>

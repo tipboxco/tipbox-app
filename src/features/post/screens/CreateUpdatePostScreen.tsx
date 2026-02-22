@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, View, Image as RNImage } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast, Image } from '@gluestack-ui/themed';
@@ -48,6 +48,7 @@ export const CreateUpdatePostScreen = () => {
   const toast = useToast();
   const createUpdatePostMutation = useCreateUpdatePost();
   const updatePostMutation = useUpdatePost();
+  const isSubmittingRef = useRef(false);
   const { user } = useAppStore();
   const queryClient = useQueryClient();
   const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
@@ -167,6 +168,9 @@ export const CreateUpdatePostScreen = () => {
   };
 
   const onSubmit = async (data: UpdatePostFormData) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
     console.log('[CreateUpdatePostScreen] Form submitted:', data);
     console.log('[CreateUpdatePostScreen] Product from route params:', product);
     console.log('[CreateUpdatePostScreen] Is update mode:', isUpdateMode);
@@ -360,6 +364,9 @@ export const CreateUpdatePostScreen = () => {
         description: fallbackMessage,
         action: 'error',
       });
+    }
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 

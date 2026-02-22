@@ -97,7 +97,7 @@ export const RegisterScreen = () => {
           title: 'Registration failed',
           description: errorMessage,
           action: 'error',
-          duration: 4000,
+          duration: 3000,
         });
       }
     }

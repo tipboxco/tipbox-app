@@ -125,6 +125,7 @@ export const CreateBenchmarkPostScreen = () => {
   const { handleSubmit, formState, setValue, watch } = methods;
   const toast = useToast();
   const createBenchmarkPostMutation = useCreateBenchmarkPost();
+  const isSubmittingRef = useRef(false);
   const { user } = useAppStore();
   const queryClient = useQueryClient();
 
@@ -135,6 +136,9 @@ export const CreateBenchmarkPostScreen = () => {
   const [showInventoryModal, setShowInventoryModal] = useState(false);
 
   const selectedProduct1 = watch('selectedProduct1');
+  const postText = watch('postText');
+  const selectedProduct2 = watch('selectedProduct2');
+  const selectedChoice = watch('selectedChoice');
 
   // Initialize first product from route params (ekrandaki ürün veya dönüşte korunan initial product)
   useEffect(() => {
@@ -272,6 +276,9 @@ export const CreateBenchmarkPostScreen = () => {
   };
 
   const onSubmit: SubmitHandler<BenchmarkPostFormData> = async (data) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
     console.log('[CreateBenchmarkPostScreen] Form submitted:', data);
     
     // Benchmark API: contextType sadece "product" kabul eder; contextId ürün id'lerinden biri olmalı
@@ -416,10 +423,18 @@ export const CreateBenchmarkPostScreen = () => {
         action: 'error',
       });
     }
+    } finally {
+      isSubmittingRef.current = false;
+    }
   };
 
-  // Check if share button should be enabled (form is valid)
-  const isShareEnabled = formState.isValid;
+  // Share button: schema (benchmarkPostSchema) required alanları açıkça kontrol et
+  const hasRequiredFields =
+    Boolean(postText?.trim?.()) &&
+    Boolean(selectedProduct1) &&
+    Boolean(selectedProduct2) &&
+    (selectedChoice === 'product1' || selectedChoice === 'product2');
+  const isShareEnabled = formState.isValid && hasRequiredFields;
   const isShareLoading = createBenchmarkPostMutation.isPending;
 
   const handleSharePress = () => {
