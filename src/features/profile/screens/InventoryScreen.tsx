@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { FlatList, Dimensions } from 'react-native';
+import { FlatList, Dimensions, Modal as RNModal, Pressable as RNPressable, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -40,6 +40,7 @@ const InventoryScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
+  const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null); // Track which card has open menu
   const navigation = useNavigation<InventoryScreenNavigationProp>();
   const route = useRoute<InventoryScreenRouteProp>();
   const insets = useSafeAreaInsets();
@@ -75,10 +76,16 @@ const InventoryScreen = () => {
   // Delete inventory item mutation
   const { mutate: deleteInventoryItem, isPending: isDeleting } = useDeleteInventoryItem();
 
-  // Tüm sayfalardaki item'ları birleştir
+  // Tüm sayfalardaki item'ları birleştir (duplicate id'leri kaldır - pagination overlap önlemi)
   const allInventoryItems = useMemo(() => {
     if (!data?.pages) return [];
-    return data.pages.flatMap((page) => page.items);
+    const flat = data.pages.flatMap((page) => page.items);
+    const seen = new Set<string>();
+    return flat.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
   }, [data]);
 
   // API'den gelen verileri filtrele
@@ -235,6 +242,8 @@ const InventoryScreen = () => {
             <InventoryCard
               item={item}
               width={CARD_WIDTH}
+              isMenuOpen={openMenuItemId === item.id}
+              onMenuToggle={(isOpen) => setOpenMenuItemId(isOpen ? item.id : null)}
               onPress={() => {
                 // If selectMode is 'event', navigate back to EventCreatePost with product
                 if (selectMode === 'event' && returnScreen === 'EventCreatePost') {
@@ -397,9 +406,33 @@ const InventoryScreen = () => {
       )}
 
       {/* Create Post Bottom Sheet */}
+      
+      {/* Full Screen Overlay - Modal açıkken ekranın tamamını kapla */}
+      {openMenuItemId && (
+        <RNModal
+          visible={true}
+          transparent={true}
+          animationType="none"
+          onRequestClose={() => setOpenMenuItemId(null)}
+        >
+          <RNPressable 
+            style={styles.fullScreenOverlay} 
+            onPress={() => setOpenMenuItemId(null)}
+          >
+            {/* Boş alan - sadece modal kapatmak için */}
+          </RNPressable>
+        </RNModal>
+      )}
       </VStack>
     </SafeAreaView>
   );
 };
 
 export default InventoryScreen;
+
+const styles = StyleSheet.create({
+  fullScreenOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+});

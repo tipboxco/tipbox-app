@@ -34,7 +34,7 @@ import {
   UserPlusIcon,
 } from 'react-native-heroicons/outline';
 import { useEventDetail, useEventPosts, useJoinEvent, useLeaveEvent } from '../api/hooks';
-    import { toImageSource, useSafeAreaValues } from '@/src/utils';
+    import { toImageSource, useSafeAreaValues, isSameImageSource } from '@/src/utils';
 import { CardType, EventStatus } from '@/src/types/common';
 import BadgeBottomSheet from '../components/BadgeBottomSheet';
 import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
@@ -360,9 +360,12 @@ const EventDetailScreen: React.FC = () => {
             },
             content,
             tags,
-            images: item.images
-                ?.map((img) => toImageSource(img))
-                .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+            images: (() => {
+                const mapped = item.images
+                    ?.map((img) => toImageSource(img))
+                    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+                return mapped.filter((img) => !isSameImageSource(img, productImage ?? defaultPostImage));
+            })(),
             stats: item.stats,
             createdAt: item.createdAt,
         };
@@ -405,6 +408,7 @@ const EventDetailScreen: React.FC = () => {
                 .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
             stats: item.stats,
             tag: item.tag,
+    benefitCategory: item.benefitCategory,
             createdAt: item.createdAt,
         };
     };

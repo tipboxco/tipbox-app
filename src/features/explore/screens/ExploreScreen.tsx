@@ -39,7 +39,6 @@ import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { ProductInfoType } from '@/src/types/common';
 import * as Linking from 'expo-linking';
-
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 // Banner Carousel Component (CardImageCarousel style)
@@ -298,14 +297,14 @@ const ExploreScreen: React.FC = () => {
   
   // Tab state - currentPage'e göre hesaplanıyor
   const activeCategory: 'hottest' | 'news' = currentPage === 0 ? 'hottest' : 'news';
-  
+
   const bottomInset = useSafeAreaValues('bottom');
   const [searchBarHeight, setSearchBarHeight] = useState(0);
   const [bannerHeight, setBannerHeight] = useState(0);
   const [tabsHeight, setTabsHeight] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  
+
   // PERFORMANCE FIX: Background colors - direkt hesapla (useMemo overhead'i yok)
   const backgroundColor = isDark ? '$backgroundDark950' : '#FFFFFF';
   const tabHeaderBgColor = isDark ? '#000' : '#FFF';

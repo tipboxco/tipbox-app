@@ -3,6 +3,7 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { Box, HStack, Text, VStack, Pressable, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { ActivityIndicator } from 'react-native';
 
 interface ControlledImagePickerProps {
   name: string;
@@ -10,6 +11,7 @@ interface ControlledImagePickerProps {
   maxImages?: number;
   onImagePicker: () => void;
   onRemoveImage?: (index: number) => void;
+  isLoading?: boolean;
 }
 
 export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
@@ -18,6 +20,7 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
   maxImages = 10,
   onImagePicker,
   onRemoveImage,
+  isLoading = false,
 }) => {
   const { control, watch } = useFormContext();
   const { colorMode } = useColorMode();
@@ -92,7 +95,7 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
 
               {/* Add Image Button */}
               {selectedImages.length < maxImages && (
-                <Pressable onPress={onImagePicker}>
+                <Pressable onPress={onImagePicker} disabled={isLoading}>
                   <Box
                     width={64}
                     height={64}
@@ -103,12 +106,17 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
                     borderRadius={5}
                     justifyContent="center"
                     alignItems="center"
+                    opacity={isLoading ? 0.5 : 1}
                   >
-                    <Feather
-                      name="plus"
-                      size={24}
-                      color={isDark ? '#C1BEBF' : '#C1BEBF'}
-                    />
+                    {isLoading ? (
+                      <ActivityIndicator size="small" color={isDark ? '#D0F205' : '#829905'} />
+                    ) : (
+                      <Feather
+                        name="plus"
+                        size={24}
+                        color={isDark ? '#C1BEBF' : '#C1BEBF'}
+                      />
+                    )}
                   </Box>
                 </Pressable>
               )}

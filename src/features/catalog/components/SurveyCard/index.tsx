@@ -93,7 +93,7 @@ const SurveyCard: React.FC<SurveyCardProps> = ({ survey, onPress }) => {
           </Text>
         </VStack>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - yeşil tamamlanmış, gri devam ediyor */}
         <Box
           width="100%"
           height={6}
@@ -102,14 +102,14 @@ const SurveyCard: React.FC<SurveyCardProps> = ({ survey, onPress }) => {
           overflow="hidden"
         >
           <Box
-            width={`${survey.progress || 0}%`}
+            width={`${survey.status === 'view_results' ? 100 : survey.progress || 0}%`}
             height="100%"
-            bg="#686868"
+            bg={survey.status === 'view_results' ? '#3CA241' : '#686868'}
             borderRadius={10}
           />
         </Box>
 
-        {/* Bottom Row - Points and Button */}
+        {/* Bottom Row - Points and Completed / Button */}
         <HStack justifyContent="space-between" alignItems="center" mt="$2">
           {/* Points */}
           <HStack alignItems="center" space="xs">
@@ -123,21 +123,27 @@ const SurveyCard: React.FC<SurveyCardProps> = ({ survey, onPress }) => {
             </Text>
           </HStack>
 
-          {/* Action Button */}
-          <Button
-            bg="#F6F6F6"
-            borderRadius={8}
-            height={26}
-            onPress={onPress}
-          >
-            <ButtonText
-              color="#111111"
-              fontSize={10}
-              fontWeight="$bold"
+          {/* Completed (yeşil) veya Action Button */}
+          {survey.status === 'view_results' ? (
+            <Text color="#3CA241" fontSize={10} fontWeight="$bold">
+              Completed
+            </Text>
+          ) : (
+            <Button
+              bg="#F6F6F6"
+              borderRadius={8}
+              height={26}
+              onPress={onPress}
             >
-              {getButtonText(survey.status)}
-            </ButtonText>
-          </Button>
+              <ButtonText
+                color="#111111"
+                fontSize={10}
+                fontWeight="$bold"
+              >
+                {getButtonText(survey.status)}
+              </ButtonText>
+            </Button>
+          )}
         </HStack>
       </VStack>
     </Box>

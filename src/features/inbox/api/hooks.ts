@@ -5,6 +5,7 @@ import {
   sendGift,
   createSupportRequest,
   sendDirectMessage,
+  sendSharedPostToDm,
   getThreadMessages,
   getSupportRequests,
   acceptSupportRequest,
@@ -30,6 +31,8 @@ import type {
   SendGiftRequest,
   SupportRequestCreate,
   DirectMessageRequest,
+  SendSharedPostToDmRequest,
+  SendSharedPostToDmResponse,
   ThreadMessage,
   SupportRequest,
   GetSupportRequestsParams,
@@ -54,26 +57,23 @@ export const inboxKeys = {
  * Get Messages query hook
  * Kullanıcının mesaj listesini getirir ve cache'ler
  *
+ * @param enabled - Query'yi aktif/pasif yapar (lazy loading için)
  * @param params - Query parameters (search, unreadOnly, threadType, limit)
  * @returns React Query hook result
  *
  * @example
- * const { data, isLoading, error } = useMessages({ threadType: 'DM', search: 'ahmet' });
+ * const { data, isLoading, error } = useMessages(true, { threadType: 'DM', search: 'ahmet' });
  */
-export const useMessages = (params?: GetMessagesParams) => {
+export const useMessages = (enabled: boolean = true, params?: GetMessagesParams) => {
   const queryClient = useQueryClient();
   
   return useQuery<InboxMessage[], Error>({
     queryKey: [...inboxKeys.messages(), params],
     queryFn: async () => {
-      console.log('[useMessages] 🔄 Query başlatılıyor:', { params });
       const result = await getMessages(params);
-      console.log('[useMessages] ✅ Query tamamlandı:', {
-        resultLength: result?.length || 0,
-        result: result,
-      });
       return result;
     },
+    enabled, // ✅ PERFORMANCE FIX: Lazy loading - inbox'a girilmeden veri çekilmez
     // Cache ayarları: Veri bir kez gelince invalid olana kadar cache'den kullan
     staleTime: 5 * 60 * 1000,  // 5 dakika - cache invalid olana kadar backend'e istek atma
     gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
@@ -91,65 +91,38 @@ export const useMessages = (params?: GetMessagesParams) => {
       
       // Eğer cache'de optimistic update varsa, backend verisini merge et
       if (cachedData && cachedData.length > 0) {
-        console.log('[useMessages] 🔄 Backend verisi cache ile merge ediliyor');
-        console.log(`[useMessages]   Backend'den gelen: ${data.length} thread`);
-        console.log(`[useMessages]   Cache'de: ${cachedData.length} thread`);
-        
-        // Backend'den gelen veriyi cache ile merge et
         const mergedData = data.map((backendMsg) => {
           const cachedMsg = cachedData.find((c) => c.id === backendMsg.id);
           
           if (!cachedMsg) {
-            // Cache'de yoksa backend verisini kullan (backend artık doğru veriyi döndürüyor)
             return backendMsg;
           }
           
-          // ✅ Backend iyileştirmesi: Backend artık thread_read event'inde unreadCount ve isUnread gönderiyor
-          // Backend'den gelen veri ile cache'i merge et
           const isCachedRead = !cachedMsg.isUnread && (cachedMsg.unreadCount || 0) === 0;
           const isBackendRead = !backendMsg.isUnread && (backendMsg.unreadCount || 0) === 0;
           const isBackendUnread = backendMsg.isUnread || (backendMsg.unreadCount || 0) > 0;
           
-          // ✅ Öncelik 1: Cache'de okunmamış mesaj varsa (optimistic update), cache'i koru
-          // Yeni mesaj geldiğinde handleNewMessage optimistic update yapıyor (isUnread: true, unreadCount++)
-          // Backend otomatik okundu işaretliyor olsa bile, cache'deki optimistic update'i koru
-          // Çünkü kullanıcı henüz mesajı okumadı, sadece yeni mesaj geldi
+          // Cache'de okunmamış mesaj varsa (optimistic update), cache'i koru
           const isCachedUnread = cachedMsg.isUnread || (cachedMsg.unreadCount || 0) > 0;
           if (isCachedUnread) {
-            console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... cache'de okunmamış (optimistic update), cache'i koru`);
-            console.log(`[useMessages]     Backend: isUnread=${backendMsg.isUnread}, unreadCount=${backendMsg.unreadCount || 0}`);
-            console.log(`[useMessages]     Cache: isUnread=${cachedMsg.isUnread}, unreadCount=${cachedMsg.unreadCount || 0}`);
-            // Cache'deki optimistic update'i koru (yeni mesaj geldiğinde badge gösterilmeli)
-            // Backend otomatik okundu işaretliyor olsa bile, kullanıcı henüz mesajı görmedi
             return cachedMsg;
           }
           
-          // ✅ Öncelik 2: Backend'den unreadCount === 0 geldiyse (thread okundu), backend verisini kullan
-          // thread_read event'i geldiğinde backend doğru veriyi döndürüyor
+          // Backend'den unreadCount === 0 geldiyse (thread okundu), backend verisini kullan
           if (isBackendRead) {
-            console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... backend'de okundu (unreadCount=0), backend verisini kullan`);
-            console.log(`[useMessages]     Backend: isUnread=${backendMsg.isUnread}, unreadCount=${backendMsg.unreadCount || 0}`);
-            console.log(`[useMessages]     Cache: isUnread=${cachedMsg.isUnread}, unreadCount=${cachedMsg.unreadCount || 0}`);
-            // Backend verisini kullan (thread_read event'inden sonra backend doğru veriyi döndürüyor)
             return backendMsg;
           }
           
-          // ✅ Öncelik 3: Cache'de okundu ama backend'de okunmamış görünüyorsa, backend verisini kullan
-          // Backend'den gelen veri daha güncel olabilir (başka cihazdan mesaj geldi)
+          // Cache'de okundu ama backend'de okunmamış görünüyorsa, backend verisini kullan
           if (isCachedRead && isBackendUnread) {
-            console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... backend'de okunmamış, backend verisini kullan`);
-            console.log(`[useMessages]     Backend: isUnread=${backendMsg.isUnread}, unreadCount=${backendMsg.unreadCount || 0}`);
-            console.log(`[useMessages]     Cache: isUnread=${cachedMsg.isUnread}, unreadCount=${cachedMsg.unreadCount || 0}`);
-            // Backend verisini kullan (başka cihazdan yeni mesaj gelmiş olabilir)
             return backendMsg;
           }
           
-          // ✅ Öncelik 4: Her iki tarafta da okundu, backend verisini kullan (daha güncel olabilir)
+          // Her iki tarafta da okundu, backend verisini kullan (daha güncel olabilir)
           if (isCachedRead && !isBackendUnread) {
             return backendMsg;
           }
           
-          // ✅ Öncelik 5: Diğer durumlarda backend verisini kullan
           return backendMsg;
         });
         
@@ -159,19 +132,12 @@ export const useMessages = (params?: GetMessagesParams) => {
         );
         
         if (cacheOnlyThreads.length > 0) {
-          console.log(`[useMessages]   📝 ${cacheOnlyThreads.length} cache-only thread eklendi`);
           return [...mergedData, ...cacheOnlyThreads];
         }
         
-        console.log(`[useMessages]   ✅ Merge tamamlandı: ${mergedData.length} thread`);
         return mergedData;
       }
       
-      // Cache yoksa backend verisini direkt döndür (backend artık doğru veriyi döndürüyor)
-      console.log('[useMessages]   ⚠️ Cache boş, backend verisi direkt kullanılıyor:', {
-        dataLength: data?.length || 0,
-        data: data,
-      });
       return data || [];
     },
   });
@@ -256,6 +222,33 @@ export const useSendDirectMessage = () => {
     onSuccess: () => {
       // Mesaj listesini invalidate et (socket event'ten sonra güncellenecek)
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Send Shared Post to DM mutation hook
+ * POST /inbox/share-post – Post'u DM thread'e paylaşır (threadId veya recipientUserId ile).
+ *
+ * @example
+ * const sendShared = useSendSharedPostToDm();
+ * sendShared.mutate({
+ *   recipientUserId: 'user-456',
+ *   messageType: 'shared-post',
+ *   sharedPost: { postId: 'post-123', authorName: 'Ahmet', productName: 'iPhone 15' },
+ *   message: 'Bunu gördün mü?'
+ * });
+ */
+export const useSendSharedPostToDm = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<SendSharedPostToDmResponse, Error, SendSharedPostToDmRequest>({
+    mutationFn: sendSharedPostToDm,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      if (data.threadId) {
+        queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(data.threadId) });
+      }
     },
   });
 };

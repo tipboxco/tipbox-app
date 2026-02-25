@@ -1,17 +1,18 @@
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  getActiveEvents, 
-  getUpcomingEvents, 
-  getEventDetail, 
-  getEventPosts, 
+import {
+  getActiveEvents,
+  getUpcomingEvents,
+  getEventDetail,
+  getEventPosts,
   getEventBadges,
   getEventBadgeDetail,
-  getLimitedEvent, 
-  getAchievements, 
-  createEventPost, 
-  joinEvent, 
-  leaveEvent, 
-  getEventRequirements, 
+  getLimitedEvent,
+  getCollectionDetail,
+  getAchievements,
+  createEventPost,
+  joinEvent,
+  leaveEvent,
+  getEventRequirements,
   createEventPostNew,
   createEventFreePost,
   getEventPostDetail,
@@ -21,9 +22,10 @@ import {
   getEventPostComments,
   deleteEventPostComment,
   createEventPostWithContext,
-  type CreateEventPostRequest, 
-  type CreateEventPostResponse, 
-  type EventBadgesResponse, 
+  type CommunityEventsFilter,
+  type CreateEventPostRequest,
+  type CreateEventPostResponse,
+  type EventBadgesResponse,
   type EventRequirementsResponse,
   type CreateEventPostRequestNew,
   type CreateEventPostResponseNew,
@@ -35,8 +37,13 @@ import {
   type CreateEventPostWithContextRequestV2 as CreateEventPostWithContextRequest,
   type CreateEventPostWithContextResponse,
 } from './communityEventsApi';
+import { getSurveyQuestions, submitSurveyQuestionAnswer, completeSurvey } from './surveyApi';
+import { getMainCategories, getSubCategories, getCategoryById } from './medusaApi';
+import type { MedusaCategory } from '../types/medusa.types';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgeDetailResponse } from '../types';
+import type { CollectionDetailResponse } from '../types/collection.types';
+import type { SurveyQuestionsApiResponse, SurveyCompleteApiResponse } from '../types/survey.types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
 
@@ -45,10 +52,10 @@ import { feedKeys } from '@/src/features/feed/api/hooks';
  */
 export const eventsKeys = {
   all: ['events'] as const,
-  active: (cursor?: string, limit?: number, search?: string) =>
-    [...eventsKeys.all, 'active', cursor, limit, search] as const,
-  upcoming: (cursor?: string, limit?: number, search?: string) =>
-    [...eventsKeys.all, 'upcoming', cursor, limit, search] as const,
+  active: (cursor?: string, limit?: number, search?: string, filters?: CommunityEventsFilter) =>
+    [...eventsKeys.all, 'active', cursor, limit, search, filters ?? null] as const,
+  upcoming: (cursor?: string, limit?: number, search?: string, filters?: CommunityEventsFilter) =>
+    [...eventsKeys.all, 'upcoming', cursor, limit, search, filters ?? null] as const,
   detail: (eventId: string) => [...eventsKeys.all, 'detail', eventId] as const,
   posts: (eventId: string, cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'posts', eventId, cursor, limit] as const,
@@ -64,9 +71,19 @@ export const eventsKeys = {
   badgeDetail: (eventId: string, badgeId: string) =>
     [...eventsKeys.all, 'badges', 'detail', eventId, badgeId] as const,
   limited: () => [...eventsKeys.all, 'limited'] as const,
+  collectionDetail: (collectionId: string, badgeSearch?: string) =>
+    [...eventsKeys.all, 'collections', 'detail', collectionId, badgeSearch ?? ''] as const,
+  surveyQuestions: (surveyId: string) =>
+    [...eventsKeys.all, 'surveys', 'questions', surveyId] as const,
   achievements: (cursor?: string, limit?: number, search?: string) =>
     [...eventsKeys.all, 'achievements', cursor, limit, search] as const,
   requirements: (eventId: string) => [...eventsKeys.all, 'requirements', eventId] as const,
+  // Medusa Categories
+  mainCategories: () => [...eventsKeys.all, 'categories', 'main'] as const,
+  subCategories: (parentId: string) =>
+    [...eventsKeys.all, 'categories', 'sub', parentId] as const,
+  categoryDetail: (categoryId: string) =>
+    [...eventsKeys.all, 'categories', 'detail', categoryId] as const,
 };
 
 /**
@@ -82,12 +99,16 @@ export const eventsKeys = {
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useActiveEvents(20, 'iphone');
  */
-export const useActiveEvents = (limit: number = 20, search?: string) => {
+export const useActiveEvents = (
+  limit: number = 20,
+  search?: string,
+  filters?: CommunityEventsFilter
+) => {
   return useInfiniteQuery<EventsApiResponse, Error>({
-    queryKey: eventsKeys.active(undefined, limit, search),
+    queryKey: eventsKeys.active(undefined, limit, search, filters),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getActiveEvents(cursor, limit, search);
+      return getActiveEvents(cursor, limit, search, filters);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -118,12 +139,16 @@ export const useActiveEvents = (limit: number = 20, search?: string) => {
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useUpcomingEvents(20, 'survey');
  */
-export const useUpcomingEvents = (limit: number = 20, search?: string) => {
+export const useUpcomingEvents = (
+  limit: number = 20,
+  search?: string,
+  filters?: CommunityEventsFilter
+) => {
   return useInfiniteQuery<UpcomingEventsApiResponse, Error>({
-    queryKey: eventsKeys.upcoming(undefined, limit, search),
+    queryKey: eventsKeys.upcoming(undefined, limit, search, filters),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getUpcomingEvents(cursor, limit, search);
+      return getUpcomingEvents(cursor, limit, search, filters);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -290,6 +315,78 @@ export const useLimitedEvent = () => {
     refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
+  });
+};
+
+/**
+ * Get Collection Detail query hook
+ * Backend'den collection detayı ve badge listesini getirir (404/error'da mock fallback ekran tarafında).
+ * badgeSearch verilirse GET /api/collections/:id?search=... ile sadece eşleşen badge'ler döner.
+ *
+ * @param collectionId - Collection ID
+ * @param badgeSearch - Badge name/description'da aranacak metin (opsiyonel)
+ * @returns React Query hook result
+ */
+export const useCollectionDetail = (collectionId: string, badgeSearch?: string) => {
+  return useQuery<CollectionDetailResponse, Error>({
+    queryKey: eventsKeys.collectionDetail(collectionId, badgeSearch),
+    queryFn: () => getCollectionDetail(collectionId, { badgeSearch: badgeSearch?.trim() || undefined }),
+    enabled: !!collectionId,
+    staleTime: 5 * 60 * 1000,  // 5 dakika
+    gcTime: 10 * 60 * 1000,    // 10 dakika
+    retry: 1,
+  });
+};
+
+/**
+ * Get Survey Questions query hook
+ * GET /surveys/{surveyId}/questions – event'ten gelen anketin soruları
+ */
+export const useSurveyQuestions = (surveyId: string) => {
+  return useQuery<SurveyQuestionsApiResponse, Error>({
+    queryKey: eventsKeys.surveyQuestions(surveyId),
+    queryFn: () => getSurveyQuestions(surveyId),
+    enabled: !!surveyId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+};
+
+/**
+ * Submit Survey Question Answer mutation hook
+ * POST /surveys/{surveyId}/questions/{questionId}/answer – tek soruya cevap (isCompleted döner)
+ */
+export const useSubmitSurveyQuestionAnswer = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      surveyId,
+      questionId,
+      answerId,
+    }: {
+      surveyId: string;
+      questionId: string;
+      answerId: string;
+    }) => submitSurveyQuestionAnswer(surveyId, questionId, answerId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: eventsKeys.surveyQuestions(variables.surveyId) });
+    },
+  });
+};
+
+/**
+ * Complete Survey mutation hook
+ * POST /surveys/{surveyId}/complete – tüm sorular cevaplandıktan sonra; pointsAwarded, badgesEarned döner
+ */
+export const useCompleteSurvey = () => {
+  const queryClient = useQueryClient();
+  return useMutation<SurveyCompleteApiResponse, Error, string>({
+    mutationFn: (surveyId: string) => completeSurvey(surveyId),
+    onSuccess: (_, surveyId) => {
+      queryClient.invalidateQueries({ queryKey: eventsKeys.surveyQuestions(surveyId) });
+      queryClient.invalidateQueries({ queryKey: eventsKeys.all });
+    },
   });
 };
 
@@ -812,3 +909,67 @@ export const useCreateEventPostWithContext = () => {
   });
 };
 
+
+// ============================================================================
+// MEDUSA CATEGORY HOOKS
+// ============================================================================
+
+/**
+ * Get Main Categories (parent_category_id === null)
+ * Ana kategorileri getiren hook
+ * 
+ * @returns React Query query hook result
+ * 
+ * @example
+ * const { data: mainCategories, isLoading } = useMainCategories();
+ */
+export const useMainCategories = () => {
+  return useQuery<MedusaCategory[], Error>({
+    queryKey: eventsKeys.mainCategories(),
+    queryFn: getMainCategories,
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat - kategoriler sık değişmez
+    gcTime: 48 * 60 * 60 * 1000, // 48 saat
+  });
+};
+
+/**
+ * Get Sub Categories by parent category ID
+ * Belirli bir kategorinin alt kategorilerini getiren hook
+ * 
+ * @param parentCategoryId - Ana kategori ID'si
+ * @param enabled - Query'nin çalışıp çalışmayacağı (default: true)
+ * @returns React Query query hook result
+ * 
+ * @example
+ * const { data: subCategories, isLoading } = useSubCategories('cat-electronics', true);
+ */
+export const useSubCategories = (parentCategoryId: string, enabled: boolean = true) => {
+  return useQuery<MedusaCategory[], Error>({
+    queryKey: eventsKeys.subCategories(parentCategoryId),
+    queryFn: () => getSubCategories(parentCategoryId),
+    enabled: enabled && !!parentCategoryId,
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat
+    gcTime: 48 * 60 * 60 * 1000, // 48 saat
+  });
+};
+
+/**
+ * Get Category by ID
+ * Belirli bir kategoriyi ID ile getiren hook
+ * 
+ * @param categoryId - Kategori ID'si
+ * @param enabled - Query'nin çalışıp çalışmayacağı (default: true)
+ * @returns React Query query hook result
+ * 
+ * @example
+ * const { data: category, isLoading } = useCategoryById('cat-electronics', true);
+ */
+export const useCategoryById = (categoryId: string, enabled: boolean = true) => {
+  return useQuery<MedusaCategory, Error>({
+    queryKey: eventsKeys.categoryDetail(categoryId),
+    queryFn: () => getCategoryById(categoryId),
+    enabled: enabled && !!categoryId,
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat
+    gcTime: 48 * 60 * 60 * 1000, // 48 saat
+  });
+};

@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
+import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Keyboard } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -30,12 +30,13 @@ import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
 import type { TipsCardData } from '@/src/types/TipsAndTricksCard';
+import { BENEFIT_CATEGORY_MAP } from '@/src/features/post/constants/benefitCategories';
+import { Feather } from '@expo/vector-icons';
 import {
   useLikePost,
   useUnlikePost,
   useBookmarkPost,
   useUnbookmarkPost,
-  useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { useReportUser } from '@/src/features/profile/api/hooks';
@@ -45,6 +46,9 @@ import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
+import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
+import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface TipsAndTricksPostCardProps {
@@ -65,6 +69,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
     const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
     const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const { openBottomSheet } = useGlobalBottomSheet();
+  const { openPostShareSheet } = usePostShare();
     
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
@@ -81,8 +86,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
     const unlikePostMutation = useUnlikePost();
     const bookmarkPostMutation = useBookmarkPost();
     const unbookmarkPostMutation = useUnbookmarkPost();
-    const sharePostMutation = useSharePost();
     const { data: postStatus } = usePostStatus(data.id);
+    const insets = useSafeAreaInsets();
     const { mutate: reportUser } = useReportUser();
     const updatePostMutation = useUpdatePost();
     const deletePostMutation = useDeletePost();
@@ -130,14 +135,15 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
     };
 
     const handleShare = () => {
-        // Zaten paylaşılmışsa tekrar paylaşma
-        if (isShared) return;
-        
-        setIsShared(true);
-        setSharesCount(prev => prev + 1);
-        sharePostMutation.mutate({
+        // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
+        openPostShareSheet({
             postId: data.id,
-            shareType: 'INTERNAL_REPOST',
+            postContent: data.content,
+            postAuthorName: data.user?.name,
+            onShareSuccess: () => {
+                setIsShared(true);
+                setSharesCount((prev) => prev + 1);
+            },
         });
     };
 
@@ -369,9 +375,9 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                         </Pressable>
                     )}
                     <Pressable flex={1} onPress={handleViewProfile}>
-                        <VStack 
+                        <VStack
                             flex={1}
-                            justifyContent={data.user?.title ? 'flex-start' : 'center'}
+                            justifyContent="center"
                         >
                             <Text
                                 color={isDark ? '$textDark50' : '#000'}
@@ -407,10 +413,11 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                         visible={isMenuOpen}
                         transparent={true}
                         animationType="fade"
+                        presentationStyle="overFullScreen"
                         onRequestClose={() => setIsMenuOpen(false)}
                     >
                         <RNPressable
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
                             onPress={() => setIsMenuOpen(false)}
                         />
                         <View
@@ -423,6 +430,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                                     borderWidth: 1,
                                     borderColor: isDark ? '#333333' : '#E9E9E9',
                                     shadowOpacity: isDark ? 0.3 : 0.1,
+                                    zIndex: 1,
+                                    elevation: 10,
                                 }
                             ]}
                         >
@@ -433,28 +442,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                                 <VStack px={12} py={8} width="100%">
                                     {isPostOwner ? (
                                         <>
-                                            <Pressable
-                                                onPress={() => {
-                                                    setIsMenuOpen(false);
-                                                    handleUpdate();
-                                                }}
-                                                py={8}
-                                            >
-                                                <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                                                    <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                                                    <Text
-                                                        color={isDark ? '#FFFFFF' : '#000000'}
-                                                        fontSize="$sm"
-                                                        fontWeight="$medium"
-                                                    >
-                                                        Update
-                                                    </Text>
-                                                </HStack>
-                                            </Pressable>
-                                            <Divider 
-                                                bg={isDark ? '#333333' : '#E9E9E9'} 
-                                                mx={0}
-                                            />
+                                            {/* Update butonu kaldırıldı - Sadece experience post'larda update var */}
                                             <Pressable
                                                 onPress={() => {
                                                     setIsMenuOpen(false);
@@ -620,24 +608,34 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     </Text>
                 </Box>
 
-                <HStack
-                    alignItems="center"
-                    space="xs"
-                    px={8}
-                >
-                    <Text
-                        mr={4}
-                        color={isDark ? '$textDark400' : '#666'}
-                        fontSize={10}
+                {/* Benefit Category Badge with Icon */}
+                {data.benefitCategory && BENEFIT_CATEGORY_MAP[data.benefitCategory] && (
+                    <Box
+                        bg={isDark ? BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor + '20' : BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor}
+                        borderWidth={1}
+                        borderColor={BENEFIT_CATEGORY_MAP[data.benefitCategory].color + '40'}
+                        borderRadius={20}
+                        px={10}
+                        py={6}
+                        flexDirection="row"
+                        alignItems="center"
+                        justifyContent="center"
                     >
-                        {data.tag}
-                    </Text>
-                    <RectangleStackIcon
-                        width={16}
-                        height={16}
-                        color={isDark ? '#fff' : '#666'}
-                    />
-                </HStack>
+                        <Feather
+                            name={BENEFIT_CATEGORY_MAP[data.benefitCategory].icon}
+                            size={14}
+                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
+                        />
+                        <Text
+                            fontSize={10}
+                            fontWeight="$semibold"
+                            ml={6}
+                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
+                        >
+                            {BENEFIT_CATEGORY_MAP[data.benefitCategory].label}
+                        </Text>
+                    </Box>
+                )}
             </HStack>
 
             {/* Content */}
@@ -651,7 +649,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
-                        fontSize="$xs"
+                        fontSize="$sm"
+                        lineHeight={18}
                         numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
                     >
                         {data.content}

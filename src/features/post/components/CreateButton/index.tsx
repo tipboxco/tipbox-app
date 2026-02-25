@@ -5,11 +5,13 @@ import { useBottomOffset } from '@/src/utils';
 
 interface CreateButtonProps {
   onPress: () => void;
+  /** Inventory status - only for PRODUCT level context */
+  isProductInInventory?: boolean;
 }
 
-export const CreateButton = ({ onPress }: CreateButtonProps) => {
+export const CreateButton = ({ onPress, isProductInInventory }: CreateButtonProps) => {
   const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
-  
+
   return (
     <Pressable
       onPress={onPress}

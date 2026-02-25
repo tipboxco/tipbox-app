@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Keyboard, Modal, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
@@ -19,6 +20,8 @@ import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys } from '@/src/features/profile/api/hooks';
+import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
+import type { InventoryItem } from '@/src/features/profile/types';
 import type { PostStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -28,7 +31,7 @@ type CreateBenchmarkPostScreenRouteProp = RouteProp<PostStackParamList, 'CreateB
 type CreateBenchmarkPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 // Product Benchmark Field Component
-const ProductBenchmarkField: React.FC = () => {
+const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ onShowSelectModal }) => {
   const { control, watch } = useFormContext<BenchmarkPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -36,18 +39,6 @@ const ProductBenchmarkField: React.FC = () => {
   const selectedProduct1 = watch('selectedProduct1');
   const selectedProduct2 = watch('selectedProduct2');
   const selectedChoice = watch('selectedChoice');
-
-  const handleProductSelect = () => {
-    const initialProductForReturn = selectedProduct1
-      ? { id: selectedProduct1.id, name: selectedProduct1.name, brand: selectedProduct1.brand, subName: selectedProduct1.subName, image: selectedProduct1.image }
-      : undefined;
-
-    navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT, {
-      returnScreen: 'CreateBenchmarkPostScreen',
-      selectedProductField: 'selectedProduct2',
-      initialProduct: initialProductForReturn,
-    });
-  };
 
   return (
     <VStack px={16} space="xs">
@@ -92,7 +83,7 @@ const ProductBenchmarkField: React.FC = () => {
                 )}
               />
             ) : (
-              <DashedProductCard onPress={handleProductSelect} />
+              <DashedProductCard onPress={onShowSelectModal} />
             )}
           </Box>
         </HStack>
@@ -131,17 +122,25 @@ export const CreateBenchmarkPostScreen = () => {
   const route = useRoute<CreateBenchmarkPostScreenRouteProp>();
   const { product } = route.params || {};
   const methods = useBenchmarkPostForm();
-  const { handleSubmit, formState, setValue } = methods;
+  const { handleSubmit, formState, setValue, watch } = methods;
   const toast = useToast();
   const createBenchmarkPostMutation = useCreateBenchmarkPost();
   const { user } = useAppStore();
   const queryClient = useQueryClient();
-  
+
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+
+  // Modal states for second product selection
+  const [showProductSourceModal, setShowProductSourceModal] = useState(false);
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
+
+  const selectedProduct1 = watch('selectedProduct1');
 
   // Initialize first product from route params (ekrandaki ürün veya dönüşte korunan initial product)
   useEffect(() => {
     if (product) {
+      console.log('[CreateBenchmarkPostScreen] 🔍 Initializing product1 from route params:', product);
+      
       const nameParts = product.name.split(' ');
       const brand = nameParts.length > 1 ? nameParts[0] : (product as any).brand;
       const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
@@ -152,9 +151,11 @@ export const CreateBenchmarkPostScreen = () => {
         name: productName,
         brand: brand,
         subName: subName,
-        image: product.image,
+        image: product.image ?? (product as any).imageUrl ?? product.description, // Try multiple image fields
         isOwned: false,
       };
+      
+      console.log('[CreateBenchmarkPostScreen] ✅ Formatted product1:', initialProduct);
       setValue('selectedProduct1', initialProduct, { shouldValidate: true });
     }
   }, [product, setValue]);
@@ -177,15 +178,22 @@ export const CreateBenchmarkPostScreen = () => {
         if (processedSelectedProductRef.current === selectionKey) {
           return;
         }
+        
+        console.log('[CreateBenchmarkPostScreen] 🔍 Processing selected product from navigation:', {
+          field: selectedProductField,
+          product: selectedProduct,
+        });
 
         const formattedProduct = {
           id: selectedProduct.id,
           name: selectedProduct.name,
           brand: selectedProduct.brand,
           subName: selectedProduct.description || selectedProduct.subName || '',
-          image: selectedProduct.image,
+          image: selectedProduct.image ?? (selectedProduct as any).imageUrl ?? selectedProduct.description,
           isOwned: selectedProductField === 'selectedProduct2' && selectedProduct.brand ? true : false,
         };
+        
+        console.log('[CreateBenchmarkPostScreen] ✅ Formatted product for', selectedProductField, ':', formattedProduct);
 
         if (selectedProductField === 'selectedProduct1') {
           setValue('selectedProduct1', formattedProduct, { shouldValidate: true });
@@ -198,6 +206,55 @@ export const CreateBenchmarkPostScreen = () => {
       }
     }, [route.params, setValue])
   );
+
+  // Handler for showing product source selection modal (second product)
+  const handleShowProductSourceModal = () => {
+    setShowProductSourceModal(true);
+  };
+
+  // Handler for selecting from catalog (second product)
+  const handleSelectFromCatalog = () => {
+    setShowProductSourceModal(false);
+
+    const initialProductForReturn = selectedProduct1
+      ? {
+          id: selectedProduct1.id,
+          name: selectedProduct1.name,
+          brand: selectedProduct1.brand,
+          subName: selectedProduct1.subName,
+          image: selectedProduct1.image,
+        }
+      : undefined;
+
+    navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT, {
+      returnScreen: 'CreateBenchmarkPostScreen',
+      selectedProductField: 'selectedProduct2',
+      initialProduct: initialProductForReturn,
+    });
+  };
+
+  // Handler for selecting from inventory (second product)
+  const handleSelectFromInventory = () => {
+    setShowProductSourceModal(false);
+    setShowInventoryModal(true);
+  };
+
+  // Handler for when product is selected from inventory modal
+  const handleInventoryProductSelect = (item: InventoryItem) => {
+    console.log('[CreateBenchmarkPostScreen] 📦 Inventory product selected:', item);
+
+    const formattedProduct = {
+      id: item.productId || item.id,
+      name: item.brand?.model || item.brand?.name || 'Unknown Product',
+      brand: item.brand?.name || '',
+      subName: item.brand?.model || '',
+      image: item.image,
+      isOwned: true,
+    };
+
+    setValue('selectedProduct2', formattedProduct, { shouldValidate: true });
+    setShowInventoryModal(false);
+  };
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -329,15 +386,33 @@ export const CreateBenchmarkPostScreen = () => {
       }
     } catch (error: any) {
       console.error('[CreateBenchmarkPostScreen] ❌ API Error:', error);
-      
-      // Hata toast göster
-      const errorMessage = error?.response?.data?.message || 
-                          error?.message || 
+
+      // Backend hata kodlarını ve mesajlarını kontrol et
+      const errorCode = error?.response?.data?.code;
+      const errorMessage = error?.response?.data?.message;
+
+      // İlk ürün envanter kontrolü - Backend'den gelen özel mesaj
+      if (errorMessage?.includes('ana ürün envanterinizde bulunmuyor') ||
+          errorMessage?.includes('envanterinizde bulunmuyor') ||
+          errorCode === 'PRODUCT_NOT_IN_INVENTORY') {
+        showCustomToast(toast, {
+          title: 'First Product Must Be in Inventory',
+          description: 'The first product must be from your inventory. Please select a product from your inventory.',
+          action: 'error',
+        });
+        // Kullanıcıyı 1. ürün seçim ekranına geri götürmek için product1'i temizle
+        setValue('selectedProduct1', null as any);
+        return;
+      }
+
+      // Genel hata
+      const fallbackMessage = errorMessage ||
+                          error?.message ||
                           'An error occurred while creating the post. Please try again.';
-      
+
       showCustomToast(toast, {
         title: 'Error',
-        description: errorMessage,
+        description: fallbackMessage,
         action: 'error',
       });
     }
@@ -345,7 +420,13 @@ export const CreateBenchmarkPostScreen = () => {
 
   // Check if share button should be enabled (form is valid)
   const isShareEnabled = formState.isValid;
+  const isShareLoading = createBenchmarkPostMutation.isPending;
 
+  const handleSharePress = () => {
+    Keyboard.dismiss();
+    const submitHandler = handleSubmit as unknown as (callback: SubmitHandler<BenchmarkPostFormData>) => () => void;
+    submitHandler(onSubmit)();
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -358,20 +439,16 @@ export const CreateBenchmarkPostScreen = () => {
             onLeftActionPress={handleBackPress}
             rightButton={{
               text: 'Share',
-              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
-              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
               paddingX: 10,
               paddingY: 10,
-              onPress: () => {
-                // TypeScript type inference issue with react-hook-form handleSubmit
-                // useBenchmarkPostForm already uses BenchmarkPostFormData, so this is safe
-                const submitHandler = handleSubmit as unknown as (callback: SubmitHandler<BenchmarkPostFormData>) => () => void;
-                submitHandler(onSubmit)();
-              },
+              onPress: handleSharePress,
+              loading: isShareLoading,
             }}
           />
 
@@ -379,7 +456,7 @@ export const CreateBenchmarkPostScreen = () => {
           <ScrollView flex={1} showsVerticalScrollIndicator={false}>
             <VStack space="md">
               {/* Product Benchmark Section */}
-              <ProductBenchmarkField />
+              <ProductBenchmarkField onShowSelectModal={handleShowProductSourceModal} />
 
               {/* Post Description Section */}
               <VStack px={16} space="xs">
@@ -393,6 +470,124 @@ export const CreateBenchmarkPostScreen = () => {
             </VStack>
           </ScrollView>
         </Box>
+
+        {/* Product Source Selection Modal (Catalog or Inventory) */}
+        <Modal
+          visible={showProductSourceModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowProductSourceModal(false)}
+        >
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            activeOpacity={1}
+            onPress={() => setShowProductSourceModal(false)}
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+              style={{ width: '80%', maxWidth: 320 }}
+            >
+              <Box
+                bg={isDark ? '$backgroundDark900' : '$white'}
+                borderRadius={12}
+                p={20}
+              >
+                <Text
+                  fontSize={18}
+                  fontWeight="$semibold"
+                  color={isDark ? '$textDark50' : '#000'}
+                  mb={16}
+                  textAlign="center"
+                >
+                  Select Second Product
+                </Text>
+
+                <VStack space="md">
+                  <Pressable
+                    onPress={handleSelectFromInventory}
+                    bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
+                    borderRadius={8}
+                    p={16}
+                  >
+                    <HStack space="sm" alignItems="center">
+                      <Feather name="archive" size={20} color={isDark ? '#FFF' : '#000'} />
+                      <Text
+                        fontSize={15}
+                        fontWeight="$medium"
+                        color={isDark ? '$textDark50' : '#000'}
+                      >
+                        From Inventory
+                      </Text>
+                    </HStack>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleSelectFromCatalog}
+                    bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
+                    borderRadius={8}
+                    p={16}
+                  >
+                    <HStack space="sm" alignItems="center">
+                      <Feather name="grid" size={20} color={isDark ? '#FFF' : '#000'} />
+                      <Text
+                        fontSize={15}
+                        fontWeight="$medium"
+                        color={isDark ? '$textDark50' : '#000'}
+                      >
+                        From Catalog
+                      </Text>
+                    </HStack>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setShowProductSourceModal(false)}
+                    bg="transparent"
+                    borderWidth={1}
+                    borderColor={isDark ? '$borderDark700' : '#E0E0E0'}
+                    borderRadius={8}
+                    p={16}
+                  >
+                    <Text
+                      fontSize={15}
+                      fontWeight="$medium"
+                      color={isDark ? '$textDark400' : '#666'}
+                      textAlign="center"
+                    >
+                      Cancel
+                    </Text>
+                  </Pressable>
+                </VStack>
+              </Box>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Inventory Product Selection Modal */}
+        <Modal
+          visible={showInventoryModal}
+          animationType="slide"
+          onRequestClose={() => setShowInventoryModal(false)}
+        >
+          <SafeAreaView style={{ flex: 1 }}>
+            <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+              <Header
+                title="Select from Inventory"
+                leftAction="back"
+                onLeftActionPress={() => setShowInventoryModal(false)}
+              />
+              <AddProductFromInventory
+                onProductSelect={handleInventoryProductSelect}
+                onClose={() => setShowInventoryModal(false)}
+              />
+            </Box>
+          </SafeAreaView>
+        </Modal>
       </FormProvider>
     </SafeAreaView>
   );

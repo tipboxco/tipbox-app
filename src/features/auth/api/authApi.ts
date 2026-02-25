@@ -384,8 +384,14 @@ export const setupProfile = async (
     formData.append('selectCategories', JSON.stringify({
       selectedCategories: data.selectCategories
     }));
+
+    // Seçilen varsayılan avatar (API listesinden): AvatarId gönder
+    if (data.profileImage?.startsWith('avatar://')) {
+      const avatarId = data.profileImage.replace('avatar://', '');
+      formData.append('AvatarId', avatarId);
+    }
     
-    // Profile image varsa ekle (field name: Avatar)
+    // Upload edilen foto: Avatar dosyası gönder (field name: Avatar)
     // Backend: max 5MB, JPG/PNG/GIF/WebP formatları
     if (data.profileImage && !data.profileImage.startsWith('avatar://')) {
       const imageUri = data.profileImage;
@@ -605,6 +611,49 @@ export interface UserCategory {
   name: string;
   subCategories: UserSubCategory[];
 }
+
+/**
+ * Avatar listesi tipi (GET /users/avatars response)
+ */
+export interface UserAvatar {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface GetUserAvatarsResponse {
+  success: boolean;
+  avatars: UserAvatar[];
+}
+
+/**
+ * Get User Avatars endpoint function
+ * Kullanıcı avatar seçimi için varsayılan avatar listesini getirir
+ *
+ * @returns GetUserAvatarsResponse - Avatar listesi
+ */
+export const getUserAvatars = async (): Promise<GetUserAvatarsResponse> => {
+  try {
+    const response = await apiService.getClient().get<GetUserAvatarsResponse>(
+      '/users/avatars'
+    );
+    console.log('[getUserAvatars] Response:', {
+      success: response.data?.success,
+      avatarsCount: response.data?.avatars?.length ?? 0,
+      avatars: response.data?.avatars,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('[getUserAvatars] API Error:', {
+      url: '/users/avatars',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
 
 /**
  * Get User Categories endpoint function

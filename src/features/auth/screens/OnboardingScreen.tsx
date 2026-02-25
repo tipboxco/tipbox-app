@@ -65,11 +65,21 @@ export const OnboardingScreen = () => {
   const handleNext = () => {
     if (currentIndex < onboardingData.length - 1) {
       const nextIndex = currentIndex + 1;
-      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
       setCurrentIndex(nextIndex);
+      flatListRef.current?.scrollToOffset({
+        offset: nextIndex * SCREEN_WIDTH,
+        animated: true,
+      });
     } else {
       handleGetStarted();
     }
+  };
+
+  const handleScrollToIndexFailed = (info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
+    flatListRef.current?.scrollToOffset({
+      offset: info.index * SCREEN_WIDTH,
+      animated: true,
+    });
   };
 
   const handleSkip = () => {
@@ -187,12 +197,14 @@ export const OnboardingScreen = () => {
           onScroll={handleScroll}
           scrollEventThrottle={16}
           onMomentumScrollEnd={handleScroll}
+          onScrollToIndexFailed={handleScrollToIndexFailed}
           contentContainerStyle={{ paddingBottom: 0 }}
           getItemLayout={(_, index) => ({
             length: SCREEN_WIDTH,
             offset: SCREEN_WIDTH * index,
             index,
           })}
+          decelerationRate="fast"
         />
 
         {/* Bottom Section */}

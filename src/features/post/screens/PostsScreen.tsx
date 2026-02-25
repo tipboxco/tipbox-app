@@ -1,7 +1,7 @@
 import React, { useRef, useMemo, useCallback, useState } from 'react';
 import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, Pressable, Text } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, Pressable, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -20,8 +20,9 @@ import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useInventoryProductCheck } from '../hooks/useInventoryProductCheck';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
-import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { useSubCategoryPosts, useProductGroupPosts, useCatalogProductPosts } from '@/src/features/catalog/api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useQueryClient } from '@tanstack/react-query';
@@ -42,6 +43,7 @@ import { FeedSkeleton } from '@/src/components/Skeletons';
 import { CardType } from '@/src/types/common';
 import { FilterSortBottomSheet, type FilterSortState } from '../components/FilterSortBottomSheet';
 import { mapPostTypeToFilter } from '../utils/postTypeMapping';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
 type PostsScreenNavigationProp = NativeStackNavigationProp<PostStackParamList>;
@@ -51,7 +53,11 @@ export const PostsScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
-  
+
+  // Inventory check hook for quick product lookups
+  const { checkProduct } = useInventoryProductCheck();
+  const toast = useToast();
+
   // PERFORMANCE FIX: Memoize route params to prevent unnecessary re-renders
   const routeParams = useMemo(() => route.params, [route.params]);
   const { stage, name, productInfo, selectedProduct, contextType, contextId } = routeParams;
@@ -151,6 +157,14 @@ export const PostsScreen = () => {
     
     return result;
   }, [contextId, feedContextType, selectedProduct]);
+
+  // Inventory check - only for PRODUCT level context
+  const isProductInInventory = useMemo(() => {
+    if (feedContextType !== 'product' || !feedContextId) {
+      return undefined; // Not applicable for other context types
+    }
+    return checkProduct(feedContextId);
+  }, [feedContextType, feedContextId, checkProduct]);
 
   // Determine which API to use based on context type
   // Use catalog posts endpoints for better hierarchical feed support
@@ -392,10 +406,23 @@ export const PostsScreen = () => {
 
   const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
     console.log('Post type selected:', type, 'experienceOption:', experienceOption);
-    
-    // Close bottom sheet first
+
+    // Product feed: require product in inventory before navigating (except Experience + "tried")
+    // Check before closing sheet so toast appears on top of the open bottom sheet
+    if (stage === 'Product' && feedContextId && !checkProduct(feedContextId)) {
+      const allowWithoutInventory = type === 'experience' && experienceOption === 'tried';
+      if (!allowWithoutInventory) {
+        showCustomToast(toast, {
+          title: 'Product not in inventory',
+          description: 'This product is not in your inventory. Add it to your inventory first to create a post.',
+          action: 'error',
+        });
+        return; // Keep bottom sheet open; toast shows above it
+      }
+    }
+
     closeBottomSheet();
-    
+
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
       // CatalogUIStore'dan ID'leri al
@@ -580,12 +607,14 @@ export const PostsScreen = () => {
         product: selectedProductPayload,
       });
     } else if (type === 'update') {
-      navigation.navigate('CreateUpdatePostScreen', {
+      // Update post oluşturmak için önce experience post seçilmeli
+      // SelectExperienceForUpdateScreen'e yönlendir
+      navigation.navigate('SelectExperienceForUpdateScreen', {
         product: selectedProductPayload,
       });
     }
     // Handle other post types here if needed
-  }, [navigation, selectedProductPayload, closeBottomSheet, contextType, contextId, stage, productInfo, selectedProduct]);
+  }, [navigation, selectedProductPayload, closeBottomSheet, contextType, contextId, stage, productInfo, selectedProduct, checkProduct, feedContextId, toast]);
 
   // Mapping functions (from FeedScreen)
   const mapFeedToCardData = useCallback((item: ProfilePost): PostCardData => {
@@ -665,7 +694,8 @@ export const PostsScreen = () => {
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages;
+    // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+    const images = mappedImages.filter((img) => !isSameImageSource(img, productImage));
 
     const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
     // 3 tag: duration, condition (location), purpose. API tags yoksa/eksikse *Name alanlarından doldur.
@@ -767,31 +797,48 @@ export const PostsScreen = () => {
         images,
         stats: item.stats,
         tag: item.tag,
+    benefitCategory: item.benefitCategory,
         createdAt: item.createdAt,
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    const product: TipsProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    let category: TipsCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: sadece category bilgisi, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: TipsProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: TipsCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     const mappedImages = Array.isArray(item.images)
       ? item.images
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
-      : [];
+        : [];
     const images = mappedImages;
 
     return {
@@ -807,6 +854,7 @@ export const PostsScreen = () => {
       images,
       stats: item.stats,
       tag: item.tag,
+    benefitCategory: item.benefitCategory,
       createdAt: item.createdAt,
     };
   }, []);
@@ -844,28 +892,49 @@ export const PostsScreen = () => {
           },
         },
         content: item.content || '',
-        isBoosted: item.isBoosted || false,
+        isBoosted: item.isBoosted ?? (item as { is_boosted?: boolean }).is_boosted ?? false,
+        boostedUntil: item.boostedUntil ?? (item as { boosted_until?: string }).boosted_until,
         images,
         stats: item.stats,
         createdAt: item.createdAt,
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    const product: QuestionCardProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    // - contextType === 'product' → category.product dolu (product card gösterilir)
+    // - contextType === 'sub_category' → sadece category dolu (sub category card gösterilir)
+    // - contextType === 'product_group' → category.product dolu (product group card gösterilir)
+    
+    let category: QuestionCardCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: category dolu, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak (QuestionPostCard'da category gösterilecek)
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: QuestionCardProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: QuestionCardCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     const mappedImages = Array.isArray(item.images)
       ? item.images
@@ -884,7 +953,8 @@ export const PostsScreen = () => {
       },
       category,
       content: item.content || '',
-      isBoosted: item.isBoosted || false,
+      isBoosted: item.isBoosted ?? (item as { is_boosted?: boolean }).is_boosted ?? false,
+      boostedUntil: item.boostedUntil ?? (item as { boosted_until?: string }).boosted_until,
       images,
       stats: item.stats,
       createdAt: item.createdAt,
@@ -1037,9 +1107,14 @@ export const PostsScreen = () => {
 
     const itemId = item.data.id;
     
-    // Eğer tüm gönderiler aynı product'a aitse (feedContextType === 'product'), 
-    // product content'ini gizle çünkü zaten üstte ProductInfoCard gösteriliyor
-    const shouldHideProduct = feedContextType === 'product';
+    // CRITICAL: Context-aware content hiding
+    // Eğer zaten o context'in post listesindeyse (sub_category, product_group, product),
+    // content'i gizle çünkü zaten üstte ProductInfoCard gösteriliyor
+    // Ama farklı context'lerde (Feed, Profile, vb.) content gösterilmeli
+    const shouldHideContext = 
+      (feedContextType === 'product') ||
+      (feedContextType === 'product_group') ||
+      (feedContextType === 'sub_category');
     
     if (__DEV__) {
       console.log('[PostsScreen] 🎨 Rendering feed item:', {
@@ -1050,7 +1125,7 @@ export const PostsScreen = () => {
         hasContextData: 'contextData' in item.data,
         hasIsBoosted: 'isBoosted' in item.data,
         feedContextType,
-        shouldHideProduct,
+        shouldHideContext,
       });
     }
 
@@ -1064,7 +1139,7 @@ export const PostsScreen = () => {
             <ExperiencePostCard
               key={itemId}
               data={mapExperienceToCardData(item.data as ExperiencePostApiItem & { type: 'experience' })}
-              hideProduct={shouldHideProduct}
+              hideProduct={shouldHideContext}
             />
           );
         }
@@ -1075,7 +1150,7 @@ export const PostsScreen = () => {
           <PostCard
             key={itemId}
             data={mapFeedToCardData(item.data as ProfilePost)}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       case CardType.BENCHMARK:
@@ -1095,7 +1170,7 @@ export const PostsScreen = () => {
             <QuestionPostCard
               key={itemId}
               data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
-              hideProduct={shouldHideProduct}
+              hideProduct={shouldHideContext}
             />
           );
         }
@@ -1113,7 +1188,7 @@ export const PostsScreen = () => {
           <TipsAndTricksPostCard
             key={itemId}
             data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       case CardType.UPDATE:
@@ -1122,7 +1197,7 @@ export const PostsScreen = () => {
           <UpdatePostCard
             key={itemId}
             data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
-            hideProduct={shouldHideProduct}
+            hideProduct={shouldHideContext}
           />
         );
       default:
@@ -1289,7 +1364,10 @@ export const PostsScreen = () => {
 
       {/* Create Button - Sadece Product stage'inde göster */}
       {stage === 'Product' && (
-        <CreateButton onPress={handleCreatePress} />
+        <CreateButton
+          onPress={handleCreatePress}
+          isProductInInventory={isProductInInventory}
+        />
       )}
 
       </Box>

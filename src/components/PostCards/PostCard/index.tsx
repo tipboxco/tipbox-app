@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Alert, Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
+import { Alert, Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Keyboard } from 'react-native';
 // Heroicons imports
 import {
   EllipsisHorizontalIcon,
@@ -33,7 +33,6 @@ import {
   useUnlikePost,
   useBookmarkPost,
   useUnbookmarkPost,
-  useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
@@ -45,6 +44,9 @@ import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
+import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
+import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface PostCardProps {
   data: PostCardData;
@@ -81,12 +83,13 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const unlikePostMutation = useUnlikePost();
   const bookmarkPostMutation = useBookmarkPost();
   const unbookmarkPostMutation = useUnbookmarkPost();
-  const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
   
   // User action hooks
   const { mutate: reportUser } = useReportUser();
   const { openBottomSheet } = useGlobalBottomSheet();
+  const insets = useSafeAreaInsets();
+  const { openPostShareSheet } = usePostShare();
   
   // Post owner actions
   const updatePostMutation = useUpdatePost();
@@ -143,17 +146,18 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
     }
   };
 
-  const handleShare = () => {
-    // Zaten paylaşılmışsa tekrar paylaşma
-    if (isShared) return;
-    
-    setIsShared(true);
-    setSharesCount(prev => prev + 1);
-    sharePostMutation.mutate({
+  const handleShare = useCallback(() => {
+    // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
+    openPostShareSheet({
       postId: data.id,
-      shareType: 'INTERNAL_REPOST',
+      postContent: data.content,
+      postAuthorName: data.user?.name,
+      onShareSuccess: () => {
+        setIsShared(true);
+        setSharesCount((prev) => prev + 1);
+      },
     });
-  };
+  }, [data.id, data.content, data.user?.name, openPostShareSheet]);
 
   const handleComment = () => {
     if (isDetailMode) return; // Detay modunda navigation yapma
@@ -426,9 +430,9 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             </Pressable>
           )}
           <Pressable flex={1} onPress={handleAvatarPress}>
-            <VStack 
+            <VStack
               flex={1}
-              justifyContent={data.user?.title ? 'flex-start' : 'center'}
+              justifyContent="center"
             >
               <Text
                 color={isDark ? '$textDark50' : '#000'}
@@ -464,10 +468,11 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             visible={isMenuOpen}
             transparent={true}
             animationType="fade"
+            presentationStyle="overFullScreen"
             onRequestClose={() => setIsMenuOpen(false)}
           >
             <RNPressable
-              style={{ flex: 1 }}
+              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
               onPress={() => setIsMenuOpen(false)}
             />
             <View
@@ -480,6 +485,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                   borderWidth: 1,
                   borderColor: isDark ? '#333333' : '#E9E9E9',
                   shadowOpacity: isDark ? 0.3 : 0.1,
+                  zIndex: 1,
+                  elevation: 10,
                 }
               ]}
             >
@@ -490,28 +497,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 <VStack px={12} py={8} width="100%">
                   {isPostOwner ? (
                     <>
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleUpdate();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            Update
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                      <Divider 
-                        bg={isDark ? '#333333' : '#E9E9E9'} 
-                        mx={0}
-                      />
+                      {/* Update butonu kaldırıldı - Sadece experience post'larda update var */}
                       <Pressable
                         onPress={() => {
                           setIsMenuOpen(false);
@@ -598,10 +584,14 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // Product için PostsScreen'e navigate et
-                  if (!context.id || !data.contextType) {
+                  // FIX: Use data.contextId instead of context.id for correct ID
+                  const contextId = (data as any).contextId || context.id;
+
+                  if (!contextId || !data.contextType) {
+                    console.warn('[PostCard] Missing contextId or contextType:', { contextId, contextType: data.contextType });
                     return;
                   }
-                  
+
                   navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostsScreen',
                     params: {
@@ -613,13 +603,13 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                         subName: context.subName,
                       },
                       selectedProduct: {
-                        id: context.id,
+                        id: contextId, // FIX: Use corrected contextId
                         name: context.name,
                         description: context.subName,
                         image: imageSource,
                       },
                       contextType: data.contextType,
-                      contextId: context.id,
+                      contextId: contextId, // FIX: Use corrected contextId
                     },
                   });
                 }}
@@ -644,14 +634,18 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // ProductGroup veya SubCategory için PostsScreen'e navigate et
-                  if (!context.id || !data.contextType) {
+                  // FIX: Use data.contextId instead of context.id for correct ID
+                  const contextId = (data as any).contextId || context.id;
+
+                  if (!contextId || !data.contextType) {
+                    console.warn('[PostCard] Missing contextId or contextType:', { contextId, contextType: data.contextType });
                     return;
                   }
-                  
-                  const stage = data.contextType === ProductInfoType.PRODUCT_GROUP 
-                    ? 'ProductGroup' 
+
+                  const stage = data.contextType === ProductInfoType.PRODUCT_GROUP
+                    ? 'ProductGroup'
                     : 'SubCategories';
-                  
+
                   navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostsScreen',
                     params: {
@@ -663,7 +657,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                         subName: context.subName,
                       },
                       contextType: data.contextType,
-                      contextId: context.id,
+                      contextId: contextId, // FIX: Use corrected contextId
                     },
                   });
                 }}
@@ -733,7 +727,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize="$xs"
+            fontSize="$sm"
+            lineHeight={18}
             numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
           >
             {data.content}

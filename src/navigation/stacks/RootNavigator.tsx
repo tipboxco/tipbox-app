@@ -12,6 +12,7 @@ import { BookmarksNavigator } from '@/src/features/bookmarks/navigation';
 import { MarketplaceNavigator } from '@/src/features/marketplace/navigation';
 import { EventNavigator } from '@/src/features/events/EventNavigator';
 import { NewsNavigator } from '@/src/features/catalog/NewsNavigator';
+import { BrandNavigator } from '@/src/features/catalog/BrandNavigator';
 import MessageDetailScreen from '@/src/features/inbox/screens/MessageDetail';
 import SupportMessageDetailScreen from '@/src/features/inbox/screens/SupportMessageDetail';
 import { ProductSelectScreen } from '@/src/screens/ProductSelectScreen';
@@ -115,6 +116,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="News"
               component={NewsNavigator}
+            />
+            <RootStack.Screen
+              name="Brand"
+              component={BrandNavigator}
             />
             <RootStack.Screen
               name="MessageDetail"

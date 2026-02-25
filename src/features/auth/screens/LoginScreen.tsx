@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -22,7 +22,6 @@ export const LoginScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const route = useRoute<LoginScreenRouteProp>();
-  const { loginAsGuest } = useAppStore();
   const toast = useToast();
   const loginMutation = useLogin();
   const googleLoginMutation = useGoogleLogin();
@@ -247,28 +246,6 @@ export const LoginScreen = () => {
     }
   };
 
-  const handleGuestLogin = async () => {
-    try {
-      console.log('Starting guest login...');
-      await loginAsGuest();
-      console.log('Guest login completed!');
-      
-      // Ana sayfaya yönlendir
-      navigation.reset({
-        index: 0,
-        routes: [{ 
-          name: 'Main' as never,
-          params: {
-            screen: 'Feed',
-            params: {}
-          }
-        }],
-      });
-    } catch (error) {
-      console.error('Guest login error:', error);
-    }
-  };
-
   const handleForgotPassword = () => {
     navigation.navigate('ForgotPassword' as never);
   };
@@ -313,8 +290,9 @@ export const LoginScreen = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor }}>
-      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={{ flex: 1, backgroundColor }}>
+        {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
       <View 
         style={{ 
           height: insets.top, 
@@ -416,7 +394,7 @@ export const LoginScreen = () => {
               />
               <HStack space="sm" alignItems="center" mr="$2">
                 {isBiometricAvailable && savedEmail && hasBiometricPassword && (
-                  <Pressable onPress={handleBiometricLogin}>
+                  <Pressable onPress={() => handleBiometricLogin()}>
                     <Icon 
                       as={Fingerprint} 
                       color={isDark ? '$primary400' : '$primary600'} 
@@ -449,7 +427,7 @@ export const LoginScreen = () => {
                     alignItems="center"
                   >
                     {rememberMe && (
-                      <Icon as={Check} size={12} color="$white" />
+                      <Icon as={Check} size="xs" color="$white" />
                     )}
                   </Box>
                   <Text
@@ -484,17 +462,6 @@ export const LoginScreen = () => {
           <ButtonText color="$textLight900">
             {loginMutation.isPending ? 'Signing in...' : 'Confirm'}
           </ButtonText>
-        </Button>
-
-        <Button
-          onPress={handleGuestLogin}
-          bg={isDark ? '$primary600' : '$primary500'}
-          py="$1"
-          px="$6"
-          rounded="$lg"
-          mt="$2"
-        >
-          <ButtonText>Continue as Guest</ButtonText>
         </Button>
 
         <HStack w="$full" alignItems="center" justifyContent="center" space="md" mt="$4">
@@ -547,6 +514,7 @@ export const LoginScreen = () => {
           zIndex: 1,
         }} 
       />
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 };

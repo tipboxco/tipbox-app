@@ -21,12 +21,17 @@ export interface BoostOption {
  */
 export const getBoostOptions = async (): Promise<BoostOption[]> => {
   try {
+    console.log('[getBoostOptions] 📡 Fetching boost options...');
     const response = await apiService.getClient().get<BoostOption[]>(
       '/posts/boost-options'
     );
+    console.log('[getBoostOptions] ✅ Success:', {
+      count: response.data.length,
+      options: response.data.map(opt => ({ id: opt.id, title: opt.title, amount: opt.amount })),
+    });
     return response.data;
   } catch (error: any) {
-    console.error('[getBoostOptions] API Error:', {
+    console.error('[getBoostOptions] ❌ API Error:', {
       url: '/posts/boost-options',
       method: 'GET',
       status: error.response?.status,
@@ -50,11 +55,25 @@ export const createFreePost = async (
 ): Promise<CreatePostResponse> => {
   const client = apiService.getClient();
   
+  console.log('[postApi] createFreePost - Input data:', {
+    contextType: data.contextType,
+    contextId: data.contextId,
+    description: data.description,
+    images: data.images?.length || 0,
+    eventId: data.eventId,
+  });
+  
   // FormData oluştur (multipart/form-data için)
   const formData = new FormData();
   formData.append('contextType', data.contextType);
   formData.append('contextId', data.contextId);
   formData.append('description', data.description);
+  
+  console.log('[postApi] createFreePost - FormData fields:', {
+    contextType: data.contextType,
+    contextId: data.contextId,
+    description: data.description,
+  });
   
   // Event ID varsa ekle (event'e bağlı post için)
   if (data.eventId) {
@@ -102,6 +121,8 @@ export const createFreePost = async (
       },
     }
   );
+  
+  console.log('[postApi] createFreePost - Backend Response:', response.data);
   
   return response.data;
 };
@@ -268,6 +289,7 @@ export const createTipsAndTricksPost = async (
       }
     );
     
+    console.log('[createTipsAndTricksPost] ✅ Backend Response:', response.data);
     console.log('[createTipsAndTricksPost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -314,7 +336,7 @@ export interface CreateQuestionPostRequest {
   contextType: ApiContextType;
   contextId: string;
   description: string;
-  selectedBoostOptionId: string;
+  boostEnabled: boolean; // Boost ON/OFF
   images?: string[];
 }
 
@@ -330,7 +352,7 @@ export const createQuestionPost = async (
       contextType: data.contextType,
       contextId: data.contextId,
       description: data.description?.substring(0, 50) + '...',
-      selectedBoostOptionId: data.selectedBoostOptionId,
+      boostEnabled: data.boostEnabled,
       imagesCount: data.images?.length || 0,
     });
     
@@ -340,7 +362,7 @@ export const createQuestionPost = async (
     formData.append('contextType', data.contextType);
     formData.append('contextId', data.contextId);
     formData.append('description', data.description);
-    formData.append('selectedBoostOptionId', data.selectedBoostOptionId);
+    formData.append('boostEnabled', String(data.boostEnabled)); // Boolean olarak gönder
     
     if (data.images && data.images.length > 0) {
       data.images.forEach((imageUri, index) => {
@@ -372,7 +394,7 @@ export const createQuestionPost = async (
       contextType: data.contextType,
       contextId: data.contextId,
       description: data.description?.substring(0, 50) + '...',
-      selectedBoostOptionId: data.selectedBoostOptionId,
+      boostEnabled: data.boostEnabled,
       imagesCount: data.images?.length || 0,
     });
     
@@ -386,6 +408,7 @@ export const createQuestionPost = async (
       }
     );
     
+    console.log('[createQuestionPost] ✅ Backend Response:', response.data);
     console.log('[createQuestionPost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -398,7 +421,7 @@ export const createQuestionPost = async (
         contextType: data.contextType,
         contextId: data.contextId,
         description: data.description?.substring(0, 50) + '...',
-        selectedBoostOptionId: data.selectedBoostOptionId,
+        boostEnabled: data.boostEnabled,
         imagesCount: data.images?.length || 0,
       },
       responseData: error.response?.data,
@@ -410,13 +433,14 @@ export const createQuestionPost = async (
 
 /**
  * Create Update Post Request Body
+ * Backend'e göre experiencePostId ZORUNLU alan - Update post sadece experience post'lara eklenir
  */
 export interface CreateUpdatePostRequest {
   contextType: ApiContextType;
   contextId: string;
   content: string;
+  experiencePostId: string; // ZORUNLU - Update post sadece experience post'lara eklenir
   images?: string[];
-  experiencePostId?: string;
   eventId?: string | null;
 }
 
@@ -427,19 +451,39 @@ export interface CreateUpdatePostRequest {
 export const createUpdatePost = async (
   data: CreateUpdatePostRequest
 ): Promise<CreatePostResponse> => {
-  const client = apiService.getClient();
-  
-  const formData = new FormData();
-  formData.append('contextType', data.contextType);
-  formData.append('contextId', data.contextId);
-  formData.append('content', data.content); // "description" değil, "content"!
-  
-  if (data.experiencePostId) {
-    formData.append('experiencePostId', data.experiencePostId);
-  }
-  if (data.eventId != null && data.eventId !== '') {
-    formData.append('eventId', data.eventId);
-  }
+  try {
+    console.log('[createUpdatePost] 📤 Request data:', {
+      contextType: data.contextType,
+      contextId: data.contextId,
+      experiencePostId: data.experiencePostId,
+      contentLength: data.content?.length || 0,
+      imagesCount: data.images?.length || 0,
+      eventId: data.eventId,
+    });
+
+    // Backend'e göre experiencePostId ZORUNLU
+    if (!data.experiencePostId || data.experiencePostId.trim() === '') {
+      const errorMsg = 'experiencePostId is required for update posts';
+      console.error(`[createUpdatePost] ❌ ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+
+    // Backend sadece 'product' contextType kabul ediyor
+    if (data.contextType !== 'product') {
+      console.warn(`[createUpdatePost] ⚠️ contextType '${data.contextType}' is not 'product', forcing to 'product'`);
+    }
+
+    const client = apiService.getClient();
+    
+    const formData = new FormData();
+    formData.append('contextType', 'product'); // Backend sadece 'product' kabul ediyor
+    formData.append('contextId', data.contextId || ''); // Opsiyonel - backend experience post'tan alır
+    formData.append('content', data.content); // "description" değil, "content"!
+    formData.append('experiencePostId', data.experiencePostId); // ZORUNLU alan
+    
+    if (data.eventId != null && data.eventId !== '') {
+      formData.append('eventId', data.eventId);
+    }
 
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {
@@ -466,17 +510,96 @@ export const createUpdatePost = async (
     });
   }
   
-  const response = await client.post<CreatePostResponse>(
-    '/posts/update',
-    formData,
-    {
-      headers: {
-        'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+    console.log('[createUpdatePost] 📤 FormData prepared:', {
+      hasContextType: !!formData.get('contextType'),
+      hasContextId: !!formData.get('contextId'),
+      hasContent: !!formData.get('content'),
+      hasExperiencePostId: !!formData.get('experiencePostId'),
+      imagesCount: data.images?.length || 0,
+    });
+
+    const response = await client.post<CreatePostResponse>(
+      '/posts/update',
+      formData,
+      {
+        headers: {
+          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
+        },
+      }
+    );
+    
+    console.log('[createUpdatePost] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[createUpdatePost] ❌ API Error:', {
+      url: '/posts/update',
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        experiencePostId: data.experiencePostId,
+        contentLength: data.content?.length || 0,
+        imagesCount: data.images?.length || 0,
       },
+      responseData: error.response?.data,
+      responseMessage: error.response?.data?.message,
+      responseError: error.response?.data?.error,
+      errorMessage: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Experience Option - Backend'den dönen duration/location/purpose seçenekleri
+ */
+export interface ExperienceOption {
+  id: string;
+  name: string;
+}
+
+/**
+ * Experience Options Response
+ * GET /posts/experience/options endpoint'inden dönen veri
+ */
+export interface ExperienceOptionsResponse {
+  durations: ExperienceOption[];
+  locations: ExperienceOption[];
+  purposes: ExperienceOption[];
+}
+
+/**
+ * Get Experience Options endpoint function
+ * Duration, Location ve Purpose seçeneklerini getirir
+ *
+ * @returns ExperienceOptionsResponse - Seçenek listeleri
+ */
+export const getExperienceOptions = async (): Promise<ExperienceOptionsResponse> => {
+  try {
+    const response = await apiService.getClient().get<ExperienceOptionsResponse>(
+      '/posts/experience/options'
+    );
+    return response.data;
+  } catch (error: any) {
+    const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
+    console.error('[getExperienceOptions] ❌ API Error:', {
+      url: '/posts/experience/options',
+      fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/posts/experience/options` : undefined,
+      method: 'GET',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+    });
+    if (__DEV__ && error) {
+      console.error('[getExperienceOptions] Full error:', error);
     }
-  );
-  
-  return response.data;
+    throw error;
+  }
 };
 
 /**
@@ -485,6 +608,7 @@ export const createUpdatePost = async (
 export interface CreateExperiencePostRequest {
   contextType: ApiContextType;
   contextId: string;
+  productId?: string; // Required when contextType is sub_category or product_group
   experienceSnippetId: string;
   selectedDurationId: string;
   selectedLocationId: string;
@@ -544,6 +668,8 @@ export const createExperiencePost = async (
         experience: data.experience,
         status: data.status,
         experienceSnippetId: data.experienceSnippetId,
+        // productId - Required when contextType is sub_category or product_group
+        ...(data.productId && { productId: data.productId }),
         // camelCase (spec)
         selectedDurationId: data.selectedDurationId,
         selectedLocationId: data.selectedLocationId,
@@ -573,6 +699,9 @@ export const createExperiencePost = async (
     const formData = new FormData();
     formData.append('contextType', data.contextType);
     formData.append('contextId', data.contextId);
+    if (data.productId) {
+      formData.append('productId', data.productId);
+    }
     formData.append('content', data.content);
     formData.append('experience', JSON.stringify(data.experience));
     formData.append('status', data.status);
@@ -909,6 +1038,111 @@ export const searchPosts = async (
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Dynamic Boost Price Request/Response
+ * Question post için dinamik boost fiyatını getirir
+ */
+export interface GetBoostPriceResponse {
+  price: number; // Dinamik boost fiyatı (TIPS)
+  currency: string; // "TIPS"
+  factors?: {
+    onlineUsers?: number;
+    activityLevel?: string;
+    timeOfDay?: string;
+  };
+}
+
+/** 404 durumunda kullanılan varsayılan boost fiyatı (backend endpoint yoksa veya route sırası yanlışsa) */
+const BOOST_PRICE_FALLBACK: GetBoostPriceResponse = {
+  price: 0,
+  currency: 'TIPS',
+};
+
+/**
+ * Get Dynamic Boost Price endpoint function
+ * Platform aktivitesine göre güncel boost fiyatını döner.
+ * 404 (Post not found) dönerse backend'de GET /posts/boost-price muhtemelen GET /posts/:postId'den sonra tanımlı;
+ * bu durumda fallback fiyat dönülür, ekran kırılmaz.
+ *
+ * @returns GetBoostPriceResponse - Dinamik boost fiyat bilgisi
+ */
+export const getBoostPrice = async (): Promise<GetBoostPriceResponse> => {
+  try {
+    const response = await apiService.getClient().get<GetBoostPriceResponse>(
+      '/posts/boost-price'
+    );
+    return response.data;
+  } catch (error: any) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message;
+
+    if (status === 404 && message === 'Post not found') {
+      // Backend'de route sırası: GET /posts/boost-price, GET /posts/:postId'den ÖNCE tanımlanmalı
+      console.warn('[getBoostPrice] ⚠️ 404 Post not found – using fallback. Ensure backend route GET /posts/boost-price is defined before GET /posts/:postId.');
+      return BOOST_PRICE_FALLBACK;
+    }
+
+    console.error('[getBoostPrice] ❌ API Error:', {
+      url: '/posts/boost-price',
+      method: 'GET',
+      status,
+      responseData: error.response?.data,
+      errorMessage: error.message,
+    });
+    throw error;
+  }
+};
+export interface ToggleBoostRequest {
+  postId: string;
+  enabled: boolean; // true: boost'u aç, false: boost'u kapat
+}
+
+export interface ToggleBoostResponse {
+  success: boolean;
+  postId: string;
+  isBoosted: boolean;
+  boostPrice?: number; // Backend'den dönen dinamik fiyat (kullanıcı aktivitesine göre)
+  message?: string;
+}
+
+/**
+ * Toggle Boost endpoint function
+ * Question post için boost'u açar veya kapatır
+ * Backend, kullanıcı aktivitesine göre dinamik bir fiyat döner
+ *
+ * @param data - Toggle boost request data
+ * @returns ToggleBoostResponse - Boost durumu ve fiyat bilgisi
+ */
+export const togglePostBoost = async (
+  data: ToggleBoostRequest
+): Promise<ToggleBoostResponse> => {
+  try {
+    console.log('[togglePostBoost] 📤 Request:', {
+      postId: data.postId,
+      enabled: data.enabled,
+    });
+
+    const response = await apiService.getClient().patch<ToggleBoostResponse>(
+      `/posts/${data.postId}/boost`,
+      { enabled: data.enabled }
+    );
+
+    console.log('[togglePostBoost] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[togglePostBoost] ❌ API Error:', {
+      url: `/posts/${data.postId}/boost`,
+      method: 'PATCH',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: data,
+      responseData: error.response?.data,
+      errorMessage: error.message,
     });
     throw error;
   }

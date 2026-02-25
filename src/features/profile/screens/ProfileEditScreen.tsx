@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
-import { ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
+import { ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Modal as RNModal, StyleSheet, Pressable as RNPressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Box, 
@@ -12,14 +12,12 @@ import {
   InputField,
   Textarea,
   TextareaInput,
-  Modal,
-  ModalBackdrop,
-  ModalContent,
-  ModalBody
 } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
@@ -32,6 +30,7 @@ import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/the
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '@/src/store/appStore';
 import type { ProfileStackParamList } from '../navigation';
+import type { UserProfile } from '../types';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -41,6 +40,16 @@ const AVAILABLE_BADGES = [
   { id: 'home_appliance', label: 'Home Appliance Enthusiast' },
   { id: 'product_reviewer', label: 'Product Reviewer' },
   { id: 'tech_expert', label: 'Tech Expert' },
+] as const;
+
+// Avatar çerçevesi (kozmetik) listesi - API'den çekilebilir
+const AVAILABLE_COSMETICS = [
+  { id: 'frame_red', label: 'Red Frame', borderColor: '#E53935' },
+  { id: 'frame_gold', label: 'Gold Frame', borderColor: '#F9A825' },
+  { id: 'frame_blue', label: 'Blue Frame', borderColor: '#1E88E5' },
+  { id: 'frame_green', label: 'Green Frame', borderColor: '#43A047' },
+  { id: 'frame_purple', label: 'Purple Frame', borderColor: '#8E24AA' },
+  { id: 'frame_none', label: 'None', borderColor: 'transparent' },
 ] as const;
 
 // Badge item component - memoized for performance
@@ -132,17 +141,20 @@ const ProfileEditScreen: React.FC = () => {
   const navigation = useNavigation<ProfileEditScreenNavigationProp>();
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+  const { user, updateUser } = useAppStore();
 
-  // Form state
-  const [name, setName] = useState(mock_user_card.name);
+  // Form state: real user name when available, else mock fallback
+  const [name, setName] = useState(() => user?.fullName ?? mock_user_card.name);
   const [bio, setBio] = useState(mock_user_card.description);
   const [badge1, setBadge1] = useState('');
   const [badge2, setBadge2] = useState('');
   const [badge3, setBadge3] = useState('');
   const [cosmetic, setCosmetic] = useState<string | null>(null); // Cosmetic ID
-  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
-  const [selectedAvatarType, setSelectedAvatarType] = useState<'picture' | 'cosmetic'>('picture');
+  const [isCosmeticModalVisible, setIsCosmeticModalVisible] = useState(false);
+  const [cosmeticPreview, setCosmeticPreview] = useState<string | null>(null); // Modal içinde seçim (Save'e basınca cosmetic'e yazılır)
   const [selectedBadgeSlot, setSelectedBadgeSlot] = useState<1 | 2 | 3 | null>(null);
+  // Sahip olunan kozmetikler - API'den gelecek; boşsa Figma 6576-32081: tek dashed + placeholder
+  const ownedCosmeticsIds: string[] = []; // TODO: userProfile?.ownedCosmetics ?? []
   const [selectedAvatarUri, setSelectedAvatarUri] = useState<string | null>(null);
   const [selectedBannerUri, setSelectedBannerUri] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -152,7 +164,11 @@ const ProfileEditScreen: React.FC = () => {
   const updateProfileMutation = useUpdateProfile();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { user, updateUser } = useAppStore();
+
+  // Sync form name when user loads (e.g. after auth)
+  useEffect(() => {
+    if (user?.fullName) setName(user.fullName);
+  }, [user?.fullName]);
 
   // Badge seçimi için bottom sheet aç
   const handleBadgeSelect = useCallback((slot: 1 | 2 | 3) => {
@@ -229,6 +245,35 @@ const ProfileEditScreen: React.FC = () => {
     return badge ? badge.label : 'Badge Seç';
   }, []);
 
+  const openCosmeticModal = useCallback(() => {
+    setCosmeticPreview(cosmetic);
+    setIsCosmeticModalVisible(true);
+  }, [cosmetic]);
+
+  const closeCosmeticModal = useCallback(() => {
+    setIsCosmeticModalVisible(false);
+    setCosmeticPreview(null);
+  }, []);
+
+  const handleSaveCosmetic = useCallback(() => {
+    setCosmetic(cosmeticPreview);
+    setIsCosmeticModalVisible(false);
+    setCosmeticPreview(null);
+  }, [cosmeticPreview]);
+
+  const getCosmeticLabel = useCallback((cosmeticId: string | null) => {
+    if (!cosmeticId) return 'Avatar Frame Seç';
+    const c = AVAILABLE_COSMETICS.find((x) => x.id === cosmeticId);
+    return c ? c.label : 'Avatar Frame Seç';
+  }, []);
+
+  const getCosmeticBorderColor = useCallback((cosmeticId: string | null) => {
+    if (!cosmeticId) return '#E53935';
+    const c = AVAILABLE_COSMETICS.find((x) => x.id === cosmeticId);
+    if (!c) return '#E53935';
+    return c.borderColor === 'transparent' ? '#9E9E9E' : c.borderColor;
+  }, []);
+
   const handleSave = async () => {
     console.log('[ProfileEditScreen] 🚀 handleSave başlatıldı');
     console.log('[ProfileEditScreen] 📋 Mevcut state değerleri:', {
@@ -290,8 +335,8 @@ const ProfileEditScreen: React.FC = () => {
             fieldName: 'avatar',
             fileFormat: {
               uri: selectedAvatarUri.substring(0, 50) + '...',
-              type: 'image/jpeg' || 'image/png',
-              name: 'avatar.jpg' || 'avatar.png',
+              type: 'image/jpeg',
+              name: 'avatar.jpg',
             },
             headers: {
               'Content-Type': 'multipart/form-data (with boundary)',
@@ -414,8 +459,8 @@ const ProfileEditScreen: React.FC = () => {
             fieldName: 'banner',
             fileFormat: {
               uri: selectedBannerUri.substring(0, 50) + '...',
-              type: 'image/jpeg' || 'image/png',
-              name: 'banner.jpg' || 'banner.png',
+              type: 'image/jpeg',
+              name: 'banner.jpg',
             },
             headers: {
               'Content-Type': 'multipart/form-data (with boundary)',
@@ -438,26 +483,38 @@ const ProfileEditScreen: React.FC = () => {
               bannerUrlLength: bannerUrl.length,
             });
             
-            // CRITICAL FIX: Banner upload başarılı olduktan sonra cache'i invalidate et ve refetch yap
-            // Backend otomatik olarak kullanıcının profilini güncelliyor, cache'i yenile
             if (user?.id) {
-              // Cache'i invalidate et
+              // Cache-bust: aynı URL için Image cache'i eski görseli gösterebilir; query param ile yeni yüklenir
+              const bannerUrlWithCacheBust = bannerUrl.includes('?')
+                ? `${bannerUrl}&_t=${Date.now()}`
+                : `${bannerUrl}?_t=${Date.now()}`;
+              console.log('[ProfileEditScreen] 🖼️ Banner URL (API response):', bannerUrl);
+              console.log('[ProfileEditScreen] 🖼️ Banner URL (cache’e yazılan, cache-bust’lı):', bannerUrlWithCacheBust);
+              const setBannerInCache = () => {
+                queryClient.setQueryData<UserProfile>(profileKeys.profile(user.id), (old) =>
+                  old ? { ...old, bannerUrl: bannerUrlWithCacheBust } : old
+                );
+              };
+              // Optimistic update: ProfileScreen anında yeni banner görsün
+              setBannerInCache();
+              const afterSet = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ Cache’e yazdıktan hemen sonra cache’teki bannerUrl:', afterSet?.bannerUrl);
               await queryClient.invalidateQueries({
                 queryKey: profileKeys.profile(user.id),
                 exact: false,
               });
-              console.log('[ProfileEditScreen] ✅ Profile cache invalidated after banner upload');
-              
-              // CRITICAL: Cache invalidate sonrası hemen refetch yap - ProfileScreen'de güncel banner görünsün
               await queryClient.refetchQueries({
                 queryKey: profileKeys.profile(user.id),
                 exact: false,
               });
-              console.log('[ProfileEditScreen] ✅ Profile cache refetched after banner upload');
+              const afterRefetch = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ Refetch sonrası cache’teki bannerUrl:', afterRefetch?.bannerUrl);
+              // Refetch sunucudan eski bannerUrl dönebilir; cache'i tekrar yeni URL ile zorla güncelle
+              setBannerInCache();
+              const afterFix = queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id));
+              console.log('[ProfileEditScreen] 🖼️ setBannerInCache tekrar çağrıldıktan sonra cache’teki bannerUrl:', afterFix?.bannerUrl);
             }
             
-            // CRITICAL FIX: Store'daki user bilgisini de güncelle (banner store'da yok ama profil cache'i güncelleniyor)
-            // Banner bilgisi profile cache'inde tutuluyor, store'da user.avatar yok
             console.log('[ProfileEditScreen] ✅ Banner upload completed, profile cache updated and refetched');
           } else {
             console.error('[ProfileEditScreen] ❌ Banner upload başarısız - response formatı hatalı:', {
@@ -735,19 +792,6 @@ const ProfileEditScreen: React.FC = () => {
     }
   };
 
-  const handleSaveAvatarChange = async () => {
-    // CRITICAL FIX: Modal'dan avatar seçildiğinde sadece local URI'yi kaydet, upload etme
-    // Upload işlemi Save butonuna tıklandığında yapılacak
-    if (!selectedAvatarUri) {
-      // Eğer fotoğraf seçilmediyse sadece modal'ı kapat
-      setIsAvatarModalVisible(false);
-      return;
-    }
-
-    // Sadece modal'ı kapat, upload işlemi Save butonuna tıklandığında yapılacak
-    setIsAvatarModalVisible(false);
-  };
-
   const handleBannerChange = async () => {
     try {
       const result = await imagePickerService.pickFromGallery();
@@ -856,7 +900,7 @@ const ProfileEditScreen: React.FC = () => {
               )}
             </Pressable>
 
-            {/* Avatar Section */}
+            {/* Avatar Section - seçili kozmetik çerçevesi varsa onu kullan */}
             <Box
               position="absolute"
               bottom={-40}
@@ -866,16 +910,16 @@ const ProfileEditScreen: React.FC = () => {
               w={100}
               h={100}
               borderWidth={4}
-              borderColor={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+              borderColor={cosmetic ? getCosmeticBorderColor(cosmetic) : (isDark ? '$backgroundDark950' : '$backgroundLight0')}
             >
               <Image
-                source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
+                source={selectedAvatarUri ? { uri: selectedAvatarUri } : (user?.avatar ? { uri: user.avatar } : mock_user_card.avatar)}
                 alt={name}
                 w="100%"
                 h="100%"
               />
               
-              {/* Change Avatar Button - Center Overlay */}
+              {/* Avatar tıklanınca Figma modal açılır: fotoğraf (kamera+) veya çerçeve seçimi */}
               <Pressable
                 position="absolute"
                 top={0}
@@ -885,7 +929,7 @@ const ProfileEditScreen: React.FC = () => {
                 bg="rgba(0, 0, 0, 0.4)"
                 justifyContent="center"
                 alignItems="center"
-                onPress={handleAvatarChange}
+                onPress={openCosmeticModal}
                 disabled={isUploadingAvatar}
               >
                 {isUploadingAvatar ? (
@@ -1047,36 +1091,63 @@ const ProfileEditScreen: React.FC = () => {
         </VStack>
       </ScrollView>
 
-      {/* Avatar Change Modal */}
-      <Modal isOpen={isAvatarModalVisible} onClose={() => setIsAvatarModalVisible(false)} flex={1}>
-        <ModalBackdrop />
-        <ModalContent
-          width="90%"
-          maxWidth={360}
-          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-          borderRadius={16}
-        >
-          <ModalBody p="$0">
-            <VStack space="lg" py="$6">
-              {/* Large Profile Photo */}
+      {/* Avatar + Cosmetics Modal - RNModal (Figma 6576-31958) */}
+      <RNModal
+        visible={isCosmeticModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeCosmeticModal}
+      >
+        <RNPressable style={styles.avatarModalOverlay} onPress={closeCosmeticModal}>
+          <RNPressable style={[styles.avatarModalContent, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }]} onPress={(e) => e.stopPropagation()}>
+            <VStack space="lg" py="$6" px="$5">
+              {/* Avatar + çerçeve; sağ altta kamera+ butonu (Figma) */}
               <VStack alignItems="center" space="md">
-                <Box
-                  width={110}
-                  height={110}
-                  borderRadius={70}
-                  borderWidth={2}
-                  borderColor="#FF0000"
-                  overflow="hidden"
-                >
-                  <Image
-                    source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
-                    alt={name}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
+                <Box position="relative" alignItems="center" justifyContent="center">
+                  <Box
+                    width={110}
+                    height={110}
+                    borderRadius={55}
+                    borderWidth={3}
+                    borderColor={getCosmeticBorderColor(cosmeticPreview ?? cosmetic)}
+                    overflow="hidden"
+                  >
+                    <Image
+                      source={selectedAvatarUri ? { uri: selectedAvatarUri } : (user?.avatar ? { uri: user.avatar } : mock_user_card.avatar)}
+                      alt={name}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  </Box>
+                  {/* Kamera+ butonu - sağ alt köşe (yeşil-sarı daire, Figma) */}
+                  <Pressable
+                    position="absolute"
+                    right={-2}
+                    bottom={-2}
+                    w={36}
+                    h={36}
+                    borderRadius={18}
+                    bg="#D0F205"
+                    borderWidth={2}
+                    borderColor={isDark ? '#1A1A1A' : '#FFFFFF'}
+                    alignItems="center"
+                    justifyContent="center"
+                    onPress={handlePickAvatarFromGallery}
+                    disabled={isUploadingAvatar}
+                  >
+                    {isUploadingAvatar ? (
+                      <ActivityIndicator size="small" color="#111111" />
+                    ) : (
+                      <Image
+                        source={require('@/assets/icons/camera_plus.png')}
+                        alt="Change avatar"
+                        w={20}
+                        h={20}
+                        resizeMode="contain"
+                      />
+                    )}
+                  </Pressable>
                 </Box>
-
-                {/* Name */}
                 <Text
                   fontSize="$lg"
                   fontWeight="$bold"
@@ -1087,129 +1158,124 @@ const ProfileEditScreen: React.FC = () => {
                 </Text>
               </VStack>
 
-              <Box h={1} w="100%" bg={'#DEDEDE'} my={"$3"} />
+              {/* Cosmetics başlık - sol hizalı, gri (Figma) */}
+              <Text
+                fontSize="$sm"
+                fontWeight="$semibold"
+                color={isDark ? '#B3B3B3' : '#737373'}
+                alignSelf="flex-start"
+              >
+                Cosmetics
+              </Text>
 
-              {/* Avatar Type Selection */}
-              <HStack space="lg" justifyContent="center" px="$6">
-                {/* Profile Picture Option */}
+              {/* Figma 6576-32081: Cosmetic yoksa tek dashed + plus butonu → MarketPlaceScreen'e yönlendir */}
+              {ownedCosmeticsIds.length === 0 ? (
                 <Pressable
-                  onPress={async () => {
-                    setSelectedAvatarType('picture');
-                    await handlePickAvatarFromGallery();
+                  alignSelf="flex-start"
+                  mt="$1"
+                  onPress={() => {
+                    closeCosmeticModal();
+                    navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
+                      screen: 'MarketPlaceScreen',
+                    });
                   }}
-                  alignItems="center"
-                  flex={1}
                 >
-                  <VStack space="xs" alignItems="center">
-                    <Box
-                      width={64}
-                      height={64}
-                      borderRadius={40}
-                      overflow="hidden"
-                      bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                    >
-                      <Image
-                        source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
-                        alt="Profile Picture"
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                      />
-                    </Box>
-                    <Text
-                      fontSize="$sm"
-                      fontWeight="$semibold"
-                      color={isDark ? '#FFFFFF' : '#818181'}
-                      textAlign="center"
-                    >
-                      Profile Picture
-                    </Text>
-                  </VStack>
+                  <Box
+                    width={56}
+                    height={56}
+                    borderRadius={28}
+                    borderWidth={2}
+                    borderStyle="dashed"
+                    borderColor={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)'}
+                    bg={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'}
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Feather name="plus" size={24} color={isDark ? '#999' : '#737373'} />
+                  </Box>
                 </Pressable>
+              ) : (
+                <VStack space="md" alignItems="center">
+                  <HStack space="md" justifyContent="center">
+                    {AVAILABLE_COSMETICS.slice(0, 4).map((item) => {
+                      const borderColor = item.borderColor === 'transparent' ? (isDark ? '#666' : '#D4D4D4') : item.borderColor;
+                      return (
+                        <Pressable
+                          key={item.id}
+                          onPress={() => setCosmeticPreview(item.id)}
+                          width={56}
+                          height={56}
+                          borderRadius={28}
+                          borderWidth={2}
+                          borderColor={borderColor}
+                          bg={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'}
+                          alignItems="center"
+                          justifyContent="center"
+                        >
+                          {item.borderColor === 'transparent' ? (
+                            <Feather name="minus" size={18} color={isDark ? '#737373' : '#A3A3A3'} />
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
+                  </HStack>
+                  <HStack space="md" justifyContent="center">
+                    {AVAILABLE_COSMETICS.slice(4, 6).map((item) => {
+                      const borderColor = item.borderColor === 'transparent' ? (isDark ? '#666' : '#D4D4D4') : item.borderColor;
+                      return (
+                        <Pressable
+                          key={item.id}
+                          onPress={() => setCosmeticPreview(item.id)}
+                          width={56}
+                          height={56}
+                          borderRadius={28}
+                          borderWidth={2}
+                          borderColor={borderColor}
+                          bg={isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'}
+                          alignItems="center"
+                          justifyContent="center"
+                        >
+                          {item.borderColor === 'transparent' ? (
+                            <Feather name="minus" size={18} color={isDark ? '#737373' : '#A3A3A3'} />
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
+                  </HStack>
+                </VStack>
+              )}
 
-                <Box h="100%" w={1} bg={'#DEDEDE'} mx={"$3"} />
-
-                {/* Profile Cosmetic Option */}
+              {/* Cancel (açık gri) + Save (limon yeşili) - Figma */}
+              <HStack space="sm" mt="$2">
                 <Pressable
-                  onPress={() => setSelectedAvatarType('cosmetic')}
-                  alignItems="center"
-                  flex={1}
-                >
-                  <VStack space="xs" alignItems="center">
-                    <Box
-                      width={64}
-                      height={64}
-                      borderRadius={40}
-                      borderWidth={2}
-                      borderColor="#FF0000"
-                      overflow="hidden"
-                      bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                    >
-                      <Image
-                        source={mock_user_card.avatar}
-                        alt="Profile Cosmetic"
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                      />
-                    </Box>
-                    <Text
-                      fontSize="$sm"
-                      fontWeight="$semibold"
-                      color={isDark ? '#FFFFFF' : '#818181'}
-                      textAlign="center"
-                    >
-                      Profile Cosmetic
-                    </Text>
-                  </VStack>
-                </Pressable>
-              </HStack>
-
-              {/* Action Buttons */}
-              <HStack space="sm" px="$6" mt="$2">
-                {/* Cancel Button */}
-                <Pressable
-                  onPress={() => setIsAvatarModalVisible(false)}
+                  onPress={closeCosmeticModal}
                   flex={1}
                   bg={isDark ? '#2A2A2A' : '#EDEDED'}
                   borderRadius={12}
                   py="$3"
                   alignItems="center"
                 >
-                  <Text
-                    fontSize="$md"
-                    fontWeight="$semibold"
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  >
+                  <Text fontSize="$md" fontWeight="$semibold" color={isDark ? '#8C8C8C' : '#6B6B6B'}>
                     Cancel
                   </Text>
                 </Pressable>
-
-                {/* Save Button */}
                 <Pressable
-                  onPress={handleSaveAvatarChange}
-                  flex={2}
-                  bg={isUploadingAvatar ? '#CCCCCC' : "#E8FF6B"}
+                  onPress={handleSaveCosmetic}
+                  flex={1}
+                  bg="#D0F205"
                   borderRadius={12}
                   py="$3"
                   alignItems="center"
-                  disabled={isUploadingAvatar}
                 >
-                  {isUploadingAvatar ? (
-                    <ActivityIndicator size="small" color="#000000" />
-                  ) : (
-                    <Text
-                      fontSize="$sm"
-                      fontWeight="$bold"
-                      color="#000000"
-                    >
-                      Save
-                    </Text>
-                  )}
+                  <Text fontSize="$md" fontWeight="$bold" color="#111111">
+                    Save
+                  </Text>
                 </Pressable>
               </HStack>
             </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+          </RNPressable>
+        </RNPressable>
+      </RNModal>
       </Box>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -1217,6 +1283,25 @@ const ProfileEditScreen: React.FC = () => {
 };
 
 ProfileEditScreen.displayName = 'ProfileEditScreen';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const AVATAR_MODAL_MAX_WIDTH = Math.min(360, SCREEN_WIDTH * 0.9);
+
+const styles = StyleSheet.create({
+  avatarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  avatarModalContent: {
+    width: '90%',
+    maxWidth: AVATAR_MODAL_MAX_WIDTH,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+});
 
 export default ProfileEditScreen;
 

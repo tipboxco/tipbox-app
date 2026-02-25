@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, ActivityIndicator, FlatList, View } from 'react-native';
+import { Platform, ActivityIndicator, FlatList, View, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@/src/components/ui';
@@ -8,11 +8,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ScrollRegistry } from '@/src/services/ScrollRegistry';
+import { navigationService } from '@/src/services/NavigationService';
 import { AssetAccessCard } from '../components/AssetAccessCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import ExpertBottomSheet from '@/src/components/ExpertBottomSheet';
 import { SearchModal } from '@/src/components/SearchModal';
+import { useSearch } from '@/src/features/search/api/hooks';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
@@ -26,7 +28,7 @@ import { useFeed, useFeedFiltered } from '../api/hooks';
 import { getFeed, getFilteredFeed } from '../api/feedApi';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
-import { toImageSource, useBottomOffset } from '@/src/utils';
+import { toImageSource, useBottomOffset, isSameImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
@@ -43,6 +45,7 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
+import { FilterBarReanimated } from '../components/FilterBar/FilterBarReanimated';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
@@ -60,7 +63,29 @@ const FeedScreenInner = React.memo(() => {
   const { user } = useAppStore();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const queryClient = useQueryClient();
-  
+
+  // 🚀 OPTIMIZATION 1: API Preloading - SearchModal için default verileri önceden cache'le
+  // Modal açılmadan önce veri hazır olduğu için 100-500ms kazanç
+  // FIX: Silent error handling - network hatası olursa sessizce devam et
+  const preloadQuery = useSearch(
+    {
+      keyword: '',
+      types: ['user', 'brand', 'product'],
+      limit: 4,
+    },
+    true // Her zaman aktif, cache'lenir ve SearchModal açıldığında hazır
+  );
+
+  // FIX: Network hatasını log'la ama UI'ı bloke etme
+  useEffect(() => {
+    if (preloadQuery.error) {
+      if (__DEV__) {
+        console.warn('[FeedScreen] Search preload failed (silent):', preloadQuery.error.message);
+      }
+      // Hata olsa bile devam et, SearchModal kendi loading state'ini handle eder
+    }
+  }, [preloadQuery.error]);
+
   // FEATURE: Pull-to-refresh için son görülen post ID'sini takip et
   // Kullanıcı en alta geldiğinde bu ID güncellenir, refresh'te cursor olarak kullanılır
   const [lastSeenPostId, setLastSeenPostId] = useState<string | undefined>(undefined);
@@ -98,6 +123,31 @@ const FeedScreenInner = React.memo(() => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
+  // Filtre state'i
+  // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
+  //
+  // Filtre Parametreleri:
+  // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
+  //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
+  //   Backend'de category ile birleştirilir (OR mantığı)
+  // - tags: Post türleri array'i (Review, Benchmark, Tips, Question, Experience, Update)
+  //   contentPostTags ve tags tablolarında arama yapılır
+  // - category: Tek bir kategori ID'si
+  //   Backend'de interests ile birleştirilir (OR mantığı)
+  // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
+  const [filters, setFilters] = useState<FeedFilterParams>({});
+
+  // FEATURE: Filter panel state - panel açıkken dışarıya tıklama için
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const closePanelRef = useRef<(() => void) | null>(null);
+
+  // Handle click outside filter panel to close it
+  const handleOverlayPress = useCallback(() => {
+    if (closePanelRef.current) {
+      closePanelRef.current();
+    }
+  }, []);
+
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
@@ -112,32 +162,19 @@ const FeedScreenInner = React.memo(() => {
 
   // Drawer açıkken veya swipe sırasında scroll'u disable et
   // CRITICAL: isDragging kontrolü ile swipe sırasında re-render önleme
+  // FEATURE: Filter panel açıkken de scroll'u disable et
   useEffect(() => {
-    if (isDrawerOpen || isDragging) {
+    if (isDrawerOpen || isDragging || isFilterPanelOpen) {
       setIsScrollEnabled(false);
     } else {
-      // Drawer kapandıktan sonra kısa bir delay ile scroll'u enable et
-      // Bu, drawer kapanma animasyonunun tamamlanmasını bekler ve titreme önler
+      // Drawer/panel kapandıktan sonra kısa bir delay ile scroll'u enable et
+      // Bu, kapanma animasyonunun tamamlanmasını bekler ve titreme önler
       const timer = setTimeout(() => {
         setIsScrollEnabled(true);
-      }, 150); // 150ms delay - drawer kapanma animasyonu tamamlandıktan sonra
+      }, 150); // 150ms delay - animasyon tamamlandıktan sonra
       return () => clearTimeout(timer);
     }
-  }, [isDrawerOpen, isDragging]);
-
-  // Filtre state'i
-  // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
-  // 
-  // Filtre Parametreleri:
-  // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
-  //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
-  //   Backend'de category ile birleştirilir (OR mantığı)
-  // - tags: Post türleri array'i (Review, Benchmark, Tips, Question, Experience, Update)
-  //   contentPostTags ve tags tablolarında arama yapılır
-  // - category: Tek bir kategori ID'si
-  //   Backend'de interests ile birleştirilir (OR mantığı)
-  // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
-  const [filters, setFilters] = useState<FeedFilterParams>({});
+  }, [isDrawerOpen, isDragging, isFilterPanelOpen]);
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
@@ -247,7 +284,8 @@ const FeedScreenInner = React.memo(() => {
     } else if (tab === 'inventory') {
       if (user?.id) {
         // Inventory ekranına git - InventoryScreen mount olduğunda useInventory hook'u otomatik olarak /inventory endpoint'ine GET isteği atacak
-        (navigation as any).navigate('Profile', {
+        // Use navigationService for cross-stack navigation (same pattern as DrawerContent)
+        navigationService.navigate('Profile', {
           screen: 'InventoryList',
           params: {
             userId: user.id,
@@ -370,17 +408,14 @@ const FeedScreenInner = React.memo(() => {
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages;
+    // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
+    const images = mappedImages.filter((img) => !isSameImageSource(img, productImage));
 
     const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
     const subNameRaw = rawProduct?.subName ?? '';
     const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
-    // 3 tag: duration, condition (location), purpose. API tags yoksa/eksikse *Name alanlarından doldur.
-    const tagsFromApi = Array.isArray(item.tags) ? item.tags : [];
-    const tags =
-      tagsFromApi.length >= 3
-        ? tagsFromApi
-        : [item.durationName, item.locationName, item.purposeName].filter((s): s is string => !!s);
+    // Tags only from API (duration/location/purpose come from GET options and are sent as IDs; no fallback)
+    const tags = Array.isArray(item.tags) ? item.tags.slice(0, 3) : [];
 
     return {
       id: item.id || '',
@@ -480,26 +515,42 @@ const FeedScreenInner = React.memo(() => {
         images,
         stats: item.stats,
         tag: item.tag,
+        benefitCategory: item.benefitCategory,
         createdAt: item.createdAt,
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    // Missing product image warning removed for performance
-    const product: TipsProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    let category: TipsCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: sadece category bilgisi, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: TipsProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const category: TipsCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
@@ -523,6 +574,7 @@ const FeedScreenInner = React.memo(() => {
       images,
       stats: item.stats,
       tag: item.tag,
+      benefitCategory: item.benefitCategory,
       createdAt: item.createdAt,
     };
   };
@@ -566,30 +618,49 @@ const FeedScreenInner = React.memo(() => {
           },
         },
         content: item.content || '',
-        isBoosted: item.isBoosted || false,
+        isBoosted: item.isBoosted ?? (item as { is_boosted?: boolean }).is_boosted ?? false,
+        boostedUntil: item.boostedUntil ?? (item as { boosted_until?: string }).boosted_until,
         images,
         stats: item.stats,
         createdAt: item.createdAt,
       };
     }
 
-    const productImage = toImageSource(item.contextData.image);
-    // Missing product image warning removed for performance
+    const contextImage = toImageSource(item.contextData.image);
+    
+    // CRITICAL: contextType'a göre product veya category mapping yap
+    // - contextType === 'product' → category.product dolu (product card gösterilir)
+    // - contextType === 'sub_category' → sadece category dolu (sub category card gösterilir)
+    // - contextType === 'product_group' → category.product dolu (product group card gösterilir)
+    
+    let category: QuestionCardCategory;
+    
+    if (item.contextType === 'sub_category') {
+      // SubCategory: category dolu, product YOK
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        // product undefined bırak (QuestionPostCard'da category gösterilecek)
+      };
+    } else {
+      // Product veya ProductGroup: category.product dolu
+      const product: QuestionCardProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+      };
 
-    const product: QuestionCardProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
-
-    const category: QuestionCardCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage || require('@/assets/inventory/product_01.png'),
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
@@ -610,7 +681,8 @@ const FeedScreenInner = React.memo(() => {
       },
       category,
       content: item.content || '',
-      isBoosted: item.isBoosted || false,
+      isBoosted: item.isBoosted ?? (item as { is_boosted?: boolean }).is_boosted ?? false,
+      boostedUntil: item.boostedUntil ?? (item as { boosted_until?: string }).boosted_until,
       images,
       stats: item.stats,
       createdAt: item.createdAt,
@@ -770,7 +842,15 @@ const FeedScreenInner = React.memo(() => {
         return null;
       case CardType.POST:
       case 'post':
-        // Post type için ProfilePost kullan ve PostCard render et
+        // relatedPost varsa update post olarak göster (mor UPDATE badge + See Related Post)
+        if ((item.data as any)?.relatedPost != null) {
+          return (
+            <UpdatePostCard
+              key={itemId}
+              data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
+            />
+          );
+        }
         return (
           <PostCard
             key={itemId}
@@ -814,8 +894,8 @@ const FeedScreenInner = React.memo(() => {
         );
       case CardType.UPDATE:
       case 'update':
-        // Update type için UpdateApiItem kullan ve UpdatePostCard render et
-        if ('relatedPost' in item.data && 'contextType' in item.data) {
+        // Update type: relatedPost varsa UpdatePostCard (mor badge + See Related Post)
+        if ((item.data as any)?.relatedPost != null) {
           return (
             <UpdatePostCard
               key={itemId}
@@ -824,7 +904,7 @@ const FeedScreenInner = React.memo(() => {
           );
         }
         if (__DEV__) {
-          console.warn(`[FeedScreen] UPDATE item ${itemId} failed validation checks`);
+          console.warn(`[FeedScreen] UPDATE item missing relatedPost:`, itemId);
         }
         return null;
       default:
@@ -949,24 +1029,49 @@ const FeedScreenInner = React.memo(() => {
           leftAction="menu"
           onSearchPress={handleSearchPress}
         />
-        <View>
+        <View style={{ flexShrink: 0 }}>
           <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
+          {/* FilterBar - panel aşağı doğru açılır, feed içeriği aşağı kayar */}
+          <FilterBarReanimated
+            filters={filters}
+            onFiltersChange={setFilters}
+            onPanelStateChange={setIsFilterPanelOpen}
+            onClosePanelRef={(closeFn) => {
+              closePanelRef.current = closeFn;
+            }}
+          />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+          {/* Overlay for closing filter panel - only covers feed area */}
+          {isFilterPanelOpen && (
+            <Pressable
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 5,
+                backgroundColor: 'transparent',
+              }}
+              onPress={handleOverlayPress}
+            />
+          )}
+
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
           ) : error ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
               <View style={{ gap: 16, alignItems: 'center' }}>
                 <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
-                  Feed Yüklenemedi
+                  Failed to Load Feed
                 </Text>
                 {(error as any)?.response?.status === 500 ? (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.
+                      Server error occurred. Please try again later.
                     </Text>
                     {(error as any)?.response?.data?.error?.message && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center" mt="$2">
@@ -977,7 +1082,7 @@ const FeedScreenInner = React.memo(() => {
                 ) : (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      {error.message || 'Bilinmeyen bir hata oluştu'}
+                      {error.message || 'An unknown error occurred'}
                     </Text>
                     {(error as any)?.response?.status && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
@@ -1043,13 +1148,12 @@ const FeedScreenInner = React.memo(() => {
             />
           )}
         </View>
+
         {/* Search Modal */}
         <SearchModal
           visible={isSearchVisible}
           onClose={handleSearchClose}
         />
-
-
       </View>
     </SafeAreaView>
   );

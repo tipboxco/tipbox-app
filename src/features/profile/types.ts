@@ -110,6 +110,14 @@ export interface Badge {
   id: string;
   title: string;
   image?: string;
+  /** Badge türü: collection = koleksiyon badge'i (Figma 6477-32135 modal), event = event badge (Figma 6477-32298 modal) */
+  type?: 'collection' | 'event';
+  /** Kazanma tarihi (bottom sheet Details) - ISO veya formatlanmış */
+  earnedAt?: string | null;
+  /** Enderlik (rarity) - örn. Usual, Rare */
+  rarity?: string | null;
+  /** Sahip (owner) - kullanıcı id veya adı */
+  owner?: string | null;
 }
 
 /**

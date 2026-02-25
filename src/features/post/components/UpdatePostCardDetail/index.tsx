@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { View, Modal, Dimensions, StyleSheet, InteractionManager, Pressable as RNPressable } from 'react-native';
 import {
   EllipsisHorizontalIcon,
   InformationCircleIcon,
@@ -19,6 +20,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '@/src/components/CardImageCarousel';
+import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
@@ -33,7 +35,6 @@ import {
 } from '@/src/features/interactions/api/hooks';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 
 interface UpdatePostCardDetailProps {
@@ -74,7 +75,73 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
   const unbookmarkPostMutation = useUnbookmarkPost();
   const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
-  const { openBottomSheet } = useGlobalBottomSheet();
+
+  // Menu modal state (diğer post tipleri gibi RN Modal)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const menuTriggerRef = useRef<View>(null);
+  const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  const handleTriggerLayout = useCallback(() => {
+    if (menuTriggerRef.current) {
+      menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+        if (width > 0 && height > 0) {
+          triggerPositionRef.current = { x, y, width, height };
+        }
+      });
+    }
+  }, []);
+
+  const handleMenuOpen = useCallback((event?: any) => {
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const menuWidth = 260;
+    const menuHeight = 200;
+
+    const calculatePosition = (x: number, y: number, width: number, height: number) => {
+      let left = x + width - menuWidth - 8;
+      let top = y + height + 4;
+      if (left < 12) left = 12;
+      if (left + menuWidth > screenWidth - 12) left = screenWidth - menuWidth - 12;
+      if (top + menuHeight > screenHeight - 12) top = y - menuHeight - 8;
+      if (top < 12) top = 12;
+      return { top, left };
+    };
+
+    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
+      const pageX = event.nativeEvent.pageX;
+      const pageY = event.nativeEvent.pageY;
+      const triggerWidth = 44;
+      const triggerHeight = 44;
+      const pos = calculatePosition(pageX - triggerWidth / 2, pageY - triggerHeight / 2, triggerWidth, triggerHeight);
+      setMenuPosition(pos);
+      setIsMenuOpen(true);
+      return;
+    }
+    if (triggerPositionRef.current) {
+      const { x, y, width, height } = triggerPositionRef.current;
+      setMenuPosition(calculatePosition(x, y, width, height));
+      setIsMenuOpen(true);
+      return;
+    }
+    InteractionManager.runAfterInteractions(() => {
+      if (menuTriggerRef.current) {
+        menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+          if (width > 0 && height > 0) {
+            triggerPositionRef.current = { x, y, width, height };
+            setMenuPosition(calculatePosition(x, y, width, height));
+            setIsMenuOpen(true);
+          } else {
+            setMenuPosition({ top: 56, left: screenWidth - 272 });
+            setIsMenuOpen(true);
+          }
+        });
+      } else {
+        setMenuPosition({ top: 56, left: screenWidth - 272 });
+        setIsMenuOpen(true);
+      }
+    });
+  }, []);
 
   // Sync with post status from API
   useEffect(() => {
@@ -116,23 +183,26 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
     });
   };
 
-  const handleOptionsPress = () => {
-    // Context bilgilerini relatedPost'tan veya data'dan al
-    const contextType = (data as any).contextType || (data.relatedPost?.product ? 'product' : undefined);
-    const contextId = (data as any).contextId || data.relatedPost?.product?.id || data.product?.id;
-    
-    openBottomSheet(
-      <PostOptionsMenu
-        postId={data.id}
-        postContent={data.content}
-        postAuthorName={data.user.name}
-        postAuthorId={data.user.id}
-        postType="update"
-        postContextType={contextType}
-        postContextId={contextId}
-      />
-    );
-  };
+  const contextType = (data as any).contextType || (data.relatedPost?.product ? 'product' : undefined);
+  const contextId = (data as any).contextId || data.relatedPost?.product?.id || data.product?.id;
+
+  // Transform relatedPost to ExperiencePostCardData for consistent rendering
+  const transformedRelatedPost = React.useMemo(() => {
+    const rp = data.relatedPost || relatedPostData;
+    if (!rp) return null;
+
+    return {
+      id: rp.id || '',
+      user: data.user,
+      contextData: rp.product || { id: '', name: '', subName: '', image: '', isOwned: false },
+      contextType: (contextType as any) || ProductInfoType.PRODUCT,
+      content: (rp.content && Array.isArray(rp.content)) ? rp.content : [],
+      tags: (rp.tags && Array.isArray(rp.tags)) ? rp.tags : [],
+      images: (rp.images && Array.isArray(rp.images)) ? rp.images : [],
+      stats: rp.stats || { likes: 0, comments: 0, shares: 0, bookmarks: 0 },
+      createdAt: new Date().toISOString(),
+    };
+  }, [data.relatedPost, relatedPostData, data.user, contextType]);
 
   return (
     <VStack
@@ -174,11 +244,48 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               {data.user.title}
             </Text>
           </VStack>
-          <Pressable onPress={handleOptionsPress}>
-            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-          </Pressable>
+          <View ref={menuTriggerRef} collapsable={false} onLayout={handleTriggerLayout}>
+            <Pressable onPress={(e) => handleMenuOpen(e)}>
+              <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+            </Pressable>
+          </View>
         </HStack>
       </VStack>
+
+      {/* Menu Modal - diğer post tipleri gibi RN Modal */}
+      <Modal
+        visible={isMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsMenuOpen(false)}
+      >
+        <RNPressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.25)' }]} onPress={() => setIsMenuOpen(false)} />
+        <View
+          style={[
+            detailStyles.menuContainer,
+            {
+              top: menuPosition.top,
+              left: menuPosition.left,
+              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              zIndex: 1,
+              elevation: 10,
+            },
+          ]}
+        >
+          <RNPressable style={{ flex: 1 }} onPress={(e) => e.stopPropagation()}>
+            <PostOptionsMenu
+              postId={data.id}
+              postContent={data.content}
+              postAuthorName={data.user.name}
+              postAuthorId={data.user.id}
+              postType="update"
+              postContextType={contextType}
+              postContextId={contextId}
+              onClose={() => setIsMenuOpen(false)}
+            />
+          </RNPressable>
+        </View>
+      </Modal>
 
       {/* Badges */}
       <HStack px='$3' py={10} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
@@ -233,250 +340,135 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         )}
       </VStack>
 
-      {/* Images */}
+      {/* Translate Button */}
+      {shouldTranslate && (
+        <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <Pressable onPress={toggleTranslation}>
+            <HStack alignItems="center" space="xs">
+              <Image
+                source={require('@/assets/translate.png')}
+                alt="translate"
+                width={16}
+                height={16}
+              />
+              <Text
+                color="#829905"
+                fontSize="$sm"
+                textDecorationLine="underline"
+              >
+                {isTranslating
+                  ? 'Çeviriliyor...'
+                  : showTranslation
+                  ? 'Hide Translation'
+                  : 'Translate'}
+              </Text>
+            </HStack>
+          </Pressable>
+        </Box>
+      )}
+
+      {/* Related Post Section - Render using ExperiencePostCard for consistent display */}
+      {transformedRelatedPost && (
+        <ExperiencePostCard
+          data={transformedRelatedPost}
+          showHeader={false}
+          showActions={false}
+          hideProduct={false}
+        />
+      )}
+
+      {/* Images - Experience post'tan sonra */}
       {data.images && data.images.length > 0 && (
-        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} paddingHorizontal={12} />
+        <VStack borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} paddingHorizontal={0} />
         </VStack>
       )}
 
-      {/* Related Post Section */}
-      {(data.relatedPost || relatedPostData) && (
-        <>
-          {/* Related Post Title */}
-          <VStack px={12} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            <Text
-              color={isDark ? '$textDark50' : '#A3A3A3'}
-              fontSize="$sm"
-              fontWeight="$bold"
-              textDecorationLine="underline"
-            >
-              Related Post
-            </Text>
-          </VStack>
-
-          {/* Product Info Card */}
-          {(relatedPostData?.product || data.product) && (
-            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                <ProductInfoCard
-                  image={(relatedPostData?.product || data.product)?.image}
-                  title={(relatedPostData?.product || data.product)?.name || ''}
-                  subName={(relatedPostData?.product || data.product)?.subName}
-                  size="big"
-                  type={ProductInfoType.PRODUCT}
-                  isOwned={true}
-                />
-            </VStack>
-          )}
-
-          {/* Content Cards - Map ile oluşturuluyor */}
-          {((relatedPostData?.content && Array.isArray(relatedPostData.content) && relatedPostData.content.length > 0) || 
-            (data.relatedPost?.content && Array.isArray(data.relatedPost.content) && data.relatedPost.content.length > 0)) && (
-            <VStack px={16} space="md" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-              {(
-                (Array.isArray(relatedPostData?.content) && relatedPostData.content.length > 0) 
-                  ? relatedPostData.content 
-                  : (Array.isArray(data.relatedPost?.content) ? data.relatedPost.content : [])
-              ).map((contentItem: any, index: number) => (
-                <Box
-                  key={index}
-                  bg={isDark ? '$backgroundDark800' : '#FAFAFA'}
-                  borderRadius={10}
-                  overflow="hidden"
-                >
-                {/* Card Header - Başlık ve Content aynı hizada */}
-                <HStack px={16} py={8} alignItems="flex-start" space="sm">
-                  {contentItem.tag.icon === 'tag' ? (
-                    <TagIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
-                  ) : (
-                    <CubeIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
-                  )}
-                  <VStack flex={1} space="xs">
-                    <Text
-                      fontSize={11}
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#3B3B3B'}
-                    >
-                      {contentItem.tag.title}
-                    </Text>
-                    <Text
-                      color={isDark ? '$textDark50' : '#000000'}
-                      fontSize="$sm"
-                      lineHeight={22}
-                    >
-                      {contentItem.text}
-                    </Text>
-                  </VStack>
-                </HStack>
-
-                {/* Rating Section - Başlık ve content ile aynı hizada */}
-                <HStack px={16} pb={12} alignItems="flex-start" space="sm">
-                  {/* Icon yerine boşluk - hizalama için */}
-                  <Box width={18} />
-                  <VStack flex={1} space="xs">
-                    <Text
-                      fontSize={11}
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#3B3B3B'}
-                    >
-                      Rate Experience
-                    </Text>
-                    <HStack space="xs">
-                      {[1, 2, 3, 4, 5].map((star) => {
-                        const rating = contentItem.rating || [];
-                        const isFilled = star <= rating.filter((r: number) => r === 1).length;
-                        return isFilled ? (
-                          <StarIconSolid
-                            key={star}
-                            width={24}
-                            height={24}
-                            color="#829905"
-                          />
-                        ) : (
-                          <StarIcon
-                            key={star}
-                            width={24}
-                            height={24}
-                            color="#E9E9E9"
-                          />
-                        );
-                      })}
-                    </HStack>
-                  </VStack>
-                </HStack>
-              </Box>
-              ))}
-            </VStack>
-          )}
-
-          {/* Tags Section */}
-          {((relatedPostData?.tags && Array.isArray(relatedPostData.tags) && relatedPostData.tags.length > 0) || 
-            (data.relatedPost?.tags && Array.isArray(data.relatedPost.tags) && data.relatedPost.tags.length > 0)) && (
-              <HStack px={16} py={10} flexWrap="wrap" gap={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                {(
-                  (Array.isArray(relatedPostData?.tags) && relatedPostData.tags.length > 0) 
-                    ? relatedPostData.tags 
-                    : (Array.isArray(data.relatedPost?.tags) ? data.relatedPost.tags : [])
-                ).map((tag: string, index: number) => (
-                  <Box
-                    key={index}
-                    bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
-                    borderWidth={1}
-                    borderColor="#EFEFEF"
-                    $dark-borderColor="$borderDark600"
-                    borderRadius={10}
-                    px={12}
-                    py={3}
-                  >
-                    <Text
-                      fontSize="$xs"
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#000000'}
-                    >
-                      {tag}
-                    </Text>
-                  </Box>
-                ))}
-              </HStack>
-          )}
-
-          {/* Translate Button - Tags'in altında */}
-          {shouldTranslate && (
-            <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-              <Pressable onPress={toggleTranslation}>
-                <HStack alignItems="center" space="xs">
-                  <Image
-                    source={require('@/assets/translate.png')}
-                    alt="translate"
-                    width={16}
-                    height={16}
-                  />
-                  <Text
-                    color="#829905"
-                    fontSize="$sm"
-                    textDecorationLine="underline"
-                  >
-                    {isTranslating
-                      ? 'Çeviriliyor...'
-                      : showTranslation
-                      ? 'Hide Translation'
-                      : 'Translate'}
-                  </Text>
-                </HStack>
-              </Pressable>
-            </Box>
-          )}
-
-          {/* Stats */}
-          <HStack
-            px={12}
-            py={8}
-            borderRightWidth={1}
-            borderLeftWidth={1}
-            borderBottomWidth={1}
-            borderBottomRightRadius={5}
-            borderBottomLeftRadius={5}
-            borderColor="#E9E9E9"
-            justifyContent="space-between"
-          >
-            <HStack>
-              <Pressable onPress={handleLike}>
-                <HStack mr={10} alignItems="center">
-                  {isLiked ? (
-                    <HeartIconSolid width={24} height={24} color="#FF3040" />
-                  ) : (
-                    <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  )}
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                    {(relatedPostData?.stats || data.stats)?.likes || 0}
-                  </Text>
-                </HStack>
-              </Pressable>
-              <Pressable 
-                onPress={onCommentPress || undefined}
-                disabled={!onCommentPress}
-                opacity={onCommentPress ? 1 : 0.5}
-              >
-                <HStack mr={10} alignItems="center">
-                  <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                    {(relatedPostData?.stats || data.stats)?.comments || 0}
-                  </Text>
-                </HStack>
-              </Pressable>
-              <Pressable onPress={handleShare}>
-                <HStack mr={10} alignItems="center">
-                  <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                    {(relatedPostData?.stats || data.stats)?.shares || 0}
-                  </Text>
-                </HStack>
-              </Pressable>
-              <Pressable onPress={handleBookmark}>
-                <HStack mr={10} alignItems="center">
-                  {isBookmarked ? (
-                    <BookmarkIconSolid width={24} height={24} color="#829905" />
-                  ) : (
-                    <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  )}
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                    {(relatedPostData?.stats || data.stats)?.bookmarks || 0}
-                  </Text>
-                </HStack>
-              </Pressable>
+      {/* Stats - Actions */}
+      <HStack
+        px={12}
+        py={8}
+        borderRightWidth={1}
+        borderLeftWidth={1}
+        borderBottomWidth={1}
+        borderBottomRightRadius={5}
+        borderBottomLeftRadius={5}
+        borderColor="#E9E9E9"
+        justifyContent="space-between"
+      >
+        <HStack>
+          <Pressable onPress={handleLike}>
+            <HStack mr={10} alignItems="center">
+              {isLiked ? (
+                <HeartIconSolid width={24} height={24} color="#FF3040" />
+              ) : (
+                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {(relatedPostData?.stats || data.stats)?.likes || 0}
+              </Text>
             </HStack>
-            <Box>
-              <Image
-                source={require('@/assets/common/Vector.png')}
-                alt={'vector'}
-                width={24}
-                height={24}
-              />
-            </Box>
-          </HStack>
-        </>
-      )}
+          </Pressable>
+          <Pressable 
+            onPress={onCommentPress || undefined}
+            disabled={!onCommentPress}
+            opacity={onCommentPress ? 1 : 0.5}
+          >
+            <HStack mr={10} alignItems="center">
+              <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {(relatedPostData?.stats || data.stats)?.comments || 0}
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable onPress={handleShare}>
+            <HStack mr={10} alignItems="center">
+              <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {(relatedPostData?.stats || data.stats)?.shares || 0}
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable onPress={handleBookmark}>
+            <HStack mr={10} alignItems="center">
+              {isBookmarked ? (
+                <BookmarkIconSolid width={24} height={24} color="#829905" />
+              ) : (
+                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {(relatedPostData?.stats || data.stats)?.bookmarks || 0}
+              </Text>
+            </HStack>
+          </Pressable>
+        </HStack>
+        <Box>
+          <Image
+            source={require('@/assets/common/Vector.png')}
+            alt={'vector'}
+            width={24}
+            height={24}
+          />
+        </Box>
+      </HStack>
     </VStack>
   );
 };
+
+const detailStyles = StyleSheet.create({
+  menuContainer: {
+    position: 'absolute',
+    width: 260,
+    maxHeight: 320,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E9E9E9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+});
 

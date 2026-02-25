@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
@@ -27,31 +27,9 @@ import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TipsAndTrickPostFormData } from '../schemas/tipsAndTrickPostSchema';
 
-// ProductInfo will be loaded from store
+import { BENEFIT_CATEGORIES } from '../constants/benefitCategories';
 
-// Categories from Figma
-const categories = [
-  { 
-    label: 'Time Saving', 
-    value: 'time-saving',
-    icon: 'clock' as const
-  },
-  { 
-    label: 'Energy Efficiency', 
-    value: 'energy-efficiency',
-    icon: 'zap' as const
-  },
-  { 
-    label: 'Durability', 
-    value: 'durability',
-    icon: 'shield' as const
-  },
-  { 
-    label: 'Better Result', 
-    value: 'better-result',
-    icon: 'target' as const
-  },
-];
+// ProductInfo will be loaded from store
 
 type CreateTipsAndTrickPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -98,7 +76,7 @@ const CategorySelectorField: React.FC = () => {
                   flex={1}
                 >
                   {selectedCategory
-                    ? categories.find((cat) => cat.value === selectedCategory)?.label
+                    ? BENEFIT_CATEGORIES.find((cat) => cat.value === selectedCategory)?.label
                     : 'Select the category of your Tips & Tricks'}
                 </Text>
                 <Feather
@@ -129,7 +107,7 @@ const CategorySelectorField: React.FC = () => {
               overflow="hidden"
             >
               <VStack>
-                {categories.map((category, index) => (
+                {BENEFIT_CATEGORIES.map((category, index) => (
                   <Box key={category.value}>
                     {index > 0 && (
                       <Box
@@ -290,16 +268,7 @@ export const CreateTipsAndTrickPostScreen = () => {
     }
   };
 
-  // Form'daki category değerini API formatına çevir
-  const mapCategoryToBenefitCategory = (category: string): 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result' => {
-    const mapping: Record<string, 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result'> = {
-      'time-saving': 'time_saving',
-      'energy-efficiency': 'energy_efficiency',
-      'durability': 'durability',
-      'better-result': 'better_result',
-    };
-    return mapping[category] || 'time_saving';
-  };
+  // Not needed - BENEFIT_CATEGORIES already uses snake_case values
 
   const onSubmit = async (data: TipsAndTrickPostFormData) => {
     console.log('[CreateTipsAndTrickPostScreen] Form submitted:', data);
@@ -332,8 +301,8 @@ export const CreateTipsAndTrickPostScreen = () => {
     // API contextType'a çevir
     const apiContextType = mapProductInfoTypeToContextType(contextType);
     
-    // Category'yi API formatına çevir
-    const benefitCategory = mapCategoryToBenefitCategory(data.selectedCategory);
+    // benefitCategory directly from form (already in snake_case format)
+    const benefitCategory = data.selectedCategory;
     
     // Validate contextId before sending
     if (!contextId || contextId.trim() === '') {
@@ -353,6 +322,13 @@ export const CreateTipsAndTrickPostScreen = () => {
       benefitCategory: benefitCategory,
       descriptionLength: data.tipsText?.length || 0,
       imagesCount: data.selectedImages?.length || 0,
+    });
+    
+    console.log('[CreateTipsAndTrickPostScreen] 📋 Context Details:', {
+      contextType,
+      contextId,
+      productInfoSnapshot,
+      apiContextType,
     });
     
     try {
@@ -551,6 +527,12 @@ export const CreateTipsAndTrickPostScreen = () => {
 
   // Check if share button should be enabled (form is valid)
   const isShareEnabled = formState.isValid;
+  const isShareLoading = createTipsAndTricksPostMutation.isPending;
+
+  const handleSharePress = () => {
+    Keyboard.dismiss();
+    handleSubmit(onSubmit)();
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -568,15 +550,16 @@ export const CreateTipsAndTrickPostScreen = () => {
             onLeftActionPress={handleBackPress}
             rightButton={{
               text: 'Share',
-              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
-              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
               fontSize: 11,
               borderRadius: 25,
               paddingX: 10,
               paddingY: 10,
-              onPress: handleSubmit(onSubmit),
+              onPress: handleSharePress,
+              loading: isShareLoading,
             }}
           />
 

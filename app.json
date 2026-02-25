@@ -32,6 +32,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Fotoğraf çekmek için kameraya ihtiyaç var.",
         "NSMicrophoneUsageDescription": "Video kaydı için mikrofona ihtiyaç var.",
+        "NSPhotoLibraryUsageDescription": "Badge'leri galerinize kaydetmek için izin gereklidir.",
+        "NSPhotoLibraryAddUsageDescription": "Badge'leri galerinize kaydetmek için izin gereklidir.",
         "NSUserNotificationsUsageDescription": "Bildirimleri almak için izin gereklidir.",
         "UIBackgroundModes": [
           "remote-notification"
@@ -79,7 +81,10 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.POST_NOTIFICATIONS",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
       ]
     },
     "web": {
@@ -97,7 +102,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/icon.png",
           "color": "#000000",
           "enableBackgroundRemoteNotifications": true
         }
@@ -122,7 +127,8 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-router"
     ],
     "extra": {
       "eas": {

@@ -17,6 +17,7 @@ import { AppProviders } from '@/src/providers/ComposedProviders';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
 import { GlobalUIHost } from '@/src/components/GlobalUIHost';
 import { TranslationCacheService } from '@/src/services/TranslationCacheService';
+import { useSyncInventoryToStore } from '@/src/features/post/hooks/useSyncInventoryToStore';
 
 
 
@@ -50,6 +51,9 @@ const AppInner = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { isAuthReady } = useAuth();
+
+  // Sync inventory product IDs to store for fast lookups
+  useSyncInventoryToStore();
 
   // PERFORMANCE FIX: Memoize navigation bar style object
   const navigationBarStyle = useMemo(
@@ -96,12 +100,14 @@ const AppInner = () => {
   // CRITICAL FIX: GestureHandlerRootView EN DIŞTA olmalı
   // Provider'lar NavigationContainer dışında ama GestureHandlerRootView içinde
   // Bu sayede gesture handler hatası çözülür
-  // CRITICAL ORDER: GluestackProvider -> PortalProvider -> NavigationContainer -> BottomSheetModalProvider -> GlobalBottomSheetProvider
+  // CRITICAL ORDER: GluestackProvider -> PortalProvider -> BottomSheetModalProvider -> NavigationContainer -> GlobalBottomSheetProvider
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackProvider>
         <PortalProvider>
-          <Navigation />
+          <BottomSheetModalProvider>
+            <Navigation />
+          </BottomSheetModalProvider>
         </PortalProvider>
       </GluestackProvider>
     </GestureHandlerRootView>

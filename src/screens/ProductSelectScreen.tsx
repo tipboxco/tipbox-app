@@ -122,6 +122,17 @@ export const ProductSelectScreen: React.FC = () => {
     return catalogCategoriesData.items;
   }, [catalogCategoriesData]);
 
+  // Reset store on mount - EventCreatePost'tan geldiğinde temiz başla
+  useEffect(() => {
+    // Component mount olduğunda store'u temizle
+    setSelectedCategoryId(undefined);
+    setSelectedSubCategory(undefined);
+    setSelectedProductGroup(undefined);
+    setSelectedProduct(undefined);
+    setCurrentView('categories');
+    setBreadcrumbItems([]);
+  }, []); // Empty dependency array - sadece mount'ta çalışır
+
   const catalogSubCategories = useMemo(() => {
     if (!catalogSubCategoriesData?.items) return [];
     return catalogSubCategoriesData.items;
@@ -544,7 +555,7 @@ export const ProductSelectScreen: React.FC = () => {
               ) : globalSearchResults.length === 0 ? (
                 <Box py="$8" alignItems="center">
                   <Text color={isDark ? '#999' : '#666'} fontSize="$sm">
-                    Arama sonucu bulunamadı
+                    No search results
                   </Text>
                 </Box>
               ) : (

@@ -13,7 +13,7 @@ import { TouchableOpacity, Modal, View, ActivityIndicator } from 'react-native';
 import { navigationService } from '@/src/services/NavigationService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { XMarkIcon } from 'react-native-heroicons/outline';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
@@ -31,13 +31,15 @@ import {
   ArrowRightStartOnRectangleIcon,
 } from 'react-native-heroicons/outline';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUserProfile, useTrustList, useTrusterList } from '@/src/features/profile/api/hooks';
+import { useUserProfile } from '@/src/features/profile/api/hooks';
 import type { UserProfile } from '@/src/features/profile/types';
 import { toImageSource, useBottomOffset  } from '@/src/utils';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 
 // Default user avatar
 const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
+
+const PRIME_PASS_VIDEO_SOURCE = require('@/src/Expert Now Video/expertnow-comingsoon.mp4');
 
 interface MenuItem {
   id: string;
@@ -100,10 +102,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   // Type assertion: React Query'nin generic tip çıkarımı sorunu için
   const typedUserProfile = userProfile as UserProfile | undefined;
   
-  // CRITICAL FIX: Trust ve Truster sayılarını liste uzunluklarından al
-  // Trust_TrusterListScreen ile aynı veriyi kullan (liste uzunluğu = gerçek sayı)
-  const { data: trustListData } = useTrustList(user?.id || '', undefined);
-  const { data: trusterListData } = useTrusterList(user?.id || '', undefined, undefined);
+  // PERFORMANCE FIX: Trust/Truster sayıları userProfile.stats'tan alınır
+  // Liste verilerine burada ihtiyaç yok - sadece Trust_TrusterListScreen'de fetch edilir
   
   // PERFORMANCE FIX: Computed değerleri useMemo ile memoize et
   // Banner source - profile'dan gelen banner URL'i veya fallback
@@ -264,15 +264,13 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const stats = useMemo(() => {
     if (isProfileLoading) return { posts: 0, trust: 0, truster: 0 };
     
-    // Posts sayısı profile'dan gelir
+    // PERFORMANCE FIX: Tüm stats userProfile'dan gelir - gereksiz API isteklerini önler
     const posts = typedUserProfile?.stats?.posts ?? 0;
-    
-    // Trust ve Truster sayıları liste uzunluklarından alınır (Trust_TrusterListScreen ile aynı)
-    const trust = trustListData?.length ?? 0;
-    const truster = trusterListData?.length ?? 0;
+    const trust = typedUserProfile?.stats?.trust ?? 0;
+    const truster = typedUserProfile?.stats?.truster ?? 0;
     
     return { posts, trust, truster };
-  }, [typedUserProfile?.stats?.posts, trustListData?.length, trusterListData?.length, isProfileLoading]);
+  }, [typedUserProfile?.stats, isProfileLoading]);
 
   // PERFORMANCE FIX: Navigation handler'larını useCallback ile memoize et
   // CRITICAL FIX: NavigationService kullan - root navigator ref'ine direkt erişir
@@ -319,9 +317,9 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     navigationService.navigate('MoreSchoise', undefined);
   }, [handleCloseDrawer]);
 
-  // Prime Pass Video Modal State
+  // Prime Pass Video Modal State (expo-video)
   const [isPrimePassVideoVisible, setIsPrimePassVideoVisible] = useState(false);
-  const videoRef = useRef<Video>(null);
+  const primePassPlayer = useVideoPlayer(PRIME_PASS_VIDEO_SOURCE);
 
   const handlePrimePassPress = useCallback(() => {
     handleCloseDrawer();
@@ -330,18 +328,15 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
 
   const handleClosePrimePassVideo = useCallback(() => {
     setIsPrimePassVideoVisible(false);
-    // Video'yu durdur
-    if (videoRef.current) {
-      videoRef.current.pauseAsync();
-    }
-  }, []);
+    primePassPlayer.pause();
+  }, [primePassPlayer]);
 
-  const handleVideoLoad = useCallback((status: AVPlaybackStatus) => {
-    if (status.isLoaded) {
-      // Video yüklendiğinde otomatik oynat
-      videoRef.current?.playAsync();
+  // Modal açıldığında videoyu oynat
+  useEffect(() => {
+    if (isPrimePassVideoVisible) {
+      primePassPlayer.play();
     }
-  }, []);
+  }, [isPrimePassVideoVisible, primePassPlayer]);
 
   // PERFORMANCE FIX: Profile section handler'ını memoize et
   const handleProfilePress = useCallback(() => {
@@ -884,18 +879,12 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <XMarkIcon width={24} height={24} color="#FFFFFF" />
           </Pressable>
 
-          {/* Video Player */}
-          <Video
-            ref={videoRef}
-            source={require('@/src/Expert Now Video/expertnow-comingsoon.mp4')}
+          {/* Video Player (expo-video) */}
+          <VideoView
+            player={primePassPlayer}
             style={{ width: '100%', height: '100%' }}
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={true}
-            isLooping={false}
-            onLoad={handleVideoLoad}
-            onError={(error) => {
-              console.error('[DrawerContent] Video error:', error);
-            }}
+            contentFit="contain"
+            nativeControls={false}
           />
         </View>
       </Modal>

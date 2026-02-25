@@ -1,10 +1,11 @@
 import { NotificationItem, NotificationFilter } from './types';
 
+/** Figma: All Notifications, Replies, Trust - Truster, TIPS */
 export const notification_filters: NotificationFilter[] = [
-  { id: 'all', label: 'All', isActive: true },
-  { id: 'tips', label: 'Tips', isActive: false },
-  { id: 'truster', label: 'Truster', isActive: false }, // CRITICAL FIX: trust → truster (backend API formatı)
+  { id: 'all', label: 'All Notifications', isActive: true },
   { id: 'replies', label: 'Replies', isActive: false },
+  { id: 'truster', label: 'Trust - Truster', isActive: false },
+  { id: 'tips', label: 'TIPS', isActive: false },
 ];
 
 export const notification_mock: NotificationItem[] = [

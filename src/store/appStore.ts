@@ -64,6 +64,11 @@ interface User {
   isGuest?: boolean;
 }
 
+interface SelectedCategory {
+  categoryId: string;
+  subCategoryIds: string[];
+}
+
 interface AppState {
   // Auth State
   isAuthenticated: boolean;
@@ -71,21 +76,24 @@ interface AppState {
   error: Error | null;
   user: User | null;
   accessToken: string | null;
-  
+
   // Wallet State (Web2-Ready)
   walletId: string | null;
   walletIdentifier: string | null;
   walletBalance: number | null;
-  
+
   // Theme State
   colorMode: ColorMode;
-  
+
   // App State Awareness - Kritik ekranlarda navigation'ı defer etmek için
   isUserBusy: boolean;
   busyReason?: 'form' | 'payment' | 'critical-action' | string;
-  
+
   // Active Thread ID - MessageDetail ekranındayken aktif thread ID'si (notification kontrolü için)
   activeThreadId: string | null;
+
+  // Setup Profile State - Route params yerine global state kullanımı
+  selectedCategories: SelectedCategory[];
   
   // Auth Actions
   login: (userData: {
@@ -114,6 +122,10 @@ interface AppState {
   
   // Wallet Actions
   setWalletBalance: (balance: number) => void;
+
+  // Setup Profile Actions
+  setSelectedCategories: (categories: SelectedCategory[]) => void;
+  clearSelectedCategories: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -141,6 +153,9 @@ export const useAppStore = create<AppState>()(
         
         // Initial Active Thread ID
         activeThreadId: null,
+
+        // Initial Setup Profile State
+        selectedCategories: [],
         
         // Auth Actions
         setTempUser: (user: User, accessToken: string) => {
@@ -268,6 +283,7 @@ export const useAppStore = create<AppState>()(
               walletId: null,
               walletIdentifier: null,
               walletBalance: null,
+              selectedCategories: [],
               isLoading: false,
               error: null,
             });
@@ -324,6 +340,7 @@ export const useAppStore = create<AppState>()(
               walletId: null,
               walletIdentifier: null,
               walletBalance: null,
+              selectedCategories: [],
               isLoading: false,
               error: error as Error,
             });
@@ -357,6 +374,17 @@ export const useAppStore = create<AppState>()(
         setWalletBalance: (balance: number) => {
           set({ walletBalance: balance });
           console.log('[AppStore] 💰 Wallet balance updated:', balance);
+        },
+
+        // Setup Profile Actions
+        setSelectedCategories: (categories: SelectedCategory[]) => {
+          set({ selectedCategories: categories });
+          console.log('[AppStore] 📂 Selected categories updated:', categories.length, 'categories');
+        },
+
+        clearSelectedCategories: () => {
+          set({ selectedCategories: [] });
+          console.log('[AppStore] 🗑️ Selected categories cleared');
         },
       }),
       {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -16,6 +16,7 @@ import {
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { EventStackParamList } from '../EventNavigator';
@@ -33,7 +34,7 @@ import { InventoryItem } from '@/src/features/profile/types';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateEventPostWithContext } from '../api/hooks';
+import { useCreateEventPostWithContext, eventsKeys } from '../api/hooks';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventStackParamList, 'EventCreatePost'>;
@@ -55,6 +56,7 @@ const EventCreatePost: React.FC = () => {
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
     const toast = useToast();
+    const queryClient = useQueryClient();
     
     // Safe area insets (tab bar yok, EventNavigator RootNavigator'ın DetailsGroup'unda)
     const insets = useSafeAreaInsets();
@@ -369,6 +371,7 @@ const EventCreatePost: React.FC = () => {
                 onClose={closeBottomSheet}
                 onProductSelect={handleProductSelect}
                 navigation={navigation}
+                eventId={eventId}
             />,
             {
                 enablePanDownToClose: true,
@@ -380,7 +383,7 @@ const EventCreatePost: React.FC = () => {
                 paddingBottom: insets.bottom + 8,
             }
         );
-    }, [openBottomSheet, closeBottomSheet, handleProductSelect, navigation]);
+    }, [openBottomSheet, closeBottomSheet, handleProductSelect, navigation, eventId]);
 
     const handleCatalogProductSelect = (product: Product) => {
         console.log('🔍 [EventCreatePost] Catalog product selected:', {
@@ -468,6 +471,27 @@ const EventCreatePost: React.FC = () => {
         setSelectedImages(prev => prev.filter((_, i) => i !== index));
     };
 
+    // Handle back button press - EventDetailScreen'e dön
+    const handleBackPress = useCallback(() => {
+        if (eventId) {
+            // EventDetailScreen'e geri dön
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        {
+                            name: 'EventDetailScreen',
+                            params: { eventId },
+                        },
+                    ],
+                })
+            );
+        } else {
+            // eventId yoksa normal goBack
+            navigation.goBack();
+        }
+    }, [eventId, navigation]);
+
     const handleShare = async () => {
         try {
             // Validation - Content is required
@@ -546,41 +570,49 @@ const EventCreatePost: React.FC = () => {
 
                 console.log('✅ [EventCreatePost] Post created successfully (JSON):', JSON.stringify(response, null, 2));
 
+                // Mutation'daki onSuccess invalidation yapacak ama biz de manuel refetch tetikleyelim
+                // EventDetailScreen'e döndükten sonra yeni post anında görünsün
+                if (eventId) {
+                    await Promise.all([
+                        queryClient.refetchQueries({
+                            queryKey: ['events', 'posts', eventId],
+                        }),
+                        queryClient.refetchQueries({
+                            queryKey: eventsKeys.detail(eventId),
+                        }),
+                    ]);
+                }
+
                 showCustomToast(toast, {
                     title: 'Success',
                     description: 'Post created successfully!',
                     action: 'success',
                 });
 
-                navigation.goBack();
+                // Event detail ekranına dön - Stack'i reset et
+                if (eventId) {
+                    navigation.dispatch(
+                        CommonActions.reset({
+                            index: 0,
+                            routes: [
+                                {
+                                    name: 'EventDetailScreen',
+                                    params: { eventId },
+                                },
+                            ],
+                        })
+                    );
+                } else {
+                    navigation.goBack();
+                }
                 return;
             }
 
-            // Validation - Product seçimi zorunlu (inventoryId için)
+            // Validation - Product seçimi zorunlu
             if (!selectedProduct) {
                 showCustomToast(toast, {
                     title: 'Error',
                     description: 'Please select a product before sharing.',
-                    action: 'error',
-                });
-                return;
-            }
-
-            // Validation - inventoryId zorunlu
-            if (!selectedProduct.inventoryId) {
-                showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Please select a product from inventory.',
-                    action: 'error',
-                });
-                return;
-            }
-
-            // Validation - productId zorunlu (inventory item içinden gelmeli)
-            if (!selectedProduct.productId) {
-                showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Selected inventory product has no productId. Please try another item.',
                     action: 'error',
                 });
                 return;
@@ -596,9 +628,9 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            // Sadece inventoryId gönder - Backend her şeyi halleder
-            const inventoryId = selectedProduct.inventoryId;
-            const productId = selectedProduct.productId;
+            // Katalogdan mı envanterden mi seçildi?
+            const isFromInventory = !!selectedProduct.inventoryId;
+            const productId = selectedProduct.productId || selectedProduct.id;
             
             const requestPayload = {
                 eventId,
@@ -606,7 +638,7 @@ const EventCreatePost: React.FC = () => {
                 contextType: 'product',
                 contextId: productId,
                 productId,
-                inventoryId,
+                ...(isFromInventory && { inventoryId: selectedProduct.inventoryId }),
                 imageCount: selectedImages.length,
                 images: selectedImages.length > 0 ? selectedImages.map((uri, i) => ({
                     index: i,
@@ -617,10 +649,11 @@ const EventCreatePost: React.FC = () => {
             console.log('📤 [EventCreatePost] Request Payload (JSON):', JSON.stringify(requestPayload, null, 2));
             
             console.log('🔍 [EventCreatePost] Request preparation:', {
-                inventoryId: inventoryId,
+                isFromInventory,
+                inventoryId: selectedProduct.inventoryId || 'N/A (Catalog)',
                 productId,
                 selectedProduct: selectedProduct.name,
-                backendWillHandle: 'optional inventoryId cross-check / lookup',
+                backendWillHandle: isFromInventory ? 'inventoryId cross-check' : 'direct productId',
             });
 
             // Debug log - Request data
@@ -628,21 +661,47 @@ const EventCreatePost: React.FC = () => {
                 eventId,
                 body: content.trim().substring(0, 50) + '...',
                 bodyLength: content.trim().length,
-                inventoryId,
+                source: isFromInventory ? 'Inventory' : 'Catalog',
+                productId,
+                inventoryId: selectedProduct.inventoryId || 'N/A',
                 imageCount: selectedImages.length,
             });
 
-            // API çağrısı - Sadece inventoryId gönder
-            const response = await createPostMutation.mutateAsync({
-                eventId,
-                body: content.trim(),
-                contextType: 'product',
-                contextId: productId,
-                inventoryId, // ekstra bilgi (backend isterse doğrulama/lookup yapabilir)
-                images: selectedImages.length > 0 ? selectedImages : undefined,
-            });
+            // API çağrısı
+            const apiPayload = isFromInventory
+                ? {
+                    eventId,
+                    body: content.trim(),
+                    contextType: 'product' as const,
+                    contextId: productId,
+                    inventoryId: selectedProduct.inventoryId!,
+                    images: selectedImages.length > 0 ? selectedImages : undefined,
+                }
+                : {
+                    eventId,
+                    body: content.trim(),
+                    contextType: 'product' as const,
+                    contextId: productId,
+                    productId,
+                    images: selectedImages.length > 0 ? selectedImages : undefined,
+                };
+
+            const response = await createPostMutation.mutateAsync(apiPayload);
 
             console.log('✅ [EventCreatePost] Post created successfully (JSON):', JSON.stringify(response, null, 2));
+
+            // Mutation'daki onSuccess invalidation yapacak ama biz de manuel refetch tetikleyelim
+            // EventDetailScreen'e döndükten sonra yeni post anında görünsün
+            if (eventId) {
+                await Promise.all([
+                    queryClient.refetchQueries({
+                        queryKey: ['events', 'posts', eventId],
+                    }),
+                    queryClient.refetchQueries({
+                        queryKey: eventsKeys.detail(eventId),
+                    }),
+                ]);
+            }
 
             // Başarılı toast göster
             showCustomToast(toast, {
@@ -651,8 +710,22 @@ const EventCreatePost: React.FC = () => {
                 action: 'success',
             });
 
-            // Event detail ekranına geri dön
-            navigation.goBack();
+            // Event detail ekranına dön - Stack'i reset et
+            if (eventId) {
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [
+                            {
+                                name: 'EventDetailScreen',
+                                params: { eventId },
+                            },
+                        ],
+                    })
+                );
+            } else {
+                navigation.goBack();
+            }
         } catch (error: any) {
             const errorJson = {
                 errorType: 'PostCreationError',
@@ -695,18 +768,16 @@ const EventCreatePost: React.FC = () => {
     // Check if share button should be enabled
     // /posts/{eventId}/post endpoint'i için:
     // - content (body) zorunlu
-    // - selectedProduct zorunlu (inventoryId için)
-    // - selectedProduct.inventoryId zorunlu
+    // - selectedProduct zorunlu
     // - eventId zorunlu
     const hasContent = content.trim().length > 0;
     const hasProduct = !!selectedProduct;
-    const hasInventoryId = !!selectedProduct?.inventoryId;
     const hasEventId = !!eventId;
     const hasProductStatus = !isRoastsEvent || productStatus !== '';
     
     const isShareEnabled = isRoastsEvent
         ? (hasContent && hasProduct && hasEventId && hasProductStatus)
-        : (hasContent && hasProduct && hasInventoryId && hasEventId);
+        : (hasContent && hasProduct && hasEventId);
     
     // Debug log - Share button state kontrolü
     useEffect(() => {
@@ -714,7 +785,6 @@ const EventCreatePost: React.FC = () => {
             isRoastsEvent,
             hasContent,
             hasProduct,
-            hasInventoryId,
             hasEventId,
             hasProductStatus,
             productStatus,
@@ -725,8 +795,8 @@ const EventCreatePost: React.FC = () => {
                 selectedProduct: selectedProduct ? {
                     id: selectedProduct.id,
                     name: selectedProduct.name,
-                    inventoryId: selectedProduct.inventoryId || 'MISSING ❌',
-                    hasInventoryId: !!selectedProduct.inventoryId
+                    source: selectedProduct.inventoryId ? 'Inventory' : 'Catalog',
+                    inventoryId: selectedProduct.inventoryId || 'N/A (Catalog)',
                 } : 'NULL ❌',
                 eventId: eventId || 'MISSING ❌',
             },
@@ -736,7 +806,6 @@ const EventCreatePost: React.FC = () => {
         isRoastsEvent,
         hasContent,
         hasProduct,
-        hasInventoryId,
         hasEventId,
         hasProductStatus,
         productStatus,
@@ -766,13 +835,13 @@ const EventCreatePost: React.FC = () => {
     }
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FFFFFF'}>
             {/* Header */}
             <Header
                 title="Write a Post"
                 leftAction="back"
-                onLeftActionPress={() => navigation.goBack()}
+                onLeftActionPress={handleBackPress}
                 rightButton={{
                     text: 'Share',
                     backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',

@@ -10,6 +10,7 @@ import {
     TextareaInput,
     Image
 } from '@gluestack-ui/themed';
+import { ActivityIndicator } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import {
   TagIcon,
@@ -45,6 +46,7 @@ interface StepThreeScreenProps {
     selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any } | null;
     fromInventory?: boolean;
     experienceOption?: 'own' | 'tried';
+    isImagePickerLoading?: boolean;
 }
 
 export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
@@ -67,6 +69,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
     selectedProduct,
     fromInventory,
     experienceOption,
+    isImagePickerLoading = false,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -375,7 +378,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
 
                         {/* Add Image Button */}
                         {selectedImages.length < 10 && (
-                            <Pressable onPress={onImagePicker}>
+                            <Pressable onPress={onImagePicker} disabled={isImagePickerLoading}>
                                 <Box
                                     width={64}
                                     height={64}
@@ -386,12 +389,17 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     borderRadius={5}
                                     justifyContent="center"
                                     alignItems="center"
+                                    opacity={isImagePickerLoading ? 0.5 : 1}
                                 >
-                                    <Feather
-                                        name="plus"
-                                        size={24}
-                                        color={isDark ? '#C1BEBF' : '#C1BEBF'}
-                                    />
+                                    {isImagePickerLoading ? (
+                                        <ActivityIndicator size="small" color={isDark ? '#D0F205' : '#829905'} />
+                                    ) : (
+                                        <Feather
+                                            name="plus"
+                                            size={24}
+                                            color={isDark ? '#C1BEBF' : '#C1BEBF'}
+                                        />
+                                    )}
                                 </Box>
                             </Pressable>
                         )}

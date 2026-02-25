@@ -83,7 +83,14 @@ export const useNotifications = (params?: GetNotificationsParams, enabled: boole
 
 /**
  * Get Unread Count Query Hook
- * 
+ *
+ * Real-time: NotificationProvider'da Socket.IO listener var; socket event geldiğinde
+ * store + invalidate ile badge güncellenir. refetchInterval burada fallback (socket
+ * bağlı değilse veya event kaçarsa ~30s gecikme olur).
+ * Recommendation: WebSocket/Socket.IO dinleyicisinin her zaman aktif olduğundan ve
+ * unread_count event'inde queryClient.invalidateQueries(notificationKeys.unreadCount())
+ * yapıldığından emin olun; böylece polling süresi kısaltılabilir veya kaldırılabilir.
+ *
  * @param enabled - Query'nin aktif olup olmayacağını kontrol eder (default: true)
  *                  Authenticated değilse false olmalı
  */
@@ -94,7 +101,7 @@ export const useUnreadCount = (enabled: boolean = true) => {
     enabled, // Authenticated kontrolü için
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma (refetchInterval ile güncellenir)
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
-    refetchInterval: enabled ? 30 * 1000 : false, // Sadece enabled ise refetch yap
+    refetchInterval: enabled ? 30 * 1000 : false, // Fallback: 30s polling (WebSocket ile anlık güncelleme tercih edilmeli)
     refetchOnWindowFocus: false, // Cache varsa kullan, yoksa fetch et
     retry: (failureCount, error: any) => {
       // 500 hatası için retry yapma (backend sorunu)

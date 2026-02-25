@@ -51,16 +51,27 @@ interface PostOption {
     description: string;
 }
 
+// Sıra: Experience -> Tips & Tricks -> Benchmark -> Update -> Question -> Free
 const postOptions: PostOption[] = [
     {
-        id: 'free',
-        title: 'Free Post',
-        description: 'Create a free post on any topic',
+        id: 'experience',
+        title: 'Experience Post',
+        description: 'Share your experience about this product',
     },
     {
         id: 'tips',
-        title: 'Tips Post',
+        title: 'Tips & Tricks',
         description: 'Share a tip about this product',
+    },
+    {
+        id: 'benchmark',
+        title: 'Benchmark Post',
+        description: 'Compare this product with similar ones',
+    },
+    {
+        id: 'update',
+        title: 'Update Post',
+        description: 'Share an update to your experience post',
     },
     {
         id: 'question',
@@ -68,14 +79,9 @@ const postOptions: PostOption[] = [
         description: 'Ask a question about this product',
     },
     {
-        id: 'experience',
-        title: 'Experience Post',
-        description: 'Share your experience about this product',
-    },
-    {
-        id: 'benchmark',
-        title: 'Benchmark Post',
-        description: 'Compare this product with similar ones',
+        id: 'free',
+        title: 'Free Post',
+        description: 'Create a free post on any topic',
     },
 ];
 
@@ -115,20 +121,15 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
         switch (stage) {
             case 'subcategories':
             case 'productgroups':
-                // Show only: Free Post, Tips Post, Question Post
-                return postOptions.filter(option => 
-                    option.id === 'free' || 
-                    option.id === 'tips' || 
-                    option.id === 'question'
-                );
+                // Sıra: Free, Tips, Question (subcategory/productgroup seviyesinde)
+                return [
+                    postOptions.find(o => o.id === 'free'),
+                    postOptions.find(o => o.id === 'tips'),
+                    postOptions.find(o => o.id === 'question'),
+                ].filter((o): o is PostOption => o != null);
             case 'products':
-                // Show: Tips Post, Benchmark Post, Question Post
-                // Experience post only available after add inventory
-                return postOptions.filter(option => 
-                    option.id === 'tips' || 
-                    option.id === 'benchmark' || 
-                    option.id === 'question'
-                );
+                // Product seviyesinde: Free, Experience, Update dahil tüm seçenekler
+                return postOptions;
             default:
                 return postOptions;
         }

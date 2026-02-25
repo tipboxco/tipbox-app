@@ -1,8 +1,8 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getCatalogContextPosts, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandHistoryFeed, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand, getSurveyQuestions, submitSurveyAnswer } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse, SurveyQuestionsResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -18,6 +18,8 @@ export const catalogKeys = {
   brandProductBook: (brandId: string, search?: string) => [...catalogKeys.all, 'brandProductBook', brandId, search] as const,
   brandSurveys: (brandId: string, limit?: number) => 
     [...catalogKeys.all, 'brandSurveys', brandId, limit] as const,
+  surveyQuestions: (brandId: string, surveyId: string) =>
+    [...catalogKeys.all, 'surveyQuestions', brandId, surveyId] as const,
   brandTrends: (brandId: string, limit?: number) => 
     [...catalogKeys.all, 'brandTrends', brandId, limit] as const,
   brandEvents: (brandId: string, limit?: number) => 
@@ -199,6 +201,7 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
   // DEBUG: React Query response'unu log'la
   if (__DEV__) {
     useEffect(() => {
+      // Log summary only; avoid nesting objects so console doesn't show "[Object]"
       console.log('[useCatalogSubCategories] 🔍 React Query State:', {
         categoryId,
         limit,
@@ -210,7 +213,6 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
         hasData: !!query.data,
         dataType: typeof query.data,
         itemsCount: query.data?.items?.length || 0,
-        data: query.data,
       });
       
       if (query.data) {
@@ -589,6 +591,32 @@ export const useBrandSurveys = (brandId: string | undefined, limit: number = 20)
 };
 
 /**
+ * Get Survey Questions query hook
+ * Anket sorularını getirir (SurveyParticipationScreen)
+ */
+export const useSurveyQuestions = (surveyId: string | undefined, brandId: string | undefined) => {
+  return useQuery<SurveyQuestionsResponse, Error>({
+    queryKey: surveyId && brandId ? catalogKeys.surveyQuestions(brandId, surveyId) : ['catalog', 'surveyQuestions', 'disabled'],
+    queryFn: () => {
+      if (!brandId || !surveyId) throw new Error('brandId and surveyId are required');
+      return getSurveyQuestions(brandId, surveyId);
+    },
+    enabled: !!surveyId && !!brandId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+/**
+ * Submit Survey Answer mutation hook
+ */
+export const useSubmitSurveyAnswer = () => {
+  return useMutation<void, Error, { brandId: string; surveyId: string; questionId: string; answerId: string }>({
+    mutationFn: ({ brandId, surveyId, questionId, answerId }) =>
+      submitSurveyAnswer(brandId, surveyId, { questionId, answerId }),
+  });
+};
+
+/**
  * Get Brand Trends infinite query hook
  * /brands/{brandId}/trends endpoint'inden marka trend içeriklerini infinite scroll ile getirir
  *
@@ -896,6 +924,39 @@ export const useBrandHistory = (brandId: string | undefined) => {
     enabled: !!brandId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand History Feed infinite query hook
+ * /brands/{brandId}/history/feed endpoint'inden marka geçmiş feed'ini getirir (infinite scroll ile)
+ *
+ * @param brandId - Marka ID'si
+ * @param limit - Sayfa başına item sayısı (default: 10)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandHistoryFeed('brand-123');
+ */
+export const useBrandHistoryFeed = (brandId: string | undefined, limit: number = 10) => {
+  return useInfiniteQuery<BrandFeedResponse, Error>({
+    queryKey: brandId ? ['catalog', 'brandHistoryFeed', brandId, limit] : ['catalog', 'brandHistoryFeed', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      return getBrandHistoryFeed(brandId, pageParam as string | undefined, limit);
+    },
+    enabled: !!brandId,
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      return lastPage.pagination?.cursor || undefined;
+    },
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,

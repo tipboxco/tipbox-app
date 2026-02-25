@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, Modal, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, View, StyleSheet } from 'react-native';
 import { Box, useToast, VStack, Text } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
@@ -13,9 +13,12 @@ import { StepThreeScreen } from '../components/CreateExperienceSteps/StepThreeSc
 import { SelectProduct } from '../components/CreateExperienceSteps/SelectProduct';
 import { useExperiencePostForm } from '../hooks/useExperiencePostForm';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateExperiencePost, useSplitExperience } from '../api/hooks';
+import { useCreateExperiencePost, useSplitExperience, useGetExperienceOptions } from '../api/hooks';
 import { useAddInventoryItem, useInventory } from '@/src/features/profile/api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useInventoryProductCheck } from '../hooks/useInventoryProductCheck';
+import { useSyncInventoryToStore } from '../hooks/useSyncInventoryToStore';
+import { getInventoryDecision } from '../utils/inventoryDecision';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,10 +41,17 @@ export const CreateExperiencePostScreen = () => {
     const navigation = useNavigation<CreateExperiencePostScreenNavigationProp>();
     const route = useRoute<CreateExperiencePostScreenRouteProp>();
     const { product, fromInventory, experienceOption } = route.params || {};
+
+    // Sync inventory to store
+    useSyncInventoryToStore();
+
+    // Get inventory product check hook
+    const { inventoryProductIds } = useInventoryProductCheck();
     
     // If product is undefined, start with SelectProduct (step 0), otherwise start with StepOneScreen (step 1)
     const [currentStep, setCurrentStep] = useState<0 | 1 | 2 | 3>(product ? 1 : 0);
     const [editingField, setEditingField] = useState<'price' | 'product' | null>(null);
+    const [isImagePickerLoading, setIsImagePickerLoading] = useState(false);
     
     const methods = useExperiencePostForm(
       product ? {
@@ -61,14 +71,13 @@ export const CreateExperiencePostScreen = () => {
     const addInventoryItemMutation = useAddInventoryItem();
     const { user } = useAppStore();
     const queryClient = useQueryClient();
-    const { data: inventoryData } = useInventory(100);
-    const inventoryProductIds = React.useMemo(() => {
-        if (!inventoryData?.pages) return new Set<string>();
-        return new Set(
-            inventoryData.pages.flatMap((p) => p.items ?? []).map((item) => item.productId).filter(Boolean)
-        );
-    }, [inventoryData]);
-    
+
+    // Experience options (duration, location, purpose) from API
+    const { data: experienceOptions } = useGetExperienceOptions();
+    const durations = experienceOptions?.durations ?? [];
+    const locations = experienceOptions?.locations ?? [];
+    const purposes = experienceOptions?.purposes ?? [];
+
     // Flow store'dan context bilgilerini al
     const contextType = useCreatePostFlowStore((state) => state.contextType);
     const contextId = useCreatePostFlowStore((state) => state.contextId);
@@ -103,6 +112,13 @@ export const CreateExperiencePostScreen = () => {
     const experienceText = watch('experienceText');
     const priceRating = watch('priceRating');
     const productRating = watch('productRating');
+
+    // Resolve option IDs to display names for Step2/Step3 tags
+    const resolveName = (options: { id: string; name: string }[], id: string) =>
+        options.find((o) => o.id === id)?.name ?? '';
+    const durationName = useMemo(() => resolveName(durations, step1Duration || ''), [durations, step1Duration]);
+    const locationName = useMemo(() => resolveName(locations, selectedCondition || ''), [locations, selectedCondition]);
+    const purposeName = useMemo(() => resolveName(purposes, selectedFrequency || ''), [purposes, selectedFrequency]);
 
     const handleBackPress = () => {
         if (currentStep === 3) {
@@ -288,14 +304,6 @@ export const CreateExperiencePostScreen = () => {
     };
 
 
-    // Form'daki duration, condition, frequency değerlerini API ID formatına çevir
-    // TODO: Backend'den experience options'ı çekip gerçek ID'leri kullan
-    const mapFormValueToId = (value: string): string => {
-        // Şimdilik form değerini direkt ID olarak kullanıyoruz
-        // Backend'den options çekildiğinde bu mapping güncellenecek
-        return value;
-    };
-
     const onSubmit: SubmitHandler<ExperiencePostFormData> = async (data) => {
         if (isSubmittingRef.current) {
             return;
@@ -363,10 +371,10 @@ export const CreateExperiencePostScreen = () => {
         // - experienceOption === 'tried' → status: 'tested' (ürün envantere eklenmez, sadece post paylaşılır)
         const status: 'own' | 'tested' = experienceOption === 'own' ? 'own' : 'tested';
         
-        // Form değerlerini ID'lere çevir
-        const selectedDurationId = mapFormValueToId(data.step1Duration);
-        const selectedLocationId = mapFormValueToId(data.selectedCondition); // Condition -> Location mapping
-        const selectedPurposeId = mapFormValueToId(data.selectedFrequency); // Frequency -> Purpose mapping
+        // Form already stores IDs from experience options API
+        const selectedDurationId = data.step1Duration;
+        const selectedLocationId = data.selectedCondition;
+        const selectedPurposeId = data.selectedFrequency;
         
         console.log('[CreateExperiencePostScreen] Mapping form values to IDs:', {
             step1Duration: data.step1Duration,
@@ -408,6 +416,7 @@ export const CreateExperiencePostScreen = () => {
         console.log('[CreateExperiencePostScreen] Submitting with:', {
             contextType: apiContextType,
             contextId: contextId,
+            productId: data.selectedProduct?.id,
             selectedDurationId: selectedDurationId,
             selectedLocationId: selectedLocationId,
             selectedPurposeId: selectedPurposeId,
@@ -494,6 +503,7 @@ export const CreateExperiencePostScreen = () => {
             const response = await createExperiencePostMutation.mutateAsync({
                 contextType: apiContextType,
                 contextId: contextId,
+                productId: data.selectedProduct?.id, // Backend için productId eklendi
                 experienceSnippetId: experienceSnippetId,
                 selectedDurationId: selectedDurationId,
                 selectedLocationId: selectedLocationId,
@@ -525,6 +535,9 @@ export const CreateExperiencePostScreen = () => {
             if (user?.id) {
                 queryClient.invalidateQueries({
                     queryKey: profileKeys.userPosts(user.id),
+                });
+                queryClient.invalidateQueries({
+                    queryKey: profileKeys.userReviews(user.id),
                 });
                 queryClient.invalidateQueries({
                     queryKey: profileKeys.profile(user.id),
@@ -641,15 +654,31 @@ export const CreateExperiencePostScreen = () => {
             }
         } catch (error: any) {
             console.error('[CreateExperiencePostScreen] ❌ API Error:', error);
-            
-            // Hata toast göster
-            const errorMessage = error?.response?.data?.message || 
-                                error?.message || 
+
+            // Backend hata kodlarını ve mesajlarını kontrol et
+            const errorCode = error?.response?.data?.code;
+            const errorMessage = error?.response?.data?.message;
+
+            // Envanter kontrolü hatası - "I Owned" için ürün envanterde olmalı
+            if (errorMessage?.includes('envanterinizde bulunmuyor') ||
+                errorCode === 'PRODUCT_NOT_IN_INVENTORY') {
+                showCustomToast(toast, {
+                    title: 'Product Not in Inventory',
+                    description:
+                        'To mark this product as "I Owned", it must be in your inventory first. Please add it to your inventory or select "I Tried" instead.',
+                    action: 'error',
+                });
+                return;
+            }
+
+            // Genel hata
+            const fallbackMessage = errorMessage ||
+                                error?.message ||
                                 'An error occurred while creating the post. Please try again.';
-            
+
             showCustomToast(toast, {
                 title: 'Error',
-                description: errorMessage,
+                description: fallbackMessage,
                 action: 'error',
             });
         }
@@ -660,6 +689,7 @@ export const CreateExperiencePostScreen = () => {
 
     const handleImagePicker = async () => {
         try {
+            setIsImagePickerLoading(true);
             const currentImages = getValues('selectedImages') || [];
             const remainingSlots = 10 - currentImages.length;
             
@@ -704,6 +734,8 @@ export const CreateExperiencePostScreen = () => {
                 description: errorMessage,
                 action: 'error',
             });
+        } finally {
+            setIsImagePickerLoading(false);
         }
     };
 
@@ -815,16 +847,20 @@ export const CreateExperiencePostScreen = () => {
                                     onPress: handleSavePress,
                                 } : {
                                     text: buttonText,
-                                    backgroundColor: isShareEnabled && !isSubmitPending ? '#D0F205' : '#EDEDED',
+                                    backgroundColor: isShareEnabled || isSubmitPending ? '#D0F205' : '#EDEDED',
                                     borderWidth: 1,
-                                    borderColor: isShareEnabled && !isSubmitPending ? '#B8CC04' : '#B1B1B1',
-                                    textColor: isShareEnabled && !isSubmitPending ? '#111111' : '#B1B1B1',
+                                    borderColor: isShareEnabled || isSubmitPending ? '#B8CC04' : '#B1B1B1',
+                                    textColor: isShareEnabled || isSubmitPending ? '#111111' : '#B1B1B1',
                                     fontSize: 14,
                                     borderRadius: 25,
                                     paddingX: 12,
                                     paddingY: 8,
-                                    onPress: handleSubmit(onSubmit),
+                                    onPress: () => {
+                                      Keyboard.dismiss();
+                                      handleSubmit(onSubmit)();
+                                    },
                                     disabled: isSubmitPending,
+                                    loading: isSubmitPending,
                                 }
                             }
                         />
@@ -839,9 +875,9 @@ export const CreateExperiencePostScreen = () => {
                             onProductExperienceTextChange={(text) => setValue('productExperienceText', text)}
                             onPriceRatingChange={(rating) => setValue('priceRating', rating, { shouldValidate: true })}
                             onProductRatingChange={(rating) => setValue('productRating', rating, { shouldValidate: true })}
-                            selectedDuration={step1Duration || ''}
-                            selectedCondition={selectedCondition || ''}
-                            selectedFrequency={selectedFrequency || ''}
+                            selectedDuration={durationName}
+                            selectedCondition={locationName}
+                            selectedFrequency={purposeName}
                             selectedImages={watch('selectedImages') || []}
                             onImagePicker={handleImagePicker}
                             onRemoveImage={handleRemoveImage}
@@ -850,6 +886,7 @@ export const CreateExperiencePostScreen = () => {
                             selectedProduct={selectedProduct}
                             fromInventory={fromInventory}
                             experienceOption={experienceOption}
+                            isImagePickerLoading={isImagePickerLoading}
                         />
 
                         {/* Gönderim sırasında ekran ortasında loading */}
@@ -903,9 +940,9 @@ export const CreateExperiencePostScreen = () => {
                             <StepTwoScreen
                                 experienceText={experienceText || ''}
                                 onExperienceTextChange={(text) => setValue('experienceText', text)}
-                                selectedDuration={step1Duration || ''}
-                                selectedCondition={selectedCondition || ''}
-                                selectedFrequency={selectedFrequency || ''}
+                                selectedDuration={durationName}
+                                selectedCondition={locationName}
+                                selectedFrequency={purposeName}
                                 selectedImages={watch('selectedImages') || []}
                                 onImagePicker={handleImagePicker}
                                 onRemoveImage={handleRemoveImage}
@@ -977,6 +1014,9 @@ export const CreateExperiencePostScreen = () => {
                         onConditionChange={(value) => setValue('selectedCondition', value, { shouldValidate: true })}
                         onFrequencyChange={(value) => setValue('selectedFrequency', value, { shouldValidate: true })}
                         selectedProduct={selectedProduct}
+                        durationOptions={durations}
+                        locationOptions={locations}
+                        purposeOptions={purposes}
                     />
                 </Box>
             </FormProvider>

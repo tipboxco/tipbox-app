@@ -7,7 +7,7 @@ import { CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
-import { CustomToast } from '@/src/components/CustomToast';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { useForgotPassword } from '../api/hooks';
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
@@ -18,9 +18,9 @@ export const ForgotPasswordScreen = () => {
   const navigation = useNavigation<ForgotPasswordScreenNavigationProp>();
   const toast = useToast();
   const insets = useSafeAreaInsets();
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
+
+  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
   const [email, setEmail] = useState('');
   const [isEmailValid, setIsEmailValid] = useState(false);
@@ -35,20 +35,11 @@ export const ForgotPasswordScreen = () => {
 
   const handleSendCode = async () => {
     if (!isEmailValid) {
-      toast.show({
-        placement: 'top',
+      showCustomToast(toast, {
+        title: 'Invalid email',
+        description: 'Please enter a valid email address.',
+        action: 'error',
         duration: 3000,
-        render: ({ id }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Invalid email"
-              description="Please enter a valid email address."
-              action="error"
-              duration={3000}
-            />
-          );
-        },
       });
       return;
     }
@@ -56,49 +47,31 @@ export const ForgotPasswordScreen = () => {
     try {
       await forgotPasswordMutation.mutateAsync(email);
 
-      toast.show({
-        placement: 'top',
+      showCustomToast(toast, {
+        title: 'Email sent',
+        description: 'Verification code has been sent to your email address.',
+        action: 'success',
         duration: 3000,
-        render: ({ id }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Email sent"
-              description="Verification code has been sent to your email address."
-              action="success"
-              duration={3000}
-            />
-          );
-        },
       });
 
       // VerifyCode ekranına yönlendir (ForgotPassword context'i ile)
-      navigation.navigate('VerifyCode', { 
+      navigation.navigate('VerifyCode', {
         email,
-        context: 'forgotPassword' 
+        context: 'forgotPassword'
       });
     } catch (error: any) {
       console.error('Forgot Password Error:', error);
-      
+
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'An error occurred. Please try again.';
-      
-      toast.show({
-        placement: 'top',
+
+      showCustomToast(toast, {
+        title: 'Error',
+        description: errorMessage,
+        action: 'error',
         duration: 4000,
-        render: ({ id }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Error"
-              description={errorMessage}
-              action="error"
-              duration={4000}
-            />
-          );
-        },
       });
     }
   };

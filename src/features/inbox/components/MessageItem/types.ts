@@ -11,7 +11,26 @@ export interface MessageDetailItem {
   isSent: boolean;
   senderName?: string;
   senderAvatar?: any;
-  type?: 'message' | 'support_request' | 'tips' | 'image';
+  type?: 'message' | 'support_request' | 'tips' | 'image' | 'sharedpost';
+  sharedPost?: {
+    postId: string;
+    postType?: string | null;
+    authorName?: string;
+    authorTitle?: string | null;
+    authorAvatar?: string | null;
+    imageUrl?: string | null;
+    contextType?: 'product' | 'productGroup' | 'subCategory' | null;
+    contextData?: {
+      id?: string;
+      name?: string;
+      image?: string | null;
+    };
+    products?: Array<{
+      id: string;
+      name: string;
+      image: string | null;
+    }>;
+  };
   supportRequest?: {
     supportType: string;
     message: string;

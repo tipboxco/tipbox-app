@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent, Divider } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, HStack, VStack, Image, Divider } from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,7 +12,8 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, useTrustList, useTrusterList, profileKeys } from '../api/hooks';
+import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
+import { usePaymentDashboard } from '@/src/features/settings/api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -23,25 +24,26 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { ProfileStackParamList } from '../navigation';
-import { toImageSource, useSafeAreaValues, useBottomOffset } from '@/src/utils';
+import { toImageSource, useSafeAreaValues, useBottomOffset, isSameImageSource } from '@/src/utils';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import SendTipsBottomSheet from '@/src/features/inbox/components/SendTipsBottomSheet';
-import { CardType } from '@/src/types/common';
+import { CardType, ProductInfoType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem, ExperiencePostApiContentBlock } from '@/src/types/ExperienceCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
+import type { UpdateCardData } from '@/src/types/UpdateCard';
 import type { ProfilePost, ProfileReview, UserProfile } from '../types';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
 import PostCard from '@/src/components/PostCards/PostCard';
+import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
-import { LadderTab } from '../components/TabContents';
 import {
   ArrowUpTrayIcon,
   FlagIcon,
@@ -56,10 +58,10 @@ import {
   BellSlashIcon,
   UserMinusIcon,
   UserPlusIcon,
+  PlusIcon,
 } from 'react-native-heroicons/outline';
 import { FeedSkeleton } from '@/src/components/Skeletons';
-import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
-import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
+import ProfileBadgeBottomSheet from '@/src/features/profile/components/ProfileBadgeBottomSheet';
 import type { Badge } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -70,7 +72,8 @@ const TABS = [
   { key: 'benchmarks',  title: 'Benchmarks' },
   { key: 'tips',        title: 'Tips & Tricks' },
   { key: 'replies',     title: 'Questions' },
-  { key: 'ladders',     title: 'Ladders' },
+  { key: 'badge',       title: 'Badges' },
+  { key: 'collections', title: 'Collections' },
 ] as const;
 
 type TabKey = typeof TABS[number]['key'];
@@ -94,11 +97,11 @@ const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
   const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(post.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
   const mappedImages = post.images
     ?.map((img) => toImageSource(img))
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  const images = mappedImages;
 
   return {
     id: post.id,
@@ -139,8 +142,10 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
     ? toImageSource(review.user.avatar)!
       : require('@/assets/avatar/default-useravatar.png');
   
-  const productImage = review.contextData?.image
-    ? toImageSource(review.contextData.image)
+  // API bazen product bazen contextData döner - ikisini de kontrol et
+  const productData = review.product || review.contextData;
+  const productImage = productData?.image
+    ? toImageSource(productData.image)
     : undefined;
 
   const contentBlocks = review.experienceContent ?? (Array.isArray(review.content) ? review.content : []);
@@ -165,18 +170,20 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
       action: 'wrote a review',
     },
     contextData: {
-      id: review.contextData?.id || '',
-      name: review.contextData?.name || '',
-      subName: review.contextData?.subName || '',
+      id: productData?.id || '',
+      name: productData?.name || '',
+      subName: productData?.subName || '',
       image: productImage,
-      isOwned: review.contextData?.isOwned,
+      isOwned: productData?.isOwned,
     },
     content,
     tags: review.tags?.slice(0, 3) ?? [],
-    images:
-      review.images
+    images: (() => {
+      const mapped = review.images
         ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+      return mapped.filter((img) => !isSameImageSource(img, productImage));
+    })(),
     stats: review.stats,
     createdAt: review.createdAt,
   };
@@ -250,6 +257,7 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData | null => {
       .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
     stats: item.stats,
     tag: item.tag,
+    benefitCategory: item.benefitCategory,
     createdAt: item.createdAt,
   };
 };
@@ -275,12 +283,11 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
     product,
   };
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
   const mappedImages = item.images
     ?.map((img) => toImageSource(img))
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  const images = mappedImages;
 
   return {
     id: item.id,
@@ -299,9 +306,80 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
   };
 };
 
+/** Map /users/{id}/reviews API update item to UpdateCardData (contextData.product, relatedPost.experienceContent) */
+const mapUpdateToCardData = (item: any): UpdateCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
+  let productInfoType = ProductInfoType.PRODUCT;
+  if (item.contextType === 'product_group') productInfoType = ProductInfoType.PRODUCT_GROUP;
+  else if (item.contextType === 'sub_category') productInfoType = ProductInfoType.SUB_CATEGORY;
+
+  const productFromContext = item.contextData?.product ?? item.contextData;
+  const rp = item.relatedPost;
+
+  const productForCard = (p: any) => ({
+    id: p?.id ?? '',
+    name: p?.name ?? '',
+    subName: p?.subName ?? '',
+    image: toImageSource(p?.image) ?? defaultPostImage,
+    isOwned: p?.isOwned ?? false,
+  });
+
+  if (!rp) {
+    return {
+      id: item.id,
+      user: { id: item.user?.id ?? '', name: item.user?.name ?? '', title: item.user?.title ?? '', avatar: avatarSource },
+      stats: item.stats ?? { likes: 0, comments: 0, shares: 0, bookmarks: 0 },
+      createdAt: item.createdAt ?? '',
+      contextType: productInfoType,
+      product: productFromContext ? productForCard(productFromContext) : { id: '', name: '', subName: '', image: defaultPostImage, isOwned: false },
+      content: typeof item.content === 'string' ? item.content : '',
+      images: Array.isArray(item.images) ? item.images.map((img: any) => toImageSource(img)).filter(Boolean) : [],
+      relatedPost: undefined,
+    };
+  }
+
+  const experienceContent = rp.experienceContent ?? (Array.isArray(rp.content) ? rp.content : []);
+  const relatedPostContent = experienceContent.map((block: any) => {
+    const ratingVal = typeof block?.rating === 'number' ? Math.min(5, Math.max(0, block.rating)) : 0;
+    const ratingArray: number[] = Array(5).fill(0);
+    for (let i = 0; i < ratingVal; i++) ratingArray[i] = 1;
+    return {
+      tag: {
+        icon: (block?.title?.toLowerCase?.().includes('product') || block?.title?.toLowerCase?.().includes('usage')) ? 'package' : 'tag',
+        title: block?.title ?? '',
+      },
+      text: block?.content ?? '',
+      rating: ratingArray,
+    };
+  });
+
+  const mappedImages = Array.isArray(item.images) ? item.images.map((img: any) => toImageSource(img)).filter((x: any): x is NonNullable<typeof x> => !!x) : [];
+  const relatedPostImages = Array.isArray(rp.images) ? rp.images.map((img: any) => toImageSource(img)).filter((x: any): x is NonNullable<typeof x> => !!x) : [];
+
+  return {
+    id: item.id,
+    user: { id: item.user?.id ?? '', name: item.user?.name ?? '', title: item.user?.title ?? '', avatar: avatarSource },
+    stats: item.stats ?? { likes: 0, comments: 0, shares: 0, bookmarks: 0 },
+    createdAt: item.createdAt ?? '',
+    contextType: productInfoType,
+    product: productForCard(rp.product ?? productFromContext),
+    content: typeof item.content === 'string' ? item.content : '',
+    images: mappedImages,
+    relatedPost: {
+      id: rp.id ?? item.id,
+      product: productForCard(rp.product),
+      content: relatedPostContent,
+      tags: Array.isArray(rp.tags) ? rp.tags : [],
+      images: relatedPostImages,
+    },
+  };
+};
+
 // Mapped post type
 type MappedPost = 
   | { type: 'post'; id: string; data: PostCardData }
+  | { type: 'update'; id: string; data: UpdateCardData }
   | { type: 'experience'; id: string; data: ExperiencePostCardData }
   | { type: 'benchmark'; id: string; data: BenchmarkCardData }
   | { type: 'tips'; id: string; data: TipsCardData }
@@ -313,7 +391,39 @@ interface TabContentProps {
   targetUserId: string;
   isDark: boolean;
   onQueryRef?: (tabKey: TabKey, query: any) => void;
+  profileBadges?: Badge[];
+  onBadgePress?: (badge: Badge) => void;
+  hasPrimePass?: boolean;
 }
+
+// NFT ribbon: Prime Pass kullanıcıları badge'i NFT olarak satabilir; sol üstte gösterilir
+const NFTBadgeRibbon: React.FC = () => (
+  <View
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: 36,
+      height: 36,
+      backgroundColor: '#D0F205',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transform: [{ rotate: '-45deg' }],
+      zIndex: 1,
+    }}
+  >
+    <RNText
+      style={{
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#111111',
+        transform: [{ rotate: '45deg' }],
+      }}
+    >
+      NFT
+    </RNText>
+  </View>
+);
 
 // TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
 interface TabsBarProps {
@@ -396,8 +506,21 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
   );
 };
 
+// Badges tab filtreleri - Figma: All Badges, Event Badges, Collections
+const BADGE_FILTERS = ['All Badges', 'Event Badges', 'Collections'] as const;
+type BadgeFilterKey = (typeof BADGE_FILTERS)[number];
+
 // Tab Content Component - Sadece içeriği render eder (FlatList yok)
-const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef }) => {
+const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef, profileBadges = [], onBadgePress, hasPrimePass = false }) => {
+  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
+  const filteredBadges = useMemo(() => {
+    if (tabKey !== 'badge') return [];
+    if (badgeFilter === 'All Badges') return profileBadges;
+    if (badgeFilter === 'Event Badges') return profileBadges.filter((b) => b.type === 'event');
+    if (badgeFilter === 'Collections') return profileBadges.filter((b) => b.type === 'collection');
+    return profileBadges;
+  }, [tabKey, profileBadges, badgeFilter]);
+
   // API hooks for each tab - sadece aktif tab'ın query'sini enable et
   const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
   const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
@@ -426,7 +549,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
   
   // Flatten and map posts based on active tab
   const mappedPosts = useMemo(() => {
-    if (tabKey === 'ladders') return [];
+    if (tabKey === 'badge' || tabKey === 'collections') return [];
     
     const queryData = activeTabQuery.data as any;
     if (!queryData?.pages) return [];
@@ -443,6 +566,10 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
       let mappedItem: MappedPost | null = null;
       
       switch (item.type) {
+        case CardType.UPDATE:
+          const updateData = mapUpdateToCardData(item);
+          mappedItem = { type: 'update', id: item.id, data: updateData };
+          break;
         case CardType.EXPERIENCE:
           if (item?.contextData && Array.isArray(item?.content)) {
             const experienceData = mapExperienceToCardData(item as ProfileReview);
@@ -493,6 +620,8 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
   // Render post card
   const renderPostCard = useCallback((postData: MappedPost) => {
     switch (postData.type) {
+      case 'update':
+        return <UpdatePostCard data={postData.data} />;
       case 'experience':
         return <ExperiencePostCard data={postData.data} />;
       case 'benchmark':
@@ -507,17 +636,105 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
     }
   }, []);
   
-  // Render LadderTab
-  if (tabKey === 'ladders') {
+  // Render Badges tab: filtreler (All Badges, Event Badges, Collections) + grid (2 per row)
+  if (tabKey === 'badge') {
     return (
-      <Box>
-        <LadderTab 
-          onQueryRef={(query) => {
-            if (onQueryRef) {
-              onQueryRef(tabKey, query);
-            }
-          }}
-        />
+      <Box flex={1} px={16} pt={8}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+          <HStack space="sm" alignItems="center">
+            {BADGE_FILTERS.map((filter) => {
+              const isActive = badgeFilter === filter;
+              return (
+                <Pressable
+                  key={filter}
+                  onPress={() => setBadgeFilter(filter)}
+                  bg={isActive ? (isDark ? '#333' : '#E9E9E9') : (isDark ? '#1A1A1A' : '#FFF')}
+                  borderWidth={1}
+                  borderColor={isDark ? '#444' : '#E9E9E9'}
+                  borderRadius={8}
+                  px="$3"
+                  py="$2"
+                >
+                  <Text
+                    fontSize="$sm"
+                    fontWeight="$semibold"
+                    color={isActive ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666')}
+                  >
+                    {filter}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </HStack>
+        </ScrollView>
+        {filteredBadges.length === 0 ? (
+          <Box py={32} alignItems="center">
+            <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+              {badgeFilter === 'All Badges' ? 'No badges yet' : `No ${badgeFilter.toLowerCase()} yet`}
+            </Text>
+          </Box>
+        ) : (
+          <Box flexDirection="row" flexWrap="wrap" justifyContent="space-between">
+            {filteredBadges.map((badge) => {
+              const isCollectionCard = badgeFilter === 'Collections';
+              // Collection kısmında card: Figma 6498-33367 (borderRadius 16, aynı bg/border)
+              const cardBorderRadius = isCollectionCard ? 16 : 5;
+              return (
+                <Box key={badge.id} position="relative" width={114} height={130} mb={12}>
+                  {hasPrimePass && <NFTBadgeRibbon />}
+                  <Pressable
+                    onPress={() => onBadgePress?.(badge)}
+                    width={114}
+                    height={130}
+                    alignItems="center"
+                    justifyContent="center"
+                    bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                    borderWidth={1}
+                    borderColor={isDark ? '#333' : '#E9E9E9'}
+                    borderRadius={cardBorderRadius}
+                    p="$2"
+                    overflow="hidden"
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    bottom={0}
+                  >
+                    <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
+                    <Image
+                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                      alt={badge.title}
+                      style={{ width: 56, height: 56 }}
+                      resizeMode="contain"
+                    />
+                  </Box>
+                    <Text
+                      mt="$1"
+                      fontSize="$2xs"
+                      fontWeight="$semibold"
+                      color={isDark ? '$textDark50' : '$textLight900'}
+                      textAlign="center"
+                      numberOfLines={2}
+                    >
+                      {badge.title}
+                    </Text>
+                  </Pressable>
+                </Box>
+              );
+            })}
+          </Box>
+        )}
+      </Box>
+    );
+  }
+
+  // Render Collections tab (coming soon)
+  if (tabKey === 'collections') {
+    return (
+      <Box py={20} alignItems="center">
+        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+          Collections content coming soon.
+        </Text>
       </Box>
     );
   }
@@ -562,7 +779,9 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
 const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const { user } = useAppStore();
+  // PERFORMANCE FIX: Sadece user.id'yi select et - tüm user objesi yerine
+  const userId = useAppStore(state => state.user?.id);
+  const user = useAppStore(state => state.user);
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const rootNavigation = useNavigation<any>();
   const safeAreaTop = useSafeAreaValues('top');
@@ -598,34 +817,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const isProfileLoading = profileQueryResult.isLoading;
   const profileError = profileQueryResult.error;
   const refetchProfile = profileQueryResult.refetch;
+
+  // Payment dashboard: Prime Pass kontrolü (badge'leri NFT olarak satabilmek için)
+  const { data: paymentDashboard } = usePaymentDashboard();
   
-  // CRITICAL FIX: Trust ve Truster sayılarını liste uzunluklarından al
-  // DrawerContent ve Trust_TrusterListScreen ile aynı veriyi kullan (liste uzunluğu = gerçek sayı)
-  const { data: trustListData, isLoading: isTrustListLoading, error: trustListError } = useTrustList(targetUserId || '', undefined);
-  const { data: trusterListData, isLoading: isTrusterListLoading, error: trusterListError } = useTrusterList(targetUserId || '', undefined, undefined);
-  
-  // DEBUG: Truster list verilerini logla
-  useEffect(() => {
-    if (__DEV__ && targetUserId) {
-      console.log('[ProfileScreen] Truster List Debug:', {
-        targetUserId,
-        trusterListData,
-        trusterListLength: trusterListData?.length ?? 0,
-        isTrusterListLoading,
-        trusterListError: trusterListError?.message,
-        userProfileStats: userProfile?.stats,
-      });
-    }
-  }, [targetUserId, trusterListData, isTrusterListLoading, trusterListError, userProfile?.stats]);
+  // PERFORMANCE FIX: Trust/Truster sayıları userProfile.stats'tan alınır
+  // Liste verilerine burada ihtiyaç yok - sadece Trust_TrusterListScreen'de fetch edilir
+  // Bu sayede ProfileScreen'de gereksiz API istekleri önlenir
   
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
   
   // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
   const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
-  
-  // Badge modal state
-  const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
   
   // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
   // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
@@ -764,7 +968,18 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === targetUserId;
-  
+
+  // Prime Pass: aktif abonelik ve plan adında "prime" varsa badge'ler NFT olarak satılabilir
+  const hasPrimePass = useMemo(
+    () =>
+      Boolean(
+        isOwnProfile &&
+          paymentDashboard?.active_subscription?.status === 'active' &&
+          paymentDashboard?.active_subscription?.plan_name?.toLowerCase().includes('prime')
+      ),
+    [isOwnProfile, paymentDashboard?.active_subscription]
+  );
+
   // Context menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -1202,32 +1417,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [targetUserId, user?.id, userProfile, muteUser, unmuteUser, toast, isMuting, isUnmuting, queryClient]);
 
-  // Map Badge to SeeAllReward format for BadgeBottomSheet
-  const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
-    const imageSource = badge.image ? toImageSource(badge.image) : require('@/assets/defaultImages/default-badge.png');
-    
-    return {
-      id: badge.id,
-      title: badge.title,
-      image: imageSource,
-      description: `You earned the "${badge.title}" badge!`,
-      category: 'achievement',
-      isUnlocked: true, // Profile'da gösterilen badge'ler zaten kazanılmış
-      completed: 1,
-      task: 1,
-    };
-  }, []);
-
-  // Handle badge press - open modal
-  const handleBadgePress = useCallback((badge: Badge) => {
-    const badgeData = mapBadgeToSeeAllReward(badge);
-    setSelectedBadge(badgeData);
-  }, [mapBadgeToSeeAllReward]);
-
-  // Handle modal close
-  const handleCloseModal = useCallback(() => {
-    setSelectedBadge(null);
-  }, []);
+  // Handle badge press - open bottom sheet (Figma 6594-24141)
+  const handleBadgePress = useCallback(
+    (badge: Badge) => {
+      openBottomSheet(
+        <ProfileBadgeBottomSheet badge={badge} onClose={closeBottomSheet} />,
+        {
+          enableDynamicSizing: true,
+          enablePanDownToClose: true,
+          enableHandle: true,
+          backdropPressBehavior: 'close',
+          animateOnMount: true,
+        }
+      );
+    },
+    [openBottomSheet, closeBottomSheet]
+  );
 
   
   // ListHeaderComponent: Banner + Profile Info
@@ -1238,17 +1443,18 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     // TypeScript için: userProfile bu noktada kesinlikle tanımlı
     const profile = userProfile;
     
-    // CRITICAL FIX: Avatar source'u DrawerContent ile aynı mantıkla hesapla
-    // Önce userProfile'dan avatar al (API'den gelen güncel veri)
-    // Yoksa store'dan avatar al (persist edilmiş veri)
+    // Avatar: Her zaman görüntülenen profilin (userProfile) avatar'ı kullanılır.
+    // Başkasının profilinde store (giriş yapan kullanıcı) avatar'ı asla kullanılmaz.
+    const profileAvatarRaw = typeof userProfile?.avatar === 'string' ? userProfile.avatar.trim() : userProfile?.avatar;
     let avatarSource: any = null;
-    if (userProfile?.avatar) {
-      const profileAvatar = toImageSource(userProfile.avatar);
+    if (profileAvatarRaw) {
+      const profileAvatar = toImageSource(profileAvatarRaw);
       if (profileAvatar) {
         avatarSource = profileAvatar;
       }
-    } else if (user?.avatar) {
-      // Yoksa store'dan avatar al (persist edilmiş veri)
+    }
+    if (!avatarSource && isOwnProfile && user?.avatar) {
+      // Sadece kendi profilimizde: API'de avatar yoksa store'dan al
       const storeAvatar = toImageSource(user.avatar);
       if (storeAvatar) {
         avatarSource = storeAvatar;
@@ -1263,12 +1469,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           overflow="hidden" 
           position="relative"
         >
-          <Image
-            source={toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png')}
-            alt="Profile Banner"
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
-          />
+          {(() => {
+            const bannerSource = toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png');
+            const bannerUrlDisplay = profile.bannerUrl ?? '(boş)';
+            const resolvedDisplay = typeof bannerSource === 'object' && bannerSource && 'uri' in bannerSource && bannerSource.uri
+              ? bannerSource.uri
+              : '[varsayılan asset]';
+            console.log('[ProfileScreen] 🖼️ Ekranda kullanılan banner – profile.bannerUrl:', bannerUrlDisplay, '| resolved URL:', resolvedDisplay);
+            return (
+              <Image
+                source={bannerSource}
+                alt="Profile Banner"
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+            );
+          })()}
           {/* Overlay */}
           <Box
             position="absolute"
@@ -1581,7 +1797,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {trustListData?.length ?? 0}
+                  {userProfile?.stats?.trust ?? 0}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1613,7 +1829,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {(trusterListData?.length ?? 0) > 999 ? `${Math.floor((trusterListData?.length ?? 0) / 1000)}K` : (trusterListData?.length ?? 0)}
+                  {(userProfile?.stats?.truster ?? 0) > 999 ? `${Math.floor((userProfile?.stats?.truster ?? 0) / 1000)}K` : (userProfile?.stats?.truster ?? 0)}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1713,64 +1929,73 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               {profile.badges && profile.badges.length > 0 ? (
                 <HStack space="md" justifyContent="flex-start" alignItems="center" flex={1}>
                   {profile.badges.slice(0, 4).map((badge) => (
-                    <Pressable
-                      key={badge.id}
-                      onPress={() => handleBadgePress(badge)}
-                    >
-                      <VStack space="xs" alignItems="center">
-                        <Box
-                          w={70}
-                          h={70}
-                          borderRadius={5}
-                          borderWidth={0}
-                          overflow="hidden"
-                          justifyContent="center"
-                          alignItems="center"
-                        >
-                          <Image
-                            source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                            alt={badge.title}
-                            w={60}
-                            h={60}
-                            resizeMode="contain"
-                          />
-                        </Box>
-                        <Text
-                          color={isDark ? '$textDark400' : '#000000'}
-                          fontSize="$2xs"
-                          fontWeight="$bold"
-                          textAlign="center"
-                        >
-                          {badge.title}
-                        </Text>
-                      </VStack>
-                    </Pressable>
+                    <Box key={badge.id} position="relative">
+                      {hasPrimePass && <NFTBadgeRibbon />}
+                      <Pressable onPress={() => handleBadgePress(badge)}>
+                        <VStack space="xs" alignItems="center">
+                          <Box
+                            w={70}
+                            h={70}
+                            borderRadius={5}
+                            borderWidth={0}
+                            overflow="hidden"
+                            justifyContent="center"
+                            alignItems="center"
+                          >
+                            <Image
+                              source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                              alt={badge.title}
+                              w={60}
+                              h={60}
+                              resizeMode="contain"
+                            />
+                          </Box>
+                          <Text
+                            color={isDark ? '$textDark400' : '#000000'}
+                            fontSize="$2xs"
+                            fontWeight="$bold"
+                            textAlign="center"
+                          >
+                            {badge.title}
+                          </Text>
+                        </VStack>
+                      </Pressable>
+                    </Box>
                   ))}
                 </HStack>
               ) : (
-                <Box position="relative" flex={1} height={70}>
-                  {/* 1 tane dashed badge placeholder - solda */}
-                  <Box
-                    w={70}
-                    h={70}
-                    borderRadius={5}
-                    borderWidth={2}
-                    borderColor={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
-                    borderStyle="dashed"
-                    justifyContent="center"
-                    alignItems="center"
-                    bg={isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'}
-                  />
-                  {/* "Henüz badge yok" text - ortada (absolute position) */}
-                  <Box
-                    position="absolute"
-                    left={0}
-                    right={0}
-                    top={0}
-                    bottom={0}
-                    justifyContent="center"
-                    alignItems="center"
-                    pointerEvents="none"
+                /* Figma 6498-34134: Badge yoksa 4 dashed kare + "Edit Highlight Badges" */
+                <VStack space="md" alignItems="center" flex={1}>
+                  <HStack space="md" justifyContent="center" alignItems="center">
+                    {[0, 1, 2, 3].map((index) => (
+                      <Box
+                        key={index}
+                        w={70}
+                        h={70}
+                        borderRadius={5}
+                        borderWidth={2}
+                        borderColor={isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'}
+                        borderStyle="dashed"
+                        justifyContent="center"
+                        alignItems="center"
+                        bg={isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'}
+                      >
+                        <PlusIcon
+                          width={28}
+                          height={28}
+                          color={isDark ? '#999999' : '#737373'}
+                        />
+                      </Box>
+                    ))}
+                  </HStack>
+                  <Pressable
+                    onPress={() => {
+                      if (isOwnProfile) {
+                        navigation.navigate('EditHighlightBadges', { initialBadgeIds: [] });
+                      }
+                    }}
+                    disabled={!isOwnProfile}
+                    opacity={isOwnProfile ? 1 : 0.7}
                   >
                     <Text
                       color={isDark ? '$textDark400' : '$textLight600'}
@@ -1778,16 +2003,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       fontWeight="$regular"
                       textAlign="center"
                     >
-                      Henüz badge yok
+                      Edit Highlight Badges
                     </Text>
-                  </Box>
-                </Box>
+                  </Pressable>
+                </VStack>
               )}
               {profile.badges && profile.badges.length > 0 && (
                 <Pressable
                   onPress={() => {
-                    navigation.navigate('Collections');
+                    if (isOwnProfile) {
+                      navigation.navigate('EditHighlightBadges', {
+                        initialBadgeIds: profile.badges?.map((b) => b.id) ?? [],
+                      });
+                    }
                   }}
+                  disabled={!isOwnProfile}
+                  opacity={isOwnProfile ? 1 : 0.7}
                 >
                   <Text
                     color={isDark ? '$textDark400' : '$textLight600'}
@@ -1796,7 +2027,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     mt="$4"
                     fontWeight="$regular"
                   >
-                    See More Collections
+                    {isOwnProfile ? 'Edit Highlight Badges' : 'Highlight Badges'}
                   </Text>
                 </Pressable>
               )}
@@ -1805,8 +2036,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus]);
-  
+  }, [userProfile, isDark, isOwnProfile, hasPrimePass, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus]);
+
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
   const profileHeader = useMemo(() => {
@@ -1887,6 +2118,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           targetUserId={targetUserId || ''}
           isDark={isDark}
           onQueryRef={handleTabQueryRef}
+          profileBadges={userProfile?.badges ?? []}
+          onBadgePress={handleBadgePress}
+          hasPrimePass={hasPrimePass}
         />
       </ScrollView>
 
@@ -2050,31 +2284,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         </RNModal>
       )}
 
-      {/* Badge Detail Modal */}
-      <Modal
-        isOpen={!!selectedBadge}
-        onClose={handleCloseModal}
-        size="lg"
-        closeOnOverlayClick={true}
-      >
-        <ModalBackdrop onPress={handleCloseModal} />
-        {selectedBadge ? (
-          <ModalContent
-            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
-            borderRadius={20}
-            marginHorizontal={24}
-            marginBottom={safeAreaBottom + 24}
-            maxHeight="80%"
-          >
-            <BadgeBottomSheet
-              data={selectedBadge}
-              onClose={handleCloseModal}
-              hideFollowLadder={isOwnProfile}
-              eventId="" // Profile badge'leri event'e bağlı değil
-            />
-          </ModalContent>
-        ) : null}
-      </Modal>
     </Box>
   );
 };

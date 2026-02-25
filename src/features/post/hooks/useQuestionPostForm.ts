@@ -7,12 +7,11 @@ export const useQuestionPostForm = (initialValues?: Partial<QuestionPostFormData
     resolver: zodResolver(questionPostSchema),
     defaultValues: {
       questionText: '',
-      selectedBoost: 'no-boost',
+      boostEnabled: false, // Boost OFF by default
       selectedImages: [],
       ...initialValues,
     },
     mode: 'onChange',
   });
 };
-
 

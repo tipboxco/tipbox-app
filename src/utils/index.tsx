@@ -128,7 +128,26 @@ export const toImageSource = (
 
   // String değilse (require() veya zaten ImageSourcePropType) direkt döndür
   return value;
-}
+};
+
+/**
+ * İki görsel kaynağının aynı olup olmadığını kontrol eder.
+ * Experience post carousel'de ürün görselinin kullanıcı görselleri arasında gösterilmesini engellemek için kullanılır.
+ */
+export const isSameImageSource = (
+  a: ImageSourcePropType | string | null | undefined,
+  b: ImageSourcePropType | string | null | undefined,
+): boolean => {
+  if (a == null || b == null) return false;
+  if (a === b) return true;
+  const aObj = typeof a === 'object' && a !== null ? a as { uri?: string } : null;
+  const bObj = typeof b === 'object' && b !== null ? b as { uri?: string } : null;
+  const aUri = aObj?.uri ?? (typeof a === 'string' ? a : undefined);
+  const bUri = bObj?.uri ?? (typeof b === 'string' ? b : undefined);
+  if (aUri && bUri) return aUri === bUri;
+  return false;
+};
+
 /**
  * Verilen ISO timestamp'in şu anki zamana göre ne kadar önce olduğunu
  * kısaltılmış formatta döndürür.
@@ -226,9 +245,25 @@ export const cleanNewlines = (text: string | null | undefined, replacement: stri
 export type CountdownFormat = string;
 
 /**
+ * Boost bitiş tarihine göre kalan süreyi okunabilir metne çevirir (badge için).
+ * @param boostedUntil - ISO string bitiş tarihi
+ * @returns "X gün Y saat kaldı", "Y saat kaldı" veya "Süresi doldu"
+ */
+export const getBoostRemainingTime = (boostedUntil: string): string => {
+  const now = new Date();
+  const end = new Date(boostedUntil);
+  const diffMs = end.getTime() - now.getTime();
+  if (diffMs <= 0) return 'Süresi doldu';
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  if (days > 0) return `${days} gün ${hours} saat kaldı`;
+  return `${hours} saat kaldı`;
+};
+
+/**
  * End date'e göre kalan süreyi hesaplar ve formatlar
  * Performans için: Her saniye güncellenir ama component re-render olmaz
- * 
+ *
  * @param endDate - ISO string formatında bitiş tarihi
  * @returns Formatlanmış countdown string (DDD:HH:MM:SS) veya null (süre dolmuşsa)
  */

@@ -32,103 +32,26 @@ interface GetMessagesResponse {
 
 export const getMessages = async (params?: GetMessagesParams): Promise<InboxMessage[]> => {
   try {
-    console.log('[getMessages] 📡 API çağrısı başlatılıyor:', {
-      endpoint: '/inbox',
-      params,
-    });
-    
     const response = await apiService.getClient().get<GetMessagesResponse>('/inbox', { params });
     
-    // 🔍 DETAYLI DEBUG: Response'un tamamını logla
-    console.log('[getMessages] ✅ API çağrısı başarılı:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      responseDataType: typeof response.data,
-      responseDataKeys: response.data ? Object.keys(response.data) : null,
-      responseDataFull: JSON.stringify(response.data, null, 2),
-    });
-    
-    // Response formatını kontrol et
     if (!response.data) {
-      console.error('[getMessages] ❌ Response data is null or undefined!');
+      console.error('[getMessages] Response data is null or undefined');
       return [];
     }
     
-    // Backend'den gelen response formatı: { items: [...], pagination: {...} }
-    // Frontend direkt array bekliyor, bu yüzden items'ı döndürüyoruz
     const items = response.data?.items || [];
-    
-    console.log('[getMessages] 📋 Response analizi:', {
-      hasItems: !!response.data.items,
-      itemsIsArray: Array.isArray(response.data.items),
-      itemsLength: items.length,
-      pagination: response.data.pagination,
-      firstItem: items[0] ? {
-        id: items[0].id,
-        recipientUserId: items[0].recipientUserId,
-        senderName: items[0].senderName,
-        senderTitle: items[0].senderTitle,
-        lastMessage: items[0].lastMessage,
-        isUnread: items[0].isUnread,
-        unreadCount: items[0].unreadCount,
-        timestamp: items[0].timestamp,
-        fullItem: items[0],
-      } : null,
-      allItems: items.map((item, index) => ({
-        index,
-        id: item.id,
-        recipientUserId: item.recipientUserId,
-        senderName: item.senderName,
-        lastMessage: item.lastMessage,
-        lastMessageType: typeof item.lastMessage,
-        lastMessageIsNull: item.lastMessage === null,
-        lastMessageIsEmpty: item.lastMessage === '',
-        isUnread: item.isUnread,
-        unreadCount: item.unreadCount,
-      })),
-    });
-    
-    if (items.length === 0) {
-      console.warn('[getMessages] ⚠️ Backend\'den boş array geldi! Veritabanında mesaj olmayabilir veya filtreleme sorunu olabilir.');
-    }
-    
-    // 🔍 BACKEND SORUNU KONTROLÜ: lastMessage null ise ama thread'de mesaj varsa backend sorunu
-    const itemsWithNullLastMessage = items.filter((item) => {
-      const hasMessages = item.isUnread || (item.unreadCount && item.unreadCount > 0);
-      const hasNullLastMessage = !item.lastMessage || item.lastMessage.trim() === '';
-      return hasMessages && hasNullLastMessage;
-    });
-    
-    if (itemsWithNullLastMessage.length > 0) {
-      console.error('[getMessages] ❌ BACKEND SORUNU: lastMessage null ama thread\'de mesaj var!', {
-        count: itemsWithNullLastMessage.length,
-        items: itemsWithNullLastMessage.map((item) => ({
-          threadId: item.id,
-          senderName: item.senderName,
-          isUnread: item.isUnread,
-          unreadCount: item.unreadCount,
-          lastMessage: item.lastMessage,
-          timestamp: item.timestamp,
-        })),
-      });
-      console.error('[getMessages] 💡 Backend\'de lastMessage hesaplaması yapılmıyor olabilir. Thread\'de mesaj varsa lastMessage mutlaka olmalı!');
-    }
-    
     return items;
   } catch (error: any) {
-    console.error('[getMessages] ❌ API çağrısı başarısız:', {
-      status: error?.response?.status,
-      statusText: error?.response?.statusText,
-      message: error?.message,
-      data: error?.response?.data,
+    console.error('[getMessages] API Error:', {
+      url: '/inbox',
+      status: error.response?.status,
+      data: error.response?.data,
       params,
     });
     
     // 404 hatası: Endpoint backend'de henüz implement edilmemiş olabilir
     if (error?.response?.status === 404) {
       console.error('[getMessages] 404 - Endpoint not found. Backend may not have implemented /inbox endpoint yet.');
-      // Boş array döndür (UI'da hata göstermek yerine boş liste göster)
       return [];
     }
     throw error;
@@ -210,36 +133,33 @@ export interface ThreadParticipant {
  * Backend Response Format - Thread mesajları için (Single Item)
  * ✅ OPTIMIZE: sender objesi yerine sadece senderId gönderilir
  * Sender bilgileri participants'tan alınır
+ *
+ * Shared post örneği (backend): data.sharedPost içinde imageUrl, contextType ("product"), contextData ({ id, name, image }) gelebilir.
  */
 export interface ThreadMessageResponseItem {
   id: string;
-  type: 'message' | 'image' | 'support-request' | 'send-tips'; // ✅ 'image' eklendi
+  /** Backend shared_post (snake_case) döner; frontend shared-post olarak normalize eder */
+  type: 'message' | 'image' | 'support-request' | 'send-tips' | 'shared-post' | 'shared_post';
   data: {
     id: string;
-    senderId: string; // ✅ OPTIMIZE: Sadece senderId gönderilir (sender objesi yerine)
-    // ✅ OPTIONAL: Backward compatibility için sender objesi hala gönderilebilir
-    // Ama yeni implementasyonlarda sadece senderId kullanılmalı
+    senderId: string;
     sender?: {
       id: string;
       senderName: string;
       senderTitle: string;
       senderAvatar: string | null;
     };
-    // For message type
     lastMessage?: string;
+    /** Kartın üstündeki metin (shared_post için) */
     message?: string;
     timestamp: string;
+    sentAt?: string; // Backward compatibility / optimize format
     isUnread?: boolean;
-    // ✅ For image type - Görsel mesajlar için
-    mediaUrl?: string;        // Görsel URL'i (CDN'den)
-    thumbnailUrl?: string | null; // Thumbnail URL'i (opsiyonel)
-    caption?: string;         // Görsel altı yazı (opsiyonel)
-    imageUrl?: string;        // Backward compatibility için (mediaUrl yerine)
-    dimensions?: {            // ✅ Görsel boyutları (opsiyonel)
-      width: number;
-      height: number;
-    };
-    // For support-request type
+    mediaUrl?: string;
+    thumbnailUrl?: string | null;
+    caption?: string;
+    imageUrl?: string;
+    dimensions?: { width: number; height: number };
     type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
     amount?: number | string;
     status?: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported';
@@ -247,6 +167,10 @@ export interface ThreadMessageResponseItem {
     requestId?: string;
     fromUserId?: string;
     toUserId?: string;
+    /** shared-post mesajı – DM thread içinde paylaşılan post kartı (postId, postType, authorName, authorTitle, authorAvatar) */
+    sharedPost?: SharedPostPayload;
+    /** Backend bazen sadece sharedPostId dönebilir; frontend bunu shared-post kartına çevirir */
+    sharedPostId?: string;
   };
 }
 
@@ -258,7 +182,7 @@ export interface ThreadMessageResponseItem {
 // Optimize mesaj yapısı (backend'den gelen)
 export interface OptimizedMessage {
   id: string;
-  type: 'message' | 'image' | 'support-request' | 'send-tips';
+  type: 'message' | 'image' | 'support-request' | 'send-tips' | 'shared-post';
   sentAt: string; // ISO 8601
   isRead: boolean;
   readAt?: string; // ISO 8601 (opsiyonel)
@@ -268,10 +192,7 @@ export interface OptimizedMessage {
     thumbnailUrl?: string | null;
     caption?: string;
     fileSize?: number;
-    dimensions?: {
-      width: number;
-      height: number;
-    };
+    dimensions?: { width: number; height: number };
     amount?: number;
     currency?: string;
     supportType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
@@ -279,6 +200,8 @@ export interface OptimizedMessage {
     requestId?: string;
     fromUserId?: string;
     toUserId?: string;
+    /** shared-post için – DM thread içinde paylaşılan post kartı */
+    sharedPost?: SharedPostPayload;
   };
   threadId?: string | null;
 }
@@ -328,11 +251,32 @@ export interface OptimizedChatResponse {
 }
 
 /**
- * Backend Response Format - Thread mesajları için (Paginated Response)
- * ✅ OPTIMIZE: Thread başında participants bilgisi gönderilir
- * Mesajlarda sadece senderId gönderilir, sender bilgileri participants'tan alınır
- * 
- * ✅ YENİ: Optimize format desteği (backward compatibility için eski format da destekleniyor)
+ * Backend Response Format - GET /inbox/:threadId (Thread mesajları)
+ * Thread başında participants (userOne, userTwo) gönderilir; mesajlarda sadece senderId kullanılır.
+ *
+ * Örnek response:
+ * {
+ *   "participants": {
+ *     "userOne": { "id": "...", "name": "Tuna", "title": "Mobile Guru", "avatar": "..." },
+ *     "userTwo": { "id": "...", "name": "Ömer Faruk", "title": "Tech Explorer", "avatar": "..." }
+ *   },
+ *   "items": [
+ *     {
+ *       "id": "e53e565c-...",
+ *       "type": "shared_post",
+ *       "data": {
+ *         "id": "e53e565c-...",
+ *         "senderId": "11111111-...",
+ *         "message": "Product",
+ *         "sharedPostId": "00ML8H9CY2...",
+ *         "sharedPost": { "postId": "...", "postType": "QUESTION", "authorName": "Furkan", "authorTitle": "...", "authorAvatar": "..." },
+ *         "timestamp": "2026-02-11T12:03:58.325Z",
+ *         "isUnread": true
+ *       }
+ *     }
+ *   ],
+ *   "pagination": { "hasMore": boolean, "limit": number, ... }
+ * }
  */
 export interface GetThreadMessagesResponse {
   // ✅ YENİ: Optimize format (backend optimize format gönderirse)
@@ -379,7 +323,7 @@ export interface ThreadMessage {
   senderId: string;
   recipientId?: string;
   message: string;
-  messageType: 'message' | 'image' | 'support-request' | 'send-tips'; // ✅ 'image' eklendi
+  messageType: 'message' | 'image' | 'support-request' | 'send-tips' | 'shared-post'; // ✅ 'shared-post' eklendi
   context?: 'DM' | 'SUPPORT'; // Sadece mesajlar için geçerli (type: "message" veya "image")
   isRead: boolean;
   sentAt: string; // ISO 8601
@@ -403,6 +347,7 @@ export interface ThreadMessage {
   requestId?: string;
   fromUserId?: string; // Support request için: Request'i oluşturan kullanıcı ID'si (required)
   toUserId?: string; // Support request için: Request'in gönderildiği kullanıcı ID'si (required)
+  sharedPost?: SharedPostPayload;
 }
 
 /**
@@ -478,6 +423,10 @@ export const convertOptimizedToFlat = (
           threadMessage.toUserId = optimizedMsg.content.toUserId;
         }
         
+        if (optimizedMsg.type === 'shared-post' && (optimizedMsg as any).content?.sharedPost) {
+          threadMessage.sharedPost = (optimizedMsg as any).content.sharedPost;
+        }
+        
         allMessages.push(threadMessage);
       });
     });
@@ -504,122 +453,55 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     const queryString = queryParams.toString();
     const endpoint = `/inbox/${threadId}${queryString ? `?${queryString}` : ''}`;
     
-    console.log('[getThreadMessages] 📡 API çağrısı başlatılıyor:', {
-      endpoint,
-      fullUrl: `${apiService.getClient().defaults.baseURL}${endpoint}`,
-      threadId,
-      params,
-      baseURL: apiService.getClient().defaults.baseURL,
-    });
-    
     const response = await apiService.getClient().get<GetThreadMessagesResponse>(endpoint);
-    
-    console.log('[getThreadMessages] ✅ API çağrısı başarılı:', {
-      status: response.status,
-      statusText: response.statusText,
-      hasDateGroups: !!response.data?.dateGroups,
-      dateGroupsLength: response.data?.dateGroups?.length || 0,
-      itemsLength: response.data?.items?.length || 0,
-      itemsIsArray: Array.isArray(response.data?.items),
-      itemsType: typeof response.data?.items,
-      itemsValue: response.data?.items,
-      pagination: response.data?.pagination,
-      hasParticipants: !!response.data?.participants,
-      participants: response.data?.participants,
-      responseDataKeys: response.data ? Object.keys(response.data) : [],
-      responseDataType: typeof response.data,
-      responseDataIsArray: Array.isArray(response.data),
-      responseDataFull: JSON.stringify(response.data, null, 2).substring(0, 500), // İlk 500 karakter
-    });
     
     // ✅ YENİ: Optimize format kontrolü (dateGroups varsa optimize format kullan)
     if (response.data?.dateGroups && response.data.dateGroups.length > 0) {
-      console.log('[getThreadMessages] ✅ Optimize format kullanılıyor (dateGroups)');
-      
-      // Participants bilgisini al (yeni format)
       const participants = response.data.participants as { [userId: string]: { id: string; name: string; title?: string; avatar: string | null } } | undefined;
       
       if (!participants) {
-        console.warn('[getThreadMessages] ⚠️ Participants bilgisi yok, optimize format kullanılamıyor');
-        // Fallback to old format
+        console.warn('[getThreadMessages] Participants bilgisi yok, optimize format kullanılamıyor');
       } else {
-        // Optimize format'tan flat array'e çevir
         const allMessages = convertOptimizedToFlat(
           response.data.dateGroups,
           participants,
           threadId
         );
         
-        console.log('[getThreadMessages] ✅ Optimize format\'tan normalize edildi:', allMessages.length, 'mesaj');
         return allMessages;
       }
     }
     
-    // ✅ Eski format (backward compatibility)
-    // Eski format: Backend'den { items: [...], pagination: {...} } formatında geliyor
-    // Yeni optimize format: Backend'den { dateGroups: [...], participants: {...}, pagination: {...} } formatında geliyor
-    // Şu anda backend henüz optimize format göndermiyor, bu yüzden eski format kullanılıyor
-    console.log('[getThreadMessages] 📦 Eski format kullanılıyor (items) - Backend henüz optimize format (dateGroups) göndermiyor');
-    
-    // CRITICAL DEBUG: Response data yapısını kontrol et
-    console.log('[getThreadMessages] 🔍 Response data analizi:', {
-      hasResponseData: !!response.data,
-      responseDataKeys: response.data ? Object.keys(response.data) : [],
-      hasItems: !!response.data?.items,
-      itemsType: typeof response.data?.items,
-      itemsIsArray: Array.isArray(response.data?.items),
-      itemsLength: response.data?.items?.length,
-      itemsFirstItem: response.data?.items?.[0],
-    });
-    
     const items = response.data?.items || [];
     
     if (items.length === 0) {
-      console.warn('[getThreadMessages] ⚠️ Backend\'den boş array geldi! Thread\'de mesaj olmayabilir.');
-      console.warn('[getThreadMessages] ⚠️ Response data:', {
-        hasData: !!response.data,
-        dataKeys: response.data ? Object.keys(response.data) : [],
-        dataType: typeof response.data,
-        fullData: response.data,
-      });
       return [];
     }
     
-    console.log('[getThreadMessages] ✅ Items bulundu:', {
-      itemsCount: items.length,
-      firstItem: items[0],
-      itemTypes: items.map(item => item.type),
-    });
-    
-    // ✅ OPTIMIZE: Participants bilgisini al (thread başında gönderilir)
     const participants = response.data?.participants;
-    console.log('[getThreadMessages] 👥 Participants bilgisi:', participants);
     
     // Helper: senderId'ye göre sender bilgilerini participants'tan bul
     const getSenderInfo = (senderId: string) => {
-      // Önce backward compatibility için data.sender objesi var mı kontrol et
-      // (Eski format desteği için)
-      
-      // Participants'tan bul
-      if (participants) {
-        if (participants.userOne.id === senderId) {
+      if (participants && 'userOne' in participants && 'userTwo' in participants) {
+        const one = participants.userOne;
+        const two = participants.userTwo;
+        if (one?.id === senderId) {
           return {
-            id: participants.userOne.id,
-            senderName: participants.userOne.name,
-            senderTitle: participants.userOne.title || '',
-            senderAvatar: participants.userOne.avatar,
+            id: one.id,
+            senderName: one.name,
+            senderTitle: one.title || '',
+            senderAvatar: one.avatar,
           };
-        } else if (participants.userTwo.id === senderId) {
+        }
+        if (two?.id === senderId) {
           return {
-            id: participants.userTwo.id,
-            senderName: participants.userTwo.name,
-            senderTitle: participants.userTwo.title || '',
-            senderAvatar: participants.userTwo.avatar,
+            id: two.id,
+            senderName: two.name,
+            senderTitle: two.title || '',
+            senderAvatar: two.avatar,
           };
         }
       }
-      
-      // Participants'ta bulunamadıysa null döndür (fallback için)
       return null;
     };
     
@@ -627,18 +509,6 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     const allMessagesToNormalize: Array<{ item: ThreadMessageResponseItem; isGrouped: boolean; parentId?: string }> = [];
     
     items.forEach((item) => {
-      // ✅ DEBUG: Her item'ı logla
-      if (item.type === 'image') {
-        console.log('[getThreadMessages] 🖼️ Image item found in items:', {
-          id: item.id,
-          type: item.type,
-          mediaUrl: item.data.mediaUrl,
-          thumbnailUrl: item.data.thumbnailUrl,
-          caption: item.data.caption,
-        });
-      }
-      
-      // Ana mesajı ekle
       allMessagesToNormalize.push({ 
         item,
         isGrouped: false 
@@ -646,36 +516,26 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     });
     
     const normalizedMessages: ThreadMessage[] = allMessagesToNormalize.map(({ item, isGrouped, parentId }) => {
-      const { id, type, data } = item;
-      // CRITICAL FIX: timestamp field'ını kontrol et - backend'den timestamp veya sentAt gelebilir
-      const timestamp = data.timestamp || data.sentAt || (item as any).timestamp || (item as any).sentAt;
+      const { id, type: rawType, data } = item;
+      // Backend shared_post (snake_case) dönebilir; frontend shared-post kullanır
+      const type = rawType === 'shared_post' ? 'shared-post' : rawType;
+      const timestamp =
+        data.timestamp ||
+        (data as { sentAt?: string }).sentAt ||
+        (item as any).timestamp ||
+        (item as any).sentAt;
       
       if (!timestamp) {
-        console.warn('[getThreadMessages] ⚠️ Timestamp bulunamadı, mesaj atlanıyor:', { id, type, data });
-        return null; // Timestamp yoksa mesajı atla
+        console.warn('[getThreadMessages] Timestamp bulunamadı, mesaj atlanıyor:', { id, type });
+        return null;
       }
       
-      // ✅ DEBUG: Image type kontrolü
-      if (type === 'image' || data.mediaUrl || data.imageUrl) {
-        console.log('[getThreadMessages] 🖼️ Processing image item:', {
-          id,
-          type,
-          mediaUrl: data.mediaUrl,
-          imageUrl: data.imageUrl,
-          thumbnailUrl: data.thumbnailUrl,
-          isGrouped,
-          parentId,
-        });
+      const senderId = (data.senderId || data.sender?.id) ?? 'unknown';
+      if (!data.senderId && !data.sender?.id) {
+        console.warn('[getThreadMessages] SenderId bulunamadı:', { itemId: id });
       }
-      
-      // ✅ OPTIMIZE: Sender bilgilerini participants'tan al (senderId'ye göre)
-      // Backward compatibility: Eğer data.sender varsa onu kullan (eski format)
-      const senderId = data.senderId || data.sender?.id;
-      if (!senderId) {
-        console.warn('[getThreadMessages] ⚠️ SenderId bulunamadı:', { itemId: id, data });
-      }
-      
-      // Sender bilgilerini al (önce backward compatibility, sonra participants)
+
+      // Sender bilgilerini al
       let senderInfo = data.sender ? {
         id: data.sender.id,
         senderName: data.sender.senderName,
@@ -683,9 +543,7 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
         senderAvatar: data.sender.senderAvatar,
       } : getSenderInfo(senderId);
       
-      // Eğer hala sender bilgisi yoksa, default değerler kullan
       if (!senderInfo) {
-        console.warn('[getThreadMessages] ⚠️ Sender bilgisi bulunamadı, default kullanılıyor:', { senderId, itemId: id });
         senderInfo = {
           id: senderId || 'unknown',
           senderName: 'Unknown',
@@ -777,6 +635,33 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
         }
       }
       
+      // Backend format: type: "shared_post", data: { message, sharedPostId, sharedPost: { postId, postType, authorName, imageUrl, contextType, contextData, products } }
+      if ((type === 'shared-post' || rawType === 'shared_post') && data.sharedPost) {
+        baseMessage.messageType = 'shared-post';
+        const sp = data.sharedPost as any;
+        const ctx = sp.contextData;
+        baseMessage.sharedPost = {
+          postId: sp.postId || sp.experiencePostId || data.sharedPost.postId,
+          postType: sp.postType ?? null,
+          authorName: sp.authorName ?? 'Unknown',
+          authorTitle: sp.authorTitle ?? null,
+          authorAvatar: sp.authorAvatar ?? null,
+          imageUrl: sp.imageUrl ?? sp.productImageUrl ?? (ctx?.image ?? null) ?? null,
+          contextType: sp.contextType ?? null,
+          contextData: sp.contextData ?? undefined,
+          products: sp.products ?? undefined,
+        };
+      } else if ((type === 'shared-post' || rawType === 'shared_post') && data.sharedPostId) {
+        baseMessage.messageType = 'shared-post';
+        baseMessage.sharedPost = {
+          postId: data.sharedPostId,
+          postType: null,
+          authorName: senderInfo.senderName ?? 'Unknown',
+          authorTitle: senderInfo.senderTitle ?? null,
+          authorAvatar: senderInfo.senderAvatar ?? null,
+        };
+      }
+
       // ✅ Grup mesajları ekle (5 dakika içinde aynı kullanıcıdan gelen text mesajlar - tek balonda gösterilecek)
       return baseMessage;
     }).filter((msg): msg is ThreadMessage => msg !== null); // null mesajları filtrele
@@ -834,54 +719,14 @@ export interface SendGiftRequest {
  */
 export const sendGift = async (data: SendGiftRequest): Promise<void> => {
   try {
-    console.log('[sendGift] 📤 Request Details:', {
-      url: '/inbox/tips',
-      method: 'POST',
-      data: {
-        senderUserId: data.senderUserId,
-        recipientUserId: data.recipientUserId,
-        message: data.message,
-        amount: data.amount,
-        timestamp: data.timestamp,
-      },
-      dataType: typeof data.amount,
-      amountIsNumber: typeof data.amount === 'number',
-      amountValue: data.amount,
-    });
-
     const response = await apiService.getClient().post('/inbox/tips', data);
-
-    console.log('[sendGift] ✅ Response Details:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      data: response.data,
-    });
-
     return;
   } catch (error: any) {
-    console.error('[sendGift] ❌ Error Details:', {
-      message: error.message,
-      response: {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-      },
-      request: {
-        url: error.config?.url,
-        method: error.config?.method,
-        data: error.config?.data,
-        headers: error.config?.headers,
-      },
-      requestData: data,
+    console.error('[sendGift] API Error:', {
+      url: '/inbox/tips',
+      status: error.response?.status,
+      data: error.response?.data,
     });
-
-    // Hata mesajını daha detaylı logla
-    if (error.response?.data) {
-      console.error('[sendGift] ❌ Backend Error Response:', JSON.stringify(error.response.data, null, 2));
-    }
-
     throw error;
   }
 };
@@ -906,7 +751,7 @@ export interface SupportRequestCreate {
  * @param data - Support Request data
  * @returns Promise<void> - 201 Created (no body)
  */
-export const createSupportRequest = async (data: SupportRequestCreate): Promise<void> => {
+export const createSupportRequest: (data: SupportRequestCreate) => Promise<void> = async (data) => {
   await apiService.getClient().post('/inbox/support-requests', data);
 };
 
@@ -917,6 +762,135 @@ export interface DirectMessageRequest {
   recipientUserId: string;
   message: string;
 }
+
+/** Backend shared post tipi – buton metni buna göre belirlenir */
+export type SharedPostType = 'QUESTION' | 'UPDATE' | 'EXPERIENCE' | 'COMPARE' | 'TIPS' | 'FREE' | null;
+
+/**
+ * Shared Post payload – DM thread içinde gösterilen paylaşılan post kartı.
+ * imageUrl: post media > product > productGroup > subCategory.
+ * contextType'a göre contextData veya (COMPARE'da) products dolu olur.
+ */
+export interface SharedPostPayload {
+  postId: string;
+  postType?: string | null;
+  authorName?: string;
+  authorTitle?: string | null;
+  authorAvatar?: string | null;
+  imageUrl?: string | null;
+  contextType?: 'product' | 'productGroup' | 'subCategory' | null;
+  contextData?: {
+    id?: string;
+    name?: string;
+    image?: string | null;
+  };
+  /** Sadece COMPARE post'unda: 2 eleman (product1, product2) */
+  products?: Array<{
+    id: string;
+    name: string;
+    image: string | null;
+  }>;
+}
+
+/**
+ * Request – Post paylaşıldıktan sonra DM thread içine shared post mesajı göndermek.
+ * POST /inbox veya POST /inbox/threads/:threadId/messages
+ */
+export interface SendSharedPostToDmRequest {
+  /** Mesajın gideceği thread (veya tek alıcı için recipientUserId) */
+  threadId?: string;
+  /** Tek alıcıya gönderim için; threadId yoksa thread oluşturulur/getirilir */
+  recipientUserId?: string;
+  messageType: 'shared-post';
+  sharedPost: SharedPostPayload;
+  /** Opsiyonel metin (kartın üstünde gösterilebilir) */
+  message?: string;
+}
+
+/**
+ * Response – Shared post mesajı gönderildikten sonra (201 Created).
+ * Backend: { success, threadId, messageId }
+ */
+export interface SendSharedPostToDmResponse {
+  success?: boolean;
+  messageId: string;
+  threadId: string;
+  sentAt?: string; // ISO 8601 (opsiyonel)
+}
+
+/**
+ * POST /inbox/share-post – Post'u DM thread içine paylaşır.
+ * threadId veya recipientUserId ile çağrılır; recipientUserId ile yeni thread oluşturulabilir.
+ */
+export const sendSharedPostToDm = async (
+  data: SendSharedPostToDmRequest
+): Promise<SendSharedPostToDmResponse> => {
+  try {
+    const client = apiService.getClient();
+    const baseURL = client.defaults.baseURL;
+    const fullURL = `${baseURL}/inbox/share-post`;
+
+    if (__DEV__) {
+      console.log('[sendSharedPostToDm] 📤 Request Details:', {
+        baseURL,
+        endpoint: '/inbox/share-post',
+        fullURL,
+        method: 'POST',
+        headers: client.defaults.headers,
+        timeout: client.defaults.timeout,
+        body: {
+          threadId: data.threadId,
+          recipientUserId: data.recipientUserId,
+          messageType: data.messageType,
+          sharedPost: data.sharedPost,
+          message: data.message ? `${data.message.slice(0, 50)}${data.message.length > 50 ? '...' : ''}` : undefined,
+        },
+      });
+    }
+
+    const response = await client.post<SendSharedPostToDmResponse>(
+      '/inbox/share-post',
+      data
+    );
+
+    if (__DEV__) {
+      console.log('[sendSharedPostToDm] ✅ Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        data: response.data,
+      });
+    }
+    return response.data;
+  } catch (error: any) {
+    if (__DEV__) {
+      console.error('[sendSharedPostToDm] ❌ Detailed Error:', {
+        message: error.message,
+        config: {
+          baseURL: error.config?.baseURL,
+          url: error.config?.url,
+          method: error.config?.method,
+          fullURL: error.config?.baseURL + error.config?.url,
+          headers: error.config?.headers,
+          timeout: error.config?.timeout,
+        },
+        request: {
+          url: error.request?._url || error.request?.responseURL,
+          method: error.request?._method,
+        },
+        response: {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          headers: error.response?.headers,
+          data: error.response?.data,
+        },
+        isAxiosError: error.isAxiosError,
+        code: error.code,
+      });
+    }
+    throw error;
+  }
+};
 
 /**
  * Send Direct Message endpoint
@@ -1378,17 +1352,15 @@ export const unmuteThread = async (threadId: string): Promise<void> => {
  * @returns MessageFeedItem[] - Feed item listesi
  */
 export const getMessageFeed = async (limit: number = 50): Promise<MessageFeedItem[]> => {
+  const limitParam = Math.min(limit, 100).toString();
   try {
-    const params = new URLSearchParams();
-    params.append('limit', Math.min(limit, 100).toString());
-
     const response = await apiService.getClient().get<MessageFeedItem[]>(
-      `/inbox/feed?${params.toString()}`
+      `/inbox/feed?limit=${limitParam}`
     );
     return response.data;
   } catch (error: any) {
     console.error('[getMessageFeed] API Error:', {
-      url: `/inbox/feed?${params.toString()}`,
+      url: `/inbox/feed?limit=${limitParam}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

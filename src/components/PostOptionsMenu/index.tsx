@@ -23,6 +23,8 @@ interface PostOptionsMenuProps {
   postType?: 'post' | 'experience' | 'benchmark' | 'tips_and_tricks' | 'question' | 'update'; // Post tipi (update için gerekli)
   postContextType?: 'product' | 'product_group' | 'sub_category'; // Context type (update için gerekli)
   postContextId?: string; // Context ID (update için gerekli)
+  /** Modal içinde kullanıldığında kapatmak için; verilmezse closeBottomSheet kullanılır */
+  onClose?: () => void;
 }
 
 export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
@@ -33,10 +35,12 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   postType,
   postContextType,
   postContextId,
+  onClose,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { closeBottomSheet } = useGlobalBottomSheet();
+  const close = onClose ?? closeBottomSheet;
   const sharePostMutation = useSharePost();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
@@ -46,7 +50,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   const isPostOwner = user?.id && postAuthorId && user.id === postAuthorId;
 
   const handleExternalShare = useCallback(async () => {
-    closeBottomSheet();
+    close();
     
     try {
       const shareMessage = postContent 
@@ -60,29 +64,30 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     } catch (error) {
       console.error('[PostOptionsMenu] Share error:', error);
     }
-  }, [postId, postContent, postAuthorName, closeBottomSheet]);
+  }, [postId, postContent, postAuthorName, close]);
 
   const handleUpdate = useCallback(() => {
-    closeBottomSheet();
+    close();
     
-    // Update post screen'ine navigate et
-    // Post tipine göre uygun create screen'e yönlendir
-    if (postType === 'update' && postContextType && postContextId) {
+    // CRITICAL: Update seçeneği sadece experience post tipinde görünür
+    if (postType === 'experience') {
+      // Experience post için: SelectExperienceForUpdateScreen'e yönlendir
+      // Bu ekranda kullanıcı experience post'unu seçecek ve ardından update oluşturacak
       navigationService.navigate(ROOT_ROUTES.POST, {
-        screen: 'CreateUpdatePostScreen',
+        screen: 'SelectExperienceForUpdateScreen',
         params: {
-          postId, // Mevcut post ID'si (update için)
-          product: postContextType === 'product' ? {
+          product: postContextType === 'product' && postContextId ? {
             id: postContextId,
-            name: '', // Update screen'de post detayından alınacak
+            name: '', // SelectExperience screen'de post detayından alınacak
           } : undefined,
         },
       });
     } else {
-      // Diğer post tipleri için TODO: Update screen'leri eklenebilir
-      Alert.alert('Info', 'Update feature is not yet available for this post type.');
+      // Diğer post tipleri için update özelliği yok
+      // Bu kod bloğuna normalde ulaşılmamalı (showUpdateOption = false)
+      Alert.alert('Info', 'Update feature is only available for experience posts.');
     }
-  }, [postId, postType, postContextType, postContextId, closeBottomSheet]);
+  }, [postId, postType, postContextType, postContextId, close]);
 
   const handleDelete = useCallback(() => {
     closeBottomSheet();
@@ -138,10 +143,10 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
         },
       ]
     );
-  }, [postId, deletePostMutation, closeBottomSheet]);
+  }, [postId, deletePostMutation, close]);
 
   const handleReport = useCallback(() => {
-    closeBottomSheet();
+    close();
     
     Alert.alert(
       'Report Post',
@@ -162,7 +167,10 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
         },
       ]
     );
-  }, [postId, closeBottomSheet]);
+  }, [postId, close]);
+
+  // CRITICAL: Update seçeneği sadece experience post tipinde görünür
+  const showUpdateOption = isPostOwner && postType === 'experience';
 
   return (
     <VStack 
@@ -174,27 +182,29 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
       {/* Post Owner Actions - Sadece post sahibi görür */}
       {isPostOwner && (
         <>
-          {/* Update */}
-          <Pressable
-            onPress={handleUpdate}
-            px={20}
-            py={16}
-            borderBottomWidth={1}
-            borderColor={isDark ? '$borderDark600' : '#E9E9E9'}
-          >
-            <HStack alignItems="center" space="md">
-              <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$md"
-                fontWeight="$medium"
-              >
-                Güncelle
-              </Text>
-            </HStack>
-          </Pressable>
+          {/* Update - SADECE experience post tipinde görünür */}
+          {showUpdateOption && (
+            <Pressable
+              onPress={handleUpdate}
+              px={20}
+              py={16}
+              borderBottomWidth={1}
+              borderColor={isDark ? '$borderDark600' : '#E9E9E9'}
+            >
+              <HStack alignItems="center" space="md">
+                <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize="$md"
+                  fontWeight="$medium"
+                >
+                  Güncelle
+                </Text>
+              </HStack>
+            </Pressable>
+          )}
 
-          {/* Delete */}
+          {/* Delete - Tüm post tiplerinde görünür */}
           <Pressable
             onPress={handleDelete}
             px={20}

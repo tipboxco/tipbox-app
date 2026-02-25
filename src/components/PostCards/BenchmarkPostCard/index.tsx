@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
+import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Keyboard } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -29,7 +29,6 @@ import {
   useUnlikePost,
   useBookmarkPost,
   useUnbookmarkPost,
-  useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { useReportUser } from '@/src/features/profile/api/hooks';
@@ -39,6 +38,9 @@ import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
+import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
+import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
@@ -134,6 +136,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const { user } = useAppStore();
     const targetUserId = data.user.id;
     const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
+    
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -152,6 +155,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const [isNameExpanded, setIsNameExpanded] = useState(false);
     const [isSubNameExpanded, setIsSubNameExpanded] = useState(false);
     const { openBottomSheet } = useGlobalBottomSheet();
+    const { openPostShareSheet } = usePostShare();
 
     // Translation hooks (only in detail mode)
     const deviceLocale = useDeviceLocale();
@@ -172,10 +176,10 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     // Interaction hooks
     const likePostMutation = useLikePost();
     const unlikePostMutation = useUnlikePost();
-    const bookmarkPostMutation = useBookmarkPost();
-    const unbookmarkPostMutation = useUnbookmarkPost();
-    const sharePostMutation = useSharePost();
-    const { data: postStatus } = usePostStatus(data.id);
+  const bookmarkPostMutation = useBookmarkPost();
+  const unbookmarkPostMutation = useUnbookmarkPost();
+  const { data: postStatus } = usePostStatus(data.id);
+  const insets = useSafeAreaInsets();
     const { mutate: reportUser } = useReportUser();
     const updatePostMutation = useUpdatePost();
     const deletePostMutation = useDeletePost();
@@ -222,17 +226,18 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
         }
     };
 
-    const handleShare = () => {
-        // Zaten paylaşılmışsa tekrar paylaşma
-        if (isShared) return;
-        
-        setIsShared(true);
-        setSharesCount(prev => prev + 1);
-        sharePostMutation.mutate({
+    const handleShare = React.useCallback(() => {
+        // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
+        openPostShareSheet({
             postId: data.id,
-            shareType: 'INTERNAL_REPOST',
+            postContent: data.content,
+            postAuthorName: data.user?.name,
+            onShareSuccess: () => {
+                setIsShared(true);
+                setSharesCount((prev) => prev + 1);
+            },
         });
-    };
+    }, [data.id, data.content, data.user?.name, openPostShareSheet]);
 
     const handleComment = () => {
         if (isDetailMode && onCommentPress) {
@@ -463,9 +468,9 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         />
                     </Pressable>
                     <Pressable flex={1} onPress={handleViewProfile}>
-                        <VStack 
+                        <VStack
                             flex={1}
-                            justifyContent={data.user?.title ? 'flex-start' : 'center'}
+                            justifyContent="center"
                         >
                             <Text
                                 color={isDark ? '$textDark50' : '#000'}
@@ -501,10 +506,11 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         visible={isMenuOpen}
                         transparent={true}
                         animationType="fade"
+                        presentationStyle="overFullScreen"
                         onRequestClose={() => setIsMenuOpen(false)}
                     >
                         <RNPressable
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
                             onPress={() => setIsMenuOpen(false)}
                         />
                         <View
@@ -517,6 +523,8 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                     borderWidth: 1,
                                     borderColor: isDark ? '#333333' : '#E9E9E9',
                                     shadowOpacity: isDark ? 0.3 : 0.1,
+                                    zIndex: 1,
+                                    elevation: 10,
                                 }
                             ]}
                         >
@@ -527,28 +535,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                 <VStack px={12} py={8} width="100%">
                                     {isPostOwner ? (
                                         <>
-                                            <Pressable
-                                                onPress={() => {
-                                                    setIsMenuOpen(false);
-                                                    handleUpdate();
-                                                }}
-                                                py={8}
-                                            >
-                                                <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                                                    <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                                                    <Text
-                                                        color={isDark ? '#FFFFFF' : '#000000'}
-                                                        fontSize="$sm"
-                                                        fontWeight="$medium"
-                                                    >
-                                                        Update
-                                                    </Text>
-                                                </HStack>
-                                            </Pressable>
-                                            <Divider 
-                                                bg={isDark ? '#333333' : '#E9E9E9'} 
-                                                mx={0}
-                                            />
+                                            {/* Update butonu kaldırıldı - Sadece experience post'larda update var */}
                                             <Pressable
                                                 onPress={() => {
                                                     setIsMenuOpen(false);
@@ -626,6 +613,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
                         fontSize="$sm"
+                        lineHeight={18}
                     >
                         {data.content}
                     </Text>
@@ -654,7 +642,8 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
                         <Text
                             color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$xs"
+                            fontSize="$sm"
+                            lineHeight={18}
                             numberOfLines={3}
                         >
                             {data.content}

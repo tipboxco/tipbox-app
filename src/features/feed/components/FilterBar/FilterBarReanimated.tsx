@@ -23,9 +23,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
   interpolate,
   runOnJS,
   useAnimatedReaction,
+  Easing,
   type SharedValue,
 } from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -65,11 +67,17 @@ export const SORT_OPTIONS = [
   { value: 'top', label: 'Top' },
 ] as const;
 
-// Spring configuration for natural feel
+// Spring configuration for open animation (natural feel)
 const SPRING_CONFIG = {
   damping: 20,
   stiffness: 300,
   mass: 0.8,
+};
+
+// Kapanışta overshoot olmasın, tek seferde yerleşsin
+const CLOSE_TIMING_CONFIG = {
+  duration: 220,
+  easing: Easing.out(Easing.cubic),
 };
 
 // Fixed panel height - no calculation needed
@@ -107,7 +115,6 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   // State
   const [openFilterId, setOpenFilterId] = useState<string | null>(null);
   const [lastOpenFilterId, setLastOpenFilterId] = useState<string | null>(null);
-  const filterBarHeight = useSharedValue(0);
 
   // 🎯 CORE: Single progress sharedValue (0 = closed, 1 = open)
   const progress = useSharedValue(0);
@@ -121,43 +128,45 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   const calculatePanelHeight = useCallback((optionsCount: number, filterId: string) => {
     // Category ve Sort için tek satır yatay scrollable liste
     if (filterId === 'category' || filterId === 'sort') {
-      const rowHeight = 28; // minHeight of each option
+      const rowHeight = 32; // minHeight of each option (updated to 32)
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const buttonTopPadding = 4; // pt="$1" = 4px
-      const buttonBottomPadding = 8; // pb="$2" = 8px
-      const buttonHeight = 32; // button minHeight
-      
-      // Total height = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding
-      const totalHeight = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding;
+      const buttonTopPadding = 6; // pt="$1.5" = 6px
+      const buttonBottomPadding = 10; // pb="$2.5" = 10px
+      const buttonHeight = 36; // button minHeight (updated to 36)
+      const extraBottomPadding = 8; // Extra padding at the very bottom
+
+      // Total height = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding
+      const totalHeight = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding;
       return totalHeight;
     }
-    
+
     // Tags için 2 satır grid (3 sütun)
     if (filterId === 'tag') {
-      const rowHeight = 28; // minHeight of each option
+      const rowHeight = 44; // minHeight increased for potential 2-line text wrapping
       const rowSpacing = 4; // space="xs" between rows (VStack space="xs")
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const buttonTopPadding = 4; // pt="$1" = 4px
-      const buttonBottomPadding = 8; // pb="$2" = 8px
-      const buttonHeight = 32; // button minHeight
+      const buttonTopPadding = 6; // pt="$1.5" = 6px
+      const buttonBottomPadding = 10; // pb="$2.5" = 10px
+      const buttonHeight = 36; // button minHeight (updated to 36)
       const rows = 2; // Tags için sabit 2 satır (6 seçenek = 2 satır x 3 sütun)
-      
-      // Total height = topPadding + (2 rows * rowHeight) + (1 spacing) + buttonTopPadding + buttonHeight + buttonBottomPadding
-      const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + buttonTopPadding + buttonHeight + buttonBottomPadding;
+      const extraBottomPadding = 8; // Extra padding at the very bottom
+
+      // Total height = topPadding + (2 rows * rowHeight) + (1 spacing) + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding
+      const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding;
       return totalHeight;
     }
-    
+
     // Interest için dinamik yükseklik (grid, 3 sütun)
     const rows = Math.ceil(optionsCount / 3);
-    const rowHeight = 28; // minHeight of each option
+    const rowHeight = 44; // minHeight increased for potential 2-line text wrapping
     const rowSpacing = 4; // space="xs" between rows
-    const topMargin = 16; // mt="$4"
     const topPadding = 8; // py="$2"
     const bottomPadding = 8; // py="$2"
-    const buttonArea = 44; // pt="$1" + pb="$2" + button height (32px)
-    
-    // Total height = margin + padding + (rows * rowHeight) + (spacing between rows) + padding + button area
-    const totalHeight = topMargin + topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonArea;
+    const buttonArea = 38; // paddingTop(4) + minHeight(32) + paddingBottom(2)
+    const extraBottomPadding = 4; // Small visual breathing room
+
+    // Total height = padding + (rows * rowHeight) + (spacing between rows) + padding + button area + extraBottomPadding
+    const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonArea + extraBottomPadding;
     return totalHeight;
   }, []);
 
@@ -317,16 +326,21 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     }
   }, []);
 
-  // FIX: Panel kapatma fonksiyonu
+  // FIX: Panel kapatma - withTiming ile tek seferde kapanır (spring overshoot = çift sıçrama yok)
+  // lastOpenFilterId bir frame sonra temizlenir, içerik unmount layout tam oturduktan sonra olur
+  const scheduleClearLastFilterId = useCallback(() => {
+    requestAnimationFrame(() => setLastOpenFilterId(null));
+  }, []);
   const closePanel = useCallback(() => {
     setOpenFilterId(null);
     openFilterIdShared.value = null;
-    progress.value = withSpring(0, SPRING_CONFIG);
-    // Kapanma animasyonu tamamlandıktan sonra lastOpenFilterId'yi temizle
-    setTimeout(() => {
-      setLastOpenFilterId(null);
-    }, 400);
-  }, [progress, openFilterIdShared]);
+    progress.value = withTiming(0, CLOSE_TIMING_CONFIG, (finished) => {
+      'worklet';
+      if (finished) {
+        runOnJS(scheduleClearLastFilterId)();
+      }
+    });
+  }, [progress, openFilterIdShared, scheduleClearLastFilterId]);
 
   // FIX: Panel kapatma fonksiyonunu parent'a expose et
   useEffect(() => {
@@ -357,10 +371,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         const optionsCount = getOptionsCount(filterId, allCategories.length);
         const calculatedHeight = calculatePanelHeight(optionsCount, filterId);
         
-        if (__DEV__) {
-          console.log('[FilterBarReanimated] Opening panel:', { filterId, optionsCount, calculatedHeight, filterBarHeight: filterBarHeight.value });
-        }
-        
+       
         // FIX: Önce state'leri güncelle, sonra animasyonu başlat
         // Bu sayede panel render edilir ve animasyon düzgün çalışır
         setLastOpenFilterId(openFilterId || filterId);
@@ -369,14 +380,12 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         
         // Panel height'ı güncelle (animasyon başlamadan önce)
         panelHeight.value = calculatedHeight;
-        
-        // FIX: requestAnimationFrame ile animasyonu başlat - DOM'un hazır olmasını bekle
-        requestAnimationFrame(() => {
-          progress.value = withSpring(1, SPRING_CONFIG);
-        });
+
+        // Animasyonu anında başlat - shared value'lar UI thread'de çalıştığı için rAF gerekmez
+        progress.value = withSpring(1, SPRING_CONFIG);
       }
     },
-    [openFilterId, progress, openFilterIdShared, panelHeight, filterBarHeight, getOptionsCount, calculatePanelHeight, allCategories.length]
+    [openFilterId, progress, openFilterIdShared, panelHeight, getOptionsCount, calculatePanelHeight, allCategories.length]
   );
 
   // Apply filters (close panel)
@@ -434,25 +443,18 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     [onPanelHeightChange]
   );
 
-  // Panel animated style - absolute positioned, z-index on top
+  // Panel animated style - IN FLOW: aşağı doğru açılır, feed içeriği aşağı kayar (modal/overlay yok)
+  // height 0'ın altına inmesin (overshoot / ikinci layout sıçraması önlenir)
   const panelStyle = useAnimatedStyle(() => {
     'worklet';
-    const height = interpolate(progress.value, [0, 1], [0, panelHeight.value]);
+    const rawHeight = interpolate(progress.value, [0, 1], [0, panelHeight.value]);
+    const height = Math.max(0, rawHeight);
     const opacity = interpolate(progress.value, [0, 1], [0, 1]);
-    // FIX: filterBarHeight 0 ise varsayılan bir değer kullan (filter bar'ın yüksekliği yaklaşık 50px)
-    const topPosition = filterBarHeight.value > 0 ? filterBarHeight.value : 50;
     return {
-      position: 'absolute' as const,
-      top: topPosition,
-      left: 0,
-      right: 0,
       height,
       opacity,
-      overflow: 'hidden' as const, // Animasyon için gerekli
-      zIndex: 1000,
-      elevation: 10, // Android
-      // FIX: Panel içeriği tıklanabilir olmalı (overlay'in üstünde)
-      pointerEvents: 'auto' as const,
+      overflow: 'hidden' as const,
+      width: '100%' as const,
     };
   });
 
@@ -573,8 +575,8 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           ) : (
             <VStack px={12} py="$2" width="100%" style={{ paddingBottom: 0 }}>
               {/* Tek satır yatay scrollable liste */}
-              <ScrollView 
-                horizontal 
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingRight: 12 }}
               >
@@ -587,15 +589,16 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                           bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
                           borderWidth={selected ? 1 : 0}
                           borderColor={selected ? '#829905' : 'transparent'}
-                          borderRadius={6}
+                          borderRadius={7}
                           px="$2"
                           py="$1"
-                          minHeight={28}
+                          minHeight={32}
+                          maxWidth={140}
                         >
                           <HStack alignItems="center" space="xs">
                             <Box
-                              width={16}
-                              height={16}
+                              width={18}
+                              height={18}
                               borderWidth={1.5}
                               borderColor={selected ? '#829905' : isDark ? '#444444' : '#CCCCCC'}
                               borderRadius={4}
@@ -604,19 +607,21 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                               alignItems="center"
                               flexShrink={0}
                             >
-                              {selected && <CheckIconSolid width={10} height={10} color="#FFFFFF" />}
+                              {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                             </Box>
-                            <RNText
-                              style={{
-                                color: isDark ? '#FFFFFF' : '#000000',
-                                fontSize: 11,
-                                fontWeight: selected ? '600' : '500',
-                                lineHeight: 14,
-                              }}
-                              numberOfLines={1}
-                            >
-                              {option.label}
-                            </RNText>
+                            <Box flexShrink={1} style={{ maxWidth: 110 }}>
+                              <RNText
+                                style={{
+                                  color: isDark ? '#FFFFFF' : '#000000',
+                                  fontSize: 12,
+                                  fontWeight: selected ? '600' : '500',
+                                  lineHeight: 16,
+                                  flexWrap: 'wrap',
+                                }}
+                              >
+                                {option.label}
+                              </RNText>
+                            </Box>
                           </HStack>
                         </Box>
                       </Pressable>
@@ -628,7 +633,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           )}
 
           {/* Clear ve Apply butonları */}
-          <Box px={12} pt="$1" pb="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 8 }}>
+          <Box px={12} pt="$1.5" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 6, paddingBottom: 2 }}>
             <HStack space="xs" justifyContent="space-between" width="100%">
               <Pressable onPress={handleClear} flex={1}>
                 <Box
@@ -636,14 +641,14 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                   bg="transparent"
                   borderWidth={1}
                   borderColor={isDark ? '#444444' : '#E9E9E9'}
-                  borderRadius={6}
+                  borderRadius={7}
                   alignItems="center"
                   justifyContent="center"
-                  minHeight={32}
+                  minHeight={36}
                 >
                   <RNText
                     style={{
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: '600',
                       color: isDark ? '#FFFFFF' : '#666666',
                     }}
@@ -656,14 +661,14 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                 <Box
                   py="$1.5"
                   bg="#829905"
-                  borderRadius={6}
+                  borderRadius={7}
                   alignItems="center"
                   justifyContent="center"
-                  minHeight={32}
+                  minHeight={36}
                 >
                   <RNText
                     style={{
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: '700',
                       color: '#FFFFFF',
                     }}
@@ -702,26 +707,26 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
             </RNText>
           </VStack>
         ) : (
-          <VStack px={12} py="$2" space="xs" width="100%">
+          <VStack px={12} py="$2" width="100%">
             {displayRows.map((row, rowIndex) => (
               <HStack key={rowIndex} space="xs" justifyContent="space-between" width="100%">
                 {row.map((option) => {
                   const selected = isSelected(option.value);
                   return (
-                    <Pressable key={option.value} onPress={() => onSelect(option.value)} flex={1} style={{ minHeight: 28 }}>
+                    <Pressable key={option.value} onPress={() => onSelect(option.value)} flex={1} style={{ minHeight: 44 }}>
                       <Box
                         flex={1}
                         bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
                         borderWidth={selected ? 1 : 0}
                         borderColor={selected ? '#829905' : 'transparent'}
-                        borderRadius={6}
-                        px="$1"
-                        py="$0.5"
+                        borderRadius={7}
+                        px="$1.5"
+                        py="$1"
                       >
-                        <HStack alignItems="center" space="xs" flex={1} justifyContent="flex-start">
+                        <HStack alignItems="center" space="xs" flex={1}>
                           <Box
-                            width={16}
-                            height={16}
+                            width={18}
+                            height={18}
                             borderWidth={1.5}
                             borderColor={selected ? '#829905' : isDark ? '#444444' : '#CCCCCC'}
                             borderRadius={4}
@@ -730,17 +735,17 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                             alignItems="center"
                             flexShrink={0}
                           >
-                            {selected && <CheckIconSolid width={10} height={10} color="#FFFFFF" />}
+                            {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
                           </Box>
-                          <Box flex={1} justifyContent="center">
+                          <Box flex={1} flexShrink={1}>
                             <RNText
                               style={{
                                 color: isDark ? '#FFFFFF' : '#000000',
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: selected ? '600' : '500',
-                                lineHeight: 14,
+                                lineHeight: 16,
+                                flexWrap: 'wrap',
                               }}
-                              numberOfLines={2}
                             >
                               {option.label}
                             </RNText>
@@ -756,7 +761,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           </VStack>
         )}
 
-        <Box px={12} pt="$1" pb="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 8 }}>
+        <Box px={12} pt="$1" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 2 }}>
           <HStack space="xs" justifyContent="space-between" width="100%">
             <Pressable onPress={handleClear} flex={1}>
               <Box
@@ -822,30 +827,30 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           flexDirection="row"
           alignItems="center"
           justifyContent="space-between"
-          gap={4}
+          gap={5}
           px="$3"
-          
+
           bg={isActive ? '#E2FF46' : '#FDFDFD'}
           borderWidth={1}
           borderColor={isActive ? '#E2FF46' : '#E9E9E9'}
           borderRadius={10}
-          height={23}
+          height={26}
         >
           <HStack alignItems="center" space="xs">
-            <Text color={isActive ? '#000000' : '#000000'} fontSize="$xs" fontWeight="$medium">
+            <Text color={isActive ? '#000000' : '#000000'} fontSize="$xs" fontWeight="$semibold">
               {label}
             </Text>
             {count > 0 && (
               <Box
                 bg={isActive ? '#000000' : '#E2FF46'}
-                borderRadius={8}
+                borderRadius={9}
                 px={6}
-                minWidth={16}
-                height={16}
+                minWidth={18}
+                height={18}
                 alignItems="center"
                 justifyContent="center"
               >
-                <Text color={isActive ? '#FFFFFF' : '#000000'} fontSize="$xs" fontWeight="$medium">
+                <Text color={isActive ? '#FFFFFF' : '#000000'} fontSize="$xs" fontWeight="$semibold">
                   {count}
                 </Text>
               </Box>
@@ -854,12 +859,12 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           {arrowStyle ? (
             <Animated.View style={arrowStyle}>
               <Box width={12} height={12} alignItems="center" justifyContent="center">
-                <ChevronDownIcon width={8} height={8} color={isActive ? '#000000' : '#000000'} />
+                <ChevronDownIcon width={9} height={9} color={isActive ? '#000000' : '#000000'} />
               </Box>
             </Animated.View>
           ) : (
             <Box width={12} height={12} alignItems="center" justifyContent="center">
-              <ChevronDownIcon width={8} height={8} color={isActive ? '#000000' : '#000000'} />
+              <ChevronDownIcon width={9} height={9} color={isActive ? '#000000' : '#000000'} />
             </Box>
           )}
         </Box>
@@ -869,16 +874,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
 
   return (
     <Box position="relative">
-      <Box 
-        px="$4" 
-        pb="$2" 
-        mt="$2"
-        onLayout={(event) => {
-          const { height } = event.nativeEvent.layout;
-          // FIX: filterBarHeight'ı hemen güncelle (animasyon başlamadan önce)
-          filterBarHeight.value = height;
-        }}
-      >
+      <Box px="$4" pb="$2" mt="$2">
         <HStack justifyContent="space-between" alignItems="center">
           <HStack space="sm" alignItems="center">
             {renderFilterButton('interest', 'Interests', interestArrowStyle)}
@@ -889,8 +885,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         </HStack>
       </Box>
 
-      {/* Animated Panel - Absolute positioned, z-index on top */}
-      {/* FIX: Panel'i her zaman render et, sadece opacity ve height ile kontrol et */}
+      {/* Animated Panel - IN FLOW: aşağı doğru açılır, feed aşağı kayar (aynı z-index, overlay yok) */}
       <Animated.View
         style={[
           panelStyle,
@@ -906,12 +901,9 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
             shadowRadius: 4,
           },
         ]}
-        pointerEvents={(openFilterId || lastOpenFilterId) ? 'auto' : 'none'}
       >
         {(openFilterId || lastOpenFilterId) && renderFilterPanel()}
       </Animated.View>
-
-      {/* FIX: Overlay kaldırıldı - FeedScreen seviyesinde overlay kullanılıyor */}
     </Box>
   );
 };

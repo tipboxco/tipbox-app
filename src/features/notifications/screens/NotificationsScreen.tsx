@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Dimensions, RefreshControl } from 'react-native';
+import { Dimensions, RefreshControl, ActivityIndicator, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
@@ -14,11 +14,9 @@ import {
     VStack,
     HStack,
     Text,
-    Image,
     Pressable,
     Input,
     InputField,
-    Spinner,
 } from '@gluestack-ui/themed';
 import {
   MagnifyingGlassIcon,
@@ -69,15 +67,8 @@ const NotificationsScreenComponent: React.FC = () => {
     const tabContainerRef = useRef<any>(null);
     const [tabContainerWidth, setTabContainerWidth] = useState(0);
     const [currentPage, setCurrentPage] = useState(0);
-    // CRITICAL FIX: Replies ve Tips tabları yer değiştirmeli
-    // Yeni sıralama: All/Unread, Tips, Trust, Replies
-    const [filters] = useState<NotificationFilter[]>(() => {
-        const originalFilters = [...notification_filters];
-        // filters[1] = Replies, filters[3] = Tips
-        // Yer değiştir: Tips -> index 1, Replies -> index 3
-        const [allFilter, repliesFilter, trustFilter, tipsFilter] = originalFilters;
-        return [allFilter, tipsFilter, trustFilter, repliesFilter];
-    });
+    // Figma sırası: All Notifications, Replies, Trust - Truster, TIPS
+    const [filters] = useState<NotificationFilter[]>(() => [...notification_filters]);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
@@ -121,24 +112,23 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, allQueryEnabled);
 
-    // Filter 1: Tips (UI'da Tips tabı ama backend'de replies type'ı kullanılıyor)
-    // CRITICAL FIX: Tips tabında Replies bildirimleri görünüyor, bu yüzden type=replies kullanıyoruz
-    const tipsFilter = filters[1];
-    const tipsUnreadOnly = tipsFilter?.id === 'unread';
-    const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
-    const tipsQueryEnabled = shouldFetchNotifications && currentPage === 1;
-    const tipsQuery = useNotifications({
-        limit: 10, // CRITICAL FIX: limit=10 olarak değiştirildi
-        unreadOnly: tipsUnreadOnly,
-        type: tipsNotificationType, // type=replies (Tips tabında Replies bildirimleri gösteriliyor)
+    // Filter 1: Replies (Figma sırası)
+    const repliesFilter = filters[1];
+    const repliesUnreadOnly = repliesFilter?.id === 'unread';
+    const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
+    const repliesQueryEnabled = shouldFetchNotifications;
+    const repliesQuery = useNotifications({
+        limit: 20,
+        unreadOnly: repliesUnreadOnly,
+        type: repliesNotificationType,
         search: debouncedSearchQuery || undefined,
-    }, tipsQueryEnabled);
+    }, repliesQueryEnabled);
 
-    // Filter 2: Trust
+    // Filter 2: Trust - Truster
     const trustFilter = filters[2];
     const trustUnreadOnly = trustFilter?.id === 'unread';
     const trustNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'truster';
-    const trustQueryEnabled = shouldFetchNotifications && currentPage === 2;
+    const trustQueryEnabled = shouldFetchNotifications;
     const trustQuery = useNotifications({
         limit: 20,
         unreadOnly: trustUnreadOnly,
@@ -146,22 +136,20 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, trustQueryEnabled);
 
-    // Filter 3: Replies (UI'da Replies tabı ama backend'de tips type'ı kullanılıyor)
-    // CRITICAL FIX: Replies tabında Tips bildirimleri görünüyor, bu yüzden type=tips kullanıyoruz
-    const repliesFilter = filters[3];
-    const repliesUnreadOnly = repliesFilter?.id === 'unread';
-    const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
-    const repliesQueryEnabled = shouldFetchNotifications && currentPage === 3;
-    const repliesQuery = useNotifications({
+    // Filter 3: TIPS
+    const tipsFilter = filters[3];
+    const tipsUnreadOnly = tipsFilter?.id === 'unread';
+    const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
+    const tipsQueryEnabled = shouldFetchNotifications;
+    const tipsQuery = useNotifications({
         limit: 20,
-        unreadOnly: repliesUnreadOnly,
-        type: repliesNotificationType, // type=tips (Replies tabında Tips bildirimleri gösteriliyor)
+        unreadOnly: tipsUnreadOnly,
+        type: tipsNotificationType,
         search: debouncedSearchQuery || undefined,
-    }, repliesQueryEnabled);
+    }, tipsQueryEnabled);
 
-    // Her filter için query sonuçlarını map et - useMemo ile memoize et (sonsuz döngü önleme)
-    // CRITICAL FIX: Sıralama değişti: All, Tips, Trust, Replies
-    const filterQueryResults = useMemo(() => [allQuery, tipsQuery, trustQuery, repliesQuery], [allQuery, tipsQuery, trustQuery, repliesQuery]);
+    // Figma sırası: All, Replies, Trust, TIPS
+    const filterQueryResults = useMemo(() => [allQuery, repliesQuery, trustQuery, tipsQuery], [allQuery, repliesQuery, trustQuery, tipsQuery]);
 
     // Mark all notifications as read mutation
     const markAllAsReadMutation = useMarkAllNotificationsAsRead();
@@ -179,98 +167,10 @@ const NotificationsScreenComponent: React.FC = () => {
         filterQueryResultsRef.current = filterQueryResults;
     }, [filterQueryResults]);
 
-    // CRITICAL FIX: İlk açılışta query'nin direkt başlaması için useEffect eklendi
-    // İlk tab için query enabled olsa bile, React Query bazen query'yi başlatmıyor
-    // Bu durumda manuel olarak query'yi başlatıyoruz
-    useEffect(() => {
-        // İlk tab için: shouldFetchNotifications true ise ve query enabled ise ama henüz başlamamışsa başlat
-        if (shouldFetchNotifications && allQueryEnabled) {
-            const queryStatus = allQuery.status;
-            const hasNoData = !allQuery.data;
-            const isNotLoading = !allQuery.isLoading && !allQuery.isFetching && !allQuery.isPending;
-            
-            // Query henüz başlamamışsa (pending) veya error durumunda takılı kalmışsa başlat
-            // CRITICAL: Query enabled olsa bile, React Query bazen query'yi başlatmıyor
-            // Bu durumda manuel olarak refetch çağırarak query'yi başlatıyoruz
-            if (hasNoData && isNotLoading) {
-                // Query status'u kontrol et - pending veya error ise başlat
-                if (queryStatus === 'pending' || queryStatus === 'error') {
-                    // Query'yi başlat - refetch çağrısı query'yi başlatacak
-                    const refetchFn = (allQuery as { refetch?: () => Promise<unknown> }).refetch;
-                    if (refetchFn) {
-                        refetchFn().catch((error: unknown) => {
-                            console.warn('[NotificationsScreen] Failed to refetch allQuery:', error);
-                        });
-                    }
-                }
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [shouldFetchNotifications, allQueryEnabled]);
-
-    // CRITICAL FIX: Tab değiştiğinde aktif tab'ın query'sini başlat
-    useEffect(() => {
-        if (!shouldFetchNotifications) {
-            return;
-        }
-        
-        // Aktif tab'ın query'sini al
-        const activeQuery = filterQueryResultsRef.current[currentPage];
-        if (!activeQuery) {
-            return;
-        }
-        
-        // Query enabled kontrolü
-        const isQueryEnabled = 
-            currentPage === 0 ? allQueryEnabled :
-            currentPage === 1 ? tipsQueryEnabled :
-            currentPage === 2 ? trustQueryEnabled :
-            repliesQueryEnabled;
-        
-        if (!isQueryEnabled) {
-            return;
-        }
-        
-        // Query durumunu kontrol et
-        const queryStatus = activeQuery.status;
-        const hasNoData = !activeQuery.data;
-        const isNotLoading = !activeQuery.isLoading && !activeQuery.isFetching && !activeQuery.isPending;
-        
-        // Query henüz başlamamışsa (pending) veya error durumunda başlat
-        if (hasNoData && isNotLoading && (queryStatus === 'pending' || queryStatus === 'error')) {
-            const refetchFn = (activeQuery as { refetch?: () => Promise<unknown> }).refetch;
-            if (refetchFn) {
-                refetchFn().catch((error: unknown) => {
-                    console.warn(`[NotificationsScreen] Failed to refetch query for tab ${currentPage}:`, error);
-                });
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, shouldFetchNotifications, allQueryEnabled, tipsQueryEnabled, trustQueryEnabled, repliesQueryEnabled]);
-
     useFocusEffect(
         useCallback(() => {
             // Ekran focus aldığında drawer gesture'ı disable et
             setGestureEnabled(false);
-            
-            // CRITICAL FIX: İlk açılışta query'yi başlat
-            // Query enabled olsa bile, React Query bazen query'yi başlatmıyor
-            // Bu durumda manuel olarak query'yi başlatıyoruz
-            if (shouldFetchNotifications && allQueryEnabled) {
-                const queryStatus = allQuery.status;
-                const hasNoData = !allQuery.data;
-                const isNotLoading = !allQuery.isLoading && !allQuery.isFetching && !allQuery.isPending;
-                
-                // Query henüz başlamamışsa başlat
-                if (hasNoData && isNotLoading && queryStatus === 'pending') {
-                    const refetchFn = (allQuery as { refetch?: () => Promise<unknown> }).refetch;
-                    if (refetchFn) {
-                        refetchFn().catch((error: unknown) => {
-                            console.warn('[NotificationsScreen] Failed to refetch allQuery on focus:', error);
-                        });
-                    }
-                }
-            }
             
             // Ekran focus aldığında tüm bildirimleri okunmuş olarak işaretle
             // CRITICAL: Sadece bir kez çalışması için ref kontrolü (sonsuz döngü önleme)
@@ -320,12 +220,6 @@ const NotificationsScreenComponent: React.FC = () => {
                     },
                 });
                 
-                // PERFORMANCE FIX: Sadece aktif tab'ı refetch et (yeni bildirimler için)
-                // Diğer tab'lar cache'den okuyacak, tab değiştiğinde o tab'ın query'si enable olacak
-                // CRITICAL FIX: ref ile çağır - dependency array'den kaldırıldı
-                if (filterQueryResultsRef.current[currentPage]) {
-                    filterQueryResultsRef.current[currentPage].refetch();
-                }
             }
             
             return () => {
@@ -335,10 +229,7 @@ const NotificationsScreenComponent: React.FC = () => {
                 // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde ref resetlenmemeli
                 hasMarkedAllAsReadRef.current = false;
             };
-        }, [setGestureEnabled, shouldFetchNotifications, queryClient, allQueryEnabled, allQuery.status, allQuery.data])
-        // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde useFocusEffect tekrar çalışmamalı
-        // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi
-        // CRITICAL FIX: allQuery objesi yerine spesifik değerleri dependency array'e ekledik (sonsuz döngü önleme)
+        }, [setGestureEnabled, shouldFetchNotifications, queryClient])
     );
     
     // PERFORMANCE FIX: Memoize background colors to prevent re-renders
@@ -463,30 +354,8 @@ const NotificationsScreenComponent: React.FC = () => {
             const position = e.nativeEvent.position;
             progress.value = withTiming(position, { duration: 0 });
             setCurrentPage(position);
-            
-            // CRITICAL FIX: Tab değiştiğinde aktif tab'ın query'sini başlat
-            // Query enabled olsa bile, React Query bazen query'yi başlatmıyor
-            // Bu durumda manuel olarak query'yi başlatıyoruz
-            if (shouldFetchNotifications) {
-                const activeQuery = filterQueryResultsRef.current[position];
-                if (activeQuery) {
-                    const queryStatus = activeQuery.status;
-                    const hasNoData = !activeQuery.data;
-                    const isNotLoading = !activeQuery.isLoading && !activeQuery.isFetching && !activeQuery.isPending;
-                    
-                    // Query henüz başlamamışsa (pending) veya error durumunda başlat
-                    if (hasNoData && isNotLoading && (queryStatus === 'pending' || queryStatus === 'error')) {
-                        const refetchFn = (activeQuery as { refetch?: () => Promise<unknown> }).refetch;
-                        if (refetchFn) {
-                            refetchFn().catch((error: unknown) => {
-                                console.warn(`[NotificationsScreen] Failed to refetch query for tab ${position}:`, error);
-                            });
-                        }
-                    }
-                }
-            }
         },
-        [progress, shouldFetchNotifications]
+        [progress]
     );
 
 
@@ -577,69 +446,57 @@ const NotificationsScreenComponent: React.FC = () => {
         }
     }, [allQuery.data, tipsQuery.data, trustQuery.data, repliesQuery.data, extractNotificationsFromResponse]);
 
-    // Tab label color animations - her tab için ayrı style
-    const activeColor = isDark ? '#FFFFFF' : '#000000';
-    const inactiveColor = '#8C8C8C';
+    // Figma: Pill tab - seçili = koyu arka plan, seçili değil = açık gri
+    const tabActiveBg = isDark ? '#1A1A1A' : '#000000';
+    const tabInactiveBg = isDark ? '#2A2A2A' : '#F2F2F2';
+    const tabActiveText = '#FFFFFF';
+    const tabInactiveText = isDark ? '#8C8C8C' : '#8C8C8C';
 
-    // Tab 0 (All Notifications)
-    const tab0Style = useAnimatedStyle(() => {
-        const color = interpolateColor(
-            progress.value,
-            [-0.5, 0, 0.5],
-            [activeColor, activeColor, inactiveColor]
-        );
-        return { color };
-    }, [isDark]);
+    // Her tab için seçili mi (animasyonlu)
+    const tab0Active = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(progress.value, [-0.5, 0, 0.5], [tabActiveBg, tabActiveBg, tabInactiveBg]),
+    }), [isDark]);
+    const tab1Active = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(progress.value, [0.5, 1, 1.5], [tabInactiveBg, tabActiveBg, tabInactiveBg]),
+    }), [isDark]);
+    const tab2Active = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(progress.value, [1.5, 2, 2.5], [tabInactiveBg, tabActiveBg, tabInactiveBg]),
+    }), [isDark]);
+    const tab3Active = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(progress.value, [2.5, 3, 3.5], [tabInactiveBg, tabActiveBg, tabActiveBg]),
+    }), [isDark]);
 
-    // Tab 1 (Tips - Replies ile yer değiştirildi)
-    const tab1Style = useAnimatedStyle(() => {
-        const color = interpolateColor(
-            progress.value,
-            [0.5, 1, 1.5],
-            [inactiveColor, activeColor, inactiveColor]
-        );
-        return { color };
-    }, [isDark]);
+    const tab0TextStyle = useAnimatedStyle(() => ({
+        color: interpolateColor(progress.value, [-0.5, 0, 0.5], [tabActiveText, tabActiveText, tabInactiveText]),
+    }), []);
+    const tab1TextStyle = useAnimatedStyle(() => ({
+        color: interpolateColor(progress.value, [0.5, 1, 1.5], [tabInactiveText, tabActiveText, tabInactiveText]),
+    }), []);
+    const tab2TextStyle = useAnimatedStyle(() => ({
+        color: interpolateColor(progress.value, [1.5, 2, 2.5], [tabInactiveText, tabActiveText, tabInactiveText]),
+    }), []);
+    const tab3TextStyle = useAnimatedStyle(() => ({
+        color: interpolateColor(progress.value, [2.5, 3, 3.5], [tabInactiveText, tabActiveText, tabActiveText]),
+    }), []);
 
-    // Tab 2 (Trust)
-    const tab2Style = useAnimatedStyle(() => {
-        const color = interpolateColor(
-            progress.value,
-            [1.5, 2, 2.5],
-            [inactiveColor, activeColor, inactiveColor]
-        );
-        return { color };
-    }, [isDark]);
-
-    // Tab 3 (Replies - Tips ile yer değiştirildi)
-    const tab3Style = useAnimatedStyle(() => {
-        const color = interpolateColor(
-            progress.value,
-            [2.5, 3, 3.5],
-            [inactiveColor, activeColor, activeColor]
-        );
-        return { color };
-    }, [isDark]);
-
-    const getTabStyle = (index: number) => {
+    const getTabBgStyle = (index: number) => {
         switch (index) {
-            case 0: return tab0Style;
-            case 1: return tab1Style;
-            case 2: return tab2Style;
-            case 3: return tab3Style;
-            default: return tab0Style;
+            case 0: return tab0Active;
+            case 1: return tab1Active;
+            case 2: return tab2Active;
+            case 3: return tab3Active;
+            default: return tab0Active;
         }
     };
-
-    // Indicator position animation
-    const tabWidth = tabContainerWidth / filters.length || 0;
-    const indicatorWidth = tabWidth * 0.8; // Tab genişliğinin %80'i
-    const indicatorStyle = useAnimatedStyle(() => {
-        const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
-        return {
-            transform: [{ translateX }],
-        };
-    });
+    const getTabTextStyle = (index: number) => {
+        switch (index) {
+            case 0: return tab0TextStyle;
+            case 1: return tab1TextStyle;
+            case 2: return tab2TextStyle;
+            case 3: return tab3TextStyle;
+            default: return tab0TextStyle;
+        }
+    };
 
     // FlatList renderItem - useCallback ile memoize et
     const renderNotificationItem = React.useCallback(({ item }: { item: { type: 'header' | 'notification'; data: any } }) => {
@@ -705,22 +562,8 @@ const NotificationsScreenComponent: React.FC = () => {
             status,
         } = queryResult;
 
-        // Query enabled durumunu kontrol et
-        // CRITICAL FIX: İlk tab (All) için her zaman enabled, diğer tablar için sadece aktif tab enabled
-        const isQueryEnabled = filterIndex === 0 ? shouldFetchNotifications :
-                              filterIndex === 1 ? (shouldFetchNotifications && currentPage === 1) :
-                              filterIndex === 2 ? (shouldFetchNotifications && currentPage === 2) :
-                              (shouldFetchNotifications && currentPage === 3);
-        
-        // Loading state: 
-        // CRITICAL FIX: Sadece gerçekten loading durumunda loading göster
-        // 1. Query aktif olarak yükleniyor (isLoading, isFetching, isPending)
-        // 2. Query enabled değilse ve data yoksa (henüz başlamamış - bu durumda loading göster)
-        // 3. Auth ready değilse ve data yoksa (henüz başlamamış - bu durumda loading göster)
-        // NOT: Query enabled ise ve data yoksa ama loading değilse, bu bir hata durumu olabilir - loading gösterme
-        const isActuallyLoading = (isLoading || isFetching || isPending) || 
-                                  (!isQueryEnabled && !notificationsResponse && shouldFetchNotifications) ||
-                                  (!isAuthReady && !notificationsResponse && shouldFetchNotifications);
+        // Loading state: Feed/Profile gibi - sadece ilk yüklemede (data yok + fetch devam ediyor) göster
+        const isActuallyLoading = (isLoading || isFetching || isPending) && !notificationsResponse;
 
         // Her tab için kendi notifications'ını çıkar
         const notifications = extractNotificationsFromResponse(notificationsResponse);
@@ -770,12 +613,12 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
-        // Loading state kontrolü - query enabled değilse veya data yoksa loading göster
+        // Loading state: App standardı ActivityIndicator (Feed/Profile ile uyumlu)
         if (isActuallyLoading && filtered.length === 0) {
             return (
-                <Box flex={1} justifyContent="center" alignItems="center">
-                    <Spinner size="large" />
-                </Box>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                </View>
             );
         }
         
@@ -854,8 +697,7 @@ const NotificationsScreenComponent: React.FC = () => {
         const currentPageData = notificationsResponse?.pages?.[notificationsResponse.pages.length - 1];
         const currentPageNotifications = currentPageData?.data || [];
         // Son sayfada limit kadar bildirim varsa, muhtemelen daha fazla sayfa var
-        // Limit bilgisini query'den al (default: 20)
-        const limit = filterIndex === 1 ? 10 : 20; // Tips tabında limit=10, diğerlerinde 20
+        const limit = 20;
         const hasMoreData = currentPageNotifications.length >= limit;
         
         // hasNextPage true ise göster, yoksa ama data limit kadar varsa da göster (backend pagination sorunu olabilir)
@@ -921,9 +763,9 @@ const NotificationsScreenComponent: React.FC = () => {
                                 </HStack>
                             </Pressable>
                             {isFetchingNextPage && (
-                                <Box mt={8}>
-                                    <Spinner size="small" />
-                                </Box>
+                                <View style={{ marginTop: 8 }}>
+                                    <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                                </View>
                             )}
                         </Box>
                     ) : null
@@ -941,12 +783,6 @@ const NotificationsScreenComponent: React.FC = () => {
         keyExtractor,
         refreshing,
         bottomOffset,
-        isAuthReady,
-        shouldFetchNotifications,
-        currentPage,
-        // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi (sonsuz döngü önleme)
-        // Query sonuçları değiştiğinde React Query otomatik olarak component'i re-render eder
-        // hasNextPage, isFetchingNextPage, fetchNextPage queryResult içinde olduğu için dependency'ye eklenmez
     ]);
 
     return (
@@ -981,7 +817,7 @@ const NotificationsScreenComponent: React.FC = () => {
                     />
                     <Input flex={1} borderWidth={0} bg="transparent">
                         <InputField
-                            placeholder="Search notifications"
+                            placeholder="Bildirimlerde Ara"
                             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                             color={isDark ? '#000' : '#000'}
                             fontSize="$xs"
@@ -992,66 +828,50 @@ const NotificationsScreenComponent: React.FC = () => {
                 </HStack>
             </VStack>
 
-            {/* Tab Header */}
-            <VStack pt={0} bg={tabHeaderBgColor}>
+            {/* Tab Header - Figma: pill/chip style */}
+            <VStack pt={0} pb="$2" px="$4" bg={tabHeaderBgColor}>
                 <HStack
                     ref={tabContainerRef}
-                    borderBottomWidth={1}
-                    borderColor="#E9E9E9"
-                    p={0}
-                    mb="$2"
-                    position="relative"
+                    space="xs"
                     onLayout={(event) => {
                         const width = event.nativeEvent.layout.width;
                         setTabContainerWidth(width);
                     }}
                 >
-                    {filters.map((filter, index) => {
-                        const tabStyle = getTabStyle(index);
-                        return (
-                            <Pressable
-                                key={filter.id}
-                                flex={1}
-                                onPress={() => handleTabPress(index)}
-                                alignItems="center"
-                                pb={8}
-                                px="$1"
+                    {filters.map((filter, index) => (
+                        <Pressable
+                            key={filter.id}
+                            flex={1}
+                            onPress={() => handleTabPress(index)}
+                            alignItems="center"
+                            justifyContent="center"
+                        >
+                            <Animated.View
+                                style={[
+                                    {
+                                        paddingVertical: 8,
+                                        paddingHorizontal: 12,
+                                        borderRadius: 20,
+                                        minWidth: 60,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    },
+                                    getTabBgStyle(index),
+                                ]}
                             >
-                                <VStack alignItems="center" space="xs">
-                                    <Animated.Text
-                                        style={[
-                                            {
-                                                fontSize: 14,
-                                                fontWeight: 'bold',
-                                            },
-                                            tabStyle,
-                                        ]}
-                                        numberOfLines={1}
-                                        ellipsizeMode="tail"
-                                    >
-                                        {filter.label}
-                                    </Animated.Text>
-                                </VStack>
-                            </Pressable>
-                        );
-                    })}
-
-                    {/* Animated Indicator */}
-                    {tabWidth > 0 && (
-                        <Animated.View
-                            style={[
-                                {
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    left: 0,
-                                    width: indicatorWidth,
-                                    height: 2,
-                                    backgroundColor: isDark ? '#FFFFFF' : '#000000',
-                                },
-                                indicatorStyle,
-                            ]}
-                        />
-                    )}
+                                <Animated.Text
+                                    style={[
+                                        { fontSize: 13, fontWeight: '600' },
+                                        getTabTextStyle(index),
+                                    ]}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
+                                    {filter.label}
+                                </Animated.Text>
+                            </Animated.View>
+                        </Pressable>
+                    ))}
                 </HStack>
             </VStack>
 
