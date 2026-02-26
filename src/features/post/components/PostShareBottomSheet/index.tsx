@@ -1,3 +1,7 @@
+/**
+ * Post paylaşım bottom sheet – API base URL ihtiyacı ApiService (API_CONFIG) üzerinden gelir.
+ * Bu modülde veya ShareToTrustedBottomSheet'te .env / API_BASE_URL import edilmez.
+ */
 import React, { useCallback } from 'react';
 import { Platform, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

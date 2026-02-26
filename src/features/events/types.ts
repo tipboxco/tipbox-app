@@ -1,6 +1,7 @@
 // Event Detail API Response Types
 
 import type { EventStatus } from '@/src/types/common';
+import type { EventSurveyItem } from './types/survey.types';
 
 // Reward/Badge Tipi
 export interface EventDetailReward {
@@ -38,6 +39,8 @@ export interface EventDetailApiResponse {
     userName: string;
   }>; // Avatar'lar için (soldaki resimler)
   product?: EventDetailProduct; // eventType'a göre opsiyonel
+  /** Event'e bağlı anketler (GET /events/{eventId} response'unda) */
+  surveys?: EventSurveyItem[];
 }
 
 // Limited Event Leaderboard User

@@ -1,7 +1,7 @@
 import React, { useRef, useMemo, useCallback, useState } from 'react';
 import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, Pressable, Text } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, Pressable, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -20,6 +20,7 @@ import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useInventoryProductCheck } from '../hooks/useInventoryProductCheck';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
 import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { useSubCategoryPosts, useProductGroupPosts, useCatalogProductPosts } from '@/src/features/catalog/api/hooks';
@@ -42,6 +43,7 @@ import { FeedSkeleton } from '@/src/components/Skeletons';
 import { CardType } from '@/src/types/common';
 import { FilterSortBottomSheet, type FilterSortState } from '../components/FilterSortBottomSheet';
 import { mapPostTypeToFilter } from '../utils/postTypeMapping';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
 type PostsScreenNavigationProp = NativeStackNavigationProp<PostStackParamList>;
@@ -51,7 +53,11 @@ export const PostsScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
-  
+
+  // Inventory check hook for quick product lookups
+  const { checkProduct } = useInventoryProductCheck();
+  const toast = useToast();
+
   // PERFORMANCE FIX: Memoize route params to prevent unnecessary re-renders
   const routeParams = useMemo(() => route.params, [route.params]);
   const { stage, name, productInfo, selectedProduct, contextType, contextId } = routeParams;
@@ -151,6 +157,14 @@ export const PostsScreen = () => {
     
     return result;
   }, [contextId, feedContextType, selectedProduct]);
+
+  // Inventory check - only for PRODUCT level context
+  const isProductInInventory = useMemo(() => {
+    if (feedContextType !== 'product' || !feedContextId) {
+      return undefined; // Not applicable for other context types
+    }
+    return checkProduct(feedContextId);
+  }, [feedContextType, feedContextId, checkProduct]);
 
   // Determine which API to use based on context type
   // Use catalog posts endpoints for better hierarchical feed support
@@ -392,10 +406,23 @@ export const PostsScreen = () => {
 
   const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
     console.log('Post type selected:', type, 'experienceOption:', experienceOption);
-    
-    // Close bottom sheet first
+
+    // Product feed: require product in inventory before navigating (except Experience + "tried")
+    // Check before closing sheet so toast appears on top of the open bottom sheet
+    if (stage === 'Product' && feedContextId && !checkProduct(feedContextId)) {
+      const allowWithoutInventory = type === 'experience' && experienceOption === 'tried';
+      if (!allowWithoutInventory) {
+        showCustomToast(toast, {
+          title: 'Product not in inventory',
+          description: 'This product is not in your inventory. Add it to your inventory first to create a post.',
+          action: 'error',
+        });
+        return; // Keep bottom sheet open; toast shows above it
+      }
+    }
+
     closeBottomSheet();
-    
+
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
       // CatalogUIStore'dan ID'leri al
@@ -587,7 +614,7 @@ export const PostsScreen = () => {
       });
     }
     // Handle other post types here if needed
-  }, [navigation, selectedProductPayload, closeBottomSheet, contextType, contextId, stage, productInfo, selectedProduct]);
+  }, [navigation, selectedProductPayload, closeBottomSheet, contextType, contextId, stage, productInfo, selectedProduct, checkProduct, feedContextId, toast]);
 
   // Mapping functions (from FeedScreen)
   const mapFeedToCardData = useCallback((item: ProfilePost): PostCardData => {
@@ -865,7 +892,8 @@ export const PostsScreen = () => {
           },
         },
         content: item.content || '',
-        isBoosted: item.isBoosted || false,
+        isBoosted: item.isBoosted ?? (item as { is_boosted?: boolean }).is_boosted ?? false,
+        boostedUntil: item.boostedUntil ?? (item as { boosted_until?: string }).boosted_until,
         images,
         stats: item.stats,
         createdAt: item.createdAt,
@@ -925,7 +953,8 @@ export const PostsScreen = () => {
       },
       category,
       content: item.content || '',
-      isBoosted: item.isBoosted || false,
+      isBoosted: item.isBoosted ?? (item as { is_boosted?: boolean }).is_boosted ?? false,
+      boostedUntil: item.boostedUntil ?? (item as { boosted_until?: string }).boosted_until,
       images,
       stats: item.stats,
       createdAt: item.createdAt,
@@ -1335,7 +1364,10 @@ export const PostsScreen = () => {
 
       {/* Create Button - Sadece Product stage'inde göster */}
       {stage === 'Product' && (
-        <CreateButton onPress={handleCreatePress} />
+        <CreateButton
+          onPress={handleCreatePress}
+          isProductInInventory={isProductInInventory}
+        />
       )}
 
       </Box>

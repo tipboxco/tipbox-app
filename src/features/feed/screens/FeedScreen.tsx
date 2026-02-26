@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, ActivityIndicator, FlatList, View } from 'react-native';
+import { Platform, ActivityIndicator, FlatList, View, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@/src/components/ui';
@@ -8,11 +8,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ScrollRegistry } from '@/src/services/ScrollRegistry';
+import { navigationService } from '@/src/services/NavigationService';
 import { AssetAccessCard } from '../components/AssetAccessCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import ExpertBottomSheet from '@/src/components/ExpertBottomSheet';
 import { SearchModal } from '@/src/components/SearchModal';
+import { useSearch } from '@/src/features/search/api/hooks';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
@@ -61,7 +63,29 @@ const FeedScreenInner = React.memo(() => {
   const { user } = useAppStore();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const queryClient = useQueryClient();
-  
+
+  // 🚀 OPTIMIZATION 1: API Preloading - SearchModal için default verileri önceden cache'le
+  // Modal açılmadan önce veri hazır olduğu için 100-500ms kazanç
+  // FIX: Silent error handling - network hatası olursa sessizce devam et
+  const preloadQuery = useSearch(
+    {
+      keyword: '',
+      types: ['user', 'brand', 'product'],
+      limit: 4,
+    },
+    true // Her zaman aktif, cache'lenir ve SearchModal açıldığında hazır
+  );
+
+  // FIX: Network hatasını log'la ama UI'ı bloke etme
+  useEffect(() => {
+    if (preloadQuery.error) {
+      if (__DEV__) {
+        console.warn('[FeedScreen] Search preload failed (silent):', preloadQuery.error.message);
+      }
+      // Hata olsa bile devam et, SearchModal kendi loading state'ini handle eder
+    }
+  }, [preloadQuery.error]);
+
   // FEATURE: Pull-to-refresh için son görülen post ID'sini takip et
   // Kullanıcı en alta geldiğinde bu ID güncellenir, refresh'te cursor olarak kullanılır
   const [lastSeenPostId, setLastSeenPostId] = useState<string | undefined>(undefined);
@@ -101,7 +125,7 @@ const FeedScreenInner = React.memo(() => {
 
   // Filtre state'i
   // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
-  // 
+  //
   // Filtre Parametreleri:
   // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
   //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
@@ -112,6 +136,17 @@ const FeedScreenInner = React.memo(() => {
   //   Backend'de interests ile birleştirilir (OR mantığı)
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
+
+  // FEATURE: Filter panel state - panel açıkken dışarıya tıklama için
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const closePanelRef = useRef<(() => void) | null>(null);
+
+  // Handle click outside filter panel to close it
+  const handleOverlayPress = useCallback(() => {
+    if (closePanelRef.current) {
+      closePanelRef.current();
+    }
+  }, []);
 
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -127,18 +162,19 @@ const FeedScreenInner = React.memo(() => {
 
   // Drawer açıkken veya swipe sırasında scroll'u disable et
   // CRITICAL: isDragging kontrolü ile swipe sırasında re-render önleme
+  // FEATURE: Filter panel açıkken de scroll'u disable et
   useEffect(() => {
-    if (isDrawerOpen || isDragging) {
+    if (isDrawerOpen || isDragging || isFilterPanelOpen) {
       setIsScrollEnabled(false);
     } else {
-      // Drawer kapandıktan sonra kısa bir delay ile scroll'u enable et
-      // Bu, drawer kapanma animasyonunun tamamlanmasını bekler ve titreme önler
+      // Drawer/panel kapandıktan sonra kısa bir delay ile scroll'u enable et
+      // Bu, kapanma animasyonunun tamamlanmasını bekler ve titreme önler
       const timer = setTimeout(() => {
         setIsScrollEnabled(true);
-      }, 150); // 150ms delay - drawer kapanma animasyonu tamamlandıktan sonra
+      }, 150); // 150ms delay - animasyon tamamlandıktan sonra
       return () => clearTimeout(timer);
     }
-  }, [isDrawerOpen, isDragging]);
+  }, [isDrawerOpen, isDragging, isFilterPanelOpen]);
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
@@ -248,7 +284,8 @@ const FeedScreenInner = React.memo(() => {
     } else if (tab === 'inventory') {
       if (user?.id) {
         // Inventory ekranına git - InventoryScreen mount olduğunda useInventory hook'u otomatik olarak /inventory endpoint'ine GET isteği atacak
-        (navigation as any).navigate('Profile', {
+        // Use navigationService for cross-stack navigation (same pattern as DrawerContent)
+        navigationService.navigate('Profile', {
           screen: 'InventoryList',
           params: {
             userId: user.id,
@@ -581,7 +618,8 @@ const FeedScreenInner = React.memo(() => {
           },
         },
         content: item.content || '',
-        isBoosted: item.isBoosted || false,
+        isBoosted: item.isBoosted ?? (item as { is_boosted?: boolean }).is_boosted ?? false,
+        boostedUntil: item.boostedUntil ?? (item as { boosted_until?: string }).boosted_until,
         images,
         stats: item.stats,
         createdAt: item.createdAt,
@@ -643,7 +681,8 @@ const FeedScreenInner = React.memo(() => {
       },
       category,
       content: item.content || '',
-      isBoosted: item.isBoosted || false,
+      isBoosted: item.isBoosted ?? (item as { is_boosted?: boolean }).is_boosted ?? false,
+      boostedUntil: item.boostedUntil ?? (item as { boosted_until?: string }).boosted_until,
       images,
       stats: item.stats,
       createdAt: item.createdAt,
@@ -994,25 +1033,45 @@ const FeedScreenInner = React.memo(() => {
           <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
-          {/* FilterBar - panel aşağı doğru açılır, feed içeriği aşağı kayar (modal/overlay yok) */}
+          {/* FilterBar - panel aşağı doğru açılır, feed içeriği aşağı kayar */}
           <FilterBarReanimated
             filters={filters}
             onFiltersChange={setFilters}
+            onPanelStateChange={setIsFilterPanelOpen}
+            onClosePanelRef={(closeFn) => {
+              closePanelRef.current = closeFn;
+            }}
           />
         </View>
-        <View style={{ flex: 1, minHeight: 0 }}>
+        <View style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+          {/* Overlay for closing filter panel - only covers feed area */}
+          {isFilterPanelOpen && (
+            <Pressable
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 5,
+                backgroundColor: 'transparent',
+              }}
+              onPress={handleOverlayPress}
+            />
+          )}
+
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
           ) : error ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
               <View style={{ gap: 16, alignItems: 'center' }}>
                 <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
-                  Feed Yüklenemedi
+                  Failed to Load Feed
                 </Text>
                 {(error as any)?.response?.status === 500 ? (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.
+                      Server error occurred. Please try again later.
                     </Text>
                     {(error as any)?.response?.data?.error?.message && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center" mt="$2">
@@ -1023,7 +1082,7 @@ const FeedScreenInner = React.memo(() => {
                 ) : (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      {error.message || 'Bilinmeyen bir hata oluştu'}
+                      {error.message || 'An unknown error occurred'}
                     </Text>
                     {(error as any)?.response?.status && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
@@ -1089,6 +1148,7 @@ const FeedScreenInner = React.memo(() => {
             />
           )}
         </View>
+
         {/* Search Modal */}
         <SearchModal
           visible={isSearchVisible}

@@ -11,7 +11,7 @@ export const catalogKeys = {
   all: ['catalog'] as const,
   categories: (cursor?: string, limit?: number) => [...catalogKeys.all, 'categories', cursor, limit] as const,
   brandCategories: () => [...catalogKeys.all, 'brandCategories'] as const,
-  brandList: (categoryId: string) => [...catalogKeys.all, 'brands', categoryId] as const,
+  brandList: (categoryId: string, limit?: number) => [...catalogKeys.all, 'brands', categoryId, limit] as const,
   brandCatalog: (brandId: string) => [...catalogKeys.all, 'brandCatalog', brandId] as const,
   brandFeed: (brandId: string, cursor?: string, limit?: number) => 
     [...catalogKeys.all, 'brandFeed', brandId, cursor, limit] as const,
@@ -137,35 +137,35 @@ export const useBrandCategories = () => {
 };
 
 /**
- * Get Brands by Category query hook
- * Seçili brand kategorisine göre /brands/categories/{category_id}/brands endpoint'inden brand listesini getirir
+ * Get Brands by Category query hook (paginated, infinite scroll)
+ * GET /brands/categories/{categoryId}/brands?page=1&limit=20
  *
  * @param categoryId - Seçili brand kategorisinin ID'si
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns useInfiniteQuery result - data.pages[].items birleştirilerek tüm brand'ler
  */
-export const useBrandsByCategory = (categoryId: string | undefined) => {
-  return useQuery<BrandListItem[], Error>({
-    queryKey: categoryId ? catalogKeys.brandList(categoryId) : ['catalog', 'brands', 'disabled'],
-    queryFn: () => {
+export const useBrandsByCategory = (categoryId: string | undefined, limit: number = 20) => {
+  return useInfiniteQuery({
+    queryKey: categoryId ? catalogKeys.brandList(categoryId, limit) : ['catalog', 'brands', 'disabled'],
+    queryFn: ({ pageParam }) => {
       if (!categoryId) {
         throw new Error('Category ID is required');
       }
-      return getBrandsByCategory(categoryId);
+      return getBrandsByCategory(categoryId, pageParam as number, limit);
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined,
     enabled: !!categoryId,
-    staleTime: 2 * 60 * 60 * 1000, // 2 saat - brand listeleri nadiren değişir
-    gcTime: 24 * 60 * 60 * 1000, // 24 saat - cache'de tut
-    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
+    staleTime: 2 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
-      // 404 hatası için retry yapma (kategori bulunamadı - geçici bir hata değil)
-      if (error?.response?.status === 404) {
-        return false;
-      }
-      // Diğer hatalar için 3 kez retry yap
+      if (error?.response?.status === 404) return false;
       return failureCount < 3;
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
@@ -201,6 +201,7 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
   // DEBUG: React Query response'unu log'la
   if (__DEV__) {
     useEffect(() => {
+      // Log summary only; avoid nesting objects so console doesn't show "[Object]"
       console.log('[useCatalogSubCategories] 🔍 React Query State:', {
         categoryId,
         limit,
@@ -212,7 +213,6 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
         hasData: !!query.data,
         dataType: typeof query.data,
         itemsCount: query.data?.items?.length || 0,
-        data: query.data,
       });
       
       if (query.data) {

@@ -20,6 +20,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '@/src/components/CardImageCarousel';
+import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
@@ -185,6 +186,24 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
   const contextType = (data as any).contextType || (data.relatedPost?.product ? 'product' : undefined);
   const contextId = (data as any).contextId || data.relatedPost?.product?.id || data.product?.id;
 
+  // Transform relatedPost to ExperiencePostCardData for consistent rendering
+  const transformedRelatedPost = React.useMemo(() => {
+    const rp = data.relatedPost || relatedPostData;
+    if (!rp) return null;
+
+    return {
+      id: rp.id || '',
+      user: data.user,
+      contextData: rp.product || { id: '', name: '', subName: '', image: '', isOwned: false },
+      contextType: (contextType as any) || ProductInfoType.PRODUCT,
+      content: (rp.content && Array.isArray(rp.content)) ? rp.content : [],
+      tags: (rp.tags && Array.isArray(rp.tags)) ? rp.tags : [],
+      images: (rp.images && Array.isArray(rp.images)) ? rp.images : [],
+      stats: rp.stats || { likes: 0, comments: 0, shares: 0, bookmarks: 0 },
+      createdAt: new Date().toISOString(),
+    };
+  }, [data.relatedPost, relatedPostData, data.user, contextType]);
+
   return (
     <VStack
       bg={isDark ? '$backgroundDark900' : '$white'}
@@ -240,7 +259,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         animationType="fade"
         onRequestClose={() => setIsMenuOpen(false)}
       >
-        <RNPressable style={StyleSheet.absoluteFill} onPress={() => setIsMenuOpen(false)} />
+        <RNPressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.25)' }]} onPress={() => setIsMenuOpen(false)} />
         <View
           style={[
             detailStyles.menuContainer,
@@ -248,6 +267,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               top: menuPosition.top,
               left: menuPosition.left,
               backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              zIndex: 1,
+              elevation: 10,
             },
           ]}
         >
@@ -319,173 +340,41 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         )}
       </VStack>
 
-      {/* Related Post Section - Experience Post içeriği */}
-      {(data.relatedPost || relatedPostData) && (
-        <>
-          {/* Related Post Title */}
-          <VStack px={12} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            <Text
-              color={isDark ? '$textDark50' : '#A3A3A3'}
-              fontSize="$sm"
-              fontWeight="$bold"
-              textDecorationLine="underline"
-            >
-              Related Post
-            </Text>
-          </VStack>
+      {/* Translate Button */}
+      {shouldTranslate && (
+        <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <Pressable onPress={toggleTranslation}>
+            <HStack alignItems="center" space="xs">
+              <Image
+                source={require('@/assets/translate.png')}
+                alt="translate"
+                width={16}
+                height={16}
+              />
+              <Text
+                color="#829905"
+                fontSize="$sm"
+                textDecorationLine="underline"
+              >
+                {isTranslating
+                  ? 'Çeviriliyor...'
+                  : showTranslation
+                  ? 'Hide Translation'
+                  : 'Translate'}
+              </Text>
+            </HStack>
+          </Pressable>
+        </Box>
+      )}
 
-          {/* Product Info Card */}
-          {(relatedPostData?.product || data.product) && (
-            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                <ProductInfoCard
-                  image={(relatedPostData?.product || data.product)?.image}
-                  title={(relatedPostData?.product || data.product)?.name || ''}
-                  subName={(relatedPostData?.product || data.product)?.subName}
-                  size="big"
-                  type={ProductInfoType.PRODUCT}
-                  isOwned={true}
-                />
-            </VStack>
-          )}
-
-          {/* Content Cards - Map ile oluşturuluyor */}
-          {((relatedPostData?.content && Array.isArray(relatedPostData.content) && relatedPostData.content.length > 0) || 
-            (data.relatedPost?.content && Array.isArray(data.relatedPost.content) && data.relatedPost.content.length > 0)) && (
-            <VStack px={16} space="md" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-              {(
-                (Array.isArray(relatedPostData?.content) && relatedPostData.content.length > 0) 
-                  ? relatedPostData.content 
-                  : (Array.isArray(data.relatedPost?.content) ? data.relatedPost.content : [])
-              ).map((contentItem: any, index: number) => (
-                <Box
-                  key={index}
-                  bg={isDark ? '$backgroundDark800' : '#FAFAFA'}
-                  borderRadius={10}
-                  overflow="hidden"
-                >
-                {/* Card Header - Başlık ve Content aynı hizada */}
-                <HStack px={16} py={8} alignItems="flex-start" space="sm">
-                  {contentItem.tag.icon === 'tag' ? (
-                    <TagIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
-                  ) : (
-                    <CubeIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
-                  )}
-                  <VStack flex={1} space="xs">
-                    <Text
-                      fontSize={11}
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#3B3B3B'}
-                    >
-                      {contentItem.tag.title}
-                    </Text>
-                    <Text
-                      color={isDark ? '$textDark50' : '#000000'}
-                      fontSize="$sm"
-                      lineHeight={22}
-                    >
-                      {contentItem.text}
-                    </Text>
-                  </VStack>
-                </HStack>
-
-                {/* Rating Section - Başlık ve content ile aynı hizada */}
-                <HStack px={16} pb={12} alignItems="flex-start" space="sm">
-                  {/* Icon yerine boşluk - hizalama için */}
-                  <Box width={18} />
-                  <VStack flex={1} space="xs">
-                    <Text
-                      fontSize={11}
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#3B3B3B'}
-                    >
-                      Rate Experience
-                    </Text>
-                    <HStack space="xs">
-                      {[1, 2, 3, 4, 5].map((star) => {
-                        const rating = contentItem.rating || [];
-                        const isFilled = star <= rating.filter((r: number) => r === 1).length;
-                        return isFilled ? (
-                          <StarIconSolid
-                            key={star}
-                            width={24}
-                            height={24}
-                            color="#829905"
-                          />
-                        ) : (
-                          <StarIcon
-                            key={star}
-                            width={24}
-                            height={24}
-                            color="#E9E9E9"
-                          />
-                        );
-                      })}
-                    </HStack>
-                  </VStack>
-                </HStack>
-              </Box>
-              ))}
-            </VStack>
-          )}
-
-          {/* Tags Section */}
-          {((relatedPostData?.tags && Array.isArray(relatedPostData.tags) && relatedPostData.tags.length > 0) || 
-            (data.relatedPost?.tags && Array.isArray(data.relatedPost.tags) && data.relatedPost.tags.length > 0)) && (
-              <HStack px={16} py={10} flexWrap="wrap" gap={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                {(
-                  (Array.isArray(relatedPostData?.tags) && relatedPostData.tags.length > 0) 
-                    ? relatedPostData.tags 
-                    : (Array.isArray(data.relatedPost?.tags) ? data.relatedPost.tags : [])
-                ).map((tag: string, index: number) => (
-                  <Box
-                    key={index}
-                    bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
-                    borderWidth={1}
-                    borderColor="#EFEFEF"
-                    $dark-borderColor="$borderDark600"
-                    borderRadius={10}
-                    px={12}
-                    py={3}
-                  >
-                    <Text
-                      fontSize="$xs"
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#000000'}
-                    >
-                      {tag}
-                    </Text>
-                  </Box>
-                ))}
-              </HStack>
-          )}
-
-          {/* Translate Button - Tags'in altında */}
-          {shouldTranslate && (
-            <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-              <Pressable onPress={toggleTranslation}>
-                <HStack alignItems="center" space="xs">
-                  <Image
-                    source={require('@/assets/translate.png')}
-                    alt="translate"
-                    width={16}
-                    height={16}
-                  />
-                  <Text
-                    color="#829905"
-                    fontSize="$sm"
-                    textDecorationLine="underline"
-                  >
-                    {isTranslating
-                      ? 'Çeviriliyor...'
-                      : showTranslation
-                      ? 'Hide Translation'
-                      : 'Translate'}
-                  </Text>
-                </HStack>
-              </Pressable>
-            </Box>
-          )}
-        </>
+      {/* Related Post Section - Render using ExperiencePostCard for consistent display */}
+      {transformedRelatedPost && (
+        <ExperiencePostCard
+          data={transformedRelatedPost}
+          showHeader={false}
+          showActions={false}
+          hideProduct={false}
+        />
       )}
 
       {/* Images - Experience post'tan sonra */}

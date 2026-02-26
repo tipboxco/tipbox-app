@@ -10,11 +10,10 @@ import {
   HeartIcon,
   ChatBubbleLeftIcon,
   BookmarkIcon,
-  ChevronDoubleUpIcon,
-  PencilIcon,
   TrashIcon,
   UserIcon,
   FlagIcon,
+  RocketLaunchIcon,
 } from 'react-native-heroicons/outline';
 import {
   HeartIcon as HeartIconSolid,
@@ -74,9 +73,14 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
   
-  // Boost state
-  const [isBoosted, setIsBoosted] = useState(data.isBoosted || false);
+  // Boost state (backend bazen is_boosted/boosted_until snake_case döner)
+  const resolvedIsBoosted = data.isBoosted ?? (data as { is_boosted?: boolean }).is_boosted ?? false;
+  const resolvedBoostedUntil = data.boostedUntil ?? (data as { boosted_until?: string }).boosted_until;
+  const [isBoosted, setIsBoosted] = useState(resolvedIsBoosted);
+  const [boostedUntil, setBoostedUntil] = useState<string | undefined>(resolvedBoostedUntil);
   const [boostPrice, setBoostPrice] = useState(data.boostPrice);
+  // Boost badge sadece süre dolmamışsa gösterilir
+  const isBoostActive = isBoosted && boostedUntil && new Date(boostedUntil) > new Date();
   
   // Animated counter states
   const [likesCount, setLikesCount] = useState(data.stats.likes);
@@ -105,11 +109,14 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
     }
   }, [postStatus]);
 
-  // Sync boost state with data prop changes
+  // Sync boost state with data prop changes (isBoosted, boostedUntil, snake_case fallback)
   useEffect(() => {
-    setIsBoosted(data.isBoosted || false);
+    const v = data.isBoosted ?? (data as { is_boosted?: boolean }).is_boosted ?? false;
+    const until = data.boostedUntil ?? (data as { boosted_until?: string }).boosted_until;
+    setIsBoosted(v);
+    setBoostedUntil(until);
     setBoostPrice(data.boostPrice);
-  }, [data.isBoosted, data.boostPrice]);
+  }, [data]);
 
   // Sync stats with data prop changes
   useEffect(() => {
@@ -462,9 +469,9 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
             </Pressable>
           )}
           <Pressable flex={1} onPress={handleViewProfile}>
-            <VStack 
+            <VStack
               flex={1}
-              justifyContent={data.user?.title ? 'flex-start' : 'center'}
+              justifyContent="center"
             >
               <Text
                 color={isDark ? '$textDark50' : '#000'}
@@ -500,10 +507,11 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
             visible={isMenuOpen}
             transparent={true}
             animationType="fade"
+            presentationStyle="overFullScreen"
             onRequestClose={() => setIsMenuOpen(false)}
           >
             <RNPressable
-              style={{ flex: 1 }}
+              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
               onPress={() => setIsMenuOpen(false)}
             />
             <View
@@ -516,6 +524,8 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                   borderWidth: 1,
                   borderColor: isDark ? '#333333' : '#E9E9E9',
                   shadowOpacity: isDark ? 0.3 : 0.1,
+                  zIndex: 1,
+                  elevation: 10,
                 }
               ]}
               onLayout={(event) => {
@@ -534,10 +544,39 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                 onPress={(e) => e.stopPropagation()}
                 style={{ flex: 1 }}
               >
-                <VStack px={8}pl={12} py={2}  width="100%">
+                <VStack px={8} pl={12} py={2} width="100%">
                   {isPostOwner ? (
                     <>
-                      {/* Update butonu kaldırıldı - Sadece experience post'larda update var */}
+                      <Pressable py={8} onPress={() => setIsMenuOpen(false)}>
+                        <HStack alignItems="center" justifyContent="space-between">
+                          <HStack alignItems="center" space="xs" flex={1}>
+                            <Image
+                              source={require('@/assets/boost.svg')}
+                              alt="boost"
+                              width={20}
+                              height={20}
+                            />
+                            <Text
+                              color={isDark ? '#FFFFFF' : '#000000'}
+                              fontSize="$sm"
+                              fontWeight="$medium"
+                            >
+                              {isBoosted ? "Boost'u Kapat" : 'Boost Post'}
+                            </Text>
+                          </HStack>
+                          <Switch
+                            value={isBoosted}
+                            onValueChange={(v) => { setIsMenuOpen(false); handleBoostToggle(v); }}
+                            trackColor={{
+                              false: isDark ? '#333333' : '#E9E9E9',
+                              true: '#829905',
+                            }}
+                            thumbColor={isBoosted ? '#B8CC04' : (isDark ? '#666666' : '#FFFFFF')}
+                            disabled={toggleBoostMutation.isPending}
+                          />
+                        </HStack>
+                      </Pressable>
+                      <Divider bg={isDark ? '#333333' : '#E9E9E9'} mx={0} />
                       <Pressable
                         onPress={() => {
                           setIsMenuOpen(false);
@@ -678,116 +717,50 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       }
 
       {/* Badges */}
-      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-        <Box
-          borderWidth={2}
-          borderColor="#B8CC04"
-          bgColor="#758600"
-          borderRadius={20}
-          width={90}
-          px={10}
-          py={6}
-          mr={16}
-          flexDirection="row"
-          alignItems="center"
-          justifyContent="space-evenly"
-        >
-          <QuestionMarkCircleIcon width={12} height={12} color={'#fff'} />
-          <Text
-            fontSize={8}
-            fontWeight="$semibold"
-            ml={5}
-            color={'#fff'}
-          >
-            Question
-          </Text>
-        </Box>
-
-        {isBoosted && (
+      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space={8} alignItems="center">
           <Box
             borderWidth={2}
-            borderColor="#EF4D81"
-            bgColor="#E0195B"
+            borderColor="#B8CC04"
+            bgColor="#758600"
             borderRadius={20}
-            width={90}
             px={10}
             py={6}
             flexDirection="row"
             alignItems="center"
-            justifyContent="space-evenly"
+            justifyContent="center"
           >
-            <Image
-              source={require('@/assets/boost.svg')}
-              alt="boost"
-              width={12}
-              height={12}
-            />
+            <QuestionMarkCircleIcon width={12} height={12} color={'#fff'} />
             <Text
               fontSize={8}
               fontWeight="$semibold"
               ml={5}
-              color="#fff"
+              color={'#fff'}
             >
-              Boosted
+              Question
             </Text>
           </Box>
-        )}
+
+          {isBoostActive && (
+            <Box
+              borderWidth={2}
+              borderColor="#EF4D81"
+              bgColor="#E0195B"
+              borderRadius={20}
+              px={10}
+              py={6}
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <RocketLaunchIcon width={12} height={12} color="#fff" />
+              <Text fontSize={8} fontWeight="$semibold" ml={5} color="#fff">
+                Boosted
+              </Text>
+            </Box>
+          )}
       </HStack>
 
-      {/* Boost Switch - Sadece post owner'a göster */}
-      {isPostOwner && (
-        <VStack 
-          px={12} 
-          py={12} 
-          borderRightWidth={1} 
-          borderLeftWidth={1} 
-          borderColor="#E9E9E9"
-          space="xs"
-        >
-          <HStack alignItems="center" justifyContent="space-between">
-            <VStack flex={1} mr={12}>
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$sm"
-                fontWeight="$semibold"
-                mb={4}
-              >
-                Boost Post
-              </Text>
-              <Text
-                color={isDark ? '$textDark400' : '#787878'}
-                fontSize={11}
-                lineHeight={14}
-              >
-                {isBoosted 
-                  ? `Aktif${boostPrice ? ` - ${boostPrice} TIPS` : ''}` 
-                  : 'Sorunuzun daha fazla kişiye ulaşmasını sağlayın'}
-              </Text>
-            </VStack>
-            <Switch
-              value={isBoosted}
-              onValueChange={handleBoostToggle}
-              trackColor={{ 
-                false: isDark ? '#333333' : '#E9E9E9', 
-                true: '#829905' 
-              }}
-              thumbColor={isBoosted ? '#B8CC04' : (isDark ? '#666666' : '#FFFFFF')}
-              disabled={toggleBoostMutation.isPending}
-            />
-          </HStack>
-          {boostPrice !== undefined && (
-            <Text
-              color={isDark ? '$textDark400' : '#787878'}
-              fontSize={10}
-              fontStyle="italic"
-            >
-              * Boost fiyatı platform aktivitesine göre belirlenir
-            </Text>
-          )}
-        </VStack>
-      )}
-
-      {/* Content */}
+      {/* Content - Boost Post sadece 3 nokta menüde (doğru tasarım: badge ile içerik arasında değil) */}
       <Pressable onPress={() => {
         if (isDetailMode) return; // Detay modunda navigation yapma
         navigationService.navigate(ROOT_ROUTES.POST, {
@@ -831,7 +804,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       {/* Stats */}
       <HStack
         px={12}
-        py={10}
+        py={12}
         borderRightWidth={1}
         borderLeftWidth={1}
         borderBottomWidth={1}
@@ -868,9 +841,15 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           </HStack>
           </Pressable>
           <Pressable onPress={handleShare}>
-          <HStack mr={10} alignItems="center">
-            <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-          </HStack>
+            <HStack mr={10} alignItems="center">
+              <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              <AnimatedCounter
+                value={sharesCount}
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize={10}
+                ml={4}
+              />
+            </HStack>
           </Pressable>
           <Pressable onPress={handleBookmark}>
           <HStack mr={10} alignItems="center">
@@ -888,15 +867,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           </HStack>
           </Pressable>
         </HStack>
-        {data.isBoosted && (
-          <Box>
-            <ChevronDoubleUpIcon
-              width={24}
-              height={24}
-              color="#22C55E"
-            />
-          </Box>
-        )}
       </HStack>
 
     </View>

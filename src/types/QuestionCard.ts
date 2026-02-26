@@ -41,6 +41,8 @@ export interface QuestionApiItem {
   contextData: QuestionApiContextData;
   content: string;
   isBoosted: boolean;
+  /** Boost bitiş tarihi (ISO string); 7 gün sonrası. Süre dolunca badge gösterilmez. */
+  boostedUntil?: string;
   boostPrice?: number; // Dinamik boost fiyatı (backend'den gelir)
   images: string[];
   // Interaction states
@@ -89,6 +91,8 @@ export interface QuestionCardData {
   category?: QuestionCardCategory; // Optional: contextData yoksa undefined olabilir
   content: string;
   isBoosted?: boolean;
+  /** Boost bitiş tarihi (ISO string). isBoostActive = isBoosted && boostedUntil > now */
+  boostedUntil?: string;
   boostPrice?: number; // Dinamik boost fiyatı (backend'den gelir)
   images?: ImageSourcePropType[];
   stats: QuestionCardStats;

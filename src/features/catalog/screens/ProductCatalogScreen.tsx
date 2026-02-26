@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, Image } from '@gluestack-ui/themed';
+import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, Image, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Search } from 'lucide-react-native';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
@@ -64,7 +64,25 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   const navigation = useNavigation<ProductCatalogScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>(initialBreadcrumbItems || []);
-  
+  const toast = useToast();
+
+  // Helper function to show error toast
+  const showErrorToast = useCallback((title: string, message: string) => {
+    toast.show({
+      placement: 'top',
+      render: ({ id }) => {
+        return (
+          <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+              <ToastTitle>{title}</ToastTitle>
+              <ToastDescription>{message}</ToastDescription>
+            </Toast>
+          </Box>
+        );
+      },
+    });
+  }, [toast]);
+
   // Create Post Flow Store
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
   
@@ -185,20 +203,22 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Global product search - tüm product group'lar arasında arama
-  const hasGlobalSearch = debouncedSearchQuery && debouncedSearchQuery.length > 0;
-  const { 
-    data: globalSearchData, 
+  // Her seviyede yerel filtre: arama yazıldığında mevcut liste searchQuery ile filtrelenir.
+  // Global product search disabled - we show locally filtered list instead of "No search results" from API.
+  const showGlobalSearchResults = false;
+
+  const {
+    data: globalSearchData,
     isLoading: isLoadingGlobalSearch,
     fetchNextPage: fetchNextGlobalSearchPage,
     hasNextPage: hasNextGlobalSearchPage,
     isFetchingNextPage: isFetchingNextGlobalSearchPage
-  } = useGlobalProductSearch(hasGlobalSearch ? debouncedSearchQuery : undefined, 20);
+  } = useGlobalProductSearch(undefined, 20); // Disabled - yerel filtre kullanılıyor
 
-  // API'den seçili ürün grubuna ait products'ı getir (search ile) - sadece global search yoksa
+  // API'den seçili ürün grubuna ait products'ı getir (yerel filtre getCurrentData'da yapılıyor)
   const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(
-    hasGlobalSearch ? undefined : selectedProductGroupId, // Global search varsa productGroupId gönderme
-    hasGlobalSearch ? undefined : (debouncedSearchQuery || undefined) // Global search varsa search query gönderme
+    selectedProductGroupId ?? undefined,
+    undefined
   );
   
   // API'den gelen verileri formatla
@@ -470,6 +490,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     
     return finalGroups;
   }, [globalSearchData, debouncedSearchQuery]);
+
   // Local state for product object (for UI display only)
   const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
@@ -1218,7 +1239,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           selectedProductGroupId,
           currentView,
         });
-        // TODO: Show error toast/modal to user - "Please select a subcategory, product group, or product first"
+        showErrorToast('Hata', 'Lütfen bir ürün, ürün grubu veya alt kategori seçiniz.');
         return;
       }
       
@@ -1311,7 +1332,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
-        // TODO: Show error toast/modal to user
+        showErrorToast('Hata', 'Lütfen bir ürün, ürün grubu veya alt kategori seçiniz.');
         return;
       }
       
@@ -1423,11 +1444,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
   }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect]);
 
   const getCurrentData = () => {
-    // Global search aktifse, global search sonuçlarını döndür
-    if (hasGlobalSearch) {
-      return null; // Global search için özel render mantığı kullanılacak
-    }
-    
+    // Her seviyede yerel filtre: searchQuery ile mevcut liste filtrelenir (API araması yok)
     const data = (() => {
       switch (currentView) {
         case 'categories':
@@ -1529,8 +1546,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         flex={1} 
         px="$4"
         onScroll={(event) => {
-          // Global search için infinite scroll
-          if (hasGlobalSearch && hasNextGlobalSearchPage && !isFetchingNextGlobalSearchPage) {
+          // Global search için infinite scroll (sadece global sonuçlar gösterilirken)
+          if (showGlobalSearchResults && hasNextGlobalSearchPage && !isFetchingNextGlobalSearchPage) {
             const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
             const paddingToBottom = 20;
             if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
@@ -1541,14 +1558,14 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         scrollEventThrottle={400}
       >
         <VStack space="md" pt="$4" pb={scrollViewPaddingBottom}>
-          {/* Global Search Results */}
-          {hasGlobalSearch ? (
+          {/* Global Search Results - Categories view'da yerel filtre kullanılır (Be → Beauty) */}
+          {showGlobalSearchResults ? (
             isLoadingGlobalSearch ? (
               <ProductSkeleton count={9} />
             ) : globalSearchResults.length === 0 ? (
               <Box py="$8" alignItems="center">
                 <Text color={isDark ? '#999' : '#666'} fontSize="$sm">
-                  Arama sonucu bulunamadı
+                  No search results
                 </Text>
               </Box>
             ) : (
@@ -1786,6 +1803,12 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                     );
                   })}
                 </>
+              ) : currentData && currentData.length === 0 && searchQuery.trim().length > 0 ? (
+                <Box py="$8" alignItems="center" px="$4">
+                  <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
+                    No results for "{searchQuery.trim()}"
+                  </Text>
+                </Box>
               ) : null}
             </>
           )}

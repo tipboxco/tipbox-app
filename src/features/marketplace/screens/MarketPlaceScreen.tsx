@@ -13,6 +13,9 @@ import { Header } from '@/src/components/Header';
 import { SearchFilter, type NFTType } from '../components/SearchFilter';
 import { NFTCard } from '../components/NFTCard';
 import { FloatingActionButton } from '../components/FloatingActionButton';
+import { NFTFilterBottomSheet } from '../components/NFTFilterBottomSheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useBottomOffset } from '@/src/utils';
 import { Dimensions } from 'react-native';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useMarketplaceListings, useMyListings, marketplaceKeys } from '../api/hooks';
@@ -37,7 +40,11 @@ const MarketPlaceScreen = () => {
   const route = useRoute();
   const queryClient = useQueryClient();
   const user = useAppStore((state) => state.user);
-  
+
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+
   // Get initial tab from route params (if navigating from delist)
   const initialTab = (route.params as any)?.initialTab || 'all';
   
@@ -258,13 +265,34 @@ const MarketPlaceScreen = () => {
     );
   };
 
+  const handleOpenFilterBottomSheet = useCallback(() => {
+    openBottomSheet(
+      <NFTFilterBottomSheet
+        selectedType={selectedType}
+        onTypeSelect={(type) => {
+          setSelectedType(type);
+        }}
+        onClose={closeBottomSheet}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: bottomOffset,
+      }
+    );
+  }, [selectedType, openBottomSheet, closeBottomSheet, bottomOffset]);
+
   const renderRow = (info: { item: NFTCardData[]; index: number }, tab: 'all' | 'my') => {
     const { item } = info;
     return (
       <HStack space="sm" justifyContent="space-between" mb="$3">
         {item.map((nft) => (
-          <VStack 
-            key={nft.id} 
+          <VStack
+            key={nft.id}
             width={cardWidth}
           >
             <NFTCard data={nft} showQuickBuy={tab === 'all'} />
@@ -365,11 +393,11 @@ const MarketPlaceScreen = () => {
 
         {/* Search Filter */}
         <VStack px={16} py={8} bg="#FFFFFF">
-          <SearchFilter 
-            searchQuery={searchQuery} 
+          <SearchFilter
+            searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             selectedType={selectedType}
-            onTypeChange={setSelectedType}
+            onFilterPress={handleOpenFilterBottomSheet}
           />
         </VStack>
 

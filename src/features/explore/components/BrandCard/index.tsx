@@ -9,13 +9,13 @@ import {
   Pressable,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Brand } from '@/src/mock/catalog/brandCatalog/types';
+import { BrandCardModel } from '@/src/features/catalog/types';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; // 16px padding on each side + 16px gap between cards
 
 interface BrandCardProps {
-  data: Brand;
+  data: BrandCardModel;
   onPress?: () => void;
 }
 

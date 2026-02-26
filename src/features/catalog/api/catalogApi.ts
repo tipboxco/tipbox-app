@@ -113,16 +113,19 @@ export const getCatalogSubCategories = async (
     
     // DEBUG: API response'unu log'la
     if (__DEV__) {
+      const data = response.data as any;
+      const itemsCount = data?.items?.length ?? (Array.isArray(data) ? data.length : 0);
+      const itemsPreview = data?.items?.slice(0, 5).map((i: { subCategoryId?: string; name?: string }) => ({ subCategoryId: i.subCategoryId, name: i.name })) ?? [];
       console.log('[getCatalogSubCategories] 📡 API Response:', {
         url: `/catalog/categories/${categoryId}/sub-categories`,
         categoryId,
         limit,
         responseDataType: typeof response.data,
         isArray: Array.isArray(response.data),
-        hasItems: response.data && typeof response.data === 'object' && 'items' in response.data,
-        hasPagination: response.data && typeof response.data === 'object' && 'pagination' in response.data,
-        itemsCount: (response.data as any)?.items?.length || (Array.isArray(response.data) ? response.data.length : 0),
-        responseData: response.data,
+        hasItems: data && typeof data === 'object' && 'items' in data,
+        hasPagination: data && typeof data === 'object' && 'pagination' in data,
+        itemsCount,
+        itemsPreview,
       });
     }
     
@@ -754,19 +757,24 @@ export const getCatalogContextPosts = async (
     );
     
     if (__DEV__ && response.data?.items) {
+      const sample = response.data.items.slice(0, 3).map((item: any) => ({
+        type: item.type,
+        dataId: item.data?.id,
+        contextType: item.data?.contextType,
+        contextId: item.data?.contextId,
+        isBoosted: item.data?.isBoosted ?? item.data?.is_boosted,
+        boostedUntil: item.data?.boostedUntil ?? item.data?.boosted_until,
+        dataKeys: item.data ? Object.keys(item.data) : [],
+      }));
       console.log('[getCatalogContextPosts] ✅ Smart endpoint response:', {
         contextId,
         contextType: response.data.contextType,
         filter,
         sort,
         itemsCount: response.data.items.length,
-        items: response.data.items.slice(0, 3).map((item: any) => ({
-          type: item.type,
-          dataId: item.data?.id,
-          contextType: item.data?.contextType,
-          contextId: item.data?.contextId,
-        })),
+        sample,
       });
+      // Backend returns isBoosted, boostedUntil (camelCase) per item; mobile uses these for Boosted badge
     }
     
     const safeResponse: FeedApiResponse & { contextType?: string } = {

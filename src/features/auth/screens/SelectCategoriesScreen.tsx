@@ -9,6 +9,7 @@ import type { AuthStackParamList } from '../navigation';
 import { useUserCategories } from '../api/hooks';
 import type { UserCategory } from '../api/authApi';
 import { Alert } from 'react-native';
+import { useAppStore } from '@/src/store/appStore';
 
 type SelectCategoriesScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectCategories'>;
 
@@ -81,13 +82,14 @@ export const SelectCategoriesScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
   const insets = useSafeAreaInsets();
+  const setSelectedCategories = useAppStore((state) => state.setSelectedCategories);
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
   
   // API'den kategorileri getir
   const { data: categories, isLoading, error } = useUserCategories();
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
+
+  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
   const handleSelectSubCategory = (subCategoryId: string) => {
     setSelectedSubCategories((prev) => {
@@ -119,13 +121,16 @@ export const SelectCategoriesScreen = () => {
       });
 
       // Backend formatına çevir
-      const selectedCategories = Array.from(categoriesMap.entries()).map(([categoryId, subCategoryIds]) => ({
+      const formattedCategories = Array.from(categoriesMap.entries()).map(([categoryId, subCategoryIds]) => ({
         categoryId,
         subCategoryIds,
       }));
 
-      // SetupProfile ekranına yönlendir ve seçilen kategorileri gönder
-      navigation.navigate('SetupProfile', { selectedCategories });
+      // Global state'e kaydet (route params yerine)
+      setSelectedCategories(formattedCategories);
+
+      // SetupProfile ekranına yönlendir (params olmadan)
+      navigation.navigate('SetupProfile');
     } else {
       Alert.alert('Error', `Please select at least ${MIN_SELECTED} categories`);
     }
@@ -226,26 +231,26 @@ export const SelectCategoriesScreen = () => {
           bottom={0}
           left={0}
           right={0}
-          bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
+          bg="#000000"
           borderTopWidth={1}
-          borderTopColor={isDark ? '$borderDark100' : '$borderLight100'}
+          borderTopColor="#333333"
           px="$4"
           py="$4"
-          pb={insets.bottom }
+          pb="$0"
         >
           <HStack alignItems="center" justifyContent="space-between">
             <VStack space="xs">
               <Text
                 fontSize="$sm"
                 fontWeight="$medium"
-                color={isDark ? '$textDark50' : '$textLight900'}
+                color="$white"
               >
                 {selectedCount}/{MIN_SELECTED} Selected
               </Text>
               {selectedCount < MIN_SELECTED && (
                 <Text
                   fontSize="$xs"
-                  color={isDark ? '$textDark300' : '$textLight600'}
+                  color="#CCCCCC"
                 >
                   Select at least {MIN_SELECTED} categories to continue
                 </Text>

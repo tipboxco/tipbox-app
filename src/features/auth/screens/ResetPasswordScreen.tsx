@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '../navigation';
 import { useResetPassword } from '../api/hooks';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 type ResetPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ResetPassword'>;
 type ResetPasswordScreenRouteProp = RouteProp<AuthStackParamList, 'ResetPassword'>;
@@ -21,9 +22,9 @@ export const ResetPasswordScreen = () => {
   const { email } = route.params;
   const toast = useToast();
   const insets = useSafeAreaInsets();
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
+
+  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,37 +48,19 @@ export const ResetPasswordScreen = () => {
 
   const handleResetPassword = async () => {
     if (!isNewPasswordValid || !isConfirmPasswordValid) {
-        toast.show({
-          placement: 'top',
-          render: ({ id }) => {
-            return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle fontSize="$sm">Invalid Password</ToastTitle>
-                  <ToastDescription fontSize="$sm">
-                    Password must be at least 8 characters and passwords must match.
-                  </ToastDescription>
-                </Toast>
-              </Box>
-            );
-          },
-        });
+      showCustomToast(toast, {
+        title: 'Invalid Password',
+        description: 'Password must be at least 8 characters and passwords must match.',
+        action: 'error',
+      });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm">Passwords Don't Match</ToastTitle>
-                <ToastDescription fontSize="$sm">Please enter the same password.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Passwords Don\'t Match',
+        description: 'Please enter the same password.',
+        action: 'error',
       });
       return;
     }
@@ -88,18 +71,10 @@ export const ResetPasswordScreen = () => {
         password: newPassword,
       });
 
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle fontSize="$sm">Password Reset</ToastTitle>
-                <ToastDescription fontSize="$sm">Your password has been successfully updated. You can now sign in.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Password Reset',
+        description: 'Your password has been successfully updated. You can now sign in.',
+        action: 'success',
       });
 
       // Login ekranına yönlendir
@@ -109,21 +84,16 @@ export const ResetPasswordScreen = () => {
       });
     } catch (error: any) {
       console.error('Reset Password Error:', error);
-      
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm">Error</ToastTitle>
-                <ToastDescription fontSize="$sm">
-                  {error?.response?.data?.message || error?.message || 'An error occurred. Please try again.'}
-                </ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'An error occurred. Please try again.';
+
+      showCustomToast(toast, {
+        title: 'Error',
+        description: errorMessage,
+        action: 'error',
       });
     }
   };

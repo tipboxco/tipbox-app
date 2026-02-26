@@ -375,9 +375,9 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                         </Pressable>
                     )}
                     <Pressable flex={1} onPress={handleViewProfile}>
-                        <VStack 
+                        <VStack
                             flex={1}
-                            justifyContent={data.user?.title ? 'flex-start' : 'center'}
+                            justifyContent="center"
                         >
                             <Text
                                 color={isDark ? '$textDark50' : '#000'}
@@ -413,10 +413,11 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                         visible={isMenuOpen}
                         transparent={true}
                         animationType="fade"
+                        presentationStyle="overFullScreen"
                         onRequestClose={() => setIsMenuOpen(false)}
                     >
                         <RNPressable
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
                             onPress={() => setIsMenuOpen(false)}
                         />
                         <View
@@ -429,6 +430,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                                     borderWidth: 1,
                                     borderColor: isDark ? '#333333' : '#E9E9E9',
                                     shadowOpacity: isDark ? 0.3 : 0.1,
+                                    zIndex: 1,
+                                    elevation: 10,
                                 }
                             ]}
                         >

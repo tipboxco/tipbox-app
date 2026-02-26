@@ -404,9 +404,9 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               </Pressable>
             )}
             <Pressable flex={1} onPress={handleViewProfile}>
-              <VStack 
+              <VStack
                 flex={1}
-                justifyContent={data.user?.title ? 'flex-start' : 'center'}
+                justifyContent="center"
               >
                 {data.user?.action ? (
                   <Text
@@ -454,10 +454,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         visible={isMenuOpen}
         transparent={true}
         animationType="fade"
+        presentationStyle="overFullScreen"
         onRequestClose={() => setIsMenuOpen(false)}
       >
         <RNPressable
-          style={{ flex: 1 }}
+          style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
           onPress={() => setIsMenuOpen(false)}
         />
         <View
@@ -470,6 +471,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               borderWidth: 1,
               borderColor: isDark ? '#333333' : '#E9E9E9',
               shadowOpacity: isDark ? 0.3 : 0.1,
+              zIndex: 1,
+              elevation: 10,
             }
           ]}
         >

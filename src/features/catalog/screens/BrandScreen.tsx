@@ -9,9 +9,8 @@ import { BrandCard } from '../components/BrandCard';
 import CategoryCard from '../components/CategoryCard';
 import { Header } from '@/src/components/Header';
 import { useBrandCategories, useBrandsByCategory, useGlobalBrandSearch } from '../api/hooks';
-import type { BrandCategory, BrandListItem } from '../types';
+import type { BrandCategory, BrandListItem, BrandCardModel } from '../types';
 import type { CategoryCardCategory } from '../components/CategoryCard';
-import type { BrandCardBrand } from '../components/BrandCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { toImageSource } from '@/src/utils';
@@ -143,23 +142,20 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   // Initial category ID varsa onu kullan, yoksa selectedCategory'dan al
   // Global search aktifse category ID gönderme
   const activeCategoryId = hasGlobalSearch ? undefined : (initialCategoryId || (currentStep === 'brands' ? selectedCategory?.id : undefined));
-  const { data: brandsByCategory, isLoading: isBrandsLoading, error: brandsError } = useBrandsByCategory(
-    activeCategoryId
-  );
+  const {
+    data: brandsByCategoryData,
+    isLoading: isBrandsLoading,
+    error: brandsError,
+    fetchNextPage: fetchNextBrandsPage,
+    hasNextPage: hasNextBrandsPage,
+    isFetchingNextPage: isFetchingNextBrandsPage,
+  } = useBrandsByCategory(activeCategoryId, 20);
 
-  // Debug: API response'u kontrol et
-  useEffect(() => {
-    if (brandsByCategory) {
-      console.log('[BrandScreen] Brands By Category Data:', JSON.stringify(brandsByCategory, null, 2));
-      console.log('[BrandScreen] Brands Count:', brandsByCategory.length);
-      if (brandsByCategory.length > 0) {
-        console.log('[BrandScreen] First Brand Item:', JSON.stringify(brandsByCategory[0], null, 2));
-      }
-    }
-    if (brandsError) {
-      console.error('[BrandScreen] Brands Error:', brandsError);
-    }
-  }, [brandsByCategory, brandsError]);
+  // Paginated response: tüm sayfalardaki items'ı birleştir
+  const brandsByCategory = useMemo(() => {
+    if (!brandsByCategoryData?.pages) return [];
+    return brandsByCategoryData.pages.flatMap((page) => page.items);
+  }, [brandsByCategoryData]);
 
   const handleCategoryPress = (category: CategoryCardCategory) => {
     setCurrentStep('brands');
@@ -174,7 +170,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     ]);
   };
 
-  const handleBrandPress = (brand: BrandCardBrand) => {
+  const handleBrandPress = (brand: BrandCardModel) => {
     setBreadcrumbItems((prev) => {
       const categoryItem =
         prev.find((item) => item.type === 'category') ||
@@ -215,10 +211,9 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     };
   };
 
-  const mapBrandListItemToBrandCardBrand = (brand: BrandListItem): BrandCardBrand => {
-    // brandId veya id alanını kullan, yoksa categoryId-name kombinasyonu kullan
-    const brandId = brand.brandId || brand.id || `${brand.categoryId}-${brand.name}`;
-    
+  const mapBrandListItemToBrandCardBrand = (brand: BrandListItem): BrandCardModel => {
+    const brandId = brand.brandId || brand.id || (brand.categoryId ? `${brand.categoryId}-${brand.name}` : brand.name);
+
     // PERFORMANCE FIX: Remove console.log to prevent performance issues
     // Only log in development if needed for debugging
     if (__DEV__ && false) { // Disabled by default, enable only when debugging
@@ -227,10 +222,11 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         mappedId: brandId,
       });
     }
-    
+
     return {
       id: brandId,
       name: brand.name,
+      description: '', // Empty description for API catalog items (Explore shows descriptions from mock data)
       followers: '',
       logo: toImageSource(brand.image) || require('@/assets/avatar/default-useravatar.png'),
       bannerImage: require('@/assets/events/banner.png'),
@@ -461,7 +457,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         ) : globalBrandSearchResults.length === 0 ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
             <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
-              Arama sonucu bulunamadı
+              No search results
             </Text>
           </Box>
         ) : (
@@ -575,8 +571,17 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
               flex={1} 
               px="$4" 
               pb={scrollViewPaddingBottom}
-              onScroll={onScroll}
-              scrollEventThrottle={16}
+              onScroll={(event) => {
+                if (currentStep === 'brands' && hasNextBrandsPage && !isFetchingNextBrandsPage) {
+                  const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+                  const paddingToBottom = 20;
+                  if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+                    fetchNextBrandsPage();
+                  }
+                }
+                onScroll?.(event);
+              }}
+              scrollEventThrottle={400}
               showsVerticalScrollIndicator={false}
             >
               <VStack space="md" pt="$4">
@@ -602,14 +607,20 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
                         return (
                           <BrandCard
                             key={`brand-${currentItem.id}-${index}-${colIndex}`}
-                            brand={currentItem as BrandCardBrand}
-                            onPress={() => handleBrandPress(currentItem as BrandCardBrand)}
+                            brand={currentItem as BrandCardModel}
+                            onPress={() => handleBrandPress(currentItem as BrandCardModel)}
                           />
                         );
                       }
                     })}
                   </HStack>
                 ))}
+                {/* Load more brands (paginated) */}
+                {currentStep === 'brands' && isFetchingNextBrandsPage && (
+                  <Box py="$4" alignItems="center">
+                    <Text color={isDark ? '#999' : '#666'} fontSize="$sm">Loading more...</Text>
+                  </Box>
+                )}
               </VStack>
             </ScrollView>
           )}

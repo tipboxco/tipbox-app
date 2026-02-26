@@ -1,0 +1,36 @@
+import { useEffect } from 'react';
+import { useInventory } from '@/src/features/profile/api/hooks';
+import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
+
+/**
+ * Hook to sync inventory product IDs from API to store
+ * Should be called on app load or when inventory data changes
+ * Automatically caches IDs in store for fast lookups
+ */
+export const useSyncInventoryToStore = () => {
+  const { data: inventoryData } = useInventory(100);
+  const setInventoryProductIds = useCreatePostFlowStore(
+    (state) => state.setInventoryProductIds
+  );
+
+  useEffect(() => {
+    if (inventoryData?.pages) {
+      // Extract all product IDs from inventory pages
+      const productIds = new Set(
+        inventoryData.pages
+          .flatMap((page) => page.items ?? [])
+          .map((item) => item.productId)
+          .filter(Boolean) as string[]
+      );
+
+      // Update store with new IDs
+      setInventoryProductIds(productIds);
+    }
+  }, [inventoryData, setInventoryProductIds]);
+
+  return {
+    isLoading: false, // useInventory handles loading state
+    inventoryData,
+    syncComplete: !!inventoryData,
+  };
+};

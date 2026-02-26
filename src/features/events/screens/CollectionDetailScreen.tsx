@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,9 +18,10 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import type { EventsStackParamList } from '../navigation';
-import type { Collection } from '../types/collection.types';
+import type { Collection, CollectionBadge as CollectionBadgeType } from '../types/collection.types';
+import { useCollectionDetail } from '../api/hooks';
 import CollectionCardModal from '../components/CollectionCardModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -143,42 +144,61 @@ const CollectionDetailScreen: React.FC = () => {
   const bottomInset = useSafeAreaValues('bottom');
   
   const { collectionId } = route.params;
-  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedBadgeSearch, setDebouncedBadgeSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All');
   const [selectedBadge, setSelectedBadge] = useState<CollectionBadge | null>(null);
 
-  // TODO: Backend'den collection detayını çek
-  const collection = MOCK_COLLECTION;
-  const allBadges = MOCK_BADGES;
+  // Debounce search for badge API (GET /api/collections/:id?search=...)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedBadgeSearch(searchQuery.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  // Filter badges based on active filter
-  const filteredBadges = useMemo(() => {
-    let filtered = allBadges;
+  // Backend'den collection detayını çek; badgeSearch ile badge'ler name/description'da filtrelenir
+  const { data: collectionDetail, isLoading: isLoadingCollection } = useCollectionDetail(
+    collectionId,
+    debouncedBadgeSearch || undefined
+  );
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (badge) =>
-          badge.title.toLowerCase().includes(query) ||
-          badge.description.toLowerCase().includes(query)
-      );
+  const collection: Collection = useMemo(() => {
+    if (collectionDetail?.collection) {
+      return collectionDetail.collection;
     }
+    return MOCK_COLLECTION;
+  }, [collectionDetail?.collection]);
 
-    // Apply status filter
+  const allBadges: CollectionBadge[] = useMemo(() => {
+    if (collectionDetail?.badges && collectionDetail.badges.length > 0) {
+      return collectionDetail.badges.map((b: CollectionBadgeType): CollectionBadge => ({
+        id: b.id,
+        title: b.title,
+        description: b.description,
+        icon: typeof b.icon === 'string' ? (toImageSource(b.icon) ?? b.icon) : b.icon,
+        currentProgress: b.currentProgress,
+        totalProgress: b.totalProgress,
+        status: b.status,
+      }));
+    }
+    return MOCK_BADGES;
+  }, [collectionDetail?.badges]);
+
+  // Filter badges: arama API'de yapılıyor (badgeSearch); burada sadece status filtresi uygulanıyor
+  const filteredBadges = useMemo(() => {
     switch (activeFilter) {
       case 'Not Started':
-        return filtered.filter((b) => b.status === 'not_started');
+        return allBadges.filter((b) => b.status === 'not_started');
       case 'In Progress':
-        return filtered.filter((b) => b.status === 'in_progress');
+        return allBadges.filter((b) => b.status === 'in_progress');
       case 'Completed':
-        return filtered.filter((b) => b.status === 'completed');
+        return allBadges.filter((b) => b.status === 'completed');
       case 'All':
       default:
-        return filtered;
+        return allBadges;
     }
-  }, [allBadges, activeFilter, searchQuery]);
+  }, [allBadges, activeFilter]);
 
   const handleGoBack = useCallback(() => {
     navigation.goBack();
@@ -298,7 +318,7 @@ const CollectionDetailScreen: React.FC = () => {
   // Filter tabs
   const filterTabs: FilterTab[] = ['All', 'Not Started', 'In Progress', 'Completed'];
 
-  if (isLoading) {
+  if (isLoadingCollection) {
     return (
       <SafeAreaView
         style={[

@@ -14,7 +14,6 @@ import { useSetupProfile, useCheckUsernameAvailability, useUsernameSuggestions }
 import { Alert } from 'react-native';
 import * as yup from 'yup';
 import { useAppStore } from '@/src/store/appStore';
-import { getCurrentUser } from '../api/authApi';
 
 type SetupProfileScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SetupProfile'>;
 type SetupProfileScreenRouteProp = RouteProp<AuthStackParamList, 'SetupProfile'>;
@@ -26,11 +25,11 @@ export const SetupProfileScreen = () => {
   const route = useRoute<SetupProfileScreenRouteProp>();
   const setupProfileMutation = useSetupProfile();
   const insets = useSafeAreaInsets();
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
 
-  const { user } = useAppStore();
+  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
+
+  const { user, selectedCategories } = useAppStore();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [isUsernameValid, setIsUsernameValid] = useState(false);
@@ -39,10 +38,6 @@ export const SetupProfileScreen = () => {
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ fullName?: string; username?: string }>({});
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<Array<{
-    categoryId: string;
-    subCategoryIds: string[];
-  }>>([]);
   
   // Debounce için username state
   const [debouncedUsername, setDebouncedUsername] = useState('');
@@ -66,7 +61,9 @@ export const SetupProfileScreen = () => {
   
   // Username check sonuçlarını işle
   useEffect(() => {
-    if (usernameCheck.data) {
+    // Sadece debounced username ile gerçek username eşleştiğinde sonuçları uygula
+    // Bu, kullanıcı hızlı yazarken eski sonuçların gösterilmesini engeller
+    if (usernameCheck.data && debouncedUsername === username) {
       setIsUsernameAvailable(usernameCheck.data.isAvailable);
       if (!usernameCheck.data.isValid) {
         setErrors((prev) => ({ ...prev, username: usernameCheck.data.message || 'Invalid username format' }));
@@ -81,7 +78,7 @@ export const SetupProfileScreen = () => {
         setShowSuggestions(false);
       }
     }
-  }, [usernameCheck.data]);
+  }, [usernameCheck.data, debouncedUsername, username]);
 
   // Yup validation schema
   const validationSchema = yup.object().shape({
@@ -98,11 +95,19 @@ export const SetupProfileScreen = () => {
       .matches(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   });
 
-  // SelectAvatar ve SelectCategories ekranlarından dönen verileri al
+  // SelectAvatar ekranından dönen verileri al ve form data'yı geri yükle
   useFocusEffect(
     React.useCallback(() => {
       const params = route.params as any;
-      
+
+      // Form data'yı geri yükle (SelectAvatar'dan dönerken)
+      if (params?.fullName !== undefined && params.fullName !== fullName) {
+        setFullName(params.fullName);
+      }
+      if (params?.username !== undefined && params.username !== username) {
+        setUsername(params.username);
+      }
+
       // Avatar data'yı al (SelectAvatar'dan: API avatarı veya upload foto)
       if (params?.avatarData) {
         if (params.avatarData.type === 'upload') {
@@ -115,13 +120,9 @@ export const SetupProfileScreen = () => {
         navigation.setParams({
           ...params,
           avatarData: undefined,
+          fullName: undefined,
+          username: undefined,
         } as any);
-      }
-      
-      // SelectedCategories'i al ve state'te tut (SelectCategories'den döndüğünde)
-      if (params?.selectedCategories && Array.isArray(params.selectedCategories) && params.selectedCategories.length > 0) {
-        setSelectedCategories(params.selectedCategories);
-        // selectedCategories'i params'tan temizleme, çünkü handleNext'te kullanılacak
       }
     }, [route.params, navigation])
   );
@@ -131,8 +132,7 @@ export const SetupProfileScreen = () => {
     const cleanText = text.replace(/^@+/, '').replace(/[^a-zA-Z0-9_]/g, '');
     setUsername(cleanText);
     setShowSuggestions(false);
-    setIsUsernameAvailable(null);
-    
+
     // Yup validation (format kontrolü)
     validationSchema
       .validateAt('username', { username: cleanText })
@@ -140,7 +140,12 @@ export const SetupProfileScreen = () => {
         // Format geçerli, availability check debounce ile yapılacak
         if (cleanText.length < 3) {
           setIsUsernameValid(false);
+          setIsUsernameAvailable(null);
           setErrors((prev) => ({ ...prev, username: undefined }));
+        } else {
+          // Username değiştiğinde loading state'e geç (debounce tamamlanana kadar)
+          // isUsernameAvailable'ı null yapma, çünkü önceki değer geçerli olabilir
+          // Sadece yeni check başladığında güncelleme yapılacak
         }
       })
       .catch((err) => {
@@ -170,14 +175,11 @@ export const SetupProfileScreen = () => {
   };
 
   const handleSelectAvatar = () => {
-    // Avatar seçim ekranına yönlendir
-    // Mevcut selectedCategories varsa onu da koru
-    const currentParams = route.params as any;
+    // Avatar seçim ekranına yönlendir - form data'yı params ile koru
     navigation.navigate('SelectAvatar', {
-      selectedCategories: selectedCategories.length > 0 
-        ? selectedCategories 
-        : currentParams?.selectedCategories
-    });
+      fullName,
+      username,
+    } as any);
   };
 
   const handleNext = async () => {
@@ -185,29 +187,12 @@ export const SetupProfileScreen = () => {
     try {
       await validationSchema.validate({ fullName: fullName.trim(), username: username.trim() }, { abortEarly: false });
       
-      // selectedCategories kontrolü - önce state'ten, sonra params'tan al
-      const categoriesToUse = selectedCategories.length > 0 
-        ? selectedCategories 
-        : (route.params as any)?.selectedCategories;
-      
-      if (!categoriesToUse || categoriesToUse.length === 0) {
+      // selectedCategories kontrolü - global state'ten al
+      if (!selectedCategories || selectedCategories.length === 0) {
         Alert.alert('Error', 'Please select categories');
-        // Mevcut input değerlerini koruyarak SelectCategories'e git
+        // SelectCategories ekranına git
         navigation.navigate('SelectCategories');
         return;
-      }
-
-      // User ID'yi backend'den al (/auth/me endpoint'inden)
-      let userId = user?.id;
-      if (!userId) {
-        try {
-          const currentUser = await getCurrentUser();
-          userId = String(currentUser.id); // Number'ı string'e çevir
-        } catch (error) {
-          console.error('[SetupProfileScreen] Failed to get user ID:', error);
-          Alert.alert('Error', 'Failed to get user information. Please try again.');
-          return;
-        }
       }
 
       try {
@@ -217,7 +202,7 @@ export const SetupProfileScreen = () => {
           fullName: fullName.trim(),
           username: username.trim(),
           profileImage: profileImage || undefined,
-          selectCategories: categoriesToUse,
+          selectCategories: selectedCategories,
         });
 
         // Başarılı olursa Onboarding ekranına yönlendir
@@ -225,7 +210,9 @@ export const SetupProfileScreen = () => {
       } catch (error: any) {
         const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving profile information.';
         Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
-        console.error('[SetupProfileScreen] Profile setup error:', error);
+        if (__DEV__) {
+          console.error('[SetupProfileScreen] Profile setup error:', error);
+        }
       }
     } catch (validationError: any) {
       // Yup validation errors
@@ -274,6 +261,8 @@ export const SetupProfileScreen = () => {
               justifyContent="center"
               alignItems="center"
               bg="$gray100"
+              borderWidth={2}
+              borderColor="$gray300"
               overflow="hidden"
               style={{ width: 120, height: 120 }}
             >
@@ -368,14 +357,14 @@ export const SetupProfileScreen = () => {
                   flex={1}
                   pl="$0"
                 />
-                {usernameCheck.isLoading ? (
+                {(usernameCheck.isLoading || (username !== debouncedUsername && username.length >= 3)) ? (
                   <Spinner size="small" color={isDark ? '$textDark300' : '$textLight600'} mr="$2" />
                 ) : (
-                  <Icon 
-                    as={CheckCircle} 
-                    color={isUsernameValid && isUsernameAvailable === true ? "$success500" : "$gray400"} 
-                    size="md" 
-                    mr="$2" 
+                  <Icon
+                    as={CheckCircle}
+                    color={isUsernameValid && isUsernameAvailable === true ? "$success500" : "$gray400"}
+                    size="md"
+                    mr="$2"
                   />
                 )}
               </HStack>
@@ -391,7 +380,7 @@ export const SetupProfileScreen = () => {
                 {usernameCheck.data.isAvailable ? '✓ Username available' : usernameCheck.data.message}
               </Text>
             )}
-            {usernameCheck.isLoading && username.length >= 3 && (
+            {(usernameCheck.isLoading || (username !== debouncedUsername && username.length >= 3)) && (
               <HStack alignItems="center" mt="$1" px="$3" space="xs">
                 <Spinner size="small" color={isDark ? '$textDark300' : '$textLight600'} />
                 <Text fontSize="$xs" color={isDark ? '$textDark300' : '$textLight600'}>

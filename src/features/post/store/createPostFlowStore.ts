@@ -16,13 +16,16 @@ interface CreatePostFlowState {
   // Flow context - IDs preferred over full objects
   contextType: ProductInfoType | undefined;
   contextId: string | undefined;
-  
+
   // Minimal snapshot for UI display only (short-lived)
   productInfoSnapshot: ProductInfoSnapshot | undefined;
-  
+
   // TTL for automatic cleanup (30 minutes)
   expiresAt: number | undefined;
-  
+
+  // Inventory product IDs cache for fast lookup
+  inventoryProductIds: Set<string>;
+
   // Actions
   setFlowContext: (
     contextType: ProductInfoType,
@@ -30,7 +33,14 @@ interface CreatePostFlowState {
     productInfoSnapshot?: ProductInfoSnapshot
   ) => void;
   clearFlow: () => void;
-  
+
+  // Inventory management
+  setInventoryProductIds: (ids: Set<string>) => void;
+  clearInventoryProductIds: () => void;
+
+  // Helper to check if product is in inventory
+  isProductInInventory: (productId: string) => boolean;
+
   // Helper to check if flow context is valid and not expired
   isValid: () => boolean;
 }
@@ -46,7 +56,8 @@ export const useCreatePostFlowStore = create<CreatePostFlowState>()(
       contextId: undefined,
       productInfoSnapshot: undefined,
       expiresAt: undefined,
-      
+      inventoryProductIds: new Set<string>(),
+
       // Set flow context with TTL
       setFlowContext: (
         contextType: ProductInfoType,
@@ -61,7 +72,7 @@ export const useCreatePostFlowStore = create<CreatePostFlowState>()(
           expiresAt,
         });
       },
-      
+
       // Clear flow context (called on cancel/submit/back)
       clearFlow: () => {
         set({
@@ -71,21 +82,37 @@ export const useCreatePostFlowStore = create<CreatePostFlowState>()(
           expiresAt: undefined,
         });
       },
-      
+
+      // Set inventory product IDs cache
+      setInventoryProductIds: (ids: Set<string>) => {
+        set({ inventoryProductIds: ids });
+      },
+
+      // Clear inventory product IDs cache
+      clearInventoryProductIds: () => {
+        set({ inventoryProductIds: new Set<string>() });
+      },
+
+      // Check if specific product is in inventory
+      isProductInInventory: (productId: string) => {
+        const state = get();
+        return state.inventoryProductIds.has(productId);
+      },
+
       // Check if flow context is valid and not expired
       isValid: () => {
         const state = get();
         if (!state.contextType || !state.contextId) {
           return false;
         }
-        
+
         // Check TTL
         if (state.expiresAt && Date.now() > state.expiresAt) {
           // Auto-clear expired flow
           get().clearFlow();
           return false;
         }
-        
+
         return true;
       },
     }),

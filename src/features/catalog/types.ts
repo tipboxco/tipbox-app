@@ -22,9 +22,36 @@ export interface BrandCategory {
 export interface BrandListItem {
   brandId?: string; // API'den gelebilir veya gelmeyebilir
   id?: string; // Alternatif olarak id gelebilir
-  categoryId: string;
+  categoryId?: string; // Paginated response'da gelmeyebilir
   name: string;
   image: string | null;
+}
+
+/**
+ * Brands by Category - Paginated response
+ * GET /brands/categories/{categoryId}/brands?page=1&limit=20
+ */
+export interface BrandsByCategoryResponse {
+  items: BrandListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  };
+}
+
+/**
+ * Unified Brand Card Model - Catalog ve Explore screens'da kullanılan unified brand model
+ * Both catalog BrandCard and explore BrandCard components use this interface
+ */
+export interface BrandCardModel {
+  id: string;
+  name: string;
+  description: string; // Explore'da zorunlu, Catalog'da default empty string
+  followers: string;
+  logo: any;
+  bannerImage?: any;
+  isJoined: boolean;
 }
 
 /**
@@ -338,6 +365,18 @@ export interface SurveyQuestion {
  */
 export interface SurveyQuestionsResponse {
   questions: SurveyQuestion[];
+}
+
+/**
+ * Survey tamamlandığında backend'in döndürmesi beklenen cevap (opsiyonel).
+ * POST .../surveys/:surveyId/answers son cevap gönderildiğinde backend bu alanları dönebilir.
+ * Böylece kullanıcı anket bitince kazandığı puanı anında gösteririz.
+ */
+export interface SurveyCompletionResponse {
+  /** Bu anket tamamlandığında kazanılan puan */
+  awardedPoints: number;
+  /** İşlem sonrası güncel toplam puan (marka bazlı) */
+  newTotalPoints?: number;
 }
 
 /**

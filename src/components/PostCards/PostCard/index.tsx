@@ -430,9 +430,9 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             </Pressable>
           )}
           <Pressable flex={1} onPress={handleAvatarPress}>
-            <VStack 
+            <VStack
               flex={1}
-              justifyContent={data.user?.title ? 'flex-start' : 'center'}
+              justifyContent="center"
             >
               <Text
                 color={isDark ? '$textDark50' : '#000'}
@@ -468,10 +468,11 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             visible={isMenuOpen}
             transparent={true}
             animationType="fade"
+            presentationStyle="overFullScreen"
             onRequestClose={() => setIsMenuOpen(false)}
           >
             <RNPressable
-              style={{ flex: 1 }}
+              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
               onPress={() => setIsMenuOpen(false)}
             />
             <View
@@ -484,6 +485,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                   borderWidth: 1,
                   borderColor: isDark ? '#333333' : '#E9E9E9',
                   shadowOpacity: isDark ? 0.3 : 0.1,
+                  zIndex: 1,
+                  elevation: 10,
                 }
               ]}
             >
@@ -581,10 +584,14 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // Product için PostsScreen'e navigate et
-                  if (!context.id || !data.contextType) {
+                  // FIX: Use data.contextId instead of context.id for correct ID
+                  const contextId = (data as any).contextId || context.id;
+
+                  if (!contextId || !data.contextType) {
+                    console.warn('[PostCard] Missing contextId or contextType:', { contextId, contextType: data.contextType });
                     return;
                   }
-                  
+
                   navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostsScreen',
                     params: {
@@ -596,13 +603,13 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                         subName: context.subName,
                       },
                       selectedProduct: {
-                        id: context.id,
+                        id: contextId, // FIX: Use corrected contextId
                         name: context.name,
                         description: context.subName,
                         image: imageSource,
                       },
                       contextType: data.contextType,
-                      contextId: context.id,
+                      contextId: contextId, // FIX: Use corrected contextId
                     },
                   });
                 }}
@@ -627,14 +634,18 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // ProductGroup veya SubCategory için PostsScreen'e navigate et
-                  if (!context.id || !data.contextType) {
+                  // FIX: Use data.contextId instead of context.id for correct ID
+                  const contextId = (data as any).contextId || context.id;
+
+                  if (!contextId || !data.contextType) {
+                    console.warn('[PostCard] Missing contextId or contextType:', { contextId, contextType: data.contextType });
                     return;
                   }
-                  
-                  const stage = data.contextType === ProductInfoType.PRODUCT_GROUP 
-                    ? 'ProductGroup' 
+
+                  const stage = data.contextType === ProductInfoType.PRODUCT_GROUP
+                    ? 'ProductGroup'
                     : 'SubCategories';
-                  
+
                   navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostsScreen',
                     params: {
@@ -646,7 +657,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                         subName: context.subName,
                       },
                       contextType: data.contextType,
-                      contextId: context.id,
+                      contextId: contextId, // FIX: Use corrected contextId
                     },
                   });
                 }}

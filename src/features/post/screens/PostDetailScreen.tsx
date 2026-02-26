@@ -279,8 +279,18 @@ export const PostDetailScreen = () => {
       };
     }, [finalType, finalPostData, finalUpdateRelatedPostData]);
 
-    // Fetch comments
-    const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
+    // Yorum sıralaması: UI (Newest/Oldest/Popular) -> API (newest/oldest/popular)
+    const commentSortBy = useMemo(() => {
+      const map: Record<string, 'newest' | 'oldest' | 'popular'> = {
+        Newest: 'newest',
+        Oldest: 'oldest',
+        Popular: 'popular',
+      };
+      return map[selectedOption] ?? 'newest';
+    }, [selectedOption]);
+
+    // Fetch comments (sortBy API'ye gönderilir)
+    const { data: commentsData, isLoading: isLoadingComments } = useComments(postId, 50, commentSortBy);
     const createCommentMutation = useCreateComment();
     const deleteCommentMutation = useDeleteComment();
     const likeCommentMutation = useLikeComment();
@@ -384,7 +394,6 @@ export const PostDetailScreen = () => {
                             onPress={() => {
                                 setSelectedOption(option.value);
                                 closeBottomSheet();
-                                // TODO: Implement actual sorting logic
                             }}
                             py="$3"
                             px="$2"
@@ -541,9 +550,9 @@ export const PostDetailScreen = () => {
 
     // FlatList için data hazırla
     const listData = flattenedComments;
-    
-    // Post detail header component - useMemo ile memoize edildi (keyboardHeight değişikliğinde re-render olmaz)
-    const renderHeader = useMemo(() => (
+
+    // Post kartı ve Comments başlığı FlatList DIŞINDA render edilir; böylece Update post detayda like/comment/share dokunmaları scroll ile çakışmaz.
+    const postCardAndCommentsHeader = useMemo(() => (
         <>
             {/* Detail Card */}
             {isLoadingPost && (!postData || !isPostDataComplete) ? (
@@ -623,7 +632,7 @@ export const PostDetailScreen = () => {
                 </Pressable>
             </HStack>
         </>
-    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, updateRelatedAsExperienceCardData, isDark, selectedOption, handleSortPress]);
+    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, isDark, selectedOption, handleSortPress]);
 
     // FlatList render item - useCallback ile memoize edildi
     const renderCommentItem = useCallback(({ item }: { item: typeof flattenedComments[0] }) => (
@@ -698,10 +707,9 @@ export const PostDetailScreen = () => {
             {/* Status Bar & Header */}
             <Header
                 title={
-                    showRelatedPost ? "Related Post" :
                     type === 'post' ? "Post Details" :
-                    type === 'tipsAndTricks' ? "Tips & Tricks Details" : 
-                    type === 'question' ? "Question Details" : 
+                    type === 'tipsAndTricks' ? "Tips & Tricks Details" :
+                    type === 'question' ? "Question Details" :
                     type === 'benchmark' ? "Benchmark Details" :
                     type === 'experience' ? "Experience Details" :
                     type === 'update' ? "Update Details" :
@@ -711,12 +719,18 @@ export const PostDetailScreen = () => {
                 onBackPress={() => navigation.goBack()}
             />
 
-            {/* FlatList for Comments */}
+            {/* Post card + Comments header: FlatList DIŞINDA, böylece like/comment/share dokunmaları çalışır */}
+            <View style={styles.postCardSection}>
+                {postCardAndCommentsHeader}
+            </View>
+
+            {/* FlatList sadece yorum listesi */}
             <FlatList
+                style={styles.commentsList}
                 data={listData}
                 renderItem={renderCommentItem}
                 keyExtractor={keyExtractor}
-                ListHeaderComponent={renderHeader}
+                ListHeaderComponent={null}
                 ListEmptyComponent={renderEmpty}
                 contentContainerStyle={contentContainerStyle}
                 keyboardShouldPersistTaps="handled"
@@ -795,3 +809,12 @@ export const PostDetailScreen = () => {
         </SafeAreaView>
     );
 };
+
+const styles = StyleSheet.create({
+    postCardSection: {
+        flex: 0,
+    },
+    commentsList: {
+        flex: 1,
+    },
+});
