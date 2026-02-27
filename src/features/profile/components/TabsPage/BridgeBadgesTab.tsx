@@ -17,13 +17,18 @@ interface BridgeBadgesTabProps {
 // Map BridgeBadgeApiItem to Badge format
 const mapBridgeToBadge = (bridge: CollectionBadgeApiItem): Badge => {
   const imageSource = toImageSource(bridge.image ?? '') || require('@/assets/defaultImages/default-badge.png');
-  
+
   return {
     id: bridge.id,
     title: bridge.title,
     icon: imageSource,
     rarity: bridge.rarity,
     category: 'bridge',
+    earnedDate: bridge.earnedDate,
+    totalEarned: bridge.totalEarned,
+    isClaimed: bridge.isClaimed,
+    nftAddress: bridge.nftAddress,
+    tasks: bridge.tasks,
   };
 };
 

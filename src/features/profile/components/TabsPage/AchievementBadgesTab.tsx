@@ -26,6 +26,11 @@ const mapAchievementToBadge = (item: CollectionBadgeApiItem): Badge => {
     icon: imageSource,
     rarity: item.rarity,
     category: 'achievement',
+    earnedDate: item.earnedDate,
+    totalEarned: item.totalEarned,
+    isClaimed: item.isClaimed,
+    nftAddress: item.nftAddress,
+    tasks: item.tasks,
   };
 };
 

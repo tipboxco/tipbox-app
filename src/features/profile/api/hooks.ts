@@ -11,6 +11,9 @@ import {
   getUserLadderBadges,
   getUserCollectionAchievements,
   getUserCollectionBridges,
+  getBadgeDetail,
+  getHighlightBadges,
+  updateHighlightBadges,
   searchProductExperiences,
   getTrustList,
   getTrusterList,
@@ -61,6 +64,10 @@ import type {
   UserCollectionBridgesApiResponse,
   SuggestedUser,
   SuggestedUsersApiResponse,
+  BadgeDetailApiResponse,
+  HighlightBadgesApiResponse,
+  UpdateHighlightBadgesRequest,
+  UpdateHighlightBadgesResponse,
 } from '../types';
 
 /**
@@ -102,6 +109,9 @@ export const profileKeys = {
     [...profileKeys.collections(), 'achievements', userId, ...(limit ? [limit] : [])] as const,
   userCollectionBridges: (userId: string, limit?: number) =>
     [...profileKeys.collections(), 'bridges', userId, ...(limit ? [limit] : [])] as const,
+  badgeDetail: (userId: string, badgeId: string) =>
+    [...profileKeys.collections(), 'detail', userId, badgeId] as const,
+  highlightBadges: () => [...profileKeys.collections(), 'highlights'] as const,
 };
 
 /**
@@ -1347,3 +1357,66 @@ export const useSuggestedUsers = (searchQuery?: string) => {
   });
 };
 
+
+/**
+ * Get Badge Detail query hook
+ * Badge detay bilgisini getirir (description dahil)
+ *
+ * @param userId - Kullanıcı ID'si
+ * @param badgeId - Badge ID'si
+ */
+export const useUserCollectionBadgeDetail = (
+  userId: string | undefined,
+  badgeId: string | undefined
+) => {
+  return useQuery<BadgeDetailApiResponse, Error>({
+    queryKey: userId && badgeId ? profileKeys.badgeDetail(userId, badgeId) : ['badge-detail', 'disabled'],
+    queryFn: () => {
+      if (!userId || !badgeId) throw new Error('userId and badgeId are required');
+      return getBadgeDetail(userId, badgeId);
+    },
+    enabled: !!userId && !!badgeId,
+    staleTime: 10 * 60 * 1000, // 10 dakika
+    gcTime: 20 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Highlight Badges query hook
+ * Kullanıcının profil kartında gösterilen 4 seçili badge'i getirir
+ */
+export const useHighlightBadges = () => {
+  return useQuery<HighlightBadgesApiResponse, Error>({
+    queryKey: profileKeys.highlightBadges(),
+    queryFn: getHighlightBadges,
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Update Highlight Badges mutation hook
+ * Kullanıcının profil kartında gösterilen 4 seçili badge'i günceller
+ */
+export const useUpdateHighlightBadges = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAppStore();
+
+  return useMutation<UpdateHighlightBadgesResponse, Error, UpdateHighlightBadgesRequest>({
+    mutationFn: updateHighlightBadges,
+    onSuccess: (data) => {
+      // Highlight badges cache'ini güncelle
+      queryClient.invalidateQueries({ queryKey: profileKeys.highlightBadges() });
+      // Profil cache'ini invalidate et (badges alanı güncellendi)
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.profile(user.id) });
+      }
+    },
+  });
+};

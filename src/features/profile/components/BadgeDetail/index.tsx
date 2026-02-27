@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { ChevronLeft } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -8,6 +9,7 @@ interface BadgeDetailProps {
   badge: Badge;
   onClose: () => void;
   hideHeader?: boolean;
+  userId?: string;
 }
 
 const getRarityColor = (rarity: BadgeRarity): string => {
@@ -25,24 +27,24 @@ const getRarityColor = (rarity: BadgeRarity): string => {
   }
 };
 
-const getBadgeDescription = (badge: Badge): string => {
-  // Mock descriptions for badges
-  const descriptions: { [key: string]: string } = {
-    'Everyday Consumer': 'Awarded to users who consistently make purchases and engage with the marketplace regularly.',
-    'Premium Shopper': 'Exclusive badge for users who have made high-value purchases and support premium sellers.',
-    'Collector': 'Given to users who have built an impressive collection of verified items.',
-    'Wishmaker': 'For users who actively share their wishlists and help others discover new items.',
-    'Hardware Expert': 'Recognized experts in hardware authentication and verification.',
-    'Early Tech Adopter': 'For users who are always first to discover and collect new tech items.',
-    'Community Builder': 'Awarded to users who actively contribute to building the community.',
-    'Network Guru': 'For users who have successfully bridged connections between multiple platforms.',
-  };
-  return descriptions[badge.title] || 'A special badge for outstanding achievement.';
+const formatDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
 };
 
 const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = false }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+
+  const tasks = badge.tasks ?? [];
+  const earnedDate = formatDate(badge.earnedDate);
+  const totalEarned = badge.totalEarned ?? 0;
+  const isClaimed = badge.isClaimed ?? false;
 
   return (
     <VStack space="lg" p={15}>
@@ -87,21 +89,23 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
           />
         </Box>
 
-        {/* Claim NFT Button */}
-        <Pressable
-          bg="#E8FF6B"
-          px="$8"
-          py="$3"
-          borderRadius="$full"
-        >
-          <Text
-            fontSize={16}
-            fontWeight="$bold"
-            color="#000000"
+        {/* Claim NFT Button — only shown when badge is not yet claimed */}
+        {!isClaimed && (
+          <Pressable
+            bg="#E8FF6B"
+            px="$8"
+            py="$3"
+            borderRadius="$full"
           >
-            Claim NFT
-          </Text>
-        </Pressable>
+            <Text
+              fontSize={16}
+              fontWeight="$bold"
+              color="#000000"
+            >
+              Claim NFT
+            </Text>
+          </Pressable>
+        )}
       </VStack>
 
       {/* Details Section */}
@@ -133,7 +137,7 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
               Kazanma Tarihi
             </Text>
             <Text fontSize={13} fontWeight="$semibold" color="#000000">
-              11 July 2025
+              {earnedDate}
             </Text>
           </HStack>
 
@@ -150,7 +154,7 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
               Enderlik
             </Text>
             <HStack space="xs" alignItems="center">
-              <Text fontSize={13} color="#000000">
+              <Text fontSize={13} color={getRarityColor(badge.rarity)}>
                 ◆
               </Text>
               <Text fontSize={13} fontWeight="$semibold" color="#000000">
@@ -170,115 +174,52 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
               Sahip
             </Text>
             <Text fontSize={13} fontWeight="$semibold" color="#000000">
-              11049
+              {totalEarned > 0 ? totalEarned.toLocaleString() : '—'}
             </Text>
           </HStack>
         </Box>
       </VStack>
 
       {/* Tasks Section */}
-      <VStack space="md">
-        <Text color="#8A8A8A" fontSize={12} fontWeight="$bold">
-          Tasks
-        </Text>
-        <Box
-          bg={isDark ? '$backgroundDark900' : '$white'}
-          borderWidth={1}
-          borderColor="#E2E2E2"
-          p={12}
-        >
-          <HStack space="md" alignItems="center">
-            <Box w={36} h={36} bg="#B9B9B9" borderRadius={4} />
-            <VStack flex={1} space="sm">
-              <Text fontSize={10} fontWeight="$semibold">
-                150 Yorum Yap
-              </Text>
-              <Box w="100%" h={6} bg="#F7F7F7" borderRadius={10} overflow="hidden">
-                <Box
-                  w="100%"
-                  h="100%"
-                  bg="#686868"
-                />
+      {tasks.length > 0 && (
+        <VStack space="md">
+          <Text color="#8A8A8A" fontSize={12} fontWeight="$bold">
+            Tasks
+          </Text>
+          {tasks.map((task) => {
+            const progress = task.total > 0 ? Math.min(task.current / task.total, 1) : 0;
+            const progressPercent: `${number}%` = `${Math.round(progress * 100)}%`;
+            return (
+              <Box
+                key={task.id}
+                bg={isDark ? '$backgroundDark900' : '$white'}
+                borderWidth={1}
+                borderColor="#E2E2E2"
+                p={12}
+              >
+                <HStack space="md" alignItems="center">
+                  <Box w={36} h={36} bg="#B9B9B9" borderRadius={4} />
+                  <VStack flex={1} space="sm">
+                    <Text fontSize={10} fontWeight="$semibold">
+                      {task.title}
+                    </Text>
+                    <View style={{ width: '100%', height: 6, backgroundColor: '#F7F7F7', borderRadius: 10, overflow: 'hidden' }}>
+                      <View
+                        style={{ width: progressPercent, height: '100%', backgroundColor: task.isCompleted ? '#3CA241' : '#686868' }}
+                      />
+                    </View>
+                  </VStack>
+                  {task.isCompleted && (
+                    <Box w={14} h={14} borderRadius={7} bg="#3CA241" />
+                  )}
+                </HStack>
               </Box>
-            </VStack>
-            <Box w={14} h={14} borderRadius={7} bg="#686868" />
-          </HStack>
-        </Box>
-        
-        <Box
-          bg={isDark ? '$backgroundDark900' : '$white'}
-          borderWidth={1}
-          borderColor="#E2E2E2"
-          p={12}
-        >
-          <HStack space="md" alignItems="center">
-            <Box w={36} h={36} bg="#B9B9B9" borderRadius={4} />
-            <VStack flex={1} space="sm">
-              <Text fontSize={10} fontWeight="$semibold">
-                20 Deneyim Paylaş
-              </Text>
-              <Box w="100%" h={6} bg="#F7F7F7" borderRadius={10} overflow="hidden">
-                <Box
-                  w="100%"
-                  h="100%"
-                  bg="#686868"
-                />
-              </Box>
-            </VStack>
-            <Box w={14} h={14} borderRadius={7} bg="#686868" />
-          </HStack>
-        </Box>
-
-        <Box
-          bg={isDark ? '$backgroundDark900' : '$white'}
-          borderWidth={1}
-          borderColor="#E2E2E2"
-          p={12}
-        >
-          <HStack space="md" alignItems="center">
-            <Box w={36} h={36} bg="#B9B9B9" borderRadius={4} />
-            <VStack flex={1} space="sm">
-              <Text fontSize={10} fontWeight="$semibold">
-                Şunu Yap
-              </Text>
-              <Box w="100%" h={6} bg="#F7F7F7" borderRadius={10} overflow="hidden">
-                <Box
-                  w="100%"
-                  h="100%"
-                  bg="#686868"
-                />
-              </Box>
-            </VStack>
-            <Box w={14} h={14} borderRadius={7} bg="#686868" />
-          </HStack>
-        </Box>
-
-        <Box
-          bg={isDark ? '$backgroundDark900' : '$white'}
-          borderWidth={1}
-          borderColor="#E2E2E2"
-          p={12}
-        >
-          <HStack space="md" alignItems="center">
-            <Box w={36} h={36} bg="#B9B9B9" borderRadius={4} />
-            <VStack flex={1} space="sm">
-              <Text fontSize={10} fontWeight="$semibold">
-                Şunu Yap
-              </Text>
-              <Box w="100%" h={6} bg="#F7F7F7" borderRadius={10} overflow="hidden">
-                <Box
-                  w="60%"
-                  h="100%"
-                  bg="#686868"
-                />
-              </Box>
-            </VStack>
-          </HStack>
-        </Box>
-      </VStack>
+            );
+          })}
+        </VStack>
+      )}
     </VStack>
   );
 };
 
 export default BadgeDetail;
-

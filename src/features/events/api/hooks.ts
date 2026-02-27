@@ -7,6 +7,8 @@ import {
   getEventBadges,
   getEventBadgeDetail,
   getLimitedEvent,
+  getCollections,
+  getCollectionCategories,
   getCollectionDetail,
   getAchievements,
   createEventPost,
@@ -42,7 +44,12 @@ import { getMainCategories, getSubCategories, getCategoryById } from './medusaAp
 import type { MedusaCategory } from '../types/medusa.types';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgeDetailResponse } from '../types';
-import type { CollectionDetailResponse } from '../types/collection.types';
+import type {
+  CollectionDetailResponse,
+  CollectionsListParams,
+  CollectionsListResponse,
+  CollectionCategoriesResponse,
+} from '../types/collection.types';
 import type { SurveyQuestionsApiResponse, SurveyCompleteApiResponse } from '../types/survey.types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
@@ -71,6 +78,9 @@ export const eventsKeys = {
   badgeDetail: (eventId: string, badgeId: string) =>
     [...eventsKeys.all, 'badges', 'detail', eventId, badgeId] as const,
   limited: () => [...eventsKeys.all, 'limited'] as const,
+  collectionsList: (params?: Omit<CollectionsListParams, 'cursor' | 'limit'>) =>
+    [...eventsKeys.all, 'collections', 'list', params ?? null] as const,
+  collectionCategories: () => [...eventsKeys.all, 'collections', 'categories'] as const,
   collectionDetail: (collectionId: string, badgeSearch?: string) =>
     [...eventsKeys.all, 'collections', 'detail', collectionId, badgeSearch ?? ''] as const,
   surveyQuestions: (surveyId: string) =>
@@ -314,6 +324,42 @@ export const useLimitedEvent = () => {
     gcTime: 60 * 60 * 1000,     // 1 saat - cache'de tut
     refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
+    retry: 1,
+  });
+};
+
+/**
+ * EP-01: Get Collections infinite scroll hook
+ * Collections listesini infinite scroll ile getirir.
+ * Filtre veya search değiştiğinde otomatik olarak başa döner.
+ */
+export const useCollections = (
+  params: Omit<CollectionsListParams, 'cursor' | 'limit'>
+) => {
+  return useInfiniteQuery<CollectionsListResponse, Error>({
+    queryKey: eventsKeys.collectionsList(params),
+    queryFn: ({ pageParam }) =>
+      getCollections({ ...params, cursor: pageParam as string | undefined, limit: 20 }),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore ? (lastPage.pagination.cursor ?? undefined) : undefined,
+    staleTime: 5 * 60 * 1000,   // 5 dakika
+    gcTime: 10 * 60 * 1000,     // 10 dakika
+    retry: 1,
+  });
+};
+
+/**
+ * EP-02: Get Collection Categories hook
+ * CollectionsTab chip filtrelerinde gösterilecek kategorileri getirir.
+ * "All" chip'i frontend tarafında eklenir.
+ */
+export const useCollectionCategories = () => {
+  return useQuery<CollectionCategoriesResponse, Error>({
+    queryKey: eventsKeys.collectionCategories(),
+    queryFn: getCollectionCategories,
+    staleTime: 24 * 60 * 60 * 1000,  // 24 saat - kategoriler nadir değişir
+    gcTime: 48 * 60 * 60 * 1000,
     retry: 1,
   });
 };
