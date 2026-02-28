@@ -153,12 +153,43 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
     }
   );
 
-  // Response Interceptor - Token refresh
+  // Response Interceptor - Unwrap standardized response format + Token refresh
   client.interceptors.response.use(
     (response) => {
+      // Backend standart format: { success: true, data: T }
+      // Interceptor otomatik olarak 'data' alanini unwrap eder
+      // Boylece tum API fonksiyonlari dogrudan T tipini alir
+      if (
+        response.data &&
+        typeof response.data === 'object' &&
+        response.data.success === true &&
+        'data' in response.data
+      ) {
+        if (__DEV__) {
+          console.log(`[ApiInterceptor] 📦 Unwrapping response: ${response.config.url}`);
+        }
+        response.data = response.data.data;
+      }
       return response;
     },
     async (error: AxiosError) => {
+      // Error response format normalization
+      // Eski format: { error: { message: '...' } } veya { error: '...' }
+      // Yeni format: { success: false, message: '...' }
+      // Eski formattan yeni formata normalize et (geri uyumluluk)
+      if (error.response?.data && typeof error.response.data === 'object') {
+        const errorData = error.response.data as Record<string, any>;
+        if (!('success' in errorData) && 'error' in errorData) {
+          if (typeof errorData.error === 'string') {
+            (error.response.data as any).message = errorData.error;
+            (error.response.data as any).success = false;
+          } else if (typeof errorData.error === 'object' && errorData.error?.message) {
+            (error.response.data as any).message = errorData.error.message;
+            (error.response.data as any).success = false;
+          }
+        }
+      }
+
       // Log error response details for /messages/tips endpoint
       if (error.config?.url?.includes('/messages/tips')) {
         console.error('[ApiInterceptor] ❌ Response Error - /messages/tips:', {
