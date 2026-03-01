@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image, useToast } from '@gluestack-ui/themed';
 import { LogIn, Facebook } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { GoogleLoginButton } from '../components/google-login-button';
+import { useGoogleLogin } from '../api';
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 
@@ -16,13 +17,6 @@ export const WelcomeScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  
-  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
-  const backgroundColor = '#FFFFFF';
-  const toast = useToast();
-  const googleLoginMutation = useGoogleLogin();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
   // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
   const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
