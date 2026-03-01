@@ -1973,6 +1973,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         scrollEventThrottle={16}
         bounces={false}
         overScrollMode="never"
+        horizontal={false}
+        nestedScrollEnabled={true}
         refreshControl={
           <RefreshControl
             refreshing={refreshing || false}

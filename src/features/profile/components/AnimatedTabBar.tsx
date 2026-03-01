@@ -1,19 +1,20 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
-  ScrollView,
+  FlatList,
   View,
   LayoutChangeEvent,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   StyleSheet,
   Platform,
+  ListRenderItem,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { Box, Text, Pressable, HStack, VStack } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, VStack } from '@gluestack-ui/themed';
 
 export interface TabDefinition {
   key: string;
@@ -32,17 +33,59 @@ interface AnimatedTabBarProps {
   isDark: boolean;
 }
 
+// Tab item component
+interface TabItemProps {
+  tab: TabDefinition;
+  isActive: boolean;
+  activeColor: string;
+  inactiveColor: string;
+  onPress: () => void;
+  onLayout: (event: LayoutChangeEvent) => void;
+}
+
+const TabItem: React.FC<TabItemProps> = React.memo(({
+  tab,
+  isActive,
+  activeColor,
+  inactiveColor,
+  onPress,
+  onLayout,
+}) => (
+  <Pressable
+    onPress={onPress}
+    onLayout={onLayout}
+    py="$3"
+    px="$4"
+    minWidth={80}
+    alignItems="center"
+  >
+    <Text
+      style={{
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: isActive ? activeColor : inactiveColor,
+      }}
+      numberOfLines={1}
+      ellipsizeMode="tail"
+    >
+      {tab.title}
+    </Text>
+  </Pressable>
+));
+
+TabItem.displayName = 'TabItem';
+
 /**
- * AnimatedTabBar with LEFT-ALIGNED (flex-start) Dynamic Snap-to-Interval
+ * AnimatedTabBar with Dynamic ScrollToIndex (viewPosition: 0 - LEFT alignment)
  *
  * Features:
- * - Active tab always snaps to LEFT edge of viewport (flex-start behavior)
- * - Dynamic snap interval based on actual tab widths
- * - Smooth momentum scroll with automatic snap to leftmost visible tab
- * - Spring animations for indicator and position changes
+ * - Uses FlatList's scrollToIndex with viewPosition: 0 (left edge alignment)
+ * - Dynamic item layouts with getItemLayout for instant scroll
+ * - Spring animations for indicator position and width
  * - Horizontal padding: 16px (left/right)
+ * - Tab gap: 12px (space="md")
  *
- * Reference: https://www.animatereactnative.com/post/dynamic-snap-to-interval-%2B-dyanmic-widths
+ * Inspiration: https://github.com/Tunacodin/dynamic-scrollindex
  */
 export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
   tabs,
@@ -50,15 +93,20 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
   onTabChange,
   isDark,
 }) => {
-  const scrollViewRef = useRef<ScrollView>(null);
-  
+  const flatListRef = useRef<FlatList<TabDefinition>>(null);
+
   // Shared animation values
   const indicatorX = useSharedValue(0);
   const indicatorWidth = useSharedValue(60);
-  
+
   // Local state
   const [tabLayouts, setTabLayouts] = useState<Map<string, TabLayout>>(new Map());
-  const [scrollViewWidth, setScrollViewWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Tab gap (space="md" in Gluestack = 12px)
+  const TAB_GAP = 12;
+  const HORIZONTAL_PADDING = 16;
+  const MIN_TAB_WIDTH = 60;
 
   // Track individual tab layout measurements
   const handleTabLayout = useCallback(
@@ -73,54 +121,58 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
     []
   );
 
-  // Calculate dynamic snap interval from actual tab dimensions
-  const snapInterval = useMemo(() => {
-    if (tabLayouts.size === 0) return 100;
-    
-    let totalWidth = 0;
-    let totalGaps = 0;
+  // Calculate average tab width for getItemLayout
+  const avgTabWidth = useMemo(() => {
+    if (tabLayouts.size === 0) return MIN_TAB_WIDTH + TAB_GAP;
+
     const layouts = Array.from(tabLayouts.values());
-    
-    for (let i = 0; i < layouts.length; i++) {
-      totalWidth += layouts[i].width;
-      if (i < layouts.length - 1) {
-        // Gap between tabs (HStack space="md" = 12px in Gluestack)
-        totalGaps += layouts[i + 1].x - (layouts[i].x + layouts[i].width);
-      }
-    }
-    
+    const totalWidth = layouts.reduce((sum, layout) => sum + layout.width, 0);
     const avgWidth = totalWidth / layouts.length;
-    const avgGap = layouts.length > 1 ? totalGaps / (layouts.length - 1) : 0;
-    
-    return Math.round(avgWidth + avgGap);
+
+    return avgWidth + TAB_GAP;
   }, [tabLayouts]);
 
-  // Scroll to align active tab to LEFT edge (flex-start)
-  const scrollToTabLeft = useCallback((tabKey: string) => {
-    const layout = tabLayouts.get(tabKey);
-    if (!layout || !scrollViewRef.current) return;
+  // getItemLayout for instant scrollToIndex (performance optimization)
+  const getItemLayout = useCallback(
+    (data: ArrayLike<TabDefinition> | null | undefined, index: number) => {
+      return {
+        length: avgTabWidth,
+        offset: avgTabWidth * index,
+        index,
+      };
+    },
+    [avgTabWidth]
+  );
 
-    // Calculate scroll position to align tab to LEFT edge
-    // Subtract horizontal padding (16px) to account for contentContainerStyle padding
-    const HORIZONTAL_PADDING = 16;
-    const scrollPos = Math.max(0, layout.x - HORIZONTAL_PADDING);
+  // Scroll to active tab using scrollToIndex with viewPosition: 0 (LEFT)
+  const scrollToActiveTab = useCallback(() => {
+    const activeIndex = tabs.findIndex(tab => tab.key === activeTab);
+    if (activeIndex === -1 || !flatListRef.current) return;
 
-    scrollViewRef.current.scrollTo({
-      x: scrollPos,
-      animated: true,
-    });
-  }, [tabLayouts]);
+    try {
+      // scrollToIndex with viewPosition: 0 -> align to LEFT edge
+      flatListRef.current.scrollToIndex({
+        index: activeIndex,
+        viewPosition: 0, // 0 = left, 0.5 = center, 1 = right
+        animated: true,
+      });
+    } catch (error) {
+      // Fallback: use scrollToOffset if scrollToIndex fails
+      console.warn('[AnimatedTabBar] scrollToIndex failed, using fallback');
+    }
+  }, [tabs, activeTab]);
 
-  // Handle momentum scroll end - snap to leftmost visible tab (flex-start)
-  const handleScrollEnd = useCallback(
+  // Handle momentum scroll end - update active tab based on scroll position
+  const handleMomentumScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (tabLayouts.size === 0) return;
+
       const scrollX = event.nativeEvent.contentOffset.x;
-      const HORIZONTAL_PADDING = 16;
 
       // Viewport left edge (considering padding)
       const viewportLeft = scrollX + HORIZONTAL_PADDING;
 
-      // Find the leftmost tab that starts at or after viewport left edge
+      // Find the tab whose left edge is closest to viewport left edge
       let nearestKey: string | null = null;
       let minDistance = Infinity;
 
@@ -156,14 +208,14 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
         overshootClamping: false,
       });
 
-      // Scroll to align tab to left edge (flex-start)
+      // Scroll to active tab with viewPosition: 0 (left alignment)
       const timer = setTimeout(() => {
-        scrollToTabLeft(activeTab);
+        scrollToActiveTab();
       }, 50);
 
       return () => clearTimeout(timer);
     }
-  }, [activeTab, tabLayouts, indicatorX, indicatorWidth, scrollToTabLeft]);
+  }, [activeTab, tabLayouts, indicatorX, indicatorWidth, scrollToActiveTab]);
 
   // Animated indicator style
   const animatedIndicatorStyle = useAnimatedStyle(() => ({
@@ -176,69 +228,77 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
   const activeColor = isDark ? '#FFFFFF' : '#000000';
   const inactiveColor = '#A3A3A3';
 
+  // Render tab item
+  const renderTabItem: ListRenderItem<TabDefinition> = useCallback(
+    ({ item }) => {
+      const isActive = item.key === activeTab;
+      return (
+        <TabItem
+          tab={item}
+          isActive={isActive}
+          activeColor={activeColor}
+          inactiveColor={inactiveColor}
+          onPress={() => onTabChange(item.key)}
+          onLayout={(e) => handleTabLayout(item.key, e)}
+        />
+      );
+    },
+    [activeTab, activeColor, inactiveColor, onTabChange, handleTabLayout]
+  );
+
+  // Item separator (gap between tabs)
+  const ItemSeparator = useCallback(
+    () => <View style={{ width: TAB_GAP }} />,
+    []
+  );
+
   return (
     <Box
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       borderBottomWidth={StyleSheet.hairlineWidth}
       borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
     >
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-        scrollEventThrottle={16}
-        decelerationRate="fast"
-        onMomentumScrollEnd={handleScrollEnd}
-        snapToInterval={snapInterval}
-        snapToAlignment="start"
-        onLayout={(e) => setScrollViewWidth(e.nativeEvent.layout.width)}
-        bounces={false}
-      >
-        <VStack position="relative">
-          <HStack space="md" mb={0} position="relative">
-            {tabs.map((tab) => {
-              const isActive = tab.key === activeTab;
-              return (
-                <Pressable
-                  key={tab.key}
-                  onPress={() => onTabChange(tab.key)}
-                  onLayout={(e) => handleTabLayout(tab.key, e)}
-                  py="$3"
-                  px="$2"
-                  minWidth={60}
-                  alignItems="center"
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 'bold',
-                      color: isActive ? activeColor : inactiveColor,
-                    }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {tab.title}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </HStack>
+      <View style={{ position: 'relative' }}>
+        <FlatList
+          ref={flatListRef}
+          data={tabs as TabDefinition[]}
+          renderItem={renderTabItem}
+          keyExtractor={(item) => item.key}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING }}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
+          ItemSeparatorComponent={ItemSeparator}
+          getItemLayout={getItemLayout}
+          onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
+          directionalLockEnabled={false}
+          bounces={false}
+          pagingEnabled={false}
+          snapToInterval={undefined}
+          snapToAlignment="start"
+          initialNumToRender={tabs.length}
+          maxToRenderPerBatch={tabs.length}
+          windowSize={2}
+          removeClippedSubviews={false}
+        />
 
-          {/* Animated indicator bar */}
-          <Animated.View
-            style={[
-              {
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                height: 3,
-              },
-              animatedIndicatorStyle,
-            ]}
-          />
-        </VStack>
-      </ScrollView>
+        {/* Animated indicator bar */}
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              bottom: 0,
+              left: HORIZONTAL_PADDING,
+              height: 3,
+            },
+            animatedIndicatorStyle,
+          ]}
+        />
+      </View>
     </Box>
   );
 };
