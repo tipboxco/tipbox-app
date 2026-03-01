@@ -3,9 +3,11 @@
  * .env üzerinden CANNY_REDIRECT_HOST, CANNY_COMPANY_ID, CANNY_REDIRECT_TARGET okunur
  */
 
-let cannyRedirectHost = 'https://api-tipbox.exportergo.com';
-let cannyCompanyId = '69737e15a53d7a0a4fe640a4';
-let cannyRedirectTarget = 'https://xsyzsajkdaj.canny.io/feature-requests';
+let cannyRedirectHost = 'https://api-test.tipbox.co';
+let cannyCompanyId = '695fcdc8fc0b828e91820b7c';
+let cannyRedirectTarget = 'https://tipbox.canny.io/test-feedback';
+
+
 
 try {
   const env = require('@env');
@@ -26,7 +28,6 @@ try {
 export const CANNY_FEEDBACK_REDIRECT_URL = `${cannyRedirectHost}/canny/redirect?companyID=${encodeURIComponent(cannyCompanyId)}&redirect=${encodeURIComponent(cannyRedirectTarget)}`;
 
 export const CANNY_CONFIG = {
-  /** API host (örn: https://api-tipbox.exportergo.com) */
   REDIRECT_HOST: cannyRedirectHost,
   /** Şirket ID */
   COMPANY_ID: cannyCompanyId,
