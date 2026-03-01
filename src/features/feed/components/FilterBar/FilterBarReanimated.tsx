@@ -128,45 +128,84 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   const calculatePanelHeight = useCallback((optionsCount: number, filterId: string) => {
     // Category ve Sort için tek satır yatay scrollable liste
     if (filterId === 'category' || filterId === 'sort') {
-      const rowHeight = 32; // minHeight of each option (updated to 32)
+      const rowHeight = 32; // minHeight of each option
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const buttonTopPadding = 6; // pt="$1.5" = 6px
-      const buttonBottomPadding = 10; // pb="$2.5" = 10px
-      const buttonHeight = 36; // button minHeight (updated to 36)
-      const extraBottomPadding = 8; // Extra padding at the very bottom
+      const bottomPadding = 0; // style={{ paddingBottom: 0 }}
 
-      // Total height = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding
-      const totalHeight = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding;
+      // Button area için gerçek değerler (satır 636-681)
+      const buttonContainerPaddingTop = 6; // pt="$1.5" = 6px
+      const buttonContainerPaddingX = 12; // px={12}
+      const buttonContainerPaddingBottom = 16; // style={{ paddingBottom: 16 }} - UPDATED
+      const buttonMinHeight = 36; // minHeight={36}
+      const buttonPaddingY = 6; // py="$1.5" = 6px (üst+alt)
+      const extraSafeSpace = 8; // Additional breathing room
+
+      // Total height = content + button area + safe space
+      const totalHeight =
+        topPadding +
+        rowHeight +
+        bottomPadding +
+        buttonContainerPaddingTop +
+        buttonMinHeight +
+        buttonContainerPaddingBottom +
+        extraSafeSpace;
       return totalHeight;
     }
 
     // Tags için 2 satır grid (3 sütun)
     if (filterId === 'tag') {
-      const rowHeight = 44; // minHeight increased for potential 2-line text wrapping
-      const rowSpacing = 4; // space="xs" between rows (VStack space="xs")
+      const rowHeight = 44; // minHeight for potential 2-line text wrapping
+      const rowSpacing = 4; // space="xs" between rows
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const buttonTopPadding = 6; // pt="$1.5" = 6px
-      const buttonBottomPadding = 10; // pb="$2.5" = 10px
-      const buttonHeight = 36; // button minHeight (updated to 36)
+      const bottomPadding = 0; // VStack paddingBottom
       const rows = 2; // Tags için sabit 2 satır (6 seçenek = 2 satır x 3 sütun)
-      const extraBottomPadding = 8; // Extra padding at the very bottom
 
-      // Total height = topPadding + (2 rows * rowHeight) + (1 spacing) + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding
-      const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + buttonTopPadding + buttonHeight + buttonBottomPadding + extraBottomPadding;
+      // Button area için gerçek değerler (satır 764-809)
+      const buttonContainerPaddingTop = 4; // pt="$1" = 4px
+      const buttonContainerPaddingX = 12; // px={12}
+      const buttonContainerPaddingBottom = 16; // style={{ paddingBottom: 16 }} - UPDATED
+      const buttonMinHeight = 32; // minHeight={32}
+      const buttonPaddingY = 6; // py="$1.5" = 6px (üst+alt)
+      const extraSafeSpace = 8; // Additional breathing room
+
+      // Total height = content + button area + safe space
+      const totalHeight =
+        topPadding +
+        (rows * rowHeight) +
+        ((rows - 1) * rowSpacing) +
+        bottomPadding +
+        buttonContainerPaddingTop +
+        buttonMinHeight +
+        buttonContainerPaddingBottom +
+        extraSafeSpace;
       return totalHeight;
     }
 
     // Interest için dinamik yükseklik (grid, 3 sütun)
     const rows = Math.ceil(optionsCount / 3);
-    const rowHeight = 44; // minHeight increased for potential 2-line text wrapping
+    const rowHeight = 44; // minHeight for potential 2-line text wrapping
     const rowSpacing = 4; // space="xs" between rows
     const topPadding = 8; // py="$2"
-    const bottomPadding = 8; // py="$2"
-    const buttonArea = 38; // paddingTop(4) + minHeight(32) + paddingBottom(2)
-    const extraBottomPadding = 4; // Small visual breathing room
+    const bottomPadding = 0; // VStack paddingBottom
 
-    // Total height = padding + (rows * rowHeight) + (spacing between rows) + padding + button area + extraBottomPadding
-    const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonArea + extraBottomPadding;
+    // Button area için gerçek değerler (satır 764-809)
+    const buttonContainerPaddingTop = 4; // pt="$1" = 4px
+    const buttonContainerPaddingX = 12; // px={12}
+    const buttonContainerPaddingBottom = 2; // style={{ paddingBottom: 2 }}
+    const buttonMinHeight = 32; // minHeight={32}
+    const buttonPaddingY = 6; // py="$1.5" = 6px (üst+alt)
+    const extraSafeSpace = 28; // CRITICAL: Generous space to ensure buttons are fully visible
+
+    // Total height = content + button area + safe space
+    const totalHeight =
+      topPadding +
+      (rows * rowHeight) +
+      ((rows - 1) * rowSpacing) +
+      bottomPadding +
+      buttonContainerPaddingTop +
+      buttonMinHeight +
+      buttonContainerPaddingBottom +
+      extraSafeSpace;
     return totalHeight;
   }, []);
 
@@ -633,7 +672,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           )}
 
           {/* Clear ve Apply butonları */}
-          <Box px={12} pt="$1.5" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 6, paddingBottom: 2 }}>
+          <Box px={12} pt="$1.5" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 6, paddingBottom: 16 }}>
             <HStack space="xs" justifyContent="space-between" width="100%">
               <Pressable onPress={handleClear} flex={1}>
                 <Box
@@ -761,7 +800,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           </VStack>
         )}
 
-        <Box px={12} pt="$1" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 2 }}>
+        <Box px={12} pt="$1" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 16 }}>
           <HStack space="xs" justifyContent="space-between" width="100%">
             <Pressable onPress={handleClear} flex={1}>
               <Box
