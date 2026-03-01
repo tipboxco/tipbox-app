@@ -45,7 +45,10 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
-import { FilterBarReanimated } from '../components/FilterBar/FilterBarReanimated';
+import { FilterBarReanimated, TAG_OPTIONS, INTEREST_OPTIONS, SORT_OPTIONS } from '../components/FilterBar/FilterBarReanimated';
+import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/catalog/api/hooks';
+import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
+import { CheckIcon as CheckIconSolid } from 'react-native-heroicons/solid';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
@@ -139,17 +142,6 @@ const FeedScreenInner = React.memo(() => {
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
 
-  // FEATURE: Filter panel state - panel açıkken dışarıya tıklama için
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
-  const closePanelRef = useRef<(() => void) | null>(null);
-
-  // Handle click outside filter panel to close it
-  const handleOverlayPress = useCallback(() => {
-    if (closePanelRef.current) {
-      closePanelRef.current();
-    }
-  }, []);
-
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
@@ -164,19 +156,18 @@ const FeedScreenInner = React.memo(() => {
 
   // Drawer açıkken veya swipe sırasında scroll'u disable et
   // CRITICAL: isDragging kontrolü ile swipe sırasında re-render önleme
-  // FEATURE: Filter panel açıkken de scroll'u disable et
   useEffect(() => {
-    if (isDrawerOpen || isDragging || isFilterPanelOpen) {
+    if (isDrawerOpen || isDragging) {
       setIsScrollEnabled(false);
     } else {
-      // Drawer/panel kapandıktan sonra kısa bir delay ile scroll'u enable et
+      // Drawer kapandıktan sonra kısa bir delay ile scroll'u enable et
       // Bu, kapanma animasyonunun tamamlanmasını bekler ve titreme önler
       const timer = setTimeout(() => {
         setIsScrollEnabled(true);
       }, 150); // 150ms delay - animasyon tamamlandıktan sonra
       return () => clearTimeout(timer);
     }
-  }, [isDrawerOpen, isDragging, isFilterPanelOpen]);
+  }, [isDrawerOpen, isDragging]);
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
@@ -296,6 +287,242 @@ const FeedScreenInner = React.memo(() => {
       }
     }
   };
+
+  // Categories for filter
+  const { data: catalogCategoriesData } = useCatalogCategories();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const { data: catalogSubCategoriesData } = useCatalogSubCategories(selectedCategoryId || undefined);
+
+  // Categories data
+  const catalogCategories = useMemo(() => {
+    if (!catalogCategoriesData?.items) return [];
+    return catalogCategoriesData.items;
+  }, [catalogCategoriesData]);
+
+  const catalogSubCategories = useMemo(() => {
+    if (!catalogSubCategoriesData?.items) return [];
+    return catalogSubCategoriesData.items;
+  }, [catalogSubCategoriesData]);
+
+  // Auto-select first category
+  useEffect(() => {
+    if (!selectedCategoryId && catalogCategories && catalogCategories.length > 0) {
+      setSelectedCategoryId(catalogCategories[0].categoryId);
+    }
+  }, [catalogCategories, selectedCategoryId]);
+
+  // Merge categories
+  const allCategories = useMemo(() => {
+    const categoriesMap = new Map<string, { id: string; name: string; type: 'main' | 'sub' }>();
+    const seenIds = new Set<string>();
+
+    if (catalogCategories && Array.isArray(catalogCategories)) {
+      catalogCategories.forEach((cat: CatalogCategory) => {
+        if (seenIds.has(cat.categoryId)) return;
+        categoriesMap.set(cat.categoryId, { id: cat.categoryId, name: cat.name, type: 'main' });
+        seenIds.add(cat.categoryId);
+      });
+    }
+
+    if (catalogSubCategories && Array.isArray(catalogSubCategories)) {
+      catalogSubCategories.forEach((subCat: CatalogSubCategory) => {
+        if (seenIds.has(subCat.subCategoryId)) return;
+        categoriesMap.set(subCat.subCategoryId, {
+          id: subCat.subCategoryId,
+          name: subCat.name,
+          type: 'sub',
+        });
+        seenIds.add(subCat.subCategoryId);
+      });
+    }
+
+    return Array.from(categoriesMap.values());
+  }, [catalogCategories, catalogSubCategories]);
+
+  // Handle filter button press - open bottom sheet with filter options
+  const handleFilterButtonPress = useCallback((filterId: string) => {
+    let options: Array<{ value: string; label: string }> = [];
+    let title = '';
+
+    switch (filterId) {
+      case 'interest':
+        options = [...INTEREST_OPTIONS];
+        title = 'Interests';
+        break;
+      case 'tag':
+        options = [...TAG_OPTIONS];
+        title = 'Tags';
+        break;
+      case 'category':
+        options = allCategories.map((cat) => ({ value: cat.id, label: cat.name }));
+        title = 'Category';
+        break;
+      case 'sort':
+        options = [...SORT_OPTIONS];
+        title = 'Sort';
+        break;
+    }
+
+    const isSelected = (value: string) => {
+      switch (filterId) {
+        case 'interest':
+          return filters.interests?.includes(value) || false;
+        case 'tag':
+          return filters.tags?.includes(value) || false;
+        case 'category':
+          return filters.category === value;
+        case 'sort':
+          return filters.sort === value;
+        default:
+          return false;
+      }
+    };
+
+    const handleToggle = (value: string) => {
+      switch (filterId) {
+        case 'interest': {
+          const currentInterests = filters.interests || [];
+          const newInterests = currentInterests.includes(value)
+            ? currentInterests.filter((v) => v !== value)
+            : [...currentInterests, value];
+          setFilters({ ...filters, interests: newInterests.length > 0 ? newInterests : undefined });
+          break;
+        }
+        case 'tag': {
+          const currentTags = filters.tags || [];
+          const newTags = currentTags.includes(value)
+            ? currentTags.filter((v) => v !== value)
+            : [...currentTags, value];
+          setFilters({ ...filters, tags: newTags.length > 0 ? newTags : undefined });
+          break;
+        }
+        case 'category': {
+          const newCategory = filters.category === value ? undefined : value;
+          setFilters({ ...filters, category: newCategory });
+          break;
+        }
+        case 'sort': {
+          const newSort = filters.sort === value ? undefined : (value as 'recent' | 'top');
+          setFilters({ ...filters, sort: newSort });
+          break;
+        }
+      }
+    };
+
+    const handleClear = () => {
+      switch (filterId) {
+        case 'interest':
+          setFilters({ ...filters, interests: undefined });
+          break;
+        case 'tag':
+          setFilters({ ...filters, tags: undefined });
+          break;
+        case 'category':
+          setFilters({ ...filters, category: undefined });
+          break;
+        case 'sort':
+          setFilters({ ...filters, sort: undefined });
+          break;
+      }
+    };
+
+    // Group options into rows of 3
+    const rows: Array<Array<{ value: string; label: string }>> = [];
+    for (let i = 0; i < options.length; i += 3) {
+      rows.push(options.slice(i, i + 3));
+    }
+
+    // Open bottom sheet
+    openBottomSheet(
+      <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%">
+        <Text fontSize={16} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'} mb="$4" textAlign="center">
+          {title}
+        </Text>
+
+        <VStack px={12} py="$2" width="100%">
+          {rows.map((row, rowIndex) => (
+            <HStack key={rowIndex} space="xs" justifyContent="space-between" width="100%" mb="$1">
+              {row.map((option) => {
+                const selected = isSelected(option.value);
+                return (
+                  <Pressable key={option.value} onPress={() => handleToggle(option.value)} flex={1} style={{ minHeight: 44 }}>
+                    <Box
+                      flex={1}
+                      bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
+                      borderWidth={selected ? 1 : 0}
+                      borderColor={selected ? '#829905' : 'transparent'}
+                      borderRadius={7}
+                      px="$1.5"
+                      py="$1"
+                    >
+                      <HStack alignItems="center" space="xs" flex={1}>
+                        <Box
+                          width={18}
+                          height={18}
+                          borderWidth={1.5}
+                          borderColor={selected ? '#829905' : isDark ? '#444444' : '#CCCCCC'}
+                          borderRadius={4}
+                          bg={selected ? '#829905' : 'transparent'}
+                          justifyContent="center"
+                          alignItems="center"
+                          flexShrink={0}
+                        >
+                          {selected && <CheckIconSolid width={11} height={11} color="#FFFFFF" />}
+                        </Box>
+                        <Box flex={1} flexShrink={1}>
+                          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12} fontWeight={selected ? '$semibold' : '$normal'}>
+                            {option.label}
+                          </Text>
+                        </Box>
+                      </HStack>
+                    </Box>
+                  </Pressable>
+                );
+              })}
+              {row.length < 3 && Array.from({ length: 3 - row.length }).map((_, idx) => <Box key={`empty-${idx}`} flex={1} />)}
+            </HStack>
+          ))}
+        </VStack>
+
+        <Box px={12} pt="$1" style={{ paddingTop: 4, paddingBottom: 16 }}>
+          <HStack space="xs" justifyContent="space-between" width="100%">
+            <Pressable onPress={handleClear} flex={1}>
+              <Box
+                py="$1.5"
+                bg="transparent"
+                borderWidth={1}
+                borderColor={isDark ? '#444444' : '#E9E9E9'}
+                borderRadius={6}
+                alignItems="center"
+                justifyContent="center"
+                minHeight={32}
+              >
+                <Text fontSize={12} fontWeight="$semibold" color={isDark ? '#FFFFFF' : '#666666'}>
+                  Clear
+                </Text>
+              </Box>
+            </Pressable>
+            <Pressable onPress={closeBottomSheet} flex={1}>
+              <Box py="$1.5" bg="#829905" borderRadius={6} alignItems="center" justifyContent="center" minHeight={32}>
+                <Text fontSize={12} fontWeight="$bold" color="#FFFFFF">
+                  Apply
+                </Text>
+              </Box>
+            </Pressable>
+          </HStack>
+        </Box>
+      </VStack>,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: false,
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
+      }
+    );
+  }, [filters, setFilters, allCategories, isDark, openBottomSheet, closeBottomSheet, insets.bottom]);
 
   const handleExpertPress = () => {
     // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
@@ -1044,33 +1271,14 @@ const FeedScreenInner = React.memo(() => {
           <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
-          {/* FilterBar - panel aşağı doğru açılır, feed içeriği aşağı kayar */}
+          {/* FilterBar - bottom sheet mode */}
           <FilterBarReanimated
             filters={filters}
             onFiltersChange={setFilters}
-            onPanelStateChange={setIsFilterPanelOpen}
-            onClosePanelRef={(closeFn) => {
-              closePanelRef.current = closeFn;
-            }}
+            onFilterButtonPress={handleFilterButtonPress}
           />
         </View>
         <View style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-          {/* Overlay for closing filter panel - only covers feed area */}
-          {isFilterPanelOpen && (
-            <Pressable
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 5,
-                backgroundColor: 'transparent',
-              }}
-              onPress={handleOverlayPress}
-            />
-          )}
-
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
           ) : error ? (

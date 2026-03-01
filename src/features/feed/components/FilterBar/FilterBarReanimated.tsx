@@ -86,6 +86,8 @@ const FIXED_PANEL_HEIGHT = 150; // Fixed height in pixels (reduced from 180)
 interface FilterBarProps {
   filters: FeedFilterParams;
   onFiltersChange: (filters: FeedFilterParams) => void;
+  // NEW: Bottom sheet mode - callback when filter button is clicked
+  onFilterButtonPress?: (filterId: string) => void;
   // Expose sharedValues for direct access (better performance)
   onSharedValuesReady?: (values: { progress: SharedValue<number>; panelHeight: SharedValue<number> }) => void;
   // FIX: Panel açık/kapalı durumunu parent'a bildir (overlay için)
@@ -104,6 +106,7 @@ interface FilterBarProps {
 export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   filters,
   onFiltersChange,
+  onFilterButtonPress,
   onSharedValuesReady,
   onPanelStateChange,
   onClosePanelRef,
@@ -126,11 +129,11 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   
   // Calculate panel height based on number of rows
   const calculatePanelHeight = useCallback((optionsCount: number, filterId: string) => {
-    // Category ve Sort için tek satır yatay scrollable liste
-    if (filterId === 'category' || filterId === 'sort') {
+    // Sort için tek satır yatay scrollable liste
+    if (filterId === 'sort') {
       const rowHeight = 32; // minHeight of each option
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const bottomPadding = 0; // style={{ paddingBottom: 0 }}
+      const bottomPadding = 8; // py="$2" = 8px bottom (VStack py="$2")
 
       // Button area için gerçek değerler (satır 636-681)
       const buttonContainerPaddingTop = 6; // pt="$1.5" = 6px
@@ -152,13 +155,13 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
       return totalHeight;
     }
 
-    // Tags için 2 satır grid (3 sütun)
-    if (filterId === 'tag') {
+    // Tags ve Category için grid (3 sütun)
+    if (filterId === 'tag' || filterId === 'category') {
       const rowHeight = 44; // minHeight for potential 2-line text wrapping
       const rowSpacing = 4; // space="xs" between rows
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const bottomPadding = 0; // VStack paddingBottom
-      const rows = 2; // Tags için sabit 2 satır (6 seçenek = 2 satır x 3 sütun)
+      const bottomPadding = 8; // py="$2" = 8px bottom (VStack py="$2")
+      const rows = filterId === 'tag' ? 2 : Math.ceil(optionsCount / 3); // Tags için sabit 2 satır, Category için dinamik
 
       // Button area için gerçek değerler (satır 764-809)
       const buttonContainerPaddingTop = 4; // pt="$1" = 4px
@@ -186,7 +189,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     const rowHeight = 44; // minHeight for potential 2-line text wrapping
     const rowSpacing = 4; // space="xs" between rows
     const topPadding = 8; // py="$2"
-    const bottomPadding = 0; // VStack paddingBottom
+    const bottomPadding = 8; // py="$2" = 8px bottom (VStack py="$2")
 
     // Button area için gerçek değerler (satır 764-809)
     const buttonContainerPaddingTop = 4; // pt="$1" = 4px
@@ -395,13 +398,20 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     }
   }, [openFilterId, lastOpenFilterId, onPanelStateChange]);
 
-  // Toggle filter panel
+  // Toggle filter panel or trigger bottom sheet
   const handleFilterToggle = useCallback(
     (filterId: string) => {
       if (__DEV__) {
-        console.log('[FilterBarReanimated] handleFilterToggle:', { filterId, openFilterId });
+        console.log('[FilterBarReanimated] handleFilterToggle:', { filterId, openFilterId, useBottomSheet: !!onFilterButtonPress });
       }
-      
+
+      // NEW: If onFilterButtonPress callback is provided, use bottom sheet mode
+      if (onFilterButtonPress) {
+        onFilterButtonPress(filterId);
+        return;
+      }
+
+      // OLD: Use panel mode
       if (openFilterId === filterId) {
         // Close
         closePanel();
@@ -409,14 +419,14 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         // Open - calculate dynamic height based on filter type
         const optionsCount = getOptionsCount(filterId, allCategories.length);
         const calculatedHeight = calculatePanelHeight(optionsCount, filterId);
-        
-       
+
+
         // FIX: Önce state'leri güncelle, sonra animasyonu başlat
         // Bu sayede panel render edilir ve animasyon düzgün çalışır
         setLastOpenFilterId(openFilterId || filterId);
         setOpenFilterId(filterId);
         openFilterIdShared.value = filterId;
-        
+
         // Panel height'ı güncelle (animasyon başlamadan önce)
         panelHeight.value = calculatedHeight;
 
@@ -424,7 +434,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         progress.value = withSpring(1, SPRING_CONFIG);
       }
     },
-    [openFilterId, progress, openFilterIdShared, panelHeight, getOptionsCount, calculatePanelHeight, allCategories.length]
+    [onFilterButtonPress, openFilterId, progress, openFilterIdShared, panelHeight, getOptionsCount, calculatePanelHeight, allCategories.length, closePanel]
   );
 
   // Apply filters (close panel)
@@ -595,8 +605,8 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         return null;
     }
 
-    // Category ve Sort için tek satır yatay scrollable liste
-    if (filterIdToRender === 'category' || filterIdToRender === 'sort') {
+    // Sort için tek satır yatay scrollable liste
+    if (filterIdToRender === 'sort') {
       return (
         <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%">
           {options.length === 0 ? (
@@ -612,7 +622,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
               </RNText>
             </VStack>
           ) : (
-            <VStack px={12} py="$2" width="100%" style={{ paddingBottom: 0 }}>
+            <VStack px={12} py="$2" width="100%">
               {/* Tek satır yatay scrollable liste */}
               <ScrollView
                 horizontal
@@ -722,7 +732,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
       );
     }
 
-    // Diğer filtreler için mevcut grid yapısı (3 sütun)
+    // Tags, Category, Interest için grid yapısı (3 sütun)
     // Group options into rows of 3
     const rows: Array<Array<{ value: string; label: string }>> = [];
     for (let i = 0; i < options.length; i += 3) {
