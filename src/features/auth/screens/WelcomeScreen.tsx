@@ -53,29 +53,31 @@ export const WelcomeScreen = () => {
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       {/* Ana İçerik */}
-      <View style={{ flex: 1 }}>
+      <VStack flex={1}>
+        {/* Hero Image - Tipbox Logo */}
         <Box
           flex={1}
           bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+          alignItems="center"
+          justifyContent="center"
         >
-      {/* Hero Image - Tipbox Logo - Extends under status bar */}
-      <Box
-        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-        alignItems="center"
-        justifyContent="center"
-        style={{ marginTop: -2.5*insets.top }}
-      >
-        <Image
-          source={require('@/src/Onboarding/onboarding0.png')}
-          alt="Tipbox Logo"
-          style={{ width: '100%', height: '60%' }}
-          resizeMode="cover"
-        />
-      </Box>
+          <Image
+            source={require('@/src/Onboarding/onboarding0.png')}
+            alt="Tipbox Logo"
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+          />
+        </Box>
 
-      {/* Content */}
-      <VStack flex={1} px="$10" space="md" mt="-$8">
-        <VStack space="md" alignItems="center">
+        {/* Content */}
+        <VStack
+          flex={1}
+          px="$10"
+          space="md"
+          pt="$6"
+          bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+        >
+          <VStack space="md" alignItems="center">
           <Button
             bg="$buttonPrimary"
             h={44}
@@ -165,9 +167,8 @@ export const WelcomeScreen = () => {
             </Text>
           </Pressable>
         </HStack>
+        </VStack>
       </VStack>
-      </Box>
-      </View>
     </View>
   );
 };
