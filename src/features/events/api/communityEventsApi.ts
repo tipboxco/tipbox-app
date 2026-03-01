@@ -2,7 +2,12 @@ import { apiService } from '../../../services/ApiService';
 import type { EventApiItem, EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgesApiResponse, EventBadgeDetailResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
-import type { CollectionDetailResponse } from '../types/collection.types';
+import type {
+  CollectionDetailResponse,
+  CollectionsListParams,
+  CollectionsListResponse,
+  CollectionCategoriesResponse,
+} from '../types/collection.types';
 
 /** Community events filter - FilterBottomSheet ile uyumlu */
 export type CommunityEventsFilter = {
@@ -131,6 +136,65 @@ export const getEventDetail = async (
   } catch (error: any) {
     console.error('Event Detail API Error:', {
       url: `/events/${eventId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * EP-01: Get Collections List endpoint function
+ * Collections listesini getirir (pagination, search, filtreler ile).
+ *
+ * @param params - search, category (chip handle), mainCategoryId, subCategoryId, productGroupId, cursor, limit
+ * @returns CollectionsListResponse - Collections ve pagination bilgisi
+ */
+export const getCollections = async (
+  params: CollectionsListParams
+): Promise<CollectionsListResponse> => {
+  const query = new URLSearchParams();
+  if (params.search)                                       query.append('search', params.search);
+  if (params.category && params.category !== 'all')        query.append('category', params.category);
+  if (params.mainCategoryId)                               query.append('mainCategoryId', params.mainCategoryId);
+  if (params.subCategoryId)                                query.append('subCategoryId', params.subCategoryId);
+  if (params.productGroupId)                               query.append('productGroupId', params.productGroupId);
+  if (params.cursor)                                       query.append('cursor', params.cursor);
+  query.append('limit', (params.limit ?? 20).toString());
+
+  const url = `/events/collections?${query.toString()}`;
+  try {
+    const response = await apiService.getClient().get<CollectionsListResponse>(url);
+    return response.data;
+  } catch (error: any) {
+    console.error('Collections API Error:', {
+      url,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * EP-02: Get Collection Categories endpoint function
+ * CollectionsTab chip filtrelerinde gösterilecek kategorileri getirir.
+ * "All" chip'i frontend tarafında eklenir (backend'den gelmez).
+ *
+ * @returns CollectionCategoriesResponse - Chip filtre kategorileri
+ */
+export const getCollectionCategories = async (): Promise<CollectionCategoriesResponse> => {
+  const url = '/events/collections/categories';
+  try {
+    const response = await apiService.getClient().get<CollectionCategoriesResponse>(url);
+    return response.data;
+  } catch (error: any) {
+    console.error('Collection Categories API Error:', {
+      url,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Keyboard, TouchableWithoutFeedback } from 'react-native';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -10,11 +8,11 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
-import { useLogin, useGoogleLogin } from '../api/hooks';
-import { googleService } from '@/src/services/GoogleService';
+import { useLogin } from '../api/hooks';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { LoginCredentialsService } from '@/src/services/LoginCredentialsService';
 import { BiometricService } from '@/src/services/BiometricService';
+import { GoogleLoginButton } from '../components/google-login-button';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 type LoginScreenRouteProp = RouteProp<AuthStackParamList, 'Login'>;
@@ -26,20 +24,8 @@ export const LoginScreen = () => {
   const route = useRoute<LoginScreenRouteProp>();
   const toast = useToast();
   const loginMutation = useLogin();
-  const googleLoginMutation = useGoogleLogin();
   const insets = useSafeAreaInsets();
-  const signInTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Cleanup: unmount veya re-run öncesi setTimeout iptal et
-  useEffect(() => {
-    return () => {
-      if (signInTimeoutRef.current) {
-        clearTimeout(signInTimeoutRef.current);
-        signInTimeoutRef.current = null;
-      }
-    };
-  }, []);
-
+  
   // Edge-to-Edge Design: Top ve bottom insets için beyaz background
   const backgroundColor = '#FFFFFF';
 
@@ -107,162 +93,175 @@ export const LoginScreen = () => {
     checkBiometric();
   }, []);
 
-  const validateEmail = useCallback((text: string) => {
+  const validateEmail = (text: string) => {
     const lowerText = text.toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     setEmail(lowerText);
-    setIsEmailValid(EMAIL_REGEX.test(lowerText));
-  }, []);
+    setIsEmailValid(emailRegex.test(lowerText));
+  };
 
-  const validatePassword = useCallback((text: string) => {
+  const validatePassword = (text: string) => {
     setPassword(text);
     setIsPasswordValid(text.length >= 8);
-  }, []);
+  };
 
-  /** Optional credentials: when provided (e.g. from biometric), use these to avoid stale closure in setTimeout. */
-  const handleSignIn = useCallback(async (credentials?: { email: string; password: string }) => {
-    const emailToUse = credentials?.email ?? email;
-    const passwordToUse = credentials?.password ?? password;
-    const valid = credentials
-      ? (EMAIL_REGEX.test(emailToUse) && passwordToUse.length >= 8)
-      : (isEmailValid && isPasswordValid);
-    if (!valid) return;
-
-    try {
-      const result = await loginMutation.mutateAsync({
-        email: emailToUse,
-        password: passwordToUse,
-      });
-
-      if (__DEV__) {
-        console.log('[LoginScreen] ✅ Login successful:', {
-          userId: result.id,
-          fullName: result.fullName,
-          email: result.email,
-          hasToken: !!result.token,
-          hasRefreshToken: !!result.refreshToken,
+  const handleSignIn = async () => {
+    if (isEmailValid && isPasswordValid) {
+      try {
+        // React Query mutation kullanarak login işlemi
+        const result = await loginMutation.mutateAsync({
+          email,
+          password,
         });
-      }
-
-      if (rememberMe) {
-        await LoginCredentialsService.saveEmail(emailToUse);
-        if (isBiometricAvailable) {
-          try {
-            await BiometricService.savePassword(passwordToUse);
-            setHasBiometricPassword(true);
-          } catch (error) {
-            console.error('[LoginScreen] ❌ Error saving password with biometric:', error);
-          }
+        if(result.success) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Main' as never }],
+          });
         }
-      } else {
-        await LoginCredentialsService.clearEmail();
-        await BiometricService.clearPassword();
-        setHasBiometricPassword(false);
-      }
+        else {
+          showCustomToast(toast, {
+            title: 'Login Failed',
+            description: result.message,
+            action: 'error',
+            duration: 4000,
+          });
+        }
+        // Console'da response'u göster (sadece development modunda)
+        if (__DEV__) {
+          console.log('[LoginScreen] ✅ Login successful:', {
+            userId: result.id,
+            fullName: result.fullName,
+            email: result.email,
+            hasToken: !!result.token,
+            hasRefreshToken: !!result.refreshToken,
+          });
+        }
 
-      showCustomToast(toast, {
-        title: `Welcome ${result.fullName || result.email?.split('@')[0] || 'User'}!`,
-        action: 'success',
-        duration: 3000,
-      });
-    } catch (error: any) {
-      if (__DEV__) {
-        console.error('[LoginScreen] ❌ Login error:', {
-          message: error?.message,
-          status: error?.response?.status,
-          responseMessage: error?.response?.data?.message,
+        // Remember me seçiliyse email'i kaydet
+        if (rememberMe) {
+          await LoginCredentialsService.saveEmail(email);
+          // Şifreyi biometrik ile kaydet (eğer biometrik mevcut ise)
+          if (isBiometricAvailable) {
+            try {
+              await BiometricService.savePassword(password);
+              setHasBiometricPassword(true);
+            } catch (error) {
+              console.error('[LoginScreen] ❌ Error saving password with biometric:', error);
+            }
+          }
+        } else {
+          // Remember me seçili değilse email'i temizle
+          await LoginCredentialsService.clearEmail();
+          await BiometricService.clearPassword();
+          setHasBiometricPassword(false);
+        }
+
+        // Başarılı toast göster
+        showCustomToast(toast, {
+          title: `Welcome ${result.fullName || result.email?.split('@')[0] || 'User'}!`,
+          action: 'success',
+          duration: 3000,
+        });
+
+        // RootNavigator otomatik olarak isAuthenticated=true olduğunda
+        // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
+      } catch (error: any) {
+        // Console'da error'u göster (sadece development modunda)
+        if (__DEV__) {
+          console.error('[LoginScreen] ❌ Login error:', {
+            message: error?.message,
+            status: error?.response?.status,
+            responseMessage: error?.response?.data?.message,
+          });
+        }
+
+        // Hata toast göster - Backend'den gelen mesajı kullan veya genel mesaj
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          'An error occurred during login';
+
+        showCustomToast(toast, {
+          title: 'Login Failed',
+          description: errorMessage,
+          action: 'error',
+          duration: 4000,
         });
       }
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'An error occurred during login';
-      showCustomToast(toast, {
-        title: 'Login Failed',
-        description: errorMessage,
-        action: 'error',
-        duration: 3000,
-      });
     }
-  }, [email, isEmailValid, isPasswordValid, password, rememberMe, isBiometricAvailable, loginMutation, toast]);
+  };
 
-  const handleEmailInputFocus = useCallback(() => {
+  const handleEmailInputFocus = () => {
     if (savedEmail && !email) {
       setShowEmailSuggestions(true);
     }
-  }, [savedEmail, email]);
+  };
 
-  const handleEmailSuggestionPress = useCallback(() => {
+  const handleEmailSuggestionPress = async () => {
     if (savedEmail) {
       setEmail(savedEmail);
       validateEmail(savedEmail);
       setShowEmailSuggestions(false);
+      
+      // Email seçildiğinde, eğer biometrik şifre varsa otomatik Face ID tetikle
+      if (__DEV__) {
+        console.log('[LoginScreen] 📧 Email suggestion pressed:', {
+          isBiometricAvailable,
+          hasBiometricPassword,
+          savedEmail,
+        });
+      }
+      
+      if (isBiometricAvailable && hasBiometricPassword) {
+        // Kısa bir gecikme sonrası Face ID'i tetikle (kullanıcı deneyimi için)
+        // skipEmailSet=true çünkü email zaten set edildi
+        if (__DEV__) {
+          console.log('[LoginScreen] 🔐 Triggering Face ID...');
+        }
+        setTimeout(async () => {
+          await handleBiometricLogin(true);
+        }, 300);
+      } else {
+        if (__DEV__) {
+          console.log('[LoginScreen] ⚠️ Face ID not available or password not saved:', {
+            isBiometricAvailable,
+            hasBiometricPassword,
+          });
+        }
+      }
     }
-  }, [savedEmail, validateEmail]);
+  };
 
-  const handleBiometricLogin = useCallback(async (skipEmailSet = false) => {
+  const handleBiometricLogin = async (skipEmailSet = false) => {
     try {
       const savedPassword = await BiometricService.authenticateAndGetPassword();
       if (savedPassword) {
-        const emailToUse = savedEmail ?? email;
+        // Email zaten set edilmişse tekrar set etme
         if (!skipEmailSet && savedEmail) {
           setEmail(savedEmail);
           validateEmail(savedEmail);
         }
         setPassword(savedPassword);
         validatePassword(savedPassword);
-        if (signInTimeoutRef.current) clearTimeout(signInTimeoutRef.current);
-        // Pass credentials explicitly so timeout uses them instead of stale state
-        signInTimeoutRef.current = setTimeout(() => {
-          signInTimeoutRef.current = null;
-          handleSignIn({ email: emailToUse, password: savedPassword });
+        // Otomatik login yap
+        setTimeout(() => {
+          handleSignIn();
         }, 300);
       } else {
-        showCustomToast(toast, {
-          title: 'Biometric Login',
-          description: 'No saved password found. Sign in with your password first and enable "Remember me".',
-          action: 'error',
-          duration: 3000,
-        });
+        // Şifre bulunamadıysa kullanıcıya bilgi ver
+        console.log('[LoginScreen] ⚠️ No saved password found');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('[LoginScreen] ❌ Biometric login error:', error);
-      const message = error?.message ?? 'Biometric authentication failed. Try signing in with your password.';
-      showCustomToast(toast, {
-        title: 'Biometric Failed',
-        description: message,
-        action: 'error',
-        duration: 3000,
-      });
     }
-  }, [savedEmail, email, toast, validateEmail, validatePassword, handleSignIn]);
+  };
 
-  const handleForgotPassword = useCallback(() => {
+  const handleForgotPassword = () => {
     navigation.navigate('ForgotPassword' as never);
-  }, [navigation]);
+  };
 
-  const handleGoogleLogin = useCallback(async () => {
-    try {
-      const googleResult = await googleService.login();
-      await googleLoginMutation.mutateAsync(googleResult.idToken);
-      showCustomToast(toast, {
-        title: `Welcome ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'User'}!`,
-        action: 'success',
-        duration: 3000,
-      });
-    } catch (error: any) {
-      console.error('[LoginScreen] ❌ Google login error:', error);
-      const errorMessage =
-        error?.message ||
-        error?.response?.data?.message ||
-        'An error occurred during Google login';
-      showCustomToast(toast, {
-        title: 'Google Login Failed',
-        description: errorMessage,
-        action: 'error',
-        duration: 3000,
-      });
-    }
-  }, [toast, googleLoginMutation]);
+
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -367,22 +366,22 @@ export const LoginScreen = () => {
                 value={password}
                 onChangeText={validatePassword}
               />
-              <HStack space="md" alignItems="center" mr="$2" flexShrink={0}>
+              <HStack space="sm" alignItems="center" mr="$2">
                 {isBiometricAvailable && savedEmail && hasBiometricPassword && (
-                  <Pressable hitSlop={8} style={{ minWidth: 32 }} onPress={() => handleBiometricLogin()}>
-                    <Icon
-                      as={Fingerprint}
-                      color={isDark ? '$primary400' : '$primary600'}
-                      size="md"
+                  <Pressable onPress={() => handleBiometricLogin()}>
+                    <Icon 
+                      as={Fingerprint} 
+                      color={isDark ? '$primary400' : '$primary600'} 
+                      size="md" 
                       alignSelf="center"
                     />
                   </Pressable>
                 )}
-                <Pressable hitSlop={8} style={{ minWidth: 32 }} onPress={() => setShowPassword(!showPassword)}>
-                  <Icon
-                    as={showPassword ? EyeOff : Eye}
-                    color={isDark ? '$textDark300' : '$textLight600'}
-                    size="md"
+                <Pressable onPress={() => setShowPassword(!showPassword)}>
+                  <Icon 
+                    as={showPassword ? EyeOff : Eye} 
+                    color={isDark ? '$textDark300' : '$textLight600'} 
+                    size="md" 
                     alignSelf="center"
                   />
                 </Pressable>
@@ -430,7 +429,7 @@ export const LoginScreen = () => {
           py="$1"
           rounded="$lg"
           mt="$4"
-          onPress={() => handleSignIn()}
+          onPress={handleSignIn}
           opacity={isEmailValid && isPasswordValid && !loginMutation.isPending ? 1 : 0.5}
           disabled={!isEmailValid || !isPasswordValid || loginMutation.isPending}
         >
@@ -445,23 +444,7 @@ export const LoginScreen = () => {
           <Box flex={1} h={1} bg={isDark ? '$textDark300' : '$textLight600'} />
         </HStack>
 
-        <Button
-          variant="outline"
-          h={44}
-          rounded="$lg"
-          borderColor="$gray400"
-          borderWidth={1}
-          onPress={handleGoogleLogin}
-          isDisabled={googleLoginMutation.isPending}
-          opacity={googleLoginMutation.isPending ? 0.5 : 1}
-        >
-          <HStack space="md" alignItems="center">
-            <Icon as={Mail} size="md" color={isDark ? '$textDark300' : '$textLight600'} />
-            <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">
-              {googleLoginMutation.isPending ? 'Signing in...' : 'Continue with Google'}
-            </ButtonText>
-          </HStack>
-        </Button>
+        <GoogleLoginButton />
 
         <Text
           fontSize="$xs"

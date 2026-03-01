@@ -5,11 +5,11 @@ import { apiService } from '../../../services/ApiService';
  * WEB2-READY WALLET API
  * ============================================
  * 
- * Bu dosya Web2 motor ile çalışacak şekilde hazırlanmıştır.
- * Endpoint isimleri ve response formatları Web3'e geçiş için hazır.
+ * This file is prepared for Web2 backend.
+ * Endpoint names and response formats are ready for Web3 migration.
  * 
- * Şimdi: Backend ledger sistemi
- * Sonra: Thirdweb + Smart Contract
+ * Current: Backend ledger system
+ * Later: Thirdweb + Smart Contract
  */
 
 /**
@@ -17,8 +17,8 @@ import { apiService } from '../../../services/ApiService';
  */
 export interface WalletInfo {
   walletId: string;
-  walletIdentifier: string; // Şimdi: fake address, Sonra: real blockchain address
-  provider: string; // Şimdi: 'CUSTOM', Sonra: 'thirdweb'
+  walletIdentifier: string; // Current: fake address; later: real blockchain address
+  provider: string; // Current: 'CUSTOM'; later: 'thirdweb'
   balance: number;
   isConnected: boolean;
   createdAt: string;
@@ -30,7 +30,7 @@ export interface WalletInfo {
 export interface WalletBalance {
   balance: number;
   pending: number;
-  cached: boolean; // 10 saniye cache
+  cached: boolean; // 10 second cache
 }
 
 /**
@@ -39,28 +39,35 @@ export interface WalletBalance {
 export interface Transaction {
   id: string;
   type: 'sent' | 'received';
-  actionType: 'TIP_SEND' | 'TIP_RECEIVE' | 'CLAIM_REWARD' | 'CLAIM_BADGE' | 'AIRDROP' | 'NFT_LIST' | 'NFT_DELIST' | 'SWAP';
+  actionType: 'TIP_SEND' | 'TIP_RECEIVE' | 'DEPOSIT' | 'WITHDRAW' | 'CLAIM_REWARD' | 'CLAIM_BADGE' | 'AIRDROP' | 'NFT_LIST' | 'NFT_DELIST' | 'SWAP';
   amount: number;
   currency: string;
   from: {
     id: string;
     name: string;
     avatar: string | null;
-    walletAddress?: string | null; // Backend'den gelen wallet adresi (opsiyonel - Web3 için)
+    walletAddress?: string | null; // Wallet address from backend (optional, for Web3)
   } | null;
   to: {
     id: string;
     name: string;
     avatar: string | null;
-    walletAddress?: string | null; // Backend'den gelen wallet adresi (opsiyonel - Web3 için)
+    walletAddress?: string | null; // Wallet address from backend (optional, for Web3)
   } | null;
   reason: string | null;
   status: 'created' | 'pending' | 'confirmed' | 'failed';
   createdAt: string;
-  // UI için ek alanlar (transform edilmiş)
+  /** On-chain transaction hash (undefined until broadcast/confirmed) */
+  txHash?: string | null;
+  /** Backend/API error message when status is failed */
+  errorMessage?: string | null;
+  // Extra fields for UI (transformed)
   description?: string;
   amountColor?: string;
 }
+
+/** Send-tip response status (matches backend flow: create → pending → confirmed/failed) */
+export type SendTipStatus = 'created' | 'pending' | 'confirmed' | 'failed';
 
 /**
  * Backend API Response (raw format)
@@ -90,19 +97,43 @@ export interface TransactionsResponse {
  * Send Tip Request
  */
 export interface SendTipRequest {
-  recipientId?: string;      // User ID (friend-to-friend için) - opsiyonel
-  walletAddress?: string;    // Wallet address (external wallet için) - opsiyonel
-  amount: number;            // TIPS miktarı - zorunlu
-  message?: string;          // Opsiyonel mesaj
+  recipientId?: string;      // User ID (friend-to-friend) - optional
+  walletAddress?: string;   // Wallet address (external wallet) - optional
+  amount: number;           // TIPS amount - required
+  message?: string;         // Optional message
 }
 
 /**
  * Send Tip Response
+ * Backend: POST /transactions/send-tip returns immediately; on-chain processing is queued, ~15s delay.
+ * First response usually has status "created", txHash undefined. After worker/webhook: pending → confirmed/failed.
  */
 export interface SendTipResponse {
-  transactionId: string;
-  status: 'pending'; // Hemen confirmed değil!
-  estimatedConfirmTime: number; // Saniye cinsinden
+  /** Transaction id (use for polling and cancel) */
+  id: string;
+  /** Alias for id (backward compat) */
+  transactionId?: string;
+  /** created | pending | confirmed | failed */
+  status: SendTipStatus;
+  amount: number;
+  /** On-chain hash; undefined until broadcast/confirmed */
+  txHash?: string;
+  toAddress?: string;
+  toUserId?: string;
+  metadata?: Record<string, unknown>;
+  provider?: string;
+  createdAt?: string;
+  /** Error message when status is failed; "Cancelled by user" when cancelled */
+  errorMessage?: string;
+  estimatedConfirmTime?: number;
+}
+
+/** POST /transactions/:transactionId/cancel response */
+export interface CancelTransactionResponse {
+  id: string;
+  status: SendTipStatus;
+  errorMessage?: string;
+  message: string;
 }
 
 /**
@@ -138,7 +169,7 @@ export interface NftTransferResponse {
  * 
  * Backend endpoint: GET /wallets/info
  * 
- * Kullanıcının wallet bilgilerini getirir
+ * Returns the user's wallet info
  */
 export const getWalletInfo = async (): Promise<WalletInfo> => {
   try {
@@ -159,7 +190,7 @@ export const getWalletInfo = async (): Promise<WalletInfo> => {
  * 
  * Backend endpoint: GET /wallets/balance
  * 
- * Cüzdan bakiyesini getirir (ledger-based, hesaplanmış)
+ * Returns wallet balance (ledger-based, computed)
  */
 export const getWalletBalance = async (): Promise<WalletBalance> => {
   try {
@@ -186,16 +217,23 @@ export const getWalletBalance = async (): Promise<WalletBalance> => {
  * 
  * Backend endpoint: POST /api/transactions/send-tip
  * 
- * Önemli: Direkt success dönmez! Transaction yaratır ve pending döner.
- * Frontend status'u poll ederek takip eder.
+ * Does not return success immediately. Creates transaction and returns (often status: created).
+ * Frontend polls status until confirmed/failed.
  */
 export const sendTips = async (data: SendTipRequest): Promise<SendTipResponse> => {
   try {
-    const response = await apiService.getClient().post<SendTipResponse>(
+    const response = await apiService.getClient().post<SendTipResponse & { transactionId?: string }>(
       '/transactions/send-tip',
-      data
+      data,{
+        timeout: 10000*60,
+      }
     );
-    return response.data;
+    const raw = response.data;
+    // Normalize: backend may return id or transactionId
+    return {
+      ...raw,
+      id: raw.id ?? raw.transactionId ?? '',
+    } as SendTipResponse;
   } catch (error: any) {
     console.error('[sendTips] API Error:', {
       url: '/transactions/send-tip',
@@ -232,7 +270,7 @@ export const transferNft = async (data: NftTransferRequest): Promise<NftTransfer
  * 
  * Backend endpoint: GET /api/transactions/:id
  * 
- * Transaction status'ünü getirir (polling için)
+ * Returns transaction status (for polling)
  */
 export const getTransactionById = async (transactionId: string): Promise<Transaction> => {
   try {
@@ -251,37 +289,60 @@ export const getTransactionById = async (transactionId: string): Promise<Transac
 };
 
 /**
+ * Cancel Transaction (tip only; only when status is "created")
+ * 
+ * Backend endpoint: POST /transactions/:transactionId/cancel
+ * 200: { id, status, errorMessage?, message: "Transaction cancelled" }
+ * 400: Transaction cannot be cancelled
+ * 404: Transaction not found
+ */
+export const cancelTransaction = async (transactionId: string): Promise<CancelTransactionResponse> => {
+  try {
+    const response = await apiService.getClient().post<CancelTransactionResponse>(
+      `/transactions/${transactionId}/cancel`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[cancelTransaction] API Error:', {
+      url: `/transactions/${transactionId}/cancel`,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+/**
  * Transform transaction to UI format
  */
 const transformTransaction = (tx: Transaction): Transaction => {
   let description = '';
   let amountColor = '#000000';
 
-  // Type'a göre description ve renk belirle
   if (tx.type === 'sent') {
     if (tx.status === 'failed') {
       description = `Failed: ${tx.to?.name || 'Unknown'}`;
-      amountColor = '#CE4A4A'; // Kırmızı
+      amountColor = '#CE4A4A'; // Red
     } else {
       description = `Sent to ${tx.to?.name || 'Unknown'}`;
-      amountColor = '#CE4A4A'; // Kırmızı
+      amountColor = '#CE4A4A'; // Red
     }
   } else if (tx.type === 'received') {
     if (tx.actionType === 'CLAIM_REWARD') {
       description = 'Claimed Reward';
-      amountColor = '#4CAF50'; // Yeşil
+      amountColor = '#4CAF50'; // Green
     } else if (tx.actionType === 'CLAIM_BADGE') {
       description = 'Claimed Badge Reward';
-      amountColor = '#4CAF50'; // Yeşil
+      amountColor = '#4CAF50'; // Green
     } else if (tx.actionType === 'AIRDROP') {
       description = 'Airdrop Received';
-      amountColor = '#4CAF50'; // Yeşil
+      amountColor = '#4CAF50'; // Green
     } else if (tx.from) {
       description = `Received from ${tx.from.name}`;
-      amountColor = '#4CAF50'; // Yeşil
+      amountColor = '#4CAF50'; // Green
     } else {
       description = 'Received';
-      amountColor = '#4CAF50'; // Yeşil
+      amountColor = '#4CAF50'; // Green
     }
   }
 
@@ -337,7 +398,7 @@ const groupTransactionsByTime = (transactions: Transaction[]): TransactionsRespo
  * 
  * Backend endpoint: GET /api/transactions/history
  * 
- * Cüzdan işlem geçmişini getirir (grouped by time)
+ * Returns wallet transaction history (grouped by time)
  */
 export const getWalletTransactions = async (params?: {
   page?: number;
@@ -371,7 +432,7 @@ export const getWalletTransactions = async (params?: {
  * BACKWARD COMPATIBILITY (OLD ENDPOINTS)
  * ============================================
  * 
- * Eski endpoint'ler (geçici olarak korunuyor)
+ * Legacy endpoints (kept for compatibility)
  */
 
 export interface Wallet {
@@ -480,7 +541,7 @@ export interface ClaimAllResult {
  * 
  * Backend endpoint: GET /wallets/rewards/summary
  * 
- * Kullanıcının tüm claimable reward'larının özetini getirir
+ * Returns summary of user's claimable rewards
  */
 export const getRewardSummary = async (): Promise<RewardSummary> => {
   try {
@@ -501,7 +562,7 @@ export const getRewardSummary = async (): Promise<RewardSummary> => {
  * 
  * Backend endpoint: GET /wallets/rewards/claimable
  * 
- * Kullanıcının claim edebileceği tüm reward'ları detaylı olarak getirir
+ * Returns all rewards the user can claim (detailed)
  */
 export const getClaimableRewards = async (): Promise<RewardClaim[]> => {
   try {
@@ -522,7 +583,7 @@ export const getClaimableRewards = async (): Promise<RewardClaim[]> => {
  * 
  * Backend endpoint: GET /wallets/rewards/source/:sourceType
  * 
- * Belirli bir kaynak tipine göre reward'ları getirir
+ * Returns rewards by source type
  */
 export const getRewardsBySource = async (sourceType: RewardSourceType): Promise<RewardClaim[]> => {
   try {
@@ -545,7 +606,7 @@ export const getRewardsBySource = async (sourceType: RewardSourceType): Promise<
  * 
  * Backend endpoint: POST /wallets/rewards/claim/:rewardId
  * 
- * Belirli bir reward'ı claim eder
+ * Claims a single reward
  */
 export const claimReward = async (rewardId: string): Promise<ClaimResult> => {
   try {
@@ -568,7 +629,7 @@ export const claimReward = async (rewardId: string): Promise<ClaimResult> => {
  * 
  * Backend endpoint: POST /wallets/rewards/claim-all
  * 
- * Kullanıcının tüm claimable reward'larını tek seferde claim eder
+ * Claims all claimable rewards at once
  */
 export const claimAllRewards = async (): Promise<ClaimAllResult> => {
   try {
@@ -591,7 +652,7 @@ export const claimAllRewards = async (): Promise<ClaimAllResult> => {
  * 
  * Backend endpoint: GET /wallets/rewards/history
  * 
- * Kullanıcının daha önce claim ettiği reward'ların geçmişini getirir
+ * Returns history of rewards the user has claimed
  */
 export const getClaimHistory = async (): Promise<RewardClaim[]> => {
   try {
@@ -608,7 +669,7 @@ export const getClaimHistory = async (): Promise<RewardClaim[]> => {
 };
 
 /**
- * @deprecated Kullanmayın. Bunun yerine getWalletInfo() kullanın.
+ * @deprecated Do not use. Use getWalletInfo() instead.
  */
 export const getWallets = async (): Promise<Wallet[]> => {
   try {
@@ -621,7 +682,7 @@ export const getWallets = async (): Promise<Wallet[]> => {
 };
 
 /**
- * @deprecated Kullanmayın. Bunun yerine getWalletInfo() kullanın.
+ * @deprecated Do not use. Use getWalletInfo() instead.
  */
 export const getActiveWallet = async (): Promise<Wallet> => {
   try {
@@ -634,7 +695,7 @@ export const getActiveWallet = async (): Promise<Wallet> => {
 };
 
 /**
- * @deprecated Kullanmayın. Wallet otomatik oluşturulur.
+ * @deprecated Do not use. Wallet is created automatically.
  */
 export const connectWallet = async (data: ConnectWalletRequest): Promise<Wallet> => {
   try {
@@ -647,7 +708,7 @@ export const connectWallet = async (data: ConnectWalletRequest): Promise<Wallet>
 };
 
 /**
- * @deprecated Kullanmayın.
+ * @deprecated Do not use.
  */
 export const disconnectWallet = async (walletId: string): Promise<Wallet> => {
   try {
@@ -660,7 +721,7 @@ export const disconnectWallet = async (walletId: string): Promise<Wallet> => {
 };
 
 /**
- * @deprecated Kullanmayın.
+ * @deprecated Do not use.
  */
 export const activateWallet = async (walletId: string): Promise<Wallet> => {
   try {
@@ -673,7 +734,7 @@ export const activateWallet = async (walletId: string): Promise<Wallet> => {
 };
 
 /**
- * @deprecated Kullanmayın.
+ * @deprecated Do not use.
  */
 export const deleteWallet = async (walletId: string): Promise<void> => {
   try {

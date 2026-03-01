@@ -404,6 +404,15 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     } as any);
   }, [handleCloseDrawer]);
 
+  const handleNavigateToFeedback = useCallback(() => {
+    handleCloseDrawer();
+    // Canny redirect URL'ye session token ile yönlendir
+    navigationService.navigate('Settings', {
+      screen: 'CannyWebView',
+      params: { mode: 'feedback' },
+    } as any);
+  }, [handleCloseDrawer]);
+
   const handleHelpCenterPress = useCallback(() => {
     // Coming Soon - şimdilik sadece drawer'ı kapat
     handleCloseDrawer();
@@ -761,13 +770,36 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       >
         <VStack px="$0">
           <Pressable
-            onPress={handleNavigateToVoteNewFeatures}
+            onPress={handleNavigateToFeedback}
             h={48}
             justifyContent="center"
             bg="transparent"
             px="$6"
             $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
           >
+          <HStack space="md" alignItems="center">
+            <Box w={20} h={20} justifyContent="center" alignItems="center">
+              <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+            </Box>
+            <Text 
+              color={isDark ? '$textDark50' : '$textLight900'}
+              fontSize="$xs"
+              fontWeight="$medium"
+              flex={1}
+              numberOfLines={1}
+            >
+              Feedback
+            </Text>
+          </HStack>
+        </Pressable>
+        <Pressable
+          onPress={handleNavigateToVoteNewFeatures}
+          h={48}
+          justifyContent="center"
+          bg="transparent"
+          px="$6"
+          $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
+        >
           <HStack space="md" alignItems="center">
             <Box w={20} h={20} justifyContent="center" alignItems="center">
               <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />

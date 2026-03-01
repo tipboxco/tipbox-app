@@ -21,6 +21,10 @@ import type {
   TrusterUser,
   SuggestedUser,
   SuggestedUsersApiResponse,
+  BadgeDetailApiResponse,
+  HighlightBadgesApiResponse,
+  UpdateHighlightBadgesRequest,
+  UpdateHighlightBadgesResponse,
 } from '../types';
 
 /**
@@ -2088,4 +2092,44 @@ export const getSuggestedUsers = async (
     });
     throw error;
   }
+};
+
+/**
+ * GET /users/:id/collections/bridges/:badgeId
+ * Badge detay bilgisini getirir (description dahil)
+ */
+export const getBadgeDetail = async (
+  userId: string,
+  badgeId: string
+): Promise<BadgeDetailApiResponse> => {
+  const response = await apiService.getClient().get<unknown>(
+    `/users/${userId}/collections/bridges/${badgeId}`
+  );
+  const raw = (response.data as { data?: unknown })?.data ?? response.data;
+  return raw as BadgeDetailApiResponse;
+};
+
+/**
+ * GET /users/me/highlight-badges
+ * Kullanıcının profil kartında gösterilen 4 seçili badge'i getirir
+ */
+export const getHighlightBadges = async (): Promise<HighlightBadgesApiResponse> => {
+  const response = await apiService.getClient().get<unknown>('/users/me/highlight-badges');
+  const raw = (response.data as { data?: unknown })?.data ?? response.data;
+  return raw as HighlightBadgesApiResponse;
+};
+
+/**
+ * PUT /users/me/highlight-badges
+ * Kullanıcının profil kartında gösterilen 4 seçili badge'i günceller
+ * Not: badgeIds içindeki badge'lerin isClaimed: true olması gerekir
+ */
+export const updateHighlightBadges = async (
+  data: UpdateHighlightBadgesRequest
+): Promise<UpdateHighlightBadgesResponse> => {
+  const response = await apiService.getClient().put<UpdateHighlightBadgesResponse>(
+    '/users/me/highlight-badges',
+    data
+  );
+  return response.data;
 };

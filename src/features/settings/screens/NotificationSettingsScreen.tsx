@@ -63,6 +63,7 @@ export const NotificationSettingsScreen = () => {
             { notificationCode: NotificationCode.EMAIL, value: localSettings[NotificationCode.EMAIL] ?? false },
             { notificationCode: NotificationCode.PUSH, value: localSettings[NotificationCode.PUSH] ?? false },
             { notificationCode: NotificationCode.IN_APP, value: localSettings[NotificationCode.IN_APP] ?? false },
+            { notificationCode: NotificationCode.DEPOSIT, value: localSettings[NotificationCode.DEPOSIT] ?? false },
         ];
         
         // Update the changed setting
@@ -96,28 +97,33 @@ export const NotificationSettingsScreen = () => {
     const notificationItems: NotificationItem[] = [
         {
             id: 'trust',
-            code: NotificationCode.PUSH, // Using PUSH as placeholder - adjust based on actual API codes
+            code: NotificationCode.PUSH,
             title: 'Trust - Truster Notifications',
         },
         {
             id: 'support',
-            code: NotificationCode.IN_APP, // Using IN_APP as placeholder
+            code: NotificationCode.IN_APP,
             title: '1-on-1 Support Notifications',
         },
         {
             id: 'message',
-            code: NotificationCode.EMAIL, // Using EMAIL as placeholder
+            code: NotificationCode.EMAIL,
             title: 'Message Notifications',
         },
         {
             id: 'collection',
-            code: NotificationCode.PUSH, // Using PUSH as placeholder
+            code: NotificationCode.PUSH,
             title: 'Collection Notifications',
         },
         {
             id: 'post',
-            code: NotificationCode.IN_APP, // Using IN_APP as placeholder
+            code: NotificationCode.IN_APP,
             title: 'Post Notifications',
+        },
+        {
+            id: 'deposit',
+            code: NotificationCode.DEPOSIT,
+            title: 'Deposit Notifications',
         },
     ];
 

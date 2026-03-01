@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,71 +13,6 @@ import type { CollectionFilters } from '../../types/medusa.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const OPTION_ITEM_HEIGHT = 48;
-
-// Mock Data
-const MOCK_MAIN_CATEGORIES = [
-  { id: '1', name: 'Analytics Tools' },
-  { id: '2', name: 'Content Management' },
-  { id: '3', name: 'Customer Support' },
-  { id: '4', name: 'Design Tools' },
-  { id: '5', name: 'Development Tools' },
-  { id: '6', name: 'Finance & Accounting' },
-  { id: '7', name: 'Marketing Automation' },
-  { id: '8', name: 'Project Management' },
-  { id: '9', name: 'Sales CRM' },
-  { id: '10', name: 'Security & Privacy' },
-].sort((a, b) => a.name.localeCompare(b.name));
-
-const MOCK_SUB_CATEGORIES: Record<string, Array<{ id: string; name: string }>> = {
-  '1': [
-    { id: 'sub-1-1', name: 'Business Intelligence' },
-    { id: 'sub-1-2', name: 'Data Visualization' },
-    { id: 'sub-1-3', name: 'Marketing Analytics' },
-    { id: 'sub-1-4', name: 'Web Analytics' },
-  ].sort((a, b) => a.name.localeCompare(b.name)),
-  '2': [
-    { id: 'sub-2-1', name: 'Blogging Platforms' },
-    { id: 'sub-2-2', name: 'CMS Systems' },
-    { id: 'sub-2-3', name: 'Digital Asset Management' },
-    { id: 'sub-2-4', name: 'Documentation Tools' },
-  ].sort((a, b) => a.name.localeCompare(b.name)),
-  '3': [
-    { id: 'sub-3-1', name: 'Chat Support' },
-    { id: 'sub-3-2', name: 'Help Desk Software' },
-    { id: 'sub-3-3', name: 'Knowledge Base' },
-    { id: 'sub-3-4', name: 'Ticketing Systems' },
-  ].sort((a, b) => a.name.localeCompare(b.name)),
-  '4': [
-    { id: 'sub-4-1', name: 'Graphic Design' },
-    { id: 'sub-4-2', name: 'Prototyping Tools' },
-    { id: 'sub-4-3', name: 'UI/UX Design' },
-    { id: 'sub-4-4', name: 'Video Editing' },
-  ].sort((a, b) => a.name.localeCompare(b.name)),
-  '5': [
-    { id: 'sub-5-1', name: 'Code Editors' },
-    { id: 'sub-5-2', name: 'Database Tools' },
-    { id: 'sub-5-3', name: 'DevOps Platforms' },
-    { id: 'sub-5-4', name: 'Version Control' },
-  ].sort((a, b) => a.name.localeCompare(b.name)),
-};
-
-const MOCK_PRODUCT_GROUPS: Record<string, Array<{ id: string; name: string }>> = {
-  'sub-1-1': [
-    { id: 'pg-1-1-1', name: 'Cloud BI Solutions' },
-    { id: 'pg-1-1-2', name: 'Enterprise BI' },
-    { id: 'pg-1-1-3', name: 'Self-Service BI' },
-  ].sort((a, b) => a.name.localeCompare(b.name)),
-  'sub-1-2': [
-    { id: 'pg-1-2-1', name: 'Chart Libraries' },
-    { id: 'pg-1-2-2', name: 'Dashboard Tools' },
-    { id: 'pg-1-2-3', name: 'Infographic Makers' },
-  ].sort((a, b) => a.name.localeCompare(b.name)),
-  'sub-4-1': [
-    { id: 'pg-4-1-1', name: 'Adobe Suite' },
-    { id: 'pg-4-1-2', name: 'Icon Editors' },
-    { id: 'pg-4-1-3', name: 'Illustration Tools' },
-  ].sort((a, b) => a.name.localeCompare(b.name)),
-};
 
 interface CollectionsBottomSheetProps {
   visible: boolean;
@@ -112,13 +47,29 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   // SnapPoints: default 45%, dropdown açıkken 70%
   const snapPoints = useMemo(() => ['40%', '70%'], []);
 
-  // Mock data usage
-  const mainCategories = MOCK_MAIN_CATEGORIES;
-  const subCategories = mainCategoryId ? MOCK_SUB_CATEGORIES[mainCategoryId] || [] : [];
-  const productGroups = subCategoryId ? MOCK_PRODUCT_GROUPS[subCategoryId] || [] : [];
-  const isLoadingMain = false;
-  const isLoadingSub = false;
-  const isLoadingProductGroup = false;
+  // Medusa'dan gerçek kategori verileri
+  const { data: mainCategoriesData, isLoading: isLoadingMain } = useMainCategories();
+  const { data: subCategoriesData, isLoading: isLoadingSub } = useSubCategories(
+    mainCategoryId ?? '',
+    !!mainCategoryId
+  );
+  const { data: productGroupsData, isLoading: isLoadingProductGroup } = useSubCategories(
+    subCategoryId ?? '',
+    !!subCategoryId
+  );
+
+  const mainCategories = useMemo(
+    () => (mainCategoriesData ?? []).map((c) => ({ id: c.id, name: c.name })),
+    [mainCategoriesData]
+  );
+  const subCategories = useMemo(
+    () => (subCategoriesData ?? []).map((c) => ({ id: c.id, name: c.name })),
+    [subCategoriesData]
+  );
+  const productGroups = useMemo(
+    () => (productGroupsData ?? []).map((c) => ({ id: c.id, name: c.name })),
+    [productGroupsData]
+  );
 
   // Visible değiştiğinde bottom sheet'i aç/kapat
   useEffect(() => {

@@ -22,9 +22,22 @@ export interface BrandCategory {
 export interface BrandListItem {
   brandId?: string; // API'den gelebilir veya gelmeyebilir
   id?: string; // Alternatif olarak id gelebilir
-  categoryId: string;
+  categoryId?: string; // Paginated response'da gelmeyebilir
   name: string;
   image: string | null;
+}
+
+/**
+ * Brands by Category - Paginated response
+ * GET /brands/categories/{categoryId}/brands?page=1&limit=20
+ */
+export interface BrandsByCategoryResponse {
+  items: BrandListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  };
 }
 
 /**

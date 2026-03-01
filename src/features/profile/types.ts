@@ -351,6 +351,9 @@ export interface CollectionBadgeTask {
   id: string;
   title: string;
   type: 'Comment' | 'Like' | 'Share';
+  current: number;
+  total: number;
+  isCompleted: boolean;
 }
 
 /**
@@ -419,4 +422,36 @@ export interface SuggestedUsersApiResponse {
     nextCursor: string | null;
     hasMore: boolean;
   };
+}
+
+/**
+ * Badge Detail API Response - GET /users/:id/collections/bridges/:badgeId
+ * Badge detay bilgisi (description dahil)
+ */
+export interface BadgeDetailApiResponse extends CollectionBadgeApiItem {
+  description: string;
+}
+
+/**
+ * Highlight Badges API Response - GET /users/me/highlight-badges
+ * Kullanıcının profil kartında gösterilen 4 adet seçili badge
+ */
+export interface HighlightBadgesApiResponse {
+  badgeIds: string[];
+  badges: CollectionBadgeApiItem[];
+}
+
+/**
+ * Update Highlight Badges Request - PUT /users/me/highlight-badges
+ */
+export interface UpdateHighlightBadgesRequest {
+  badgeIds: string[];
+}
+
+/**
+ * Update Highlight Badges Response - PUT /users/me/highlight-badges
+ */
+export interface UpdateHighlightBadgesResponse {
+  success: boolean;
+  badgeIds: string[];
 }

@@ -1,14 +1,7 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-  Extrapolation,
-} from 'react-native-reanimated';
 import {
   VStack,
   HStack,
@@ -24,8 +17,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { ProfileStackParamList } from '../navigation';
-import { mockBadgesData } from '@/src/mock/profile/badges';
+import { useHighlightBadges, useUpdateHighlightBadges, useUserCollectionBridges } from '../api/hooks';
+import { toImageSource, useCurrentUserIdOrLogout } from '@/src/utils';
 import type { Badge } from '@/src/mock/profile/badges/types';
+import type { CollectionBadgeApiItem } from '../types';
 
 type ProfileEditHighlightBadgesNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'EditHighlightBadges'>;
 type ProfileEditHighlightBadgesRouteProp = RouteProp<ProfileStackParamList, 'EditHighlightBadges'>;
@@ -33,9 +28,18 @@ type ProfileEditHighlightBadgesRouteProp = RouteProp<ProfileStackParamList, 'Edi
 const SLOT_COUNT = 4;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Event Badges = achievements, Collections = bridges (veya tümü)
-const EVENT_BADGES: Badge[] = mockBadgesData.achievements;
-const COLLECTION_BADGES: Badge[] = mockBadgesData.bridges;
+const mapApiItemToBadge = (item: CollectionBadgeApiItem, category: 'achievement' | 'bridge'): Badge => ({
+  id: item.id,
+  title: item.title,
+  icon: toImageSource(item.image ?? '') || require('@/assets/defaultImages/default-badge.png'),
+  rarity: item.rarity,
+  category,
+  earnedDate: item.earnedDate,
+  totalEarned: item.totalEarned,
+  isClaimed: item.isClaimed,
+  nftAddress: item.nftAddress,
+  tasks: item.tasks,
+});
 
 const EditHighlightBadgesScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -44,14 +48,50 @@ const EditHighlightBadgesScreen: React.FC = () => {
   const route = useRoute<ProfileEditHighlightBadgesRouteProp>();
   const pagerRef = useRef<PagerView>(null);
   const [currentPage, setCurrentPage] = useState(0);
-  // Smooth drag-aware progress: 0 = tab 0, 1 = tab 1
-  const progress = useSharedValue(0);
+  const currentUserId = useCurrentUserIdOrLogout();
 
-  const initialBadgeIds = route.params?.initialBadgeIds ?? [];
-  const initialSlots = Array.isArray(initialBadgeIds) ? initialBadgeIds : [];
+  // Fetch highlight badges to get current selected IDs
+  const { data: highlightData, isLoading: isLoadingHighlights } = useHighlightBadges();
+
+  // Fetch all available badges (achievements + bridges) for selection
+  const { data: bridgesData, isLoading: isLoadingBadges } = useUserCollectionBridges(currentUserId, 50);
+
+  const { mutateAsync: saveHighlightBadges } = useUpdateHighlightBadges();
+
+  // Derive badge lists from API data
+  const eventBadges: Badge[] = useMemo(() => {
+    const allPages = bridgesData?.pages ?? [];
+    const items = allPages.flatMap((page) => page.achievement?.items ?? []);
+    const unique = new Map<string, CollectionBadgeApiItem>();
+    for (const item of items) {
+      if (!unique.has(item.id)) unique.set(item.id, item);
+    }
+    return Array.from(unique.values()).map((item) => mapApiItemToBadge(item, 'achievement'));
+  }, [bridgesData]);
+
+  const collectionBadges: Badge[] = useMemo(() => {
+    const allPages = bridgesData?.pages ?? [];
+    const items = allPages.flatMap((page) => page.brand?.items ?? []);
+    const unique = new Map<string, CollectionBadgeApiItem>();
+    for (const item of items) {
+      if (!unique.has(item.id)) unique.set(item.id, item);
+    }
+    return Array.from(unique.values()).map((item) => mapApiItemToBadge(item, 'bridge'));
+  }, [bridgesData]);
+
+  // All badges combined for slot lookup
+  const allBadges = useMemo(() => [...eventBadges, ...collectionBadges], [eventBadges, collectionBadges]);
+
+  // Initialize slots from route params or highlight API response
+  const initialBadgeIds = useMemo(() => {
+    const routeIds = route.params?.initialBadgeIds;
+    if (routeIds && routeIds.length > 0) return routeIds;
+    return highlightData?.badgeIds ?? [];
+  }, [route.params?.initialBadgeIds, highlightData?.badgeIds]);
+
   const [slots, setSlots] = useState<(string | null)[]>(() => {
     const arr: (string | null)[] = [];
-    for (let i = 0; i < SLOT_COUNT; i++) arr.push(initialSlots[i] ?? null);
+    for (let i = 0; i < SLOT_COUNT; i++) arr.push(initialBadgeIds[i] ?? null);
     return arr;
   });
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
@@ -68,11 +108,16 @@ const EditHighlightBadgesScreen: React.FC = () => {
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
-    const badgeIds = slots.filter((id): id is string => id != null && id !== '');
-    // TODO: API - highlight badges güncelle (örn. PATCH /profile/highlight-badges)
-    setIsSaving(false);
-    navigation.goBack();
-  }, [slots, navigation]);
+    try {
+      const badgeIds = slots.filter((id): id is string => id != null && id !== '');
+      await saveHighlightBadges({ badgeIds });
+      navigation.goBack();
+    } catch (error) {
+      console.error('[EditHighlightBadgesScreen] Save failed:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [slots, navigation, saveHighlightBadges]);
 
   const handleRemoveFromSlot = useCallback((index: number) => {
     setSlots((prev) => {
@@ -125,30 +170,23 @@ const EditHighlightBadgesScreen: React.FC = () => {
   }, []);
 
   const handlePageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
-    const pos = e.nativeEvent.position;
-    setCurrentPage(pos);
-    progress.value = withTiming(pos, { duration: 150 });
-  }, [progress]);
-
-  const handlePageScroll = useCallback((e: { nativeEvent: { position: number; offset: number } }) => {
-    const { position, offset } = e.nativeEvent;
-    progress.value = position + offset;
-  }, [progress]);
+    setCurrentPage(e.nativeEvent.position);
+  }, []);
 
   const tabBorderColor = isDark ? '#FFFFFF' : '#000000';
   const tabInactiveColor = '#9D9D9D';
 
-  // Animated styles for tab underline indicators
-  const tab0IndicatorStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [1, 0], Extrapolation.CLAMP),
-    borderBottomWidth: 2,
-    borderBottomColor: tabBorderColor,
-  }));
-  const tab1IndicatorStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
-    borderBottomWidth: 2,
-    borderBottomColor: tabBorderColor,
-  }));
+  const isLoading = isLoadingHighlights || isLoadingBadges;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
+        <VStack flex={1} justifyContent="center" alignItems="center">
+          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+        </VStack>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
@@ -189,9 +227,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
       <HStack px="$4" py="$4" space="md" justifyContent="space-between">
         {Array.from({ length: SLOT_COUNT }, (_, index) => {
           const badgeId = slots[index];
-          const badge = badgeId
-            ? [...EVENT_BADGES, ...COLLECTION_BADGES].find((b) => b.id === badgeId)
-            : null;
+          const badge = badgeId ? allBadges.find((b) => b.id === badgeId) : null;
           const isSelectedSlot = selectedSlotIndex === index;
           return (
             <Box key={index} flex={1} alignItems="center">
@@ -257,6 +293,8 @@ const EditHighlightBadgesScreen: React.FC = () => {
           flex={1}
           py="$3"
           alignItems="center"
+          borderBottomWidth={2}
+          borderBottomColor={currentPage === 0 ? tabBorderColor : 'transparent'}
           onPress={() => handleTabPress(0)}
         >
           <Text
@@ -266,12 +304,13 @@ const EditHighlightBadgesScreen: React.FC = () => {
           >
             Event Badges
           </Text>
-          <Animated.View style={[{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 }, tab0IndicatorStyle]} />
         </Pressable>
         <Pressable
           flex={1}
           py="$3"
           alignItems="center"
+          borderBottomWidth={2}
+          borderBottomColor={currentPage === 1 ? tabBorderColor : 'transparent'}
           onPress={() => handleTabPress(1)}
         >
           <Text
@@ -281,7 +320,6 @@ const EditHighlightBadgesScreen: React.FC = () => {
           >
             Collections
           </Text>
-          <Animated.View style={[{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 }, tab1IndicatorStyle]} />
         </Pressable>
       </HStack>
 
@@ -291,7 +329,6 @@ const EditHighlightBadgesScreen: React.FC = () => {
         style={styles.pagerView}
         initialPage={0}
         onPageSelected={handlePageSelected}
-        onPageScroll={handlePageScroll}
       >
         <View key="0" style={styles.page}>
           <ScrollView
@@ -300,61 +337,67 @@ const EditHighlightBadgesScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
           >
             <VStack p="$4" space="lg">
-              {Array.from({ length: Math.ceil(EVENT_BADGES.length / 3) }, (_, rowIndex) => (
-                <HStack key={rowIndex} space="md" justifyContent="flex-start">
-                  {EVENT_BADGES.slice(rowIndex * 3, rowIndex * 3 + 3).map((badge) => {
-                    const selected = isBadgeInSlots(badge.id);
-                    return (
-                      <Pressable
-                        key={badge.id}
-                        onPress={() => handleBadgePress(badge)}
-                        flex={1}
-                        alignItems="center"
-                        py="$2"
-                      >
-                        <Box position="relative" w={72} h={72} alignItems="center" justifyContent="center">
-                          <Box
-                            w={72}
-                            h={72}
-                            borderRadius={10}
-                            overflow="hidden"
-                            bg={isDark ? '#1A1A1A' : '#F5F5F5'}
-                            alignItems="center"
-                            justifyContent="center"
-                          >
-                            <Image source={badge.icon} alt={badge.title} w={56} h={56} resizeMode="contain" />
-                          </Box>
-                          {selected && (
+              {eventBadges.length === 0 ? (
+                <Text color={isDark ? '#9D9D9D' : '#8A8A8A'} fontSize="$sm" textAlign="center" mt="$4">
+                  No event badges yet.
+                </Text>
+              ) : (
+                Array.from({ length: Math.ceil(eventBadges.length / 3) }, (_, rowIndex) => (
+                  <HStack key={rowIndex} space="md" justifyContent="flex-start">
+                    {eventBadges.slice(rowIndex * 3, rowIndex * 3 + 3).map((badge) => {
+                      const selected = isBadgeInSlots(badge.id);
+                      return (
+                        <Pressable
+                          key={badge.id}
+                          onPress={() => handleBadgePress(badge)}
+                          flex={1}
+                          alignItems="center"
+                          py="$2"
+                        >
+                          <Box position="relative" w={72} h={72} alignItems="center" justifyContent="center">
                             <Box
-                              position="absolute"
-                              top={4}
-                              right={4}
-                              w={22}
-                              h={22}
-                              borderRadius={11}
-                              bg="#3CA241"
+                              w={72}
+                              h={72}
+                              borderRadius={10}
+                              overflow="hidden"
+                              bg={isDark ? '#1A1A1A' : '#F5F5F5'}
                               alignItems="center"
                               justifyContent="center"
                             >
-                              <CheckIcon width={14} height={14} color="#FFFFFF" />
+                              <Image source={badge.icon} alt={badge.title} w={56} h={56} resizeMode="contain" />
                             </Box>
-                          )}
-                        </Box>
-                        <Text
-                          fontSize="$xs"
-                          fontWeight="$semibold"
-                          color={isDark ? '#FFFFFF' : '#000000'}
-                          textAlign="center"
-                          numberOfLines={2}
-                          mt="$1"
-                        >
-                          {badge.title}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </HStack>
-              ))}
+                            {selected && (
+                              <Box
+                                position="absolute"
+                                top={4}
+                                right={4}
+                                w={22}
+                                h={22}
+                                borderRadius={11}
+                                bg="#3CA241"
+                                alignItems="center"
+                                justifyContent="center"
+                              >
+                                <CheckIcon width={14} height={14} color="#FFFFFF" />
+                              </Box>
+                            )}
+                          </Box>
+                          <Text
+                            fontSize="$xs"
+                            fontWeight="$semibold"
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            textAlign="center"
+                            numberOfLines={2}
+                            mt="$1"
+                          >
+                            {badge.title}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </HStack>
+                ))
+              )}
             </VStack>
           </ScrollView>
         </View>
@@ -365,61 +408,67 @@ const EditHighlightBadgesScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
           >
             <VStack p="$4" space="lg">
-              {Array.from({ length: Math.ceil(COLLECTION_BADGES.length / 3) }, (_, rowIndex) => (
-                <HStack key={rowIndex} space="md" justifyContent="flex-start">
-                  {COLLECTION_BADGES.slice(rowIndex * 3, rowIndex * 3 + 3).map((badge) => {
-                    const selected = isBadgeInSlots(badge.id);
-                    return (
-                      <Pressable
-                        key={badge.id}
-                        onPress={() => handleBadgePress(badge)}
-                        flex={1}
-                        alignItems="center"
-                        py="$2"
-                      >
-                        <Box position="relative" w={72} h={72} alignItems="center" justifyContent="center">
-                          <Box
-                            w={72}
-                            h={72}
-                            borderRadius={10}
-                            overflow="hidden"
-                            bg={isDark ? '#1A1A1A' : '#F5F5F5'}
-                            alignItems="center"
-                            justifyContent="center"
-                          >
-                            <Image source={badge.icon} alt={badge.title} w={56} h={56} resizeMode="contain" />
-                          </Box>
-                          {selected && (
+              {collectionBadges.length === 0 ? (
+                <Text color={isDark ? '#9D9D9D' : '#8A8A8A'} fontSize="$sm" textAlign="center" mt="$4">
+                  No collection badges yet.
+                </Text>
+              ) : (
+                Array.from({ length: Math.ceil(collectionBadges.length / 3) }, (_, rowIndex) => (
+                  <HStack key={rowIndex} space="md" justifyContent="flex-start">
+                    {collectionBadges.slice(rowIndex * 3, rowIndex * 3 + 3).map((badge) => {
+                      const selected = isBadgeInSlots(badge.id);
+                      return (
+                        <Pressable
+                          key={badge.id}
+                          onPress={() => handleBadgePress(badge)}
+                          flex={1}
+                          alignItems="center"
+                          py="$2"
+                        >
+                          <Box position="relative" w={72} h={72} alignItems="center" justifyContent="center">
                             <Box
-                              position="absolute"
-                              top={4}
-                              right={4}
-                              w={22}
-                              h={22}
-                              borderRadius={11}
-                              bg="#3CA241"
+                              w={72}
+                              h={72}
+                              borderRadius={10}
+                              overflow="hidden"
+                              bg={isDark ? '#1A1A1A' : '#F5F5F5'}
                               alignItems="center"
                               justifyContent="center"
                             >
-                              <CheckIcon width={14} height={14} color="#FFFFFF" />
+                              <Image source={badge.icon} alt={badge.title} w={56} h={56} resizeMode="contain" />
                             </Box>
-                          )}
-                        </Box>
-                        <Text
-                          fontSize="$xs"
-                          fontWeight="$semibold"
-                          color={isDark ? '#FFFFFF' : '#000000'}
-                          textAlign="center"
-                          numberOfLines={2}
-                          mt="$1"
-                        >
-                          {badge.title}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </HStack>
-              ))}
+                            {selected && (
+                              <Box
+                                position="absolute"
+                                top={4}
+                                right={4}
+                                w={22}
+                                h={22}
+                                borderRadius={11}
+                                bg="#3CA241"
+                                alignItems="center"
+                                justifyContent="center"
+                              >
+                                <CheckIcon width={14} height={14} color="#FFFFFF" />
+                              </Box>
+                            )}
+                          </Box>
+                          <Text
+                            fontSize="$xs"
+                            fontWeight="$semibold"
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            textAlign="center"
+                            numberOfLines={2}
+                            mt="$1"
+                          >
+                            {badge.title}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </HStack>
+                ))
+              )}
             </VStack>
           </ScrollView>
         </View>

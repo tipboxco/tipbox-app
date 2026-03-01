@@ -18,7 +18,7 @@ export const register = async (
   credentials: RegisterCredentials
 ): Promise<RegisterResponse> => {
   const response = await apiService.getClient().post<ApiRegisterResponse>(
-    '/auth/register',
+    '/auth0/register',
     credentials
   );
 
@@ -49,7 +49,7 @@ export const login = async (
   try {
     const client = apiService.getClient();
     const baseURL = client.defaults.baseURL;
-    const fullURL = `${baseURL}/auth/login`;
+    const fullURL = `${baseURL}/auth0/email`;
     
     console.log('[login] Request details:', {
       baseURL,
@@ -62,11 +62,8 @@ export const login = async (
       },
     });
     
-    const response = await client.post<ApiLoginResponse>(
-      '/auth/login',
-      credentials
-    );
-
+    const response = await client.post<ApiLoginResponse>(fullURL,credentials);
+    
     console.log('[login] ✅ Success:', {
       status: response.status,
       userId: response.data.id,

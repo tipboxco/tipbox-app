@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
+import { Clipboard } from 'react-native';
 import { 
   ArrowDownIcon,
   ArrowUpIcon,
@@ -10,11 +11,14 @@ import {
   ArrowsRightLeftIcon,
   SparklesIcon,
   ReceiptPercentIcon,
+  DocumentDuplicateIcon,
 } from 'react-native-heroicons/outline';
 
 export type ActionType = 
   | 'TIP_SEND'
   | 'TIP_RECEIVE'
+  | 'DEPOSIT'
+  | 'WITHDRAW'
   | 'CLAIM_REWARD'
   | 'CLAIM_BADGE'
   | 'NFT_BUY'
@@ -24,6 +28,9 @@ export type ActionType =
   | 'AIRDROP'
   | 'FEE';
 
+/** Transaction status from backend (created → pending → confirmed/failed) */
+export type TransactionStatus = 'created' | 'pending' | 'confirmed' | 'failed';
+
 interface HistoryCardProps {
   type: string;
   description: string;
@@ -32,6 +39,12 @@ interface HistoryCardProps {
   date?: string;
   transactionType?: 'sent' | 'received' | 'failed' | 'claim' | 'airdrop';
   actionType?: ActionType;
+  /** Backend status: created | pending | confirmed | failed */
+  status?: TransactionStatus;
+  /** On-chain tx hash (optional) */
+  txHash?: string | null;
+  /** When status is failed and errorMessage === "Cancelled by user" show "Cancelled" */
+  errorMessage?: string | null;
   onCopyPress?: () => void;
 }
 
@@ -44,6 +57,10 @@ const getActionTypeLabel = (actionType?: ActionType): string => {
       return 'TIPS Sent';
     case 'TIP_RECEIVE':
       return 'TIPS Received';
+    case 'DEPOSIT':
+      return 'Deposit';
+    case 'WITHDRAW':
+      return 'Withdraw';
     case 'CLAIM_REWARD':
       return 'Reward Claimed';
     case 'CLAIM_BADGE':
@@ -74,6 +91,10 @@ const getActionTypeDescription = (actionType?: ActionType): string => {
       return 'TIPS transfer completed';
     case 'TIP_RECEIVE':
       return 'TIPS transfer received';
+    case 'DEPOSIT':
+      return 'Deposit received (external wallet)';
+    case 'WITHDRAW':
+      return 'Withdraw to external wallet';
     case 'CLAIM_REWARD':
       return 'Reward successfully claimed';
     case 'CLAIM_BADGE':
@@ -96,36 +117,50 @@ const getActionTypeDescription = (actionType?: ActionType): string => {
 };
 
 /**
- * Transaction type ve actionType'a göre icon ve renk döndürür
+ * Status label (created | pending | confirmed | failed).
+ * Returns "Cancelled" when errorMessage === "Cancelled by user".
+ */
+const getStatusLabel = (status?: TransactionStatus, errorMessage?: string | null): string | null => {
+  if (!status) return null;
+  if (status === 'failed' && errorMessage === 'Cancelled by user') return 'Cancelled';
+  switch (status) {
+    case 'created': return 'Pending';
+    case 'pending': return 'Processing';
+    case 'confirmed': return 'Completed';
+    case 'failed': return 'Failed';
+    default: return null;
+  }
+};
+
+/**
+ * Returns icon and color by transaction type and actionType
  */
 const getTransactionIcon = (
   type: string, 
   transactionType?: 'sent' | 'received' | 'failed' | 'claim' | 'airdrop',
   actionType?: ActionType
 ) => {
-  // Failed durumu kontrolü
   if (transactionType === 'failed') {
     return {
       Icon: XMarkIcon,
       iconColor: '#FFFFFF',
-      bgColor: '#CE4A4A', // Kırmızı
+      bgColor: '#CE4A4A', // Red
     };
   }
 
-  // ActionType bazlı icon seçimi
   switch (actionType) {
     case 'NFT_BUY':
       return {
         Icon: ShoppingBagIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#7C3AED', // Mor
+        bgColor: '#7C3AED', // Purple
       };
     
     case 'NFT_SELL':
       return {
         Icon: BanknotesIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#059669', // Yeşil
+        bgColor: '#059669', // Green
       };
     
     case 'SWAP_TIP_TO_SOL':
@@ -133,14 +168,14 @@ const getTransactionIcon = (
       return {
         Icon: ArrowsRightLeftIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#2563EB', // Mavi
+        bgColor: '#2563EB', // Blue
       };
     
     case 'AIRDROP':
       return {
         Icon: SparklesIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#F59E0B', // Turuncu/Altın
+        bgColor: '#F59E0B', // Orange/Gold
       };
     
     case 'CLAIM_REWARD':
@@ -148,45 +183,44 @@ const getTransactionIcon = (
       return {
         Icon: GiftIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#10B981', // Yeşil
+        bgColor: '#10B981', // Green
       };
     
     case 'FEE':
       return {
         Icon: ReceiptPercentIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#6B7280', // Gri
+        bgColor: '#6B7280', // Gray
       };
     
     case 'TIP_SEND':
+    case 'WITHDRAW':
       return {
         Icon: ArrowUpIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#CE4A4A', // Kırmızı
+        bgColor: '#CE4A4A', // Red
       };
     
     case 'TIP_RECEIVE':
+    case 'DEPOSIT':
       return {
         Icon: ArrowDownIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#4CAF50', // Yeşil
+        bgColor: '#4CAF50', // Green
       };
     
     default:
-      // Fallback - transactionType'a göre
       if (transactionType === 'sent') {
         return {
           Icon: ArrowUpIcon,
           iconColor: '#FFFFFF',
-          bgColor: '#CE4A4A', // Kırmızı
+          bgColor: '#CE4A4A', // Red
         };
       }
-      
-      // Default: Received
       return {
         Icon: ArrowDownIcon,
         iconColor: '#FFFFFF',
-        bgColor: '#4CAF50', // Yeşil
+        bgColor: '#4CAF50', // Green
       };
   }
 };
@@ -199,6 +233,9 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
   date,
   transactionType,
   actionType,
+  status,
+  txHash,
+  errorMessage,
   onCopyPress,
 }) => {
   const { Icon, iconColor, bgColor } = getTransactionIcon(type, transactionType, actionType);
@@ -206,8 +243,15 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
   // Use English label if actionType exists
   const displayType = actionType ? getActionTypeLabel(actionType) : type;
   
-  // Use default description if description is empty
-  const displayDescription = description || getActionTypeDescription(actionType);
+  // Use default description if description is empty; show "Cancelled" for cancelled
+  const isCancelled = status === 'failed' && errorMessage === 'Cancelled by user';
+  const displayDescription = isCancelled ? 'Cancelled' : (description || getActionTypeDescription(actionType));
+  
+  const statusLabel = getStatusLabel(status, errorMessage);
+  const statusBg =
+    status === 'failed' ? (isCancelled ? '#6B7280' : '#CE4A4A') :
+    status === 'pending' || status === 'created' ? '#F59E0B' :
+    status === 'confirmed' ? '#10B981' : undefined;
   
   return (
     <Box
@@ -233,9 +277,18 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
         </Box>
         
         <VStack flex={1}>
-          <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            {displayType}
-          </Text>
+          <HStack alignItems="center" space="sm" flexWrap="wrap">
+            <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+              {displayType}
+            </Text>
+            {statusLabel && statusBg && (
+              <Box bg={statusBg} rounded={4} px="$1.5" py="$0.5">
+                <Text fontSize={9} fontWeight="$semibold" color="#FFFFFF">
+                  {statusLabel}
+                </Text>
+              </Box>
+            )}
+          </HStack>
           {displayDescription && (
             <Text fontSize={9} color="$textLight500" $dark-color="$textDark400">
               {displayDescription}
@@ -249,6 +302,19 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
               <Text fontSize={9} color="$textLight500" $dark-color="$textDark400">
                 {date}
               </Text>
+            </HStack>
+          )}
+          {txHash && (
+            <HStack space="sm" alignItems="center" mt="$1" flexWrap="wrap">
+              <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" numberOfLines={1} flex={1}>
+                Hash: {txHash.length > 12 ? `${txHash.slice(0, 6)}…${txHash.slice(-6)}` : txHash}
+              </Text>
+              <Pressable
+                onPress={() => Clipboard.setString(txHash)}
+                hitSlop={8}
+              >
+                <DocumentDuplicateIcon width={14} height={14} color="#6B7280" />
+              </Pressable>
             </HStack>
           )}
         </VStack>

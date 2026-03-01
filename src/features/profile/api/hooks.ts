@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient, useInfiniteQuery, useMutation, type InfiniteData } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import {
   getUserProfile,
@@ -11,6 +11,9 @@ import {
   getUserLadderBadges,
   getUserCollectionAchievements,
   getUserCollectionBridges,
+  getBadgeDetail,
+  getHighlightBadges,
+  updateHighlightBadges,
   searchProductExperiences,
   getTrustList,
   getTrusterList,
@@ -39,7 +42,6 @@ import {
   type AddInventoryItemResponse,
 } from './profileApi';
 import { useAppStore } from '@/src/store/appStore';
-import { feedKeys } from '@/src/features/feed/api/hooks';
 import type {
   TrustUser,
   TrusterUser,
@@ -62,6 +64,10 @@ import type {
   UserCollectionBridgesApiResponse,
   SuggestedUser,
   SuggestedUsersApiResponse,
+  BadgeDetailApiResponse,
+  HighlightBadgesApiResponse,
+  UpdateHighlightBadgesRequest,
+  UpdateHighlightBadgesResponse,
 } from '../types';
 
 /**
@@ -103,6 +109,9 @@ export const profileKeys = {
     [...profileKeys.collections(), 'achievements', userId, ...(limit ? [limit] : [])] as const,
   userCollectionBridges: (userId: string, limit?: number) =>
     [...profileKeys.collections(), 'bridges', userId, ...(limit ? [limit] : [])] as const,
+  badgeDetail: (userId: string, badgeId: string) =>
+    [...profileKeys.collections(), 'detail', userId, badgeId] as const,
+  highlightBadges: () => [...profileKeys.collections(), 'highlights'] as const,
 };
 
 /**
@@ -137,8 +146,8 @@ export const useTrustList = (
       return getTrustList(userId, searchQuery);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000, // 5 dakika cache (search yoksa)
-    gcTime: hasSearchQuery ? 0 : 10 * 60 * 1000, // 10 dakika garbage collection
+    staleTime: hasSearchQuery ? 0 : 2 * 60 * 60 * 1000, // 2 saat cache (search yoksa)
+    gcTime: hasSearchQuery ? 0 : 4 * 60 * 60 * 1000, // 4 saat garbage collection
     refetchOnMount: hasSearchQuery ? 'always' : false, // Search yoksa cache'den al
     refetchOnWindowFocus: hasSearchQuery, // Sadece search varsa window focus'ta refetch
     placeholderData: undefined,
@@ -195,8 +204,8 @@ export const useTrusterList = (
       return getTrusterList(userId, searchQuery, sort);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000, // 5 dakika cache (search yoksa)
-    gcTime: hasSearchQuery ? 0 : 10 * 60 * 1000, // 10 dakika garbage collection
+    staleTime: 0, // 2 saat cache (search yoksa)
+    gcTime: 0, // 4 saat garbage collection
     refetchOnMount: hasSearchQuery ? 'always' : false, // Search yoksa cache'den al
     refetchOnWindowFocus: hasSearchQuery, // Sadece search varsa window focus'ta refetch
     placeholderData: undefined,
@@ -247,8 +256,8 @@ export const useUserProfile = (userId: string | undefined) => {
       return getUserProfile(userId.trim());
     },
     enabled: Boolean(isValidUserId),
-    staleTime: 5 * 60 * 1000, // 5 dakika - daha sık fresh data
-    gcTime: 10 * 60 * 1000, // 10 dakika - memory-friendly garbage collection
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -335,8 +344,8 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3, opti
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
-    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: (failureCount, error: any) => {
@@ -384,8 +393,8 @@ export const useUserReviews = (userId: string | undefined, limit: number = 5, op
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
-    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -425,8 +434,8 @@ export const useUserBenchmarks = (userId: string | undefined, limit: number = 5,
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
-    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -466,8 +475,8 @@ export const useUserTipsAndTricks = (userId: string | undefined, limit: number =
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
-    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -547,8 +556,8 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5, op
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
-    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -593,8 +602,8 @@ export const useUserCollectionAchievements = (
     },
     enabled: !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
-    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -635,8 +644,8 @@ export const useUserCollectionBridges = (
     },
     enabled: !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - daha sık fresh data
-    gcTime: 10 * 60 * 1000,    // 10 dakika - memory-friendly garbage collection
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -958,6 +967,9 @@ export const useMuteUser = () => {
       return { previousProfile };
     },
     onSuccess: (_, variables) => {
+      // Invalidate yapmıyoruz çünkü optimistic update zaten doğru değeri set etti
+      // Invalidate yaparsak query refetch edilir ve backend'den gelen veri optimistic update'i ezer
+      // Sadece cache'i güncellemek yeterli (optimistic update zaten yaptı)
       console.log('[useMuteUser] ✅ User muted successfully');
     },
     onError: (error, variables, context) => {
@@ -969,10 +981,6 @@ export const useMuteUser = () => {
         );
       }
       console.error('[useMuteUser] ❌ Mutation error:', error);
-    },
-    onSettled: (_, __, variables) => {
-      // Safety-net: Backend ile senkronizasyonu garanti et
-      queryClient.invalidateQueries({ queryKey: profileKeys.profile(variables.targetUserId) });
     },
   });
 };
@@ -1061,10 +1069,6 @@ export const useUnmuteUser = () => {
       }
       console.error('[useUnmuteUser] ❌ Mutation error:', error);
     },
-    onSettled: (_, __, variables) => {
-      // Safety-net: Backend ile senkronizasyonu garanti et
-      queryClient.invalidateQueries({ queryKey: profileKeys.profile(variables.targetUserId) });
-    },
   });
 };
 
@@ -1130,12 +1134,6 @@ export const useBlockUser = () => {
         );
       }
       console.error('[useBlockUser] ❌ Mutation error:', error);
-    },
-    onSettled: (_, __, variables) => {
-      // Safety-net: Backend ile senkronizasyonu garanti et
-      queryClient.invalidateQueries({ queryKey: profileKeys.profile(variables.targetUserId) });
-      // Block sonrası feed'i invalidate et - engellenen kullanıcının postları gizlenmeli
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
     },
   });
 };
@@ -1221,12 +1219,6 @@ export const useUnblockUser = () => {
       }
       console.error('[useUnblockUser] ❌ Mutation error:', error);
     },
-    onSettled: (_, __, variables) => {
-      // Safety-net: Backend ile senkronizasyonu garanti et
-      queryClient.invalidateQueries({ queryKey: profileKeys.profile(variables.targetUserId) });
-      // Unblock sonrası feed'i invalidate et - kullanıcının postları tekrar görünmeli
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-    },
   });
 };
 
@@ -1283,9 +1275,6 @@ export const useUpdateInventoryItem = () => {
  *   status: 'own',
  *   images: [...]
  * });
- *
- * NOTE: Screens using this hook should handle errors in their own onError callback
- * to show context-specific toast messages. This onError is just for logging.
  */
 export const useAddInventoryItem = () => {
   const queryClient = useQueryClient();
@@ -1303,15 +1292,8 @@ export const useAddInventoryItem = () => {
       queryClient.removeQueries({ queryKey: profileKeys.inventory() });
       console.log('[useAddInventoryItem] ✅ Inventory item added successfully', { productId: variables.productId });
     },
-    onError: (error: any) => {
-      // Log error for debugging
-      console.error('[useAddInventoryItem] ❌ Mutation error:', {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-      });
-      // NOTE: Toast notification should be handled in the component's onError callback
-      // for context-specific error messages
+    onError: (error) => {
+      console.error('[useAddInventoryItem] ❌ Mutation error:', error);
     },
   });
 };
@@ -1331,37 +1313,15 @@ export const useDeleteInventoryItem = () => {
 
   return useMutation<DeleteInventoryItemResponse, Error, string>({
     mutationFn: (inventoryId) => deleteInventoryItem(inventoryId),
-    onMutate: async (inventoryId) => {
-      await queryClient.cancelQueries({ queryKey: profileKeys.inventory() });
-      const previous = queryClient.getQueriesData<InfiniteData<InventoryApiResponse>>({
-        queryKey: profileKeys.inventory(),
-      });
-      queryClient.setQueriesData<InfiniteData<InventoryApiResponse>>(
-        { queryKey: profileKeys.inventory(), exact: false },
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              ...page,
-              items: page.items.filter((item) => item.id !== inventoryId),
-            })),
-          };
-        }
-      );
-      return { previous };
-    },
-    onError: (error, inventoryId, context) => {
-      console.error('[useDeleteInventoryItem] ❌ Mutation error:', error);
-      if (context?.previous) {
-        context.previous.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
-    },
     onSuccess: (data, inventoryId) => {
+      // Inventory listesini invalidate et
       queryClient.invalidateQueries({ queryKey: profileKeys.inventory() });
+      // Cache'i tamamen temizle
+      queryClient.removeQueries({ queryKey: profileKeys.inventory() });
       console.log('[useDeleteInventoryItem] ✅ Inventory item deleted successfully', { inventoryId });
+    },
+    onError: (error) => {
+      console.error('[useDeleteInventoryItem] ❌ Mutation error:', error);
     },
   });
 };
@@ -1397,3 +1357,66 @@ export const useSuggestedUsers = (searchQuery?: string) => {
   });
 };
 
+
+/**
+ * Get Badge Detail query hook
+ * Badge detay bilgisini getirir (description dahil)
+ *
+ * @param userId - Kullanıcı ID'si
+ * @param badgeId - Badge ID'si
+ */
+export const useUserCollectionBadgeDetail = (
+  userId: string | undefined,
+  badgeId: string | undefined
+) => {
+  return useQuery<BadgeDetailApiResponse, Error>({
+    queryKey: userId && badgeId ? profileKeys.badgeDetail(userId, badgeId) : ['badge-detail', 'disabled'],
+    queryFn: () => {
+      if (!userId || !badgeId) throw new Error('userId and badgeId are required');
+      return getBadgeDetail(userId, badgeId);
+    },
+    enabled: !!userId && !!badgeId,
+    staleTime: 10 * 60 * 1000, // 10 dakika
+    gcTime: 20 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Highlight Badges query hook
+ * Kullanıcının profil kartında gösterilen 4 seçili badge'i getirir
+ */
+export const useHighlightBadges = () => {
+  return useQuery<HighlightBadgesApiResponse, Error>({
+    queryKey: profileKeys.highlightBadges(),
+    queryFn: getHighlightBadges,
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Update Highlight Badges mutation hook
+ * Kullanıcının profil kartında gösterilen 4 seçili badge'i günceller
+ */
+export const useUpdateHighlightBadges = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAppStore();
+
+  return useMutation<UpdateHighlightBadgesResponse, Error, UpdateHighlightBadgesRequest>({
+    mutationFn: updateHighlightBadges,
+    onSuccess: (data) => {
+      // Highlight badges cache'ini güncelle
+      queryClient.invalidateQueries({ queryKey: profileKeys.highlightBadges() });
+      // Profil cache'ini invalidate et (badges alanı güncellendi)
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.profile(user.id) });
+      }
+    },
+  });
+};

@@ -965,6 +965,9 @@ export const WalletScreen: React.FC = () => {
                           amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
                           actionType={transaction.actionType}
+                          status={transaction.status}
+                          txHash={transaction.txHash}
+                          errorMessage={transaction.errorMessage}
                           transactionType={
                             transaction.status === 'failed' 
                               ? 'failed' 
@@ -993,6 +996,9 @@ export const WalletScreen: React.FC = () => {
                           amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
                           actionType={transaction.actionType}
+                          status={transaction.status}
+                          txHash={transaction.txHash}
+                          errorMessage={transaction.errorMessage}
                           transactionType={
                             transaction.status === 'failed' 
                               ? 'failed' 
@@ -1021,6 +1027,9 @@ export const WalletScreen: React.FC = () => {
                           amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
                           actionType={transaction.actionType}
+                          status={transaction.status}
+                          txHash={transaction.txHash}
+                          errorMessage={transaction.errorMessage}
                           transactionType={
                             transaction.status === 'failed' 
                               ? 'failed' 
@@ -1049,6 +1058,9 @@ export const WalletScreen: React.FC = () => {
                           amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
                           actionType={transaction.actionType}
+                          status={transaction.status}
+                          txHash={transaction.txHash}
+                          errorMessage={transaction.errorMessage}
                           transactionType={
                             transaction.status === 'failed' 
                               ? 'failed' 

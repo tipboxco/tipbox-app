@@ -12,6 +12,7 @@ import type {
   BrandHistory,
   BrandStats,
   GlobalBrandSearchResponse,
+  BrandsByCategoryResponse,
   SurveyQuestionsResponse
 } from '../types';
 
@@ -29,29 +30,31 @@ export const getBrandCategories = async (): Promise<BrandCategory[]> => {
 };
 
 /**
- * Get Brands by Category endpoint function
- * /brands/categories/{category_id}/brands API'sinden marka listesini getirir
+ * Get Brands by Category endpoint function (paginated)
+ * GET /brands/categories/{categoryId}/brands?page=1&limit=20
  *
  * @param categoryId - Seçili brand kategorisinin ID'si
- * @returns BrandListItem[] - Marka listesi
+ * @param page - Sayfa numarası (1-based)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandsByCategoryResponse - items + pagination
  */
 export const getBrandsByCategory = async (
-  categoryId: string
-): Promise<BrandListItem[]> => {
+  categoryId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<BrandsByCategoryResponse> => {
   try {
-    const response = await apiService.getClient().get<{ items: BrandListItem[] }>(
-      `/brands/categories/${categoryId}/brands`
+    const response = await apiService.getClient().get<BrandsByCategoryResponse>(
+      `/brands/categories/${categoryId}/brands`,
+      { params: { page, limit } }
     );
-    console.log('[BrandsByCategory API] Response:', JSON.stringify(response.data, null, 2));
-    console.log('[BrandsByCategory API] Items length:', response.data?.items?.length);
-    if (response.data?.items && response.data.items.length > 0) {
-      console.log('[BrandsByCategory API] First item:', JSON.stringify(response.data.items[0], null, 2));
-    }
-    return response.data?.items || [];
+    return {
+      items: response.data?.items ?? [],
+      pagination: response.data?.pagination ?? { page: 1, limit, hasMore: false },
+    };
   } catch (error: any) {
     // 404 hatası: Kategori bulunamadı - bu normal bir durum olabilir (kategori silinmiş veya mevcut değil)
     if (error.response?.status === 404) {
-      // Sadece debug modunda log bas (production'da sessiz)
       if (__DEV__) {
         console.warn('[getBrandsByCategory] ⚠️ Category not found (404):', {
           categoryId,
@@ -59,12 +62,8 @@ export const getBrandsByCategory = async (
           message: 'Category may have been deleted or does not exist.',
         });
       }
-      
-      // Boş array döndür (kullanıcıya hata göstermek yerine boş sonuç göster)
-      return [];
+      return { items: [], pagination: { page: 1, limit, hasMore: false } };
     }
-    
-    // Diğer hatalar için error log
     console.error('Brands By Category API Error:', {
       url: `/brands/categories/${categoryId}/brands`,
       status: error.response?.status,
@@ -1198,18 +1197,14 @@ export const getBrandProductNewsComments = async (
   limit: number = 50,
   offset: number = 0
 ): Promise<import('../types').NewsCommentsResponse> => {
+  const query = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() }).toString();
+  const url = `/brands/${brandId}/products/${productId}/news/${newsId}/comments?${query}`;
   try {
-    const params = new URLSearchParams();
-    params.append('limit', limit.toString());
-    params.append('offset', offset.toString());
-
-    const response = await apiService.getClient().get<import('../types').NewsCommentsResponse>(
-      `/brands/${brandId}/products/${productId}/news/${newsId}/comments?${params.toString()}`
-    );
+    const response = await apiService.getClient().get<import('../types').NewsCommentsResponse>(url);
     return response.data;
   } catch (error: any) {
     console.error('[getBrandProductNewsComments] API Error:', {
-      url: `/brands/${brandId}/products/${productId}/news/${newsId}/comments?${params.toString()}`,
+      url,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

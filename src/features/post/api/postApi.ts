@@ -318,8 +318,8 @@ export const createTipsAndTricksPost = async (
     // Backend'den gelen detaylı hata mesajını logla
     if (error.response?.data) {
       console.error('[createTipsAndTricksPost] ❌ Backend Error Details:', {
+        success: error.response.data.success,
         message: error.response.data.message,
-        error: error.response.data.error,
         statusCode: error.response.data.statusCode,
         data: error.response.data,
       });

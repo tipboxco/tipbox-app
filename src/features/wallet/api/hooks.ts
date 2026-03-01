@@ -4,7 +4,9 @@ import {
   getWalletInfo,
   getWalletBalance,
   getWalletTransactions,
+  getTransactionById,
   sendTips,
+  cancelTransaction,
   transferNft,
   // Reward API
   getRewardSummary,
@@ -24,9 +26,11 @@ import {
 import type {
   WalletInfo,
   WalletBalance,
+  Transaction,
   TransactionsResponse,
   SendTipRequest,
   SendTipResponse,
+  CancelTransactionResponse,
   NftTransferRequest,
   NftTransferResponse,
   // Reward types
@@ -51,6 +55,7 @@ export const walletKeys = {
   info: () => [...walletKeys.all, 'info'] as const,
   balance: () => [...walletKeys.all, 'balance'] as const,
   transactions: (params?: any) => [...walletKeys.all, 'transactions', params] as const,
+  transaction: (id: string) => [...walletKeys.all, 'transaction', id] as const,
   // Reward keys
   rewards: () => [...walletKeys.all, 'rewards'] as const,
   rewardSummary: () => [...walletKeys.rewards(), 'summary'] as const,
@@ -71,19 +76,19 @@ export const walletKeys = {
 /**
  * useWalletInfo Hook
  * 
- * Kullanıcının wallet bilgilerini getirir
+ * Returns the user's wallet info
  * 
  * Backend endpoint: GET /api/wallet/info
  * 
  * **PERFORMANCE FIX:**
- * - Backend hazır değilse fazla retry yapma (1 kez dene)
+ * Avoid excessive retries when backend is not ready (retry once)
  */
 export const useWalletInfo = () => {
   return useQuery<WalletInfo, Error>({
     queryKey: walletKeys.info(),
     queryFn: () => getWalletInfo(),
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 0, // 5 dakika
+    gcTime: 0, // 10 dakika
     refetchOnMount: true,
     refetchOnWindowFocus: false,
     retry: 1, // ✅ PERFORMANCE FIX: Sadece 1 kez dene (backend hazır değilse fazla deneme)
@@ -93,18 +98,13 @@ export const useWalletInfo = () => {
 /**
  * useWalletBalance Hook
  * 
- * Cüzdan bakiyesini getirir (ledger-based, hesaplanmış)
+ * Returns wallet balance (ledger-based, computed)
  * 
  * Backend endpoint: GET /api/wallet/balance
  * 
- * **Önemli:**
- * - Her 10 saniyede bir refetch eder (sadece başarılıysa)
- * - Backend 10 saniye cache kullanır
- * - Balance asla direkt tutulmaz, transaction'lardan hesaplanır
- * 
- * **PERFORMANCE FIX:**
- * - Backend hazır değilse otomatik refetch yapılmaz
- * - Error durumunda refetchInterval devre dışı kalır
+ * Balance is never stored directly; it is computed from transactions.
+ * Refetches every 10 seconds (only when successful). Backend uses 10 second cache.
+ * Refetch interval is disabled on error.
  */
 export const useWalletBalance = () => {
   const setWalletBalance = useAppStore((state) => state.setWalletBalance);
@@ -113,49 +113,42 @@ export const useWalletBalance = () => {
     queryKey: walletKeys.balance(),
     queryFn: async () => {
       const balance = await getWalletBalance();
-      // ✅ Store'u güncelle
+      // Update store
       if (balance?.balance !== undefined && balance.balance !== null) {
         setWalletBalance(balance.balance);
       }
       return balance;
     },
     refetchInterval: (query) => {
-      // ✅ PERFORMANCE FIX: Sadece başarılı response varsa refetch yap
-      // Backend hazır değilse veya hata varsa refetch yapma
+      // Only refetch on successful response
+      // Do not refetch when backend is not ready or on error
       return query.state.status === 'success' ? 10000 : false;
     },
-    staleTime: 5000, // 5 saniye
-    gcTime: 30000, // 30 saniye
+    staleTime: 5000, // 5 seconds
+    gcTime: 30000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: 1, // ✅ PERFORMANCE FIX: Sadece 1 kez dene (backend hazır değilse fazla deneme)
+    retry: 1, // Only retry once when backend is not ready
   });
 };
 
 /**
  * useWalletTransactions Hook
  * 
- * Cüzdan işlem geçmişini getirir (grouped by time)
+ * Returns wallet transaction history (grouped by time)
  * 
  * Backend endpoint: GET /transactions/history
  * 
  * **Response format:**
- * ```
  * {
  *   today: Transaction[],
  *   yesterday: Transaction[],
  *   lastWeek: Transaction[],
  *   lastMonth: Transaction[]
  * }
- * ```
  * 
- * **Error Handling:**
- * - Backend hatası durumunda boş array döner
- * - UI'da "No transactions" gösterilir
- * 
- * **PERFORMANCE FIX:**
- * - Backend hazır değilse otomatik refetch yapılmaz
- * - Error durumunda refetchInterval devre dışı kalır
+ * Returns empty array on backend error; UI shows "No transactions".
+ * Refetch interval is disabled on error.
  */
 export const useWalletTransactions = (params?: {
   page?: number;
@@ -169,7 +162,7 @@ export const useWalletTransactions = (params?: {
       try {
         return await getWalletTransactions(params);
       } catch (error: any) {
-        // Backend hatası varsa boş data dön (graceful degradation)
+        // Return empty data on backend error (graceful degradation)
         console.warn('[useWalletTransactions] Backend error, returning empty data:', {
           status: error?.response?.status,
           code: error?.response?.data?.error?.code,
@@ -185,15 +178,44 @@ export const useWalletTransactions = (params?: {
       }
     },
     refetchInterval: (query) => {
-      // ✅ PERFORMANCE FIX: Sadece başarılı response varsa refetch yap
-      // Backend hazır değilse veya hata varsa refetch yapma
+      // Only refetch on successful response
+      // Do not refetch when backend is not ready or on error
       return query.state.status === 'success' ? 10000 : false;
     },
-    staleTime: 5000, // 5 saniye
+    staleTime: 5000, // 5 seconds
     gcTime: 5 * 60 * 1000, // 5 dakika
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: false, // Backend hatası varsa retry yapma
+    retry: false, // Do not retry on backend error
+  });
+};
+
+/**
+ * useTransactionById Hook
+ *
+ * GET /transactions/:id — Used for polling.
+ * When transactionId is provided and status is "created" or "pending", polls periodically;
+ * Polling stops when status is "confirmed" or "failed".
+ */
+export const useTransactionById = (
+  transactionId: string | null,
+  options?: { pollUntilFinal?: boolean }
+) => {
+  const pollUntilFinal = options?.pollUntilFinal !== false;
+
+  return useQuery<Transaction, Error>({
+    queryKey: walletKeys.transaction(transactionId ?? ''),
+    queryFn: () => getTransactionById(transactionId!),
+    enabled: !!transactionId,
+    refetchInterval: (query) => {
+      if (!pollUntilFinal || !transactionId) return false;
+      const tx = query.state.data;
+      const status = tx?.status;
+      if (status === 'created' || status === 'pending') return 4000; // every 4 seconds
+      return false; // stop polling when confirmed or failed
+    },
+    staleTime: 0,
+    gcTime: 60 * 1000,
   });
 };
 
@@ -209,7 +231,7 @@ export const useNftTransfer = () => {
   return useMutation<NftTransferResponse, Error, NftTransferRequest>({
     mutationFn: (data) => transferNft(data),
     onSuccess: () => {
-      // NFT listesi güncellensin
+      // Invalidate NFT list
       queryClient.invalidateQueries({ queryKey: marketplaceKeys.myNFTs() });
     },
   });
@@ -224,15 +246,14 @@ export const useNftTransfer = () => {
 /**
  * useSendTips Hook
  * 
- * TIPS gönderme işlemi
+ * Send TIPS mutation
  * 
  * Backend endpoint: POST /api/transactions/send-tip
  * 
- * **Önemli:**
- * - Direkt success dönmez!
- * - Backend transaction yaratır (status: pending)
- * - Frontend useTransactionStatus ile poll eder
- * - 2-3 saniye sonra confirmed olur
+ * Does not return success immediately;
+ * Backend creates transaction (status: pending/created)
+ * Frontend polls with useTransactionById until confirmed/failed
+ * Typically confirmed within a few seconds
  * 
  * **UI Flow:**
  * ```tsx
@@ -242,7 +263,7 @@ export const useNftTransfer = () => {
  *   { recipientId, amount, message },
  *   {
  *     onSuccess: (data) => {
- *       // data.transactionId ile status poll et
+ *       // Poll status with data.id
  *       const { data: tx } = useTransactionStatus(data.transactionId);
  *     }
  *   }
@@ -255,13 +276,34 @@ export const useSendTips = () => {
   return useMutation<SendTipResponse, Error, SendTipRequest>({
     mutationFn: sendTips,
     onSuccess: () => {
-      // Balance'ı invalidate et (pending balance değişir)
+      // Invalidate balance (pending balance changes)
       queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
-      // Transaction history'yi invalidate et
+      // Invalidate transaction history
       queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
     },
     onError: (error) => {
       console.error('[useSendTips] Error:', error);
+    },
+  });
+};
+
+/**
+ * useCancelTransaction Hook
+ *
+ * POST /transactions/:transactionId/cancel — Should only be called when status === "created".
+ */
+export const useCancelTransaction = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<CancelTransactionResponse, Error, string>({
+    mutationFn: (transactionId: string) => cancelTransaction(transactionId),
+    onSuccess: (_data, transactionId) => {
+      queryClient.invalidateQueries({ queryKey: walletKeys.transaction(transactionId) });
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
+    },
+    onError: (error) => {
+      console.error('[useCancelTransaction] Error:', error);
     },
   });
 };
@@ -275,7 +317,7 @@ export const useSendTips = () => {
 /**
  * useRewardSummary Hook
  * 
- * Kullanıcının tüm claimable reward'larının özetini getirir
+ * Returns summary of user's claimable rewards
  * 
  * Backend endpoint: GET /wallets/rewards/summary
  */
@@ -283,7 +325,7 @@ export const useRewardSummary = () => {
   return useQuery<RewardSummary, Error>({
     queryKey: walletKeys.rewardSummary(),
     queryFn: () => getRewardSummary(),
-    staleTime: 30000, // 30 saniye
+    staleTime: 30000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 dakika
     refetchOnMount: true,
     refetchOnWindowFocus: false,
@@ -294,7 +336,7 @@ export const useRewardSummary = () => {
 /**
  * useClaimableRewards Hook
  * 
- * Kullanıcının claim edebileceği tüm reward'ları detaylı olarak getirir
+ * Returns all rewards the user can claim (detailed)
  * 
  * Backend endpoint: GET /wallets/rewards/claimable
  */
@@ -302,7 +344,7 @@ export const useClaimableRewards = () => {
   return useQuery<RewardClaim[], Error>({
     queryKey: walletKeys.claimableRewards(),
     queryFn: () => getClaimableRewards(),
-    staleTime: 30000, // 30 saniye
+    staleTime: 30000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 dakika
     refetchOnMount: true,
     refetchOnWindowFocus: false,
@@ -313,7 +355,7 @@ export const useClaimableRewards = () => {
 /**
  * useRewardsBySource Hook
  * 
- * Belirli bir kaynak tipine göre reward'ları getirir
+ * Returns rewards by source type
  * 
  * Backend endpoint: GET /wallets/rewards/source/:sourceType
  */
@@ -321,7 +363,7 @@ export const useRewardsBySource = (sourceType: RewardSourceType) => {
   return useQuery<RewardClaim[], Error>({
     queryKey: walletKeys.rewardsBySource(sourceType),
     queryFn: () => getRewardsBySource(sourceType),
-    staleTime: 30000, // 30 saniye
+    staleTime: 30000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 dakika
     refetchOnMount: true,
     refetchOnWindowFocus: false,
@@ -332,7 +374,7 @@ export const useRewardsBySource = (sourceType: RewardSourceType) => {
 /**
  * useClaimHistory Hook
  * 
- * Kullanıcının daha önce claim ettiği reward'ların geçmişini getirir
+ * Returns history of rewards the user has claimed
  * 
  * Backend endpoint: GET /wallets/rewards/history
  */
@@ -357,7 +399,7 @@ export const useClaimHistory = () => {
 /**
  * useClaimReward Hook
  * 
- * Tek bir reward'ı claim eder
+ * Claims a single reward
  * 
  * Backend endpoint: POST /wallets/rewards/claim/:rewardId
  */
@@ -367,13 +409,13 @@ export const useClaimReward = () => {
   return useMutation<ClaimResult, Error, string>({
     mutationFn: (rewardId: string) => claimReward(rewardId),
     onSuccess: () => {
-      // Reward summary'yi invalidate et
+      // Invalidate reward summary
       queryClient.invalidateQueries({ queryKey: walletKeys.rewardSummary() });
-      // Claimable rewards'ı invalidate et
+      // Invalidate claimable rewards
       queryClient.invalidateQueries({ queryKey: walletKeys.claimableRewards() });
-      // Balance'ı invalidate et (claim edince balance artar)
+      // Invalidate balance (increases after claim)
       queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
-      // Transaction history'yi invalidate et
+      // Invalidate transaction history
       queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
     },
     onError: (error) => {
@@ -385,7 +427,7 @@ export const useClaimReward = () => {
 /**
  * useClaimAllRewards Hook
  * 
- * Tüm claimable reward'ları tek seferde claim eder
+ * Claims all claimable rewards at once
  * 
  * Backend endpoint: POST /wallets/rewards/claim-all
  */
@@ -395,13 +437,13 @@ export const useClaimAllRewards = () => {
   return useMutation<ClaimAllResult, Error, void>({
     mutationFn: () => claimAllRewards(),
     onSuccess: () => {
-      // Reward summary'yi invalidate et
+      // Invalidate reward summary
       queryClient.invalidateQueries({ queryKey: walletKeys.rewardSummary() });
-      // Claimable rewards'ı invalidate et
+      // Invalidate claimable rewards
       queryClient.invalidateQueries({ queryKey: walletKeys.claimableRewards() });
-      // Balance'ı invalidate et (claim edince balance artar)
+      // Invalidate balance (increases after claim)
       queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
-      // Transaction history'yi invalidate et
+      // Invalidate transaction history
       queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
     },
     onError: (error) => {
@@ -415,9 +457,9 @@ export const useClaimAllRewards = () => {
  * BACKWARD COMPATIBILITY HOOKS
  * ============================================
  * 
- * Eski hook'lar (geçici olarak korunuyor)
+ * Legacy hooks (kept for compatibility)
  * 
- * @deprecated Kullanmayın. Yeni hook'ları kullanın.
+ * @deprecated Do not use. Use the new hooks instead.
  */
 
 export const useWallets = () => {

@@ -45,96 +45,6 @@ interface CollectionBadge {
 
 type FilterTab = 'All' | 'Not Started' | 'In Progress' | 'Completed';
 
-// Mock collection data
-const MOCK_COLLECTION: Collection = {
-  id: '1',
-  title: 'Silicon Strategist',
-  description: 'Completing this collection proves your deep understanding of the digital backbone. You\'ve demonstrated that you know exactly what drives modern productivity. You are now a certified authority in high-performance computing.',
-  currentProgress: 12,
-  totalProgress: 120,
-  backgroundGradient: {
-    colors: ['#3B2F63', '#5C4A7D', '#8B6F47'],
-    start: { x: 0, y: 0 },
-    end: { x: 1, y: 1 },
-  },
-  category: 'electronics',
-};
-
-// Mock badges - Using existing badge images from assets
-const MOCK_BADGES: CollectionBadge[] = [
-  {
-    id: '1',
-    title: 'Boot Loader',
-    description: 'Add your first computer or tablet to your inventory.',
-    icon: require('@/assets/badges/badge_01.png'),
-    currentProgress: 8,
-    totalProgress: 10,
-    status: 'in_progress',
-  },
-  {
-    id: '2',
-    title: 'Boot Loader',
-    description: 'Add your first computer or tablet to your inventory.',
-    icon: require('@/assets/badges/badge_02.png'),
-    currentProgress: 8,
-    totalProgress: 10,
-    status: 'in_progress',
-  },
-  {
-    id: '3',
-    title: 'Boot Loader',
-    description: 'Add your first computer or tablet to your inventory.',
-    icon: require('@/assets/badges/badge_03.png'),
-    currentProgress: 8,
-    totalProgress: 10,
-    status: 'not_started',
-  },
-  {
-    id: '4',
-    title: 'Boot Loader',
-    description: 'Add your first computer or tablet to your inventory.',
-    icon: require('@/assets/badges/badge_04.png'),
-    currentProgress: 10,
-    totalProgress: 10,
-    status: 'completed',
-  },
-  {
-    id: '5',
-    title: 'Boot Loader',
-    description: 'Add your first computer or tablet to your inventory.',
-    icon: require('@/assets/badges/rozet_01.png'),
-    currentProgress: 0,
-    totalProgress: 10,
-    status: 'not_started',
-  },
-  {
-    id: '6',
-    title: 'Boot Loader',
-    description: 'Add your first computer or tablet to your inventory.',
-    icon: require('@/assets/badges/rozet_02.png'),
-    currentProgress: 5,
-    totalProgress: 10,
-    status: 'in_progress',
-  },
-  {
-    id: '7',
-    title: 'Boot Loader',
-    description: 'Add your first computer or tablet to your inventory.',
-    icon: require('@/assets/badges/rozet_03.png'),
-    currentProgress: 3,
-    totalProgress: 10,
-    status: 'in_progress',
-  },
-  {
-    id: '8',
-    title: 'Boot Loader',
-    description: 'Add your first computer or tablet to your inventory.',
-    icon: require('@/assets/badges/rozet_04.png'),
-    currentProgress: 0,
-    totalProgress: 10,
-    status: 'not_started',
-  },
-];
 
 const CollectionDetailScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -163,26 +73,22 @@ const CollectionDetailScreen: React.FC = () => {
     debouncedBadgeSearch || undefined
   );
 
-  const collection: Collection = useMemo(() => {
-    if (collectionDetail?.collection) {
-      return collectionDetail.collection;
-    }
-    return MOCK_COLLECTION;
-  }, [collectionDetail?.collection]);
+  const collection: Collection | null = useMemo(
+    () => collectionDetail?.collection ?? null,
+    [collectionDetail?.collection]
+  );
 
   const allBadges: CollectionBadge[] = useMemo(() => {
-    if (collectionDetail?.badges && collectionDetail.badges.length > 0) {
-      return collectionDetail.badges.map((b: CollectionBadgeType): CollectionBadge => ({
-        id: b.id,
-        title: b.title,
-        description: b.description,
-        icon: typeof b.icon === 'string' ? (toImageSource(b.icon) ?? b.icon) : b.icon,
-        currentProgress: b.currentProgress,
-        totalProgress: b.totalProgress,
-        status: b.status,
-      }));
-    }
-    return MOCK_BADGES;
+    if (!collectionDetail?.badges) return [];
+    return collectionDetail.badges.map((b: CollectionBadgeType): CollectionBadge => ({
+      id: b.id,
+      title: b.title,
+      description: b.description,
+      icon: typeof b.icon === 'string' ? (toImageSource(b.icon) ?? b.icon) : b.icon,
+      currentProgress: b.currentProgress,
+      totalProgress: b.totalProgress,
+      status: b.status,
+    }));
   }, [collectionDetail?.badges]);
 
   // Filter badges: arama API'de yapılıyor (badgeSearch); burada sadece status filtresi uygulanıyor
@@ -321,12 +227,37 @@ const CollectionDetailScreen: React.FC = () => {
   if (isLoadingCollection) {
     return (
       <SafeAreaView
-        style={[
-          styles.container,
-          { backgroundColor: isDark ? '#000' : '#FFF' },
-        ]}
+        style={[styles.container, { backgroundColor: isDark ? '#000' : '#FFF' }]}
       >
         <ActivityIndicator size="large" color={isDark ? '#FFF' : '#000'} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!collection) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: isDark ? '#000' : '#FFF' }]}
+        edges={['top']}
+      >
+        <View style={[styles.header, { backgroundColor: isDark ? '#000' : '#FFF' }]}>
+          <Pressable
+            onPress={handleGoBack}
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Feather name="arrow-left" size={24} color={isDark ? '#FFF' : '#000'} />
+          </Pressable>
+          <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#000' }]}>
+            Collection
+          </Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyText, { color: isDark ? '#B9B9B9' : '#666' }]}>
+            Collection not found
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }

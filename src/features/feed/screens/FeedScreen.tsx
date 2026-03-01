@@ -1084,9 +1084,9 @@ const FeedScreenInner = React.memo(() => {
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
                       Server error occurred. Please try again later.
                     </Text>
-                    {(error as any)?.response?.data?.error?.message && (
+                    {(error as any)?.response?.data?.message && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center" mt="$2">
-                        {(error as any).response.data.error.message}
+                        {(error as any).response.data.message}
                       </Text>
                     )}
                   </>
