@@ -15,11 +15,10 @@
     },
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/tipbox-square-black.png",
+    "icon": "./assets/ios-icon.png",
     "splash": {
-      "image": "./assets/splash-black.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#000000",
+      "resizeMode": "contain"
     },
     "scheme": "tipboxapp",
     "assetBundlePatterns": [
@@ -27,7 +26,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.tipbox.test",
+      "bundleIdentifier": "app.tipbox.ios",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "Fotoğraf çekmek için kameraya ihtiyaç var.",

@@ -149,7 +149,8 @@ export const usePostStatus = (postId: string) => {
     queryKey: interactionKeys.postStatus(postId),
     queryFn: async () => {
       const response = await getPostStatus(postId);
-      return response.data!;
+      // CRITICAL: data undefined olabilir, fallback değer döndür
+      return response.data ?? { liked: false, favorited: false, shared: false };
     },
     enabled: !!postId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
@@ -175,7 +176,8 @@ export const useComments = (
     queryKey: interactionKeys.comments(postId, sortBy),
     queryFn: async () => {
       const response = await getComments(postId, limit, sortBy);
-      return response.data!;
+      // CRITICAL: data undefined olabilir, fallback değer döndür
+      return response.data ?? { comments: [] };
     },
     enabled: !!postId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma

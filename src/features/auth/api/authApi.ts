@@ -18,7 +18,7 @@ export const register = async (
   credentials: RegisterCredentials
 ): Promise<RegisterResponse> => {
   const response = await apiService.getClient().post<ApiRegisterResponse>(
-    '/auth0/register',
+    '/auth/register',
     credentials
   );
 
@@ -49,20 +49,20 @@ export const login = async (
   try {
     const client = apiService.getClient();
     const baseURL = client.defaults.baseURL;
-    const fullURL = `${baseURL}/auth0/email`;
-    
+    const endpoint = '/auth/login';
+
     console.log('[login] Request details:', {
       baseURL,
-      endpoint: '/auth/login',
-      fullURL,
+      endpoint,
+      fullURL: `${baseURL}${endpoint}`,
       method: 'POST',
       credentials: {
         email: credentials.email,
         password: '***', // Güvenlik için password'ü gizle
       },
     });
-    
-    const response = await client.post<ApiLoginResponse>(fullURL,credentials);
+
+    const response = await client.post<ApiLoginResponse>(endpoint, credentials);
     
     console.log('[login] ✅ Success:', {
       status: response.status,

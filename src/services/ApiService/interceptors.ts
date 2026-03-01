@@ -168,7 +168,9 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
         if (__DEV__) {
           console.log(`[ApiInterceptor] 📦 Unwrapping response: ${response.config.url}`);
         }
-        response.data = response.data.data;
+        // CRITICAL: React Query undefined kabul etmiyor
+        // data field'ı undefined ise null döndür
+        response.data = response.data.data !== undefined ? response.data.data : null;
       }
       return response;
     },

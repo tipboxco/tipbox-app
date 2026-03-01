@@ -742,18 +742,13 @@ export const PostDetailScreen = () => {
                 onBackPress={() => navigation.goBack()}
             />
 
-            {/* Post card + Comments header: FlatList DIŞINDA, böylece like/comment/share dokunmaları çalışır */}
-            <View style={styles.postCardSection}>
-                {postCardAndCommentsHeader}
-            </View>
-
-            {/* FlatList sadece yorum listesi */}
+            {/* FlatList - Post kartı ve yorumlar birlikte scroll edilebilir */}
             <FlatList
                 style={styles.commentsList}
                 data={listData}
                 renderItem={renderCommentItem}
                 keyExtractor={keyExtractor}
-                ListHeaderComponent={null}
+                ListHeaderComponent={postCardAndCommentsHeader}
                 ListEmptyComponent={renderEmpty}
                 contentContainerStyle={contentContainerStyle}
                 keyboardShouldPersistTaps="handled"
@@ -834,9 +829,6 @@ export const PostDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    postCardSection: {
-        flex: 0,
-    },
     commentsList: {
         flex: 1,
     },
