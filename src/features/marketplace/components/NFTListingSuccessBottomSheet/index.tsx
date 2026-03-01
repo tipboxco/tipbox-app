@@ -1,10 +1,10 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import { VStack, HStack, Text, Box, Pressable, Image } from '@gluestack-ui/themed';
 import { Dimensions, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { useBottomOffset, toImageSource } from '@/src/utils';
+import { toImageSource } from '@/src/utils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -39,9 +39,8 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding: 0 });
 
-  const snapPoints = React.useMemo(() => ['70%'], []);
+  const snapPoints = React.useMemo(() => ['95%'], []);
 
   useEffect(() => {
     if (isVisible) {
@@ -65,8 +64,9 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
         {...props}
         disappearsOnIndex={-1}
         appearsOnIndex={0}
-        opacity={0.5}
+        opacity={0.7}
         pressBehavior="close"
+        style={[props.style, { top: 0 }]}
       />
     ),
     []
@@ -90,9 +90,10 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
       handleIndicatorStyle={{
         backgroundColor: isDark ? '#404040' : '#E0E0E0',
       }}
-      bottomInset={bottomOffset}
+      bottomInset={0}
+      topInset={0}
     >
-      <BottomSheetView style={styles.contentContainer}>
+      <BottomSheetScrollView style={styles.contentContainer} contentContainerStyle={styles.scrollContent}>
         <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(200)}>
           <VStack space="lg" px="$4" py="$2">
             {/* Success Icon */}
@@ -357,7 +358,7 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
             </HStack>
           </VStack>
         </Animated.View>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 };
@@ -365,5 +366,8 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
 const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
 });

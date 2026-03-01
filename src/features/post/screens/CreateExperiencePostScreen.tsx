@@ -299,8 +299,8 @@ export const CreateExperiencePostScreen = () => {
     const handleProductSelect = (selected: { id: string; name: string; brand?: string; description?: string; image: any }) => {
         if (!fromInventory && inventoryProductIds.has(selected.id)) {
             showCustomToast(toast, {
-                title: 'Zaten envanterinizde',
-                description: 'Bu ürün envanterinizde mevcut. Yine de deneyim paylaşımına devam edebilirsiniz.',
+                title: 'Already in your inventory',
+                description: 'This product is already in your inventory. You can still continue sharing your experience.',
                 action: 'info',
             });
         }
@@ -494,8 +494,8 @@ export const CreateExperiencePostScreen = () => {
                             status: inventoryError?.response?.status,
                         });
                         showCustomToast(toast, {
-                            title: 'Envanter hatası',
-                            description: errMsg || 'Ürün envantere eklenemedi.',
+                            title: 'Inventory error',
+                            description: errMsg || 'Failed to add product to inventory.',
                             action: 'error',
                         });
                         isSubmittingRef.current = false;
@@ -907,7 +907,7 @@ export const CreateExperiencePostScreen = () => {
                                 <View style={[styles.loadingBox, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }]}>
                                     <ActivityIndicator size="large" color={isDark ? '#D0F205' : '#829905'} />
                                     <Text color={isDark ? '$textDark50' : '#000000'} fontSize={14} mt={12}>
-                                        Gönderiliyor...
+                                        Sending...
                                     </Text>
                                 </View>
                             </View>

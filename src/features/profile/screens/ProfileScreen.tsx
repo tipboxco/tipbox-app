@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   interpolateColor,
 } from 'react-native-reanimated';
+import { AnimatedTabBar } from '../components/AnimatedTabBar';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -423,86 +424,7 @@ const NFTBadgeRibbon: React.FC = () => (
   </View>
 );
 
-// TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
-interface TabsBarProps {
-  activeTab: TabKey;
-  onChangeTab: (tab: TabKey) => void;
-  isDark: boolean;
-}
 
-const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => {
-  const activeColor = isDark ? '#FFFFFF' : '#000000';
-  const inactiveColor = '#A3A3A3';
-
-  return (
-    <Box
-      mb={0}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-      borderBottomWidth={StyleSheet.hairlineWidth}
-      borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
-    >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ 
-          paddingHorizontal: 16,
-        }}
-        scrollEnabled={true}
-        bounces={false}
-      >
-        <HStack
-          borderBottomWidth={1}
-          borderColor="#E9E9E9"
-          p={0}
-          mb={0}
-          position="relative"
-          space="md"
-        >
-          {TABS.map((tab, index) => {
-            const isActive = tab.key === activeTab;
-            return (
-              <Pressable
-                key={tab.key}
-                onPress={() => onChangeTab(tab.key)}
-                alignItems="center"
-                py="$1"
-                px="$2"
-              >
-                <VStack alignItems="center" space="xs">
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 'bold',
-                      color: isActive ? activeColor : inactiveColor,
-                    }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {tab.title}
-                  </Text>
-                </VStack>
-                {/* Active indicator */}
-                {isActive && (
-                  <Box
-                    position="absolute"
-                    bottom={0}
-                    left="50%"
-                    height={2}
-                    width={40}
-                    backgroundColor={isDark ? '#FFFFFF' : '#000000'}
-                    style={{
-                      transform: [{ translateX: -15 }],
-                    }}
-                  />
-                )}
-              </Pressable>
-            );
-          })}
-        </HStack>
-      </ScrollView>
-    </Box>
-  );
-};
 
 // Badges tab filtreleri - Figma: All Badges, Event Badges, Collections
 const BADGE_FILTERS = ['All Badges', 'Event Badges', 'Collections'] as const;
@@ -935,12 +857,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const scrollViewRef = useRef<ScrollView>(null);
   
   // Tab değiştiğinde scroll pozisyonunu sıfırla
-  const handleTabChange = useCallback((tabKey: TabKey) => {
-    setActiveTab(tabKey);
-    
-    // Tab değiştiğinde scroll pozisyonunu en üste al
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 0, animated: false });
+  const handleTabChange = useCallback((tabKey: string) => {
+    // Type guard - sadece valide TabKey değerleri kabul et
+    const validTabKeys = TABS.map(t => t.key);
+    if (validTabKeys.includes(tabKey as TabKey)) {
+      const typedTabKey = tabKey as TabKey;
+      setActiveTab(typedTabKey);
+      
+      // Tab değiştiğinde scroll pozisyonunu en üste al
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: false });
+      }
     }
   }, []);
   
@@ -2063,10 +1990,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           {profileHeader}
         </Box>
 
-        {/* Tab Bar - Scroll edilebilir */}
-        <TabsBar 
+        {/* Tab Bar - Animated with smooth transitions */}
+        <AnimatedTabBar 
+          tabs={TABS} 
           activeTab={activeTab} 
-          onChangeTab={handleTabChange} 
+          onTabChange={handleTabChange} 
           isDark={isDark}
         />
 

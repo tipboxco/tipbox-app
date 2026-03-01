@@ -118,79 +118,72 @@ export const LoginScreen = () => {
     setIsPasswordValid(text.length >= 8);
   }, []);
 
-  const handleSignIn = useCallback(async () => {
-    if (isEmailValid && isPasswordValid) {
-      try {
-        // React Query mutation kullanarak login işlemi
-        const result = await loginMutation.mutateAsync({
-          email,
-          password,
-        });
+  /** Optional credentials: when provided (e.g. from biometric), use these to avoid stale closure in setTimeout. */
+  const handleSignIn = useCallback(async (credentials?: { email: string; password: string }) => {
+    const emailToUse = credentials?.email ?? email;
+    const passwordToUse = credentials?.password ?? password;
+    const valid = credentials
+      ? (EMAIL_REGEX.test(emailToUse) && passwordToUse.length >= 8)
+      : (isEmailValid && isPasswordValid);
+    if (!valid) return;
 
-        // Console'da response'u göster (sadece development modunda)
-        if (__DEV__) {
-          console.log('[LoginScreen] ✅ Login successful:', {
-            userId: result.id,
-            fullName: result.fullName,
-            email: result.email,
-            hasToken: !!result.token,
-            hasRefreshToken: !!result.refreshToken,
-          });
-        }
+    try {
+      const result = await loginMutation.mutateAsync({
+        email: emailToUse,
+        password: passwordToUse,
+      });
 
-        // Remember me seçiliyse email'i kaydet
-        if (rememberMe) {
-          await LoginCredentialsService.saveEmail(email);
-          // Şifreyi biometrik ile kaydet (eğer biometrik mevcut ise)
-          if (isBiometricAvailable) {
-            try {
-              await BiometricService.savePassword(password);
-              setHasBiometricPassword(true);
-            } catch (error) {
-              console.error('[LoginScreen] ❌ Error saving password with biometric:', error);
-            }
-          }
-        } else {
-          // Remember me seçili değilse email'i temizle
-          await LoginCredentialsService.clearEmail();
-          await BiometricService.clearPassword();
-          setHasBiometricPassword(false);
-        }
-
-        // Başarılı toast göster
-        showCustomToast(toast, {
-          title: `Welcome ${result.fullName || result.email?.split('@')[0] || 'User'}!`,
-          action: 'success',
-          duration: 3000,
-        });
-
-        // RootNavigator otomatik olarak isAuthenticated=true olduğunda
-        // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
-      } catch (error: any) {
-        // Console'da error'u göster (sadece development modunda)
-        if (__DEV__) {
-          console.error('[LoginScreen] ❌ Login error:', {
-            message: error?.message,
-            status: error?.response?.status,
-            responseMessage: error?.response?.data?.message,
-          });
-        }
-
-        // Hata toast göster - Backend'den gelen mesajı kullan veya genel mesaj
-        const errorMessage =
-          error?.response?.data?.message ||
-          error?.message ||
-          'An error occurred during login';
-
-        showCustomToast(toast, {
-          title: 'Login Failed',
-          description: errorMessage,
-          action: 'error',
-          duration: 3000,
+      if (__DEV__) {
+        console.log('[LoginScreen] ✅ Login successful:', {
+          userId: result.id,
+          fullName: result.fullName,
+          email: result.email,
+          hasToken: !!result.token,
+          hasRefreshToken: !!result.refreshToken,
         });
       }
+
+      if (rememberMe) {
+        await LoginCredentialsService.saveEmail(emailToUse);
+        if (isBiometricAvailable) {
+          try {
+            await BiometricService.savePassword(passwordToUse);
+            setHasBiometricPassword(true);
+          } catch (error) {
+            console.error('[LoginScreen] ❌ Error saving password with biometric:', error);
+          }
+        }
+      } else {
+        await LoginCredentialsService.clearEmail();
+        await BiometricService.clearPassword();
+        setHasBiometricPassword(false);
+      }
+
+      showCustomToast(toast, {
+        title: `Welcome ${result.fullName || result.email?.split('@')[0] || 'User'}!`,
+        action: 'success',
+        duration: 3000,
+      });
+    } catch (error: any) {
+      if (__DEV__) {
+        console.error('[LoginScreen] ❌ Login error:', {
+          message: error?.message,
+          status: error?.response?.status,
+          responseMessage: error?.response?.data?.message,
+        });
+      }
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'An error occurred during login';
+      showCustomToast(toast, {
+        title: 'Login Failed',
+        description: errorMessage,
+        action: 'error',
+        duration: 3000,
+      });
     }
-  }, [email, isEmailValid, isPasswordValid, password, loginMutation, toast]);
+  }, [email, isEmailValid, isPasswordValid, password, rememberMe, isBiometricAvailable, loginMutation, toast]);
 
   const handleEmailInputFocus = useCallback(() => {
     if (savedEmail && !email) {
@@ -210,7 +203,7 @@ export const LoginScreen = () => {
     try {
       const savedPassword = await BiometricService.authenticateAndGetPassword();
       if (savedPassword) {
-        // Email zaten set edilmişse tekrar set etme
+        const emailToUse = savedEmail ?? email;
         if (!skipEmailSet && savedEmail) {
           setEmail(savedEmail);
           validateEmail(savedEmail);
@@ -218,9 +211,10 @@ export const LoginScreen = () => {
         setPassword(savedPassword);
         validatePassword(savedPassword);
         if (signInTimeoutRef.current) clearTimeout(signInTimeoutRef.current);
+        // Pass credentials explicitly so timeout uses them instead of stale state
         signInTimeoutRef.current = setTimeout(() => {
           signInTimeoutRef.current = null;
-          handleSignIn();
+          handleSignIn({ email: emailToUse, password: savedPassword });
         }, 300);
       } else {
         showCustomToast(toast, {
@@ -240,7 +234,7 @@ export const LoginScreen = () => {
         duration: 3000,
       });
     }
-  }, [savedEmail, toast, validateEmail, validatePassword, handleSignIn]);
+  }, [savedEmail, email, toast, validateEmail, validatePassword, handleSignIn]);
 
   const handleForgotPassword = useCallback(() => {
     navigation.navigate('ForgotPassword' as never);
@@ -436,7 +430,7 @@ export const LoginScreen = () => {
           py="$1"
           rounded="$lg"
           mt="$4"
-          onPress={handleSignIn}
+          onPress={() => handleSignIn()}
           opacity={isEmailValid && isPasswordValid && !loginMutation.isPending ? 1 : 0.5}
           disabled={!isEmailValid || !isPasswordValid || loginMutation.isPending}
         >

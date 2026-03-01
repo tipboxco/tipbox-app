@@ -257,15 +257,15 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
 
   const handleDelete = useCallback(() => {
     Alert.alert(
-      'Post\'u Sil',
-      'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Sil',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {

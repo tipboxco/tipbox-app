@@ -270,20 +270,20 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     // ✅ FIX: Screen focus olduğunda cache'i kontrol et ve gerekirse refetch yap
     useFocusEffect(
         useCallback(() => {
-            // Screen focus olduğunda bottom sheet'i kapat
             closeBottomSheet();
-            
-            // ✅ FIX: MessageDetail'den döndüğünde cache'i kontrol et
-            // Eğer socket bağlı değilse veya thread_read event'i gelmediyse, refetch yap
-            // Ancak sadece cache'de okunmamış mesaj varsa refetch yap (gereksiz refetch'i önle)
+
             const queryKey = [...inboxKeys.messages(), searchParams];
             const cachedData = queryClient.getQueryData<InboxMessage[]>(queryKey);
             const hasUnreadMessages = cachedData?.some(msg => msg.isUnread || (msg.unreadCount && msg.unreadCount > 0));
-            
+
             if (hasUnreadMessages && (!isConnected || !cachedData)) {
-                console.log('[MessagesScreen] 🔄 Screen focused with unread messages, refetching...');
+                if (__DEV__) console.log('[MessagesScreen] 🔄 Screen focused with unread messages, refetching...');
                 refetch();
             }
+
+            return () => {
+                inboxTypingStore.clearAll();
+            };
         }, [closeBottomSheet, queryClient, searchParams, isConnected, refetch])
     );
     

@@ -59,7 +59,7 @@ const InventoryDetailScreen = () => {
               color={isDark ? '$textDark400' : '#6D6D6D'}
               textAlign="center"
             >
-              {error ? 'Ürün bilgisi yüklenirken bir hata oluştu.' : 'Ürün bulunamadı.'}
+              {error ? 'An error occurred while loading product information.' : 'Product not found.'}
             </Text>
           </VStack>
         </VStack>

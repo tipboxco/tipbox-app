@@ -244,15 +244,15 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
     if (!targetUserId) return;
     
     Alert.alert(
-      'Kullanıcıyı Engelle',
-      'Bu kullanıcıyı engellemek istediğinizden emin misiniz? Engellediğiniz kullanıcı sizinle etkileşime geçemez.',
+      'Block User',
+      'Are you sure you want to block this user? Blocked users cannot interact with you.',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Engelle',
+          text: 'Block',
           style: 'destructive',
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
@@ -285,15 +285,15 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
 
   const handleDelete = useCallback(() => {
     Alert.alert(
-      'Post\'u Sil',
-      'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Sil',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -301,8 +301,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               Alert.alert('Success', 'Post deleted successfully.');
             } catch (error: any) {
               Alert.alert(
-                'Hata',
-                error.response?.data?.message || 'Post silinirken bir hata oluştu.'
+                'Error',
+                error.response?.data?.message || 'An error occurred while deleting post.'
               );
             }
           },

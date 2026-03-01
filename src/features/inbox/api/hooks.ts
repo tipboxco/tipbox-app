@@ -41,7 +41,7 @@ import type {
   CloseSupportRequestRequest,
   FinalizeSupportRequestRequest,
   ReportSupportRequestRequest,
-  type GetMessageReactionsResponse,
+  GetMessageReactionsResponse,
 } from './messagesApi';
 
 /**

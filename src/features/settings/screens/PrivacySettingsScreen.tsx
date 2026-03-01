@@ -90,7 +90,7 @@ export const PrivacySettingsScreen = () => {
         render: ({ id }) => (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Hata</ToastTitle>
+              <ToastTitle>Error</ToastTitle>
               <ToastDescription>{errorMessage}</ToastDescription>
             </Toast>
           </Box>

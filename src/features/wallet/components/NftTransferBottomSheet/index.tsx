@@ -117,13 +117,13 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
           },
           {
             onSuccess: () => {
-              Alert.alert('Başarılı', 'NFT transferi tamamlandı.');
+              Alert.alert('Success', 'NFT transfer completed.');
               bottomSheetRef.current?.dismiss();
               resolve();
             },
             onError: (err: any) => {
-              const msg = err?.response?.data?.message || err?.message || 'NFT transferi sırasında hata oluştu.';
-              Alert.alert('Hata', msg);
+              const msg = err?.response?.data?.message || err?.message || 'An error occurred during NFT transfer.';
+              Alert.alert('Error', msg);
               reject(err);
             },
           }
@@ -134,7 +134,7 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
     const handleConfirmPress = useCallback(() => {
       if (!selected) return;
       if (!nftId) {
-        Alert.alert('Hata', 'NFT seçimi bulunamadı. Lütfen tekrar deneyin.');
+        Alert.alert('Error', 'NFT selection not found. Please try again.');
         return;
       }
 

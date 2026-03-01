@@ -31,6 +31,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '@/src/store/appStore';
 import type { ProfileStackParamList } from '../navigation';
 import type { UserProfile } from '../types';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -294,14 +295,24 @@ const ProfileEditScreen: React.FC = () => {
     // Validate name (min 2 characters)
     if (name.trim().length < 2) {
       console.log('[ProfileEditScreen] ❌ Validation hatası: Name çok kısa');
-      Alert.alert('Error', 'Name must be at least 2 characters');
+      showCustomToast(toast, {
+        title: 'Validation Error',
+        description: 'Name must be at least 2 characters',
+        action: 'error',
+        duration: 3000,
+      });
       return;
     }
 
     // Validate biography (max 500 characters)
     if (bio.trim().length > 500) {
       console.log('[ProfileEditScreen] ❌ Validation hatası: Bio çok uzun');
-      Alert.alert('Error', 'Biography can be at most 500 characters');
+      showCustomToast(toast, {
+        title: 'Validation Error',
+        description: 'Biography can be at most 500 characters',
+        action: 'error',
+        duration: 3000,
+      });
       return;
     }
 
@@ -392,7 +403,7 @@ const ProfileEditScreen: React.FC = () => {
               data: uploadResponse.data,
               fullResponse: uploadResponse,
             });
-            throw new Error('Avatar yüklenemedi - response formatı hatalı');
+            throw new Error('Failed to upload avatar - invalid response format');
           }
         } catch (error: any) {
           const backendError = error?.response?.data;
@@ -421,14 +432,19 @@ const ProfileEditScreen: React.FC = () => {
             || backendError?.error
             || (typeof backendError === 'string' ? backendError : null)
             || error?.message 
-            || 'Avatar yüklenirken bir hata oluştu';
+            || 'An error occurred while uploading avatar';
           
           console.error('[ProfileEditScreen] ❌ Avatar upload hatası - Backend mesajı:', {
             backendError,
             extractedMessage: errorMessage,
             status: error?.response?.status,
           });
-          Alert.alert('Avatar Upload Failed', errorMessage);
+          showCustomToast(toast, {
+            title: 'Avatar Upload Failed',
+            description: errorMessage,
+            action: 'error',
+            duration: 3000,
+          });
           return;
         } finally {
           setIsUploadingAvatar(false);
@@ -522,7 +538,7 @@ const ProfileEditScreen: React.FC = () => {
               data: uploadResponse.data,
               fullResponse: uploadResponse,
             });
-            throw new Error('Banner yüklenemedi - response formatı hatalı');
+            throw new Error('Failed to upload banner - invalid response format');
           }
         } catch (error: any) {
           const backendError = error?.response?.data;
@@ -551,14 +567,19 @@ const ProfileEditScreen: React.FC = () => {
             || backendError?.error
             || (typeof backendError === 'string' ? backendError : null)
             || error?.message 
-            || 'Banner yüklenirken bir hata oluştu';
+            || 'An error occurred while uploading banner';
           
           console.error('[ProfileEditScreen] ❌ Banner upload hatası - Backend mesajı:', {
             backendError,
             extractedMessage: errorMessage,
             status: error?.response?.status,
           });
-          Alert.alert('Banner Upload Failed', errorMessage);
+          showCustomToast(toast, {
+            title: 'Banner Upload Failed',
+            description: errorMessage,
+            action: 'error',
+            duration: 3000,
+          });
           return;
         } finally {
           setIsUploadingBanner(false);
@@ -693,7 +714,7 @@ const ProfileEditScreen: React.FC = () => {
           const errorMessage = error?.response?.data?.message 
             || error?.response?.data?.error
             || error?.message 
-            || 'Profil güncellenirken bir hata oluştu';
+            || 'An error occurred while updating profile';
           
           console.error('[ProfileEditScreen] ❌ Profile update hatası - kullanıcıya gösterilecek mesaj:', errorMessage);
           Alert.alert('Error', errorMessage);

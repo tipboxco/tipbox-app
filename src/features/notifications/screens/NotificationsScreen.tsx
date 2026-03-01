@@ -93,60 +93,53 @@ const NotificationsScreenComponent: React.FC = () => {
       return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // CRITICAL FIX: Her filter için ayrı query yap - her tab kendi verilerini çekmeli
-    // PERFORMANCE FIX: Sadece aktif tab'ın query'sini enabled yap - aynı anda 4 istek atmayı önle
-    // Diğer tab'lar cache'den okuyacak, tab değiştiğinde o tab'ın query'si enable olacak
-    
-    // Filter 0: All/Unread
-    // CRITICAL FIX: İlk açılışta query'nin başlaması için ilk tab'ı her zaman enable et
+    // CRITICAL FIX: Tüm query'leri enable et - React Query cache mekanizması gereksiz request'leri önler
+    // staleTime: 30s ayarı sayesinde cache varsa kullanır, yoksa fetch eder
+    // Bu sayede tab geçişlerinde anında cache'den gösterir, sürekli loading olmaz
+
+    // Filter 0: All Notifications
     const allFilter = filters[0];
     const allUnreadOnly = allFilter?.id === 'unread';
     const allNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = undefined;
-    // İlk tab için: auth ready ise her zaman enable et (ilk açılışta başlasın)
-    // Diğer tablar için: sadece o tab aktif olduğunda enable et
-    const allQueryEnabled = shouldFetchNotifications; // İlk tab için her zaman enable
     const allQuery = useNotifications({
         limit: 20,
         unreadOnly: allUnreadOnly,
         type: allNotificationType,
         search: debouncedSearchQuery || undefined,
-    }, allQueryEnabled);
+    }, shouldFetchNotifications);
 
-    // Filter 1: Replies – sadece bu tab aktifken enable et
+    // Filter 1: Replies
     const repliesFilter = filters[1];
     const repliesUnreadOnly = repliesFilter?.id === 'unread';
     const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
-    const repliesQueryEnabled = shouldFetchNotifications && currentPage === 1;
     const repliesQuery = useNotifications({
         limit: 20,
         unreadOnly: repliesUnreadOnly,
         type: repliesNotificationType,
         search: debouncedSearchQuery || undefined,
-    }, repliesQueryEnabled);
+    }, shouldFetchNotifications);
 
-    // Filter 2: Trust - Truster – sadece bu tab aktifken enable et
+    // Filter 2: Trust - Truster
     const trustFilter = filters[2];
     const trustUnreadOnly = trustFilter?.id === 'unread';
     const trustNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'truster';
-    const trustQueryEnabled = shouldFetchNotifications && currentPage === 2;
     const trustQuery = useNotifications({
         limit: 20,
         unreadOnly: trustUnreadOnly,
         type: trustNotificationType,
         search: debouncedSearchQuery || undefined,
-    }, trustQueryEnabled);
+    }, shouldFetchNotifications);
 
-    // Filter 3: TIPS – sadece bu tab aktifken enable et
+    // Filter 3: TIPS
     const tipsFilter = filters[3];
     const tipsUnreadOnly = tipsFilter?.id === 'unread';
     const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
-    const tipsQueryEnabled = shouldFetchNotifications && currentPage === 3;
     const tipsQuery = useNotifications({
         limit: 20,
         unreadOnly: tipsUnreadOnly,
         type: tipsNotificationType,
         search: debouncedSearchQuery || undefined,
-    }, tipsQueryEnabled);
+    }, shouldFetchNotifications);
 
     // Figma sırası: All, Replies, Trust, TIPS
     const filterQueryResults = useMemo(() => [allQuery, repliesQuery, trustQuery, tipsQuery], [allQuery, repliesQuery, trustQuery, tipsQuery]);
@@ -562,8 +555,9 @@ const NotificationsScreenComponent: React.FC = () => {
             status,
         } = queryResult;
 
-        // Loading state: Feed/Profile gibi - sadece ilk yüklemede (data yok + fetch devam ediyor) göster
-        const isActuallyLoading = (isLoading || isFetching || isPending) && !notificationsResponse;
+        // CRITICAL FIX: Feed/Profile pattern - sadece ilk loading'de göster (cache yoksa)
+        // isFetching kaldırıldı - background refetch sırasında loading göstermesin
+        const isInitialLoading = isLoading && !notificationsResponse;
 
         // Her tab için kendi notifications'ını çıkar
         const notifications = extractNotificationsFromResponse(notificationsResponse);
@@ -613,27 +607,35 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
-        // Loading state: App standardı ActivityIndicator (Feed/Profile ile uyumlu)
-        if (isActuallyLoading && filtered.length === 0) {
-            return (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                </View>
-            );
-        }
-        
-        if (error) {
+        // CRITICAL FIX: Feed/Profile pattern - Error önce kontrol edilir
+        if (error && !isInitialLoading) {
+            console.error(`[NotificationsScreen] Tab ${filterIndex} Error:`, error);
             return (
                 <Box flex={1} justifyContent="center" alignItems="center" px="$4">
-                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center" mb="$2">
                         An error occurred while loading notifications.
                     </Text>
-                    <Pressable onPress={() => refetch()} mt="$4" bg="#E8FF6B" px="$4" py="$2" borderRadius={10}>
+                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize={12} textAlign="center" mb="$4">
+                        {(error as any)?.response?.status === 401
+                            ? 'Please login to view notifications.'
+                            : (error as any)?.message || 'Unknown error'
+                        }
+                    </Text>
+                    <Pressable onPress={() => refetch()} bg="#E8FF6B" px="$4" py="$2" borderRadius={10}>
                         <Text color="#000000" fontSize={12} fontWeight="$semibold">
                             Try Again
                         </Text>
                     </Pressable>
                 </Box>
+            );
+        }
+
+        // CRITICAL FIX: Feed/Profile pattern - Sadece ilk yüklemede loading göster (cache yoksa)
+        if (isInitialLoading) {
+            return (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                </View>
             );
         }
         
@@ -817,7 +819,7 @@ const NotificationsScreenComponent: React.FC = () => {
                     />
                     <Input flex={1} borderWidth={0} bg="transparent">
                         <InputField
-                            placeholder="Bildirimlerde Ara"
+                            placeholder="Search notifications"
                             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                             color={isDark ? '#000' : '#000'}
                             fontSize="$xs"

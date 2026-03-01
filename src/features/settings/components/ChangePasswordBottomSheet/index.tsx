@@ -204,8 +204,8 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                      <ToastTitle>Eksik Bilgi</ToastTitle>
-                      <ToastDescription>Lütfen tüm alanları doldurun.</ToastDescription>
+                      <ToastTitle>Missing Information</ToastTitle>
+                      <ToastDescription>Please fill in all fields.</ToastDescription>
                     </Toast>
                   </Box>
                 );
@@ -221,8 +221,8 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                      <ToastTitle>Şifreler Eşleşmiyor</ToastTitle>
-                      <ToastDescription>Yeni şifre ve onay şifresi aynı olmalıdır.</ToastDescription>
+                      <ToastTitle>Passwords Don't Match</ToastTitle>
+                      <ToastDescription>New password and confirmation password must be the same.</ToastDescription>
                     </Toast>
                   </Box>
                 );
@@ -238,8 +238,8 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                      <ToastTitle>Geçersiz Şifre</ToastTitle>
-                      <ToastDescription>Şifre en az 8 karakter olmalıdır.</ToastDescription>
+                      <ToastTitle>Invalid Password</ToastTitle>
+                      <ToastDescription>Password must be at least 8 characters long.</ToastDescription>
                     </Toast>
                   </Box>
                 );
@@ -261,9 +261,9 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                      <ToastTitle>Şifre Değiştirildi</ToastTitle>
+                      <ToastTitle>Password Changed</ToastTitle>
                       <ToastDescription>
-                        {result.message || 'Şifreniz başarıyla güncellendi.'}
+                        {result.message || 'Your password has been updated successfully.'}
                       </ToastDescription>
                     </Toast>
                   </Box>
@@ -281,7 +281,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             const errorMessage =
               error?.response?.data?.message ||
               error?.message ||
-              'Şifre değiştirme işlemi sırasında bir hata oluştu';
+              'An error occurred while changing password';
 
             toast.show({
               placement: 'top',
@@ -289,7 +289,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                      <ToastTitle>Hata</ToastTitle>
+                      <ToastTitle>Error</ToastTitle>
                       <ToastDescription>{errorMessage}</ToastDescription>
                     </Toast>
                   </Box>

@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, HStack, Image, Input, InputField, Pressable, Text, VStack } from '@gluestack-ui/themed';
+import { Box, HStack, Image, Input, InputField, Pressable, Text, VStack, useToast } from '@gluestack-ui/themed';
 import { ChevronLeftIcon, MagnifyingGlassIcon, UsersIcon } from 'react-native-heroicons/outline';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -12,12 +12,14 @@ import { DEFAULT_USER_AVATAR, toImageSource } from '@/src/utils';
 import { useNftTransferFlowStore } from '@/src/features/wallet/store/nft-transfer-flow-store';
 import { useNftTransfer } from '@/src/features/wallet/api/hooks';
 import { deleteListing } from '@/src/features/marketplace/api/marketplaceApi';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 export const NftTransferScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
+  const toast = useToast();
 
   const user = useAppStore((s) => s.user);
 
@@ -68,14 +70,24 @@ export const NftTransferScreen: React.FC = () => {
       recipientId: recipient.id,
     });
 
-    Alert.alert('Başarılı', 'NFT transferi tamamlandı.');
+    showCustomToast(toast, {
+      title: 'Transfer Successful',
+      description: 'NFT has been transferred successfully.',
+      action: 'success',
+      duration: 3000,
+    });
     clearFlow();
     navigation.goBack();
-  }, [clearFlow, listingId, listingStatus, navigation, nftId, recipient?.id, transferNft]);
+  }, [clearFlow, listingId, listingStatus, navigation, nftId, recipient?.id, transferNft, toast]);
 
   const handleTransferPress = useCallback(() => {
     if (!nftId) {
-      Alert.alert('Hata', 'NFT seçimi bulunamadı. Lütfen tekrar deneyin.');
+      showCustomToast(toast, {
+        title: 'NFT Not Found',
+        description: 'NFT selection not found. Please try again.',
+        action: 'error',
+        duration: 3000,
+      });
       return;
     }
     if (!recipient?.id) return;
@@ -91,13 +103,18 @@ export const NftTransferScreen: React.FC = () => {
           onPress: () => {
             void runTransfer().catch((err: any) => {
               const msg = err?.response?.data?.message || err?.message || 'NFT transferi sırasında hata oluştu.';
-              Alert.alert('Hata', msg);
+              showCustomToast(toast, {
+                title: 'Transfer Failed',
+                description: msg,
+                action: 'error',
+                duration: 3000,
+              });
             });
           },
         },
       ]
     );
-  }, [nftId, recipient?.id, recipient?.name, runTransfer]);
+  }, [nftId, recipient?.id, recipient?.name, runTransfer, toast]);
 
   const listContent = useMemo(() => {
     if (isLoading) {

@@ -287,13 +287,13 @@ export const SelectExperienceForUpdateScreen = () => {
         ) : error ? (
           <VStack flex={1} justifyContent="center" alignItems="center" px="$4">
             <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-              Liste yüklenirken bir hata oluştu.
+              An error occurred while loading the list.
             </Text>
           </VStack>
         ) : mappedItems.length === 0 ? (
           <VStack flex={1} justifyContent="center" alignItems="center" px="$4">
             <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-              Henüz experience gönderiniz yok. Önce bir ürün için experience gönderisi oluşturun, ardından bu ekrandan update ekleyebilirsiniz.
+              You don't have any experience posts yet. First create an experience post for a product, then you can add updates from this screen.
             </Text>
           </VStack>
         ) : (

@@ -1283,6 +1283,9 @@ export const useUpdateInventoryItem = () => {
  *   status: 'own',
  *   images: [...]
  * });
+ *
+ * NOTE: Screens using this hook should handle errors in their own onError callback
+ * to show context-specific toast messages. This onError is just for logging.
  */
 export const useAddInventoryItem = () => {
   const queryClient = useQueryClient();
@@ -1300,8 +1303,15 @@ export const useAddInventoryItem = () => {
       queryClient.removeQueries({ queryKey: profileKeys.inventory() });
       console.log('[useAddInventoryItem] ✅ Inventory item added successfully', { productId: variables.productId });
     },
-    onError: (error) => {
-      console.error('[useAddInventoryItem] ❌ Mutation error:', error);
+    onError: (error: any) => {
+      // Log error for debugging
+      console.error('[useAddInventoryItem] ❌ Mutation error:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+      });
+      // NOTE: Toast notification should be handled in the component's onError callback
+      // for context-specific error messages
     },
   });
 };

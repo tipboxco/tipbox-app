@@ -88,6 +88,17 @@ export const RegisterScreen = () => {
           console.error('========================');
         }
 
+        // 409 Conflict - Email already exists
+        if (error?.response?.status === 409) {
+          showCustomToast(toast, {
+            title: 'Email Already Registered',
+            description: 'This email address is already in use. Please sign in or use a different email.',
+            action: 'error',
+            duration: 4000,
+          });
+          return;
+        }
+
         // Hata toast göster
         const errorMessage =
           error?.response?.data?.message ||

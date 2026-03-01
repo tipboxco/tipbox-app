@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { VStack, HStack, Text, Box, Pressable, Image } from '@gluestack-ui/themed';
+import { VStack, HStack, Text, Box, Pressable, Image, useToast } from '@gluestack-ui/themed';
 import { ScrollView, Alert, ActivityIndicator, TextInput, Dimensions, Keyboard, InputAccessoryView, Platform } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -10,6 +10,7 @@ import type { MarketplaceStackParamList } from '../navigation';
 import { useNFTSellInfo, useCreateListing, useDeleteListing, useUpdateListingPrice } from '../api/hooks';
 import { toImageSource } from '@/src/utils';
 import { NFTListingSuccessBottomSheet } from '../components/NFTListingSuccessBottomSheet';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -27,6 +28,7 @@ export const NFTSellScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<MarketplaceStackParamList>>();
   const route = useRoute();
   const { nftId } = route.params as { nftId: string };
+  const toast = useToast();
 
   // Input accessory view ID for keyboard toolbar
   const inputAccessoryViewID = 'priceInputAccessory';
@@ -64,7 +66,12 @@ export const NFTSellScreen = () => {
     const price = parseFloat(priceInput);
 
     if (!price || price <= 0) {
-      Alert.alert('Invalid Price', 'Please enter a valid price greater than 0.');
+      showCustomToast(toast, {
+        title: 'Invalid Price',
+        description: 'Please enter a valid price greater than 0.',
+        action: 'error',
+        duration: 3000,
+      });
       return;
     }
 
@@ -89,12 +96,14 @@ export const NFTSellScreen = () => {
                   refetch();
                 },
                 onError: (error: any) => {
-                  Alert.alert(
-                    'Error',
-                    error.response?.data?.error?.message || 
-                    error.message || 
-                    'Failed to list NFT for sale'
-                  );
+                  showCustomToast(toast, {
+                    title: 'Listing Failed',
+                    description: error.response?.data?.error?.message ||
+                      error.message ||
+                      'Failed to list NFT for sale',
+                    action: 'error',
+                    duration: 3000,
+                  });
                 },
               }
             );
@@ -106,7 +115,12 @@ export const NFTSellScreen = () => {
 
   const handleDelist = () => {
     if (!listingId) {
-      Alert.alert('Error', 'No active listing found');
+      showCustomToast(toast, {
+        title: 'No Listing Found',
+        description: 'No active listing found',
+        action: 'error',
+        duration: 3000,
+      });
       return;
     }
 
@@ -121,17 +135,24 @@ export const NFTSellScreen = () => {
           onPress: () => {
             deleteListingMutation.mutate(listingId, {
               onSuccess: () => {
-                Alert.alert('Success', 'NFT removed from marketplace');
+                showCustomToast(toast, {
+                  title: 'Delisted Successfully',
+                  description: 'NFT removed from marketplace',
+                  action: 'success',
+                  duration: 3000,
+                });
                 // Refetch NFT info to update listing status
                 refetch();
               },
               onError: (error: any) => {
-                Alert.alert(
-                  'Error',
-                  error.response?.data?.error?.message || 
-                  error.message || 
-                  'Failed to delist NFT'
-                );
+                showCustomToast(toast, {
+                  title: 'Delist Failed',
+                  description: error.response?.data?.error?.message ||
+                    error.message ||
+                    'Failed to delist NFT',
+                  action: 'error',
+                  duration: 3000,
+                });
               },
             });
           },
@@ -144,12 +165,22 @@ export const NFTSellScreen = () => {
     const newPrice = parseFloat(updatePriceInput);
 
     if (!newPrice || newPrice <= 0) {
-      Alert.alert('Invalid Price', 'Please enter a valid price greater than 0.');
+      showCustomToast(toast, {
+        title: 'Invalid Price',
+        description: 'Please enter a valid price greater than 0.',
+        action: 'error',
+        duration: 3000,
+      });
       return;
     }
 
     if (!listingId) {
-      Alert.alert('Error', 'No active listing found');
+      showCustomToast(toast, {
+        title: 'No Listing Found',
+        description: 'No active listing found',
+        action: 'error',
+        duration: 3000,
+      });
       return;
     }
 
@@ -166,17 +197,24 @@ export const NFTSellScreen = () => {
               { listingId, amount: newPrice },
               {
                 onSuccess: () => {
-                  Alert.alert('Success', 'Price updated successfully');
+                  showCustomToast(toast, {
+                    title: 'Price Updated',
+                    description: 'Price updated successfully',
+                    action: 'success',
+                    duration: 3000,
+                  });
                   // Refetch NFT info to show new price
                   refetch();
                 },
                 onError: (error: any) => {
-                  Alert.alert(
-                    'Error',
-                    error.response?.data?.error?.message || 
-                    error.message || 
-                    'Failed to update price'
-                  );
+                  showCustomToast(toast, {
+                    title: 'Update Failed',
+                    description: error.response?.data?.error?.message ||
+                      error.message ||
+                      'Failed to update price',
+                    action: 'error',
+                    duration: 3000,
+                  });
                 },
               }
             );

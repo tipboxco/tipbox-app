@@ -265,7 +265,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect, onQueryR
     return (
       <Box flex={1} justifyContent="center" alignItems="center" py={20}>
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-        <Text color={isDark ? '#fff' : '#000'} mt="$2">Yükleniyor...</Text>
+        <Text color={isDark ? '#fff' : '#000'} mt="$2">Loading...</Text>
       </Box>
     );
   }

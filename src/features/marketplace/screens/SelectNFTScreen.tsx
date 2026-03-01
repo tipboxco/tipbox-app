@@ -173,7 +173,7 @@ const SelectNFTScreen = () => {
           ) : error ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">
               <Text color="#CE4A4A" fontSize="$sm">
-                NFT'ler yüklenirken bir hata oluştu: {error.message}
+                An error occurred while loading NFTs: {error.message}
               </Text>
             </Box>
           ) : userNFTData.length === 0 ? (

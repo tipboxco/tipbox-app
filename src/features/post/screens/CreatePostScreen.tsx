@@ -340,7 +340,6 @@ export const CreatePostScreen = () => {
         action: 'error',
       });
       // TODO: Error handling UI göster
-    }
     } finally {
       isSubmittingRef.current = false;
     }

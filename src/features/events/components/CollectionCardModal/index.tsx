@@ -96,7 +96,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
   const performDownload = async () => {
     try {
       if (!badge.icon) {
-        Alert.alert('Hata', 'İndirilecek badge resmi bulunamadı');
+        Alert.alert('Error', 'Badge image not found');
         setIsDownloading(false);
         return;
       }
@@ -108,13 +108,13 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
       );
 
       if (result.success) {
-        Alert.alert('Başarılı!', 'Badge galerinize kaydedildi');
+        Alert.alert('Success!', 'Badge saved to your gallery');
       } else {
-        Alert.alert('Hata', result.error || 'Badge kaydedilemedi');
+        Alert.alert('Error', result.error || 'Failed to save badge');
       }
     } catch (error) {
       console.error('[CollectionCardModal] Download error:', error);
-      Alert.alert('Hata', 'Badge indirme sırasında bir hata oluştu');
+      Alert.alert('Error', 'An error occurred while downloading badge');
     } finally {
       setIsDownloading(false);
     }

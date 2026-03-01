@@ -269,7 +269,7 @@ const BookMarksScreen = () => {
           {error && (
             <Box py={20} alignItems="center">
               <Text color="#CE4A4A" fontSize="$sm">
-                Bookmarks yüklenirken bir hata oluştu: {error.message}
+                An error occurred while loading bookmarks: {error.message}
               </Text>
             </Box>
           )}

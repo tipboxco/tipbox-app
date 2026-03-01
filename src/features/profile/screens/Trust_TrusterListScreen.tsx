@@ -586,7 +586,7 @@ export const Trust_TrusterListScreen = () => {
                             {/* Trust Users List */}
                             {shouldShowTrustLoading ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+                                    <Text color={isDark ? '#fff' : '#000'}>Loading...</Text>
                                 </Box>
                             ) : !userId ? (
                                 <Box py={20} alignItems="center">
@@ -663,7 +663,7 @@ export const Trust_TrusterListScreen = () => {
                             {/* Truster Users List */}
                             {shouldShowTrusterLoading ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+                                    <Text color={isDark ? '#fff' : '#000'}>Loading...</Text>
                                 </Box>
                             ) : !userId ? (
                                 <Box py={20} alignItems="center">

@@ -168,8 +168,8 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                     // Hata durumunda geri al
                     setIsBoosted(!value);
                     
-                    const errorMessage = error?.response?.data?.message || error?.message || 'Boost değiştirilirken bir hata oluştu';
-                    Alert.alert('Hata', errorMessage);
+                    const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while changing boost';
+                    Alert.alert('Error', errorMessage);
                 },
             }
         );

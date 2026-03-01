@@ -324,7 +324,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     fontSize="$xs"
                   >
-                    Yükleniyor...
+                    Loading...
                   </Text>
                   {item.uploadProgress !== undefined && (
                     <Text

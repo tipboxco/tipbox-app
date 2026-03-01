@@ -1317,7 +1317,7 @@ export const PostsScreen = () => {
                 Feed Yüklenemedi
               </Text>
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                {error.message || 'Bilinmeyen bir hata oluştu'}
+                {error.message || 'An unknown error occurred'}
               </Text>
             </VStack>
           </Box>

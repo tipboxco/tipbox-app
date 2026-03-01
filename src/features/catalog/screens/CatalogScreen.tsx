@@ -382,7 +382,7 @@ const CatalogScreenComponent = () => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[CatalogScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId);
-        showErrorToast('Hata', 'Lütfen öncelikle bir kategori, ürün grubu veya ürün seçiniz.');
+        showErrorToast('Error', 'Please select a category, product group or product first.');
         return;
       }
       
@@ -454,7 +454,7 @@ const CatalogScreenComponent = () => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[CatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
-        showErrorToast('Hata', 'Lütfen öncelikle bir kategori, ürün grubu veya ürün seçiniz.');
+        showErrorToast('Error', 'Please select a category, product group or product first.');
         return;
       }
       

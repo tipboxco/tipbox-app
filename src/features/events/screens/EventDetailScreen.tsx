@@ -779,7 +779,7 @@ const EventDetailScreen: React.FC = () => {
                     onBackPress={() => navigation.goBack()}
                 />
                 <Box flex={1} alignItems="center" justifyContent="center">
-                    <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
+                    <Text color={isDark ? '#FFFFFF' : '#000000'}>Loading...</Text>
                 </Box>
             </Box>
         );

@@ -32,8 +32,8 @@ export const SMSVerificationScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Eksik Bilgi</ToastTitle>
-                <ToastDescription>Lütfen telefon numaranızı girin.</ToastDescription>
+                <ToastTitle>Missing Information</ToastTitle>
+                <ToastDescription>Please enter your phone number.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -58,9 +58,9 @@ export const SMSVerificationScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
+                <ToastTitle>Error</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || 'SMS gönderilemedi. Lütfen tekrar deneyin.'}
+                  {error?.response?.data?.message || 'Failed to send SMS. Please try again.'}
                 </ToastDescription>
               </Toast>
             </Box>

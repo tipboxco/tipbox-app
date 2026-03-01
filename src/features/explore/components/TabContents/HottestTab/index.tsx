@@ -526,7 +526,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerCom
     return (
       <Box py="$8" alignItems="center">
         <Text color={isDark ? '#FFFFFF' : '#000000'}>
-          Bir hata oluştu. Lütfen tekrar deneyin.
+          An error occurred. Please try again.
         </Text>
       </Box>
     );

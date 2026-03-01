@@ -1239,7 +1239,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           selectedProductGroupId,
           currentView,
         });
-        showErrorToast('Hata', 'Lütfen bir ürün, ürün grubu veya alt kategori seçiniz.');
+        showErrorToast('Error', 'Please select a product, product group or subcategory.');
         return;
       }
       
@@ -1332,7 +1332,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
-        showErrorToast('Hata', 'Lütfen bir ürün, ürün grubu veya alt kategori seçiniz.');
+        showErrorToast('Error', 'Please select a product, product group or subcategory.');
         return;
       }
       

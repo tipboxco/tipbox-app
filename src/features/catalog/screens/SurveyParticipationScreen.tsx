@@ -273,7 +273,7 @@ const SurveyParticipationScreen: React.FC = () => {
                   color={selectedAnswerId ? '#000000' : '#686868'}
                 >
                   {submitAnswerMutation.isPending
-                    ? 'Gönderiliyor...'
+                    ? 'Sending...'
                     : isLastQuestion
                     ? 'Tamamla'
                     : 'Sonraki Soru'

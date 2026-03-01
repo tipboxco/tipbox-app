@@ -45,7 +45,7 @@ export const OTAUpdateCard = () => {
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$md"
             >
-              Hata Oluştu
+              Error Occurred
             </Text>
           </HStack>
           <Text

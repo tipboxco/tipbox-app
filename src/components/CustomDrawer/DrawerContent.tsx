@@ -248,7 +248,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   
   // Kullanıcı adı - profile'dan gelen name veya fallback
   const displayName = useMemo(() => {
-    if (isProfileLoading) return user?.fullName || user?.email || 'Yükleniyor...';
+    if (isProfileLoading) return user?.fullName || user?.email || 'Loading...';
     return typedUserProfile?.name || user?.fullName || user?.email || 'Kullanıcı';
   }, [typedUserProfile?.name, user?.fullName, user?.email, isProfileLoading]);
   

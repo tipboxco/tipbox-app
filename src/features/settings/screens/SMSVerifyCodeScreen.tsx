@@ -36,8 +36,8 @@ export const SMSVerifyCodeScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Başarılı</ToastTitle>
-                <ToastDescription>SMS doğrulama başarıyla tamamlandı.</ToastDescription>
+                <ToastTitle>Success</ToastTitle>
+                <ToastDescription>SMS verification completed successfully.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -53,9 +53,9 @@ export const SMSVerifyCodeScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
+                <ToastTitle>Error</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || 'Kod doğrulanamadı. Lütfen tekrar deneyin.'}
+                  {error?.response?.data?.message || 'Code verification failed. Please try again.'}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -74,8 +74,8 @@ export const SMSVerifyCodeScreen = () => {
         return (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="info" variant="solid">
-              <ToastTitle>Kod Gönderildi</ToastTitle>
-              <ToastDescription>Yeni doğrulama kodu gönderildi.</ToastDescription>
+              <ToastTitle>Code Sent</ToastTitle>
+              <ToastDescription>New verification code has been sent.</ToastDescription>
             </Toast>
           </Box>
         );

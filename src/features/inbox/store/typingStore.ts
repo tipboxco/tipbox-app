@@ -43,4 +43,11 @@ export const inboxTypingStore = {
       set.delete(callback);
     };
   },
+
+  /** Clear all typing state and notify subscribers. Call when screen blurs to avoid stale indicators. */
+  clearAll(): void {
+    const threadIds = Object.keys(state);
+    Object.keys(state).forEach((id) => delete state[id]);
+    threadIds.forEach((threadId) => getListenersForThread(threadId).forEach((cb) => cb(null)));
+  },
 };

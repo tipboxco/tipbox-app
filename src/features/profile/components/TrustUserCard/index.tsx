@@ -68,24 +68,24 @@ export const TrustUserCard = ({
     console.error('[TrustUserCard] Untrust error:', error);
     const errorMessage = error?.response?.data?.message 
       || error?.message 
-      || (error?.message === 'Network Error' ? 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.' : 'Kullanıcı trust listesinden kaldırılırken bir hata oluştu.');
-    Alert.alert('Hata', errorMessage);
+      || (error?.message === 'Network Error' ? 'Network connection error. Please check your internet connection.' : 'An error occurred while removing user from trust list.');
+    Alert.alert('Error', errorMessage);
   };
   
   const handleBlockError = (error: any) => {
     console.error('[TrustUserCard] Block error:', error);
     const errorMessage = error?.response?.data?.message 
       || error?.message 
-      || (error?.message === 'Network Error' ? 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.' : 'Kullanıcı engellenirken bir hata oluştu.');
-    Alert.alert('Hata', errorMessage);
+      || (error?.message === 'Network Error' ? 'Network connection error. Please check your internet connection.' : 'An error occurred while blocking user.');
+    Alert.alert('Error', errorMessage);
   };
   
   const handleMuteError = (error: any) => {
     console.error('[TrustUserCard] Mute error:', error);
     const errorMessage = error?.response?.data?.message 
       || error?.message 
-      || (error?.message === 'Network Error' ? 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.' : 'Kullanıcı sessize alınırken bir hata oluştu.');
-    Alert.alert('Hata', errorMessage);
+      || (error?.message === 'Network Error' ? 'Network connection error. Please check your internet connection.' : 'An error occurred while muting user.');
+    Alert.alert('Error', errorMessage);
   };
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = useRef<View>(null);

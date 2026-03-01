@@ -35,8 +35,8 @@ export const GoogleAuthenticatorSetupScreen = () => {
         return (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle>Kopyalandı</ToastTitle>
-              <ToastDescription>Key panoya kopyalandı</ToastDescription>
+              <ToastTitle>Copied</ToastTitle>
+              <ToastDescription>Key copied to clipboard</ToastDescription>
             </Toast>
           </Box>
         );

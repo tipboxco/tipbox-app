@@ -608,7 +608,7 @@ export const PostDetailScreen = () => {
             ) : (
                 <Box flex={1} justifyContent="center" alignItems="center" py="$8">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
-                        Post bulunamadı.
+                        Post not found.
                     </Text>
                 </Box>
             )}
@@ -709,7 +709,7 @@ export const PostDetailScreen = () => {
                 <Header title="Post Details" showBackButton onBackPress={() => navigation.goBack()} />
                 <Box flex={1} justifyContent="center" alignItems="center" px="$6">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={16} textAlign="center">
-                        Post bulunamadı.
+                        Post not found.
                     </Text>
                     <Text color={isDark ? '#A3A3A3' : '#666'} fontSize={14} mt="$2" textAlign="center">
                         Bu post silinmiş veya artık mevcut değil.
