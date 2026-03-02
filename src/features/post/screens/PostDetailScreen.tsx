@@ -94,9 +94,10 @@ export const PostDetailScreen = () => {
     const isFromNotificationOrDeepLink = !postData || !isPostDataComplete;
     
     // Fetch post detail - Notification/deep link'ten geldiğinde her zaman en güncel veriyi fetch et
+    // FIX: Feed'den geldiğinde (postData varsa) fetch etme, sadece notification/deep link'ten geldiğinde fetch et
     const { data: fetchedPostData, isLoading: isLoadingPost, isError: isPostDetailError, error: postDetailError } = usePostDetail(
       postId,
-      true, // Her zaman enabled
+      isFromNotificationOrDeepLink, // Sadece notification/deep link'ten geldiğinde enabled
       isFromNotificationOrDeepLink // Notification/deep link'ten geldiğinde force refresh
     );
     const is404 = isPostDetailError && (postDetailError as any)?.response?.status === 404;

@@ -20,6 +20,7 @@ import {
     ScrollView
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import { FunnelIcon, MagnifyingGlassIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -423,9 +424,9 @@ export const Trust_TrusterListScreen = () => {
                         px={14}
                         space="sm"
                     >
-                        <Feather
-                            name="search"
-                            size={24}
+                        <MagnifyingGlassIcon
+                            width={24}
+                            height={24}
                             color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
                         />
                         <Input flex={1} borderWidth={0} bg="transparent">
@@ -441,9 +442,9 @@ export const Trust_TrusterListScreen = () => {
                         {/* Filter Icon - Only for Truster tab */}
                         {activeTab === 'truster' && (
                             <Pressable p={8} onPress={handleFilterPress}>
-                                <Feather
-                                    name="filter"
-                                    size={18}
+                                <FunnelIcon
+                                    width={18}
+                                    height={18}
                                     color={isDark ? '#89898D' : '#89898D'}
                                 />
                             </Pressable>

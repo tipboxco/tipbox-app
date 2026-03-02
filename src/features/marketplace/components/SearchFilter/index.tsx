@@ -1,6 +1,6 @@
 import React from 'react';
 import { HStack, Input, InputField, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { FunnelIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 export type NFTType = 'BADGE' | 'COSMETIC' | 'LOOTBOX' | 'ALL';
@@ -59,9 +59,9 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
           borderColor={isFilterActive ? '$buttonPrimary' : '#E9E9E9'}
           position="relative"
         >
-          <Feather
-            name="sliders"
-            size={20}
+          <FunnelIcon
+            width={20}
+            height={20}
             color={isFilterActive ? '#000000' : (isDark ? '#FFFFFF' : '#000000')}
           />
           {isFilterActive && (

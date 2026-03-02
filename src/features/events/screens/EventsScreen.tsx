@@ -16,7 +16,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
-import { Bars3Icon } from 'react-native-heroicons/outline';
+import { Bars3Icon, FunnelIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -265,9 +265,9 @@ const EventsScreen: React.FC = () => {
                 }
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Feather
-                  name="sliders"
-                  size={20}
+                <FunnelIcon
+                  width={20}
+                  height={20}
                   color={isDark ? '#FFF' : '#000'}
                 />
               </Pressable>

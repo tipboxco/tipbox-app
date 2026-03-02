@@ -3,7 +3,7 @@ import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, Pressable, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { FunnelIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
@@ -1285,9 +1285,9 @@ export const PostsScreen = () => {
         onBackPress={() => navigation.goBack()}
         rightAction={
           <Pressable onPress={handleFilterPress}>
-            <Feather
-              name="filter"
-              size={24}
+            <FunnelIcon
+              width={24}
+              height={24}
               color={isDark ? '#FFFFFF' : '#000000'}
             />
           </Pressable>
