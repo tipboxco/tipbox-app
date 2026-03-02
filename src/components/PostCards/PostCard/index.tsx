@@ -12,6 +12,7 @@ import {
   TrashIcon,
   UserIcon,
   FlagIcon,
+  ArrowUpCircleIcon,
 } from 'react-native-heroicons/outline';
 import {
   HeartIcon as HeartIconSolid,
@@ -63,12 +64,14 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const [isLiked, setIsLiked] = useState(data.isLiked ?? false);
   const [isBookmarked, setIsBookmarked] = useState(data.isBookmarked ?? false);
   const [isShared, setIsShared] = useState(data.isShared ?? false);
-  
+  const [isUpvoted, setIsUpvoted] = useState(data.isUpvoted ?? false);
+
   // Animated counter states
   const [likesCount, setLikesCount] = useState(data.stats.likes);
   const [commentsCount, setCommentsCount] = useState(data.stats.comments);
   const [sharesCount, setSharesCount] = useState(data.stats.shares);
   const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
+  const [upvotesCount, setUpvotesCount] = useState(data.stats.upvotes ?? 0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = useRef<View>(null);
   const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -109,7 +112,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
     if (data.isLiked !== undefined) setIsLiked(data.isLiked);
     if (data.isBookmarked !== undefined) setIsBookmarked(data.isBookmarked);
     if (data.isShared !== undefined) setIsShared(data.isShared);
-  }, [data.isLiked, data.isBookmarked, data.isShared]);
+    if (data.isUpvoted !== undefined) setIsUpvoted(data.isUpvoted);
+  }, [data.isLiked, data.isBookmarked, data.isShared, data.isUpvoted]);
 
   // Sync stats with data prop changes
   useEffect(() => {
@@ -117,7 +121,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
     setCommentsCount(data.stats.comments);
     setSharesCount(data.stats.shares);
     setBookmarksCount(data.stats.bookmarks);
-  }, [data.stats.likes, data.stats.comments, data.stats.shares, data.stats.bookmarks]);
+    setUpvotesCount(data.stats.upvotes ?? 0);
+  }, [data.stats.likes, data.stats.comments, data.stats.shares, data.stats.bookmarks, data.stats.upvotes]);
 
   const avatarSource = toImageSource(data.user.avatar);
 
@@ -143,6 +148,19 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
       setIsBookmarked(true);
       setBookmarksCount(prev => prev + 1);
       bookmarkPostMutation.mutate(data.id);
+    }
+  };
+
+  const handleUpvote = () => {
+    // TODO: Upvote API hook'u eklendiğinde buraya entegre edilecek
+    if (isUpvoted) {
+      setIsUpvoted(false);
+      setUpvotesCount(prev => Math.max(0, prev - 1));
+      // downvotePostMutation.mutate(data.id);
+    } else {
+      setIsUpvoted(true);
+      setUpvotesCount(prev => prev + 1);
+      // upvotePostMutation.mutate(data.id);
     }
   };
 
@@ -434,6 +452,15 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               flex={1}
               justifyContent="center"
             >
+              {data.user?.action ? (
+                <Text
+                  color={isDark ? '$textDark400' : '#C7C7C7'}
+                  fontSize={8}
+                  fontWeight="$semibold"
+                >
+                  {data.user.action}
+                </Text>
+              ) : null}
               <Text
                 color={isDark ? '$textDark50' : '#000'}
                 fontSize="$sm"
@@ -768,6 +795,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         borderBottomLeftRadius={5}
         borderColor="#E9E9E9"
         justifyContent="space-between"
+        alignItems="center"
       >
         <HStack>
           <Pressable onPress={handleLike}>
@@ -823,6 +851,30 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             </HStack>
           </Pressable>
         </HStack>
+
+        {/* Upvote button - Event posts için (en sağda) */}
+        {data.stats.upvotes !== undefined && (
+          <Pressable onPress={handleUpvote}>
+            <HStack alignItems="center" space="xs">
+              <AnimatedCounter
+                value={upvotesCount}
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize={10}
+              />
+              <Box
+                bg={isUpvoted ? '#E8FF6B' : 'transparent'}
+                borderRadius={20}
+                p={4}
+              >
+                <ArrowUpCircleIcon
+                  width={20}
+                  height={20}
+                  color={isUpvoted ? '#000000' : (isDark ? '#fff' : '#000')}
+                />
+              </Box>
+            </HStack>
+          </Pressable>
+        )}
       </HStack>
       
       {/* Boosted Icon - Card'ın sağ alt köşesi */}

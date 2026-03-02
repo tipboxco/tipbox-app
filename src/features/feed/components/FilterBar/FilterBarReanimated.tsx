@@ -119,6 +119,10 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   const [openFilterId, setOpenFilterId] = useState<string | null>(null);
   const [lastOpenFilterId, setLastOpenFilterId] = useState<string | null>(null);
 
+  // FIX: Debounce mechanism to prevent multiple rapid calls
+  const lastToggleTimeRef = useRef<number>(0);
+  const TOGGLE_DEBOUNCE_MS = 300; // 300ms debounce
+
   // 🎯 CORE: Single progress sharedValue (0 = closed, 1 = open)
   const progress = useSharedValue(0);
   // Dynamic panel height - calculated based on number of rows
@@ -401,6 +405,16 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   // Toggle filter panel or trigger bottom sheet
   const handleFilterToggle = useCallback(
     (filterId: string) => {
+      // FIX: Debounce rapid calls to prevent double-trigger issues
+      const now = Date.now();
+      if (now - lastToggleTimeRef.current < TOGGLE_DEBOUNCE_MS) {
+        if (__DEV__) {
+          console.log('[FilterBarReanimated] handleFilterToggle debounced (too fast)');
+        }
+        return;
+      }
+      lastToggleTimeRef.current = now;
+
       if (__DEV__) {
         console.log('[FilterBarReanimated] handleFilterToggle:', { filterId, openFilterId, useBottomSheet: !!onFilterButtonPress });
       }
@@ -420,18 +434,17 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         const optionsCount = getOptionsCount(filterId, allCategories.length);
         const calculatedHeight = calculatePanelHeight(optionsCount, filterId);
 
-
-        // FIX: Önce state'leri güncelle, sonra animasyonu başlat
-        // Bu sayede panel render edilir ve animasyon düzgün çalışır
+        // FIX: State güncellemeleri önce yap
         setLastOpenFilterId(openFilterId || filterId);
         setOpenFilterId(filterId);
-        openFilterIdShared.value = filterId;
 
-        // Panel height'ı güncelle (animasyon başlamadan önce)
-        panelHeight.value = calculatedHeight;
-
-        // Animasyonu anında başlat - shared value'lar UI thread'de çalıştığı için rAF gerekmez
-        progress.value = withSpring(1, SPRING_CONFIG);
+        // FIX: Shared value yazma işlemlerini render cycle'ından sonraya ertele
+        // requestAnimationFrame kullanarak Reanimated warning'ini önle
+        requestAnimationFrame(() => {
+          openFilterIdShared.value = filterId;
+          panelHeight.value = calculatedHeight;
+          progress.value = withSpring(1, SPRING_CONFIG);
+        });
       }
     },
     [onFilterButtonPress, openFilterId, progress, openFilterIdShared, panelHeight, getOptionsCount, calculatePanelHeight, allCategories.length, closePanel]

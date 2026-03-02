@@ -264,13 +264,20 @@ const EventDetailScreen: React.FC = () => {
                 name: item.user.name,
                 title: item.user.title,
                 avatar: toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png'),
+                action: event?.title ? `📤 Posted in ${event.title}` : undefined,
             },
             content: contentString,
             images,
-            stats: item.stats,
+            stats: {
+                ...item.stats,
+                upvotes: item.stats.upvotes || 0, // Event posts için upvote sayısı
+            },
             createdAt: item.createdAt,
             contextType: mappedContextType,
             contextData,
+            eventId: eventId,
+            isLiked: item.isLiked,
+            isUpvoted: item.isUpvoted, // Event posts için upvote durumu
         };
     };
 

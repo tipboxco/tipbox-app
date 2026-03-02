@@ -47,6 +47,7 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
    * STABİL FIX: Eğer sheet zaten açıksa, önce kapat sonra aç (content değişikliği için)
    */
   const openBottomSheet = useCallback((content: ReactNode, options?: BottomSheetOptions) => {
+
     // Eğer önceki close cleanup bekliyorsa iptal et (yeni content'in silinmesini önler)
     cancelPendingCleanup();
     bumpOpId();

@@ -6,6 +6,7 @@ export type LegacyPostUser = {
   name: string;
   title: string;
   avatar: ImageSourcePropType;
+  action?: string; // Event action text: "Posted in [Event Name]"
 };
 
 export type LegacyPostProduct = {
@@ -29,6 +30,7 @@ export type PostStats = {
   comments: number;
   shares: number;
   bookmarks: number;
+  upvotes?: number; // Event posts için upvote sayısı
 };
 
 export type PostContextData = {
@@ -57,6 +59,7 @@ export interface PostCardData {
   isLiked?: boolean;
   isBookmarked?: boolean;
   isShared?: boolean;
+  isUpvoted?: boolean; // Event posts için upvote durumu
   // Post source (e.g., "BOOSTED")
   source?: string;
 }

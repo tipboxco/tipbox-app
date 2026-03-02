@@ -879,6 +879,10 @@ export interface PostDetailResponse {
   stats: any;
   images: any[];
   createdAt: string;
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isShared?: boolean;
+  isUpvoted?: boolean; // Event posts için upvote durumu
 }
 
 export const getPostDetail = async (postId: string): Promise<PostDetailResponse> => {

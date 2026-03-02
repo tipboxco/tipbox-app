@@ -131,6 +131,16 @@ export const PostDetailScreen = () => {
           products: post.products || fetched.products,
           // RelatedPost bilgisi (Update için) - postData'dan öncelikli
           relatedPost: post.relatedPost || fetched.relatedPost,
+          // Stats merge - upvotes field'ını preserve et (Event posts için)
+          stats: {
+            ...fetched.stats,
+            ...(post.stats?.upvotes !== undefined && { upvotes: post.stats.upvotes }),
+          },
+          // Interaction states preserve et (Event posts için upvote, diğerleri için like/bookmark/share)
+          isLiked: post.isLiked ?? fetched.isLiked,
+          isBookmarked: post.isBookmarked ?? fetched.isBookmarked,
+          isShared: post.isShared ?? fetched.isShared,
+          isUpvoted: post.isUpvoted ?? fetched.isUpvoted,
           // Experience: split content, 3 tag ve images postData'dan (zaten kart formatında)
           ...(isExperience && {
             content: Array.isArray(post.content) ? post.content : (fetched.content ?? []),

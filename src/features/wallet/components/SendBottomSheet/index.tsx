@@ -13,147 +13,34 @@ import {
   XCircleIcon,
   ClockIcon,
 } from 'react-native-heroicons/outline';
-import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useWalletTransactions, useWalletBalance, useSendTips, useTransactionById, useCancelTransaction } from '../../api/hooks';
 import type { SendTipResponse } from '../../api/walletApi';
 import { useAppStore } from '@/src/store/appStore';
-import { useTrusterList } from '@/src/features/profile/api/hooks';
 
-// Truster List Component for Bottom Sheet
-const TrusterListContent: React.FC<{
-  trusterList: any[];
-  isLoadingTrusters: boolean;
-  onTrusterSelect: (truster: any) => void;
-  onClose: () => void;
-  isDark: boolean;
-}> = ({ trusterList, isLoadingTrusters, onTrusterSelect, onClose, isDark }) => {
-  return (
-    <VStack w="100%" h="100%">
-      {/* Header - Fixed */}
-      <HStack alignItems="center" space="md" mb="$2" px="$4" pt="$4" pb="$2">
-        <Pressable onPress={onClose}>
-          <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
-        </Pressable>
-        <HStack flex={1} justifyContent="center" alignItems="center">
-          <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            Select Friend
-          </Text>
-        </HStack>
-        <Box w={24} />
-      </HStack>
-
-      {/* Truster List - Scrollable */}
-      <ScrollView 
-        contentContainerStyle={{ 
-          paddingHorizontal: 16, 
-          paddingTop: 8,
-          paddingBottom: 24,
-          flexGrow: 1,
-        }}
-        showsVerticalScrollIndicator={true}
-        bounces={true}
-        style={{ flex: 1 }}
-      >
-        {isLoadingTrusters ? (
-          <VStack alignItems="center" justifyContent="center" py="$8">
-            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-            <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" mt="$4">
-              Loading friends...
-            </Text>
-          </VStack>
-        ) : trusterList && trusterList.length > 0 ? (
-          <VStack space="md">
-            {trusterList.map((truster) => (
-              <Pressable
-                key={truster.id}
-                onPress={() => onTrusterSelect(truster)}
-              >
-                <Box
-                  bg="$backgroundLight0"
-                  $dark-bg="$backgroundDark800"
-                  borderWidth={1}
-                  borderColor="$borderLight200"
-                  $dark-borderColor="$borderDark600"
-                  rounded={10}
-                  p="$4"
-                >
-                  <HStack space="md" alignItems="center">
-                    <Box w={48} h={48} rounded="$full" overflow="hidden" bg="$backgroundLight200" $dark-bg="$backgroundDark700">
-                      <Image
-                        source={toImageSource(truster.avatar) || DEFAULT_USER_AVATAR}
-                        alt={truster.name}
-                        style={{ width: 48, height: 48 }}
-                        resizeMode="cover"
-                      />
-                    </Box>
-
-                    <VStack flex={1} space="xs">
-                      <Text 
-                        fontSize={14} 
-                        fontWeight="$bold" 
-                        color="$textLight900" 
-                        $dark-color="$textDark50"
-                      >
-                        {truster.name}
-                      </Text>
-                      <Text 
-                        fontSize={12} 
-                        color="$textLight500" 
-                        $dark-color="$textDark400"
-                      >
-                        @{truster.userName}
-                      </Text>
-                      {truster.titles && truster.titles.length > 0 && (
-                        <Text 
-                          fontSize={11} 
-                          color="$textLight400" 
-                          $dark-color="$textDark500"
-                        >
-                          {truster.titles[0]}
-                        </Text>
-                      )}
-                    </VStack>
-
-                    {truster.isTrusted && (
-                      <Box bg="#C2E607" rounded={6} px="$2" py="$1">
-                        <Text fontSize={10} fontWeight="$bold" color="#111111">Trusted</Text>
-                      </Box>
-                    )}
-                  </HStack>
-                </Box>
-              </Pressable>
-            ))}
-          </VStack>
-        ) : (
-          <VStack alignItems="center" justifyContent="center" py="$8" flex={1}>
-            <UsersIcon width={64} height={64} color={isDark ? '#666666' : '#CCCCCC'} />
-            <Text fontSize={16} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400" mt="$4">
-              No Friends Found
-            </Text>
-            <Text fontSize={12} color="$textLight400" $dark-color="$textDark500" mt="$2" textAlign="center" px="$4">
-              You don't have any friends in your trust list yet.
-            </Text>
-          </VStack>
-        )}
-      </ScrollView>
-    </VStack>
-  );
-};
+// Truster List Component is now a separate screen (SelectFriendScreen)
 
 interface SendBottomSheetProps {
   onClose: () => void;
   onWalletAddressPress?: () => void;
   onFriendPress?: () => void;
-  onViewChange?: (view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list') => void;
+  onViewChange?: (view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => void;
   onSuccess?: (transactionDetails: {
     sentAmount: string;
     transactionFee: string;
     remainingBalance: string;
     transactionId?: string;
   }) => void;
+  onNavigateToFriendSelect?: () => void;
+  initialView?: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection';
+  selectedFriend?: {
+    id: string;
+    name: string;
+    title?: string;
+    bio?: string;
+    avatar: any;
+  } | null;
 }
 
 export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
@@ -162,14 +49,17 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   onFriendPress,
   onViewChange,
   onSuccess,
+  onNavigateToFriendSelect,
+  initialView = 'options',
+  selectedFriend: initialSelectedFriend = null,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [view, setView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list'>('options');
+  const [view, setView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection'>(initialView);
   const [walletAddress, setWalletAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [isSwapped, setIsSwapped] = useState(false); // false = TIPS mode, true = USD mode
-  const [selectedFriend, setSelectedFriend] = useState<{ id: string; name: string; title?: string; bio?: string; avatar: any } | null>(null);
+  const [selectedFriend, setSelectedFriend] = useState<{ id: string; name: string; title?: string; bio?: string; avatar: any } | null>(initialSelectedFriend);
   const [previousView, setPreviousView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | null>(null);
   /** Send-tip API response; used for status-based UI and polling */
   const [sendResult, setSendResult] = useState<SendTipResponse | null>(null);
@@ -246,7 +136,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   
   // Debug: Log view changes
   React.useEffect(() => {
-    if (view === 'truster-list' || view === 'confirmation') {
+    if (view === 'confirmation') {
       console.log('[SendBottomSheet] View changed to:', view);
     }
   }, [view]);
@@ -269,34 +159,16 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
   // Send TIPS mutation hook
   const { mutate: sendTips, isPending: isSending } = useSendTips();
-  
-  // Fetch Truster List
-  const { data: trusterList, isLoading: isLoadingTrusters, error: trusterListError } = useTrusterList(user?.id);
 
-  // Function to show Truster list view (no nested bottom sheet)
-  const openTrusterListBottomSheet = () => {
-    setPreviousView('options');
-    onViewChange?.('truster-list');
-    
+  // Function to open friend selection screen
+  const handleOpenFriendSelection = () => {
+    // Close bottom sheet and notify parent to navigate
+    onClose();
+
+    // Let parent (WalletScreen) handle navigation
     setTimeout(() => {
-      setView('truster-list');
-    }, 100);
-  };
-  
-  // Callback for when a truster is selected from the list
-  const handleTrusterSelect = (truster: any) => {
-    const friendData = {
-      id: truster.id,
-      name: truster.name,
-      title: truster.titles?.[0],
-      bio: truster.userName,
-      avatar: truster.avatar,
-    };
-    
-    setSelectedFriend(friendData);
-    setPreviousView('truster-list');
-    setView('amount');
-    onViewChange?.('amount');
+      onNavigateToFriendSelect?.();
+    }, 300);
   };
 
   // Truncate wallet address for display (crypto-style)
@@ -587,9 +459,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           </Pressable>
 
           {/* Friend Option */}
-          <Pressable onPress={() => {
-            openTrusterListBottomSheet();
-          }}>
+          <Pressable onPress={handleOpenFriendSelection}>
             <Box
               bg="$backgroundLight0"
               $dark-bg="$backgroundDark800"
@@ -748,18 +618,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     );
   }
 
-  if (view === 'truster-list') {
-    return (
-      <TrusterListContent
-        trusterList={trusterList || []}
-        isLoadingTrusters={isLoadingTrusters}
-        onTrusterSelect={handleTrusterSelect}
-        onClose={handleBack}
-        isDark={isDark}
-      />
-    );
-  }
-
   if (view === 'friend-selection') {
     // Friend Selection View - Shows selected friend with confirm button
     return (
@@ -897,15 +755,12 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       <HStack alignItems="center" space="md" mb="$2">
         <Pressable onPress={() => {
           Keyboard.dismiss();
-          // Back to previous view (truster-list or wallet-address)
-          if (previousView === 'friend-selection' || selectedFriend) {
-            setView('truster-list');
-            onViewChange?.('truster-list');
-          } else if (previousView === 'wallet-address' || walletAddress) {
+          // Back to previous view (wallet-address or options)
+          if (previousView === 'wallet-address' || (walletAddress && !selectedFriend)) {
             setView('wallet-address');
             onViewChange?.('wallet-address');
           } else {
-            // Default: go back to options
+            // Default: go back to options and clear friend selection
             setView('options');
             onViewChange?.('options');
             setSelectedFriend(null);

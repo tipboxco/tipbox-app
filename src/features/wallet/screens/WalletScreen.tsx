@@ -11,8 +11,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Header } from '@/src/components/Header';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CompositeNavigationProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
+import type { WalletStackParamList } from '../navigation';
+import type { RootStackParamList } from '@/src/navigation/types/root.types';
 import {
   QrCodeIcon,
   PaperAirplaneIcon,
@@ -44,8 +47,13 @@ import { useAppStore } from '@/src/store/appStore';
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
+type WalletScreenNavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<WalletStackParamList, 'WalletScreen'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
 export const WalletScreen: React.FC = () => {
-      const navigation = useNavigation<any>();
+      const navigation = useNavigation<WalletScreenNavigationProp>();
       const { colorMode } = useColorMode();
       const isDark = colorMode === 'dark';
       const [activeTab, setActiveTab] = useState<'tips' | 'nft'>('tips');
@@ -166,45 +174,85 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
 
-  const [sendBottomSheetContent, setSendBottomSheetContent] = React.useState<React.ReactNode>(null);
-  
-  const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list') => {
-    if (!sendBottomSheetContent) return;
+  const sendBottomSheetContentRef = React.useRef<React.ReactNode>(null);
+  const [pendingFriend, setPendingFriend] = React.useState<{
+    id: string;
+    name: string;
+    title?: string;
+    bio?: string;
+    avatar: any;
+  } | null>(null);
 
-    const optionsForView =
-      view === 'truster-list'
-        ? {
-            enablePanDownToClose: true,
-            enableOverDrag: false,
-            enableHandlePanningGesture: false,
-            enableContentPanningGesture: false,
-            enableDynamicSizing: false,
-            snapPoints: ['90%'],
-            animateOnMount: false,
-            paddingBottom: bottomInset,
-            handleIndicatorStyle: {
-              backgroundColor: isDark ? '#333333' : '#B8B8B7',
-              width: 70,
-              height: 5,
-            },
-          }
-        : {
-            enablePanDownToClose: true,
-            enableOverDrag: false,
-            enableHandlePanningGesture: true,
-            enableContentPanningGesture: true,
-            enableDynamicSizing: true,
-            animateOnMount: true,
-            paddingBottom: bottomInset,
-            handleIndicatorStyle: {
-              backgroundColor: isDark ? '#333333' : '#B8B8B7',
-              width: 70,
-              height: 5,
-            },
-          };
+  // Listen for friend selection from SelectFriendScreen
+  React.useEffect(() => {
+    if (pendingFriend) {
+      // Friend was selected, reopen bottom sheet with amount view
+      const bottomSheetContent = (
+        <SendBottomSheet
+          onClose={() => {
+            closeBottomSheet();
+            setPendingFriend(null);
+          }}
+          onViewChange={handleSendViewChange}
+          onSuccess={handleSendSuccess}
+          onNavigateToFriendSelect={handleNavigateToFriendSelect}
+          initialView="amount"
+          selectedFriend={pendingFriend}
+        />
+      );
 
-    openBottomSheet(sendBottomSheetContent, optionsForView);
-  }, [openBottomSheet, bottomInset, isDark, sendBottomSheetContent]);
+      sendBottomSheetContentRef.current = bottomSheetContent;
+
+      openBottomSheet(
+        bottomSheetContent,
+        {
+          enablePanDownToClose: true,
+          enableOverDrag: false,
+          enableHandlePanningGesture: true,
+          enableContentPanningGesture: true,
+          enableDynamicSizing: true,
+          animateOnMount: true,
+          paddingBottom: bottomInset,
+          handleIndicatorStyle: {
+            backgroundColor: isDark ? '#333333' : '#B8B8B7',
+            width: 70,
+            height: 5,
+          },
+        }
+      );
+    }
+  }, [pendingFriend, openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendSuccess, handleSendViewChange, handleNavigateToFriendSelect]);
+
+  const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => {
+    if (!sendBottomSheetContentRef.current) {
+      return;
+    }
+
+    const optionsForView = {
+      enablePanDownToClose: true,
+      enableOverDrag: false,
+      enableHandlePanningGesture: true,
+      enableContentPanningGesture: true,
+      enableDynamicSizing: true,
+      animateOnMount: true,
+      paddingBottom: bottomInset,
+      handleIndicatorStyle: {
+        backgroundColor: isDark ? '#333333' : '#B8B8B7',
+        width: 70,
+        height: 5,
+      },
+    };
+
+    openBottomSheet(sendBottomSheetContentRef.current, optionsForView);
+  }, [openBottomSheet, bottomInset, isDark]);
+
+  const handleNavigateToFriendSelect = useCallback(() => {
+    navigation.navigate('SelectFriendScreen', {
+      onSelect: (friendData) => {
+        setPendingFriend(friendData);
+      },
+    });
+  }, [navigation]);
 
   const handleSendPress = useCallback(() => {
     const bottomSheetContent = (
@@ -212,10 +260,11 @@ export const WalletScreen: React.FC = () => {
         onClose={closeBottomSheet}
         onViewChange={handleSendViewChange}
         onSuccess={handleSendSuccess}
+        onNavigateToFriendSelect={handleNavigateToFriendSelect}
       />
     );
-    
-    setSendBottomSheetContent(bottomSheetContent);
+
+    sendBottomSheetContentRef.current = bottomSheetContent;
     
     openBottomSheet(
       bottomSheetContent,
@@ -234,7 +283,7 @@ export const WalletScreen: React.FC = () => {
         },
       }
     );
-  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendSuccess, handleSendViewChange]);
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendSuccess, handleSendViewChange, handleNavigateToFriendSelect]);
 
   const handleSwapPress = useCallback(() => {
     openBottomSheet(
