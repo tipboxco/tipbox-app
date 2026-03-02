@@ -1952,7 +1952,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [activeTab]);
   
-  if (profileError || !userProfile) {
+  // CRITICAL FIX: Error sadece loading bittikten sonra gösterilmeli
+  // Loading sırasında geçici error'ları gösterme (flash of error problemi)
+  if (!isProfileLoading && (profileError || !userProfile)) {
     return (
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>
         <Text color="#CE4A4A" fontSize="$sm">

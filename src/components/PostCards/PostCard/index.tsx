@@ -867,8 +867,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 p={4}
               >
                 <ArrowUpCircleIcon
-                  width={20}
-                  height={20}
+                  width={24}
+                  height={24}
                   color={isUpvoted ? '#000000' : (isDark ? '#fff' : '#000')}
                 />
               </Box>
@@ -876,26 +876,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           </Pressable>
         )}
       </HStack>
-      
-      {/* Boosted Icon - Card'ın sağ alt köşesi */}
-      {isBoosted && (
-        <Box
-          position="absolute"
-          bottom={8}
-          right={12}
-          width={24}
-          height={24}
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Image
-            source={require('@/assets/boost.svg')}
-            alt="boosted"
-            width={24}
-            height={24}
-          />
-        </Box>
-      )}
 
     </View>
   );
