@@ -609,7 +609,7 @@ export const PostDetailScreen = () => {
                         <UpdatePostCardDetail
                             data={finalPostData}
                             showRelatedPost={true}
-                            relatedPostData={postData?.relatedPost || relatedPostData}
+                            relatedPostData={finalUpdateRelatedPostData || postData?.relatedPost || relatedPostData}
                             onCommentPress={handleCommentInputPress}
                         />
                     ) : (

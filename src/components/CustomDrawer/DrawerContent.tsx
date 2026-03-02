@@ -520,10 +520,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     >
       {/* ScrollView kullan - DrawerContentScrollView yerine */}
       <ScrollView
-        contentContainerStyle={{ 
+        contentContainerStyle={{
           flexGrow: 1,
           paddingTop: 0,
-          paddingBottom: 200, // Bottom menüler için padding
+          paddingBottom: 320, // Bottom menüler için padding - artırıldı
           paddingLeft: 0,
           paddingRight: 0,
           margin: 0,
@@ -760,14 +760,20 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       </ScrollView>
 
       {/* Settings and Help – DIŞTA px yok, SATIRDA px var - Bottom Fixed */}
-      <Box 
-        position="absolute" 
-        bottom={0} 
-        left={0} 
-        right={0} 
+      <Box
+        position="absolute"
+        bottom={0}
+        left={0}
+        right={0}
         bg={isDark ? '#000000' : '#FFFFFF'}
         pb={bottomPadding}
       >
+        {/* Top separator - arkadaki öğeleri gizlemek için solid line */}
+        <Box
+          h={1.5}
+          w="100%"
+          bg={isDark ? '$backgroundDark200' : '$backgroundLight200'}
+        />
         <VStack px="$0">
           <Pressable
             onPress={handleNavigateToFeedback}

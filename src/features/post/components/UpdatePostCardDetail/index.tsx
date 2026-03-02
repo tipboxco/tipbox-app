@@ -377,8 +377,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         />
       )}
 
-      {/* Images - Experience post'tan sonra */}
-      {data.images && data.images.length > 0 && (
+      {/* Images - Sadece related post yoksa göster (update post'un kendi görselleri) */}
+      {!transformedRelatedPost && data.images && data.images.length > 0 && (
         <VStack borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <CardImageCarousel images={data.images} paddingHorizontal={0} />
         </VStack>
