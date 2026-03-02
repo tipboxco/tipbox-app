@@ -168,9 +168,10 @@ export const GlobalBottomSheet: React.FC = () => {
   const timingConfigs = useBottomSheetTimingConfigs({ duration: 300 });
   const animationConfigs = mergedOptions.animateOnMount ? timingConfigs : undefined;
 
-  // CRITICAL FIX: Her zaman BottomSheet'i render et, unmount etme
-  // Content null ise boş View render et - bu sayede component mounted kalır
-  // ve ikinci açılışta gorhom'un internal state'i korunur
+  // Content yoksa render etme
+  if (!content) {
+    return null;
+  }
 
   // DOĞRU MİMARİ: Sadece index ile kontrol
   // enableDynamicSizing true ise snapPoints undefined olmalı
@@ -208,20 +209,17 @@ export const GlobalBottomSheet: React.FC = () => {
         android_keyboardInputMode={mergedOptions.android_keyboardInputMode ?? 'adjustResize'}
         detached={mergedOptions.detached ?? false}
         bottomInset={mergedOptions.bottomInset}
-
+       
         style={sheetContainerStyle}
       >
-        <BottomSheetView
-          style={{
+        <BottomSheetView 
+          style={{ 
             paddingBottom,
-            // CRITICAL FIX: Sheet kapalıyken (index -1) minHeight 0, böylece alan kaplamaz
-            minHeight: index === 0 && content ? 200 : 0,
+            minHeight: 200,
           }}
         >
-          {/* CRITICAL FIX: Sheet açıkken (index 0) content render et, kapalıyken boş View */}
-          {/* Bu sayede component unmount olmaz ama gereksiz render'lardan kaçınırız */}
-          {index === 0 && content ? content : <View />}
-          {keyboardHeight > 0 && index === 0 && (
+          {content}
+          {keyboardHeight > 0 && (
             <View style={{ height: keyboardHeight }} />
           )}
         </BottomSheetView>
