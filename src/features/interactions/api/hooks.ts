@@ -149,8 +149,8 @@ export const usePostStatus = (postId: string) => {
     queryKey: interactionKeys.postStatus(postId),
     queryFn: async () => {
       const response = await getPostStatus(postId);
-      // CRITICAL: data undefined olabilir, fallback değer döndür
-      return response.data ?? { liked: false, favorited: false, shared: false };
+      // FIXED: Interceptor unwraps response, so response is already the data
+      return response ?? { liked: false, favorited: false, shared: false, upvoted: false };
     },
     enabled: !!postId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
@@ -176,8 +176,8 @@ export const useComments = (
     queryKey: interactionKeys.comments(postId, sortBy),
     queryFn: async () => {
       const response = await getComments(postId, limit, sortBy);
-      // CRITICAL: data undefined olabilir, fallback değer döndür
-      return response.data ?? { comments: [] };
+      // FIXED: Interceptor unwraps response, so response is already the data
+      return response ?? { comments: [] };
     },
     enabled: !!postId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
@@ -197,6 +197,9 @@ export const useBookmarks = (limit: number = 50) => {
     queryKey: interactionKeys.bookmarks(),
     queryFn: async () => {
       const response = await getBookmarks(limit);
+      // Backend returns { success: true, data: { data: Bookmark[] } }
+      // Interceptor unwraps to { data: Bookmark[] }
+      // So response is { data: Bookmark[] } which is BookmarksResponse
       return response.data || [];
     },
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma

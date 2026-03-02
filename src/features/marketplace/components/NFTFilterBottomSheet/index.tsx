@@ -24,7 +24,6 @@ export const NFTFilterBottomSheet: React.FC<NFTFilterBottomSheetProps> = ({
     { value: 'ALL', label: 'All' },
     { value: 'BADGE', label: 'Badge' },
     { value: 'COSMETIC', label: 'Cosmetic' },
-    { value: 'LOOTBOX', label: 'Lootbox' },
   ];
 
   const handleReset = () => {

@@ -58,7 +58,7 @@ export interface UserNFTApiItem {
   username: string;
   image: string;
   description?: string;
-  type?: string; // "BADGE", "CHEST", "COSMETIC", "LOOTBOX"
+  type?: string; // "BADGE", "CHEST", "COSMETIC"
   rarity?: string; // "COMMON", "RARE", "EPIC", "LEGENDARY"
   listing?: {
     id: string;

@@ -11,6 +11,7 @@ export interface PostInteractionStatus {
   liked: boolean;      // Kullanıcı post'u beğenmiş mi?
   favorited: boolean;  // Kullanıcı post'u favorilere eklemiş mi?
   shared: boolean;     // Kullanıcı post'u paylaşmış mı?
+  upvoted?: boolean;   // Kullanıcı post'a upvote vermiş mi? (event posts için)
 }
 
 /**
