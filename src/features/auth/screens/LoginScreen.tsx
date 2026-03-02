@@ -114,6 +114,43 @@ export const LoginScreen = () => {
           password,
         });
         if(result.success) {
+          // Console'da response'u göster (sadece development modunda)
+          if (__DEV__) {
+            console.log('[LoginScreen] ✅ Login successful:', {
+              userId: result.id,
+              fullName: result.fullName,
+              email: result.email,
+              hasToken: !!result.token,
+              hasRefreshToken: !!result.refreshToken,
+            });
+          }
+
+          // Remember me seçiliyse email'i kaydet
+          if (rememberMe) {
+            await LoginCredentialsService.saveEmail(email);
+            // Şifreyi biometrik ile kaydet (eğer biometrik mevcut ise)
+            if (isBiometricAvailable) {
+              try {
+                await BiometricService.savePassword(password);
+                setHasBiometricPassword(true);
+              } catch (error) {
+                console.error('[LoginScreen] ❌ Error saving password with biometric:', error);
+              }
+            }
+          } else {
+            // Remember me seçili değilse email'i temizle
+            await LoginCredentialsService.clearEmail();
+            await BiometricService.clearPassword();
+            setHasBiometricPassword(false);
+          }
+
+          // Başarılı toast göster
+          showCustomToast(toast, {
+            title: `Welcome ${result.fullName || result.email?.split('@')[0] || 'User'}!`,
+            action: 'success',
+            duration: 3000,
+          });
+
           navigation.reset({
             index: 0,
             routes: [{ name: 'Main' as never }],
@@ -127,42 +164,6 @@ export const LoginScreen = () => {
             duration: 4000,
           });
         }
-        // Console'da response'u göster (sadece development modunda)
-        if (__DEV__) {
-          console.log('[LoginScreen] ✅ Login successful:', {
-            userId: result.id,
-            fullName: result.fullName,
-            email: result.email,
-            hasToken: !!result.token,
-            hasRefreshToken: !!result.refreshToken,
-          });
-        }
-
-        // Remember me seçiliyse email'i kaydet
-        if (rememberMe) {
-          await LoginCredentialsService.saveEmail(email);
-          // Şifreyi biometrik ile kaydet (eğer biometrik mevcut ise)
-          if (isBiometricAvailable) {
-            try {
-              await BiometricService.savePassword(password);
-              setHasBiometricPassword(true);
-            } catch (error) {
-              console.error('[LoginScreen] ❌ Error saving password with biometric:', error);
-            }
-          }
-        } else {
-          // Remember me seçili değilse email'i temizle
-          await LoginCredentialsService.clearEmail();
-          await BiometricService.clearPassword();
-          setHasBiometricPassword(false);
-        }
-
-        // Başarılı toast göster
-        showCustomToast(toast, {
-          title: `Welcome ${result.fullName || result.email?.split('@')[0] || 'User'}!`,
-          action: 'success',
-          duration: 3000,
-        });
 
         // RootNavigator otomatik olarak isAuthenticated=true olduğunda
         // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez

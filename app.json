@@ -15,10 +15,9 @@
     },
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/ios-icon.png",
+    "icon": "./assets/tipbox-square-black.png",
     "splash": {
-      "backgroundColor": "#000000",
-      "resizeMode": "contain"
+      "backgroundColor": "#000000"
     },
     "scheme": "tipboxapp",
     "assetBundlePatterns": [
@@ -93,8 +92,6 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-black.png",
-          "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
       ],
