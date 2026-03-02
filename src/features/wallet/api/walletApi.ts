@@ -104,6 +104,31 @@ export interface SendTipRequest {
 }
 
 /**
+ * Withdraw Request
+ * Backend: POST /transactions/withdraw
+ */
+export interface WithdrawRequest {
+  amount: number;           // TIPS amount to withdraw
+  walletAddress: string;    // External wallet address (blockchain address)
+  tokenType?: string;       // ERC20 token type (default: TIPS)
+}
+
+/**
+ * Withdraw Response
+ */
+export interface WithdrawResponse {
+  id: string;               // Transaction ID
+  transactionId?: string;   // Alias for id
+  status: SendTipStatus;    // Transaction status
+  amount: number;           // Withdrawn amount
+  walletAddress: string;    // Destination wallet address
+  txHash?: string;          // On-chain transaction hash (after confirmation)
+  createdAt?: string;       // Creation timestamp
+  errorMessage?: string;    // Error message if failed
+  estimatedConfirmTime?: number; // Estimated confirmation time (seconds)
+}
+
+/**
  * Send Tip Response
  * Backend: POST /transactions/send-tip returns immediately; on-chain processing is queued, ~15s delay.
  * First response usually has status "created", txHash undefined. After worker/webhook: pending → confirmed/failed.
@@ -257,6 +282,40 @@ export const transferNft = async (data: NftTransferRequest): Promise<NftTransfer
   } catch (error: any) {
     console.error('[transferNft] API Error:', {
       url: '/transactions/nft-transfer',
+      status: error.response?.status,
+      data: error.response?.data,
+      requestData: data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Withdraw TIPS to External Wallet
+ *
+ * Backend endpoint: POST /transactions/withdraw
+ *
+ * Withdraws TIPS to an external blockchain wallet address.
+ * Supports ERC20 token transfers.
+ */
+export const withdrawTips = async (data: WithdrawRequest): Promise<WithdrawResponse> => {
+  try {
+    const response = await apiService.getClient().post<WithdrawResponse & { transactionId?: string }>(
+      '/transactions/withdraw',
+      data,
+      {
+        timeout: 10000 * 60, // 10 minute timeout
+      }
+    );
+    const raw = response.data;
+    // Normalize: backend may return id or transactionId
+    return {
+      ...raw,
+      id: raw.id ?? raw.transactionId ?? '',
+    } as WithdrawResponse;
+  } catch (error: any) {
+    console.error('[withdrawTips] API Error:', {
+      url: '/transactions/withdraw',
       status: error.response?.status,
       data: error.response?.data,
       requestData: data,

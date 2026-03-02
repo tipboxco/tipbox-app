@@ -6,6 +6,7 @@ import {
   getWalletTransactions,
   getTransactionById,
   sendTips,
+  withdrawTips,
   cancelTransaction,
   transferNft,
   // Reward API
@@ -30,6 +31,8 @@ import type {
   TransactionsResponse,
   SendTipRequest,
   SendTipResponse,
+  WithdrawRequest,
+  WithdrawResponse,
   CancelTransactionResponse,
   NftTransferRequest,
   NftTransferResponse,
@@ -304,6 +307,48 @@ export const useCancelTransaction = () => {
     },
     onError: (error) => {
       console.error('[useCancelTransaction] Error:', error);
+    },
+  });
+};
+
+/**
+ * useWithdrawTips Hook
+ *
+ * Withdraw TIPS to external wallet
+ *
+ * Backend endpoint: POST /transactions/withdraw
+ *
+ * Supports ERC20 token transfers to external blockchain addresses.
+ * Transaction status can be polled using useTransactionById.
+ *
+ * **UI Flow:**
+ * ```tsx
+ * const { mutate, isPending } = useWithdrawTips();
+ *
+ * mutate(
+ *   { amount, walletAddress, tokenType: 'TIPS' },
+ *   {
+ *     onSuccess: (data) => {
+ *       // Poll status with data.id
+ *       const { data: tx } = useTransactionById(data.id, { pollUntilFinal: true });
+ *     }
+ *   }
+ * );
+ * ```
+ */
+export const useWithdrawTips = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<WithdrawResponse, Error, WithdrawRequest>({
+    mutationFn: withdrawTips,
+    onSuccess: () => {
+      // Invalidate balance (pending balance changes)
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      // Invalidate transaction history
+      queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
+    },
+    onError: (error) => {
+      console.error('[useWithdrawTips] Error:', error);
     },
   });
 };

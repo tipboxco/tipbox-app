@@ -41,6 +41,10 @@ export interface EventDetailApiResponse {
   product?: EventDetailProduct; // eventType'a göre opsiyonel
   /** Event'e bağlı anketler (GET /events/{eventId} response'unda) */
   surveys?: EventSurveyItem[];
+  /** Event istatistikleri (leaderboard için) */
+  stats?: {
+    helpfulVotesReceived?: number; // Event'te alınan toplam upvote sayısı
+  };
 }
 
 // Limited Event Leaderboard User
@@ -48,6 +52,7 @@ export interface LimitedEventLeaderboardUser {
   id: string;
   avatar: string;
   rank: number;
+  helpfulVotesReceived?: number; // Event'te alınan upvote sayısı
 }
 
 // Limited Event User Score
@@ -56,6 +61,7 @@ export interface LimitedEventUserScore {
   avatar: string;
   rank: number;
   score: number;
+  helpfulVotesReceived?: number; // Event'te alınan upvote sayısı
 }
 
 // Limited Event API Response
