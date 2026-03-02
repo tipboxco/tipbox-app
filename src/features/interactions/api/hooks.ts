@@ -14,6 +14,8 @@ import {
   sharePost,
   sharePostToDm,
   getPostStatus,
+  upvotePost,
+  removeUpvote,
 } from './interactionsApi';
 import type {
   PostInteractionStatus,
@@ -902,6 +904,86 @@ export const useSharePostToDm = () => {
     onError: (err, variables) => {
       // Error logging
       console.error('[useSharePostToDm] Error:', err);
+    },
+  });
+};
+
+/**
+ * Upvote Post mutation hook
+ * Event post'una upvote verir ve cache'i günceller
+ *
+ * @returns React Query mutation hook
+ */
+export const useUpvotePost = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId }: { postId: string }) => upvotePost(postId),
+    onMutate: async (variables) => {
+      const { postId } = variables;
+
+      // Optimistic update için önceki verileri kaydet
+      await queryClient.cancelQueries({ queryKey: feedKeys.all() });
+      await queryClient.cancelQueries({ queryKey: profileKeys.all() });
+
+      // Feed cache güncelle (upvotesCount +1, isUpvoted = true)
+      setFeedPostUpdate(queryClient, postId, (post) => ({
+        ...post,
+        stats: {
+          ...post.stats,
+          upvotes: (post.stats.upvotes || 0) + 1,
+        },
+        isUpvoted: true,
+      }));
+
+      // Post status'u invalidate et
+      queryClient.invalidateQueries({ queryKey: interactionKeys.postStatus(postId) });
+    },
+    onError: (err, variables) => {
+      // Hata durumunda cache'i geri yükle (refetch ile)
+      queryClient.invalidateQueries({ queryKey: feedKeys.all() });
+      queryClient.invalidateQueries({ queryKey: profileKeys.all() });
+      console.error('[useUpvotePost] Error:', err);
+    },
+  });
+};
+
+/**
+ * Remove Upvote mutation hook
+ * Post upvote'unu geri alır ve cache'i günceller
+ *
+ * @returns React Query mutation hook
+ */
+export const useRemoveUpvote = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId }: { postId: string }) => removeUpvote(postId),
+    onMutate: async (variables) => {
+      const { postId } = variables;
+
+      // Optimistic update için önceki verileri kaydet
+      await queryClient.cancelQueries({ queryKey: feedKeys.all() });
+      await queryClient.cancelQueries({ queryKey: profileKeys.all() });
+
+      // Feed cache güncelle (upvotesCount -1, isUpvoted = false)
+      setFeedPostUpdate(queryClient, postId, (post) => ({
+        ...post,
+        stats: {
+          ...post.stats,
+          upvotes: Math.max((post.stats.upvotes || 0) - 1, 0),
+        },
+        isUpvoted: false,
+      }));
+
+      // Post status'u invalidate et
+      queryClient.invalidateQueries({ queryKey: interactionKeys.postStatus(postId) });
+    },
+    onError: (err, variables) => {
+      // Hata durumunda cache'i geri yükle (refetch ile)
+      queryClient.invalidateQueries({ queryKey: feedKeys.all() });
+      queryClient.invalidateQueries({ queryKey: profileKeys.all() });
+      console.error('[useRemoveUpvote] Error:', err);
     },
   });
 };

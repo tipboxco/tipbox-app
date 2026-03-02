@@ -35,6 +35,8 @@ import {
   useBookmarkPost,
   useUnbookmarkPost,
   usePostStatus,
+  useUpvotePost,
+  useRemoveUpvote,
 } from '@/src/features/interactions/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import {
@@ -86,6 +88,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const unlikePostMutation = useUnlikePost();
   const bookmarkPostMutation = useBookmarkPost();
   const unbookmarkPostMutation = useUnbookmarkPost();
+  const upvotePostMutation = useUpvotePost();
+  const removeUpvoteMutation = useRemoveUpvote();
   const { data: postStatus } = usePostStatus(data.id);
   
   // User action hooks
@@ -152,15 +156,14 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   };
 
   const handleUpvote = () => {
-    // TODO: Upvote API hook'u eklendiğinde buraya entegre edilecek
     if (isUpvoted) {
       setIsUpvoted(false);
       setUpvotesCount(prev => Math.max(0, prev - 1));
-      // downvotePostMutation.mutate(data.id);
+      removeUpvoteMutation.mutate({ postId: data.id });
     } else {
       setIsUpvoted(true);
       setUpvotesCount(prev => prev + 1);
-      // upvotePostMutation.mutate(data.id);
+      upvotePostMutation.mutate({ postId: data.id });
     }
   };
 

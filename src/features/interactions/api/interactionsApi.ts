@@ -274,3 +274,33 @@ export const getPostStatus = async (
   return response.data;
 };
 
+/**
+ * Upvote Post endpoint function
+ * Event post'una upvote verir (sadece FREE type ve eventId olan postlar)
+ *
+ * @param postId - Upvote verilecek post'un ID'si
+ * @returns ApiResponse<void>
+ */
+export const upvotePost = async (postId: string): Promise<ApiResponse<void>> => {
+  const client = apiService.getClient();
+  const response = await client.post<ApiResponse<void>>(
+    `/interactions/posts/${postId}/upvote`
+  );
+  return response.data;
+};
+
+/**
+ * Remove Upvote endpoint function
+ * Post upvote'unu geri alır
+ *
+ * @param postId - Upvote'u geri alınacak post'un ID'si
+ * @returns ApiResponse<void>
+ */
+export const removeUpvote = async (postId: string): Promise<ApiResponse<void>> => {
+  const client = apiService.getClient();
+  const response = await client.delete<ApiResponse<void>>(
+    `/interactions/posts/${postId}/upvote`
+  );
+  return response.data;
+};
+
