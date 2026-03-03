@@ -13,11 +13,13 @@ import { toImageSource } from '@/src/utils';
 import { Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUserAvatars } from '../api/hooks';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SelectAvatarScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectAvatar'>;
 type SelectAvatarScreenRouteProp = RouteProp<AuthStackParamList, 'SelectAvatar'>;
 
 export const SelectAvatarScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectAvatarScreenNavigationProp>();
@@ -64,13 +66,13 @@ export const SelectAvatarScreen = () => {
         setUploadedImage(result.asset.uri);
         setSelectedAvatarId(null); // Avatar seçimini temizle
       } else {
-        Alert.alert('Error', result.error || 'An error occurred while selecting photo');
+        Alert.alert(t('selectAvatarScreen.errorTitle'), result.error || t('selectAvatarScreen.errorSelecting'));
       }
     } catch (error: any) {
       if (__DEV__) {
         console.error('[SelectAvatarScreen] Gallery pick error:', error);
       }
-      Alert.alert('Error', 'An error occurred while selecting photo');
+      Alert.alert(t('selectAvatarScreen.errorTitle'), t('selectAvatarScreen.errorSelecting'));
     } finally {
       setIsUploading(false);
     }
@@ -85,13 +87,13 @@ export const SelectAvatarScreen = () => {
         setUploadedImage(result.asset.uri);
         setSelectedAvatarId(null); // Avatar seçimini temizle
       } else {
-        Alert.alert('Error', result.error || 'An error occurred while taking photo');
+        Alert.alert(t('selectAvatarScreen.errorTitle'), result.error || t('selectAvatarScreen.errorTaking'));
       }
     } catch (error: any) {
       if (__DEV__) {
         console.error('[SelectAvatarScreen] Camera error:', error);
       }
-      Alert.alert('Error', 'An error occurred while taking photo');
+      Alert.alert(t('selectAvatarScreen.errorTitle'), t('selectAvatarScreen.errorTaking'));
     } finally {
       setIsUploading(false);
     }
@@ -135,7 +137,7 @@ export const SelectAvatarScreen = () => {
               color={isDark ? '$textDark50' : '$textLight900'}
               textAlign="center"
             >
-              Set Up Profile
+              {t('selectAvatarScreen.title')}
             </Text>
 
             {/* Tab Buttons */}
@@ -152,7 +154,7 @@ export const SelectAvatarScreen = () => {
                   fontWeight="$bold"
                   fontSize="$sm"
                 >
-                  Avatars
+                  {t('selectAvatarScreen.avatarsTab')}
                 </Text>
               </Pressable>
 
@@ -168,7 +170,7 @@ export const SelectAvatarScreen = () => {
                   fontWeight="$bold"
                   fontSize="$sm"
                 >
-                  Upload Photo
+                  {t('selectAvatarScreen.uploadTab')}
                 </Text>
               </Pressable>
             </HStack>
@@ -186,7 +188,7 @@ export const SelectAvatarScreen = () => {
                     <Box py="$12" alignItems="center" justifyContent="center">
                       <Spinner size="large" color={isDark ? '$textDark50' : '$primary500'} />
                       <Text color={isDark ? '$textDark300' : '$textLight600'} mt="$2" fontSize="$sm">
-                        Loading avatars...
+                        {t('selectAvatarScreen.loadingAvatars')}
                       </Text>
                     </Box>
                   ) : avatars.length === 0 ? (
@@ -301,7 +303,7 @@ export const SelectAvatarScreen = () => {
                         <>
                           <Icon as={Upload} size="md" color={isDark ? '$textDark50' : '$textLight900'} mr="$2" />
                           <ButtonText color={isDark ? '$textDark50' : '$textLight900'}>
-                            Gallery
+                            {t('selectAvatarScreen.pickFromGallery')}
                           </ButtonText>
                         </>
                       )}
@@ -320,7 +322,7 @@ export const SelectAvatarScreen = () => {
                         <>
                           <Icon as={Camera} size="md" color={isDark ? '$textDark50' : '$textLight900'} mr="$2" />
                           <ButtonText color={isDark ? '$textDark50' : '$textLight900'}>
-                            Camera
+                            {t('selectAvatarScreen.takePhoto')}
                           </ButtonText>
                         </>
                       )}
@@ -340,7 +342,7 @@ export const SelectAvatarScreen = () => {
               opacity={hasSelection ? 1 : 0.5}
               disabled={!hasSelection}
             >
-              <ButtonText color="$textLight900">Next</ButtonText>
+              <ButtonText color="$textLight900">{t('selectAvatarScreen.nextButton')}</ButtonText>
             </Button>
           </VStack>
         </Box>

@@ -9,10 +9,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { GoogleLoginButton } from '../components/google-login-button';
 import { useGoogleLogin } from '../api';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 
 export const WelcomeScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
@@ -58,16 +60,16 @@ export const WelcomeScreen = () => {
             w={315}
             onPress={() => navigation.navigate('Register')}
           >
-            <ButtonText color="$textLight900" fontWeight="$bold">Sign up with Email</ButtonText>
+            <ButtonText color="$textLight900" fontWeight="$bold">{t('welcomeScreen.signUpWithEmail')}</ButtonText>
           </Button>
 
           <HStack w="$full" alignItems="center" justifyContent="center" space="md">
             <Box flex={1} h={1} bg="$textLight900" />
-            <Text color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">or</Text>
+            <Text color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">{t('common:labels.or')}</Text>
             <Box flex={1} h={1} bg="$textLight900" />
           </HStack>
 
-          <GoogleLoginButton buttonText="Continue with Google" />
+          <GoogleLoginButton buttonText={t('welcomeScreen.continueWithGoogle')} />
 
           <Button
             variant="outline"
@@ -80,7 +82,7 @@ export const WelcomeScreen = () => {
           >
             <HStack space="md" alignItems="center">
               <Icon as={LogIn} size="md" color={isDark ? '$textDark300' : '$textLight600'} />
-              <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">Continue with Apple</ButtonText>
+              <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">{t('welcomeScreen.continueWithApple')}</ButtonText>
             </HStack>
           </Button>
 
@@ -95,7 +97,7 @@ export const WelcomeScreen = () => {
           >
             <HStack space="md" alignItems="center">
               <Icon as={Facebook} size="md" color={isDark ? '$textDark300' : '$textLight600'} />
-              <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">Continue with Facebook</ButtonText>
+              <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">{t('welcomeScreen.continueWithFacebook')}</ButtonText>
             </HStack>
           </Button>
         </VStack>
@@ -111,7 +113,7 @@ export const WelcomeScreen = () => {
             fontSize="$xs"
             color={isDark ? '$textDark300' : '$textLight600'}
           >
-            Already have an account?
+            {t('welcomeScreen.alreadyHaveAccount')}
           </Text>
           <Text
             fontSize="$xs"
@@ -119,7 +121,7 @@ export const WelcomeScreen = () => {
             fontWeight="$bold"
             onPress={() => navigation.navigate('Login', {})}
           >
-            Sign In
+            {t('welcomeScreen.signIn')}
           </Text>
         </HStack>
         </VStack>

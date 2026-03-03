@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type OnboardingScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Onboarding'>;
 
@@ -19,40 +20,42 @@ interface OnboardingItem {
   description: string;
 }
 
-const onboardingData: OnboardingItem[] = [
-  {
-    id: 0,
-    image: require('@/assets/onboard/onboarding4.png'),
-    title: 'Build Your Digital Inventory',
-    description: 'Add the products you own and showcase your digital collection.',
-  },
-  {
-    id: 1,
-    image: require('@/assets/onboard/onboarding1.png'),
-    title: 'Review Shopping and Products',
-    description: 'Post your shopping journey and product usage experiences.',
-  },
-  {
-    id: 2,
-    image: require('@/assets/onboard/onboarding2.png'),
-    title: 'Connect With Your Community',
-    description: 'Gain followers and lead the community with your expertise.',
-  },
-  {
-    id: 3,
-    image: require('@/assets/onboard/onboarding3.png'),
-    title: 'Earn Exclusive Web3 Rewards',
-    description: 'Climb the ladder and collect Web3 connected badges.',
-  },
-];
 
 export const OnboardingScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<OnboardingScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const onboardingData: OnboardingItem[] = [
+    {
+      id: 0,
+      image: require('@/assets/onboard/onboarding4.png'),
+      title: t('onboardingScreen.slides.slide1.title'),
+      description: t('onboardingScreen.slides.slide1.description'),
+    },
+    {
+      id: 1,
+      image: require('@/assets/onboard/onboarding1.png'),
+      title: t('onboardingScreen.slides.slide2.title'),
+      description: t('onboardingScreen.slides.slide2.description'),
+    },
+    {
+      id: 2,
+      image: require('@/assets/onboard/onboarding2.png'),
+      title: t('onboardingScreen.slides.slide3.title'),
+      description: t('onboardingScreen.slides.slide3.description'),
+    },
+    {
+      id: 3,
+      image: require('@/assets/onboard/onboarding3.png'),
+      title: t('onboardingScreen.slides.slide4.title'),
+      description: t('onboardingScreen.slides.slide4.description'),
+    },
+  ];
 
   const backgroundColor = '#FFFFFF';
 
@@ -185,7 +188,7 @@ export const OnboardingScreen = () => {
               color={isDark ? '$textDark300' : '$textLight600'}
               fontWeight="$medium"
             >
-              Skip
+              {t('onboardingScreen.skip')}
             </ButtonText>
           </Button>
         </Box>
@@ -233,7 +236,7 @@ export const OnboardingScreen = () => {
               onPress={handleNext}
             >
               <ButtonText color="$textLight900" fontWeight="$bold" fontSize="$md">
-                {currentIndex === onboardingData.length - 1 ? "Let's Begin" : 'Continue'}
+                {currentIndex === onboardingData.length - 1 ? t('onboardingScreen.letsBegin') : t('onboardingScreen.continue')}
               </ButtonText>
             </Button>
           </Box>

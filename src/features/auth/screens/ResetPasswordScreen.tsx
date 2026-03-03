@@ -10,11 +10,13 @@ import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '../navigation';
 import { useResetPassword } from '../api/hooks';
 import { showCustomToast } from '@/src/components/CustomToast';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type ResetPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ResetPassword'>;
 type ResetPasswordScreenRouteProp = RouteProp<AuthStackParamList, 'ResetPassword'>;
 
 export const ResetPasswordScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ResetPasswordScreenNavigationProp>();
@@ -49,8 +51,8 @@ export const ResetPasswordScreen = () => {
   const handleResetPassword = async () => {
     if (!isNewPasswordValid || !isConfirmPasswordValid) {
       showCustomToast(toast, {
-        title: 'Invalid Password',
-        description: 'Password must be at least 8 characters and passwords must match.',
+        title: t('toasts.invalidPassword'),
+        description: t('toasts.invalidPasswordMessage'),
         action: 'error',
       });
       return;
@@ -58,8 +60,8 @@ export const ResetPasswordScreen = () => {
 
     if (newPassword !== confirmPassword) {
       showCustomToast(toast, {
-        title: 'Passwords Don\'t Match',
-        description: 'Please enter the same password.',
+        title: t('toasts.passwordsDontMatch'),
+        description: t('toasts.passwordsDontMatchMessage'),
         action: 'error',
       });
       return;
@@ -72,8 +74,8 @@ export const ResetPasswordScreen = () => {
       });
 
       showCustomToast(toast, {
-        title: 'Password Reset',
-        description: 'Your password has been successfully updated. You can now sign in.',
+        title: t('toasts.passwordReset'),
+        description: t('toasts.passwordResetMessage'),
         action: 'success',
       });
 
@@ -88,10 +90,10 @@ export const ResetPasswordScreen = () => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        'An error occurred. Please try again.';
+        t('toasts.genericError');
 
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('toasts.error'),
         description: errorMessage,
         action: 'error',
       });
@@ -126,22 +128,21 @@ export const ResetPasswordScreen = () => {
             fontWeight="$bold"
             color={isDark ? '$textDark50' : '$textLight900'}
           >
-            Reset Password
+            {t('resetPasswordScreen.title')}
           </Text>
-          
+
           <Text
             fontSize="$sm"
             color={isDark ? '$textDark300' : '$textLight600'}
             mb="$4"
           >
-            Set your new password.{'\n'}
-            Your password must be at least 8 characters.
+            {t('resetPasswordScreen.subtitle')}
           </Text>
 
           <VStack space="md">
             <FormControl>
               <FormControlLabel>
-                <FormControlLabelText>New Password</FormControlLabelText>
+                <FormControlLabelText>{t('resetPasswordScreen.newPasswordLabel')}</FormControlLabelText>
               </FormControlLabel>
               <Input
                 variant="outline"
@@ -149,24 +150,24 @@ export const ResetPasswordScreen = () => {
                 bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               >
-                <InputField 
-                  placeholder="New password"
+                <InputField
+                  placeholder={t('resetPasswordScreen.newPasswordPlaceholder')}
                   secureTextEntry
                   value={newPassword}
                   onChangeText={validateNewPassword}
                 />
-                <Icon 
-                  as={CheckCircle} 
-                  color={isNewPasswordValid ? "$success500" : "$gray400"} 
-                  size="md" 
-                  mr="$2" 
+                <Icon
+                  as={CheckCircle}
+                  color={isNewPasswordValid ? "$success500" : "$gray400"}
+                  size="md"
+                  mr="$2"
                 />
               </Input>
             </FormControl>
 
             <FormControl>
               <FormControlLabel>
-                <FormControlLabelText>Confirm Password</FormControlLabelText>
+                <FormControlLabelText>{t('resetPasswordScreen.confirmPasswordLabel')}</FormControlLabelText>
               </FormControlLabel>
               <Input
                 variant="outline"
@@ -174,17 +175,17 @@ export const ResetPasswordScreen = () => {
                 bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               >
-                <InputField 
-                  placeholder="Confirm your password"
+                <InputField
+                  placeholder={t('resetPasswordScreen.confirmPasswordPlaceholder')}
                   secureTextEntry
                   value={confirmPassword}
                   onChangeText={validateConfirmPassword}
                 />
-                <Icon 
-                  as={CheckCircle} 
-                  color={isConfirmPasswordValid ? "$success500" : "$gray400"} 
-                  size="md" 
-                  mr="$2" 
+                <Icon
+                  as={CheckCircle}
+                  color={isConfirmPasswordValid ? "$success500" : "$gray400"}
+                  size="md"
+                  mr="$2"
                 />
               </Input>
             </FormControl>
@@ -200,7 +201,7 @@ export const ResetPasswordScreen = () => {
             disabled={!isNewPasswordValid || !isConfirmPasswordValid || resetPasswordMutation.isPending}
           >
             <ButtonText color="$textLight900">
-              {resetPasswordMutation.isPending ? 'Saving...' : 'Reset Password'}
+              {resetPasswordMutation.isPending ? t('resetPasswordScreen.saving') : t('resetPasswordScreen.resetButton')}
             </ButtonText>
           </Button>
 
@@ -215,7 +216,7 @@ export const ResetPasswordScreen = () => {
               color={isDark ? '$textDark300' : '$textLight600'}
               textAlign="center"
             >
-              Go Back
+              {t('resetPasswordScreen.goBack')}
             </Text>
           </Pressable>
         </VStack>

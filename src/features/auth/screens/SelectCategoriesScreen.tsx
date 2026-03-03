@@ -10,6 +10,7 @@ import { useUserCategories } from '../api/hooks';
 import type { UserCategory } from '../api/authApi';
 import { Alert } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SelectCategoriesScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectCategories'>;
 
@@ -100,6 +101,7 @@ const CategoryItemInner: React.FC<CategoryItemProps> = ({
 export const CategoryItem = React.memo(CategoryItemInner);
 
 export const SelectCategoriesScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
@@ -125,14 +127,14 @@ export const SelectCategoriesScreen = () => {
   const handleNext = useCallback(() => {
     const MIN_SELECTED = 3;
     if (!categories) {
-      Alert.alert('Error', 'Categories not loaded. Please try again.');
+      Alert.alert(t('toasts.error'), t('toasts.genericError'));
       return;
     }
-    
+
     if (selectedSubCategories.length >= MIN_SELECTED) {
       // Seçilen subCategory'leri categoryId'lerine göre grupla
       const categoriesMap = new Map<string, string[]>();
-      
+
       categories.forEach((category) => {
         category.subCategories.forEach((subCategory) => {
           if (selectedSubCategories.includes(subCategory.subCategoryId)) {
@@ -154,9 +156,9 @@ export const SelectCategoriesScreen = () => {
       // SetupProfile ekranına yönlendir (params olmadan)
       navigation.navigate('SetupProfile');
     } else {
-      Alert.alert('Error', `Please select at least ${MIN_SELECTED} categories`);
+      Alert.alert(t('toasts.error'), t('selectCategoriesScreen.selectAtLeastThree'));
     }
-  }, [categories, selectedSubCategories, setSelectedCategories, navigation]);
+  }, [categories, selectedSubCategories, setSelectedCategories, navigation, t]);
 
   // Minimum 3 kategori seçilmesi gerekiyor (görseldeki tasarıma göre)
   const MIN_SELECTED = 3;
@@ -176,16 +178,16 @@ export const SelectCategoriesScreen = () => {
             fontWeight="$bold"
             color={isDark ? '$textDark50' : '$textLight900'}
           >
-            Set Up Profile
+            {t('selectCategoriesScreen.title')}
           </Text>
-          
+
           <Text
             fontSize="$sm"
             color={isDark ? '$textDark300' : '$textLight600'}
             mt="$2"
             mb="$4"
           >
-            Select your interests to personalize your experience
+            {t('selectCategoriesScreen.subtitle')}
           </Text>
         </Box>
 
@@ -203,7 +205,7 @@ export const SelectCategoriesScreen = () => {
                 color={isDark ? '$textDark300' : '$textLight600'}
                 mt="$4"
               >
-                Loading categories...
+                {t('selectCategoriesScreen.loadingCategories')}
               </Text>
             </Box>
           ) : error ? (
@@ -274,11 +276,11 @@ export const SelectCategoriesScreen = () => {
                   fontSize="$xs"
                   color="#CCCCCC"
                 >
-                  Select at least {MIN_SELECTED} categories to continue
+                  {t('selectCategoriesScreen.selectAtLeastThree')}
                 </Text>
               )}
             </VStack>
-            
+
             <Button
               bg="$buttonPrimary"
               px="$6"
@@ -289,7 +291,7 @@ export const SelectCategoriesScreen = () => {
               disabled={!isNextEnabled}
             >
               <ButtonText color="$textLight900" fontWeight="$bold" fontSize="$md">
-                Next
+                {t('selectCategoriesScreen.continueButton')}
               </ButtonText>
             </Button>
           </HStack>

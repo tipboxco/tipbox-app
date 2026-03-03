@@ -9,12 +9,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useForgotPassword } from '../api/hooks';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
 export const ForgotPasswordScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ForgotPasswordScreenNavigationProp>();
@@ -37,8 +39,8 @@ export const ForgotPasswordScreen = () => {
   const handleSendCode = useCallback(async () => {
     if (!isEmailValid) {
       showCustomToast(toast, {
-        title: 'Invalid email',
-        description: 'Please enter a valid email address.',
+        title: t('toasts.invalidEmail'),
+        description: t('toasts.invalidEmailMessage'),
         action: 'error',
         duration: 3000,
       });
@@ -49,8 +51,8 @@ export const ForgotPasswordScreen = () => {
       await forgotPasswordMutation.mutateAsync(email);
 
       showCustomToast(toast, {
-        title: 'Email sent',
-        description: 'Verification code has been sent to your email address.',
+        title: t('toasts.emailSent'),
+        description: t('toasts.emailSentMessage'),
         action: 'success',
         duration: 3000,
       });
@@ -66,10 +68,10 @@ export const ForgotPasswordScreen = () => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        'An error occurred. Please try again.';
+        t('toasts.genericError');
 
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('toasts.error'),
         description: errorMessage,
         action: 'error',
         duration: 3000,
@@ -105,22 +107,21 @@ export const ForgotPasswordScreen = () => {
             fontWeight="$bold"
             color={isDark ? '$textDark50' : '$textLight900'}
           >
-            Forgot Password
+            {t('forgotPasswordScreen.title')}
           </Text>
-          
+
           <Text
             fontSize="$sm"
             color={isDark ? '$textDark300' : '$textLight600'}
             mb="$4"
           >
-            Enter your email address to reset your password.{'\n'}
-            We will send you a verification code.
+            {t('forgotPasswordScreen.subtitle')}
           </Text>
 
           <VStack space="md">
             <FormControl>
               <FormControlLabel>
-                <FormControlLabelText>Email</FormControlLabelText>
+                <FormControlLabelText>{t('forgotPasswordScreen.emailLabel')}</FormControlLabelText>
               </FormControlLabel>
               <Input
                 variant="outline"
@@ -129,8 +130,8 @@ export const ForgotPasswordScreen = () => {
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
                 alignItems="center"
               >
-                <InputField 
-                  placeholder="Your email address"
+                <InputField
+                  placeholder={t('forgotPasswordScreen.emailPlaceholder')}
                   value={email}
                   onChangeText={validateEmail}
                   keyboardType="email-address"
@@ -157,7 +158,7 @@ export const ForgotPasswordScreen = () => {
             disabled={!isEmailValid || forgotPasswordMutation.isPending}
           >
             <ButtonText color="$textLight900">
-              {forgotPasswordMutation.isPending ? 'Sending...' : 'Send Code'}
+              {forgotPasswordMutation.isPending ? t('forgotPasswordScreen.sending') : t('forgotPasswordScreen.sendCodeButton')}
             </ButtonText>
           </Button>
 
@@ -172,7 +173,7 @@ export const ForgotPasswordScreen = () => {
               color={isDark ? '$textDark300' : '$textLight600'}
               textAlign="center"
             >
-              Go Back
+              {t('forgotPasswordScreen.goBack')}
             </Text>
           </Pressable>
         </VStack>

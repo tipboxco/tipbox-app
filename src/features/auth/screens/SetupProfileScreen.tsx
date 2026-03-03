@@ -14,11 +14,13 @@ import { useSetupProfile, useCheckUsernameAvailability, useUsernameSuggestions }
 import { Alert } from 'react-native';
 import * as yup from 'yup';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SetupProfileScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SetupProfile'>;
 type SetupProfileScreenRouteProp = RouteProp<AuthStackParamList, 'SetupProfile'>;
 
 export const SetupProfileScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SetupProfileScreenNavigationProp>();
@@ -66,10 +68,10 @@ export const SetupProfileScreen = () => {
     if (usernameCheck.data && debouncedUsername === username) {
       setIsUsernameAvailable(usernameCheck.data.isAvailable);
       if (!usernameCheck.data.isValid) {
-        setErrors((prev) => ({ ...prev, username: usernameCheck.data.message || 'Invalid username format' }));
+        setErrors((prev) => ({ ...prev, username: usernameCheck.data.message || t('validation.usernameFormat') }));
         setIsUsernameValid(false);
       } else if (!usernameCheck.data.isAvailable) {
-        setErrors((prev) => ({ ...prev, username: usernameCheck.data.message || 'This username is already taken' }));
+        setErrors((prev) => ({ ...prev, username: usernameCheck.data.message || t('setupProfileScreen.usernameAlreadyTaken') }));
         setIsUsernameValid(false);
         setShowSuggestions(true);
       } else {
@@ -84,15 +86,15 @@ export const SetupProfileScreen = () => {
   const validationSchema = yup.object().shape({
     fullName: yup
       .string()
-      .required('Full name is required')
-      .min(2, 'Full name must be at least 2 characters')
-      .max(100, 'Full name must be at most 100 characters'),
+      .required(t('validation.fullNameRequired'))
+      .min(2, t('validation.fullNameMinLength'))
+      .max(100, t('validation.fullNameMaxLength')),
     username: yup
       .string()
-      .required('Username is required')
-      .min(3, 'Username must be at least 3 characters')
-      .max(30, 'Username must be at most 30 characters')
-      .matches(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+      .required(t('validation.usernameRequired'))
+      .min(3, t('validation.usernameMinLength'))
+      .max(30, t('validation.usernameMaxLength'))
+      .matches(/^[a-zA-Z0-9_]+$/, t('validation.usernameFormat')),
   });
 
   // SelectAvatar ekranından dönen verileri al ve form data'yı geri yükle
@@ -241,7 +243,7 @@ export const SetupProfileScreen = () => {
             color={isDark ? '$textDark50' : '$textLight900'}
             textAlign="center"
           >
-            Enter Your Profile Information
+            {t('setupProfileScreen.title')}
           </Text>
 
           {/* Profile Photo - wrapper overflow visible so camera button stays tappable */}
@@ -308,7 +310,7 @@ export const SetupProfileScreen = () => {
         <VStack space="md" mt="$4">
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Full Name</FormControlLabelText>
+              <FormControlLabelText>{t('setupProfileScreen.fullNameLabel')}</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -316,8 +318,8 @@ export const SetupProfileScreen = () => {
               bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
             >
-              <InputField 
-                placeholder="Your full name"
+              <InputField
+                placeholder={t('setupProfileScreen.fullNamePlaceholder')}
                 value={fullName}
                 onChangeText={validateFullName}
               />
@@ -331,7 +333,7 @@ export const SetupProfileScreen = () => {
 
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Username</FormControlLabelText>
+              <FormControlLabelText>{t('setupProfileScreen.usernameLabel')}</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -341,8 +343,8 @@ export const SetupProfileScreen = () => {
             >
               <HStack alignItems="center" pl="$3" flex={1} >
                 <Text color={isDark ? '$textDark50' : '$textLight900'} fontSize="$md">@</Text>
-                <InputField 
-                  placeholder="username"
+                <InputField
+                  placeholder={t('setupProfileScreen.usernamePlaceholder')}
                   value={username}
                   onChangeText={validateUsername}
                   flex={1}
@@ -368,14 +370,14 @@ export const SetupProfileScreen = () => {
             {/* Username availability status */}
             {username.length >= 3 && !usernameCheck.isLoading && usernameCheck.data && (
               <Text fontSize="$xs" color={usernameCheck.data.isAvailable ? "$success500" : "$error500"} mt="$1" px="$3">
-                {usernameCheck.data.isAvailable ? '✓ Username available' : usernameCheck.data.message}
+                {usernameCheck.data.isAvailable ? `✓ ${t('setupProfileScreen.usernameAvailable')}` : usernameCheck.data.message}
               </Text>
             )}
             {(usernameCheck.isLoading || (username !== debouncedUsername && username.length >= 3)) && (
               <HStack alignItems="center" mt="$1" px="$3" space="xs">
                 <Spinner size="small" color={isDark ? '$textDark300' : '$textLight600'} />
                 <Text fontSize="$xs" color={isDark ? '$textDark300' : '$textLight600'}>
-                  Checking...
+                  {t('setupProfileScreen.checkingAvailability')}
                 </Text>
               </HStack>
             )}
@@ -383,7 +385,7 @@ export const SetupProfileScreen = () => {
             {showSuggestions && usernameSuggestions.data?.suggestions && usernameSuggestions.data.suggestions.length > 0 && (
               <Box mt="$2" px="$3">
                 <Text fontSize="$xs" color={isDark ? '$textDark300' : '$textLight600'} mb="$2">
-                  Suggested usernames:
+                  {t('setupProfileScreen.suggestions')}
                 </Text>
                 <VStack space="xs">
                   {usernameSuggestions.data.suggestions.map((suggestion, index) => (
@@ -428,15 +430,15 @@ export const SetupProfileScreen = () => {
                 {setupProfileMutation.isPending ? (
                   <HStack alignItems="center" space="sm">
                     <Spinner size="small" color="$textLight900" />
-                    <ButtonText color="$textLight900">Saving...</ButtonText>
+                    <ButtonText color="$textLight900">{t('setupProfileScreen.continuing')}</ButtonText>
                   </HStack>
                 ) : isCheckingUsername && username.trim().length >= 3 ? (
                   <HStack alignItems="center" space="sm">
                     <Spinner size="small" color="$textLight900" />
-                    <ButtonText color="$textLight900">Checking...</ButtonText>
+                    <ButtonText color="$textLight900">{t('setupProfileScreen.checkingAvailability')}</ButtonText>
                   </HStack>
                 ) : (
-                  <ButtonText color="$textLight900">Continue</ButtonText>
+                  <ButtonText color="$textLight900">{t('setupProfileScreen.continueButton')}</ButtonText>
                 )}
               </Button>
             );
