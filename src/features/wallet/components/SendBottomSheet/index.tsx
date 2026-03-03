@@ -18,6 +18,7 @@ import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useWalletTransactions, useWalletBalance, useSendTips, useTransactionById, useCancelTransaction } from '../../api/hooks';
 import type { SendTipResponse } from '../../api/walletApi';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 // Truster List Component is now a separate screen (SelectFriendScreen)
 
@@ -53,6 +54,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   initialView = 'options',
   selectedFriend: initialSelectedFriend = null,
 }) => {
+  const { t } = useTranslation('wallet');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [view, setView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection'>(initialView);
@@ -180,15 +182,15 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
   // Calculate relative time (e.g., "2 days ago", "3 hours ago")
   const getRelativeTime = (dateString: string | undefined): string => {
-    if (!dateString) return 'Recently';
-    
+    if (!dateString) return t('common:time.recently');
+
     try {
       const date = new Date(dateString);
       const now = new Date();
-      
+
       // Check if date is valid
-      if (isNaN(date.getTime())) return 'Recently';
-      
+      if (isNaN(date.getTime())) return t('common:time.recently');
+
       const diffMs = now.getTime() - date.getTime();
       const diffSeconds = Math.floor(diffMs / 1000);
       const diffMinutes = Math.floor(diffSeconds / 60);
@@ -198,21 +200,21 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       const diffYears = Math.floor(diffDays / 365);
 
       if (diffYears > 0) {
-        return `${diffYears} ${diffYears === 1 ? 'year' : 'years'} ago`;
+        return `${diffYears} ${t('common:time.year', { count: diffYears })} ${t('common:time.ago')}`;
       } else if (diffMonths > 0) {
-        return `${diffMonths} ${diffMonths === 1 ? 'month' : 'months'} ago`;
+        return `${diffMonths} ${t('common:time.month', { count: diffMonths })} ${t('common:time.ago')}`;
       } else if (diffDays > 0) {
-        return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+        return `${diffDays} ${t('common:time.day', { count: diffDays })} ${t('common:time.ago')}`;
       } else if (diffHours > 0) {
-        return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+        return `${diffHours} ${t('common:time.hour', { count: diffHours })} ${t('common:time.ago')}`;
       } else if (diffMinutes > 0) {
-        return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
+        return `${diffMinutes} ${t('common:time.minute', { count: diffMinutes })} ${t('common:time.ago')}`;
       } else {
-        return 'Just now';
+        return t('common:time.justNow');
       }
     } catch (error) {
       console.error('[SendBottomSheet] Error calculating relative time:', error);
-      return 'Recently';
+      return t('common:time.recently');
     }
   };
 
@@ -381,13 +383,13 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               onPress={() => Keyboard.dismiss()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text 
-                fontSize={17} 
-                fontWeight="$semibold" 
+              <Text
+                fontSize={17}
+                fontWeight="$semibold"
                 color="#007AFF"
                 letterSpacing={-0.4}
               >
-                Done
+                {t('common:buttons.done')}
               </Text>
             </Pressable>
           </HStack>
@@ -417,7 +419,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         {/* Title */}
         <HStack justifyContent="center" alignItems="center">
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            Send TIPS
+            {t('sendBottomSheet.title')}
           </Text>
         </HStack>
 
@@ -448,10 +450,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                 </Box>
                 <VStack flex={1} space="xs">
                   <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                    Send to Wallet Address
+                    {t('sendBottomSheet.options.walletAddressTitle')}
                   </Text>
                   <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" lineHeight={14}>
-                    Paste the wallet address you want to send TIPS to.
+                    {t('sendBottomSheet.options.walletAddressDescription')}
                   </Text>
                 </VStack>
               </HStack>
@@ -483,10 +485,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                 </Box>
                 <VStack flex={1} space="xs">
                   <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                    Send to Friend
+                    {t('sendBottomSheet.options.friendTitle')}
                   </Text>
                   <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" lineHeight={14}>
-                    Select a friend from your friend list to send TIPS.
+                    {t('sendBottomSheet.options.friendDescription')}
                   </Text>
                 </VStack>
               </HStack>
@@ -509,7 +511,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <HStack flex={1} justifyContent="center" alignItems="center">
                   <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            Send TIPS
+            {t('sendBottomSheet.title')}
           </Text>
         </HStack>
         <Box w={24} />
@@ -527,7 +529,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       >
         <HStack alignItems="center" space="md">
           <Text fontSize={11} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
-            To:
+            {t('sendBottomSheet.walletAddress.to')}
           </Text>
           {walletAddress && walletAddress !== '0x' ? (
             <Text 

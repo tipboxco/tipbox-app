@@ -13,11 +13,13 @@ import { showCustomToast } from '@/src/components/CustomToast';
 import { LoginCredentialsService } from '@/src/services/LoginCredentialsService';
 import { BiometricService } from '@/src/services/BiometricService';
 import { GoogleLoginButton } from '../components/google-login-button';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 type LoginScreenRouteProp = RouteProp<AuthStackParamList, 'Login'>;
 
 export const LoginScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<LoginScreenNavigationProp>();
@@ -44,14 +46,14 @@ export const LoginScreen = () => {
   useEffect(() => {
     if (route.params?.showSuccessToast) {
       showCustomToast(toast, {
-        title: 'Your account has been created',
+        title: t('toasts.accountCreated'),
         action: 'success',
         duration: 3000,
       });
       // Param'ı temizle (bir daha gösterilmesin)
       navigation.setParams({ showSuccessToast: false });
     }
-  }, [route.params?.showSuccessToast]);
+  }, [route.params?.showSuccessToast, t]);
 
   // Kaydedilmiş email'i yükle ve biometrik desteğini kontrol et
   useEffect(() => {
@@ -146,7 +148,7 @@ export const LoginScreen = () => {
 
           // Başarılı toast göster
           showCustomToast(toast, {
-            title: `Welcome ${result.fullName || result.email?.split('@')[0] || 'User'}!`,
+            title: t('toasts.loginSuccess', { name: result.fullName || result.email?.split('@')[0] || 'User' }),
             action: 'success',
             duration: 3000,
           });
@@ -158,7 +160,7 @@ export const LoginScreen = () => {
         }
         else {
           showCustomToast(toast, {
-            title: 'Login Failed',
+            title: t('toasts.loginFailed'),
             description: result.message,
             action: 'error',
             duration: 4000,
@@ -181,10 +183,10 @@ export const LoginScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'An error occurred during login';
+          t('toasts.loginError');
 
         showCustomToast(toast, {
-          title: 'Login Failed',
+          title: t('toasts.loginFailed'),
           description: errorMessage,
           action: 'error',
           duration: 4000,
@@ -293,22 +295,21 @@ export const LoginScreen = () => {
           fontWeight="$bold"
           color={isDark ? '$textDark50' : '$textLight900'}
         >
-          Sign In
+          {t('loginScreen.title')}
         </Text>
-        
+
         <Text
           fontSize="$sm"
           color={isDark ? '$textDark300' : '$textLight600'}
           mb="$4"
         >
-          Enter the email where you can be contacted.{'\n'}
-          No one will see this on your profile.
+          {t('loginScreen.subtitle')}
         </Text>
 
         <VStack space="md">
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Email</FormControlLabelText>
+              <FormControlLabelText>{t('loginScreen.emailLabel')}</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -317,8 +318,8 @@ export const LoginScreen = () => {
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               alignItems="center"
             >
-              <InputField 
-                placeholder="Your email address"
+              <InputField
+                placeholder={t('loginScreen.emailPlaceholder')}
                 value={email}
                 onChangeText={validateEmail}
                 onFocus={handleEmailInputFocus}
@@ -352,7 +353,7 @@ export const LoginScreen = () => {
 
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Password</FormControlLabelText>
+              <FormControlLabelText>{t('loginScreen.passwordLabel')}</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -361,8 +362,8 @@ export const LoginScreen = () => {
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               alignItems="center"
             >
-              <InputField 
-                placeholder="Your password" 
+              <InputField
+                placeholder={t('loginScreen.passwordPlaceholder')}
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={validatePassword}
@@ -409,7 +410,7 @@ export const LoginScreen = () => {
                     fontSize="$xs"
                     color={isDark ? '$textDark300' : '$textLight600'}
                   >
-                    Remember me
+                    {t('loginScreen.rememberMe')}
                   </Text>
                 </HStack>
               </Pressable>
@@ -419,7 +420,7 @@ export const LoginScreen = () => {
                 onPress={handleForgotPassword}
                 style={{ textDecorationLine: 'underline' }}
               >
-                Forgot Password?
+                {t('loginScreen.forgotPassword')}
               </Text>
             </Box>
           </FormControl>
@@ -435,13 +436,13 @@ export const LoginScreen = () => {
           disabled={!isEmailValid || !isPasswordValid || loginMutation.isPending}
         >
           <ButtonText color="$textLight900">
-            {loginMutation.isPending ? 'Signing in...' : 'Confirm'}
+            {loginMutation.isPending ? t('loginScreen.signingIn') : t('loginScreen.signInButton')}
           </ButtonText>
         </Button>
 
         <HStack w="$full" alignItems="center" justifyContent="center" space="md" mt="$4">
           <Box flex={1} h={1} bg={isDark ? '$textDark300' : '$textLight600'} />
-          <Text color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold" fontSize="$xs">or</Text>
+          <Text color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold" fontSize="$xs">{t('common:labels.or')}</Text>
           <Box flex={1} h={1} bg={isDark ? '$textDark300' : '$textLight600'} />
         </HStack>
 
@@ -455,7 +456,7 @@ export const LoginScreen = () => {
           mb={insets.bottom + 16}
           onPress={() => navigation.navigate('Register')}
         >
-          Don't have an account? Sign Up
+          {t('loginScreen.signUpPrompt')}
         </Text>
       </VStack>
       </Box>

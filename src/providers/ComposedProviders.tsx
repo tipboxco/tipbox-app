@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import { LocalizationProvider } from './LocalizationProvider';
 import { QueryProvider } from './QueryProvider';
 import { AuthProvider } from './AuthProvider';
 import { AppStateProvider } from './AppStateProvider';
@@ -40,16 +41,17 @@ const composeProviders = (
 /**
  * Composed App Providers
  * All providers are composed into a single provider tree
- * 
+ *
  * ARCHITECTURE FIX: Provider order matters!
  * - reduceRight wraps from right to left, so order is reversed
- * 
- * NEW ARCHITECTURE: 
+ *
+ * NEW ARCHITECTURE:
  * - GestureHandlerRootView, BottomSheetModalProvider, GlobalBottomSheetProvider, GluestackProvider
  *   artık NavigationContainer içinde (src/navigation/index.tsx'te) olacak, burada değil.
  * - Bu sayede navigation hierarchy içindeki tüm component'ler Gluestack context'ine erişebilir
  */
 export const AppProviders = composeProviders(
+  LocalizationProvider, // Outermost provider - all other providers can use translations
   QueryProvider,
   AuthProvider,
   AppStateProvider,

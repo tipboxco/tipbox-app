@@ -1,0 +1,26 @@
+{
+  "filters": {
+    "all": "All",
+    "posts": "Posts",
+    "events": "Events",
+    "media": "Media"
+  },
+  "emptyStates": {
+    "noPosts": "No posts yet",
+    "noEvents": "No events yet",
+    "noMedia": "No media yet"
+  },
+  "actions": {
+    "like": "Like",
+    "comment": "Comment",
+    "share": "Share",
+    "tip": "Tip",
+    "upvote": "Upvote"
+  },
+  "labels": {
+    "comments": "Comments",
+    "likes": "Likes",
+    "shares": "Shares",
+    "tips": "Tips"
+  }
+}

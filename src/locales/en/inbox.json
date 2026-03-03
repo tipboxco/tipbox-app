@@ -1,0 +1,23 @@
+{
+  "title": "Inbox",
+  "tabs": {
+    "messages": "Messages",
+    "notifications": "Notifications"
+  },
+  "messages": {
+    "empty": "No messages yet",
+    "newMessage": "New Message",
+    "typeMessage": "Type a message..."
+  },
+  "notifications": {
+    "empty": "No notifications yet",
+    "markAllRead": "Mark All as Read",
+    "types": {
+      "like": "liked your post",
+      "comment": "commented on your post",
+      "follow": "started following you",
+      "tip": "sent you a tip",
+      "mention": "mentioned you"
+    }
+  }
+}

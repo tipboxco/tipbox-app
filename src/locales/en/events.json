@@ -1,0 +1,26 @@
+{
+  "list": {
+    "title": "Events",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "empty": "No events available"
+  },
+  "details": {
+    "date": "Date",
+    "time": "Time",
+    "location": "Location",
+    "description": "Description",
+    "attendees": "Attendees",
+    "joinButton": "Join Event",
+    "leaveButton": "Leave Event",
+    "joined": "Joined"
+  },
+  "badges": {
+    "title": "Badges",
+    "earned": "Earned",
+    "notEarned": "Not Earned",
+    "details": "Badge Details",
+    "close": "Close",
+    "loadingError": "Failed to load badge details"
+  }
+}

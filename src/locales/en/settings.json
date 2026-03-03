@@ -1,0 +1,39 @@
+{
+  "title": "Settings",
+  "sections": {
+    "account": "Account",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "privacy": "Privacy & Security",
+    "about": "About"
+  },
+  "account": {
+    "profile": "Edit Profile",
+    "email": "Email Address",
+    "password": "Change Password",
+    "deleteAccount": "Delete Account"
+  },
+  "preferences": {
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "notifications": "Push Notifications"
+  },
+  "privacy": {
+    "blockedUsers": "Blocked Users",
+    "privacy": "Privacy Settings",
+    "security": "Security"
+  },
+  "about": {
+    "version": "Version",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "help": "Help & Support",
+    "logout": "Logout"
+  },
+  "languages": {
+    "en": "English",
+    "tr": "Turkish",
+    "es": "Spanish"
+  }
+}

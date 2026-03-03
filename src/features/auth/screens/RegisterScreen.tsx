@@ -11,12 +11,14 @@ import { useRegister } from '../api/hooks';
 import { CustomToast } from '@/src/components/CustomToast';
 import { GoogleLoginButton } from '../components/google-login-button';
 import { showCustomToast } from '@/src/components/CustomToast';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
 export const RegisterScreen = () => {
+  const { t } = useTranslation('auth');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<RegisterScreenNavigationProp>();
@@ -69,8 +71,8 @@ export const RegisterScreen = () => {
 
         // Başarılı toast göster
         showCustomToast(toast, {
-          title: 'Registration successful',
-          description: result.message || 'Your account has been created successfully!',
+          title: t('toasts.registrationSuccess'),
+          description: result.message || t('toasts.registrationSuccessMessage'),
           action: 'success',
           duration: 3000,
         });
@@ -93,8 +95,8 @@ export const RegisterScreen = () => {
         // 409 Conflict - Email already exists
         if (error?.response?.status === 409) {
           showCustomToast(toast, {
-            title: 'Email Already Registered',
-            description: 'This email address is already in use. Please sign in or use a different email.',
+            title: t('toasts.emailAlreadyRegistered'),
+            description: t('toasts.emailAlreadyRegisteredMessage'),
             action: 'error',
             duration: 4000,
           });
@@ -105,10 +107,10 @@ export const RegisterScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'An error occurred during registration';
+          t('toasts.registrationError');
 
         showCustomToast(toast, {
-          title: 'Registration failed',
+          title: t('toasts.registrationFailed'),
           description: errorMessage,
           action: 'error',
           duration: 3000,
@@ -146,22 +148,21 @@ export const RegisterScreen = () => {
           fontWeight="$bold"
           color={isDark ? '$textDark50' : '$textLight900'}
         >
-          Sign Up
+          {t('registerScreen.title')}
         </Text>
-        
+
         <Text
           fontSize="$sm"
           color={isDark ? '$textDark300' : '$textLight600'}
           mb="$4"
         >
-          Enter the email where you can be contacted.{'\n'}
-          No one will see this on your profile.
+          {t('registerScreen.subtitle')}
         </Text>
 
         <VStack space="md">
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Email</FormControlLabelText>
+              <FormControlLabelText>{t('registerScreen.emailLabel')}</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -170,8 +171,8 @@ export const RegisterScreen = () => {
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               alignItems="center"
             >
-              <InputField 
-                placeholder="Your email address"
+              <InputField
+                placeholder={t('registerScreen.emailPlaceholder')}
                 value={email}
                 onChangeText={validateEmail}
               />
@@ -187,7 +188,7 @@ export const RegisterScreen = () => {
 
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Password</FormControlLabelText>
+              <FormControlLabelText>{t('registerScreen.passwordLabel')}</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -196,8 +197,8 @@ export const RegisterScreen = () => {
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               alignItems="center"
             >
-              <InputField 
-                placeholder="Your password" 
+              <InputField
+                placeholder={t('registerScreen.passwordPlaceholder')}
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={validatePassword}
@@ -225,7 +226,7 @@ export const RegisterScreen = () => {
           disabled={!isEmailValid || !isPasswordValid || registerMutation.isPending}
         >
           <ButtonText color="$textLight900">
-            {registerMutation.isPending ? 'Registering...' : 'Confirm'}
+            {registerMutation.isPending ? t('registerScreen.registering') : t('registerScreen.registerButton')}
           </ButtonText>
         </Button>
 
@@ -237,7 +238,7 @@ export const RegisterScreen = () => {
           mb={insets.bottom + 16}
           onPress={() => navigation.navigate('Login')}
         >
-          Already have an account? Sign In
+          {t('registerScreen.signInPrompt')}
         </Text>
       </VStack>
       </Box>

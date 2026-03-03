@@ -1,0 +1,52 @@
+{
+  "buttons": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "done": "Done",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "send": "Send",
+    "retry": "Retry",
+    "ok": "OK"
+  },
+  "labels": {
+    "email": "Email",
+    "password": "Password",
+    "username": "Username",
+    "name": "Name",
+    "or": "or"
+  },
+  "placeholders": {
+    "emailAddress": "Your email address",
+    "password": "Your password",
+    "search": "Search..."
+  },
+  "errors": {
+    "generic": "An error occurred",
+    "networkError": "Network error. Please try again.",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidPassword": "Password must be at least 8 characters",
+    "required": "This field is required"
+  },
+  "time": {
+    "justNow": "Just now",
+    "recently": "Recently",
+    "ago": "ago",
+    "year": "year",
+    "year_other": "years",
+    "month": "month",
+    "month_other": "months",
+    "day": "day",
+    "day_other": "days",
+    "hour": "hour",
+    "hour_other": "hours",
+    "minute": "minute",
+    "minute_other": "minutes",
+    "second": "second",
+    "second_other": "seconds"
+  }
+}

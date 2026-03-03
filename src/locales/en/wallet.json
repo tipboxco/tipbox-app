@@ -1,0 +1,77 @@
+{
+  "sendBottomSheet": {
+    "title": "Send TIPS",
+    "options": {
+      "walletAddressTitle": "Send to Wallet Address",
+      "walletAddressDescription": "Paste the wallet address you want to send TIPS to.",
+      "friendTitle": "Send to Friend",
+      "friendDescription": "Select a friend from your friend list to send TIPS."
+    },
+    "walletAddress": {
+      "to": "To:",
+      "paste": "Paste",
+      "enterAddress": "Enter wallet address",
+      "invalidAddress": "Invalid wallet address",
+      "addressRequired": "Wallet address is required"
+    },
+    "amount": {
+      "title": "Enter Amount",
+      "placeholder": "0",
+      "max": "Max",
+      "balance": "Balance:",
+      "fee": "Transaction Fee:",
+      "total": "Total:",
+      "insufficientBalance": "Insufficient balance",
+      "minAmount": "Minimum amount is {{amount}} TIPS",
+      "maxAmount": "Maximum amount is {{amount}} TIPS"
+    },
+    "confirmation": {
+      "title": "Confirm Transaction",
+      "recipient": "Recipient",
+      "amount": "Amount",
+      "fee": "Fee",
+      "total": "Total",
+      "confirmButton": "Confirm & Send",
+      "sending": "Sending...",
+      "created": "Transaction Created",
+      "pending": "Processing Transaction...",
+      "completed": "Transaction Completed!",
+      "failed": "Transaction Failed",
+      "cancelled": "Transaction Cancelled",
+      "cancel": "Cancel Transaction",
+      "cancelCountdown": "Cancel ({{seconds}}s)"
+    },
+    "recentAddresses": {
+      "title": "Recent Addresses",
+      "empty": "No recent addresses"
+    },
+    "toasts": {
+      "sendSuccess": "TIPS sent successfully!",
+      "sendFailed": "Failed to send TIPS",
+      "transactionCancelled": "Transaction cancelled",
+      "cancelFailed": "Failed to cancel transaction"
+    }
+  },
+  "claim": {
+    "title": "Claim TIPS",
+    "description": "Claim your TIPS rewards",
+    "claimButton": "Claim Now",
+    "claiming": "Claiming...",
+    "success": "TIPS claimed successfully!",
+    "failed": "Failed to claim TIPS"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "lastWeek": "Last Week",
+    "lastMonth": "Last Month",
+    "older": "Older",
+    "empty": "No transactions yet",
+    "sent": "Sent",
+    "received": "Received",
+    "pending": "Pending",
+    "failed": "Failed",
+    "cancelled": "Cancelled"
+  }
+}

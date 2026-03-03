@@ -1,0 +1,29 @@
+{
+  "tabs": {
+    "posts": "Posts",
+    "media": "Media",
+    "events": "Events",
+    "badges": "Badges"
+  },
+  "stats": {
+    "followers": "Followers",
+    "following": "Following",
+    "posts": "Posts",
+    "tips": "Tips"
+  },
+  "actions": {
+    "follow": "Follow",
+    "following": "Following",
+    "unfollow": "Unfollow",
+    "message": "Message",
+    "tip": "Send Tip",
+    "edit": "Edit Profile",
+    "share": "Share Profile"
+  },
+  "emptyStates": {
+    "noPosts": "No posts yet",
+    "noMedia": "No media yet",
+    "noEvents": "No events yet",
+    "noBadges": "No badges yet"
+  }
+}
