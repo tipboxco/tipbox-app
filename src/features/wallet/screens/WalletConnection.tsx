@@ -10,8 +10,10 @@ import { Header } from '@/src/components/Header';
 import { WalletService } from '@/src/services/WalletService';
 import { useNavigation } from '@react-navigation/native';
 import { useState, useEffect } from 'react';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 export const WalletConnection: React.FC = () => {
+    const { t } = useTranslation('wallet');
     const [isConnected, setIsConnected] = useState(false);
     const navigation = useNavigation<any>();
 
@@ -34,7 +36,7 @@ export const WalletConnection: React.FC = () => {
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
             <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
-            <Header title="Varlıklar" showBackButton onBackPress={() => navigation.goBack()} />
+            <Header title={t('header.assets')} showBackButton onBackPress={() => navigation.goBack()} />
 
             {/* Body */}
             <VStack flex={1} px="$4" py="$4" space="lg" alignItems="center" justifyContent="center">
@@ -70,7 +72,7 @@ export const WalletConnection: React.FC = () => {
                         <HStack space="xs" alignItems="center">
                             <LinkIcon width={14} height={14} color="#6B7280" />
                             <Text fontSize={12} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                                Connect Wallet
+                                {t('walletConnection.connectWallet')}
                             </Text>
                         </HStack>
                     </Pressable>
@@ -91,7 +93,7 @@ export const WalletConnection: React.FC = () => {
                         <HStack space="xs" alignItems="center">
                             <PlusIcon width={14} height={14} color="#000000" />
                             <Text fontSize={12} fontWeight="$bold" color="$black">
-                                Create a Wallet
+                                {t('walletConnection.createWallet')}
                             </Text>
                         </HStack>
                     </Pressable>

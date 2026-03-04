@@ -190,8 +190,14 @@
     "estimatedValue": "Estimated Value",
     "fees": "Fees",
     "notAvailable": "Not Available",
+    "percentages": {
+      "25": "25%",
+      "50": "50%",
+      "75": "75%",
+      "all": "All"
+    },
     "insufficientBalance": {
-      "title": "Not Enought {{token}}",
+      "title": "Not Enough {{token}}",
       "message": "You don't have enough {{token}} in your wallet for this transaction.",
       "remaining": "Remaining",
       "required": "Required",
@@ -201,6 +207,7 @@
   },
   "nft": {
     "title": "NFT's",
+    "assets": "NFT Assets",
     "filter": "Filter",
     "sort": "Sort",
     "loading": "Loading NFTs...",
@@ -302,5 +309,9 @@
     "success": "Success",
     "retry": "Retry",
     "back": "Back"
+  },
+  "walletConnection": {
+    "connectWallet": "Connect Wallet",
+    "createWallet": "Create a Wallet"
   }
 }

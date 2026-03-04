@@ -16,8 +16,10 @@ import { ScrollView, ActivityIndicator } from 'react-native';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 import { useWalletBalance } from '../api/hooks';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 export const SwapScreen: React.FC = () => {
+  const { t } = useTranslation('wallet');
   const navigation = useNavigation<any>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -126,7 +128,7 @@ export const SwapScreen: React.FC = () => {
             </Pressable>
             <HStack flex={1} justifyContent="center" alignItems="center">
               <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                Swap
+                {t('header.swap')}
               </Text>
             </HStack>
             <Box w={24} />
@@ -145,10 +147,10 @@ export const SwapScreen: React.FC = () => {
             />
             <VStack alignItems="center" space="xs" px="$4">
               <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
-                Not Enought {activeToken}
+                {t('swapScreen.insufficientBalance.title', { token: activeToken })}
               </Text>
               <Text fontSize={12} fontWeight="$normal" color="$textLight900" $dark-color="$textDark50" textAlign="center" lineHeight={18}>
-                You don't have enough {activeToken} in your wallet for this transaction.
+                {t('swapScreen.insufficientBalance.message', { token: activeToken })}
               </Text>
             </VStack>
           </VStack>
@@ -167,7 +169,7 @@ export const SwapScreen: React.FC = () => {
               {/* Remaining Row */}
               <HStack justifyContent="space-between" alignItems="center">
                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                  Remaining
+                  {t('swapScreen.insufficientBalance.remaining')}
                 </Text>
                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
                   {remaining.toFixed(2)} {activeToken}
@@ -180,7 +182,7 @@ export const SwapScreen: React.FC = () => {
               {/* Required Row */}
               <HStack justifyContent="space-between" alignItems="center">
                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                  Required
+                  {t('swapScreen.insufficientBalance.required')}
                 </Text>
                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
                   {required} {activeToken}
@@ -205,7 +207,7 @@ export const SwapScreen: React.FC = () => {
               justifyContent="center"
             >
               <Text fontSize={12} fontWeight="$bold" color="#111111" textAlign="center">
-                Buy {activeToken}
+                {t('swapScreen.insufficientBalance.buy', { token: activeToken })}
               </Text>
             </Pressable>
             <Pressable
@@ -223,7 +225,7 @@ export const SwapScreen: React.FC = () => {
               justifyContent="center"
             >
               <Text fontSize={12} fontWeight="$bold" color="#9E9E9E" $dark-color="$textDark400" textAlign="center">
-                Cancel
+                {t('swapScreen.insufficientBalance.cancel')}
               </Text>
             </Pressable>
           </HStack>
@@ -272,8 +274,8 @@ export const SwapScreen: React.FC = () => {
               closeBottomSheet();
               setSuccessTransactionDetails(null);
             }}
-            title="Swap Successful"
-            message="Your swap transaction has been completed successfully."
+            title={t('successBottomSheet.swapTitle')}
+            message={t('successBottomSheet.swapMessage')}
             transactionDetails={{
               sentAmount,
               receivedAmount,
@@ -345,12 +347,12 @@ export const SwapScreen: React.FC = () => {
   ];
 
   return (
-    <SafeAreaView 
-      edges={['top', 'bottom', 'left', 'right']} 
+    <SafeAreaView
+      edges={['top', 'bottom', 'left', 'right']}
       style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
     >
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <Header title="Swap" showBackButton onBackPress={() => navigation.goBack()} />
+      <Header title={t('header.swap')} showBackButton onBackPress={() => navigation.goBack()} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         <VStack px="$4" py="$4" space="lg">
@@ -370,7 +372,7 @@ export const SwapScreen: React.FC = () => {
               >
                 <VStack space="md" flex={1}>
                   <Text fontSize={14} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
-                    You Pay
+                    {t('swapScreen.youPay')}
                   </Text>
                   
                   {/* Amount Input Section */}
@@ -450,7 +452,7 @@ export const SwapScreen: React.FC = () => {
               >
                 <VStack space="md" flex={1}>
                   <Text fontSize={14} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
-                    You Receive
+                    {t('swapScreen.youReceive')}
                   </Text>
                   
                   {/* Amount Display Section */}
@@ -555,7 +557,7 @@ export const SwapScreen: React.FC = () => {
                   justifyContent="center"
                 >
                   <Text fontSize={14} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                    {percentage}%
+                    {t(`swapScreen.percentages.${percentage}`)}
                   </Text>
                 </Pressable>
               ))}
@@ -573,7 +575,7 @@ export const SwapScreen: React.FC = () => {
                 justifyContent="center"
               >
                 <Text fontSize={14} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                  All
+                  {t('swapScreen.percentages.all')}
                 </Text>
               </Pressable>
             </HStack>
@@ -604,8 +606,8 @@ export const SwapScreen: React.FC = () => {
                       </Pressable>
                     </HStack>
                     <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                      {activeToken === 'TIP' 
-                        ? `$${TIP_PRICE_USD.toFixed(6)}` 
+                      {activeToken === 'TIP'
+                        ? `$${TIP_PRICE_USD.toFixed(6)}`
                         : `$${SOL_PRICE_USD.toFixed(2)}`}
                     </Text>
                   </HStack>
@@ -617,14 +619,14 @@ export const SwapScreen: React.FC = () => {
                   <HStack justifyContent="space-between" alignItems="center">
                     <HStack alignItems="center" space="xs">
                       <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                        Slippage
+                        {t('swapScreen.slippage')}
                       </Text>
                       <Pressable>
                         <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                       </Pressable>
                     </HStack>
                     <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                      Rare
+                      {t('swapScreen.slippageValue')}
                     </Text>
                   </HStack>
 
@@ -635,7 +637,7 @@ export const SwapScreen: React.FC = () => {
                   <HStack justifyContent="space-between" alignItems="center">
                     <HStack alignItems="center" space="xs">
                       <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                        Estimated Value
+                        {t('swapScreen.estimatedValue')}
                       </Text>
                       <Pressable>
                         <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
@@ -655,7 +657,7 @@ export const SwapScreen: React.FC = () => {
                   <HStack justifyContent="space-between" alignItems="center">
                     <HStack alignItems="center" space="xs">
                       <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                        Fees
+                        {t('swapScreen.fees')}
                       </Text>
                       <Pressable>
                         <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
@@ -678,14 +680,14 @@ export const SwapScreen: React.FC = () => {
                 disabled={true}
                 opacity={0.5}
               >
-                <Text 
-                  fontSize={14} 
-                  fontWeight="$bold" 
+                <Text
+                  fontSize={14}
+                  fontWeight="$bold"
                   color="#B1B1B1"
-                  $dark-color="$textDark400" 
+                  $dark-color="$textDark400"
                   textAlign="center"
                 >
-                  Not Available
+                  {t('swapScreen.notAvailable')}
                 </Text>
               </Pressable>
             </>

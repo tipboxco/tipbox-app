@@ -13,6 +13,7 @@ import { WalletCardInfo } from '../components/WalletCardInfo';
 import { useMyNFTs } from '@/src/features/marketplace/api/hooks';
 import { toImageSource } from '@/src/utils';
 import { useNftTransferFlowStore } from '../store/nft-transfer-flow-store';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface NftItem {
   id: string;
@@ -30,6 +31,7 @@ interface NftItem {
 }
 
 export const NftAssetsScreen: React.FC = () => {
+  const { t } = useTranslation('wallet');
   const navigation = useNavigation<any>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -85,7 +87,7 @@ export const NftAssetsScreen: React.FC = () => {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
-      <Header title="Varlıklar" showBackButton onBackPress={() => navigation.goBack()} />
+      <Header title={t('header.assets')} showBackButton onBackPress={() => navigation.goBack()} />
       
       {/* Tabs */}
       <VStack px="$4" py="$2" space="xs">
@@ -93,7 +95,7 @@ export const NftAssetsScreen: React.FC = () => {
           <Pressable onPress={() => navigation.navigate('WalletScreen')}>
             <VStack alignItems="center" space="xs">
               <Text fontSize={12} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                TIPS
+                {t('tabs.tips')}
               </Text>
               <Box w={72} h={2} bg="transparent" />
             </VStack>
@@ -102,7 +104,7 @@ export const NftAssetsScreen: React.FC = () => {
           <Pressable>
             <VStack alignItems="center" space="xs">
               <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                NFT Assets
+                {t('nft.assets')}
               </Text>
               <Box w={86} h={2} bg="$backgroundLight300" $dark-bg="$backgroundDark600" rounded={2} />
             </VStack>
@@ -121,7 +123,7 @@ export const NftAssetsScreen: React.FC = () => {
           <VStack space="md">
             <HStack justifyContent="space-between" alignItems="center">
               <Text fontSize={14} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
-                NFT Assets
+                {t('nft.assets')}
               </Text>
               <HStack space="xs" alignItems="center">
                 {/* Filtrele Button */}
@@ -137,7 +139,7 @@ export const NftAssetsScreen: React.FC = () => {
                 >
                   <HStack alignItems="center" space="xs">
                     <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                      Filtrele
+                      {t('nft.filter')}
                     </Text>
                     <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                   </HStack>
@@ -155,7 +157,7 @@ export const NftAssetsScreen: React.FC = () => {
                 >
                   <HStack alignItems="center" space="xs">
                     <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                      Sırala
+                      {t('nft.sort')}
                     </Text>
                     <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                   </HStack>
@@ -168,13 +170,13 @@ export const NftAssetsScreen: React.FC = () => {
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                  Loading NFTs...
+                  {t('nft.loading')}
                 </Text>
               </VStack>
             ) : nfts.length === 0 ? (
               <VStack alignItems="center" py="$8">
                 <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                  No NFTs found
+                  {t('nft.noNfts')}
                 </Text>
               </VStack>
             ) : (
