@@ -11,6 +11,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { ScrollView } from 'react-native';
 import { useNftTransferFlowStore } from '../store/nft-transfer-flow-store';
 
@@ -38,6 +39,7 @@ type RouteParams = {
 export const NftAssetDetailScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const route = useRoute();
+    const { t } = useTranslation('wallet');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const setTransferNft = useNftTransferFlowStore((s) => s.setTransferNft);
@@ -148,7 +150,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             <HStack alignItems="center" space="xs">
                                 <ArrowTopRightOnSquareIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                                    Transfer
+                                    {t('nftDetail.transfer')}
                                 </Text>
                             </HStack>
                         </Pressable>
@@ -188,7 +190,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             <HStack alignItems="center" space="xs">
                                 <ShoppingBagIcon width={24} height={24} color="#000000" />
                                 <Text fontSize={11} fontWeight="$semibold" color="#000000">
-                                    {isListed ? 'View Listing' : 'Sell'}
+                                    {isListed ? t('nftDetail.viewListing') : t('nftDetail.sell')}
                                 </Text>
                             </HStack>
                         </Pressable>
@@ -207,7 +209,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             {/* Acquisition Date */}
                             <HStack justifyContent="space-between" alignItems="center" px="$4">
                                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                    Acquisition Date
+                                    {t('nftDetail.acquisitionDate')}
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     11 July 2025
@@ -220,7 +222,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             {/* Rarity */}
                             <HStack justifyContent="space-between" alignItems="center" px="$4">
                                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                    Rarity
+                                    {t('nftDetail.rarity')}
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     {nft.rarity}
@@ -235,11 +237,11 @@ export const NftAssetDetailScreen: React.FC = () => {
                                 <>
                                     <HStack justifyContent="space-between" alignItems="center" px="$4">
                                         <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                            Listed Price
+                                            {t('nftDetail.listedPrice')}
                                         </Text>
                                         <HStack alignItems="center" space="xs">
                                             <Text fontSize={11} fontWeight="$bold" color="#C2E607" $dark-color="#C2E607">
-                                                {Math.floor(listingPrice)} TIPS
+                                                {Math.floor(listingPrice)} {t('nft.tips')}
                                             </Text>
                                             <Box
                                                 bg="rgba(194, 230, 7, 0.15)"
@@ -248,7 +250,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                                                 py="$1"
                                             >
                                                 <Text fontSize={8} fontWeight="$bold" color="#596B00">
-                                                    ON SALE
+                                                    {t('nft.onSale')}
                                                 </Text>
                                             </Box>
                                         </HStack>
@@ -262,7 +264,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             {/* Owners */}
                             <HStack justifyContent="space-between" alignItems="center" px="$4">
                                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                    Owners
+                                    {t('nftDetail.owners')}
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     {nft.username ? `@${nft.username}` : '-'}
@@ -276,7 +278,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             {/* Average Price */}
                             <HStack justifyContent="space-between" alignItems="center" px="$4">
                                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                    Average Price
+                                    {t('nftDetail.averagePrice')}
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     $0.495

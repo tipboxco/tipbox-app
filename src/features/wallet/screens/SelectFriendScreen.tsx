@@ -5,6 +5,7 @@ import { VStack, HStack, Text, Pressable, Box, Image } from '@gluestack-ui/theme
 import { ChevronLeftIcon, UsersIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useTrusterList } from '@/src/features/profile/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
@@ -16,6 +17,7 @@ type SelectFriendScreenRouteProp = RouteProp<WalletStackParamList, 'SelectFriend
 type SelectFriendScreenNavigationProp = NativeStackNavigationProp<WalletStackParamList, 'SelectFriendScreen'>;
 
 export const SelectFriendScreen: React.FC = () => {
+  const { t } = useTranslation('wallet');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectFriendScreenNavigationProp>();
@@ -94,7 +96,7 @@ export const SelectFriendScreen: React.FC = () => {
 
           {truster.isTrusted && (
             <Box bg="#C2E607" rounded={6} px="$2" py="$1">
-              <Text fontSize={10} fontWeight="$bold" color="#111111">Trusted</Text>
+              <Text fontSize={10} fontWeight="$bold" color="#111111">{t('selectFriend.trusted')}</Text>
             </Box>
           )}
         </HStack>
@@ -107,10 +109,10 @@ export const SelectFriendScreen: React.FC = () => {
     <VStack alignItems="center" justifyContent="center" py="$8" px="$4">
       <UsersIcon width={64} height={64} color={isDark ? '#666666' : '#CCCCCC'} />
       <Text fontSize={16} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400" mt="$4">
-        No Friends Found
+        {t('selectFriend.noFriendsTitle')}
       </Text>
       <Text fontSize={12} color="$textLight400" $dark-color="$textDark500" mt="$2" textAlign="center">
-        You don't have any friends in your trust list yet.
+        {t('selectFriend.noFriendsMessage')}
       </Text>
     </VStack>
   );
@@ -122,7 +124,7 @@ export const SelectFriendScreen: React.FC = () => {
     >
       {/* Header */}
       <Header
-        title="Select Friend"
+        title={t('header.selectFriend')}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
@@ -133,7 +135,7 @@ export const SelectFriendScreen: React.FC = () => {
           <VStack alignItems="center" justifyContent="center" flex={1}>
             <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
             <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" mt="$4">
-              Loading friends...
+              {t('selectFriend.loading')}
             </Text>
           </VStack>
         ) : (

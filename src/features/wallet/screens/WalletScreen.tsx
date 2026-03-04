@@ -13,6 +13,7 @@ import Animated, {
 import { Header } from '@/src/components/Header';
 import { useNavigation, useFocusEffect, CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import type { WalletStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/types/root.types';
@@ -54,6 +55,7 @@ type WalletScreenNavigationProp = CompositeNavigationProp<
 
 export const WalletScreen: React.FC = () => {
       const navigation = useNavigation<WalletScreenNavigationProp>();
+      const { t } = useTranslation('wallet');
       const { colorMode } = useColorMode();
       const isDark = colorMode === 'dark';
       const [activeTab, setActiveTab] = useState<'tips' | 'nft'>('tips');
@@ -114,9 +116,9 @@ export const WalletScreen: React.FC = () => {
   const handleCopyAddress = useCallback(async () => {
     if (walletInfo?.walletIdentifier) {
       await Clipboard.setStringAsync(walletInfo.walletIdentifier);
-      Alert.alert('Copied', 'Wallet address copied to clipboard');
+      Alert.alert(t('receiveBottomSheet.copied'), t('receiveBottomSheet.addressCopied'));
     }
-  }, [walletInfo?.walletIdentifier]);
+  }, [walletInfo?.walletIdentifier, t]);
   
   const [successTransactionDetails, setSuccessTransactionDetails] = React.useState<{
     sentAmount?: string;
@@ -151,8 +153,8 @@ export const WalletScreen: React.FC = () => {
             closeBottomSheet();
             setSuccessTransactionDetails(null);
           }}
-          title="Transaction Successful"
-          message="Your transaction has been completed successfully."
+          title={t('successBottomSheet.title')}
+          message={t('successBottomSheet.message')}
           transactionDetails={transactionDetails}
         />,
         {
@@ -741,16 +743,16 @@ export const WalletScreen: React.FC = () => {
     >
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         <VStack flex={1}>
-        <Header 
-          title="Wallet" 
-          showBackButton 
+        <Header
+          title={t('header.title')}
+          showBackButton
           onBackPress={() => {
             if (navigation.canGoBack()) {
               navigation.goBack();
             } else {
               navigation.navigate('Feed');
             }
-          }} 
+          }}
         />
       {/* Tabs */}
       <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
@@ -783,7 +785,7 @@ export const WalletScreen: React.FC = () => {
                   tab1Style,
                 ]}
               >
-                TIPS
+                {t('tabs.tips')}
               </Animated.Text>
             </VStack>
           </Pressable>
@@ -804,7 +806,7 @@ export const WalletScreen: React.FC = () => {
                   tab2Style,
                 ]}
               >
-                NFT Assets
+                {t('tabs.nft')}
               </Animated.Text>
             </VStack>
           </Pressable>
@@ -875,9 +877,9 @@ export const WalletScreen: React.FC = () => {
                   <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>
               ) : (
-                <WalletCardInfo 
-                  name={user?.fullName || 'Kullanıcı'}
-                  address={walletInfo?.walletIdentifier || 'Adres bulunamadı'}
+                <WalletCardInfo
+                  name={user?.fullName || t('walletCard.user')}
+                  address={walletInfo?.walletIdentifier || t('walletCard.addressNotFound')}
                   onCopyPress={handleCopyAddress}
                 />
               )}
@@ -885,7 +887,7 @@ export const WalletScreen: React.FC = () => {
               {/* Balance Card */}
               <Box bg="$backgroundLight0" $dark-bg="$backgroundDark900" borderWidth={1} borderColor="$borderLight200" $dark-borderColor="$borderDark600" rounded={5} p="$4">
                 <VStack space="sm" alignItems="center">
-                  <Text fontSize={14} color="#B9B9B9" fontWeight={'$bold'}>Current Balance</Text>
+                  <Text fontSize={14} color="#B9B9B9" fontWeight={'$bold'}>{t('balance.currentBalance')}</Text>
                   {isLoadingBalance ? (
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                   ) : (
@@ -925,10 +927,10 @@ export const WalletScreen: React.FC = () => {
                 {/* Quick Actions */}
                 <HStack mt="$4" space="md">
                   {[
-                    { icon: QrCodeIcon, label: 'Receive' as const, onPress: handleReceivePress },
-                    { icon: PaperAirplaneIcon, label: 'Send' as const, onPress: handleSendPress },
-                    { icon: ArrowsRightLeftIcon, label: 'Swap' as const, onPress: handleSwapPress },
-                    { icon: GiftIcon, label: 'Claim' as const, onPress: handleClaimPress },
+                    { icon: QrCodeIcon, label: 'receive' as const, onPress: handleReceivePress },
+                    { icon: PaperAirplaneIcon, label: 'send' as const, onPress: handleSendPress },
+                    { icon: ArrowsRightLeftIcon, label: 'swap' as const, onPress: handleSwapPress },
+                    { icon: GiftIcon, label: 'claim' as const, onPress: handleClaimPress },
                   ].map((action) => {
                     const IconComponent = action.icon;
                     return (
@@ -950,7 +952,7 @@ export const WalletScreen: React.FC = () => {
                         <VStack alignItems="center" space="xs">
                           <IconComponent width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
                           <Text fontSize={11} fontWeight="$medium" color="$textLight900" $dark-color="$textDark50">
-                            {action.label}
+                            {t(`quickActions.${action.label}`)}
                           </Text>
                         </VStack>
                       </Pressable>
@@ -962,7 +964,7 @@ export const WalletScreen: React.FC = () => {
               {/* Transaction History Header */}
               <HStack mt="$4" alignItems="center" justifyContent="space-between">
                 <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                  Transaction History
+                  {t('transactions.title')}
                 </Text>
                 <HStack space="sm" alignItems="center">
                   <Pressable
@@ -995,7 +997,7 @@ export const WalletScreen: React.FC = () => {
                 <VStack alignItems="center" py="$8">
                   <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                   <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                    Loading transactions...
+                    {t('transactions.loading')}
                   </Text>
                 </VStack>
               ) : (
@@ -1004,7 +1006,7 @@ export const WalletScreen: React.FC = () => {
                   {shouldShowPeriod('today') && filteredTransactions.today && filteredTransactions.today.length > 0 && (
                     <VStack space="md">
                       <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                        Today
+                        {t('transactions.today')}
                       </Text>
                       {filteredTransactions.today.map((transaction: any, index: number) => (
                         <HistoryCard
@@ -1035,7 +1037,7 @@ export const WalletScreen: React.FC = () => {
                   {shouldShowPeriod('yesterday') && filteredTransactions.yesterday && filteredTransactions.yesterday.length > 0 && (
                     <VStack space="md" mt="$4">
                       <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                        Yesterday
+                        {t('transactions.yesterday')}
                       </Text>
                       {filteredTransactions.yesterday.map((transaction: any, index: number) => (
                         <HistoryCard
@@ -1066,7 +1068,7 @@ export const WalletScreen: React.FC = () => {
                   {shouldShowPeriod('lastWeek') && filteredTransactions.lastWeek && filteredTransactions.lastWeek.length > 0 && (
                     <VStack space="md" mt="$4">
                       <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                        Last Week
+                        {t('transactions.lastWeek')}
                       </Text>
                       {filteredTransactions.lastWeek.map((transaction: any, index: number) => (
                         <HistoryCard
@@ -1097,7 +1099,7 @@ export const WalletScreen: React.FC = () => {
                   {shouldShowPeriod('lastMonth') && filteredTransactions.lastMonth && filteredTransactions.lastMonth.length > 0 && (
                     <VStack space="md" mt="$4">
                       <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                        Last Month
+                        {t('transactions.lastMonth')}
                       </Text>
                       {filteredTransactions.lastMonth.map((transaction: any, index: number) => (
                         <HistoryCard
@@ -1138,7 +1140,7 @@ export const WalletScreen: React.FC = () => {
                   ) && (
                     <VStack alignItems="center" py="$8">
                       <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                        No transactions found
+                        {t('transactions.noTransactionsFound')}
                       </Text>
                     </VStack>
                   )}
@@ -1184,9 +1186,9 @@ export const WalletScreen: React.FC = () => {
                   <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>
               ) : (
-                <WalletCardInfo 
-                  name={user?.fullName || 'User'}
-                  address={walletInfo?.walletIdentifier || 'Address not found'}
+                <WalletCardInfo
+                  name={user?.fullName || t('walletCard.user')}
+                  address={walletInfo?.walletIdentifier || t('walletCard.addressNotFound')}
                   onCopyPress={handleCopyAddress}
                 />
               )}
@@ -1195,7 +1197,7 @@ export const WalletScreen: React.FC = () => {
               <VStack space="md">
                 <HStack justifyContent="space-between" alignItems="center">
                   <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                    NFT's
+                    {t('nft.title')}
                   </Text>
                   <HStack space="xs" alignItems="center">
                     {/* Filter Button */}
@@ -1212,7 +1214,7 @@ export const WalletScreen: React.FC = () => {
                     >
                       <HStack alignItems="center" space="xs">
                         <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                          Filter
+                          {t('nft.filter')}
                         </Text>
                         <ChevronDownIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
@@ -1231,7 +1233,7 @@ export const WalletScreen: React.FC = () => {
                     >
                       <HStack alignItems="center" space="xs">
                         <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                          Sort
+                          {t('nft.sort')}
                         </Text>
                         <ChevronDownIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
@@ -1244,13 +1246,13 @@ export const WalletScreen: React.FC = () => {
                   <VStack alignItems="center" py="$4">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                     <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                      Loading NFTs...
+                      {t('nft.loading')}
                     </Text>
                   </VStack>
                 ) : filteredAndSortedNfts.length === 0 ? (
                   <VStack alignItems="center" py="$8">
                     <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                      {selectedTypes.length > 0 ? 'No NFTs match your filter' : 'No NFTs found'}
+                      {selectedTypes.length > 0 ? t('nft.noMatchingFilter') : t('nft.noNfts')}
                     </Text>
                   </VStack>
                 ) : (
@@ -1309,7 +1311,7 @@ export const WalletScreen: React.FC = () => {
                                         fontSize={8}
                                         fontWeight="$bold"
                                       >
-                                        ON SALE
+                                        {t('nft.onSale')}
                                       </Text>
                                     </Box>
                                   )}
@@ -1330,7 +1332,7 @@ export const WalletScreen: React.FC = () => {
                                         fontSize={9}
                                         fontWeight="$bold"
                                       >
-                                        {Math.floor(nft.listing.price)} TIPS
+                                        {Math.floor(nft.listing.price)} {t('nft.tips')}
                                       </Text>
                                     </Box>
                                   )}

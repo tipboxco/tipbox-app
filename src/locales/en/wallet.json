@@ -1,4 +1,48 @@
 {
+  "header": {
+    "title": "Wallet",
+    "swap": "Swap",
+    "assets": "Assets",
+    "nftAssets": "NFT Assets",
+    "selectFriend": "Select Friend",
+    "nftTransfer": "NFT Transfer"
+  },
+  "tabs": {
+    "tips": "TIPS",
+    "nft": "NFT Assets"
+  },
+  "balance": {
+    "currentBalance": "Current Balance",
+    "availableBalance": "Available Balance",
+    "tips": "TIPS",
+    "usd": "USD"
+  },
+  "quickActions": {
+    "receive": "Receive",
+    "send": "Send",
+    "swap": "Swap",
+    "claim": "Claim"
+  },
+  "transactions": {
+    "title": "Transaction History",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "lastWeek": "Last Week",
+    "lastMonth": "Last Month",
+    "older": "Older",
+    "empty": "No transactions yet",
+    "noTransactionsFound": "No transactions found",
+    "loading": "Loading transactions...",
+    "sent": "Sent",
+    "received": "Received",
+    "pending": "Pending",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "tipsSent": "Tips Sent",
+    "tipsClaim": "TIPS Claim",
+    "bulkClaimed": "Bulk TIPS Claimed.",
+    "transaction": "Transaction"
+  },
   "sendBottomSheet": {
     "title": "Send TIPS",
     "options": {
@@ -11,35 +55,59 @@
       "to": "To:",
       "paste": "Paste",
       "enterAddress": "Enter wallet address",
+      "walletAddress": "Wallet Address...",
       "invalidAddress": "Invalid wallet address",
-      "addressRequired": "Wallet address is required"
+      "addressRequired": "Wallet address is required",
+      "noAddressSelected": "No address selected",
+      "recent": "Recent",
+      "recently": "Recently"
     },
     "amount": {
       "title": "Enter Amount",
       "placeholder": "0",
-      "max": "Max",
+      "max": "Max.",
+      "maxButton": "Max",
       "balance": "Balance:",
       "fee": "Transaction Fee:",
       "total": "Total:",
       "insufficientBalance": "Insufficient balance",
       "minAmount": "Minimum amount is {{amount}} TIPS",
-      "maxAmount": "Maximum amount is {{amount}} TIPS"
+      "maxAmount": "Maximum amount is {{amount}} TIPS",
+      "availableBalance": "Available Balance",
+      "loading": "Loading...",
+      "tipsCalculation": "TIPS token is calculated based on the current USD exchange rate."
     },
     "confirmation": {
       "title": "Confirm Transaction",
+      "sendTips": "Send TIPS",
+      "sendTip": "Send Tip",
       "recipient": "Recipient",
       "amount": "Amount",
       "fee": "Fee",
       "total": "Total",
-      "confirmButton": "Confirm & Send",
+      "transactionFee": "Transaction Fee:",
+      "remainingBalance": "Remaining Balance:",
+      "confirmButton": "Confirm",
+      "sendButton": "Send",
       "sending": "Sending...",
       "created": "Transaction Created",
       "pending": "Processing Transaction...",
       "completed": "Transaction Completed!",
       "failed": "Transaction Failed",
+      "sendFailed": "Send Failed",
       "cancelled": "Transaction Cancelled",
       "cancel": "Cancel Transaction",
-      "cancelCountdown": "Cancel ({{seconds}}s)"
+      "cancelButton": "Cancel",
+      "cancelCountdown": "Cancel ({{seconds}}s)",
+      "close": "Close",
+      "back": "Back",
+      "transactionQueued": "Your transaction has been queued. Confirmation will start shortly. You can cancel within 5 seconds if you wish.",
+      "processingNetwork": "Processing on network…",
+      "transactionCancelled": "Transaction cancelled.",
+      "processing": "Processing…",
+      "secondsToCancel": "You have {{count}} seconds to cancel.",
+      "transactionHash": "Transaction hash",
+      "pleaseWait": "Please wait if the request takes a moment."
     },
     "recentAddresses": {
       "title": "Recent Addresses",
@@ -50,28 +118,189 @@
       "sendFailed": "Failed to send TIPS",
       "transactionCancelled": "Transaction cancelled",
       "cancelFailed": "Failed to cancel transaction"
+    },
+    "friendSelection": {
+      "youAreAbout": "You are about to send TIPS to this friend from your trust list."
     }
   },
-  "claim": {
-    "title": "Claim TIPS",
-    "description": "Claim your TIPS rewards",
-    "claimButton": "Claim Now",
-    "claiming": "Claiming...",
-    "success": "TIPS claimed successfully!",
-    "failed": "Failed to claim TIPS"
+  "receiveBottomSheet": {
+    "title": "Receive TIPS",
+    "scanQR": "Scan this QR code to send TIPS",
+    "walletAddress": "Wallet Address",
+    "copy": "Copy",
+    "share": "Share",
+    "info": "💡 Use this address only to receive TIPS. Do not send other cryptocurrencies.",
+    "copied": "Copied",
+    "addressCopied": "Wallet address copied to clipboard"
   },
-  "transactions": {
-    "title": "Transactions",
+  "claimBottomSheet": {
+    "title": "Rewards",
+    "loading": "Loading rewards...",
+    "loadFailed": "Failed to load rewards",
+    "retry": "Retry",
+    "empty": "No rewards available to claim",
+    "claimAll": "Claim All",
+    "rewardTypes": {
+      "ladderRewards": "Ladder Rewards",
+      "tips": "Tips",
+      "supportRewards": "Support Rewards",
+      "badgeRewards": "Badge Rewards",
+      "achievementRewards": "Achievement Rewards",
+      "eventRewards": "Event Rewards",
+      "systemRewards": "System Rewards"
+    }
+  },
+  "successBottomSheet": {
+    "title": "Transaction Successful",
+    "swapTitle": "Swap Successful",
+    "message": "Your transaction has been completed successfully.",
+    "swapMessage": "Your swap transaction has been completed successfully.",
+    "from": "From",
+    "to": "To",
+    "exchangeRate": "Exchange Rate",
+    "networkFee": "Network Fee",
+    "transactionId": "Transaction ID",
+    "viewOnExplorer": "View on Explorer",
+    "goToWallet": "Go to Wallet"
+  },
+  "swapBottomSheet": {
+    "title": "Swap",
+    "youPay": "You Pay",
+    "youReceive": "You Receive",
+    "pricing": "1 TIP",
+    "slippage": "Slippage",
+    "slippageValue": "Rare",
+    "estimatedValue": "Estimated Value",
+    "fees": "Fees",
+    "swapNow": "Swap Now",
+    "notAvailable": "Not Available",
+    "percentages": {
+      "25": "25%",
+      "50": "50%",
+      "75": "75%",
+      "all": "All"
+    }
+  },
+  "swapScreen": {
+    "youPay": "You Pay",
+    "youReceive": "You Receive",
+    "pricing": "1 TIP",
+    "slippage": "Slippage",
+    "slippageValue": "Rare",
+    "estimatedValue": "Estimated Value",
+    "fees": "Fees",
+    "notAvailable": "Not Available",
+    "insufficientBalance": {
+      "title": "Not Enought {{token}}",
+      "message": "You don't have enough {{token}} in your wallet for this transaction.",
+      "remaining": "Remaining",
+      "required": "Required",
+      "buy": "Buy {{token}}",
+      "cancel": "Cancel"
+    }
+  },
+  "nft": {
+    "title": "NFT's",
+    "filter": "Filter",
+    "sort": "Sort",
+    "loading": "Loading NFTs...",
+    "noNfts": "No NFTs found",
+    "noMatchingFilter": "No NFTs match your filter",
+    "rarity": {
+      "usual": "Usual",
+      "rare": "Rare",
+      "common": "Common",
+      "epic": "Epic",
+      "legendary": "Legendary"
+    },
+    "onSale": "ON SALE",
+    "tips": "TIPS"
+  },
+  "nftDetail": {
+    "transfer": "Transfer",
+    "sell": "Sell",
+    "viewListing": "View Listing",
+    "acquisitionDate": "Acquisition Date",
+    "rarity": "Rarity",
+    "listedPrice": "Listed Price",
+    "owners": "Owners",
+    "averagePrice": "Average Price"
+  },
+  "nftTransfer": {
+    "title": "NFT Transfer",
+    "searchPlaceholder": "Trust list içinde ara",
+    "loading": "Trust list yükleniyor...",
+    "loadFailed": "Trust list alınamadı",
+    "tryAgain": "Lütfen daha sonra tekrar deneyin.",
+    "emptyList": "Trust listeniz boş",
+    "transfer": "Transfer",
+    "transferring": "Transfer...",
+    "confirmDialog": {
+      "title": "NFT Transfer",
+      "message": "{{name}} kullanıcısına transfer etmek istiyor musunuz?",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "toasts": {
+      "success": "Transfer Successful",
+      "successMessage": "NFT has been transferred successfully.",
+      "failed": "Transfer Failed",
+      "nftNotFound": "NFT Not Found",
+      "nftNotFoundMessage": "NFT selection not found. Please try again."
+    }
+  },
+  "selectFriend": {
+    "loading": "Loading friends...",
+    "noFriendsTitle": "No Friends Found",
+    "noFriendsMessage": "You don't have any friends in your trust list yet.",
+    "trusted": "Trusted"
+  },
+  "walletCard": {
+    "user": "User",
+    "addressNotFound": "Address not found",
+    "copied": "Copied",
+    "addressCopied": "Wallet address copied to clipboard"
+  },
+  "filterBottomSheet": {
+    "title": "Filter NFTs",
+    "byType": "Filter by Type",
+    "noTypes": "No types available",
+    "clear": "Clear All",
+    "apply": "Apply Filters"
+  },
+  "sortBottomSheet": {
+    "title": "Sort NFTs",
+    "rarityDesc": "Rarity: High to Low",
+    "rarityAsc": "Rarity: Low to High",
+    "apply": "Apply"
+  },
+  "transactionFilterBottomSheet": {
+    "title": "Transaction Type",
+    "all": "All",
+    "sent": "Sent",
+    "received": "Received",
+    "nft": "NFT",
+    "claim": "Claim",
+    "airdrop": "Airdrop",
+    "failed": "Failed"
+  },
+  "transactionPeriodBottomSheet": {
+    "title": "Time Period",
+    "all": "All Time",
     "today": "Today",
     "yesterday": "Yesterday",
     "lastWeek": "Last Week",
-    "lastMonth": "Last Month",
-    "older": "Older",
-    "empty": "No transactions yet",
-    "sent": "Sent",
-    "received": "Received",
-    "pending": "Pending",
-    "failed": "Failed",
-    "cancelled": "Cancelled"
+    "lastMonth": "Last Month"
+  },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "close": "Close",
+    "done": "Done",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "retry": "Retry",
+    "back": "Back"
   }
 }
