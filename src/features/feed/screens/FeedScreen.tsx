@@ -49,6 +49,7 @@ import { FilterButtons } from '../components/FilterButtons';
 import { FilterFeed } from '../components/FilterFeed';
 import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/catalog/api/hooks';
 import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
@@ -62,6 +63,7 @@ const ESTIMATED_FEED_ITEM_HEIGHT = 420;
  * useFocusEffect ile sadece focus'ta render edilir
  */
 const FeedScreenInner = React.memo(() => {
+  const { t } = useTranslation('feed');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<FeedScreenNavigationProp>();
@@ -468,7 +470,7 @@ const FeedScreenInner = React.memo(() => {
         name: item.user?.name || '',
         title: item.user?.title || '',
         avatar: avatarSource,
-        action: isOwned ? 'Added new product and experiences to inventory!' : undefined,
+        action: isOwned ? t('actions.addedToInventory') : undefined,
       },
       contextData: {
         id: rawProduct?.id || '',
@@ -1099,12 +1101,12 @@ const FeedScreenInner = React.memo(() => {
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
               <View style={{ gap: 16, alignItems: 'center' }}>
                 <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
-                  Failed to Load Feed
+                  {t('errors.failedToLoad')}
                 </Text>
                 {(error as any)?.response?.status === 500 ? (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      Server error occurred. Please try again later.
+                      {t('errors.serverError')}
                     </Text>
                     {(error as any)?.response?.data?.message && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center" mt="$2">
@@ -1115,11 +1117,11 @@ const FeedScreenInner = React.memo(() => {
                 ) : (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      {error.message || 'An unknown error occurred'}
+                      {error.message || t('errors.unknownError')}
                     </Text>
                     {(error as any)?.response?.status && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
-                        HTTP Status: {(error as any).response.status}
+                        {t('errors.httpStatus', { status: (error as any).response.status })}
                       </Text>
                     )}
                     {(error as any)?.response?.data?.message && (
@@ -1134,7 +1136,7 @@ const FeedScreenInner = React.memo(() => {
           ) : feedItems.length === 0 ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                No feed content found yet.
+                {t('emptyStates.noFeedContent')}
               </Text>
             </View>
           ) : (

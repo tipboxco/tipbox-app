@@ -8,19 +8,27 @@
   "emptyStates": {
     "noPosts": "No posts yet",
     "noEvents": "No events yet",
-    "noMedia": "No media yet"
+    "noMedia": "No media yet",
+    "noFeedContent": "No feed content found yet."
   },
   "actions": {
     "like": "Like",
     "comment": "Comment",
     "share": "Share",
     "tip": "Tip",
-    "upvote": "Upvote"
+    "upvote": "Upvote",
+    "addedToInventory": "Added new product and experiences to inventory!"
   },
   "labels": {
     "comments": "Comments",
     "likes": "Likes",
     "shares": "Shares",
     "tips": "Tips"
+  },
+  "errors": {
+    "failedToLoad": "Failed to Load Feed",
+    "serverError": "Server error occurred. Please try again later.",
+    "unknownError": "An unknown error occurred",
+    "httpStatus": "HTTP Status: {{status}}"
   }
 }
