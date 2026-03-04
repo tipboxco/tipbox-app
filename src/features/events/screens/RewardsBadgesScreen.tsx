@@ -21,6 +21,7 @@ import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { toImageSource } from '@/src/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import type { EventBadge, EventBadgesResponse } from '../api/communityEventsApi';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +29,7 @@ type RewardsBadgesScreenNavigationProp = NativeStackNavigationProp<EventStackPar
 type RewardsBadgesScreenRouteProp = RouteProp<EventStackParamList, 'RewardsBadgesScreen'>;
 
 const RewardsBadgesScreen: React.FC = () => {
+    const { t } = useTranslation('events');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<RewardsBadgesScreenNavigationProp>();
@@ -104,7 +106,7 @@ const RewardsBadgesScreen: React.FC = () => {
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
             <Header
-                title="Rewards & Badges"
+                title={t('badges.rewardsAndBadges')}
                 showBackButton={true}
                 onBackPress={() => navigation.goBack()}
             />
@@ -113,13 +115,13 @@ const RewardsBadgesScreen: React.FC = () => {
                 <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                     <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                        Loading rewards...
+                        {t('badges.loadingRewards')}
                     </Text>
                 </VStack>
             ) : rewards.length === 0 ? (
                 <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
                     <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                        No rewards found
+                        {t('badges.noRewardsFound')}
                     </Text>
                 </VStack>
             ) : (

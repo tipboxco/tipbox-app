@@ -23,6 +23,7 @@ import type { EventsStackParamList } from '../navigation';
 import type { Collection, CollectionBadge as CollectionBadgeType } from '../types/collection.types';
 import { useCollectionDetail } from '../api/hooks';
 import CollectionCardModal from '../components/CollectionCardModal';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -47,12 +48,13 @@ type FilterTab = 'All' | 'Not Started' | 'In Progress' | 'Completed';
 
 
 const CollectionDetailScreen: React.FC = () => {
+  const { t } = useTranslation('events');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CollectionDetailScreenNavigationProp>();
   const route = useRoute<CollectionDetailScreenRouteProp>();
   const bottomInset = useSafeAreaValues('bottom');
-  
+
   const { collectionId } = route.params;
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedBadgeSearch, setDebouncedBadgeSearch] = useState('');
@@ -221,8 +223,14 @@ const CollectionDetailScreen: React.FC = () => {
     [isDark, handleBadgePress]
   );
 
-  // Filter tabs
+  // Filter tabs with translations
   const filterTabs: FilterTab[] = ['All', 'Not Started', 'In Progress', 'Completed'];
+  const filterTabLabels: Record<FilterTab, string> = {
+    'All': t('collection.all'),
+    'Not Started': t('collection.notStarted'),
+    'In Progress': t('collection.inProgress'),
+    'Completed': t('collection.completed'),
+  };
 
   if (isLoadingCollection) {
     return (
@@ -249,13 +257,13 @@ const CollectionDetailScreen: React.FC = () => {
             <Feather name="arrow-left" size={24} color={isDark ? '#FFF' : '#000'} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#000' }]}>
-            Collection
+            {t('collection.title')}
           </Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyText, { color: isDark ? '#B9B9B9' : '#666' }]}>
-            Collection not found
+            {t('collection.notFound')}
           </Text>
         </View>
       </SafeAreaView>
@@ -289,7 +297,7 @@ const CollectionDetailScreen: React.FC = () => {
           />
         </Pressable>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#000' }]}>
-          Collection
+          {t('collection.title')}
         </Text>
         <View style={styles.headerRight} />
       </View>
@@ -335,7 +343,7 @@ const CollectionDetailScreen: React.FC = () => {
                     <Feather name="search" size={18} color="rgba(255, 255, 255, 0.6)" />
                     <TextInput
                       style={styles.searchInput}
-                      placeholder="Search Badge"
+                      placeholder={t('search.badge')}
                       placeholderTextColor="rgba(255, 255, 255, 0.6)"
                       value={searchQuery}
                       onChangeText={setSearchQuery}
@@ -391,7 +399,7 @@ const CollectionDetailScreen: React.FC = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: isDark ? '#B9B9B9' : '#666' }]}>
-              {searchQuery ? 'No badges found' : 'No badges in this collection'}
+              {searchQuery ? t('collection.noBadgesFound') : t('collection.noBadgesInCollection')}
             </Text>
           </View>
         }

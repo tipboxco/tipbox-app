@@ -36,6 +36,7 @@ import OneOnOneSupportBottomSheet from '../components/OneOnOneSupportBottomSheet
 import { ImageMessage } from '../components/MessageItem/ImageMessage';
 import { MessageItem } from '../components/MessageItem';
 import { SharedPostMessage } from '@/src/features/inbox/components/MessageItem/SharedPostMessage';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface MessageDetailItem {
   id: string;
@@ -135,12 +136,12 @@ const formatMessageTime = (dateInput: string | Date | null | undefined): string 
   }
 };
 
-// Date header formatting function (Yesterday, or date) - English
-const formatDateHeader = (timestamp: string | Date): string => {
+// Date header formatting function (Yesterday, or date) - i18n supported
+const formatDateHeader = (timestamp: string | Date, t: (key: string) => string): string => {
   try {
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
     if (isNaN(date.getTime())) return '';
-    
+
     const now = new Date();
     const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -148,14 +149,24 @@ const formatDateHeader = (timestamp: string | Date): string => {
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (messageDate.getTime() === yesterday.getTime()) {
-      return 'Yesterday';
+      return t('messageDetail.yesterday');
     } else {
       const day = date.getDate();
-      const months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
+      const monthKeys = [
+        'messageDetail.months.january',
+        'messageDetail.months.february',
+        'messageDetail.months.march',
+        'messageDetail.months.april',
+        'messageDetail.months.may',
+        'messageDetail.months.june',
+        'messageDetail.months.july',
+        'messageDetail.months.august',
+        'messageDetail.months.september',
+        'messageDetail.months.october',
+        'messageDetail.months.november',
+        'messageDetail.months.december'
       ];
-      const month = months[date.getMonth()];
+      const month = t(monthKeys[date.getMonth()]);
       const year = date.getFullYear();
       return `${month} ${day}, ${year}`;
     }
@@ -238,6 +249,7 @@ const insertMessageInOrder = (
 // Gelecekte: useMemo ile tüm mesajları bir kerede process edip groupInfo eklenebilir
 
 const MessageDetailScreen: React.FC = () => {
+  const { t } = useTranslation('inbox');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<MessageDetailScreenNavigationProp>();
@@ -3073,7 +3085,7 @@ const MessageDetailScreen: React.FC = () => {
               fontSize="$xs"
               fontWeight="$medium"
             >
-              {formatDateHeader(item.sentAt)}
+              {formatDateHeader(item.sentAt, t)}
             </Text>
           </Box>
           

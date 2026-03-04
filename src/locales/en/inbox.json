@@ -2,12 +2,52 @@
   "title": "Inbox",
   "tabs": {
     "messages": "Messages",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "supportRequests": "1-on-1 Support Requests"
+  },
+  "search": {
+    "placeholder": "Search in inbox"
   },
   "messages": {
-    "empty": "No messages yet",
+    "empty": "Start a conversation",
     "newMessage": "New Message",
-    "typeMessage": "Type a message..."
+    "typeMessage": "Type a message...",
+    "error": "Error: {{message}}"
+  },
+  "supportRequests": {
+    "empty": "No support requests yet",
+    "error": "Error: {{message}}",
+    "filters": {
+      "all": "All",
+      "pending": "Awaiting Resolution",
+      "active": "Active Requests",
+      "awaitingCompletion": "Awaiting Completion",
+      "completed": "Completed"
+    }
+  },
+  "supportMessageDetail": {
+    "empty": "No messages yet",
+    "loading": "Loading..."
+  },
+  "messageDetail": {
+    "yesterday": "Yesterday",
+    "typing": "typing...",
+    "placeholder": "Type a message...",
+    "imageAlt": "Sent image",
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    }
   },
   "notifications": {
     "empty": "No notifications yet",

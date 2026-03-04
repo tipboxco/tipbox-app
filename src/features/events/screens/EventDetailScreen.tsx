@@ -59,6 +59,7 @@ import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/sr
 import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
 import { ProductInfoType } from '@/src/types/common';
 import RoastProductInfoCard from '../components/RoastProductInfoCard';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 
@@ -67,6 +68,7 @@ type EventDetailScreenNavigationProp = NativeStackNavigationProp<EventStackParam
 type EventDetailScreenRouteProp = RouteProp<EventStackParamList, 'EventDetailScreen'>;
 
 const EventDetailScreen: React.FC = () => {
+    const { t } = useTranslation('events');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const insets = useSafeAreaInsets();
@@ -82,13 +84,13 @@ const EventDetailScreen: React.FC = () => {
         return (
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} pt={insets.top}>
                 <Header
-                    title="Event Not Found"
+                    title={t('details.eventNotFound')}
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />
                 <Box flex={1} alignItems="center" justifyContent="center">
                     <Text color={isDark ? '#FFFFFF' : '#000000'}>
-                        Event ID bulunamadı
+                        {t('details.eventIdNotFound')}
                     </Text>
                 </Box>
             </Box>
@@ -781,12 +783,12 @@ const EventDetailScreen: React.FC = () => {
         return (
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} pt={insets.top}>
                 <Header
-                    title="Loading..."
+                    title={t('details.loading')}
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />
                 <Box flex={1} alignItems="center" justifyContent="center">
-                    <Text color={isDark ? '#FFFFFF' : '#000000'}>Loading...</Text>
+                    <Text color={isDark ? '#FFFFFF' : '#000000'}>{t('details.loading')}</Text>
                 </Box>
             </Box>
         );
@@ -797,13 +799,13 @@ const EventDetailScreen: React.FC = () => {
         return (
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} pt={insets.top}>
                 <Header
-                    title="Event Not Found"
+                    title={t('details.eventNotFound')}
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />
                 <Box flex={1} alignItems="center" justifyContent="center">
                     <Text color={isDark ? '#FFFFFF' : '#000000'}>
-                        {error ? 'Event yüklenirken bir hata oluştu' : 'Event bulunamadı'}
+                        {error ? t('details.eventLoadError') : t('details.eventNotFoundError')}
                     </Text>
                 </Box>
             </Box>
@@ -953,8 +955,8 @@ const EventDetailScreen: React.FC = () => {
                                     textAlign="center"
                                 >
                                     {(joinEventMutation.isPending || leaveEventMutation.isPending)
-                                        ? '...' 
-                                        : (isJoined ? 'Joined' : 'Join')
+                                        ? '...'
+                                        : (isJoined ? t('details.joined') : t('details.join'))
                                     }
                                 </ButtonText>
                             </HStack>
@@ -979,7 +981,7 @@ const EventDetailScreen: React.FC = () => {
                                 fontSize={12}
                                 fontWeight="$bold"
                             >
-                                Product
+                                {t('details.product')}
                             </Text>
 
                             <RoastProductInfoCard
@@ -997,7 +999,7 @@ const EventDetailScreen: React.FC = () => {
                             fontSize={12}
                             fontWeight="$bold"
                         >
-                            Details
+                            {t('details.description')}
                         </Text>
 
                         <Box
@@ -1028,7 +1030,7 @@ const EventDetailScreen: React.FC = () => {
                                             fontSize={11}
                                             fontWeight="$medium"
                                         >
-                                            Duration
+                                            {t('details.duration')}
                                         </Text>
                                         <Text
                                             color="#000000"
@@ -1059,14 +1061,14 @@ const EventDetailScreen: React.FC = () => {
                                             fontSize={11}
                                             fontWeight="$medium"
                                         >
-                                            Participants
+                                            {t('details.participants')}
                                         </Text>
                                         <Text
                                             color="#000000"
                                             fontSize={11}
                                             fontWeight="$bold"
                                         >
-                                            {event.interaction}+ people joined
+                                            {event.interaction}{t('details.peopleJoined')}
                                         </Text>
                                     </VStack>
                                 </HStack>
@@ -1082,7 +1084,7 @@ const EventDetailScreen: React.FC = () => {
                                 fontSize={12}
                                 fontWeight="$bold"
                             >
-                                Rewards & Badges
+                                {t('details.rewardsAndBadges')}
                             </Text>
                             {/* See All Button */}
                             {event.rewards && event.rewards.length > 0 && (
@@ -1097,7 +1099,7 @@ const EventDetailScreen: React.FC = () => {
                                         fontWeight="$medium"
                                         textDecorationLine="underline"
                                     >
-                                        See All
+                                        {t('details.seeAll')}
                                     </Text>
                                 </Pressable>
                             )}
@@ -1169,7 +1171,7 @@ const EventDetailScreen: React.FC = () => {
                         ) : (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
-                                    Henüz ödül bulunmuyor
+                                    {t('details.noRewards')}
                                 </Text>
                             </Box>
                         )}
@@ -1183,7 +1185,7 @@ const EventDetailScreen: React.FC = () => {
                                 fontSize={12}
                                 fontWeight="$bold"
                             >
-                                Event Feed
+                                {t('details.eventFeed')}
                             </Text>
                             <Text
                                 color={isDark ? '#FFFFFF' : '#000000'}
@@ -1191,7 +1193,7 @@ const EventDetailScreen: React.FC = () => {
                                 fontWeight="$bold"
                                 underline
                             >
-                                Latest
+                                {t('details.latest')}
                             </Text>
                         </HStack>
 
@@ -1203,13 +1205,13 @@ const EventDetailScreen: React.FC = () => {
                         ) : postsError ? (
                             <Box py="$4" alignItems="center">
                                 <Text color="#CE4A4A" fontSize={12}>
-                                    Postlar yüklenirken bir hata oluştu
+                                    {t('details.postsLoadError')}
                                 </Text>
                             </Box>
                         ) : eventPosts.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
-                                    No posts yet
+                                    {t('details.noPosts')}
                                 </Text>
                             </Box>
                         ) : (

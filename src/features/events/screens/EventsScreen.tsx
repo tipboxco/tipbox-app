@@ -1,10 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  Pressable, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,6 +29,7 @@ import { useDrawerStore } from '@/src/store/drawerStore';
 import FilterBottomSheet, { FilterSelection } from '../components/FilterBottomSheet';
 import CollectionsBottomSheet from '../components/CollectionsBottomSheet';
 import type { CollectionFilters } from '../types/medusa.types';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,6 +38,7 @@ const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 type EventsScreenNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventsScreen'>;
 
 const EventsScreen: React.FC = () => {
+  const { t } = useTranslation('events');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<EventsScreenNavigationProp>();
@@ -231,7 +233,7 @@ const EventsScreen: React.FC = () => {
               <Text
                 style={[styles.headerTitle, { color: headerTextColor }]}
               >
-                Events
+                {t('list.title')}
               </Text>
             </View>
 
@@ -251,7 +253,7 @@ const EventsScreen: React.FC = () => {
               />
               <TextInput
                 style={[styles.searchInput, { color: '#000' }]}
-                placeholder={activeTab === 'community' ? 'Search events' : 'Search Collections'}
+                placeholder={activeTab === 'community' ? t('search.events') : t('search.collections')}
                 placeholderTextColor="#B9B9B9"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -290,7 +292,7 @@ const EventsScreen: React.FC = () => {
                 onPress={() => handleTabPress(0)}
               >
                 <Animated.Text style={[styles.tabLabel, tab1Style]}>
-                  Community Events
+                  {t('tabs.community')}
                 </Animated.Text>
               </Pressable>
 
@@ -300,7 +302,7 @@ const EventsScreen: React.FC = () => {
                 onPress={() => handleTabPress(1)}
               >
                 <Animated.Text style={[styles.tabLabel, tab2Style]}>
-                  Collections
+                  {t('tabs.collections')}
                 </Animated.Text>
               </Pressable>
 

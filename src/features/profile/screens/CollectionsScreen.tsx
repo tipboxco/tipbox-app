@@ -30,6 +30,7 @@ import { useSafeAreaValues } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { ProfileStackParamList } from '../navigation';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -51,6 +52,7 @@ const CollectionsScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const safeAreaBottom = useSafeAreaValues('bottom');
+  const { t } = useTranslation('profile');
   
   // 🎯 CORE: Shared progress value (0 = Achievements, 1 = Bridges)
   const progress = useSharedValue(0);
@@ -230,7 +232,7 @@ const CollectionsScreen: React.FC = () => {
       ]}>
         {/* Header */}
         <Header
-          title={`${user?.fullName || 'User'}'s Collections`}
+          title={t('collections.title', { name: user?.fullName || 'User' })}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />
@@ -251,7 +253,7 @@ const CollectionsScreen: React.FC = () => {
                 styles.searchInput,
                 { color: isDark ? '#FFFFFF' : '#000000' }
               ]}
-              placeholder="Search by badge name"
+              placeholder={t('collections.searchPlaceholder')}
               placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -281,7 +283,7 @@ const CollectionsScreen: React.FC = () => {
               onPress={() => handleTabPress(0)}
             >
               <Animated.Text style={[styles.tabLabel, tab1Style]}>
-                Achievements Badges
+                {t('collections.achievementBadges')}
               </Animated.Text>
             </Pressable>
 
@@ -291,7 +293,7 @@ const CollectionsScreen: React.FC = () => {
               onPress={() => handleTabPress(1)}
             >
               <Animated.Text style={[styles.tabLabel, tab2Style]}>
-                Bridge Badges
+                {t('collections.bridgeBadges')}
               </Animated.Text>
             </Pressable>
 

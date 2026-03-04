@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { 
-    VStack, 
-    HStack, 
-    Text, 
-    Pressable, 
-    Box, 
+import {
+    VStack,
+    HStack,
+    Text,
+    Pressable,
+    Box,
     Image,
     ScrollView,
     Spinner
@@ -20,6 +20,7 @@ import { SuggestedUserCard } from '../components/SuggestedUserCard';
 import { useSuggestedUsers, useAddToTrustList } from '../api/hooks';
 import { FlatList } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SuggestedUsersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -28,6 +29,7 @@ export const SuggestedUsersScreen = () => {
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<SuggestedUsersScreenNavigationProp>();
     const queryClient = useQueryClient();
+    const { t } = useTranslation('profile');
     
     // Local state for optimistic updates
     const [localTrustedUsers, setLocalTrustedUsers] = useState<Set<string>>(new Set());
@@ -106,7 +108,7 @@ export const SuggestedUsersScreen = () => {
                 <Box flex={1} alignItems="center" justifyContent="center" py={40}>
                     <Spinner size="large" color={isDark ? '#FFF' : '#000'} />
                     <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} mt={16}>
-                        Loading suggested users...
+                        {t('suggestedUsers.loading')}
                     </Text>
                 </Box>
             );
@@ -116,7 +118,7 @@ export const SuggestedUsersScreen = () => {
             return (
                 <Box flex={1} alignItems="center" justifyContent="center" py={40}>
                     <Text color="#FF0000" fontSize={14}>
-                        An error occurred
+                        {t('suggestedUsers.error')}
                     </Text>
                     <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} mt={8} fontSize={12}>
                         {error.message}
@@ -128,7 +130,7 @@ export const SuggestedUsersScreen = () => {
         return (
             <Box flex={1} alignItems="center" justifyContent="center" py={40}>
                 <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize={14}>
-                    No suggested users found
+                    {t('suggestedUsers.noUsers')}
                 </Text>
             </Box>
         );
@@ -139,7 +141,7 @@ export const SuggestedUsersScreen = () => {
         <VStack flex={1} bg={isDark ? '#000' : '#FFFFFF'}>
             {/* Header */}
             <Header
-                title="Suggested Users"
+                title={t('suggestedUsers.title')}
                 showBackButton
                 onBackPress={() => navigation.goBack()}
             />

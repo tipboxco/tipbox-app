@@ -5,6 +5,15 @@
     "past": "Past",
     "empty": "No events available"
   },
+  "search": {
+    "events": "Search events",
+    "collections": "Search Collections",
+    "badge": "Search Badge"
+  },
+  "tabs": {
+    "community": "Community Events",
+    "collections": "Collections"
+  },
   "details": {
     "date": "Date",
     "time": "Time",
@@ -13,7 +22,24 @@
     "attendees": "Attendees",
     "joinButton": "Join Event",
     "leaveButton": "Leave Event",
-    "joined": "Joined"
+    "joined": "Joined",
+    "join": "Join",
+    "loading": "Loading...",
+    "eventNotFound": "Event Not Found",
+    "eventIdNotFound": "Event ID bulunamadı",
+    "eventLoadError": "Event yüklenirken bir hata oluştu",
+    "eventNotFoundError": "Event bulunamadı",
+    "duration": "Duration",
+    "participants": "Participants",
+    "peopleJoined": "+ people joined",
+    "rewardsAndBadges": "Rewards & Badges",
+    "seeAll": "See All",
+    "noRewards": "Henüz ödül bulunmuyor",
+    "eventFeed": "Event Feed",
+    "latest": "Latest",
+    "postsLoadError": "Postlar yüklenirken bir hata oluştu",
+    "noPosts": "No posts yet",
+    "product": "Product"
   },
   "badges": {
     "title": "Badges",
@@ -21,6 +47,48 @@
     "notEarned": "Not Earned",
     "details": "Badge Details",
     "close": "Close",
-    "loadingError": "Failed to load badge details"
+    "loadingError": "Failed to load badge details",
+    "rewardsAndBadges": "Rewards & Badges",
+    "loadingRewards": "Loading rewards...",
+    "noRewardsFound": "No rewards found"
+  },
+  "collection": {
+    "title": "Collection",
+    "notFound": "Collection not found",
+    "noBadgesFound": "No badges found",
+    "noBadgesInCollection": "No badges in this collection",
+    "all": "All",
+    "notStarted": "Not Started",
+    "inProgress": "In Progress",
+    "completed": "Completed"
+  },
+  "createPost": {
+    "title": "Write a Post",
+    "share": "Share",
+    "selectProduct": "Select Product",
+    "content": "Content",
+    "contentPlaceholder": "Write your content... (max 2000 characters)",
+    "productStatus": "Product Status",
+    "productStatusPlaceholder": "Product Status",
+    "iOwnProduct": "I Own the Product",
+    "triedTested": "Tried / Tested",
+    "images": "Images (Optional)",
+    "errors": {
+      "contentRequired": "Content is required.",
+      "productMissing": "Product is missing.",
+      "productStatusRequired": "Please select a product status.",
+      "eventIdMissing": "Event ID is missing. Please try again.",
+      "selectProductFirst": "Please select a product before sharing.",
+      "limitExceeded": "You can select a maximum of 10 images.",
+      "imageUriError": "Could not find URIs of selected images.",
+      "imagePickerError": "An error occurred while selecting images",
+      "postCreationError": "An error occurred while creating the post. Please try again.",
+      "eventNotFound": "Event not found",
+      "notJoined": "You must join this event before sharing a post",
+      "validationError": "Please fill in all fields"
+    },
+    "success": {
+      "postCreated": "Post created successfully!"
+    }
   }
 }

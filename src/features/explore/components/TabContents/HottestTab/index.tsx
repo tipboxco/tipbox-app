@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { Box, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
@@ -389,6 +390,7 @@ const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCa
 
 const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerComponent }) => {
   const { colorMode } = useColorMode();
+  const { t } = useTranslation('explore');
   const isDark = colorMode === 'dark';
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
   
@@ -526,7 +528,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerCom
     return (
       <Box py="$8" alignItems="center">
         <Text color={isDark ? '#FFFFFF' : '#000000'}>
-          An error occurred. Please try again.
+          {t('hottest.error')}
         </Text>
       </Box>
     );
@@ -544,12 +546,12 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerCom
             <>
               {headerComponent}
               <Box py="$8" alignItems="center" px="$4">
-                <Text 
+                <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize="$md"
                   textAlign="center"
                 >
-                  Henüz gönderi yok
+                  {t('hottest.empty')}
                 </Text>
               </Box>
             </>

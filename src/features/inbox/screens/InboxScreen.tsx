@@ -24,12 +24,14 @@ import { Header } from '@/src/components/Header';
 import MessagesScreen from './MessagesScreen';
 import SupportRequestsScreen from './SupportRequestsScreen';
 import { useDrawerStore } from '@/src/store/drawerStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type InboxScreenNavigationProp = NativeStackNavigationProp<any, 'InboxScreen'>;
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 const InboxScreen: React.FC = () => {
+  const { t } = useTranslation('inbox');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<InboxScreenNavigationProp>();
@@ -155,7 +157,7 @@ const InboxScreen: React.FC = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={backgroundColor}>
         <Header
-          title="Inbox"
+          title={t('title')}
           leftAction="menu"
         />
 
@@ -178,7 +180,7 @@ const InboxScreen: React.FC = () => {
               />
               <Input flex={1} borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder="Search in inbox"
+                  placeholder={t('search.placeholder')}
                   placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                   color={isDark ? '#000' : '#000'}
                   fontSize="$xs"
@@ -220,7 +222,7 @@ const InboxScreen: React.FC = () => {
                       tab1Style,
                     ]}
                   >
-                    Messages
+                    {t('tabs.messages')}
                   </Animated.Text>
                 </VStack>
               </Pressable>
@@ -242,7 +244,7 @@ const InboxScreen: React.FC = () => {
                       tab2Style,
                     ]}
                   >
-                    1-on-1 Support Requests
+                    {t('tabs.supportRequests')}
                   </Animated.Text>
                 </VStack>
               </Pressable>

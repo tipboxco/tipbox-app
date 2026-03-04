@@ -21,6 +21,7 @@ import { useHighlightBadges, useUpdateHighlightBadges, useUserCollectionBridges 
 import { toImageSource, useCurrentUserIdOrLogout } from '@/src/utils';
 import type { Badge } from '@/src/mock/profile/badges/types';
 import type { CollectionBadgeApiItem } from '../types';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type ProfileEditHighlightBadgesNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'EditHighlightBadges'>;
 type ProfileEditHighlightBadgesRouteProp = RouteProp<ProfileStackParamList, 'EditHighlightBadges'>;
@@ -49,6 +50,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
   const pagerRef = useRef<PagerView>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const currentUserId = useCurrentUserIdOrLogout();
+  const { t } = useTranslation('profile');
 
   // Fetch highlight badges to get current selected IDs
   const { data: highlightData, isLoading: isLoadingHighlights } = useHighlightBadges();
@@ -203,7 +205,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
           <XMarkIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
         <Text fontSize="$lg" fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
-          Edit Highlight Badges
+          {t('editHighlightBadges.title')}
         </Text>
         <Pressable
           onPress={handleSave}
@@ -217,7 +219,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <Text color="#FFFFFF" fontSize="$sm" fontWeight="$bold">
-              Save
+              {t('editHighlightBadges.save')}
             </Text>
           )}
         </Pressable>
@@ -302,7 +304,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
             fontWeight={currentPage === 0 ? '$bold' : '$normal'}
             color={currentPage === 0 ? (isDark ? '#FFFFFF' : '#000000') : tabInactiveColor}
           >
-            Event Badges
+            {t('editHighlightBadges.eventBadges')}
           </Text>
         </Pressable>
         <Pressable
@@ -318,7 +320,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
             fontWeight={currentPage === 1 ? '$bold' : '$normal'}
             color={currentPage === 1 ? (isDark ? '#FFFFFF' : '#000000') : tabInactiveColor}
           >
-            Collections
+            {t('editHighlightBadges.collections')}
           </Text>
         </Pressable>
       </HStack>
@@ -339,7 +341,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
             <VStack p="$4" space="lg">
               {eventBadges.length === 0 ? (
                 <Text color={isDark ? '#9D9D9D' : '#8A8A8A'} fontSize="$sm" textAlign="center" mt="$4">
-                  No event badges yet.
+                  {t('editHighlightBadges.noEventBadges')}
                 </Text>
               ) : (
                 Array.from({ length: Math.ceil(eventBadges.length / 3) }, (_, rowIndex) => (
@@ -410,7 +412,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
             <VStack p="$4" space="lg">
               {collectionBadges.length === 0 ? (
                 <Text color={isDark ? '#9D9D9D' : '#8A8A8A'} fontSize="$sm" textAlign="center" mt="$4">
-                  No collection badges yet.
+                  {t('editHighlightBadges.noCollectionBadges')}
                 </Text>
               ) : (
                 Array.from({ length: Math.ceil(collectionBadges.length / 3) }, (_, rowIndex) => (

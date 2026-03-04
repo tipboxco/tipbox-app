@@ -35,6 +35,7 @@ import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import type { ThreadMessage } from '../api/messagesApi';
 import { MessageItem } from '../components/MessageItem';
 import { formatMessageTime } from '../utils/messageHelpers';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface MessageDetailItem {
   id: string;
@@ -123,6 +124,7 @@ const insertMessageInOrder = (
 
 
 const SupportMessageDetailScreen: React.FC = () => {
+  const { t } = useTranslation('inbox');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SupportMessageDetailScreenNavigationProp>();
@@ -1972,11 +1974,11 @@ const SupportMessageDetailScreen: React.FC = () => {
             ListEmptyComponent={
               isLoadingMessages ? (
                 <Box flex={1} justifyContent="center" alignItems="center">
-                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Loading...</Text>
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('supportMessageDetail.loading')}</Text>
                 </Box>
               ) : (
                 <Box flex={1} justifyContent="center" alignItems="center">
-                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No messages yet</Text>
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('supportMessageDetail.empty')}</Text>
                 </Box>
               )
             }

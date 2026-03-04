@@ -23,6 +23,7 @@ import { useInventory, useDeleteInventoryItem, useUserProfile } from '../api/hoo
 import { useAppStore } from '@/src/store/appStore';
 import { InventorySkeleton } from '@/src/components/Skeletons';
 import { Alert } from 'react-native';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 6;
@@ -50,6 +51,7 @@ const InventoryScreen = () => {
   const insets = useSafeAreaInsets();
   const { user } = useAppStore();
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { t } = useTranslation('profile');
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -203,15 +205,15 @@ const InventoryScreen = () => {
   const handleDeleteProduct = useCallback((item: InventoryItem) => {
     console.log('[InventoryScreen] Delete product:', item.id);
     Alert.alert(
-      'Ürünü Sil',
-      'Bu ürünü envanterinizden silmek istediğinizden emin misiniz?',
+      t('inventory.deleteProduct'),
+      t('inventory.deleteConfirm'),
       [
         {
-          text: 'İptal',
+          text: t('inventory.deleteCancel'),
           style: 'cancel',
         },
         {
-          text: 'Sil',
+          text: t('inventory.delete'),
           style: 'destructive',
           onPress: () => {
             setDeletingItemId(item.id);
@@ -221,9 +223,9 @@ const InventoryScreen = () => {
                   error?.response?.data?.message ||
                   error?.response?.data?.error?.message ||
                   error?.message ||
-                  'Ürün silinirken bir hata oluştu.';
+                  t('inventory.deleteErrorMessage');
                 showCustomToast(toast, {
-                  title: 'Silme hatası',
+                  title: t('inventory.deleteError'),
                   description: message,
                   action: 'error',
                 });
@@ -236,14 +238,14 @@ const InventoryScreen = () => {
         },
       ]
     );
-  }, [deleteInventoryItem, toast]);
+  }, [deleteInventoryItem, toast, t]);
 
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
-        title={userProfile?.name ? `${userProfile.name}'s Inventory` : 'Inventory'}
+        title={userProfile?.name ? t('inventory.title', { name: userProfile.name }) : t('inventory.inventory')}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
@@ -267,7 +269,7 @@ const InventoryScreen = () => {
           <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
           <Input flex={1} borderWidth={0} bg="transparent">
             <InputField
-              placeholder="Search product in your inventory"
+              placeholder={t('inventory.searchPlaceholder')}
               placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
               color={isDark ? '#000' : '#000'}
               fontSize="$sm"
@@ -282,7 +284,7 @@ const InventoryScreen = () => {
         <InventorySkeleton count={9} cardWidth={CARD_WIDTH} />
       ) : isError ? (
         <Box flex={1} justifyContent="center" alignItems="center">
-          <Text color="#CE4A4A">Hata: Envanter yüklenirken bir sorun oluştu</Text>
+          <Text color="#CE4A4A">{t('inventory.errorLoading')}</Text>
         </Box>
       ) : (
         <FlatList
@@ -393,12 +395,12 @@ const InventoryScreen = () => {
                   color={isDark ? '#666666' : '#B9B9B9'} 
                   strokeWidth={1.5}
                 />
-                <Text 
+                <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
                   fontSize="$md"
                   textAlign="center"
                 >
-                  {searchQuery ? 'No search results found' : 'Inventory is empty'}
+                  {searchQuery ? t('inventory.noResults') : t('inventory.isEmpty')}
                 </Text>
                 {!searchQuery && showCreateButton && (
                   <Pressable
@@ -412,7 +414,7 @@ const InventoryScreen = () => {
                       py="$2"
                     >
                       <Text color="#000000" fontSize="$md" fontWeight="$semibold">
-                        Add Product
+                        {t('inventory.addProduct')}
                       </Text>
                     </Box>
                   </Pressable>

@@ -22,6 +22,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated-carousel';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Feather } from '@expo/vector-icons';
 import { Bars3Icon } from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
@@ -269,6 +270,7 @@ const BannerCarousel = React.memo(BannerCarouselComponent, (prevProps, nextProps
 
 const ExploreScreen: React.FC = () => {
   const { colorMode } = useColorMode();
+  const { t } = useTranslation('explore');
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<ExploreStackParamList & RootStackParamList>>();
   const pagerRef = useRef<PagerView>(null);
@@ -334,19 +336,19 @@ const ExploreScreen: React.FC = () => {
   const staticExploreBanners: MarketplaceBanner[] = useMemo(() => [
     {
       id: 'explore-banner-1',
-      title: 'Tipbox Explore',
-      description: 'Keşfetmeye devam edin',
+      title: t('banners.title'),
+      description: t('banners.description1'),
       imageUrl: require('@/src/Explore Banners/Tipbox-explorebanners.png') as any,
       linkUrl: '',
     },
     {
       id: 'explore-banner-2',
-      title: 'Tipbox Explore',
-      description: 'Yeni içerikler keşfedin',
+      title: t('banners.title'),
+      description: t('banners.description2'),
       imageUrl: require('@/src/Explore Banners/Tipbox-explorebanners2.png') as any,
       linkUrl: '',
     },
-  ], []);
+  ], [t]);
 
   // Combine API banners with static explore banners
   const combinedBanners = useMemo(() => {
@@ -593,7 +595,7 @@ const ExploreScreen: React.FC = () => {
                 fontWeight="$bold"
                 textAlign="center"
               >
-                Explore
+                {t('title')}
               </Text>
             </Box>
 
@@ -627,7 +629,7 @@ const ExploreScreen: React.FC = () => {
               />
               <Input flex={1} borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder="Search posts, products, or brands"
+                  placeholder={t('search.placeholder')}
                   placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                   color={isDark ? '#000' : '#000'}
                   fontSize="$xs"
@@ -674,7 +676,7 @@ const ExploreScreen: React.FC = () => {
                       tab1Style,
                     ]}
                   >
-                    Hottest
+                    {t('tabs.hottest')}
                   </Animated.Text>
                 </VStack>
               </Pressable>
@@ -696,7 +698,7 @@ const ExploreScreen: React.FC = () => {
                       tab2Style,
                     ]}
                   >
-                    What's News
+                    {t('tabs.news')}
                   </Animated.Text>
                 </VStack>
               </Pressable>

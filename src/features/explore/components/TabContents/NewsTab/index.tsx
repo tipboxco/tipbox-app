@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { FlatList, ActivityIndicator, ScrollView } from 'react-native';
 import { Box, VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { EventSkeleton } from '@/src/components/Skeletons';
 import EventCard from '@/src/components/EventCard';
 import BrandCard from '../../BrandCard';
@@ -33,6 +34,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   headerComponent,
 }) => {
   const { colorMode } = useColorMode();
+  const { t } = useTranslation('explore');
   const isDark = colorMode === 'dark';
 
   // Explore Events API hook with infinite scroll
@@ -333,7 +335,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
                 fontSize={14}
                 fontWeight="$bold"
               >
-                New Community Events
+                {t('news.sections.events.title')}
               </Text>
               <Pressable onPress={handleSeeAllEvents}>
                 <Text
@@ -342,7 +344,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
                   fontWeight="$medium"
                   textDecorationLine="underline"
                 >
-                  See Event Catalog
+                  {t('news.sections.events.seeAll')}
                 </Text>
               </Pressable>
             </HStack>
@@ -389,7 +391,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
                 fontSize={14}
                 fontWeight="$bold"
               >
-                New Brands
+                {t('news.sections.brands.title')}
               </Text>
               <Pressable onPress={handleSeeAllBrands}>
                 <Text
@@ -398,7 +400,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
                   fontWeight="$medium"
                   textDecorationLine="underline"
                 >
-                  See Brand Catalog
+                  {t('news.sections.brands.seeAll')}
                 </Text>
               </Pressable>
             </HStack>
@@ -482,7 +484,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
                 fontSize={14}
                 fontWeight="$bold"
               >
-                New Products
+                {t('news.sections.products.title')}
               </Text>
               <Pressable onPress={handleSeeAllProducts}>
                 <Text
@@ -491,7 +493,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
                   fontWeight="$medium"
                   textDecorationLine="underline"
                 >
-                  See Product Catalog
+                  {t('news.sections.products.seeAll')}
                 </Text>
               </Pressable>
             </HStack>

@@ -21,6 +21,7 @@ import type { SupportRequest } from '../api/messagesApi';
 import { Alert } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 import { SupportRequestSkeleton } from '@/src/components/Skeletons';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SupportRequestsScreenNavigationProp = NativeStackNavigationProp<any, 'SupportRequestsScreen'>;
 
@@ -28,6 +29,7 @@ type SupportRequestsScreenNavigationProp = NativeStackNavigationProp<any, 'Suppo
 const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
 
 const SupportRequestsScreen: React.FC = () => {
+  const { t } = useTranslation('inbox');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [activeFilter, setActiveFilter] = useState<string>('all'); // ✅ Default: 'all' (tüm request'leri göster)
@@ -314,11 +316,11 @@ const SupportRequestsScreen: React.FC = () => {
 
   // Filter options for UI
   const filterOptions = [
-    { id: 'all', name: 'All' }, // ✅ Tüm request'leri göster
-    { id: 'pending', name: 'Awaiting Resolution' },
-    { id: 'active', name: 'Active Requests' },
-    { id: 'awaiting_completion', name: 'Awaiting Completion' },
-    { id: 'completed', name: 'Completed' },
+    { id: 'all', name: t('supportRequests.filters.all') },
+    { id: 'pending', name: t('supportRequests.filters.pending') },
+    { id: 'active', name: t('supportRequests.filters.active') },
+    { id: 'awaiting_completion', name: t('supportRequests.filters.awaitingCompletion') },
+    { id: 'completed', name: t('supportRequests.filters.completed') },
   ];
 
   return (
@@ -336,7 +338,7 @@ const SupportRequestsScreen: React.FC = () => {
         {/* Support Requests List - Full Width */}
         {error ? (
           <Box py={20} alignItems="center">
-            <Text color="#CE4A4A">Error: {error.message}</Text>
+            <Text color="#CE4A4A">{t('supportRequests.error', { message: error.message })}</Text>
           </Box>
         ) : (
           <FlatList
@@ -364,7 +366,7 @@ const SupportRequestsScreen: React.FC = () => {
             ListEmptyComponent={
               !isLoading ? (
                 <Box py={40} alignItems="center" justifyContent="center" flex={1}>
-                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No support requests yet</Text>
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('supportRequests.empty')}</Text>
                 </Box>
               ) : null
             }

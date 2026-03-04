@@ -3,13 +3,22 @@
     "posts": "Posts",
     "media": "Media",
     "events": "Events",
-    "badges": "Badges"
+    "badges": "Badges",
+    "feed": "Feed",
+    "reviews": "Experience",
+    "benchmarks": "Benchmarks",
+    "tipsAndTricks": "Tips & Tricks",
+    "replies": "Questions",
+    "badge": "Badges",
+    "collections": "Collections"
   },
   "stats": {
     "followers": "Followers",
     "following": "Following",
     "posts": "Posts",
-    "tips": "Tips"
+    "tips": "Tips",
+    "trust": "Trust",
+    "truster": "Truster"
   },
   "actions": {
     "follow": "Follow",
@@ -18,12 +27,157 @@
     "message": "Message",
     "tip": "Send Tip",
     "edit": "Edit Profile",
-    "share": "Share Profile"
+    "share": "Share Profile",
+    "save": "Save",
+    "cancel": "Cancel",
+    "adding": "Adding...",
+    "removing": "Removing...",
+    "trust": "Trust",
+    "unTrust": "Un Trust",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "muting": "Muting...",
+    "unmuting": "Unmuting...",
+    "report": "Report",
+    "block": "Block"
   },
   "emptyStates": {
     "noPosts": "No posts yet",
     "noMedia": "No media yet",
     "noEvents": "No events yet",
-    "noBadges": "No badges yet"
+    "noBadges": "No badges yet",
+    "noContent": "No content found yet.",
+    "collectionsComingSoon": "Collections content coming soon.",
+    "noBadgesYet": "No badges yet",
+    "noEventBadges": "No {{type}} yet",
+    "noCollectionBadges": "No {{type}} yet"
+  },
+  "profileScreen": {
+    "inventory": "{{name}}'s Inventory",
+    "editHighlightBadges": "Edit Highlight Badges",
+    "highlightBadges": "Highlight Badges",
+    "allBadges": "All Badges",
+    "eventBadges": "Event Badges"
+  },
+  "profileEdit": {
+    "title": "Edit Profile",
+    "name": "Name",
+    "bio": "Bio",
+    "badge": "Badge",
+    "selectBadge": "Select Badge {{number}}",
+    "avatarFrameSelect": "Avatar Frame Seç",
+    "cosmetics": "Cosmetics",
+    "namePlaceholder": "Enter your name",
+    "bioPlaceholder": "Tell us about yourself",
+    "validationNameMin": "Name must be at least 2 characters",
+    "validationBioMax": "Biography can be at most 500 characters",
+    "avatarUploadFailed": "Avatar Upload Failed",
+    "bannerUploadFailed": "Banner Upload Failed",
+    "errorUploadingAvatar": "An error occurred while uploading avatar",
+    "errorUploadingBanner": "An error occurred while uploading banner",
+    "errorSelectingPhoto": "An error occurred while selecting photo",
+    "successAvatarUpdated": "Avatar updated successfully!",
+    "successBannerUpdated": "Banner updated successfully!",
+    "successProfileUpdated": "Profile updated successfully!",
+    "warningBadgeUsed": "This badge is already used in another slot",
+    "badgeLabel": {
+      "everyday_consumer": "Everyday Consumer",
+      "home_appliance": "Home Appliance Enthusiast",
+      "product_reviewer": "Product Reviewer",
+      "tech_expert": "Tech Expert"
+    }
+  },
+  "inventory": {
+    "title": "{{name}}'s Inventory",
+    "inventory": "Inventory",
+    "searchPlaceholder": "Search product in your inventory",
+    "noResults": "No search results found",
+    "isEmpty": "Inventory is empty",
+    "addProduct": "Add Product",
+    "deleteProduct": "Ürünü Sil",
+    "deleteConfirm": "Bu ürünü envanterinizden silmek istediğinizden emin misiniz?",
+    "deleteCancel": "İptal",
+    "delete": "Sil",
+    "deleteError": "Silme hatası",
+    "deleteErrorMessage": "Ürün silinirken bir hata oluştu.",
+    "errorLoading": "Hata: Envanter yüklenirken bir sorun oluştu"
+  },
+  "inventoryDetail": {
+    "title": "Product Details",
+    "priceReview": "Price and Shopping Experience",
+    "productReview": "Product and Usage Experience",
+    "noReviews": "Bu ürün için henüz değerlendirme bulunmamaktadır.",
+    "errorLoading": "An error occurred while loading product information.",
+    "notFound": "Product not found."
+  },
+  "collections": {
+    "title": "{{name}}'s Collections",
+    "searchPlaceholder": "Search by badge name",
+    "achievementBadges": "Achievements Badges",
+    "bridgeBadges": "Bridge Badges"
+  },
+  "trustList": {
+    "trust": "Trust",
+    "truster": "Truster",
+    "searchTrust": "Search for a user in the Trust List.",
+    "searchTruster": "Search for a user in the Truster List.",
+    "viewSuggested": "View Suggested Users",
+    "viewSuggestedSubtitle": "Based on the categories you are interested in.",
+    "noUserId": "Kullanıcı ID bulunamadı",
+    "error": "Hata: {{message}}",
+    "noUserFound": "Kullanıcı bulunamadı",
+    "trustListEmpty": "Henüz trust listeniz boş",
+    "trusterListEmpty": "Henüz truster listeniz boş",
+    "loading": "Loading...",
+    "sort": "Sort",
+    "sortDefault": "Default",
+    "sortNewest": "Sort by: Newest",
+    "sortOldest": "Sort by: Oldest"
+  },
+  "editHighlightBadges": {
+    "title": "Edit Highlight Badges",
+    "save": "Save",
+    "eventBadges": "Event Badges",
+    "collections": "Collections",
+    "noEventBadges": "No event badges yet.",
+    "noCollectionBadges": "No collection badges yet."
+  },
+  "suggestedUsers": {
+    "title": "Suggested Users",
+    "loading": "Loading suggested users...",
+    "error": "An error occurred",
+    "noUsers": "No suggested users found"
+  },
+  "menu": {
+    "share": "Share",
+    "report": "Report",
+    "block": "Block",
+    "reportTitle": "Report User",
+    "reportMessage": "Are you sure you want to report this user?",
+    "blockTitle": "Block User",
+    "blockMessage": "Are you sure you want to block this user? Blocked users cannot interact with you."
+  },
+  "toast": {
+    "tipsSent": "TIPS Sent",
+    "tipsSentDescription": "{{amount}} TIPS has been sent successfully",
+    "muted": "User Muted",
+    "mutedDescription": "{{name}} will no longer send notifications",
+    "unmuted": "Unmuted",
+    "unmutedDescription": "{{name}} can now send notifications",
+    "error": "Error",
+    "errorMuting": "An error occurred while muting user",
+    "errorUnmuting": "An error occurred while unmuting"
+  },
+  "alerts": {
+    "errorTitle": "Error",
+    "errorUserInfo": "User information not found",
+    "errorTipsMinimum": "TIPS amount must be at least 0.01",
+    "errorMessageEmpty": "Message cannot be empty",
+    "successTitle": "Success"
+  },
+  "badges": {
+    "allBadges": "All Badges",
+    "eventBadges": "Event Badges",
+    "collections": "Collections"
   }
 }

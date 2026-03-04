@@ -35,11 +35,13 @@ import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateEventPostWithContext, eventsKeys } from '../api/hooks';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventStackParamList, 'EventCreatePost'>;
 
 const EventCreatePost: React.FC = () => {
+    const { t } = useTranslation('events');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<EventCreatePostNavigationProp>();
@@ -426,8 +428,8 @@ const EventCreatePost: React.FC = () => {
             
             if (remainingSlots <= 0) {
                 showCustomToast(toast, {
-                    title: 'Limit Exceeded',
-                    description: 'You can select a maximum of 10 images.',
+                    title: t('createPost.errors.limitExceeded'),
+                    description: t('createPost.errors.limitExceeded'),
                     action: 'error',
                 });
                 return;
@@ -444,23 +446,23 @@ const EventCreatePost: React.FC = () => {
                     setSelectedImages(prev => [...prev, ...newImageUris]);
                 } else {
                     showCustomToast(toast, {
-                        title: 'Error',
-                        description: 'Could not find URIs of selected images.',
+                        title: t('createPost.errors.imageUriError'),
+                        description: t('createPost.errors.imageUriError'),
                         action: 'error',
                     });
                 }
             } else if (result.error) {
                 showCustomToast(toast, {
-                    title: 'Error',
+                    title: t('createPost.errors.imagePickerError'),
                     description: result.error,
                     action: 'error',
                 });
             }
         } catch (error: any) {
             console.error('Image picker error:', error);
-            const errorMessage = error?.message || 'An error occurred while selecting images';
+            const errorMessage = error?.message || t('createPost.errors.imagePickerError');
             showCustomToast(toast, {
-                title: 'Error',
+                title: t('createPost.errors.imagePickerError'),
                 description: errorMessage,
                 action: 'error',
             });
@@ -497,8 +499,8 @@ const EventCreatePost: React.FC = () => {
             // Validation - Content is required
             if (!content.trim()) {
                 showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Content is required.',
+                    title: t('createPost.errors.contentRequired'),
+                    description: t('createPost.errors.contentRequired'),
                     action: 'error',
                 });
                 return;
@@ -508,8 +510,8 @@ const EventCreatePost: React.FC = () => {
             if (isRoastsEvent) {
                 if (!selectedProduct) {
                     showCustomToast(toast, {
-                        title: 'Error',
-                        description: 'Product is missing.',
+                        title: t('createPost.errors.productMissing'),
+                        description: t('createPost.errors.productMissing'),
                         action: 'error',
                     });
                     return;
@@ -517,8 +519,8 @@ const EventCreatePost: React.FC = () => {
 
                 if (!productStatus) {
                     showCustomToast(toast, {
-                        title: 'Error',
-                        description: 'Please select a product status.',
+                        title: t('createPost.errors.productStatusRequired'),
+                        description: t('createPost.errors.productStatusRequired'),
                         action: 'error',
                     });
                     return;
@@ -526,8 +528,8 @@ const EventCreatePost: React.FC = () => {
 
                 if (!eventId) {
                     showCustomToast(toast, {
-                        title: 'Error',
-                        description: 'Event ID is missing. Please try again.',
+                        title: t('createPost.errors.eventIdMissing'),
+                        description: t('createPost.errors.eventIdMissing'),
                         action: 'error',
                     });
                     return;
@@ -584,8 +586,8 @@ const EventCreatePost: React.FC = () => {
                 }
 
                 showCustomToast(toast, {
-                    title: 'Success',
-                    description: 'Post created successfully!',
+                    title: t('createPost.success.postCreated'),
+                    description: t('createPost.success.postCreated'),
                     action: 'success',
                 });
 
@@ -611,8 +613,8 @@ const EventCreatePost: React.FC = () => {
             // Validation - Product seçimi zorunlu
             if (!selectedProduct) {
                 showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Please select a product before sharing.',
+                    title: t('createPost.errors.selectProductFirst'),
+                    description: t('createPost.errors.selectProductFirst'),
                     action: 'error',
                 });
                 return;
@@ -621,8 +623,8 @@ const EventCreatePost: React.FC = () => {
             // Validation - eventId zorunlu
             if (!eventId) {
                 showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Event ID is missing. Please try again.',
+                    title: t('createPost.errors.eventIdMissing'),
+                    description: t('createPost.errors.eventIdMissing'),
                     action: 'error',
                 });
                 return;
@@ -705,8 +707,8 @@ const EventCreatePost: React.FC = () => {
 
             // Başarılı toast göster
             showCustomToast(toast, {
-                title: 'Success',
-                description: 'Post created successfully!',
+                title: t('createPost.success.postCreated'),
+                description: t('createPost.success.postCreated'),
                 action: 'success',
             });
 
@@ -740,25 +742,25 @@ const EventCreatePost: React.FC = () => {
             // Backend hata mesajlarını parse et
             const errorCode = error?.response?.data?.error?.code;
             const errorMessage = error?.response?.data?.error?.message || error?.response?.data?.message;
-            
-            let displayMessage = 'An error occurred while creating the post. Please try again.';
-            
+
+            let displayMessage = t('createPost.errors.postCreationError');
+
             switch (errorCode) {
                 case 'EVENT_NOT_FOUND':
-                    displayMessage = 'Event not found';
+                    displayMessage = t('createPost.errors.eventNotFound');
                     break;
                 case 'NOT_JOINED':
-                    displayMessage = 'You must join this event before sharing a post';
+                    displayMessage = t('createPost.errors.notJoined');
                     break;
                 case 'VALIDATION_ERROR':
-                    displayMessage = errorMessage || 'Please fill in all fields';
+                    displayMessage = errorMessage || t('createPost.errors.validationError');
                     break;
                 default:
                     displayMessage = errorMessage || displayMessage;
             }
-            
+
             showCustomToast(toast, {
-                title: 'Error',
+                title: t('createPost.errors.postCreationError'),
                 description: displayMessage,
                 action: 'error',
             });
@@ -839,11 +841,11 @@ const EventCreatePost: React.FC = () => {
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FFFFFF'}>
             {/* Header */}
             <Header
-                title="Write a Post"
+                title={t('createPost.title')}
                 leftAction="back"
                 onLeftActionPress={handleBackPress}
                 rightButton={{
-                    text: 'Share',
+                    text: t('createPost.share'),
                     backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
                     borderWidth: 1,
                     borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
@@ -907,7 +909,7 @@ const EventCreatePost: React.FC = () => {
                                             color={isDark ? '#999' : '#CCCCCC'}
                                             fontSize={15}
                                         >
-                                            Select Product
+                                            {t('createPost.selectProduct')}
                                         </Text>
                                     </HStack>
                                 </Pressable>
@@ -932,7 +934,7 @@ const EventCreatePost: React.FC = () => {
                             color={isDark ? '$textDark200' : '#999999'}
                             fontSize={14}
                         >
-                            Content
+                            {t('createPost.content')}
                         </Text>
                         <Textarea
                             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -942,7 +944,7 @@ const EventCreatePost: React.FC = () => {
                             height={180}
                         >
                             <TextareaInput
-                                placeholder="Write your content... (max 2000 characters)"
+                                placeholder={t('createPost.contentPlaceholder')}
                                 value={content}
                                 onChangeText={(text) => {
                                     if (text.length <= 2000) {
@@ -973,7 +975,7 @@ const EventCreatePost: React.FC = () => {
                                 color={isDark ? '$textDark200' : '#999999'}
                                 fontSize={14}
                             >
-                                Product Status
+                                {t('createPost.productStatus')}
                             </Text>
 
                             <Pressable onPress={() => setShowProductStatusDropdown((v) => !v)}>
@@ -1005,10 +1007,10 @@ const EventCreatePost: React.FC = () => {
                                             flex={1}
                                         >
                                             {productStatus === 'own'
-                                                ? 'I Own the Product'
+                                                ? t('createPost.iOwnProduct')
                                                 : productStatus === 'tried'
-                                                    ? 'Tried / Tested'
-                                                    : 'Product Status'}
+                                                    ? t('createPost.triedTested')
+                                                    : t('createPost.productStatusPlaceholder')}
                                         </Text>
                                         <Feather
                                             name={showProductStatusDropdown ? 'chevron-up' : 'chevron-down'}
@@ -1044,7 +1046,7 @@ const EventCreatePost: React.FC = () => {
                                                     fontSize="$sm"
                                                     fontWeight="$medium"
                                                 >
-                                                    I Own the Product
+                                                    {t('createPost.iOwnProduct')}
                                                 </Text>
                                             </HStack>
                                         </Pressable>
@@ -1061,7 +1063,7 @@ const EventCreatePost: React.FC = () => {
                                                     fontSize="$sm"
                                                     fontWeight="$medium"
                                                 >
-                                                    Tried / Tested
+                                                    {t('createPost.triedTested')}
                                                 </Text>
                                             </HStack>
                                         </Pressable>
@@ -1077,7 +1079,7 @@ const EventCreatePost: React.FC = () => {
                             color={isDark ? '$textDark200' : '#999999'}
                             fontSize={14}
                         >
-                            Images (Optional)
+                            {t('createPost.images')}
                         </Text>
                         <HStack space="sm" flexWrap="wrap">
                             {selectedImages.map((imageUri, index) => (

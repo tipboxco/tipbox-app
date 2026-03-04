@@ -28,6 +28,7 @@ import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { MessageSkeleton } from '@/src/components/Skeletons';
 import { inboxTypingStore } from '../store/typingStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -38,6 +39,7 @@ interface MessagesScreenProps {
 }
 
 const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveTab = true, searchQuery = '' }) => {
+    const { t } = useTranslation('inbox');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [activeCategory, setActiveCategory] = useState<string>('1');
@@ -558,7 +560,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             {/* Messages List - Full Height */}
             {error ? (
                 <Box py={20} alignItems="center">
-                    <Text color="#CE4A4A">Error: {error.message}</Text>
+                    <Text color="#CE4A4A">{t('messages.error', { message: error.message })}</Text>
                 </Box>
             ) : (
                 <FlatList
@@ -577,7 +579,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     ListEmptyComponent={
                         !isLoading ? (
                             <Box py={40} alignItems="center" justifyContent="center" flex={1}>
-                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Start a conversation</Text>
+                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('messages.empty')}</Text>
                             </Box>
                         ) : null
                     }

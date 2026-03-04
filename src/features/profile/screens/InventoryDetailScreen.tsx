@@ -12,6 +12,7 @@ import { useInventory } from '../api/hooks';
 import { toImageSource, cleanNewlines } from '@/src/utils';
 import { ProfileStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const InventoryDetailScreen = () => {
   const { colorMode } = useColorMode();
@@ -20,6 +21,7 @@ const InventoryDetailScreen = () => {
   const route = useRoute<RouteProp<ProfileStackParamList, 'InventoryDetail'>>();
   const { itemId, userId } = route.params as { itemId: string; userId: string };
   const { user } = useAppStore();
+  const { t } = useTranslation('profile');
 
   // API'den inventory listesini al (pagination ile)
   const { data, isLoading, error } = useInventory(20);
@@ -49,7 +51,7 @@ const InventoryDetailScreen = () => {
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
           <Header
-            title="Product Details"
+            title={t('inventoryDetail.title')}
             showBackButton
             onBackPress={() => navigation.goBack()}
           />
@@ -59,7 +61,7 @@ const InventoryDetailScreen = () => {
               color={isDark ? '$textDark400' : '#6D6D6D'}
               textAlign="center"
             >
-              {error ? 'An error occurred while loading product information.' : 'Product not found.'}
+              {error ? t('inventoryDetail.errorLoading') : t('inventoryDetail.notFound')}
             </Text>
           </VStack>
         </VStack>
@@ -88,7 +90,7 @@ const InventoryDetailScreen = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
       <Header
-        title="Product Details"
+        title={t('inventoryDetail.title')}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
@@ -154,7 +156,7 @@ const InventoryDetailScreen = () => {
                   fontWeight="$semibold"
                   color={isDark ? '$textDark50' : '#3B3B3B'}
                 >
-                  {priceReview.title || 'Price and Shopping Experience'}
+                  {priceReview.title || t('inventoryDetail.priceReview')}
                 </Text>
               </HStack>
               <Text
@@ -185,7 +187,7 @@ const InventoryDetailScreen = () => {
                   fontWeight="$semibold"
                   color={isDark ? '$textDark50' : '#3B3B3B'}
                 >
-                  {productReview.title || 'Product and Usage Experience'}
+                  {productReview.title || t('inventoryDetail.productReview')}
                 </Text>
               </HStack>
               <Text
@@ -210,7 +212,7 @@ const InventoryDetailScreen = () => {
                 color={isDark ? '$textDark400' : '#6D6D6D'}
                 textAlign="center"
               >
-                Bu ürün için henüz değerlendirme bulunmamaktadır.
+                {t('inventoryDetail.noReviews')}
               </Text>
             </VStack>
           )}
