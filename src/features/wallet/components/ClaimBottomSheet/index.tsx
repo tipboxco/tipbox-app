@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { VStack, HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { RewardCard, RewardCardProps } from '../RewardCard';
 import { useRewardSummary, useClaimReward, useClaimAllRewards } from '../../api/hooks';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -24,6 +25,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('wallet');
 
   // API hooks
   const { data: rewardSummary, isLoading, error, refetch } = useRewardSummary();
@@ -40,13 +42,13 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
     return Object.entries(rewardSummary.bySourceType).map(([sourceType, data]) => {
       // Map sourceType to display title
       const titleMap: Record<string, string> = {
-        'LADDER_REWARD': 'Ladder Rewards',
-        'TIPS_RECEIVED': 'Tips',
-        'SUPPORT_SESSION': 'Support Rewards',
-        'BADGE_EARNED': 'Badge Rewards',
-        'ACHIEVEMENT_UNLOCKED': 'Achievement Rewards',
-        'EVENT_PARTICIPATION': 'Event Rewards',
-        'SYSTEM_GRANT': 'System Rewards',
+        'LADDER_REWARD': t('claimBottomSheet.rewardTypes.ladderRewards'),
+        'TIPS_RECEIVED': t('claimBottomSheet.rewardTypes.tips'),
+        'SUPPORT_SESSION': t('claimBottomSheet.rewardTypes.supportRewards'),
+        'BADGE_EARNED': t('claimBottomSheet.rewardTypes.badgeRewards'),
+        'ACHIEVEMENT_UNLOCKED': t('claimBottomSheet.rewardTypes.achievementRewards'),
+        'EVENT_PARTICIPATION': t('claimBottomSheet.rewardTypes.eventRewards'),
+        'SYSTEM_GRANT': t('claimBottomSheet.rewardTypes.systemRewards'),
       };
 
       // Get first claim ID as the group ID
@@ -126,7 +128,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
         {/* Header */}
         <HStack justifyContent="center" alignItems="center" mb="$2">
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            Rewards
+            {t('claimBottomSheet.title')}
           </Text>
         </HStack>
 
@@ -135,7 +137,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
           <VStack alignItems="center" py="$8" space="md">
             <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
             <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-              Loading rewards...
+              {t('claimBottomSheet.loading')}
             </Text>
           </VStack>
         )}
@@ -144,7 +146,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
         {error && !isLoading && (
           <VStack alignItems="center" py="$8" space="md">
             <Text fontSize={14} color="#CE4A4A" textAlign="center">
-              Failed to load rewards
+              {t('claimBottomSheet.loadFailed')}
             </Text>
             <Pressable
               onPress={() => refetch()}
@@ -155,7 +157,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
               py="$2"
             >
               <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                Retry
+                {t('claimBottomSheet.retry')}
               </Text>
             </Pressable>
           </VStack>
@@ -165,7 +167,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
         {!isLoading && !error && rewards.length === 0 && (
           <VStack alignItems="center" py="$8">
             <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" textAlign="center">
-              No rewards available to claim
+              {t('claimBottomSheet.empty')}
             </Text>
           </VStack>
         )}
@@ -203,7 +205,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
               <ActivityIndicator size="small" color="#111111" />
             ) : (
               <Text fontSize={14} fontWeight="$bold" color="#111111" $dark-color="#111111" textAlign="center">
-                Claim All
+                {t('claimBottomSheet.claimAll')}
               </Text>
             )}
           </Pressable>

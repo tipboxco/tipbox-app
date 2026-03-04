@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Box, VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
 import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 interface NFTFilterBottomSheetProps {
@@ -19,6 +20,7 @@ export const NFTFilterBottomSheet: React.FC<NFTFilterBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('wallet');
 
   const handleTypeToggle = useCallback((type: string) => {
     const newSelectedTypes = selectedTypes.includes(type)
@@ -43,7 +45,7 @@ export const NFTFilterBottomSheet: React.FC<NFTFilterBottomSheetProps> = ({
           </Pressable>
           <HStack flex={1} justifyContent="center" alignItems="center">
             <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-              Type Filter
+              {t('filterBottomSheet.title')}
             </Text>
           </HStack>
           <Box w={24} />
@@ -120,7 +122,7 @@ export const NFTFilterBottomSheet: React.FC<NFTFilterBottomSheetProps> = ({
             justifyContent="center"
           >
             <Text fontSize={14} fontWeight="$bold" color="#9E9E9E" $dark-color="$textDark400" textAlign="center">
-              Reset
+              {t('filterBottomSheet.reset')}
             </Text>
           </Pressable>
         )}

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { Clipboard } from 'react-native';
-import { 
+import { useTranslation } from '@/src/hooks/useTranslation';
+import {
   ArrowDownIcon,
   ArrowUpIcon,
   XMarkIcon,
@@ -51,66 +52,66 @@ interface HistoryCardProps {
 /**
  * Returns English label based on ActionType
  */
-const getActionTypeLabel = (actionType?: ActionType): string => {
+const getActionTypeLabel = (actionType: ActionType | undefined, t: any): string => {
   switch (actionType) {
     case 'TIP_SEND':
-      return 'TIPS Sent';
+      return t('historyCard.actionTypes.tipsSent');
     case 'TIP_RECEIVE':
-      return 'TIPS Received';
+      return t('historyCard.actionTypes.tipsReceived');
     case 'DEPOSIT':
-      return 'Deposit';
+      return t('historyCard.actionTypes.deposit');
     case 'WITHDRAW':
-      return 'Withdraw';
+      return t('historyCard.actionTypes.withdraw');
     case 'CLAIM_REWARD':
-      return 'Reward Claimed';
+      return t('historyCard.actionTypes.rewardClaimed');
     case 'CLAIM_BADGE':
-      return 'Badge Claimed';
+      return t('historyCard.actionTypes.badgeClaimed');
     case 'NFT_BUY':
-      return 'NFT Purchased';
+      return t('historyCard.actionTypes.nftPurchased');
     case 'NFT_SELL':
-      return 'NFT Sold';
+      return t('historyCard.actionTypes.nftSold');
     case 'SWAP_TIP_TO_SOL':
-      return 'TIPS → SOL Swap';
+      return t('historyCard.actionTypes.swapTipToSol');
     case 'SWAP_SOL_TO_TIP':
-      return 'SOL → TIPS Swap';
+      return t('historyCard.actionTypes.swapSolToTip');
     case 'AIRDROP':
-      return 'Airdrop Received';
+      return t('historyCard.actionTypes.airdropReceived');
     case 'FEE':
-      return 'Transaction Fee';
+      return t('historyCard.actionTypes.transactionFee');
     default:
-      return 'Transaction';
+      return t('historyCard.actionTypes.transaction');
   }
 };
 
 /**
  * Returns default description based on ActionType (used when description is empty)
  */
-const getActionTypeDescription = (actionType?: ActionType): string => {
+const getActionTypeDescription = (actionType: ActionType | undefined, t: any): string => {
   switch (actionType) {
     case 'TIP_SEND':
-      return 'TIPS transfer completed';
+      return t('historyCard.descriptions.tipsSent');
     case 'TIP_RECEIVE':
-      return 'TIPS transfer received';
+      return t('historyCard.descriptions.tipsReceived');
     case 'DEPOSIT':
-      return 'Deposit received (external wallet)';
+      return t('historyCard.descriptions.deposit');
     case 'WITHDRAW':
-      return 'Withdraw to external wallet';
+      return t('historyCard.descriptions.withdraw');
     case 'CLAIM_REWARD':
-      return 'Reward successfully claimed';
+      return t('historyCard.descriptions.rewardClaimed');
     case 'CLAIM_BADGE':
-      return 'Badge successfully claimed';
+      return t('historyCard.descriptions.badgeClaimed');
     case 'NFT_BUY':
-      return 'NFT purchase completed';
+      return t('historyCard.descriptions.nftPurchased');
     case 'NFT_SELL':
-      return 'NFT sale completed';
+      return t('historyCard.descriptions.nftSold');
     case 'SWAP_TIP_TO_SOL':
-      return 'TIPS tokens swapped to SOL';
+      return t('historyCard.descriptions.swapTipToSol');
     case 'SWAP_SOL_TO_TIP':
-      return 'SOL tokens swapped to TIPS';
+      return t('historyCard.descriptions.swapSolToTip');
     case 'AIRDROP':
-      return 'Airdrop reward received';
+      return t('historyCard.descriptions.airdropReceived');
     case 'FEE':
-      return 'Transaction fee paid';
+      return t('historyCard.descriptions.transactionFee');
     default:
       return '';
   }
@@ -120,14 +121,14 @@ const getActionTypeDescription = (actionType?: ActionType): string => {
  * Status label (created | pending | confirmed | failed).
  * Returns "Cancelled" when errorMessage === "Cancelled by user".
  */
-const getStatusLabel = (status?: TransactionStatus, errorMessage?: string | null): string | null => {
+const getStatusLabel = (status: TransactionStatus | undefined, errorMessage: string | null | undefined, t: any): string | null => {
   if (!status) return null;
-  if (status === 'failed' && errorMessage === 'Cancelled by user') return 'Cancelled';
+  if (status === 'failed' && errorMessage === 'Cancelled by user') return t('historyCard.status.cancelled');
   switch (status) {
-    case 'created': return 'Pending';
-    case 'pending': return 'Processing';
-    case 'confirmed': return 'Completed';
-    case 'failed': return 'Failed';
+    case 'created': return t('historyCard.status.pending');
+    case 'pending': return t('historyCard.status.processing');
+    case 'confirmed': return t('historyCard.status.completed');
+    case 'failed': return t('historyCard.status.failed');
     default: return null;
   }
 };
@@ -238,16 +239,17 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
   errorMessage,
   onCopyPress,
 }) => {
+  const { t } = useTranslation('wallet');
   const { Icon, iconColor, bgColor } = getTransactionIcon(type, transactionType, actionType);
-  
+
   // Use English label if actionType exists
-  const displayType = actionType ? getActionTypeLabel(actionType) : type;
-  
+  const displayType = actionType ? getActionTypeLabel(actionType, t) : type;
+
   // Use default description if description is empty; show "Cancelled" for cancelled
   const isCancelled = status === 'failed' && errorMessage === 'Cancelled by user';
-  const displayDescription = isCancelled ? 'Cancelled' : (description || getActionTypeDescription(actionType));
-  
-  const statusLabel = getStatusLabel(status, errorMessage);
+  const displayDescription = isCancelled ? t('historyCard.status.cancelled') : (description || getActionTypeDescription(actionType, t));
+
+  const statusLabel = getStatusLabel(status, errorMessage, t);
   const statusBg =
     status === 'failed' ? (isCancelled ? '#6B7280' : '#CE4A4A') :
     status === 'pending' || status === 'created' ? '#F59E0B' :
@@ -297,7 +299,7 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
           {date && (
             <HStack space="sm" alignItems="center" mt="$1">
               <Text fontSize={9} color="$textLight500" $dark-color="$textDark400">
-                Transaction Date:
+                {t('historyCard.transactionDate')}
               </Text>
               <Text fontSize={9} color="$textLight500" $dark-color="$textDark400">
                 {date}
@@ -307,7 +309,7 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
           {txHash && (
             <HStack space="sm" alignItems="center" mt="$1" flexWrap="wrap">
               <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" numberOfLines={1} flex={1}>
-                Hash: {txHash.length > 12 ? `${txHash.slice(0, 6)}…${txHash.slice(-6)}` : txHash}
+                {t('historyCard.hash')} {txHash.length > 12 ? `${txHash.slice(0, 6)}…${txHash.slice(-6)}` : txHash}
               </Text>
               <Pressable
                 onPress={() => Clipboard.setString(txHash)}

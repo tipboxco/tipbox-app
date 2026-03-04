@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Box, VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
 import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 export type SortOption = 'rarity_asc' | 'rarity_desc';
@@ -11,19 +12,6 @@ interface SortOptionItem {
   label: string;
   description: string;
 }
-
-const SORT_OPTIONS: SortOptionItem[] = [
-  {
-    value: 'rarity_desc',
-    label: 'Rarity: High to Low',
-    description: 'Rare items first',
-  },
-  {
-    value: 'rarity_asc',
-    label: 'Rarity: Low to High',
-    description: 'Common items first',
-  },
-];
 
 interface NFTSortBottomSheetProps {
   onClose: () => void;
@@ -38,6 +26,20 @@ export const NFTSortBottomSheet: React.FC<NFTSortBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('wallet');
+
+  const SORT_OPTIONS: SortOptionItem[] = [
+    {
+      value: 'rarity_desc',
+      label: t('sortBottomSheet.rarityDesc'),
+      description: t('sortBottomSheet.rarityDescInfo'),
+    },
+    {
+      value: 'rarity_asc',
+      label: t('sortBottomSheet.rarityAsc'),
+      description: t('sortBottomSheet.rarityAscInfo'),
+    },
+  ];
 
   const handleSortSelect = useCallback((newSortOption: SortOption) => {
     onApply(newSortOption);
@@ -54,7 +56,7 @@ export const NFTSortBottomSheet: React.FC<NFTSortBottomSheetProps> = ({
           </Pressable>
           <HStack flex={1} justifyContent="center" alignItems="center">
             <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-              Sort By Rarity
+              {t('sortBottomSheet.title')}
             </Text>
           </HStack>
           <Box w={24} />

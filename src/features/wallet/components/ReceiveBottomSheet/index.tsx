@@ -5,6 +5,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Alert, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useTranslation } from '@/src/hooks/useTranslation';
 // @ts-ignore - QR code library doesn't have type definitions
 import QRCode from 'react-native-qrcode-svg';
 
@@ -21,6 +22,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('wallet');
 
   // Truncate wallet address for display (crypto-style)
   const truncateAddress = (address: string, startLength = 12, endLength = 10) => {
@@ -31,7 +33,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
 
   const handleCopyAddress = async () => {
     await Clipboard.setStringAsync(walletAddress);
-    Alert.alert('Copied', 'Wallet address copied to clipboard');
+    Alert.alert(t('receiveBottomSheet.copied'), t('receiveBottomSheet.addressCopied'));
   };
 
   const handleShare = async () => {
@@ -63,7 +65,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
           borderBottomColor={isDark ? '$borderDark700' : '$borderLight200'}
         >
           <Text fontSize={18} fontWeight="$bold" color={isDark ? '$textDark50' : '$textLight900'}>
-            Receive TIPS
+            {t('receiveBottomSheet.title')}
           </Text>
           <Pressable onPress={onClose}>
             <XMarkIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
@@ -94,7 +96,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
               {userName}
             </Text>
             <Text fontSize={12} color={isDark ? '$textDark400' : '$textLight500'} textAlign="center">
-              Scan this QR code to send TIPS
+              {t('receiveBottomSheet.scanQR')}
             </Text>
           </VStack>
 
@@ -109,7 +111,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
           >
             <VStack space="sm">
               <Text fontSize={12} fontWeight="$semibold" color={isDark ? '$textDark400' : '$textLight500'}>
-                Wallet Address
+                {t('receiveBottomSheet.walletAddress')}
               </Text>
               <Text 
                 fontSize={11} 
@@ -138,7 +140,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
               <HStack space="sm" alignItems="center" justifyContent="center">
                 <DocumentDuplicateIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text fontSize={14} fontWeight="$semibold" color={isDark ? '$textDark50' : '$textLight900'}>
-                  Copy
+                  {t('receiveBottomSheet.copy')}
                 </Text>
               </HStack>
             </Pressable>
@@ -155,7 +157,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
               <HStack space="sm" alignItems="center" justifyContent="center">
                 <ShareIcon width={20} height={20} color="#000000" />
                 <Text fontSize={14} fontWeight="$semibold" color="#000000">
-                  Share
+                  {t('receiveBottomSheet.share')}
                 </Text>
               </HStack>
             </Pressable>
@@ -171,7 +173,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
             w="100%"
           >
             <Text fontSize={11} color={isDark ? '$textDark300' : '$textLight700'}>
-              💡 Use this address only to receive TIPS. Do not send other cryptocurrencies.
+              {t('receiveBottomSheet.info')}
             </Text>
           </Box>
         </VStack>

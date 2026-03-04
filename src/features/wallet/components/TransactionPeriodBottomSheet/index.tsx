@@ -2,6 +2,7 @@ import React from 'react';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { VStack, HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Feather } from '@expo/vector-icons';
 
 export type TransactionPeriodValue = 'all' | 'today' | 'yesterday' | 'lastWeek' | 'lastMonth';
@@ -12,14 +13,6 @@ interface TransactionPeriodBottomSheetProps {
   onClose: () => void;
 }
 
-const OPTIONS: Array<{ value: TransactionPeriodValue; label: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'today', label: 'Today' },
-  { value: 'yesterday', label: 'Yesterday' },
-  { value: 'lastWeek', label: 'Last Week' },
-  { value: 'lastMonth', label: 'Last Month' },
-];
-
 export const TransactionPeriodBottomSheet: React.FC<TransactionPeriodBottomSheetProps> = ({
   value,
   onChange,
@@ -27,6 +20,15 @@ export const TransactionPeriodBottomSheet: React.FC<TransactionPeriodBottomSheet
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('wallet');
+
+  const OPTIONS: Array<{ value: TransactionPeriodValue; label: string }> = [
+    { value: 'all', label: t('transactionPeriodBottomSheet.all') },
+    { value: 'today', label: t('transactionPeriodBottomSheet.today') },
+    { value: 'yesterday', label: t('transactionPeriodBottomSheet.yesterday') },
+    { value: 'lastWeek', label: t('transactionPeriodBottomSheet.lastWeek') },
+    { value: 'lastMonth', label: t('transactionPeriodBottomSheet.lastMonth') },
+  ];
 
   const borderColor = isDark ? '$borderDark600' : '$borderLight200';
   const cardBg = isDark ? '$backgroundDark900' : '$backgroundLight0';
@@ -37,7 +39,7 @@ export const TransactionPeriodBottomSheet: React.FC<TransactionPeriodBottomSheet
         <HStack alignItems="center" justifyContent="space-between">
           <Box w={24} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            Time Range
+            {t('transactionPeriodBottomSheet.title')}
           </Text>
           <Pressable onPress={onClose} hitSlop={12}>
             <Feather name="x" size={20} color={isDark ? '#FFFFFF' : '#000000'} />

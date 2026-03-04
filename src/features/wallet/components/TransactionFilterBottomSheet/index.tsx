@@ -2,6 +2,7 @@ import React from 'react';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { VStack, HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Feather } from '@expo/vector-icons';
 
 export type TransactionFilterValue =
@@ -19,16 +20,6 @@ interface TransactionFilterBottomSheetProps {
   onClose: () => void;
 }
 
-const FILTER_OPTIONS: Array<{ value: TransactionFilterValue; label: string }> = [
-  { value: 'all', label: 'All' },
-  { value: 'sent', label: 'Sent' },
-  { value: 'received', label: 'Received' },
-  { value: 'claim', label: 'Claim' },
-  { value: 'nft', label: 'NFT' },
-  { value: 'airdrop', label: 'Airdrop' },
-  { value: 'failed', label: 'Failed' },
-];
-
 export const TransactionFilterBottomSheet: React.FC<TransactionFilterBottomSheetProps> = ({
   value,
   onChange,
@@ -36,6 +27,17 @@ export const TransactionFilterBottomSheet: React.FC<TransactionFilterBottomSheet
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('wallet');
+
+  const FILTER_OPTIONS: Array<{ value: TransactionFilterValue; label: string }> = [
+    { value: 'all', label: t('transactionFilterBottomSheet.all') },
+    { value: 'sent', label: t('transactionFilterBottomSheet.sent') },
+    { value: 'received', label: t('transactionFilterBottomSheet.received') },
+    { value: 'claim', label: t('transactionFilterBottomSheet.claim') },
+    { value: 'nft', label: t('transactionFilterBottomSheet.nft') },
+    { value: 'airdrop', label: t('transactionFilterBottomSheet.airdrop') },
+    { value: 'failed', label: t('transactionFilterBottomSheet.failed') },
+  ];
 
   const borderColor = isDark ? '$borderDark600' : '$borderLight200';
   const cardBg = isDark ? '$backgroundDark900' : '$backgroundLight0';
@@ -46,7 +48,7 @@ export const TransactionFilterBottomSheet: React.FC<TransactionFilterBottomSheet
         <HStack alignItems="center" justifyContent="space-between">
           <Box w={24} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            Filter
+            {t('transactionFilterBottomSheet.title')}
           </Text>
           <Pressable onPress={onClose} hitSlop={12}>
             <Feather name="x" size={20} color={isDark ? '#FFFFFF' : '#000000'} />

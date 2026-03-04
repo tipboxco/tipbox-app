@@ -268,21 +268,62 @@
     "copied": "Copied",
     "addressCopied": "Wallet address copied to clipboard"
   },
+  "historyCard": {
+    "actionTypes": {
+      "tipsSent": "TIPS Sent",
+      "tipsReceived": "TIPS Received",
+      "deposit": "Deposit",
+      "withdraw": "Withdraw",
+      "rewardClaimed": "Reward Claimed",
+      "badgeClaimed": "Badge Claimed",
+      "nftPurchased": "NFT Purchased",
+      "nftSold": "NFT Sold",
+      "swapTipToSol": "TIPS → SOL Swap",
+      "swapSolToTip": "SOL → TIPS Swap",
+      "airdropReceived": "Airdrop Received",
+      "transactionFee": "Transaction Fee",
+      "transaction": "Transaction"
+    },
+    "descriptions": {
+      "tipsSent": "TIPS transfer completed",
+      "tipsReceived": "TIPS transfer received",
+      "deposit": "Deposit received (external wallet)",
+      "withdraw": "Withdraw to external wallet",
+      "rewardClaimed": "Reward successfully claimed",
+      "badgeClaimed": "Badge successfully claimed",
+      "nftPurchased": "NFT purchase completed",
+      "nftSold": "NFT sale completed",
+      "swapTipToSol": "TIPS tokens swapped to SOL",
+      "swapSolToTip": "SOL tokens swapped to TIPS",
+      "airdropReceived": "Airdrop reward received",
+      "transactionFee": "Transaction fee paid"
+    },
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "transactionDate": "Transaction Date:",
+    "hash": "Hash:"
+  },
+  "rewardCard": {
+    "recents": "Recents"
+  },
   "filterBottomSheet": {
-    "title": "Filter NFTs",
-    "byType": "Filter by Type",
-    "noTypes": "No types available",
-    "clear": "Clear All",
-    "apply": "Apply Filters"
+    "title": "Type Filter",
+    "reset": "Reset"
   },
   "sortBottomSheet": {
-    "title": "Sort NFTs",
+    "title": "Sort By Rarity",
     "rarityDesc": "Rarity: High to Low",
+    "rarityDescInfo": "Rare items first",
     "rarityAsc": "Rarity: Low to High",
-    "apply": "Apply"
+    "rarityAscInfo": "Common items first"
   },
   "transactionFilterBottomSheet": {
-    "title": "Transaction Type",
+    "title": "Filter",
     "all": "All",
     "sent": "Sent",
     "received": "Received",
@@ -292,8 +333,8 @@
     "failed": "Failed"
   },
   "transactionPeriodBottomSheet": {
-    "title": "Time Period",
-    "all": "All Time",
+    "title": "Time Range",
+    "all": "All",
     "today": "Today",
     "yesterday": "Yesterday",
     "lastWeek": "Last Week",

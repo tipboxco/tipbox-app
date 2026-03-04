@@ -2,6 +2,7 @@ import React from 'react';
 import { VStack, HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
 import { CheckIcon } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface SuccessBottomSheetProps {
     onClose: () => void;
@@ -18,12 +19,16 @@ interface SuccessBottomSheetProps {
 
 export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
     onClose,
-    title = 'Transaction Successful',
-    message = 'Your transaction has been completed successfully.',
+    title,
+    message,
     transactionDetails,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('wallet');
+
+    const defaultTitle = title || t('successBottomSheet.title');
+    const defaultMessage = message || t('successBottomSheet.message');
 
     return (
         <VStack px="$4" py="$4" space="lg" flex={1}>
@@ -45,10 +50,10 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                 {/* Title and Message */}
                 <VStack alignItems="center" space="xs" px="$4">
                     <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
-                        {title}
+                        {defaultTitle}
                     </Text>
                     <Text fontSize={12} fontWeight="$normal" color="$textLight500" $dark-color="$textDark400" textAlign="center" lineHeight={18}>
-                        {message}
+                        {defaultMessage}
                     </Text>
                 </VStack>
             </VStack>
@@ -68,7 +73,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                                 <>
                                     <HStack justifyContent="space-between" alignItems="center" px="$4" py="$4">
                                         <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400" flex={1}>
-                                            From
+                                            {t('successBottomSheet.from')}
                                         </Text>
                                         <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right" flex={1} numberOfLines={1}>
                                             {transactionDetails.sentAmount}
@@ -82,7 +87,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                                 <>
                                     <HStack justifyContent="space-between" alignItems="center" px="$4" py="$4">
                                         <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400" flex={1}>
-                                            To
+                                            {t('successBottomSheet.to')}
                                         </Text>
                                         <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right" flex={1} numberOfLines={1}>
                                             {transactionDetails.receivedAmount}
@@ -96,7 +101,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                                 <>
                                     <HStack justifyContent="space-between" alignItems="center" px="$4" py="$4">
                                         <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400" flex={1}>
-                                            Exchange Rate
+                                            {t('successBottomSheet.exchangeRate')}
                                         </Text>
                                         <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right" flex={1} numberOfLines={1}>
                                             {transactionDetails.transactionFee}
@@ -110,7 +115,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                                 <>
                                     <HStack justifyContent="space-between" alignItems="center" px="$4" py="$4">
                                         <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400" flex={1}>
-                                            Network Fee
+                                            {t('successBottomSheet.networkFee')}
                                         </Text>
                                         <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right" flex={1} numberOfLines={1}>
                                             {transactionDetails.remainingBalance}
@@ -123,7 +128,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                             {transactionDetails.transactionId && (
                                 <HStack justifyContent="space-between" alignItems="center" px="$4" py="$4">
                                     <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400" flex={1}>
-                                        Transaction ID
+                                        {t('successBottomSheet.transactionId')}
                                     </Text>
                                     <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right" flex={1} numberOfLines={1}>
                                         {transactionDetails.transactionId}
@@ -165,7 +170,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                     justifyContent="center"
                 >
                     <Text fontSize={12} fontWeight="$bold" color="#9E9E9E" textAlign="center">
-                        View on Explorer
+                        {t('successBottomSheet.viewOnExplorer')}
                     </Text>
                 </Pressable>
                 <Pressable
@@ -179,7 +184,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                     justifyContent="center"
                 >
                     <Text fontSize={14} fontWeight="$bold" color="#111111" textAlign="center">
-                        Go to Wallet
+                        {t('successBottomSheet.goToWallet')}
                     </Text>
                 </Pressable>
             </HStack>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { VStack, HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { LayoutAnimation, Platform, UIManager } from 'react-native';
 
 // Android için layout animasyonlarını etkinleştir
@@ -34,6 +35,7 @@ export const RewardCard: React.FC<RewardCardProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('wallet');
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleToggle = () => {
@@ -108,7 +110,7 @@ export const RewardCard: React.FC<RewardCardProps> = ({
           <VStack space="sm" mt="$2">
             {/* Recents Header */}
             <Text fontSize={9} fontWeight="$semibold" color="#7B7B7B" $dark-color="$textDark400">
-              Recents
+              {t('rewardCard.recents')}
             </Text>
             
             {/* Details List */}
