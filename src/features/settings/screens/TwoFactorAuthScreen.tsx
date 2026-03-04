@@ -12,8 +12,10 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 export const TwoFactorAuthScreen = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
@@ -40,7 +42,7 @@ export const TwoFactorAuthScreen = () => {
           bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
         >
         <Header
-          title="Two-Factor Authentication"
+          title={t('settings.twoFactorAuth.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -102,13 +104,13 @@ export const TwoFactorAuthScreen = () => {
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mb="$1"
                   >
-                    Google Authenticator
+                    {t('settings.twoFactorAuth.googleAuthenticator.title')}
                   </Text>
                   <Text
                     fontSize="$sm"
                     color={isDark ? '#CCCCCC' : '#666666'}
                   >
-                    Use Google Authenticator to protect your account
+                    {t('settings.twoFactorAuth.googleAuthenticator.description')}
                   </Text>
                 </VStack>
               </HStack>
@@ -152,13 +154,13 @@ export const TwoFactorAuthScreen = () => {
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mb="$1"
                   >
-                    SMS
+                    {t('settings.twoFactorAuth.smsOption.title')}
                   </Text>
                   <Text
                     fontSize="$sm"
                     color={isDark ? '#CCCCCC' : '#666666'}
                   >
-                    Receive a verification code via SMS to secure your account.
+                    {t('settings.twoFactorAuth.smsOption.description')}
                   </Text>
                 </VStack>
               </HStack>
@@ -186,7 +188,7 @@ export const TwoFactorAuthScreen = () => {
               textAlign="center"
               underline
             >
-              Why do we need this?
+              {t('settings.twoFactorAuth.whyNeeded')}
             </Text>
           </Pressable>
         </VStack>

@@ -21,8 +21,10 @@ import { Header } from '@/src/components/Header';
 import { useChangePassword } from '../api/hooks';
 import { showCustomToast } from '@/src/components/CustomToast';
 import * as yup from 'yup';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 export const ChangePasswordScreen = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
@@ -47,15 +49,15 @@ export const ChangePasswordScreen = () => {
   const validationSchema = yup.object().shape({
     currentPassword: yup
       .string()
-      .required('Current password is required'),
+      .required(t('settings.changePassword.errors.currentPasswordRequired')),
     newPassword: yup
       .string()
-      .required('New password is required')
-      .min(6, 'Password must be at least 6 characters'),
+      .required(t('settings.changePassword.errors.newPasswordRequired'))
+      .min(6, t('settings.changePassword.errors.passwordMinLength')),
     confirmPassword: yup
       .string()
-      .required('Please confirm your password')
-      .oneOf([yup.ref('newPassword')], 'Passwords must match'),
+      .required(t('settings.changePassword.errors.confirmPasswordRequired'))
+      .oneOf([yup.ref('newPassword')], t('settings.changePassword.errors.passwordsMustMatch')),
   });
 
   const validateField = async (field: 'currentPassword' | 'newPassword' | 'confirmPassword', value: string) => {
@@ -93,8 +95,8 @@ export const ChangePasswordScreen = () => {
 
         // Show success toast
         showCustomToast(toast, {
-          title: 'Password Changed',
-          description: result.message || 'Your password has been successfully updated.',
+          title: t('settings.changePassword.success.title'),
+          description: result.message || t('settings.changePassword.success.description'),
           action: 'success',
           duration: 3000,
         });
@@ -112,10 +114,10 @@ export const ChangePasswordScreen = () => {
           error?.response?.data?.error?.message ||
           error?.response?.data?.message ||
           error?.message ||
-          'An error occurred while changing the password';
+          t('settings.changePassword.error.fallbackMessage');
 
         showCustomToast(toast, {
-          title: 'Error',
+          title: t('settings.changePassword.error.title'),
           description: errorMessage,
           action: 'error',
           duration: 3000,
@@ -137,7 +139,7 @@ export const ChangePasswordScreen = () => {
       const firstError = validationErrors.inner?.[0];
       if (firstError) {
         showCustomToast(toast, {
-          title: 'Validation Error',
+          title: t('settings.changePassword.validation.title'),
           description: firstError.message,
           action: 'error',
           duration: 3000,
@@ -174,7 +176,7 @@ export const ChangePasswordScreen = () => {
           bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
         >
         <Header
-          title="Change Password"
+          title={t('settings.changePassword.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -187,7 +189,7 @@ export const ChangePasswordScreen = () => {
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              Current Password
+              {t('settings.changePassword.currentPassword')}
             </Text>
             <Box
               borderWidth={1}
@@ -199,7 +201,7 @@ export const ChangePasswordScreen = () => {
             >
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
-                  placeholder="****************"
+                  placeholder={t('settings.changePassword.placeholder')}
                   placeholderTextColor="#B9B9B9"
                   value={currentPassword}
                   onChangeText={(text) => {
@@ -282,7 +284,7 @@ export const ChangePasswordScreen = () => {
             >
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
-                  placeholder="****************"
+                  placeholder={t('settings.changePassword.placeholder')}
                   placeholderTextColor="#B9B9B9"
                   value={newPassword}
                   onChangeText={(text) => {
@@ -340,7 +342,7 @@ export const ChangePasswordScreen = () => {
             >
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
-                  placeholder="****************"
+                  placeholder={t('settings.changePassword.placeholder')}
                   placeholderTextColor="#B9B9B9"
                   value={confirmPassword}
                   onChangeText={(text) => {

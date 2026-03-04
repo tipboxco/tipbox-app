@@ -17,6 +17,7 @@ import { SubscriptionTab } from './PaymentAndSubscriptionTabsScreen/Subscription
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomOffset } from '@/src/utils';
 import AddPaymentMethodBottomSheet from '../components/AddPaymentMethodBottomSheet';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
@@ -31,6 +32,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
   const pagerRef = useRef<PagerView>(null);
   const [tabContainerWidth, setTabContainerWidth] = useState(0);
   const tabWidth = tabContainerWidth / 2 || Dimensions.get('window').width / 2;
+  const { t } = useTranslation('settings');
 
   const [activeTab, setActiveTab] = useState<'payment' | 'subscription'>('payment');
 
@@ -136,7 +138,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
           <Header
-            title="Payment & Subscription"
+            title={t('settings.payment.headerTitle')}
             showBackButton={true}
             onBackPress={() => navigation.goBack()}
           />
@@ -168,7 +170,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
                         tab1Style,
                       ]}
                     >
-                      Payment Methods
+                      {t('settings.payment.tabPaymentMethods')}
                     </Animated.Text>
                   </VStack>
                 </Pressable>
@@ -185,7 +187,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
                         tab2Style,
                       ]}
                     >
-                      Premium Plans
+                      {t('settings.payment.tabPremiumPlans')}
                     </Animated.Text>
                   </VStack>
                 </Pressable>

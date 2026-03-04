@@ -17,10 +17,12 @@ import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import VerifyCodeScreen from '@/src/components/VerifyCodeScreen';
 import SetPasswordScreen from '@/src/components/SetPasswordScreen';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type ForgotPasswordStep = 'email' | 'verify' | 'password';
 
 export const ForgotPasswordScreen = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
@@ -73,9 +75,9 @@ export const ForgotPasswordScreen = () => {
     return (
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VerifyCodeScreen
-          headerTitle="Forgot Password"
-          title="Enter the confirmation code"
-          description="To reset your password, enter the 6-digit code we sent to"
+          headerTitle={t('settings.forgotPassword.title')}
+          title={t('settings.forgotPassword.verifyStep.title')}
+          description={t('settings.forgotPassword.verifyStep.description')}
           maskedEmail={maskedEmail}
           onVerify={handleVerifyCode}
           onBackPress={handleBackPress}
@@ -89,7 +91,7 @@ export const ForgotPasswordScreen = () => {
     return (
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <SetPasswordScreen
-          headerTitle="Forgot Password"
+          headerTitle={t('settings.forgotPassword.title')}
           onSetPassword={handleSetPassword}
           onBackPress={handleBackPress}
         />
@@ -104,7 +106,7 @@ export const ForgotPasswordScreen = () => {
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
-          title="Forgot Password"
+          title={t('settings.forgotPassword.title')}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />
@@ -117,7 +119,7 @@ export const ForgotPasswordScreen = () => {
               fontWeight="$semibold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              {t('settings.forgotPassword.description')}
             </Text>
           </HStack>
 
@@ -129,7 +131,7 @@ export const ForgotPasswordScreen = () => {
                 fontWeight="$bold"
                 color={isDark ? '#FFFFFF' : '#000000'}
               >
-                E-Mail
+                {t('settings.forgotPassword.email')}
               </Text>
               <Box
                 borderWidth={1}
@@ -141,7 +143,7 @@ export const ForgotPasswordScreen = () => {
               >
                 <Input borderWidth={0} bg="transparent">
                   <InputField
-                    placeholder="example@gmail.com"
+                    placeholder={t('settings.forgotPassword.emailPlaceholder')}
                     placeholderTextColor="#B9B9B9"
                     value={email}
                     onChangeText={setEmail}
@@ -168,7 +170,7 @@ export const ForgotPasswordScreen = () => {
               fontWeight="$bold"
               textAlign="center"
             >
-              Send E-Mail
+              {t('settings.forgotPassword.sendEmailButton')}
             </ButtonText>
           </Button>
         </VStack>

@@ -14,8 +14,10 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 export const SMSVerificationScreen = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
@@ -32,8 +34,8 @@ export const SMSVerificationScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Missing Information</ToastTitle>
-                <ToastDescription>Please enter your phone number.</ToastDescription>
+                <ToastTitle>{t('settings.smsVerification.errors.missingInfoTitle')}</ToastTitle>
+                <ToastDescription>{t('settings.smsVerification.errors.missingInfoDescription')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -58,9 +60,9 @@ export const SMSVerificationScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Error</ToastTitle>
+                <ToastTitle>{t('settings.smsVerification.errors.errorTitle')}</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || 'Failed to send SMS. Please try again.'}
+                  {error?.response?.data?.message || t('settings.smsVerification.errors.fallbackMessage')}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -77,7 +79,7 @@ export const SMSVerificationScreen = () => {
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
-          title="SMS Verification"
+          title={t('settings.smsVerification.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -89,7 +91,7 @@ export const SMSVerificationScreen = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             mb="$2"
           >
-            Enter Your Phone Number
+            {t('settings.smsVerification.heading')}
           </Text>
 
           <Text
@@ -97,7 +99,7 @@ export const SMSVerificationScreen = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             mb="$6"
           >
-            Enter the phone number to which the verification code will be sent.
+            {t('settings.smsVerification.description')}
           </Text>
 
           {/* Phone Number Input */}
@@ -136,7 +138,7 @@ export const SMSVerificationScreen = () => {
             >
               <Input borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder="5XX XXX XX XX"
+                  placeholder={t('settings.smsVerification.phonePlaceholder')}
                   placeholderTextColor="#B9B9B9"
                   value={phoneNumber}
                   onChangeText={(text) => {
@@ -178,7 +180,7 @@ export const SMSVerificationScreen = () => {
               fontWeight="$bold"
               textAlign="center"
             >
-              Send Code
+              {t('settings.smsVerification.sendCodeButton')}
             </ButtonText>
           </Button>
         </Box>

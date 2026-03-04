@@ -13,6 +13,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import VerifyCodeScreen from '@/src/components/VerifyCodeScreen';
 import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 export const SMSVerifyCodeScreen = () => {
   const { colorMode } = useColorMode();
@@ -20,6 +21,7 @@ export const SMSVerifyCodeScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const toast = useToast();
+  const { t } = useTranslation('settings');
 
   const phoneNumber = (route.params as any)?.phoneNumber || '**** **** 31';
   const maskedPhone = phoneNumber.replace(/(\d{4})\s(\d{4})\s(\d{2})\s(\d{2})/, '**** **** $3 $4');
@@ -36,8 +38,8 @@ export const SMSVerifyCodeScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Success</ToastTitle>
-                <ToastDescription>SMS verification completed successfully.</ToastDescription>
+                <ToastTitle>{t('settings.smsVerifyCode.success')}</ToastTitle>
+                <ToastDescription>{t('settings.smsVerifyCode.successMessage')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -53,9 +55,9 @@ export const SMSVerifyCodeScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Error</ToastTitle>
+                <ToastTitle>{t('settings.smsVerifyCode.error')}</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || 'Code verification failed. Please try again.'}
+                  {error?.response?.data?.message || t('settings.smsVerifyCode.errorMessage')}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -74,8 +76,8 @@ export const SMSVerifyCodeScreen = () => {
         return (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="info" variant="solid">
-              <ToastTitle>Code Sent</ToastTitle>
-              <ToastDescription>New verification code has been sent.</ToastDescription>
+              <ToastTitle>{t('settings.smsVerifyCode.codeSent')}</ToastTitle>
+              <ToastDescription>{t('settings.smsVerifyCode.codeSentMessage')}</ToastDescription>
             </Toast>
           </Box>
         );
@@ -86,9 +88,9 @@ export const SMSVerifyCodeScreen = () => {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
       <VerifyCodeScreen
-        headerTitle="SMS Verification"
-        title="Onay Kodunu Gir"
-        description="Enter the 6-digit code we sent to the phone number"
+        headerTitle={t('settings.smsVerifyCode.headerTitle')}
+        title={t('settings.smsVerifyCode.title')}
+        description={t('settings.smsVerifyCode.description')}
         maskedEmail={maskedPhone}
         onVerify={handleVerify}
         onBackPress={() => navigation.goBack()}
@@ -102,7 +104,7 @@ export const SMSVerifyCodeScreen = () => {
             textAlign="center"
             underline
           >
-            Resend Code
+            {t('settings.smsVerifyCode.resendCode')}
           </Text>
         </Pressable>
       </Box>
