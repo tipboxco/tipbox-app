@@ -4,12 +4,12 @@ export const SUPPORTED_LANGUAGES = {
     name: 'English',
     nativeName: 'English',
   },
-  tr: {
-    code: 'tr',
-    name: 'Turkish',
-    nativeName: 'Türkçe',
-  },
-  // Future languages can be added here:
+  // Future languages will be added here after all screens are migrated:
+  // tr: {
+  //   code: 'tr',
+  //   name: 'Turkish',
+  //   nativeName: 'Türkçe',
+  // },
   // es: {
   //   code: 'es',
   //   name: 'Spanish',

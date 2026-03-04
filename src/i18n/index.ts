@@ -14,14 +14,10 @@ import settings_en from '@/src/locales/en/settings.json';
 import inbox_en from '@/src/locales/en/inbox.json';
 import profile_en from '@/src/locales/en/profile.json';
 
-import common_tr from '@/src/locales/tr/common.json';
-import auth_tr from '@/src/locales/tr/auth.json';
-import wallet_tr from '@/src/locales/tr/wallet.json';
-import feed_tr from '@/src/locales/tr/feed.json';
-import events_tr from '@/src/locales/tr/events.json';
-import settings_tr from '@/src/locales/tr/settings.json';
-import inbox_tr from '@/src/locales/tr/inbox.json';
-import profile_tr from '@/src/locales/tr/profile.json';
+// Turkish locale files will be imported after all screens are migrated
+// import common_tr from '@/src/locales/tr/common.json';
+// import auth_tr from '@/src/locales/tr/auth.json';
+// ... etc
 
 // Define resources
 const resources = {
@@ -35,17 +31,7 @@ const resources = {
     inbox: inbox_en,
     profile: profile_en,
   },
-  tr: {
-    common: common_tr,
-    auth: auth_tr,
-    wallet: wallet_tr,
-    feed: feed_tr,
-    events: events_tr,
-    settings: settings_tr,
-    inbox: inbox_tr,
-    profile: profile_tr,
-  },
-  // Future languages will be added here
+  // Future languages will be added here after all screens are migrated
 } as const;
 
 // Get device language
@@ -71,7 +57,9 @@ const getSavedLanguage = async (): Promise<SupportedLanguage> => {
   } catch (error) {
     console.error('Error loading saved language:', error);
   }
-  return getDeviceLanguage();
+  // Always use DEFAULT_LANGUAGE if no saved preference
+  // User can change language from Settings > Language
+  return DEFAULT_LANGUAGE;
 };
 
 // Save language to AsyncStorage
