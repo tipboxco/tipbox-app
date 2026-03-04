@@ -54,5 +54,14 @@
     "loading": "Loading bookmarks...",
     "error": "An error occurred while loading bookmarks",
     "empty": "No bookmarks yet."
+  },
+  "moreSchoise": {
+    "title": "MoreSchoise",
+    "tabs": {
+      "settings": "Settings",
+      "notification": "Notification",
+      "media": "Media",
+      "keyboard": "Keyboard"
+    }
   }
 }
