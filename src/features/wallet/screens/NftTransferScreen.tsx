@@ -5,6 +5,7 @@ import { Box, HStack, Image, Input, InputField, Pressable, Text, VStack, useToas
 import { ChevronLeftIcon, MagnifyingGlassIcon, UsersIcon } from 'react-native-heroicons/outline';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useAppStore } from '@/src/store/appStore';
 import { useTrustList } from '@/src/features/profile/api/hooks';
 import type { TrustUser } from '@/src/features/profile/types';
@@ -20,6 +21,7 @@ export const NftTransferScreen: React.FC = () => {
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
   const toast = useToast();
+  const { t } = useTranslation('wallet');
 
   const user = useAppStore((s) => s.user);
 
@@ -71,8 +73,8 @@ export const NftTransferScreen: React.FC = () => {
     });
 
     showCustomToast(toast, {
-      title: 'Transfer Successful',
-      description: 'NFT has been transferred successfully.',
+      title: t('nftTransfer.toasts.success'),
+      description: t('nftTransfer.toasts.successMessage'),
       action: 'success',
       duration: 3000,
     });
@@ -83,8 +85,8 @@ export const NftTransferScreen: React.FC = () => {
   const handleTransferPress = useCallback(() => {
     if (!nftId) {
       showCustomToast(toast, {
-        title: 'NFT Not Found',
-        description: 'NFT selection not found. Please try again.',
+        title: t('nftTransfer.toasts.nftNotFound'),
+        description: t('nftTransfer.toasts.nftNotFoundMessage'),
         action: 'error',
         duration: 3000,
       });
@@ -93,18 +95,18 @@ export const NftTransferScreen: React.FC = () => {
     if (!recipient?.id) return;
 
     Alert.alert(
-      'NFT Transfer',
-      `${recipient.name} kullanıcısına transfer etmek istiyor musunuz?`,
+      t('nftTransfer.confirmDialog.title'),
+      t('nftTransfer.confirmDialog.message', { name: recipient.name }),
       [
-        { text: 'No', style: 'cancel' },
+        { text: t('nftTransfer.confirmDialog.no'), style: 'cancel' },
         {
-          text: 'Yes',
+          text: t('nftTransfer.confirmDialog.yes'),
           style: 'destructive',
           onPress: () => {
             void runTransfer().catch((err: any) => {
-              const msg = err?.response?.data?.message || err?.message || 'NFT transferi sırasında hata oluştu.';
+              const msg = err?.response?.data?.message || err?.message || t('nftTransfer.toasts.failed');
               showCustomToast(toast, {
-                title: 'Transfer Failed',
+                title: t('nftTransfer.toasts.failed'),
                 description: msg,
                 action: 'error',
                 duration: 3000,
@@ -122,7 +124,7 @@ export const NftTransferScreen: React.FC = () => {
         <VStack alignItems="center" justifyContent="center" py="$8">
           <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
           <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-            Trust list yükleniyor...
+            {t('nftTransfer.loading')}
           </Text>
         </VStack>
       );
@@ -132,10 +134,10 @@ export const NftTransferScreen: React.FC = () => {
       return (
         <VStack alignItems="center" justifyContent="center" py="$8">
           <Text fontSize={14} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            Trust list alınamadı
+            {t('nftTransfer.loadFailed')}
           </Text>
           <Text mt="$2" fontSize={12} color="$textLight500" $dark-color="$textDark400" textAlign="center">
-            Lütfen daha sonra tekrar deneyin.
+            {t('nftTransfer.tryAgain')}
           </Text>
         </VStack>
       );
@@ -146,7 +148,7 @@ export const NftTransferScreen: React.FC = () => {
         <VStack alignItems="center" justifyContent="center" py="$8">
           <UsersIcon width={56} height={56} color={isDark ? '#666666' : '#CCCCCC'} />
           <Text mt="$4" fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-            Trust listeniz boş
+            {t('nftTransfer.emptyList')}
           </Text>
         </VStack>
       );
@@ -224,7 +226,7 @@ export const NftTransferScreen: React.FC = () => {
           </Pressable>
           <HStack flex={1} justifyContent="center" alignItems="center">
             <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-              NFT Transfer
+              {t('nftTransfer.title')}
             </Text>
           </HStack>
           <Box w={24} />
@@ -245,7 +247,7 @@ export const NftTransferScreen: React.FC = () => {
           <MagnifyingGlassIcon width={22} height={22} color="#8E8E93" />
           <Input flex={1} borderWidth={0} bg="transparent">
             <InputField
-              placeholder="Trust list içinde ara"
+              placeholder={t('nftTransfer.searchPlaceholder')}
               placeholderTextColor="#B9B9B9"
               color={isDark ? '#fff' : '#000'}
               fontSize={11}
@@ -283,7 +285,7 @@ export const NftTransferScreen: React.FC = () => {
               <HStack alignItems="center" space="sm">
                 <ActivityIndicator size="small" color="#111111" />
                 <Text fontSize={14} fontWeight="$bold" color="#111111">
-                  Transfer...
+                  {t('nftTransfer.transferring')}
                 </Text>
               </HStack>
             ) : (
@@ -293,7 +295,7 @@ export const NftTransferScreen: React.FC = () => {
                 color={recipient?.id ? '#111111' : '#B1B1B1'}
                 $dark-color={recipient?.id ? '#111111' : '#777777'}
               >
-                Transfer
+                {t('nftTransfer.transfer')}
               </Text>
             )}
           </Pressable>
