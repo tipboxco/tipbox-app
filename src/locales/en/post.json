@@ -37,6 +37,24 @@
         "done": "Done",
         "processing": "Processing..."
       },
+      "step1": {
+        "selectDuration": "Select duration",
+        "selectLocation": "Select location",
+        "selectPurpose": "Select purpose"
+      },
+      "step2": {
+        "experience": "Experience",
+        "experiencePlaceholder": "Type your Experience here...",
+        "images": "Images"
+      },
+      "step3": {
+        "priceAndShopping": "Price and Shopping Experience",
+        "productAndUsage": "Product and Usage Experience",
+        "rateExperience": "Rate Experience",
+        "priceExperiencePlaceholder": "Describe your price and shopping experience...",
+        "productExperiencePlaceholder": "Describe your product and usage experience...",
+        "images": "Images"
+      },
       "ai": {
         "processingContent": "Processing experience content...",
         "timeoutError": "AI processing timed out. Please try again or continue manually.",

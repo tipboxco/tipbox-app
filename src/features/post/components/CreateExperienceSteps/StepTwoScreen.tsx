@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-    Box, 
-    ScrollView, 
-    VStack, 
-    HStack, 
-    Text, 
-    Pressable, 
-    Textarea, 
+import {
+    Box,
+    ScrollView,
+    VStack,
+    HStack,
+    Text,
+    Pressable,
+    Textarea,
     TextareaInput,
     Image
 } from '@gluestack-ui/themed';
@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 // Mock data for product info
 const productInfo = {
@@ -44,9 +45,10 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
     onRemoveImage,
     selectedProduct,
 }) => {
+    const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    
+
     const characterCount = experienceText.length;
     const maxCharacters = 500;
 
@@ -93,7 +95,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                         fontSize={14}
                         fontWeight="$bold"
                     >
-                        Experience
+                        {t('post.create.experience.step2.experience')}
                     </Text>
 
                     {/* Text Input Area */}
@@ -115,7 +117,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                             minHeight={174}
                         >
                             <TextareaInput
-                                placeholder="Type your Experience here..."
+                                placeholder={t('post.create.experience.step2.experiencePlaceholder')}
                                 placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                 color={isDark ? '$textDark50' : '#343434'}
                                 fontSize={14}
@@ -186,7 +188,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                         fontSize={14}
                         fontWeight="$bold"
                     >
-                        Images
+                        {t('post.create.experience.step2.images')}
                     </Text>
 
                     {/* Image Picker Areas */}

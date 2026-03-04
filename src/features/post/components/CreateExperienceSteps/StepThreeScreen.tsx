@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-    Box, 
-    ScrollView, 
-    VStack, 
-    HStack, 
-    Text, 
-    Pressable, 
-    Textarea, 
+import {
+    Box,
+    ScrollView,
+    VStack,
+    HStack,
+    Text,
+    Pressable,
+    Textarea,
     TextareaInput,
     Image
 } from '@gluestack-ui/themed';
@@ -19,6 +19,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 // Mock data for product info
 const productInfo = {
@@ -71,9 +72,10 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
     experienceOption,
     isImagePickerLoading = false,
 }) => {
+    const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    
+
     const [priceTextAreaHeight, setPriceTextAreaHeight] = useState<number>(56);
     const [productTextAreaHeight, setProductTextAreaHeight] = useState<number>(56);
 
@@ -96,12 +98,12 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                     fontWeight="$semibold"
                     color={isDark ? '$textDark50' : '#3B3B3B'}
                 >
-                    Rate Experience
+                    {t('post.create.experience.step3.rateExperience')}
                 </Text>
                 <HStack space="xs">
                     {[1, 2, 3, 4, 5].map((star) => (
-                        <Pressable 
-                            key={star} 
+                        <Pressable
+                            key={star}
                             onPress={() => onRatingChange(star)}
                             disabled={disabled}
                         >
@@ -168,7 +170,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#3B3B3B'}
                                     >
-                                        Price and Shopping Experience
+                                        {t('post.create.experience.step3.priceAndShopping')}
                                     </Text>
                                 </HStack>
                                 {/* Edit Icon */}
@@ -176,9 +178,9 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     onPress={() => onEditPress('price')}
                                     disabled={isEditing && editingField !== 'price'}
                                 >
-                                    <Feather 
-                                        name="edit-3" 
-                                        size={20} 
+                                    <Feather
+                                        name="edit-3"
+                                        size={20}
                                         color={isDark ? '#FFFFFF' : '#B9B9B9'}
                                     />
                                 </Pressable>
@@ -189,7 +191,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                 height={priceTextAreaHeight}
                             >
                                 <TextareaInput
-                                    placeholder="Describe your price and shopping experience..."
+                                    placeholder={t('post.create.experience.step3.priceExperiencePlaceholder')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '$textDark50' : '#000000'}
                                     fontSize={14}
@@ -244,7 +246,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#3B3B3B'}
                                     >
-                                        Product and Usage Experience
+                                        {t('post.create.experience.step3.productAndUsage')}
                                     </Text>
                                 </HStack>
                                 {/* Edit Icon */}
@@ -252,9 +254,9 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     onPress={() => onEditPress('product')}
                                     disabled={isEditing && editingField !== 'product'}
                                 >
-                                    <Feather 
-                                        name="edit-3" 
-                                        size={20} 
+                                    <Feather
+                                        name="edit-3"
+                                        size={20}
                                         color={isDark ? '#FFFFFF' : '#B9B9B9'}
                                     />
                                 </Pressable>
@@ -265,7 +267,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                 height={productTextAreaHeight}
                             >
                                 <TextareaInput
-                                    placeholder="Describe your product and usage experience..."
+                                    placeholder={t('post.create.experience.step3.productExperiencePlaceholder')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '$textDark50' : '#000000'}
                                     fontSize={14}
@@ -333,7 +335,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                         fontSize={14}
                         fontWeight="$bold"
                     >
-                        Images
+                        {t('post.create.experience.step3.images')}
                     </Text>
                     <HStack space="sm" flexWrap="wrap">
                         {/* Display selected images */}

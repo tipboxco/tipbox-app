@@ -14,6 +14,7 @@ import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { OptionSelectBottomSheet, type OptionSelectBottomSheetOption } from './OptionSelectBottomSheet';
 import type { ExperienceOption } from '../../api/postApi';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const productInfo = {
     image: require('@/assets/product/product_01.png'),
@@ -62,6 +63,7 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
     locationOptions = [],
     purposeOptions = [],
 }) => {
+    const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -158,25 +160,25 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                 <VStack px={16} space="xs">
                     <VStack space="xs">
                         {renderTrigger(
-                            'Select duration',
+                            t('post.create.experience.step1.selectDuration'),
                             durationDisplayName,
-                            () => openSelectSheet('Select duration', durationSheetOptions, selectedDuration, onDurationChange)
+                            () => openSelectSheet(t('post.create.experience.step1.selectDuration'), durationSheetOptions, selectedDuration, onDurationChange)
                         )}
                     </VStack>
 
                     <VStack space="xs">
                         {renderTrigger(
-                            'Select location',
+                            t('post.create.experience.step1.selectLocation'),
                             locationDisplayName,
-                            () => openSelectSheet('Select location', locationSheetOptions, selectedCondition, onConditionChange)
+                            () => openSelectSheet(t('post.create.experience.step1.selectLocation'), locationSheetOptions, selectedCondition, onConditionChange)
                         )}
                     </VStack>
 
                     <VStack space="xs">
                         {renderTrigger(
-                            'Select purpose',
+                            t('post.create.experience.step1.selectPurpose'),
                             purposeDisplayName,
-                            () => openSelectSheet('Select purpose', purposeSheetOptions, selectedFrequency, onFrequencyChange)
+                            () => openSelectSheet(t('post.create.experience.step1.selectPurpose'), purposeSheetOptions, selectedFrequency, onFrequencyChange)
                         )}
                     </VStack>
                 </VStack>
