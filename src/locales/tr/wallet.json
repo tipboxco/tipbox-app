@@ -1,0 +1,306 @@
+{
+  "header": {
+    "title": "Cüzdan",
+    "swap": "Takas",
+    "assets": "Varlıklar",
+    "nftAssets": "NFT Varlıkları",
+    "selectFriend": "Arkadaş Seç",
+    "nftTransfer": "NFT Transferi"
+  },
+  "tabs": {
+    "tips": "TIPS",
+    "nft": "NFT Varlıkları"
+  },
+  "balance": {
+    "currentBalance": "Mevcut Bakiye",
+    "availableBalance": "Kullanılabilir Bakiye",
+    "tips": "TIPS",
+    "usd": "USD"
+  },
+  "quickActions": {
+    "receive": "Al",
+    "send": "Gönder",
+    "swap": "Takas",
+    "claim": "Talep Et"
+  },
+  "transactions": {
+    "title": "İşlem Geçmişi",
+    "today": "Bugün",
+    "yesterday": "Dün",
+    "lastWeek": "Geçen Hafta",
+    "lastMonth": "Geçen Ay",
+    "older": "Daha Eski",
+    "empty": "Henüz işlem yok",
+    "noTransactionsFound": "İşlem bulunamadı",
+    "loading": "İşlemler yükleniyor...",
+    "sent": "Gönderildi",
+    "received": "Alındı",
+    "pending": "Beklemede",
+    "failed": "Başarısız",
+    "cancelled": "İptal Edildi",
+    "tipsSent": "Tips Gönderildi",
+    "tipsClaim": "TIPS Talebi",
+    "bulkClaimed": "Toplu TIPS Talep Edildi.",
+    "transaction": "İşlem"
+  },
+  "sendBottomSheet": {
+    "title": "TIPS Gönder",
+    "options": {
+      "walletAddressTitle": "Cüzdan Adresine Gönder",
+      "walletAddressDescription": "TIPS göndermek istediğiniz cüzdan adresini yapıştırın.",
+      "friendTitle": "Arkadaşa Gönder",
+      "friendDescription": "Arkadaş listenizden bir arkadaş seçerek TIPS gönderin."
+    },
+    "walletAddress": {
+      "to": "Kime:",
+      "paste": "Yapıştır",
+      "enterAddress": "Cüzdan adresi girin",
+      "walletAddress": "Cüzdan Adresi...",
+      "invalidAddress": "Geçersiz cüzdan adresi",
+      "addressRequired": "Cüzdan adresi gereklidir",
+      "noAddressSelected": "Adres seçilmedi",
+      "recent": "Son Kullanılanlar",
+      "recently": "Yakın zamanda"
+    },
+    "amount": {
+      "title": "Miktar Girin",
+      "placeholder": "0",
+      "max": "Maks.",
+      "maxButton": "Maks",
+      "balance": "Bakiye:",
+      "fee": "İşlem Ücreti:",
+      "total": "Toplam:",
+      "insufficientBalance": "Yetersiz bakiye",
+      "minAmount": "Minimum miktar {{amount}} TIPS",
+      "maxAmount": "Maksimum miktar {{amount}} TIPS",
+      "availableBalance": "Kullanılabilir Bakiye",
+      "loading": "Yükleniyor...",
+      "tipsCalculation": "TIPS token mevcut USD döviz kuruna göre hesaplanır."
+    },
+    "confirmation": {
+      "title": "İşlemi Onayla",
+      "sendTips": "TIPS Gönder",
+      "sendTip": "Tip Gönder",
+      "recipient": "Alıcı",
+      "amount": "Miktar",
+      "fee": "Ücret",
+      "total": "Toplam",
+      "transactionFee": "İşlem Ücreti:",
+      "remainingBalance": "Kalan Bakiye:",
+      "confirmButton": "Onayla",
+      "sendButton": "Gönder",
+      "sending": "Gönderiliyor...",
+      "created": "İşlem Oluşturuldu",
+      "pending": "İşlem Gerçekleştiriliyor...",
+      "completed": "İşlem Tamamlandı!",
+      "failed": "İşlem Başarısız",
+      "sendFailed": "Gönderim Başarısız",
+      "cancelled": "İşlem İptal Edildi",
+      "cancel": "İşlemi İptal Et",
+      "cancelButton": "İptal",
+      "cancelCountdown": "İptal ({{seconds}}s)",
+      "close": "Kapat",
+      "back": "Geri",
+      "transactionQueued": "İşleminiz kuyruğa alındı. Onay kısa süre içinde başlayacak. İsterseniz 5 saniye içinde iptal edebilirsiniz.",
+      "processingNetwork": "Ağda işleniyor…",
+      "transactionCancelled": "İşlem iptal edildi.",
+      "processing": "İşleniyor…",
+      "secondsToCancel": "İptal etmek için {{count}} saniyeniz var.",
+      "transactionHash": "İşlem hash'i",
+      "pleaseWait": "İstek biraz zaman alıyorsa lütfen bekleyin."
+    },
+    "recentAddresses": {
+      "title": "Son Adresler",
+      "empty": "Son adres yok"
+    },
+    "toasts": {
+      "sendSuccess": "TIPS başarıyla gönderildi!",
+      "sendFailed": "TIPS gönderilemedi",
+      "transactionCancelled": "İşlem iptal edildi",
+      "cancelFailed": "İşlem iptal edilemedi"
+    },
+    "friendSelection": {
+      "youAreAbout": "Güven listenizden bu arkadaşınıza TIPS göndermek üzeresiniz."
+    }
+  },
+  "receiveBottomSheet": {
+    "title": "TIPS Al",
+    "scanQR": "TIPS göndermek için bu QR kodu tarayın",
+    "walletAddress": "Cüzdan Adresi",
+    "copy": "Kopyala",
+    "share": "Paylaş",
+    "info": "💡 Bu adresi sadece TIPS almak için kullanın. Diğer kripto paraları göndermeyin.",
+    "copied": "Kopyalandı",
+    "addressCopied": "Cüzdan adresi panoya kopyalandı"
+  },
+  "claimBottomSheet": {
+    "title": "Ödüller",
+    "loading": "Ödüller yükleniyor...",
+    "loadFailed": "Ödüller yüklenemedi",
+    "retry": "Tekrar Dene",
+    "empty": "Talep edilebilecek ödül yok",
+    "claimAll": "Tümünü Talep Et",
+    "rewardTypes": {
+      "ladderRewards": "Sıralama Ödülleri",
+      "tips": "Tipler",
+      "supportRewards": "Destek Ödülleri",
+      "badgeRewards": "Rozet Ödülleri",
+      "achievementRewards": "Başarı Ödülleri",
+      "eventRewards": "Etkinlik Ödülleri",
+      "systemRewards": "Sistem Ödülleri"
+    }
+  },
+  "successBottomSheet": {
+    "title": "İşlem Başarılı",
+    "swapTitle": "Takas Başarılı",
+    "message": "İşleminiz başarıyla tamamlandı.",
+    "swapMessage": "Takas işleminiz başarıyla tamamlandı.",
+    "from": "Gönderen",
+    "to": "Alıcı",
+    "exchangeRate": "Döviz Kuru",
+    "networkFee": "Ağ Ücreti",
+    "transactionId": "İşlem ID",
+    "viewOnExplorer": "Explorer'da Görüntüle",
+    "goToWallet": "Cüzdana Git"
+  },
+  "swapBottomSheet": {
+    "title": "Takas",
+    "youPay": "Ödeyeceğiniz",
+    "youReceive": "Alacağınız",
+    "pricing": "1 TIP",
+    "slippage": "Kayma",
+    "slippageValue": "Nadir",
+    "estimatedValue": "Tahmini Değer",
+    "fees": "Ücretler",
+    "swapNow": "Şimdi Takas Et",
+    "notAvailable": "Mevcut Değil",
+    "percentages": {
+      "25": "%25",
+      "50": "%50",
+      "75": "%75",
+      "all": "Tümü"
+    }
+  },
+  "swapScreen": {
+    "youPay": "Ödeyeceğiniz",
+    "youReceive": "Alacağınız",
+    "pricing": "1 TIP",
+    "slippage": "Kayma",
+    "slippageValue": "Nadir",
+    "estimatedValue": "Tahmini Değer",
+    "fees": "Ücretler",
+    "notAvailable": "Mevcut Değil",
+    "insufficientBalance": {
+      "title": "Yetersiz {{token}}",
+      "message": "Bu işlem için cüzdanınızda yeterli {{token}} yok.",
+      "remaining": "Kalan",
+      "required": "Gerekli",
+      "buy": "{{token}} Satın Al",
+      "cancel": "İptal"
+    }
+  },
+  "nft": {
+    "title": "NFT'ler",
+    "filter": "Filtrele",
+    "sort": "Sırala",
+    "loading": "NFT'ler yükleniyor...",
+    "noNfts": "NFT bulunamadı",
+    "noMatchingFilter": "Filtrenize uygun NFT yok",
+    "rarity": {
+      "usual": "Sıradan",
+      "rare": "Nadir",
+      "common": "Yaygın",
+      "epic": "Epik",
+      "legendary": "Efsanevi"
+    },
+    "onSale": "SATIŞTA",
+    "tips": "TIPS"
+  },
+  "nftDetail": {
+    "transfer": "Transfer",
+    "sell": "Sat",
+    "viewListing": "İlanı Görüntüle",
+    "acquisitionDate": "Edinme Tarihi",
+    "rarity": "Nadirlik",
+    "listedPrice": "İlan Fiyatı",
+    "owners": "Sahipler",
+    "averagePrice": "Ortalama Fiyat"
+  },
+  "nftTransfer": {
+    "title": "NFT Transferi",
+    "searchPlaceholder": "Güven listesinde ara",
+    "loading": "Güven listesi yükleniyor...",
+    "loadFailed": "Güven listesi alınamadı",
+    "tryAgain": "Lütfen daha sonra tekrar deneyin.",
+    "emptyList": "Güven listeniz boş",
+    "transfer": "Transfer",
+    "transferring": "Transfer ediliyor...",
+    "confirmDialog": {
+      "title": "NFT Transferi",
+      "message": "{{name}} kullanıcısına transfer etmek istiyor musunuz?",
+      "yes": "Evet",
+      "no": "Hayır"
+    },
+    "toasts": {
+      "success": "Transfer Başarılı",
+      "successMessage": "NFT başarıyla transfer edildi.",
+      "failed": "Transfer Başarısız",
+      "nftNotFound": "NFT Bulunamadı",
+      "nftNotFoundMessage": "NFT seçimi bulunamadı. Lütfen tekrar deneyin."
+    }
+  },
+  "selectFriend": {
+    "loading": "Arkadaşlar yükleniyor...",
+    "noFriendsTitle": "Arkadaş Bulunamadı",
+    "noFriendsMessage": "Güven listenizde henüz arkadaşınız yok.",
+    "trusted": "Güvenilir"
+  },
+  "walletCard": {
+    "user": "Kullanıcı",
+    "addressNotFound": "Adres bulunamadı",
+    "copied": "Kopyalandı",
+    "addressCopied": "Cüzdan adresi panoya kopyalandı"
+  },
+  "filterBottomSheet": {
+    "title": "NFT'leri Filtrele",
+    "byType": "Türe Göre Filtrele",
+    "noTypes": "Mevcut tür yok",
+    "clear": "Tümünü Temizle",
+    "apply": "Filtreleri Uygula"
+  },
+  "sortBottomSheet": {
+    "title": "NFT'leri Sırala",
+    "rarityDesc": "Nadirlik: Yüksekten Düşüğe",
+    "rarityAsc": "Nadirlik: Düşükten Yükseğe",
+    "apply": "Uygula"
+  },
+  "transactionFilterBottomSheet": {
+    "title": "İşlem Türü",
+    "all": "Tümü",
+    "sent": "Gönderilen",
+    "received": "Alınan",
+    "nft": "NFT",
+    "claim": "Talep",
+    "airdrop": "Airdrop",
+    "failed": "Başarısız"
+  },
+  "transactionPeriodBottomSheet": {
+    "title": "Zaman Aralığı",
+    "all": "Tüm Zamanlar",
+    "today": "Bugün",
+    "yesterday": "Dün",
+    "lastWeek": "Geçen Hafta",
+    "lastMonth": "Geçen Ay"
+  },
+  "common": {
+    "confirm": "Onayla",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "done": "Tamam",
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı",
+    "retry": "Tekrar Dene",
+    "back": "Geri"
+  }
+}

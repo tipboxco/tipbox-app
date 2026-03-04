@@ -15,6 +15,7 @@ import { Header } from '@/src/components/Header';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../api/hooks';
 import { NotificationCode } from '../types';
 import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface NotificationItem {
     id: string;
@@ -23,6 +24,7 @@ interface NotificationItem {
 }
 
 export const NotificationSettingsScreen = () => {
+    const { t } = useTranslation('settings');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation();
@@ -98,32 +100,32 @@ export const NotificationSettingsScreen = () => {
         {
             id: 'trust',
             code: NotificationCode.PUSH,
-            title: 'Trust - Truster Notifications',
+            title: t('notificationSettings.trustTrusterNotifications'),
         },
         {
             id: 'support',
             code: NotificationCode.IN_APP,
-            title: '1-on-1 Support Notifications',
+            title: t('notificationSettings.oneononeNotifications'),
         },
         {
             id: 'message',
             code: NotificationCode.EMAIL,
-            title: 'Message Notifications',
+            title: t('notificationSettings.messageNotifications'),
         },
         {
             id: 'collection',
             code: NotificationCode.PUSH,
-            title: 'Collection Notifications',
+            title: t('notificationSettings.collectionNotifications'),
         },
         {
             id: 'post',
             code: NotificationCode.IN_APP,
-            title: 'Post Notifications',
+            title: t('notificationSettings.postNotifications'),
         },
         {
             id: 'deposit',
             code: NotificationCode.DEPOSIT,
-            title: 'Deposit Notifications',
+            title: t('notificationSettings.depositNotifications'),
         },
     ];
 
@@ -167,7 +169,7 @@ export const NotificationSettingsScreen = () => {
                     bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
                 >
                 <Header
-                    title="Notification Settings"
+                    title={t('notificationSettings.title')}
                     maxTitleLength={25}
                     showBackButton
                     onBackPress={() => navigation.goBack()}
@@ -194,7 +196,7 @@ export const NotificationSettingsScreen = () => {
                                 px="$2"
                                 pt="$2"
                             >
-                                Push Notifications
+                                {t('notificationSettings.pushNotifications')}
                             </Text>
 
                             {/* All Notifications */}
@@ -211,14 +213,14 @@ export const NotificationSettingsScreen = () => {
                                             fontWeight="$bold"
                                             color={isDark ? '#FFFFFF' : '#000000'}
                                         >
-                                            All Notifications
+                                            {t('notificationSettings.allNotifications')}
                                         </Text>
                                         <Text
                                             fontSize="$xs"
                                             fontWeight="$normal"
                                             color="#B9B9B9"
                                         >
-                                            Pause Notifications Temporarily
+                                            {t('notificationSettings.pauseNotifications')}
                                         </Text>
                                     </VStack>
 

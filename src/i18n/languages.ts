@@ -4,12 +4,12 @@ export const SUPPORTED_LANGUAGES = {
     name: 'English',
     nativeName: 'English',
   },
+  tr: {
+    code: 'tr',
+    name: 'Turkish',
+    nativeName: 'Türkçe',
+  },
   // Future languages can be added here:
-  // tr: {
-  //   code: 'tr',
-  //   name: 'Turkish',
-  //   nativeName: 'Türkçe',
-  // },
   // es: {
   //   code: 'es',
   //   name: 'Spanish',

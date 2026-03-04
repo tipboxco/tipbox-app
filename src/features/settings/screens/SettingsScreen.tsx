@@ -19,6 +19,8 @@ import { Feather } from '@expo/vector-icons';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomOffset } from '@/src/utils';
 import YourDevicesBottomSheet from '../components/YourDevicesBottomSheet';
+import { LanguageBottomSheet } from '../components/LanguageBottomSheet';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<SettingsStackParamList, 'SettingsScreen'>;
 
@@ -35,6 +37,7 @@ interface SettingSection {
 }
 
 export const SettingsScreen = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SettingsScreenNavigationProp>();
@@ -49,47 +52,78 @@ export const SettingsScreen = () => {
 
   const settingSections: SettingSection[] = [
     {
-      title: 'Account Security',
+      title: t('settingsScreen.sections.accountSecurity'),
       items: [
         {
           id: 'change-password',
           icon: 'user',
-          title: 'Change Password',
+          title: t('settingsScreen.menuItems.changePassword'),
           onPress: () => navigation.navigate('ChangePassword'),
         },
         {
           id: 'two-factor',
           icon: 'user',
-          title: 'Two-Factor Authentication',
+          title: t('settingsScreen.menuItems.twoFactor'),
           onPress: () => navigation.navigate('TwoFactorAuth'),
         },
       ],
     },
     {
-      title: 'Account Preferences',
+      title: t('settingsScreen.sections.accountPreferences'),
       items: [
         {
           id: 'notification-settings',
           icon: 'bell',
-          title: 'Notification Settings',
+          title: t('settingsScreen.menuItems.notificationSettings'),
           onPress: () => navigation.navigate('NotificationSettings'),
         },
         {
           id: 'privacy-settings',
           icon: 'shield',
-          title: 'Privacy Settings',
+          title: t('settingsScreen.menuItems.privacySettings'),
           onPress: () => navigation.navigate('PrivacySettings'),
         },
         {
           id: 'support-settings',
           icon: 'headphones',
-          title: '1-on-1 Support Settings',
+          title: t('settingsScreen.menuItems.supportSettings'),
           onPress: () => navigation.navigate('SupportSettings'),
+        },
+        {
+          id: 'language',
+          icon: 'globe',
+          title: t('settingsScreen.menuItems.language', 'Dil / Language'),
+          onPress: () => {
+            openBottomSheet(
+              <LanguageBottomSheet onClose={closeBottomSheet} />,
+              {
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableDynamicSizing: true,
+                backgroundStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleIndicatorStyle: {
+                  backgroundColor: isDark ? '#333333' : '#B8B8B7',
+                  width: 40,
+                  height: 4,
+                },
+                paddingBottom: bottomOffset,
+              }
+            );
+          },
         },
         {
           id: 'your-devices',
           icon: 'smartphone',
-          title: 'Your Devices',
+          title: t('settingsScreen.menuItems.yourDevices'),
           onPress: () => {
             openBottomSheet(
               <YourDevicesBottomSheet onClose={closeBottomSheet} />,
@@ -120,18 +154,18 @@ export const SettingsScreen = () => {
       ],
     },
     {
-      title: 'Payment & Subscription Settings',
+      title: t('settingsScreen.sections.paymentSubscription'),
       items: [
         {
           id: 'payment-subscription',
           icon: 'credit-card',
-          title: 'Payment & Subscription',
+          title: t('settingsScreen.menuItems.paymentSubscription'),
           onPress: () => navigation.navigate('PaymentAndSubscription'),
         },
         {
           id: 'billing-history',
           icon: 'file-text',
-          title: 'Billing History',
+          title: t('settingsScreen.menuItems.billingHistory'),
           onPress: () => console.log('Billing History'),
         },
       ],
@@ -149,7 +183,7 @@ export const SettingsScreen = () => {
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Box pt={insets.top}>
         <Header
-          title="Settings"
+          title={t('settingsScreen.title')}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />
@@ -173,7 +207,7 @@ export const SettingsScreen = () => {
           />
           <Input flex={1} borderWidth={0} bg="transparent">
             <InputField
-              placeholder="Select product group or search product name"
+              placeholder={t('settingsScreen.searchPlaceholder')}
               placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
               color={isDark ? '#fff' : '#000'}
               fontSize="$sm"

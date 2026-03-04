@@ -1,0 +1,34 @@
+{
+  "filters": {
+    "all": "Tümü",
+    "posts": "Gönderiler",
+    "events": "Etkinlikler",
+    "media": "Medya"
+  },
+  "emptyStates": {
+    "noPosts": "Henüz gönderi yok",
+    "noEvents": "Henüz etkinlik yok",
+    "noMedia": "Henüz medya yok",
+    "noFeedContent": "Henüz akış içeriği bulunamadı."
+  },
+  "actions": {
+    "like": "Beğen",
+    "comment": "Yorum",
+    "share": "Paylaş",
+    "tip": "Bahşiş",
+    "upvote": "Oyla",
+    "addedToInventory": "Envantere yeni ürün ve deneyimler eklendi!"
+  },
+  "labels": {
+    "comments": "Yorumlar",
+    "likes": "Beğeniler",
+    "shares": "Paylaşımlar",
+    "tips": "Bahşişler"
+  },
+  "errors": {
+    "failedToLoad": "Akış Yüklenemedi",
+    "serverError": "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.",
+    "unknownError": "Bilinmeyen bir hata oluştu",
+    "httpStatus": "HTTP Durumu: {{status}}"
+  }
+}

@@ -11,11 +11,13 @@ import { useShallow } from 'zustand/react/shallow';
 import { TokenService } from '@/src/services/TokenService';
 import type { SettingsStackParamList } from '../navigation';
 import { CANNY_CONFIG } from '@/src/config/canny.config';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 // Canny URL - Tipbox Canny sayfası (varsayılan)
 const DEFAULT_CANNY_URL = 'https://tipbox.canny.io/';
 
 export const CannyWebViewScreen: React.FC = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
@@ -26,7 +28,7 @@ export const CannyWebViewScreen: React.FC = () => {
   const params = route.params ?? {};
   const isFeedback = params?.mode === 'feedback';
   const url = params?.url ?? (isFeedback ? CANNY_CONFIG.FEEDBACK_REDIRECT_URL : DEFAULT_CANNY_URL);
-  const title = params?.title ?? (isFeedback ? 'Feedback' : 'Vote New Features');
+  const title = params?.title ?? (isFeedback ? t('cannyWebView.feedback') : t('cannyWebView.voteNewFeatures'));
 
   // Kullanıcı bilgilerini al (Auth için gerekirse)
   const { user } = useAppStore(
@@ -71,7 +73,7 @@ export const CannyWebViewScreen: React.FC = () => {
           {showAuthError ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$6">
               <Text color={isDark ? '$textDark50' : '$textLight900'} textAlign="center">
-                Oturum bulunamadı. Lütfen tekrar giriş yapın.
+                {t('cannyWebView.sessionNotFound')}
               </Text>
             </Box>
           ) : !shouldShowWebView ? (

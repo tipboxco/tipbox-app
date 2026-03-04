@@ -19,6 +19,7 @@ import { Feather } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePrivacySettings, useUpdatePrivacySettings } from '../api/hooks';
 import { PrivacyCode } from '../types';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface PrivacyOption {
   id: 'trust-only' | 'everyone';
@@ -26,6 +27,7 @@ interface PrivacyOption {
 }
 
 export const PrivacySettingsScreen = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
@@ -100,8 +102,8 @@ export const PrivacySettingsScreen = () => {
   };
 
   const privacyOptions: PrivacyOption[] = [
-    { id: 'trust-only', label: 'Trusters Only' },
-    { id: 'everyone', label: 'Everyone' },
+    { id: 'trust-only', label: t('privacySettings.trustersOnly') },
+    { id: 'everyone', label: t('privacySettings.everyone') },
   ];
 
   // Privacy setting items for display
@@ -109,22 +111,22 @@ export const PrivacySettingsScreen = () => {
     {
       id: 'nft-collections',
       code: PrivacyCode.NFT_BADGE_COLLECTIONS,
-      title: 'NFT / Badge Collections',
-      description: 'Choose who can view your NFT / Badge Collections.',
+      title: t('privacySettings.nftCollections'),
+      description: t('privacySettings.nftCollectionsDesc'),
       defaultValue: 'trust-only' as const,
     },
     {
       id: 'trust-list',
       code: PrivacyCode.TRUST_TRUSTER_LIST,
-      title: 'Trust / Truster List',
-      description: 'Choose who can view your Trust / Truster List.',
+      title: t('privacySettings.trustTrusterList'),
+      description: t('privacySettings.trustTrusterListDesc'),
       defaultValue: 'everyone' as const,
     },
     {
       id: 'support-session',
       code: PrivacyCode.ONE_ON_ONE_SUPPORT,
-      title: '1-on-1 Support Session Request',
-      description: 'Choose who can request a 1-on-1 Support Session.',
+      title: t('privacySettings.supportSessionRequest'),
+      description: t('privacySettings.supportSessionRequestDesc'),
       defaultValue: 'everyone' as const,
     },
   ];
@@ -241,7 +243,7 @@ export const PrivacySettingsScreen = () => {
           bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
         >
         <Header
-          title="Privacy Settings"
+          title={t('privacySettings.title')}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />

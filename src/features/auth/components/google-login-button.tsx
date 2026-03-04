@@ -8,6 +8,7 @@ import { API_CONFIG } from '@/src/config/api.config';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { apiService } from '@/src/services/ApiService';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 // iOS için gerekli
 WebBrowser.maybeCompleteAuthSession();
@@ -39,10 +40,13 @@ export type GoogleLoginButtonProps = {
 
 export function GoogleLoginButton({
   redirectPath = 'auth/callback',
-  buttonText = 'Continue with Google',
+  buttonText,
 }: GoogleLoginButtonProps) {
+  const { t } = useTranslation('auth');
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
+
+  const defaultButtonText = buttonText || t('googleLogin.continueWithGoogle');
 
   // openAuthSessionAsync + Linking event aynı callback'i iki kez tetikleyebilir
   const hasHandledCallbackRef = useRef(false);
@@ -98,8 +102,8 @@ export function GoogleLoginButton({
       const payload = parseGoogleAuthCallbackUrl(url);
       if (!payload) {
         showCustomToast(toast, {
-          title: 'Google Login Failed',
-          description: 'Token/refreshToken veya kullanıcı bilgileri alınamadı.',
+          title: t('googleLogin.loginFailed'),
+          description: t('googleLogin.tokenError'),
           action: 'error',
           duration: 4000,
         });
@@ -127,7 +131,7 @@ export function GoogleLoginButton({
       hasHandledCallbackRef.current = true;
 
       showCustomToast(toast, {
-        title: 'Google ile başarıyla giriş yapıldı!',
+        title: t('googleLogin.loginSuccess'),
         action: 'success',
         duration: 3000,
       });
@@ -137,10 +141,10 @@ export function GoogleLoginButton({
       const errorMessage =
         error?.message ||
         error?.response?.data?.message ||
-        'Google ile giriş yapılırken bir hata oluştu';
+        t('googleLogin.loginError');
 
       showCustomToast(toast, {
-        title: 'Google Login Failed',
+        title: t('googleLogin.loginFailed'),
         description: errorMessage,
         action: 'error',
         duration: 4000,
@@ -204,8 +208,8 @@ export function GoogleLoginButton({
       }
 
       showCustomToast(toast, {
-        title: 'Google Login Failed',
-        description: 'Giriş işlemi tamamlanamadı.',
+        title: t('googleLogin.loginFailed'),
+        description: t('googleLogin.loginCancelled'),
         action: 'error',
         duration: 4000,
       });
@@ -213,9 +217,9 @@ export function GoogleLoginButton({
     } catch (error: any) {
       console.error('[GoogleLoginButton] ❌ Failed to start Google login:', error);
 
-      const errorMessage = error?.message || 'Google ile giriş yapılırken bir hata oluştu';
+      const errorMessage = error?.message || t('googleLogin.loginError');
       showCustomToast(toast, {
-        title: 'Google Login Failed',
+        title: t('googleLogin.loginFailed'),
         description: errorMessage,
         action: 'error',
         duration: 4000,
@@ -258,7 +262,7 @@ export function GoogleLoginButton({
       <HStack space="md" alignItems="center">
         <Icon as={Mail} size="md" color="$textLight600" />
         <ButtonText color="$textLight600" fontWeight="$bold">
-          {isLoading ? 'Signing in...' : buttonText}
+          {isLoading ? t('googleLogin.signingIn') : defaultButtonText}
         </ButtonText>
       </HStack>
     </Button>

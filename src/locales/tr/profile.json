@@ -1,0 +1,29 @@
+{
+  "tabs": {
+    "posts": "Gönderiler",
+    "media": "Medya",
+    "events": "Etkinlikler",
+    "badges": "Rozetler"
+  },
+  "stats": {
+    "followers": "Takipçi",
+    "following": "Takip",
+    "posts": "Gönderi",
+    "tips": "Bahşiş"
+  },
+  "actions": {
+    "follow": "Takip Et",
+    "following": "Takip Ediliyor",
+    "unfollow": "Takibi Bırak",
+    "message": "Mesaj",
+    "tip": "Bahşiş Gönder",
+    "edit": "Profili Düzenle",
+    "share": "Profili Paylaş"
+  },
+  "emptyStates": {
+    "noPosts": "Henüz gönderi yok",
+    "noMedia": "Henüz medya yok",
+    "noEvents": "Henüz etkinlik yok",
+    "noBadges": "Henüz rozet yok"
+  }
+}

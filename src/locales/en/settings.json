@@ -1,37 +1,98 @@
 {
-  "title": "Settings",
-  "sections": {
-    "account": "Account",
-    "preferences": "Preferences",
-    "notifications": "Notifications",
-    "privacy": "Privacy & Security",
-    "about": "About"
+  "settingsScreen": {
+    "title": "Settings",
+    "searchPlaceholder": "Select product group or search product name",
+    "sections": {
+      "accountSecurity": "Account Security",
+      "accountPreferences": "Account Preferences",
+      "paymentSubscription": "Payment & Subscription Settings"
+    },
+    "menuItems": {
+      "changePassword": "Change Password",
+      "twoFactor": "Two-Factor Authentication",
+      "notificationSettings": "Notification Settings",
+      "privacySettings": "Privacy Settings",
+      "supportSettings": "1-on-1 Support Settings",
+      "language": "Language",
+      "yourDevices": "Your Devices",
+      "paymentSubscription": "Payment & Subscription",
+      "billingHistory": "Billing History"
+    }
   },
-  "account": {
-    "profile": "Edit Profile",
-    "email": "Email Address",
-    "password": "Change Password",
-    "deleteAccount": "Delete Account"
+  "notificationSettings": {
+    "title": "Notification Settings",
+    "pushNotifications": "Push Notifications",
+    "emailNotifications": "Email Notifications",
+    "smsNotifications": "SMS Notifications",
+    "trustTrusterNotifications": "Trust - Truster Notifications",
+    "oneononeNotifications": "1-on-1 Support Notifications",
+    "messageNotifications": "Message Notifications",
+    "collectionNotifications": "Collection Notifications",
+    "postNotifications": "Post Notifications",
+    "depositNotifications": "Deposit Notifications",
+    "allNotifications": "All Notifications",
+    "pauseNotifications": "Pause Notifications Temporarily"
   },
-  "preferences": {
-    "language": "Language",
-    "theme": "Theme",
-    "darkMode": "Dark Mode",
-    "notifications": "Push Notifications"
-  },
-  "privacy": {
+  "privacySettings": {
+    "title": "Privacy Settings",
     "blockedUsers": "Blocked Users",
-    "privacy": "Privacy Settings",
-    "security": "Security"
+    "privateAccount": "Private Account",
+    "dataSharing": "Data Sharing",
+    "trustersOnly": "Trusters Only",
+    "everyone": "Everyone",
+    "nftCollections": "NFT / Badge Collections",
+    "nftCollectionsDesc": "Choose who can view your NFT / Badge Collections.",
+    "trustTrusterList": "Trust / Truster List",
+    "trustTrusterListDesc": "Choose who can view your Trust / Truster List.",
+    "supportSessionRequest": "1-on-1 Support Session Request",
+    "supportSessionRequestDesc": "Choose who can request a 1-on-1 Support Session."
   },
-  "about": {
-    "version": "Version",
-    "terms": "Terms of Service",
-    "privacy": "Privacy Policy",
-    "help": "Help & Support",
-    "logout": "Logout"
+  "supportSettings": {
+    "title": "1-on-1 Support Settings",
+    "enableSupport": "Enable Support",
+    "supportHours": "Support Hours",
+    "setTipsAmount": "Set TIPS Amount",
+    "descriptionPart1": "Set the minimum TIPS amount users must pay to open a 1-on-1",
+    "descriptionPart2": "Support Request.",
+    "descriptionPart3": "This amount is only required to open the request.",
+    "minimumNotice": "* Minimum of {{amount}} TIPS can be set.",
+    "changeLimitNotice": "* The amount can be changed once every 10 days.",
+    "save": "Save",
+    "saving": "Saving...",
+    "invalidPrice": "Invalid Price",
+    "minimumTipsRequired": "Minimum {{amount}} TIPS required",
+    "priceUpdated": "Price Updated",
+    "priceUpdatedSuccess": "Support session price has been updated successfully",
+    "errorUpdatingPrice": "An error occurred while updating price"
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "saveButton": "Save Changes",
+    "saving": "Saving..."
+  },
+  "twoFactorAuth": {
+    "title": "Two-Factor Authentication",
+    "enable": "Enable 2FA",
+    "disable": "Disable 2FA",
+    "sms": "SMS Authentication",
+    "authenticator": "Authenticator App"
+  },
+  "paymentSubscription": {
+    "title": "Payment & Subscription",
+    "currentPlan": "Current Plan",
+    "paymentMethod": "Payment Method",
+    "billingHistory": "Billing History"
+  },
+  "cannyWebView": {
+    "feedback": "Feedback",
+    "voteNewFeatures": "Vote New Features",
+    "sessionNotFound": "Oturum bulunamadı. Lütfen tekrar giriş yapın."
   },
   "languages": {
+    "title": "Language",
     "en": "English",
     "tr": "Turkish",
     "es": "Spanish"

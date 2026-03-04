@@ -18,11 +18,13 @@ import { Header } from '@/src/components/Header';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSupportSessionPrice, useUpdateSupportSessionPrice } from '../api/hooks';
 import { CustomToast } from '@/src/components/CustomToast';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const MIN_PRICE = 50;
 const TIPS_TO_USD_RATIO = 10; // 10 TIPS = 1 USD
 
 export const SupportSettingsScreen = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
@@ -71,8 +73,8 @@ export const SupportSettingsScreen = () => {
         render: ({ id }) => (
           <CustomToast
             id={id}
-            title="Invalid Price"
-            description={`Minimum ${MIN_PRICE} TIPS required`}
+            title={t('supportSettings.invalidPrice')}
+            description={t('supportSettings.minimumTipsRequired', { amount: MIN_PRICE })}
             action="error"
             duration={3000}
           />
@@ -90,18 +92,18 @@ export const SupportSettingsScreen = () => {
         render: ({ id }) => (
           <CustomToast
             id={id}
-            title="Price Updated"
-            description="Support session price has been updated successfully"
+            title={t('supportSettings.priceUpdated')}
+            description={t('supportSettings.priceUpdatedSuccess')}
             action="success"
             duration={3000}
           />
         ),
       });
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.error?.message || 
-                          error?.response?.data?.message || 
-                          error?.message || 
-                          'An error occurred while updating price';
+      const errorMessage = error?.response?.data?.error?.message ||
+                          error?.response?.data?.message ||
+                          error?.message ||
+                          t('supportSettings.errorUpdatingPrice');
       toast.show({
         placement: 'top',
         duration: 4000,
@@ -138,7 +140,7 @@ export const SupportSettingsScreen = () => {
           bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
         >
         <Header
-          title="1-on-1 Support Settings"
+          title={t('supportSettings.title')}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />
@@ -164,7 +166,7 @@ export const SupportSettingsScreen = () => {
                   fontWeight="$bold"
                   color={isDark ? '#FFFFFF' : '#000000'}
                 >
-                  Set TIPS Amount
+                  {t('supportSettings.setTipsAmount')}
                 </Text>
 
                 {/* Description */}
@@ -175,7 +177,7 @@ export const SupportSettingsScreen = () => {
                     color="#B9B9B9"
                     lineHeight={14}
                   >
-                    Set the minimum TIPS amount users must pay to open a 1-on-1
+                    {t('supportSettings.descriptionPart1')}
                   </Text>
                   <Text
                     fontSize="$xs"
@@ -183,7 +185,7 @@ export const SupportSettingsScreen = () => {
                     color="#B9B9B9"
                     lineHeight={14}
                   >
-                    Support Request.
+                    {t('supportSettings.descriptionPart2')}
                   </Text>
                   <Text
                     fontSize="$xs"
@@ -192,7 +194,7 @@ export const SupportSettingsScreen = () => {
                     lineHeight={14}
                     mt="$1"
                   >
-                    This amount is only required to open the request.
+                    {t('supportSettings.descriptionPart3')}
                   </Text>
                 </VStack>
 
@@ -252,7 +254,7 @@ export const SupportSettingsScreen = () => {
                   color="#B9B9B9"
                   lineHeight={14}
                 >
-                  * Minimum of {MIN_PRICE} TIPS can be set.
+                  {t('supportSettings.minimumNotice', { amount: MIN_PRICE })}
                 </Text>
                 <Text
                   fontSize={10}
@@ -260,7 +262,7 @@ export const SupportSettingsScreen = () => {
                   color="#B9B9B9"
                   lineHeight={14}
                 >
-                  * The amount can be changed once every 10 days.
+                  {t('supportSettings.changeLimitNotice')}
                 </Text>
               </VStack>
 
@@ -279,7 +281,7 @@ export const SupportSettingsScreen = () => {
                     fontSize={14}
                     fontWeight="$bold"
                   >
-                    {updateMutation.isPending ? 'Saving...' : 'Save'}
+                    {updateMutation.isPending ? t('supportSettings.saving') : t('supportSettings.save')}
                   </ButtonText>
                 </Button>
               )}
