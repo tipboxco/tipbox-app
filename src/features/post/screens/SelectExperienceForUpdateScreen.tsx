@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCard';
@@ -96,6 +97,7 @@ export const mapReviewToExperiencePostParam = (item: ProfileReview): {
 export const SelectExperienceForUpdateScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('post');
   const navigation = useNavigation<SelectExperienceForUpdateScreenNavigationProp>();
   const route = useRoute<SelectExperienceForUpdateScreenRouteProp>();
   const { product } = route.params || {};
@@ -175,8 +177,8 @@ export const SelectExperienceForUpdateScreen = () => {
       // Legacy review için uyarı göster
       if (isLegacy) {
         showCustomToast(toast, {
-          title: 'Legacy Review',
-          description: 'Update posts cannot be created for old inventory-based reviews. Please create a new experience post for this product first.',
+          title: t('selectExperience.legacyWarning.toast.title'),
+          description: t('selectExperience.legacyWarning.toast.description'),
           action: 'error',
         });
         return;
@@ -223,20 +225,20 @@ export const SelectExperienceForUpdateScreen = () => {
             }}
           />
           {isLegacy && (
-            <Box 
-              mt="$2" 
-              px="$3" 
-              py="$2" 
-              bg={isDark ? '$yellow900' : '$yellow100'} 
+            <Box
+              mt="$2"
+              px="$3"
+              py="$2"
+              bg={isDark ? '$yellow900' : '$yellow100'}
               borderRadius={8}
               borderWidth={1}
               borderColor={isDark ? '$yellow700' : '$yellow300'}
             >
-              <Text 
-                fontSize="$xs" 
+              <Text
+                fontSize="$xs"
                 color={isDark ? '$yellow200' : '$yellow800'}
               >
-                ⚠️ This is a legacy review. Update posts cannot be created for old reviews.
+                {t('selectExperience.legacyWarning.badge')}
               </Text>
             </Box>
           )}
@@ -260,9 +262,9 @@ export const SelectExperienceForUpdateScreen = () => {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'} px="$4" py="$4">
-          <Header title="Experience Post Seçin" leftAction="cancel" onLeftActionPress={handleBackPress} />
+          <Header title={t('selectExperience.header.title')} leftAction="cancel" onLeftActionPress={handleBackPress} />
           <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-            Giriş yapmanız gerekiyor.
+            {t('selectExperience.noUser.message')}
           </Text>
         </Box>
       </SafeAreaView>
@@ -273,7 +275,7 @@ export const SelectExperienceForUpdateScreen = () => {
     <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
         <Header
-          title="Experience Post Seçin"
+          title={t('selectExperience.header.title')}
           leftAction="cancel"
           onLeftActionPress={handleBackPress}
         />
@@ -281,19 +283,19 @@ export const SelectExperienceForUpdateScreen = () => {
           <VStack flex={1} justifyContent="center" alignItems="center" px="$4">
             <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
             <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-              Deneyim gönderileriniz yükleniyor...
+              {t('selectExperience.loading.message')}
             </Text>
           </VStack>
         ) : error ? (
           <VStack flex={1} justifyContent="center" alignItems="center" px="$4">
             <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-              An error occurred while loading the list.
+              {t('selectExperience.error.message')}
             </Text>
           </VStack>
         ) : mappedItems.length === 0 ? (
           <VStack flex={1} justifyContent="center" alignItems="center" px="$4">
             <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-              You don't have any experience posts yet. First create an experience post for a product, then you can add updates from this screen.
+              {t('selectExperience.empty.message')}
             </Text>
           </VStack>
         ) : (

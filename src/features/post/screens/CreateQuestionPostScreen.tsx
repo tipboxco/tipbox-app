@@ -6,6 +6,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { InformationCircleIcon, ArrowTrendingUpIcon } from 'react-native-heroicons/outline';
 import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -41,6 +42,7 @@ const BoostSwitchField: React.FC<{
   isLoadingPrice: boolean;
   availableTips: number;
 }> = ({ boostPrice, isLoadingPrice, availableTips }) => {
+  const { t } = useTranslation('post');
   const { control, watch } = useFormContext<QuestionPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -83,7 +85,7 @@ const BoostSwitchField: React.FC<{
                 fontWeight="$semibold"
                 mb={4}
               >
-                Boost Question
+                {t('create.question.boost.title')}
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#787878'}
@@ -91,10 +93,10 @@ const BoostSwitchField: React.FC<{
                 lineHeight={14}
               >
                 {isLoadingPrice
-                  ? 'Calculating boost price...'
+                  ? t('create.question.boost.calculating')
                   : value
-                    ? `Boost active${boostPrice != null ? ` - ${boostPrice} TIPS` : ''}`
-                    : 'Boost your question for 24 hours to reach more people and get more answers.'}
+                    ? (boostPrice != null ? t('create.question.boost.activeTips', { price: boostPrice }) : t('create.question.boost.active'))
+                    : t('create.question.boost.description')}
               </Text>
             </VStack>
             <Switch
@@ -114,7 +116,7 @@ const BoostSwitchField: React.FC<{
           <HStack justifyContent="space-between" alignItems="flex-start">
             <VStack alignItems="flex-start" flex={1}>
               <Text color={greyLabel} fontSize={10} mb={4}>
-                Available
+                {t('create.question.boost.available')}
               </Text>
               <Text color={greyValue} fontSize="$sm" fontWeight="$medium">
                 {availableTips} TIPS
@@ -125,7 +127,7 @@ const BoostSwitchField: React.FC<{
             </VStack>
             <VStack alignItems="flex-end" flex={1}>
               <Text color={greyLabel} fontSize={10} mb={4}>
-                Boost Price
+                {t('create.question.boost.boostPrice')}
               </Text>
               <Text
                 color={isLoadingPrice ? greyValue : '#829905'}
@@ -146,6 +148,7 @@ const BoostSwitchField: React.FC<{
 };
 
 export const CreateQuestionPostScreen = () => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreateQuestionPostScreenNavigationProp>();
@@ -238,8 +241,8 @@ export const CreateQuestionPostScreen = () => {
       
       if (remainingSlots <= 0) {
         showCustomToast(toast, {
-          title: 'Limit Exceeded',
-          description: 'You can select a maximum of 10 images.',
+          title: t('create.toast.limitExceeded.title'),
+          description: t('create.toast.limitExceeded.description'),
           action: 'error',
         });
         return;
@@ -257,23 +260,23 @@ export const CreateQuestionPostScreen = () => {
           setValue('selectedImages', updatedImages, { shouldValidate: true });
         } else {
           showCustomToast(toast, {
-            title: 'Error',
-            description: "Selected image URIs could not be found.",
+            title: t('create.common.errors.title'),
+            description: t('create.common.validation.imageUriNotFound'),
             action: 'error',
           });
         }
       } else if (result.error) {
         showCustomToast(toast, {
-          title: 'Error',
+          title: t('create.common.errors.title'),
           description: result.error,
           action: 'error',
         });
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
-      const errorMessage = error?.message || 'An error occurred while selecting images';
+      const errorMessage = error?.message || t('create.common.validation.imagePickerError');
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('create.common.errors.title'),
         description: errorMessage,
         action: 'error',
       });
@@ -306,8 +309,8 @@ export const CreateQuestionPostScreen = () => {
     if (!contextType || !contextId) {
       console.error('[CreateQuestionPostScreen] ❌ Missing context:', { contextType, contextId });
       showCustomToast(toast, {
-        title: 'Error',
-        description: 'Context information not found. Please try again.',
+        title: t('create.common.errors.title'),
+        description: t('create.question.validation.contextMissing'),
         action: 'error',
       });
       return;
@@ -341,11 +344,11 @@ export const CreateQuestionPostScreen = () => {
       });
       
       console.log('[CreateQuestionPostScreen] ✅ API Response:', response);
-      
+
       // Show success toast
       showCustomToast(toast, {
-        title: 'Question Post Created',
-        description: 'Your question post has been shared successfully!',
+        title: t('create.question.success.title'),
+        description: t('create.question.success.description'),
         action: 'success',
       });
       
@@ -485,8 +488,8 @@ export const CreateQuestionPostScreen = () => {
       // Context not found hatası
       if (errorCode === 'CONTEXT_NOT_FOUND') {
         showCustomToast(toast, {
-          title: 'Product Not Found',
-          description: 'The selected product could not be found. Please try selecting another product.',
+          title: t('create.question.validation.productNotFound.title'),
+          description: t('create.question.validation.productNotFound.description'),
           action: 'error',
         });
         return;
@@ -495,10 +498,10 @@ export const CreateQuestionPostScreen = () => {
       // Genel hata
       const fallbackMessage = errorMessage ||
                           error?.message ||
-                          'An error occurred while creating the post. Please try again.';
+                          t('create.common.errors.general');
 
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('create.common.errors.title'),
         description: fallbackMessage,
         action: 'error',
       });
@@ -528,11 +531,11 @@ export const CreateQuestionPostScreen = () => {
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
           {/* Header */}
           <Header
-            title="Question Post"
+            title={t('create.question.header.title')}
             leftAction="cancel"
             onLeftActionPress={handleBackPress}
             rightButton={{
-              text: 'Share',
+              text: t('create.question.header.share'),
               backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
               borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
@@ -566,9 +569,9 @@ export const CreateQuestionPostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledTextarea
                   name="questionText"
-                  placeholder="Type your Question here..."
+                  placeholder={t('create.question.placeholders.description')}
                   maxLength={500}
-                  label="Question Description"
+                  label={t('create.question.labels.description')}
                 />
               </VStack>
 
@@ -576,7 +579,7 @@ export const CreateQuestionPostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledImagePicker
                   name="selectedImages"
-                  label="Images"
+                  label={t('create.question.labels.images')}
                   maxImages={10}
                   onImagePicker={handleImagePicker}
                   isLoading={isImagePickerLoading}
@@ -592,14 +595,14 @@ export const CreateQuestionPostScreen = () => {
                   fontWeight="$bold"
                   mb={8}
                 >
-                  Boost this Question
+                  {t('create.question.labels.boostSection')}
                 </Text>
 
                 {/* Boost Switch */}
                 {boostPriceError ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '$red500' : '#EF4444'} fontSize="$sm">
-                      Error loading boost price
+                      {t('create.question.boost.errorLoading')}
                     </Text>
                   </Box>
                 ) : (
@@ -622,7 +625,7 @@ export const CreateQuestionPostScreen = () => {
                     fontSize="$sm"
                     fontWeight="$medium"
                   >
-                    You currently have {availableTips} TIPS available
+                    {t('create.question.boost.tipsAvailable', { tips: availableTips })}
                   </Text>
                 </HStack>
               </VStack>

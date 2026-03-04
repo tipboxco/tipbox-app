@@ -1,0 +1,302 @@
+{
+  "create": {
+    "header": {
+      "title": "Write a Post",
+      "share": "Share"
+    },
+    "form": {
+      "postDescription": "Post Description",
+      "postPlaceholder": "Type your Post here...",
+      "images": "Images"
+    },
+    "toast": {
+      "limitExceeded": {
+        "title": "Limit Exceeded",
+        "description": "You can select a maximum of 10 images."
+      },
+      "postCreated": {
+        "title": "Post Created",
+        "description": "Your post has been created successfully!"
+      },
+      "error": {
+        "title": "Error",
+        "description": "An error occurred while creating the post. Please try again."
+      },
+      "validation": {
+        "title": "Validation",
+        "description": "Please check your post and try again."
+      }
+    },
+    "experience": {
+      "header": {
+        "title": "Experience Post",
+        "addToInventory": "Add to Inventory",
+        "next": "Next",
+        "save": "Save",
+        "share": "Share",
+        "done": "Done",
+        "processing": "Processing..."
+      },
+      "ai": {
+        "processingContent": "Processing experience content...",
+        "timeoutError": "AI processing timed out. Please try again or continue manually.",
+        "structureError": "AI could not structure your experience. Please try again or continue manually.",
+        "generalError": "An error occurred while processing the experience text. Please try again.",
+        "splitRequired": "Please use AI split first to structure your experience."
+      },
+      "validation": {
+        "productNotSelected": "Product not selected. Please select a product.",
+        "experienceTextTooShort": "Experience text must be at least 10 characters.",
+        "productSelectionRequired": "Product selection is required.",
+        "experienceCategoryRequired": "At least one experience category must be filled.",
+        "durationRequired": "Duration selection is required.",
+        "locationRequired": "Location selection is required.",
+        "purposeRequired": "Purpose selection is required.",
+        "contextMissing": "Context information not found. Please try again."
+      },
+      "inventory": {
+        "alreadyInInventory": {
+          "title": "Already in your inventory",
+          "description": "This product is already in your inventory. You can still continue sharing your experience."
+        },
+        "addError": {
+          "title": "Inventory error",
+          "description": "Failed to add product to inventory."
+        },
+        "productNotInInventory": {
+          "title": "Product Not in Inventory",
+          "description": "To mark this product as \"I Owned\", it must be in your inventory first. Please add it to your inventory or select \"I Tried\" instead."
+        }
+      },
+      "success": {
+        "title": "Post Created",
+        "description": "Your experience post has been created successfully!"
+      },
+      "sending": "Sending..."
+    },
+    "benchmark": {
+      "header": {
+        "title": "Benchmark Post",
+        "share": "Share"
+      },
+      "labels": {
+        "productBenchmark": "Product Benchmark",
+        "description": "Benchmark Description"
+      },
+      "placeholders": {
+        "description": "Type your Benchmark Description here..."
+      },
+      "modal": {
+        "title": "Select Second Product",
+        "fromInventory": "From Inventory",
+        "fromCatalog": "From Catalog",
+        "cancel": "Cancel",
+        "selectFromInventoryTitle": "Select from Inventory"
+      },
+      "validation": {
+        "twoProductsRequired": "Two products must be selected.",
+        "descriptionRequired": "Benchmark description is required.",
+        "firstProductMustBeInInventory": {
+          "title": "First Product Must Be in Inventory",
+          "description": "The first product must be from your inventory. Please select a product from your inventory."
+        }
+      },
+      "success": {
+        "title": "Post Created",
+        "description": "Your benchmark post has been created successfully!"
+      }
+    },
+    "question": {
+      "header": {
+        "title": "Question Post",
+        "share": "Share"
+      },
+      "labels": {
+        "description": "Question Description",
+        "images": "Images",
+        "boostSection": "Boost this Question"
+      },
+      "placeholders": {
+        "description": "Type your Question here..."
+      },
+      "boost": {
+        "title": "Boost Question",
+        "calculating": "Calculating boost price...",
+        "active": "Boost active",
+        "activeTips": "Boost active - {{price}} TIPS",
+        "description": "Boost your question for 24 hours to reach more people and get more answers.",
+        "available": "Available",
+        "boostPrice": "Boost Price",
+        "tipsAvailable": "You currently have {{tips}} TIPS available",
+        "errorLoading": "Error loading boost price"
+      },
+      "validation": {
+        "contextMissing": "Context information not found. Please try again.",
+        "productNotFound": {
+          "title": "Product Not Found",
+          "description": "The selected product could not be found. Please try selecting another product."
+        }
+      },
+      "success": {
+        "title": "Question Post Created",
+        "description": "Your question post has been shared successfully!"
+      }
+    },
+    "tipsAndTricks": {
+      "header": {
+        "title": "Tips & Tricks Post",
+        "share": "Share"
+      },
+      "labels": {
+        "description": "Tips & Tricks Description",
+        "category": "Tips & Tricks Category",
+        "images": "Images"
+      },
+      "placeholders": {
+        "description": "Type your Tips & Tricks here...",
+        "categorySelect": "Select the category of your Tips & Tricks"
+      },
+      "validation": {
+        "contextMissing": "Context information not found. Please try again.",
+        "invalidContext": "Invalid context information. Please try again."
+      },
+      "success": {
+        "title": "Post Created",
+        "description": "Your Tips & Tricks post has been created successfully!"
+      },
+      "errors": {
+        "serverError": "Server error occurred. Please try again later.",
+        "badRequest": "Invalid request data. Please check your input.",
+        "unauthorized": "Authentication failed. Please log in again.",
+        "forbidden": "You do not have permission to create this post."
+      }
+    },
+    "update": {
+      "header": {
+        "title": "Update Post",
+        "share": "Share"
+      },
+      "labels": {
+        "originalPost": "Original Experience Post",
+        "description": "Update Description",
+        "images": "Images"
+      },
+      "placeholders": {
+        "description": "Type your update here..."
+      },
+      "validation": {
+        "experiencePostIdRequired": "Experience post ID is required. Please try again.",
+        "invalidUsage": "Invalid screen usage. Please select an experience post first."
+      },
+      "success": {
+        "postUpdated": {
+          "title": "Post Updated",
+          "description": "Your post has been updated successfully!"
+        },
+        "postCreated": {
+          "title": "Update Post Created",
+          "description": "Your update post has been created successfully!"
+        }
+      },
+      "errors": {
+        "legacyNotSupported": {
+          "title": "Legacy Review Not Supported",
+          "description": "This is a legacy inventory item without an associated experience post. Please create a new experience post for this product first."
+        },
+        "experiencePostNotFound": {
+          "title": "Experience Post Not Found",
+          "description": "The selected experience post could not be found. Please try again."
+        }
+      }
+    },
+    "common": {
+      "buttons": {
+        "next": "Next",
+        "save": "Save",
+        "share": "Share",
+        "cancel": "Cancel",
+        "done": "Done"
+      },
+      "validation": {
+        "imageUriNotFound": "Selected image URIs could not be found.",
+        "imagePickerError": "An error occurred while selecting images"
+      },
+      "errors": {
+        "title": "Error",
+        "general": "An error occurred while creating the post. Please try again."
+      }
+    }
+  },
+  "selectExperience": {
+    "header": {
+      "title": "Experience Post Seçin"
+    },
+    "noUser": {
+      "message": "Giriş yapmanız gerekiyor."
+    },
+    "loading": {
+      "message": "Deneyim gönderileriniz yükleniyor..."
+    },
+    "error": {
+      "message": "An error occurred while loading the list."
+    },
+    "empty": {
+      "message": "You don't have any experience posts yet. First create an experience post for a product, then you can add updates from this screen."
+    },
+    "legacyWarning": {
+      "badge": "⚠️ This is a legacy review. Update posts cannot be created for old reviews.",
+      "toast": {
+        "title": "Legacy Review",
+        "description": "Update posts cannot be created for old inventory-based reviews. Please create a new experience post for this product first."
+      }
+    }
+  },
+  "screens": {
+    "posts": {
+      "title": "Posts",
+      "empty": "No posts found for this context yet.",
+      "errors": {
+        "failedToLoad": "Failed to Load Feed",
+        "unknownError": "An unknown error occurred",
+        "notInInventory": "Product not in inventory",
+        "notInInventoryDesc": "This product is not in your inventory. Add it to your inventory first to create a post."
+      }
+    },
+    "detail": {
+      "loading": "Loading post...",
+      "notFound": "Post not found.",
+      "notFoundDesc": "This post has been deleted or is no longer available.",
+      "titles": {
+        "post": "Post Details",
+        "tips": "Tips & Tricks Details",
+        "question": "Question Details",
+        "benchmark": "Benchmark Details",
+        "experience": "Experience Details",
+        "update": "Update Details"
+      }
+    }
+  },
+  "comments": {
+    "title": "Comments",
+    "loading": "Loading comments...",
+    "empty": "No comments yet. Be the first to comment!",
+    "placeholder": "Type a message...",
+    "sort": {
+      "title": "Sort Comments",
+      "newest": "Newest First",
+      "oldest": "Oldest First",
+      "popular": "Most Popular"
+    },
+    "sortOptions": {
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "popular": "Popular"
+    }
+  },
+  "actions": {
+    "like": "Like",
+    "comment": "Comment",
+    "share": "Share",
+    "tip": "Tip"
+  }
+}

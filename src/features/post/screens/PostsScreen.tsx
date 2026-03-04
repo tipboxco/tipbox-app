@@ -5,6 +5,7 @@ import { Box, ScrollView, VStack, Pressable, Text, useToast } from '@gluestack-u
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { FunnelIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -53,6 +54,7 @@ export const PostsScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
+  const { t } = useTranslation('post');
 
   // Inventory check hook for quick product lookups
   const { checkProduct } = useInventoryProductCheck();
@@ -413,8 +415,8 @@ export const PostsScreen = () => {
       const allowWithoutInventory = type === 'experience' && experienceOption === 'tried';
       if (!allowWithoutInventory) {
         showCustomToast(toast, {
-          title: 'Product not in inventory',
-          description: 'This product is not in your inventory. Add it to your inventory first to create a post.',
+          title: t('screens.posts.errors.notInInventory'),
+          description: t('screens.posts.errors.notInInventoryDesc'),
           action: 'error',
         });
         return; // Keep bottom sheet open; toast shows above it
@@ -1314,17 +1316,17 @@ export const PostsScreen = () => {
           <Box flex={1} justifyContent="center" alignItems="center" px="$4">
             <VStack space="md" alignItems="center">
               <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
-                Feed Yüklenemedi
+                {t('screens.posts.errors.failedToLoad')}
               </Text>
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                {error.message || 'An unknown error occurred'}
+                {error.message || t('screens.posts.errors.unknownError')}
               </Text>
             </VStack>
           </Box>
         ) : feedItems.length === 0 ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4">
             <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-              No posts found for this context yet.
+              {t('screens.posts.empty')}
             </Text>
           </Box>
         ) : (

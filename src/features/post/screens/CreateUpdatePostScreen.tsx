@@ -7,6 +7,7 @@ import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-naviga
 import { Feather } from '@expo/vector-icons';
 import { FormProvider } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -36,6 +37,7 @@ type CreateUpdatePostScreenNavigationProp = NativeStackNavigationProp<RootStackP
 type CreateUpdatePostScreenRouteProp = RouteProp<PostStackParamList, 'CreateUpdatePostScreen'>;
 
 export const CreateUpdatePostScreen = () => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreateUpdatePostScreenNavigationProp>();
@@ -119,8 +121,8 @@ export const CreateUpdatePostScreen = () => {
 
       if (remainingSlots <= 0) {
         showCustomToast(toast, {
-          title: 'Limit Exceeded',
-          description: 'You can select a maximum of 10 images.',
+          title: t('create.toast.limitExceeded.title'),
+          description: t('create.toast.limitExceeded.description'),
           action: 'error',
         });
         return;
@@ -158,23 +160,23 @@ export const CreateUpdatePostScreen = () => {
           setValue('selectedImages', updatedImages, { shouldValidate: false });
         } else {
         showCustomToast(toast, {
-          title: 'Error',
-          description: "Selected image URIs could not be found.",
+          title: t('create.common.errors.title'),
+          description: t('create.common.validation.imageUriNotFound'),
           action: 'error',
         });
         }
       } else if (result.error) {
         showCustomToast(toast, {
-          title: 'Error',
+          title: t('create.common.errors.title'),
           description: result.error,
           action: 'error',
         });
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
-      const errorMessage = error?.message || 'An error occurred while selecting images';
+      const errorMessage = error?.message || t('create.common.validation.imagePickerError');
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('create.common.errors.title'),
         description: errorMessage,
         action: 'error',
       });
@@ -210,11 +212,11 @@ export const CreateUpdatePostScreen = () => {
         });
         
         console.log('[CreateUpdatePostScreen] ✅ Post Updated:', response);
-        
+
         // Başarılı toast göster
         showCustomToast(toast, {
-          title: 'Post Updated',
-          description: 'Your post has been updated successfully!',
+          title: t('create.update.success.postUpdated.title'),
+          description: t('create.update.success.postUpdated.description'),
           action: 'success',
         });
         
@@ -226,8 +228,8 @@ export const CreateUpdatePostScreen = () => {
         if (!experiencePostId || experiencePostId.trim() === '') {
           console.error('[CreateUpdatePostScreen] experiencePostId is missing or empty');
           showCustomToast(toast, {
-            title: 'Error',
-            description: 'Experience post ID is required. Please try again.',
+            title: t('create.common.errors.title'),
+            description: t('create.update.validation.experiencePostIdRequired'),
             action: 'error',
           });
           return;
@@ -263,11 +265,11 @@ export const CreateUpdatePostScreen = () => {
         });
         
         console.log('[CreateUpdatePostScreen] ✅ Update Post Created from Experience:', response);
-        
+
         // Başarılı toast göster
         showCustomToast(toast, {
-          title: 'Update Post Created',
-          description: 'Your update post has been created successfully!',
+          title: t('create.update.success.postCreated.title'),
+          description: t('create.update.success.postCreated.description'),
           action: 'success',
         });
         
@@ -335,11 +337,11 @@ export const CreateUpdatePostScreen = () => {
         // Hatalı kullanım: Bu ekran sadece experience update veya post edit için kullanılmalı
         console.error('[CreateUpdatePostScreen] Invalid usage: experiencePostId or postId required');
         showCustomToast(toast, {
-          title: 'Error',
-          description: 'Invalid screen usage. Please select an experience post first.',
+          title: t('create.common.errors.title'),
+          description: t('create.update.validation.invalidUsage'),
           action: 'error',
         });
-        
+
         // Geri dön
         handleBackPress();
       }
@@ -354,34 +356,34 @@ export const CreateUpdatePostScreen = () => {
       // Legacy review hatası (backend'den gelen farklı hata kodları)
       if (errorCode === 'LEGACY_REVIEW_NOT_SUPPORTED' || errorCode === 'LEGACY_INVENTORY_NO_POST') {
         showCustomToast(toast, {
-          title: 'Legacy Review Not Supported',
-          description: errorHint || 'This is a legacy inventory item without an associated experience post. Please create a new experience post for this product first.',
+          title: t('create.update.errors.legacyNotSupported.title'),
+          description: errorHint || t('create.update.errors.legacyNotSupported.description'),
           action: 'error',
         });
         // Geri dön
         handleBackPress();
         return;
       }
-      
+
       // Experience post bulunamadı hatası
       if (errorCode === 'EXPERIENCE_POST_NOT_FOUND') {
         showCustomToast(toast, {
-          title: 'Experience Post Not Found',
-          description: errorHint || 'The selected experience post could not be found. Please try again.',
+          title: t('create.update.errors.experiencePostNotFound.title'),
+          description: errorHint || t('create.update.errors.experiencePostNotFound.description'),
           action: 'error',
         });
         // Geri dön
         handleBackPress();
         return;
       }
-      
+
       // Genel hata
-      const fallbackMessage = errorMessage || 
-                              error?.message || 
-                              'An error occurred while creating the post. Please try again.';
-      
+      const fallbackMessage = errorMessage ||
+                              error?.message ||
+                              t('create.common.errors.general');
+
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('create.common.errors.title'),
         description: fallbackMessage,
         action: 'error',
       });
@@ -411,11 +413,11 @@ export const CreateUpdatePostScreen = () => {
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
           {/* Header */}
           <Header
-            title="Update Post"
+            title={t('create.update.header.title')}
             leftAction="cancel"
             onLeftActionPress={handleBackPress}
             rightButton={{
-              text: 'Share',
+              text: t('create.update.header.share'),
               backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
               borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
@@ -442,7 +444,7 @@ export const CreateUpdatePostScreen = () => {
                       color={isDark ? '$textDark50' : '#000'}
                       mb="$2"
                     >
-                      Original Experience Post
+                      {t('create.update.labels.originalPost')}
                     </Text>
                     <Box
                       bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
@@ -544,9 +546,9 @@ export const CreateUpdatePostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledTextarea
                   name="description"
-                  placeholder="Type your update here..."
+                  placeholder={t('create.update.placeholders.description')}
                   maxLength={500}
-                  label="Update Description"
+                  label={t('create.update.labels.description')}
                 />
               </VStack>
 
@@ -554,7 +556,7 @@ export const CreateUpdatePostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledImagePicker
                   name="selectedImages"
-                  label="Images"
+                  label={t('create.update.labels.images')}
                   maxImages={10}
                   onImagePicker={handleImagePicker}
                   onRemoveImage={handleRemoveImage}

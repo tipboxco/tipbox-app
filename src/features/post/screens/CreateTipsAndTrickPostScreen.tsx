@@ -7,6 +7,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -43,6 +44,7 @@ const CategorySelectorField: React.FC<CategorySelectorFieldProps> = ({
   showCategoryModal,
   setShowCategoryModal,
 }) => {
+  const { t } = useTranslation('post');
   const { control, watch } = useFormContext<TipsAndTrickPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -59,7 +61,7 @@ const CategorySelectorField: React.FC<CategorySelectorFieldProps> = ({
             fontSize="$sm"
             fontWeight="$semibold"
           >
-            Tips & Tricks Category
+            {t('create.tipsAndTricks.labels.category')}
           </Text>
           <Pressable onPress={() => setShowCategoryModal(!showCategoryModal)}>
             <Box
@@ -84,7 +86,7 @@ const CategorySelectorField: React.FC<CategorySelectorFieldProps> = ({
                 >
                   {selectedCategory
                     ? BENEFIT_CATEGORIES.find((cat) => cat.value === selectedCategory)?.label
-                    : 'Select the category of your Tips & Tricks'}
+                    : t('create.tipsAndTricks.placeholders.categorySelect')}
                 </Text>
                 <Feather
                   name={showCategoryModal ? "chevron-up" : "chevron-down"}
@@ -166,6 +168,7 @@ const CategorySelectorField: React.FC<CategorySelectorFieldProps> = ({
 };
 
 export const CreateTipsAndTrickPostScreen = () => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreateTipsAndTrickPostScreenNavigationProp>();
@@ -236,8 +239,8 @@ export const CreateTipsAndTrickPostScreen = () => {
 
       if (remainingSlots <= 0) {
         showCustomToast(toast, {
-          title: 'Limit Exceeded',
-          description: 'You can select a maximum of 10 images.',
+          title: t('create.toast.limitExceeded.title'),
+          description: t('create.toast.limitExceeded.description'),
           action: 'error',
         });
         return;
@@ -255,23 +258,23 @@ export const CreateTipsAndTrickPostScreen = () => {
           setValue('selectedImages', updatedImages, { shouldValidate: true });
         } else {
           showCustomToast(toast, {
-            title: 'Error',
-            description: "Selected image URIs could not be found.",
+            title: t('create.common.errors.title'),
+            description: t('create.common.validation.imageUriNotFound'),
             action: 'error',
           });
         }
       } else if (result.error) {
         showCustomToast(toast, {
-          title: 'Error',
+          title: t('create.common.errors.title'),
           description: result.error,
           action: 'error',
         });
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
-      const errorMessage = error?.message || 'An error occurred while selecting images';
+      const errorMessage = error?.message || t('create.common.validation.imagePickerError');
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('create.common.errors.title'),
         description: errorMessage,
         action: 'error',
       });
@@ -306,8 +309,8 @@ export const CreateTipsAndTrickPostScreen = () => {
     if (!contextType || !contextId) {
       console.error('[CreateTipsAndTrickPostScreen] ❌ Missing context:', { contextType, contextId });
       showCustomToast(toast, {
-        title: 'Error',
-        description: 'Context information not found. Please try again.',
+        title: t('create.common.errors.title'),
+        description: t('create.tipsAndTricks.validation.contextMissing'),
         action: 'error',
       });
       return;
@@ -323,8 +326,8 @@ export const CreateTipsAndTrickPostScreen = () => {
     if (!contextId || contextId.trim() === '') {
       console.error('[CreateTipsAndTrickPostScreen] ❌ Empty or invalid contextId:', contextId);
       showCustomToast(toast, {
-        title: 'Error',
-        description: 'Invalid context information. Please try again.',
+        title: t('create.common.errors.title'),
+        description: t('create.tipsAndTricks.validation.invalidContext'),
         action: 'error',
       });
       return;
@@ -356,11 +359,11 @@ export const CreateTipsAndTrickPostScreen = () => {
       });
       
       console.log('[CreateTipsAndTrickPostScreen] ✅ API Response:', response);
-      
+
       // Başarılı toast göster
       showCustomToast(toast, {
-        title: 'Post Created',
-        description: 'Your Tips & Tricks post has been created successfully!',
+        title: t('create.tipsAndTricks.success.title'),
+        description: t('create.tipsAndTricks.success.description'),
         action: 'success',
       });
       
@@ -511,7 +514,7 @@ export const CreateTipsAndTrickPostScreen = () => {
       });
       
       // Backend'den gelen detaylı hata mesajını al (description her zaman string olmalı; obje React hatası verir)
-      let errorMessage = 'An error occurred while creating the post. Please try again.';
+      let errorMessage = t('create.common.errors.general');
       const errObj = error?.response?.data?.error;
       const errMsg = typeof errObj?.message === 'string' ? errObj.message : undefined;
       if (error?.response?.data?.message && typeof error.response.data.message === 'string') {
@@ -519,21 +522,21 @@ export const CreateTipsAndTrickPostScreen = () => {
       } else if (errMsg) {
         errorMessage = errMsg;
       } else if (error?.response?.status === 500) {
-        errorMessage = 'Server error occurred. Please try again later.';
+        errorMessage = t('create.tipsAndTricks.errors.serverError');
       } else if (error?.response?.status === 400) {
-        errorMessage = error?.response?.data?.message || 'Invalid request data. Please check your input.';
+        errorMessage = error?.response?.data?.message || t('create.tipsAndTricks.errors.badRequest');
       } else if (error?.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
+        errorMessage = t('create.tipsAndTricks.errors.unauthorized');
       } else if (error?.response?.status === 403) {
-        errorMessage = 'You do not have permission to create this post.';
+        errorMessage = t('create.tipsAndTricks.errors.forbidden');
       } else if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('create.common.errors.title'),
         description: errorMessage,
         action: 'error',
       });
@@ -563,11 +566,11 @@ export const CreateTipsAndTrickPostScreen = () => {
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'} position="relative">
           {/* Header */}
           <Header
-            title="Tips & Tricks Post"
+            title={t('create.tipsAndTricks.header.title')}
             leftAction="cancel"
             onLeftActionPress={handleBackPress}
             rightButton={{
-              text: 'Share',
+              text: t('create.tipsAndTricks.header.share'),
               backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
               borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
@@ -606,9 +609,9 @@ export const CreateTipsAndTrickPostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledTextarea
                   name="tipsText"
-                  placeholder="Type your Tips & Tricks here..."
+                  placeholder={t('create.tipsAndTricks.placeholders.description')}
                   maxLength={500}
-                  label="Tips & Tricks Description"
+                  label={t('create.tipsAndTricks.labels.description')}
                 />
               </VStack>
 
@@ -624,7 +627,7 @@ export const CreateTipsAndTrickPostScreen = () => {
               <VStack px={16} space="xs" mt="$4">
                 <ControlledImagePicker
                   name="selectedImages"
-                  label="Images"
+                  label={t('create.tipsAndTricks.labels.images')}
                   maxImages={10}
                   onImagePicker={handleImagePicker}
                   isLoading={isImagePickerLoading}

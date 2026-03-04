@@ -7,6 +7,7 @@ import { useNavigation, useRoute, RouteProp, CommonActions, useFocusEffect } fro
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { useCallback } from 'react';
 import { navigationService } from '@/src/services/NavigationService';
@@ -32,6 +33,7 @@ type CreateBenchmarkPostScreenNavigationProp = NativeStackNavigationProp<RootSta
 
 // Product Benchmark Field Component
 const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ onShowSelectModal }) => {
+  const { t } = useTranslation('post');
   const { control, watch } = useFormContext<BenchmarkPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -47,7 +49,7 @@ const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ on
         fontSize={10}
         fontWeight="$bold"
       >
-        Product Benchmark
+        {t('create.benchmark.labels.productBenchmark')}
       </Text>
       <Box position="relative" width="100%">
         <HStack width="100%" alignItems="stretch" space="md" flex={1}>
@@ -116,6 +118,7 @@ const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ on
 };
 
 export const CreateBenchmarkPostScreen = () => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreateBenchmarkPostScreenNavigationProp>();
@@ -284,8 +287,8 @@ export const CreateBenchmarkPostScreen = () => {
     // Benchmark API: contextType sadece "product" kabul eder; contextId ürün id'lerinden biri olmalı
     if (!data.selectedProduct1?.id || !data.selectedProduct2?.id) {
       showCustomToast(toast, {
-        title: 'Error',
-        description: 'Two products must be selected.',
+        title: t('create.common.errors.title'),
+        description: t('create.benchmark.validation.twoProductsRequired'),
         action: 'error',
       });
       return;
@@ -294,8 +297,8 @@ export const CreateBenchmarkPostScreen = () => {
     const description = (data.postText || '').trim();
     if (!description) {
       showCustomToast(toast, {
-        title: 'Error',
-        description: 'Benchmark description is required.',
+        title: t('create.common.errors.title'),
+        description: t('create.benchmark.validation.descriptionRequired'),
         action: 'error',
       });
       return;
@@ -318,11 +321,11 @@ export const CreateBenchmarkPostScreen = () => {
       });
       
       console.log('[CreateBenchmarkPostScreen] ✅ API Response:', response);
-      
+
       // Başarılı toast göster
       showCustomToast(toast, {
-        title: 'Post Created',
-        description: 'Your benchmark post has been created successfully!',
+        title: t('create.benchmark.success.title'),
+        description: t('create.benchmark.success.description'),
         action: 'success',
       });
       
@@ -403,8 +406,8 @@ export const CreateBenchmarkPostScreen = () => {
           errorMessage?.includes('envanterinizde bulunmuyor') ||
           errorCode === 'PRODUCT_NOT_IN_INVENTORY') {
         showCustomToast(toast, {
-          title: 'First Product Must Be in Inventory',
-          description: 'The first product must be from your inventory. Please select a product from your inventory.',
+          title: t('create.benchmark.validation.firstProductMustBeInInventory.title'),
+          description: t('create.benchmark.validation.firstProductMustBeInInventory.description'),
           action: 'error',
         });
         // Kullanıcıyı 1. ürün seçim ekranına geri götürmek için product1'i temizle
@@ -415,10 +418,10 @@ export const CreateBenchmarkPostScreen = () => {
       // Genel hata
       const fallbackMessage = errorMessage ||
                           error?.message ||
-                          'An error occurred while creating the post. Please try again.';
+                          t('create.common.errors.general');
 
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('create.common.errors.title'),
         description: fallbackMessage,
         action: 'error',
       });
@@ -449,11 +452,11 @@ export const CreateBenchmarkPostScreen = () => {
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
           {/* Header */}
           <Header
-            title="Benchmark Post"
+            title={t('create.benchmark.header.title')}
             leftAction="cancel"
             onLeftActionPress={handleBackPress}
             rightButton={{
-              text: 'Share',
+              text: t('create.benchmark.header.share'),
               backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
               borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
@@ -477,9 +480,9 @@ export const CreateBenchmarkPostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledTextarea
                   name="postText"
-                  placeholder="Type your Benchmark Description here..."
+                  placeholder={t('create.benchmark.placeholders.description')}
                   maxLength={500}
-                  label="Benchmark Description"
+                  label={t('create.benchmark.labels.description')}
                 />
               </VStack>
             </VStack>
@@ -520,7 +523,7 @@ export const CreateBenchmarkPostScreen = () => {
                   mb={16}
                   textAlign="center"
                 >
-                  Select Second Product
+                  {t('create.benchmark.modal.title')}
                 </Text>
 
                 <VStack space="md">
@@ -537,7 +540,7 @@ export const CreateBenchmarkPostScreen = () => {
                         fontWeight="$medium"
                         color={isDark ? '$textDark50' : '#000'}
                       >
-                        From Inventory
+                        {t('create.benchmark.modal.fromInventory')}
                       </Text>
                     </HStack>
                   </Pressable>
@@ -555,7 +558,7 @@ export const CreateBenchmarkPostScreen = () => {
                         fontWeight="$medium"
                         color={isDark ? '$textDark50' : '#000'}
                       >
-                        From Catalog
+                        {t('create.benchmark.modal.fromCatalog')}
                       </Text>
                     </HStack>
                   </Pressable>
@@ -574,7 +577,7 @@ export const CreateBenchmarkPostScreen = () => {
                       color={isDark ? '$textDark400' : '#666'}
                       textAlign="center"
                     >
-                      Cancel
+                      {t('create.benchmark.modal.cancel')}
                     </Text>
                   </Pressable>
                 </VStack>
@@ -592,7 +595,7 @@ export const CreateBenchmarkPostScreen = () => {
           <SafeAreaView style={{ flex: 1 }}>
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
               <Header
-                title="Select from Inventory"
+                title={t('create.benchmark.modal.selectFromInventoryTitle')}
                 leftAction="back"
                 onLeftActionPress={() => setShowInventoryModal(false)}
               />

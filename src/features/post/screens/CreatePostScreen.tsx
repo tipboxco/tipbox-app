@@ -6,6 +6,7 @@ import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { FormProvider, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -37,6 +38,7 @@ type CreatePostScreenRouteProp = RouteProp<PostStackParamList, 'CreatePostScreen
 export const CreatePostScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('post');
   const navigation = useNavigation<CreatePostScreenNavigationProp>();
   const route = useRoute<CreatePostScreenRouteProp>();
   const methods = usePostForm();
@@ -126,8 +128,8 @@ export const CreatePostScreen = () => {
 
     if (remainingSlots <= 0) {
         showCustomToast(toast, {
-          title: 'Limit Exceeded',
-          description: 'You can select a maximum of 10 images.',
+          title: t('create.toast.limitExceeded.title'),
+          description: t('create.toast.limitExceeded.description'),
           action: 'error',
         });
       return;
@@ -193,8 +195,8 @@ export const CreatePostScreen = () => {
       
       // Başarılı toast göster
       showCustomToast(toast, {
-        title: 'Post Created',
-        description: 'Your post has been created successfully!',
+        title: t('create.toast.postCreated.title'),
+        description: t('create.toast.postCreated.description'),
         action: 'success',
       });
 
@@ -330,12 +332,12 @@ export const CreatePostScreen = () => {
       console.log('[CreatePostScreen] ====================================');
       
       // Hata toast göster
-      const errorMessage = error?.response?.data?.message || 
-                          error?.message || 
-                          'An error occurred while creating the post. Please try again.';
-      
+      const errorMessage = error?.response?.data?.message ||
+                          error?.message ||
+                          t('create.toast.error.description');
+
       showCustomToast(toast, {
-        title: 'Error',
+        title: t('create.toast.error.title'),
         description: errorMessage,
         action: 'error',
       });
@@ -357,9 +359,9 @@ export const CreatePostScreen = () => {
         const firstError = errors?.postText?.message
           || errors?.selectedImages?.message
           || (Object.values(errors).find((e) => e?.message) as { message?: string } | undefined)?.message
-          || 'Please check your post and try again.';
+          || t('create.toast.validation.description');
         showCustomToast(toast, {
-          title: 'Validation',
+          title: t('create.toast.validation.title'),
           description: firstError,
           action: 'error',
           duration: 3000,
@@ -391,11 +393,11 @@ export const CreatePostScreen = () => {
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
           {/* Header */}
           <Header
-            title="Write a Post"
+            title={t('create.header.title')}
             leftAction="cancel"
             onLeftActionPress={handleBackPress}
             rightButton={{
-              text: 'Share',
+              text: t('create.header.share'),
               backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
               borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
@@ -429,9 +431,9 @@ export const CreatePostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledTextarea
                   name="postText"
-                  placeholder="Type your Post here..."
+                  placeholder={t('create.form.postPlaceholder')}
                   maxLength={500}
-                  label="Post Description"
+                  label={t('create.form.postDescription')}
                 />
               </VStack>
 
@@ -439,7 +441,7 @@ export const CreatePostScreen = () => {
               <VStack px={16} space="xs">
                 <ControlledImagePicker
                   name="selectedImages"
-                  label="Images"
+                  label={t('create.form.images')}
                   maxImages={10}
                   onImagePicker={handleImagePicker}
                   onRemoveImage={(index) => {

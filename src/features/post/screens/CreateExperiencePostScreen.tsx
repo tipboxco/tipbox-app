@@ -6,6 +6,7 @@ import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { FormProvider, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { StepOneScreen } from '../components/CreateExperienceSteps/StepOneScreen';
 import { StepTwoScreen } from '../components/CreateExperienceSteps/StepTwoScreen';
@@ -36,6 +37,7 @@ type CreateExperiencePostScreenNavigationProp = NativeStackNavigationProp<RootSt
 type CreateExperiencePostScreenRouteProp = RouteProp<PostStackParamList, 'CreateExperiencePostScreen'>;
 
 export const CreateExperiencePostScreen = () => {
+    const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<CreateExperiencePostScreenNavigationProp>();
@@ -200,8 +202,8 @@ export const CreateExperiencePostScreen = () => {
                 // Product ID kontrolü
                 if (!selectedProduct?.id) {
                     showCustomToast(toast, {
-                        title: 'Error',
-                        description: 'Product not selected. Please select a product.',
+                        title: t('create.common.errors.title'),
+                        description: t('create.experience.validation.productNotSelected'),
                         action: 'error',
                     });
                     return;
@@ -210,8 +212,8 @@ export const CreateExperiencePostScreen = () => {
                 // Experience text kontrolü
                 if (!experienceText || experienceText.trim().length < 10) {
                     showCustomToast(toast, {
-                        title: 'Error',
-                        description: 'Experience text must be at least 10 characters.',
+                        title: t('create.common.errors.title'),
+                        description: t('create.experience.validation.experienceTextTooShort'),
                         action: 'error',
                     });
                     return;
@@ -255,8 +257,8 @@ export const CreateExperiencePostScreen = () => {
                     if (!hasValidSnippetId) {
                         setIsSplitLoading(false);
                         showCustomToast(toast, {
-                            title: 'Error',
-                            description: 'AI could not structure your experience. Please try again or continue manually.',
+                            title: t('create.common.errors.title'),
+                            description: t('create.experience.ai.structureError'),
                             action: 'error',
                         });
                         return;
@@ -278,16 +280,16 @@ export const CreateExperiencePostScreen = () => {
                     
                     let errorMessage: string;
                     if (isTimeout) {
-                        errorMessage = 'AI processing timed out. Please try again or continue manually.';
+                        errorMessage = t('create.experience.ai.timeoutError');
                     } else {
-                        errorMessage = error?.response?.data?.message || 
+                        errorMessage = error?.response?.data?.message ||
                                        error?.response?.data?.error?.message ||
-                                       error?.message || 
-                                       'An error occurred while processing the experience text. Please try again.';
+                                       error?.message ||
+                                       t('create.experience.ai.generalError');
                     }
-                    
+
                     showCustomToast(toast, {
-                        title: 'Error',
+                        title: t('create.common.errors.title'),
                         description: errorMessage,
                         action: 'error',
                     });
@@ -299,8 +301,8 @@ export const CreateExperiencePostScreen = () => {
     const handleProductSelect = (selected: { id: string; name: string; brand?: string; description?: string; image: any }) => {
         if (!fromInventory && inventoryProductIds.has(selected.id)) {
             showCustomToast(toast, {
-                title: 'Already in your inventory',
-                description: 'This product is already in your inventory. You can still continue sharing your experience.',
+                title: t('create.experience.inventory.alreadyInInventory.title'),
+                description: t('create.experience.inventory.alreadyInInventory.description'),
                 action: 'info',
             });
         }
@@ -327,18 +329,18 @@ export const CreateExperiencePostScreen = () => {
             // ContextType ve contextId kontrolü
             if (!contextType || !contextId) {
                 showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Context information not found. Please try again.',
+                    title: t('create.common.errors.title'),
+                    description: t('create.experience.validation.contextMissing'),
                     action: 'error',
                 });
                 return;
             }
-            
+
             // Ürün kontrolü
             if (!data.selectedProduct) {
                 showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Product selection is required.',
+                    title: t('create.common.errors.title'),
+                    description: t('create.experience.validation.productSelectionRequired'),
                     action: 'error',
                 });
                 return;
@@ -371,8 +373,8 @@ export const CreateExperiencePostScreen = () => {
         // Experience array kontrolü
         if (experience.length === 0) {
             showCustomToast(toast, {
-                title: 'Error',
-                description: 'At least one experience category must be filled.',
+                title: t('create.common.errors.title'),
+                description: t('create.experience.validation.experienceCategoryRequired'),
                 action: 'error',
             });
             return;
@@ -400,26 +402,26 @@ export const CreateExperiencePostScreen = () => {
         // Zorunlu alan kontrolü
         if (!selectedDurationId || selectedDurationId.trim() === '') {
             showCustomToast(toast, {
-                title: 'Error',
-                description: 'Duration selection is required.',
+                title: t('create.common.errors.title'),
+                description: t('create.experience.validation.durationRequired'),
                 action: 'error',
             });
             return;
         }
-        
+
         if (!selectedLocationId || selectedLocationId.trim() === '') {
             showCustomToast(toast, {
-                title: 'Error',
-                description: 'Location selection is required.',
+                title: t('create.common.errors.title'),
+                description: t('create.experience.validation.locationRequired'),
                 action: 'error',
             });
             return;
         }
-        
+
         if (!selectedPurposeId || selectedPurposeId.trim() === '') {
             showCustomToast(toast, {
-                title: 'Error',
-                description: 'Purpose selection is required.',
+                title: t('create.common.errors.title'),
+                description: t('create.experience.validation.purposeRequired'),
                 action: 'error',
             });
             return;
@@ -494,8 +496,8 @@ export const CreateExperiencePostScreen = () => {
                             status: inventoryError?.response?.status,
                         });
                         showCustomToast(toast, {
-                            title: 'Inventory error',
-                            description: errMsg || 'Failed to add product to inventory.',
+                            title: t('create.experience.inventory.addError.title'),
+                            description: errMsg || t('create.experience.inventory.addError.description'),
                             action: 'error',
                         });
                         isSubmittingRef.current = false;
@@ -506,8 +508,8 @@ export const CreateExperiencePostScreen = () => {
             
             if (!experienceSnippetId || experienceSnippetId.trim() === '') {
                 showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Please use AI split first to structure your experience.',
+                    title: t('create.common.errors.title'),
+                    description: t('create.experience.ai.splitRequired'),
                     action: 'error',
                 });
                 return;
@@ -527,11 +529,11 @@ export const CreateExperiencePostScreen = () => {
             });
             
             console.log('[CreateExperiencePostScreen] ✅ API Response:', response);
-            
+
             // Başarılı toast göster
             showCustomToast(toast, {
-                title: 'Post Created',
-                description: 'Your experience post has been created successfully!',
+                title: t('create.experience.success.title'),
+                description: t('create.experience.success.description'),
                 action: 'success',
             });
             
@@ -675,9 +677,8 @@ export const CreateExperiencePostScreen = () => {
             if (errorMessage?.includes('envanterinizde bulunmuyor') ||
                 errorCode === 'PRODUCT_NOT_IN_INVENTORY') {
                 showCustomToast(toast, {
-                    title: 'Product Not in Inventory',
-                    description:
-                        'To mark this product as "I Owned", it must be in your inventory first. Please add it to your inventory or select "I Tried" instead.',
+                    title: t('create.experience.inventory.productNotInInventory.title'),
+                    description: t('create.experience.inventory.productNotInInventory.description'),
                     action: 'error',
                 });
                 return;
@@ -686,10 +687,10 @@ export const CreateExperiencePostScreen = () => {
             // Genel hata
             const fallbackMessage = errorMessage ||
                                 error?.message ||
-                                'An error occurred while creating the post. Please try again.';
+                                t('create.common.errors.general');
 
             showCustomToast(toast, {
-                title: 'Error',
+                title: t('create.common.errors.title'),
                 description: fallbackMessage,
                 action: 'error',
             });
@@ -707,8 +708,8 @@ export const CreateExperiencePostScreen = () => {
             
             if (remainingSlots <= 0) {
                 showCustomToast(toast, {
-                    title: 'Limit Exceeded',
-                    description: 'You can select a maximum of 10 images.',
+                    title: t('create.toast.limitExceeded.title'),
+                    description: t('create.toast.limitExceeded.description'),
                     action: 'error',
                 });
                 return;
@@ -726,23 +727,23 @@ export const CreateExperiencePostScreen = () => {
                     setValue('selectedImages', updatedImages, { shouldValidate: true });
                 } else {
                     showCustomToast(toast, {
-                        title: 'Error',
-                        description: "Selected image URIs could not be found.",
+                        title: t('create.common.errors.title'),
+                        description: t('create.common.validation.imageUriNotFound'),
                         action: 'error',
                     });
                 }
             } else if (result.error) {
                 showCustomToast(toast, {
-                    title: 'Error',
+                    title: t('create.common.errors.title'),
                     description: result.error,
                     action: 'error',
                 });
             }
         } catch (error: any) {
             console.error('Image picker error:', error);
-            const errorMessage = error?.message || 'An error occurred while selecting images';
+            const errorMessage = error?.message || t('create.common.validation.imagePickerError');
             showCustomToast(toast, {
-                title: 'Error',
+                title: t('create.common.errors.title'),
                 description: errorMessage,
                 action: 'error',
             });
@@ -792,11 +793,11 @@ export const CreateExperiencePostScreen = () => {
                     <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
                         {/* Header */}
                         <Header
-                            title={fromInventory ? "Add to Inventory" : "Experience Post"}
+                            title={fromInventory ? t('create.experience.header.addToInventory') : t('create.experience.header.title')}
                             leftAction="cancel"
                             onLeftActionPress={handleBackPress}
                             rightButton={{
-                                text: 'Next',
+                                text: t('create.experience.header.next'),
                                 backgroundColor: isSelectProductNextEnabled ? '#D0F205' : '#EDEDED',
                                 borderWidth: 1,
                                 borderColor: isSelectProductNextEnabled ? '#B8CC04' : '#B1B1B1',
@@ -826,12 +827,12 @@ export const CreateExperiencePostScreen = () => {
         // Determine button text based on fromInventory and experienceOption
         const getButtonText = () => {
             if (editingField) {
-                return 'Save';
+                return t('create.experience.header.save');
             }
             if (fromInventory && experienceOption === 'own') {
-                return 'Done';
+                return t('create.experience.header.done');
             }
-            return 'Share';
+            return t('create.experience.header.share');
         };
 
         const buttonText = getButtonText();
@@ -842,12 +843,12 @@ export const CreateExperiencePostScreen = () => {
                     <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
                         {/* Header */}
                         <Header
-                            title="Experience Post"
+                            title={t('create.experience.header.title')}
                             leftAction="back"
                             onLeftActionPress={handleBackPress}
                             rightButton={
                                 editingField ? {
-                                    text: 'Save',
+                                    text: t('create.experience.header.save'),
                                     backgroundColor: '#D8FF08',
                                     borderWidth: 0,
                                     borderColor: 'transparent',
@@ -907,7 +908,7 @@ export const CreateExperiencePostScreen = () => {
                                 <View style={[styles.loadingBox, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }]}>
                                     <ActivityIndicator size="large" color={isDark ? '#D0F205' : '#829905'} />
                                     <Text color={isDark ? '$textDark50' : '#000000'} fontSize={14} mt={12}>
-                                        Sending...
+                                        {t('create.experience.sending')}
                                     </Text>
                                 </View>
                             </View>
@@ -929,11 +930,11 @@ export const CreateExperiencePostScreen = () => {
                     <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
                         {/* Header */}
                         <Header
-                            title="Experience Post"
+                            title={t('create.experience.header.title')}
                             leftAction="back"
                             onLeftActionPress={handleBackPress}
                             rightButton={{
-                                text: isStep2Loading ? 'Processing...' : 'Next',
+                                text: isStep2Loading ? t('create.experience.header.processing') : t('create.experience.header.next'),
                                 backgroundColor: isStep2NextDisabled ? '#EDEDED' : '#D0F205',
                                 borderWidth: 1,
                                 borderColor: isStep2NextDisabled ? '#B1B1B1' : '#B8CC04',
@@ -981,7 +982,7 @@ export const CreateExperiencePostScreen = () => {
                                             fontSize={14}
                                             fontWeight="$medium"
                                         >
-                                            Processing experience content...
+                                            {t('create.experience.ai.processingContent')}
                                         </Text>
                                     </VStack>
                                 </Box>
@@ -1000,11 +1001,11 @@ export const CreateExperiencePostScreen = () => {
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
                     {/* Header */}
                     <Header
-                        title="Experience Post"
+                        title={t('create.experience.header.title')}
                         leftAction="cancel"
                         onLeftActionPress={handleBackPress}
                         rightButton={{
-                            text: 'Next',
+                            text: t('create.experience.header.next'),
                             backgroundColor: isStep1NextEnabled ? '#D0F205' : '#EDEDED',
                             borderWidth: 1,
                             borderColor: isStep1NextEnabled ? '#B8CC04' : '#B1B1B1',

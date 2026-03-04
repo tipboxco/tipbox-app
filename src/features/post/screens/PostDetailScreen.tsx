@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PostStackParamList } from '../navigation';
 import PostCard from '@/src/components/PostCards/PostCard';
@@ -37,6 +38,7 @@ export const PostDetailScreen = () => {
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<NativeStackNavigationProp<PostStackParamList>>();
     const route = useRoute<PostDetailScreenRouteProp>();
+    const { t } = useTranslation('post');
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
     const [isSortBottomSheetOpen, setIsSortBottomSheetOpen] = useState(false);
@@ -384,9 +386,9 @@ export const PostDetailScreen = () => {
     // Handle sort option press - sort bottom sheet aç
     const handleSortPress = useCallback(() => {
         const sortOptions = [
-            { value: 'Newest', label: 'Newest First' },
-            { value: 'Oldest', label: 'Oldest First' },
-            { value: 'Popular', label: 'Most Popular' },
+            { value: 'Newest', label: t('comments.sort.newest') },
+            { value: 'Oldest', label: t('comments.sort.oldest') },
+            { value: 'Popular', label: t('comments.sort.popular') },
         ];
 
         openBottomSheet(
@@ -398,7 +400,7 @@ export const PostDetailScreen = () => {
                         color={isDark ? '#FFFFFF' : '#000000'}
                         mb="$2"
                     >
-                        Sort Comments
+                        {t('comments.sort.title')}
                     </Text>
                     {sortOptions.map((option) => (
                         <Pressable
@@ -436,7 +438,7 @@ export const PostDetailScreen = () => {
                 paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
             }
         );
-    }, [isDark, selectedOption, openBottomSheet, closeBottomSheet, insets.bottom]);
+    }, [isDark, selectedOption, openBottomSheet, closeBottomSheet, insets.bottom, t]);
 
     // Handle empty area press - sadece klavyeyi kapat
     const handleEmptyAreaPress = () => {
@@ -592,7 +594,7 @@ export const PostDetailScreen = () => {
             {isLoadingPost && (!postData || !isPostDataComplete) ? (
                 <Box flex={1} justifyContent="center" alignItems="center" py="$8">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
-                        Post yükleniyor...
+                        {t('screens.detail.loading')}
                     </Text>
                 </Box>
             ) : finalPostData && finalPostData.id ? (
@@ -619,7 +621,7 @@ export const PostDetailScreen = () => {
             ) : (
                 <Box flex={1} justifyContent="center" alignItems="center" py="$8">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
-                        Post not found.
+                        {t('screens.detail.notFound')}
                     </Text>
                 </Box>
             )}
@@ -637,7 +639,7 @@ export const PostDetailScreen = () => {
                     fontSize={14}
                     fontWeight="$bold"
                 >
-                    Comments
+                    {t('comments.title')}
                 </Text>
                 <Pressable
                     px={12}
@@ -696,12 +698,12 @@ export const PostDetailScreen = () => {
     const renderEmpty = useMemo(() => (
         <Box px="$4" py="$4">
             {isLoadingComments ? (
-                <Text color={isDark ? '#FFFFFF' : '#000000'}>Loading comments...</Text>
+                <Text color={isDark ? '#FFFFFF' : '#000000'}>{t('comments.loading')}</Text>
             ) : (
-                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No comments yet. Be the first to comment!</Text>
+                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('comments.empty')}</Text>
             )}
         </Box>
-    ), [isLoadingComments, isDark]);
+    ), [isLoadingComments, isDark, t]);
 
     // FlatList keyExtractor - useCallback ile memoize edildi
     const keyExtractor = useCallback((item: { id: string }) => item.id, []);
@@ -717,13 +719,13 @@ export const PostDetailScreen = () => {
     if (!isLoadingPost && is404) {
         return (
             <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#fff' }}>
-                <Header title="Post Details" showBackButton onBackPress={() => navigation.goBack()} />
+                <Header title={t('screens.detail.titles.post')} showBackButton onBackPress={() => navigation.goBack()} />
                 <Box flex={1} justifyContent="center" alignItems="center" px="$6">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={16} textAlign="center">
-                        Post not found.
+                        {t('screens.detail.notFound')}
                     </Text>
                     <Text color={isDark ? '#A3A3A3' : '#666'} fontSize={14} mt="$2" textAlign="center">
-                        Bu post silinmiş veya artık mevcut değil.
+                        {t('screens.detail.notFoundDesc')}
                     </Text>
                 </Box>
             </SafeAreaView>
@@ -741,13 +743,13 @@ export const PostDetailScreen = () => {
             {/* Status Bar & Header */}
             <Header
                 title={
-                    type === 'post' ? "Post Details" :
-                    type === 'tipsAndTricks' ? "Tips & Tricks Details" :
-                    type === 'question' ? "Question Details" :
-                    type === 'benchmark' ? "Benchmark Details" :
-                    type === 'experience' ? "Experience Details" :
-                    type === 'update' ? "Update Details" :
-                    "Post Details"
+                    type === 'post' ? t('screens.detail.titles.post') :
+                    type === 'tipsAndTricks' ? t('screens.detail.titles.tips') :
+                    type === 'question' ? t('screens.detail.titles.question') :
+                    type === 'benchmark' ? t('screens.detail.titles.benchmark') :
+                    type === 'experience' ? t('screens.detail.titles.experience') :
+                    type === 'update' ? t('screens.detail.titles.update') :
+                    t('screens.detail.titles.post')
                 }
                 showBackButton
                 onBackPress={() => navigation.goBack()}
@@ -785,7 +787,7 @@ export const PostDetailScreen = () => {
                     ref={inputRef}
                     value={commentText}
                     onChangeText={setCommentText}
-                    placeholder="Type a message..."
+                    placeholder={t('comments.placeholder')}
                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                     style={{
                         flex: 1,
