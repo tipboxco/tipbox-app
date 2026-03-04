@@ -48,5 +48,11 @@
     "minute_other": "minutes",
     "second": "second",
     "second_other": "seconds"
+  },
+  "bookmarks": {
+    "title": "Bookmarks",
+    "loading": "Loading bookmarks...",
+    "error": "An error occurred while loading bookmarks",
+    "empty": "No bookmarks yet."
   }
 }

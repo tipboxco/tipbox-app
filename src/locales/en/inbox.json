@@ -50,8 +50,34 @@
     }
   },
   "notifications": {
+    "title": "Notifications",
     "empty": "No notifications yet",
+    "emptySearch": "No search results found.",
     "markAllRead": "Mark All as Read",
+    "search": {
+      "placeholder": "Search notifications"
+    },
+    "filters": {
+      "all": "All Notifications",
+      "replies": "Replies",
+      "truster": "Trust - Truster",
+      "tips": "TIPS"
+    },
+    "dateGroups": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month"
+    },
+    "errors": {
+      "loading": "An error occurred while loading notifications.",
+      "loginRequired": "Please login to view notifications.",
+      "unknown": "Unknown error"
+    },
+    "actions": {
+      "tryAgain": "Try Again",
+      "showMore": "Show More"
+    },
     "types": {
       "like": "liked your post",
       "comment": "commented on your post",

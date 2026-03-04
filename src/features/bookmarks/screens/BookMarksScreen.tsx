@@ -3,6 +3,7 @@ import { VStack, ScrollView, Text, Box } from '@gluestack-ui/themed';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
@@ -24,6 +25,7 @@ import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAn
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 
 const BookMarksScreen = () => {
+  const { t } = useTranslation('common');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const screenWidth = Dimensions.get('window').width;
@@ -245,7 +247,7 @@ const BookMarksScreen = () => {
       <VStack flex={1} pt={insets.top}>
         {/* Header */}
         <Header
-          title="Bookmarks"
+          title={t('bookmarks.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -261,7 +263,7 @@ const BookMarksScreen = () => {
           {isLoading && !bookmarksData && (
             <Box py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                Bookmarks yükleniyor...
+                {t('bookmarks.loading')}
               </Text>
             </Box>
           )}
@@ -269,7 +271,7 @@ const BookMarksScreen = () => {
           {error && (
             <Box py={20} alignItems="center">
               <Text color="#CE4A4A" fontSize="$sm">
-                An error occurred while loading bookmarks: {error.message}
+                {t('bookmarks.error')}: {error.message}
               </Text>
             </Box>
           )}
@@ -277,7 +279,7 @@ const BookMarksScreen = () => {
           {!isLoading && !error && (!bookmarks || bookmarks.length === 0) && (
             <Box py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                No bookmarks yet.
+                {t('bookmarks.empty')}
               </Text>
             </Box>
           )}
