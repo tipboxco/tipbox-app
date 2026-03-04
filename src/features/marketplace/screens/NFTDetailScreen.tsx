@@ -3,6 +3,7 @@ import { ScrollView, Dimensions, Alert, ActivityIndicator, TextInput, Modal, Pre
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Text, Box, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,17 +18,10 @@ import { useDeleteListing, useUpdateListingPrice } from '../api/hooks';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Rarity mapping
-const rarityMap: Record<string, { label: string; color: string }> = {
-    common: { label: 'Common', color: '$blue500' },
-    rare: { label: 'Rare', color: '$purple500' },
-    epic: { label: 'Epic', color: '$orange500' },
-    legendary: { label: 'Legendary', color: '$yellow500' },
-};
-
 const NFTDetailScreen = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('marketplace');
     const navigation = useNavigation<NativeStackNavigationProp<MarketplaceStackParamList>>();
     const route = useRoute();
     const { nftId, mode = 'buy' } = route.params as { nftId: string; mode?: 'view' | 'buy' };
@@ -127,7 +121,7 @@ const NFTDetailScreen = () => {
         if (!isMyNFT) return;
 
         if (!listingIdForActions) {
-            Alert.alert('Error', 'Listing ID not found (cannot edit price)');
+            Alert.alert(t('screens.nftDetail.errors.error'), t('screens.nftDetail.alerts.errorNoListing'));
             return;
         }
 
@@ -147,32 +141,32 @@ const NFTDetailScreen = () => {
         const price = parseFloat(priceDraft);
 
         if (!price || price <= 0) {
-            Alert.alert('Invalid Price', 'Please enter a valid price greater than 0.');
+            Alert.alert(t('screens.nftDetail.alerts.invalidPrice'), t('screens.nftDetail.alerts.invalidPriceMessage'));
             return;
         }
 
         if (!listingIdForActions) {
-            Alert.alert('Error', 'Listing ID not found (cannot update price)');
+            Alert.alert(t('screens.nftDetail.errors.error'), t('screens.nftDetail.alerts.errorNoListing'));
             return;
         }
 
-        Alert.alert('Confirm Price Update', `Update price to ${price} TIPS?`, [
-            { text: 'No', style: 'cancel' },
+        Alert.alert(t('screens.nftDetail.alerts.confirmPriceUpdate'), t('screens.nftDetail.alerts.confirmPriceUpdateMessage', { price }), [
+            { text: t('screens.nftDetail.alerts.no'), style: 'cancel' },
             {
-                text: 'Yes',
+                text: t('screens.nftDetail.alerts.yes'),
                 onPress: () => {
                     updatePriceMutation.mutate(
                         { listingId: listingIdForActions, amount: price },
                         {
                             onSuccess: () => {
-                                Alert.alert('Success', 'Price has been updated successfully!');
+                                Alert.alert(t('screens.nftDetail.success.priceUpdated'), t('screens.nftDetail.success.priceUpdatedMessage'));
                                 setIsEditingPrice(false);
                                 refetch();
                             },
                             onError: (error: any) => {
                                 Alert.alert(
-                                    'Error',
-                                    error?.response?.data?.error?.message || error?.message || 'Failed to update price'
+                                    t('screens.nftDetail.errors.error'),
+                                    error?.response?.data?.error?.message || error?.message || t('screens.nftDetail.errors.updatePriceFailed')
                                 );
                             },
                         }
@@ -197,21 +191,21 @@ const NFTDetailScreen = () => {
                 title: nftDetail?.title,
             });
         }
-        
+
         Alert.alert(
-            'Delist NFT',
-            `Are you sure you want to remove "${nftDetail?.title}" from marketplace?`,
+            t('screens.nftDetail.alerts.confirmDelist'),
+            t('screens.nftDetail.alerts.confirmDelistMessage', { title: nftDetail?.title }),
             [
                 {
-                    text: 'No',
+                    text: t('screens.nftDetail.alerts.no'),
                     style: 'cancel',
                 },
                 {
-                    text: 'Yes',
+                    text: t('screens.nftDetail.alerts.yes'),
                     style: 'destructive',
                     onPress: () => {
                         if (!listingIdForActions) {
-                            Alert.alert('Error', 'Listing ID not found (cannot delist)');
+                            Alert.alert(t('screens.nftDetail.errors.error'), t('screens.nftDetail.alerts.errorNoListingDelist'));
                             return;
                         }
 
@@ -223,9 +217,9 @@ const NFTDetailScreen = () => {
 
                         deleteListingMutation.mutate(listingIdForActions, {
                             onSuccess: () => {
-                                Alert.alert('Success', 'NFT has been delisted from marketplace');
+                                Alert.alert(t('screens.nftDetail.success.delisted'), t('screens.nftDetail.success.delistedMessage'));
                                 refetch();
-                                
+
                                 // Navigate back to MarketPlaceScreen with My Listings tab
                                 navigation.goBack();
                                 setTimeout(() => {
@@ -242,8 +236,8 @@ const NFTDetailScreen = () => {
                                     });
                                 }
                                 Alert.alert(
-                                    'Error',
-                                    error?.response?.data?.error?.message || error?.message || 'Failed to delist NFT'
+                                    t('screens.nftDetail.errors.error'),
+                                    error?.response?.data?.error?.message || error?.message || t('screens.nftDetail.errors.delistFailed')
                                 );
                             },
                         });
@@ -271,24 +265,24 @@ const NFTDetailScreen = () => {
         // Check balance first
         if (!hasSufficientBalance) {
             Alert.alert(
-                'Insufficient Balance',
-                `You need ${nftDetail.price} TIPS but you only have ${userBalance} TIPS.`,
-                [{ text: 'OK', style: 'cancel' }]
+                t('screens.nftDetail.alerts.insufficientBalanceTitle'),
+                t('screens.nftDetail.alerts.insufficientBalanceMessage', { required: nftDetail.price, available: userBalance }),
+                [{ text: t('screens.nftDetail.alerts.ok'), style: 'cancel' }]
             );
             return;
         }
 
         // Show confirmation modal
         Alert.alert(
-            'Confirm Purchase',
-            `Are you sure you want to buy "${nftDetail.title}" for ${nftDetail.price} TIPS?`,
+            t('screens.nftDetail.alerts.confirmPurchase'),
+            t('screens.nftDetail.alerts.confirmPurchaseMessage', { title: nftDetail.title, price: nftDetail.price }),
             [
                 {
-                    text: 'No',
+                    text: t('screens.nftDetail.alerts.no'),
                     style: 'cancel',
                 },
                 {
-                    text: 'Yes',
+                    text: t('screens.nftDetail.alerts.yes'),
                     style: 'default',
                     onPress: () => {
                         // Find the listing ID from priceHistory (active listing)
@@ -297,7 +291,7 @@ const NFTDetailScreen = () => {
                         );
 
                         if (!activeListing) {
-                            Alert.alert('Error', 'No active listing found for this NFT');
+                            Alert.alert(t('screens.nftDetail.errors.error'), t('screens.nftDetail.alerts.errorNoActiveListing'));
                             return;
                         }
 
@@ -318,10 +312,10 @@ const NFTDetailScreen = () => {
                                 },
                                 onError: (error: any) => {
                                     Alert.alert(
-                                        'Error',
-                                        error.response?.data?.error?.message || 
-                                        error.message || 
-                                        'Failed to purchase NFT'
+                                        t('screens.nftDetail.errors.error'),
+                                        error.response?.data?.error?.message ||
+                                        error.message ||
+                                        t('screens.nftDetail.errors.purchaseFailed')
                                     );
                                 },
                             }
@@ -332,8 +326,22 @@ const NFTDetailScreen = () => {
         );
     };
 
-    // Get rarity display info
-    const rarityInfo = rarityMap[nftDetail?.rarity || 'common'] || rarityMap.common;
+    // Get rarity display info with translation
+    const getRarityInfo = (rarity: string) => {
+        const rarityKey = rarity.toLowerCase();
+        const colorMap: Record<string, string> = {
+            common: '$blue500',
+            rare: '$purple500',
+            epic: '$orange500',
+            legendary: '$yellow500',
+        };
+        return {
+            label: t(`screens.nftDetail.rarity.${rarityKey}`),
+            color: colorMap[rarityKey] || '$blue500',
+        };
+    };
+
+    const rarityInfo = getRarityInfo(nftDetail?.rarity || 'common');
 
     // Get NFT image source
     const nftImageSource = nftDetail?.image 
@@ -362,10 +370,10 @@ const NFTDetailScreen = () => {
         return (
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                 <Box flex={1} bg="#FFFFFF">
-                    <Header 
-                        title="NFT Detail" 
-                        showBackButton={true} 
-                        onBackPress={() => navigation.goBack()} 
+                    <Header
+                        title={t('screens.nftDetail.title')}
+                        showBackButton={true}
+                        onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center">
                         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
@@ -380,14 +388,14 @@ const NFTDetailScreen = () => {
         return (
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                 <Box flex={1} bg="#FFFFFF">
-                    <Header 
-                        title="NFT Detail" 
-                        showBackButton={true} 
-                        onBackPress={() => navigation.goBack()} 
+                    <Header
+                        title={t('screens.nftDetail.title')}
+                        showBackButton={true}
+                        onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                         <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                            {error?.message || 'Failed to load NFT details'}
+                            {error?.message || t('screens.nftDetail.errors.loadingFailed')}
                         </Text>
                     </Box>
                 </Box>
@@ -398,9 +406,9 @@ const NFTDetailScreen = () => {
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
             <Box flex={1} bg="#FFFFFF">
-                <Header 
-                    title="NFT Detail" 
-                    showBackButton={true} 
+                <Header
+                    title={t('screens.nftDetail.title')}
+                    showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                     rightAction={
                         isMyNFT ? (
@@ -502,7 +510,7 @@ const NFTDetailScreen = () => {
                                 fontSize={10}
                                 color={isDark ? '$textDark400' : '$textLight600'}
                             >
-                                Owner by <Text fontSize={11} fontWeight="$bold" textDecorationLine="underline" color={isDark ? '$textDark200' : '$textLight800'}>{nftDetail.ownerUser.name}</Text>
+                                {t('screens.nftDetail.owner')} <Text fontSize={11} fontWeight="$bold" textDecorationLine="underline" color={isDark ? '$textDark200' : '$textLight800'}>{nftDetail.ownerUser.name}</Text>
                             </Text>
                         </VStack>
 
@@ -521,7 +529,7 @@ const NFTDetailScreen = () => {
                                         fontWeight="$medium"
                                         color={isDark ? '$textDark400' : '$textLight500'}
                                     >
-                                        Current Price
+                                        {t('screens.nftDetail.currentPrice')}
                                     </Text>
 
                                     <HStack
@@ -554,7 +562,7 @@ const NFTDetailScreen = () => {
                                             fontWeight="$semibold"
                                             color={isDark ? '$textDark300' : '$textLight700'}
                                         >
-                                            TIPS
+                                            {t('common.tips')}
                                         </Text>
                                     </HStack>
 
@@ -563,7 +571,7 @@ const NFTDetailScreen = () => {
                                             fontSize={10}
                                             color={isDark ? '$textDark400' : '$textLight600'}
                                         >
-                                            Select "Edit Price" from the top right menu to change the price.
+                                            {t('screens.nftDetail.editPriceNote')}
                                         </Text>
                                     )}
 
@@ -602,7 +610,7 @@ const NFTDetailScreen = () => {
                                                 color="#000000"
                                                 textAlign="center"
                                             >
-                                                Update Price
+                                                {t('screens.nftDetail.buttons.updatePrice')}
                                             </Text>
                                         )}
                                     </Pressable>
@@ -622,7 +630,7 @@ const NFTDetailScreen = () => {
                                                 color={isDark ? '$textDark200' : '$textLight700'}
                                                 textAlign="center"
                                             >
-                                                Cancel
+                                                {t('screens.nftDetail.buttons.cancel')}
                                             </Text>
                                         </Pressable>
                                     )}
@@ -636,7 +644,7 @@ const NFTDetailScreen = () => {
                                         color={isDark ? '$textDark400' : '$textLight500'}
                                         mb="$2"
                                     >
-                                        Current Price
+                                        {t('screens.nftDetail.currentPrice')}
                                     </Text>
 
                                     <HStack space="sm" alignItems="center" mb="$2.5">
@@ -652,7 +660,7 @@ const NFTDetailScreen = () => {
                                                 fontWeight="$bold"
                                                 color={isDark ? '$textDark50' : '$textLight900'}
                                             >
-                                                {nftDetail.price} TIPS
+                                                {nftDetail.price} {t('common.tips')}
                                             </Text>
                                             <Text
                                                 fontSize="$sm"
@@ -678,14 +686,14 @@ const NFTDetailScreen = () => {
                                         fontWeight="$medium"
                                         color={isDark ? '$textDark400' : '$textLight600'}
                                     >
-                                        Suggested Price
+                                        {t('screens.nftDetail.suggestedPrice')}
                                     </Text>
                                     <Text
                                         fontSize="$sm"
                                         fontWeight="$bold"
                                         color={isDark ? '$textDark200' : '$textLight800'}
                                     >
-                                        {nftDetail.suggestedPrice} TIPS
+                                        {nftDetail.suggestedPrice} {t('common.tips')}
                                     </Text>
                                 </HStack>
                             </Box>
@@ -706,7 +714,7 @@ const NFTDetailScreen = () => {
                                     fontWeight="$medium"
                                     color={isDark ? '$textDark400' : '$textLight600'}
                                 >
-                                    Earn Date
+                                    {t('screens.nftDetail.earnDate')}
                                 </Text>
                                 <Text
                                     fontSize={11}
@@ -734,7 +742,7 @@ const NFTDetailScreen = () => {
                                         fontWeight="$medium"
                                         color={isDark ? '$textDark400' : '$textLight600'}
                                     >
-                                        Rarity
+                                        {t('screens.nftDetail.rarity')}
                                     </Text>
                                     <Text
                                         fontSize={11}
@@ -759,7 +767,7 @@ const NFTDetailScreen = () => {
                                         fontWeight="$medium"
                                         color={isDark ? '$textDark400' : '$textLight600'}
                                     >
-                                        Owners
+                                        {t('screens.nftDetail.owners')}
                                     </Text>
                                     <Text
                                         fontSize={11}
@@ -784,7 +792,7 @@ const NFTDetailScreen = () => {
                                         color={isDark ? '$textDark400' : '$textLight600'}
                                         mb="$1.5"
                                     >
-                                        Description
+                                        {t('screens.nftDetail.description')}
                                     </Text>
                                     <Text
                                         fontSize={10}
@@ -812,9 +820,9 @@ const NFTDetailScreen = () => {
                                     color={isDark ? '$textDark50' : '$textLight900'}
                                     mb="$2.5"
                                 >
-                                    Sales History
+                                    {t('screens.nftDetail.salesHistory')}
                                 </Text>
-                                
+
                                 <SimpleLineChart
                                     data={chartData}
                                     width={screenWidth - 64}
@@ -823,12 +831,12 @@ const NFTDetailScreen = () => {
                                 />
                             </Box>
                         )}
-                        
+
                         {/* Debug: Show if we have data */}
                         {!hasSalesHistory && (
                             <Box p="$3">
                                 <Text fontSize={10} color={isDark ? '$textDark400' : '$textLight600'}>
-                                    No sales history available yet
+                                    {t('screens.nftDetail.noSalesHistory')}
                                 </Text>
                             </Box>
                         )}
@@ -855,10 +863,10 @@ const NFTDetailScreen = () => {
                                 textAlign="center"
                                 mb="$2"
                             >
-                                Insufficient TIPS balance. You need {nftDetail.price} TIPS.
+                                {t('screens.nftDetail.insufficientBalance', { amount: nftDetail.price })}
                             </Text>
                         )}
-                        
+
                         <Pressable
                             onPress={handleBuyNFT}
                             bg={hasSufficientBalance ? '#C2E607' : '#CCCCCC'}
@@ -877,7 +885,7 @@ const NFTDetailScreen = () => {
                                     color={hasSufficientBalance ? '#000000' : '#666666'}
                                     textAlign="center"
                                 >
-                                    Buy NFT - {nftDetail.price} TIPS
+                                    {t('screens.nftDetail.buttons.buyNFT', { price: nftDetail.price })}
                                 </Text>
                             )}
                         </Pressable>
@@ -914,7 +922,7 @@ const NFTDetailScreen = () => {
                                 <HStack space="sm" alignItems="center">
                                     <PencilSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
                                     <Text color={isDark ? '$textDark50' : '$textLight900'} fontSize="$sm" fontWeight="$medium">
-                                        Edit Price
+                                        {t('screens.nftDetail.menu.editPrice')}
                                     </Text>
                                 </HStack>
                             </Pressable>
@@ -923,7 +931,7 @@ const NFTDetailScreen = () => {
                                 <HStack space="sm" alignItems="center">
                                     <TrashIcon width={20} height={20} color="#CE4A4A" />
                                     <Text color="#CE4A4A" fontSize="$sm" fontWeight="$medium">
-                                        Delist NFT
+                                        {t('screens.nftDetail.menu.delistNFT')}
                                     </Text>
                                 </HStack>
                             </Pressable>

@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Pressable, Text, Box } from '@gluestack-ui/themed';
 import { FlatList, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { UserNFTCard } from '../components/UserNFTCard';
 import { Dimensions } from 'react-native';
@@ -17,6 +18,7 @@ import { toImageSource } from '@/src/utils';
 const SelectNFTScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('marketplace');
   const screenWidth = Dimensions.get('window').width;
   const cardWidth = (screenWidth - 48) / 2; // 2 cards per row with 16px padding on each side
   const navigation = useNavigation();
@@ -159,7 +161,7 @@ const SelectNFTScreen = () => {
       <VStack flex={1} bg="#FFFFFF">
         {/* Header */}
         <Header
-          title="Select NFT"
+          title={t('screens.selectNFT.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -173,13 +175,13 @@ const SelectNFTScreen = () => {
           ) : error ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">
               <Text color="#CE4A4A" fontSize="$sm">
-                An error occurred while loading NFTs: {error.message}
+                {t('screens.selectNFT.errors.loadingError', { message: error.message })}
               </Text>
             </Box>
           ) : userNFTData.length === 0 ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                No NFTs found yet.
+                {t('screens.selectNFT.empty')}
               </Text>
             </Box>
           ) : (
@@ -232,7 +234,7 @@ const SelectNFTScreen = () => {
                 fontWeight="$bold"
                 textAlign="center"
               >
-                Continue ({selectedNFTs.length} selected)
+                {t('screens.selectNFT.continueButton', { count: selectedNFTs.length })}
               </Text>
             </Pressable>
           </VStack>

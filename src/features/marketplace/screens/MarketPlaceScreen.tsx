@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { SearchFilter, type NFTType } from '../components/SearchFilter';
 import { NFTCard } from '../components/NFTCard';
@@ -34,6 +35,7 @@ const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 const MarketPlaceScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('marketplace');
   const screenWidth = Dimensions.get('window').width;
   const cardWidth = (screenWidth - 48) / 2; // 2 cards per row with 16px padding on each side
   const navigation = useNavigation();
@@ -308,7 +310,7 @@ const MarketPlaceScreen = () => {
       <VStack flex={1} bg="#FFFFFF">
         {/* Header */}
         <Header
-          title="Marketplace"
+          title={t('screens.marketplace.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -345,7 +347,7 @@ const MarketPlaceScreen = () => {
                     tab1Style,
                   ]}
                 >
-                  All NFT's
+                  {t('screens.marketplace.tabs.allNFTs')}
                 </Animated.Text>
               </VStack>
             </Pressable>
@@ -366,7 +368,7 @@ const MarketPlaceScreen = () => {
                     tab2Style,
                   ]}
                 >
-                  My Listings
+                  {t('screens.marketplace.tabs.myListings')}
                 </Animated.Text>
               </VStack>
             </Pressable>
@@ -420,13 +422,13 @@ const MarketPlaceScreen = () => {
             ) : errorAll ? (
               <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                 <Text color="#CE4A4A" fontSize="$sm">
-                  An error occurred while loading NFTs: {errorAll.message}
+                  {t('screens.marketplace.errors.loadingError', { message: errorAll.message })}
                 </Text>
               </Box>
             ) : allNFTData.length === 0 ? (
               <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                 <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                  No NFTs for sale yet.
+                  {t('screens.marketplace.empty.noNFTs')}
                 </Text>
               </Box>
             ) : (
@@ -466,13 +468,13 @@ const MarketPlaceScreen = () => {
             ) : errorMy ? (
               <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                 <Text color="#CE4A4A" fontSize="$sm">
-                  An error occurred while loading your listings: {errorMy.message}
+                  {t('screens.marketplace.errors.loadingMyListingsError', { message: errorMy.message })}
                 </Text>
               </Box>
             ) : myNFTData.length === 0 ? (
               <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                 <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                  You don't have any active listings yet.
+                  {t('screens.marketplace.empty.noListings')}
                 </Text>
               </Box>
             ) : (

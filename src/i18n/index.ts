@@ -15,6 +15,7 @@ import inbox_en from '@/src/locales/en/inbox.json';
 import profile_en from '@/src/locales/en/profile.json';
 import explore_en from '@/src/locales/en/explore.json';
 import post_en from '@/src/locales/en/post.json';
+import marketplace_en from '@/src/locales/en/marketplace.json';
 
 // Turkish locale files will be imported after all screens are migrated
 // import common_tr from '@/src/locales/tr/common.json';
@@ -34,6 +35,7 @@ const resources = {
     profile: profile_en,
     explore: explore_en,
     post: post_en,
+    marketplace: marketplace_en,
   },
   // Future languages will be added here after all screens are migrated
 } as const;
@@ -86,7 +88,7 @@ export const initializeI18n = async (): Promise<void> => {
       lng: savedLanguage,
       fallbackLng: DEFAULT_LANGUAGE,
       defaultNS: 'common',
-      ns: ['common', 'auth', 'wallet', 'feed', 'events', 'settings', 'inbox', 'profile', 'explore', 'post'],
+      ns: ['common', 'auth', 'wallet', 'feed', 'events', 'settings', 'inbox', 'profile', 'explore', 'post', 'marketplace'],
 
       // React Native compatibility
       compatibilityJSON: 'v3',

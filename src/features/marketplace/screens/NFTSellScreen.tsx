@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Text, Box, Pressable, Image, useToast } from '@gluestack-ui/themed';
 import { ScrollView, Alert, ActivityIndicator, TextInput, Dimensions, Keyboard, InputAccessoryView, Platform } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,17 +15,10 @@ import { showCustomToast } from '@/src/components/CustomToast';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Rarity mapping
-const rarityMap: Record<string, { label: string; color: string }> = {
-    common: { label: 'Common', color: '$blue500' },
-    rare: { label: 'Rare', color: '$purple500' },
-    epic: { label: 'Epic', color: '$orange500' },
-    legendary: { label: 'Legendary', color: '$yellow500' },
-};
-
 export const NFTSellScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('marketplace');
   const navigation = useNavigation<NativeStackNavigationProp<MarketplaceStackParamList>>();
   const route = useRoute();
   const { nftId } = route.params as { nftId: string };
@@ -67,8 +61,8 @@ export const NFTSellScreen = () => {
 
     if (!price || price <= 0) {
       showCustomToast(toast, {
-        title: 'Invalid Price',
-        description: 'Please enter a valid price greater than 0.',
+        title: t('screens.nftSell.toast.invalidPrice'),
+        description: t('screens.nftSell.toast.invalidPriceMessage'),
         action: 'error',
         duration: 3000,
       });
@@ -77,12 +71,12 @@ export const NFTSellScreen = () => {
 
     // Show confirmation modal
     Alert.alert(
-      'Confirm Listing',
-      `Are you sure you want to list this NFT for ${price} TIPS?`,
+      t('screens.nftSell.alerts.confirmListing'),
+      t('screens.nftSell.alerts.confirmListingMessage', { price }),
       [
-        { text: 'No', style: 'cancel' },
+        { text: t('screens.nftSell.alerts.no'), style: 'cancel' },
         {
-          text: 'Yes',
+          text: t('screens.nftSell.alerts.yes'),
           style: 'default',
           onPress: () => {
             createListingMutation.mutate(
@@ -97,10 +91,10 @@ export const NFTSellScreen = () => {
                 },
                 onError: (error: any) => {
                   showCustomToast(toast, {
-                    title: 'Listing Failed',
+                    title: t('screens.nftSell.toast.listingFailed'),
                     description: error.response?.data?.error?.message ||
                       error.message ||
-                      'Failed to list NFT for sale',
+                      t('screens.nftSell.toast.listingFailedMessage'),
                     action: 'error',
                     duration: 3000,
                   });
@@ -116,8 +110,8 @@ export const NFTSellScreen = () => {
   const handleDelist = () => {
     if (!listingId) {
       showCustomToast(toast, {
-        title: 'No Listing Found',
-        description: 'No active listing found',
+        title: t('screens.nftSell.toast.noListingFound'),
+        description: t('screens.nftSell.toast.noListingFoundMessage'),
         action: 'error',
         duration: 3000,
       });
@@ -125,19 +119,19 @@ export const NFTSellScreen = () => {
     }
 
     Alert.alert(
-      'Confirm Delist',
-      'Are you sure you want to remove this NFT from sale?',
+      t('screens.nftSell.alerts.confirmDelist'),
+      t('screens.nftSell.alerts.confirmDelistMessage'),
       [
-        { text: 'No', style: 'cancel' },
+        { text: t('screens.nftSell.alerts.no'), style: 'cancel' },
         {
-          text: 'Yes',
+          text: t('screens.nftSell.alerts.yes'),
           style: 'destructive',
           onPress: () => {
             deleteListingMutation.mutate(listingId, {
               onSuccess: () => {
                 showCustomToast(toast, {
-                  title: 'Delisted Successfully',
-                  description: 'NFT removed from marketplace',
+                  title: t('screens.nftSell.toast.delistSuccess'),
+                  description: t('screens.nftSell.toast.delistSuccessMessage'),
                   action: 'success',
                   duration: 3000,
                 });
@@ -146,10 +140,10 @@ export const NFTSellScreen = () => {
               },
               onError: (error: any) => {
                 showCustomToast(toast, {
-                  title: 'Delist Failed',
+                  title: t('screens.nftSell.toast.delistFailed'),
                   description: error.response?.data?.error?.message ||
                     error.message ||
-                    'Failed to delist NFT',
+                    t('screens.nftSell.toast.delistFailedMessage'),
                   action: 'error',
                   duration: 3000,
                 });
@@ -166,8 +160,8 @@ export const NFTSellScreen = () => {
 
     if (!newPrice || newPrice <= 0) {
       showCustomToast(toast, {
-        title: 'Invalid Price',
-        description: 'Please enter a valid price greater than 0.',
+        title: t('screens.nftSell.toast.invalidPrice'),
+        description: t('screens.nftSell.toast.invalidPriceMessage'),
         action: 'error',
         duration: 3000,
       });
@@ -176,8 +170,8 @@ export const NFTSellScreen = () => {
 
     if (!listingId) {
       showCustomToast(toast, {
-        title: 'No Listing Found',
-        description: 'No active listing found',
+        title: t('screens.nftSell.toast.noListingFound'),
+        description: t('screens.nftSell.toast.noListingFoundMessage'),
         action: 'error',
         duration: 3000,
       });
@@ -185,12 +179,12 @@ export const NFTSellScreen = () => {
     }
 
     Alert.alert(
-      'Confirm Price Update',
-      `Update price from ${currentListingPrice} TIPS to ${newPrice} TIPS?`,
+      t('screens.nftSell.alerts.confirmPriceUpdate'),
+      t('screens.nftSell.alerts.confirmPriceUpdateMessage', { oldPrice: currentListingPrice, newPrice }),
       [
-        { text: 'No', style: 'cancel' },
+        { text: t('screens.nftSell.alerts.no'), style: 'cancel' },
         {
-          text: 'Yes',
+          text: t('screens.nftSell.alerts.yes'),
           style: 'default',
           onPress: () => {
             updatePriceMutation.mutate(
@@ -198,8 +192,8 @@ export const NFTSellScreen = () => {
               {
                 onSuccess: () => {
                   showCustomToast(toast, {
-                    title: 'Price Updated',
-                    description: 'Price updated successfully',
+                    title: t('screens.nftSell.toast.priceUpdated'),
+                    description: t('screens.nftSell.toast.priceUpdatedMessage'),
                     action: 'success',
                     duration: 3000,
                   });
@@ -208,10 +202,10 @@ export const NFTSellScreen = () => {
                 },
                 onError: (error: any) => {
                   showCustomToast(toast, {
-                    title: 'Update Failed',
+                    title: t('screens.nftSell.toast.updateFailed'),
                     description: error.response?.data?.error?.message ||
                       error.message ||
-                      'Failed to update price',
+                      t('screens.nftSell.toast.updateFailedMessage'),
                     action: 'error',
                     duration: 3000,
                   });
@@ -224,8 +218,7 @@ export const NFTSellScreen = () => {
     );
   };
 
-  // Get rarity display info
-  const rarityInfo = rarityMap[nftInfo?.rarity?.toLowerCase() || 'common'] || rarityMap.common;
+  // Rarity is not needed in this screen - removed mapping
 
   // Get NFT image source
   const nftImageSource = nftInfo?.image 
@@ -256,13 +249,13 @@ export const NFTSellScreen = () => {
               onPress={() => Keyboard.dismiss()}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text 
-                fontSize={17} 
-                fontWeight="$semibold" 
+              <Text
+                fontSize={17}
+                fontWeight="$semibold"
                 color="#007AFF"
                 letterSpacing={-0.4}
               >
-                Done
+                {t('screens.nftSell.buttons.done')}
               </Text>
             </Pressable>
           </HStack>
@@ -276,10 +269,10 @@ export const NFTSellScreen = () => {
     return (
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
         <Box flex={1} bg="#FFFFFF">
-          <Header 
-            title="Sell NFT" 
-            showBackButton={true} 
-            onBackPress={() => navigation.goBack()} 
+          <Header
+            title={t('screens.nftSell.title')}
+            showBackButton={true}
+            onBackPress={() => navigation.goBack()}
           />
           <Box flex={1} justifyContent="center" alignItems="center">
             <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
@@ -294,14 +287,14 @@ export const NFTSellScreen = () => {
     return (
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
         <Box flex={1} bg="#FFFFFF">
-          <Header 
-            title="Sell NFT" 
-            showBackButton={true} 
-            onBackPress={() => navigation.goBack()} 
+          <Header
+            title={t('screens.nftSell.title')}
+            showBackButton={true}
+            onBackPress={() => navigation.goBack()}
           />
           <Box flex={1} justifyContent="center" alignItems="center" px="$4">
             <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-              {error?.message || 'Failed to load NFT information'}
+              {error?.message || t('screens.nftSell.errors.loadingError')}
             </Text>
           </Box>
         </Box>
@@ -312,10 +305,10 @@ export const NFTSellScreen = () => {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <Box flex={1} bg="#FFFFFF">
-        <Header 
-          title="Sell NFT" 
-          showBackButton={true} 
-          onBackPress={() => navigation.goBack()} 
+        <Header
+          title={t('screens.nftSell.title')}
+          showBackButton={true}
+          onBackPress={() => navigation.goBack()}
         />
         
         <ScrollView 
@@ -400,7 +393,7 @@ export const NFTSellScreen = () => {
                       fontWeight="$semibold"
                       color={isDark ? '$textDark200' : '$textLight700'}
                     >
-                      Current Price
+                      {t('screens.nftSell.currentPrice')}
                     </Text>
                     <HStack space="xs" alignItems="center">
                       <Text
@@ -415,19 +408,20 @@ export const NFTSellScreen = () => {
                         fontWeight="$semibold"
                         color={isDark ? '$textDark300' : '$textLight700'}
                       >
-                        TIPS
+                        {t('common.tips')}
                       </Text>
                     </HStack>
                   </HStack>
                   
                   <Box height={1} bg={isDark ? '$borderDark700' : '$borderLight200'} />
-                  
+
+
                   <Text
                     fontSize="$sm"
                     fontWeight="$semibold"
                     color={isDark ? '$textDark200' : '$textLight700'}
                   >
-                    Update Price
+                    {t('screens.nftSell.updatePrice')}
                   </Text>
                   
                   {/* Price Input for Update */}
@@ -443,7 +437,7 @@ export const NFTSellScreen = () => {
                     <TextInput
                       value={updatePriceInput}
                       onChangeText={setUpdatePriceInput}
-                      placeholder="0.00"
+                      placeholder={t('screens.nftSell.placeholders.price')}
                       placeholderTextColor={isDark ? '#666666' : '#AAAAAA'}
                       keyboardType="decimal-pad"
                       inputAccessoryViewID={inputAccessoryViewID}
@@ -563,7 +557,7 @@ export const NFTSellScreen = () => {
                     fontWeight="$semibold"
                     color={isDark ? '$textDark200' : '$textLight700'}
                   >
-                    Rarity
+                    {t('screens.nftSell.rarity')}
                   </Text>
                   <Text
                     fontSize="$sm"
@@ -586,14 +580,14 @@ export const NFTSellScreen = () => {
                     fontWeight="$semibold"
                     color={isDark ? '$textDark200' : '$textLight700'}
                   >
-                    Gas Fee (10%)
+                    {t('screens.nftSell.gasFee')}
                   </Text>
                   <Text
                     fontSize="$sm"
                     fontWeight="$bold"
                     color={isDark ? '$textDark50' : '$textLight900'}
                   >
-                    {gasFee.toFixed(2)} TIPS
+                    {gasFee.toFixed(2)} {t('common.tips')}
                   </Text>
                 </HStack>
 
@@ -609,14 +603,14 @@ export const NFTSellScreen = () => {
                     fontWeight="$semibold"
                     color={isDark ? '$textDark200' : '$textLight700'}
                   >
-                    You Will Earn
+                    {t('screens.nftSell.youWillEarn')}
                   </Text>
                   <Text
                     fontSize="$sm"
                     fontWeight="$bold"
                     color={isDark ? '$textDark50' : '$textLight900'}
                   >
-                    {earningsAfterFees > 0 ? earningsAfterFees.toFixed(2) : '0.00'} TIPS
+                    {earningsAfterFees > 0 ? earningsAfterFees.toFixed(2) : '0.00'} {t('common.tips')}
                   </Text>
                 </HStack>
               </VStack>
@@ -676,7 +670,7 @@ export const NFTSellScreen = () => {
                     }
                     textAlign="center"
                   >
-                    Update Price - {parseFloat(updatePriceInput || '0') > 0 ? updatePriceInput : '0'} TIPS
+                    {t('screens.nftSell.buttons.updatePriceButton', { price: parseFloat(updatePriceInput || '0') > 0 ? updatePriceInput : '0' })}
                   </Text>
                 )}
               </Pressable>
@@ -701,7 +695,7 @@ export const NFTSellScreen = () => {
                     color="#CE4A4A"
                     textAlign="center"
                   >
-                    Delist from Marketplace
+                    {t('screens.nftSell.buttons.delist')}
                   </Text>
                 )}
               </Pressable>
@@ -725,7 +719,7 @@ export const NFTSellScreen = () => {
                   color={parseFloat(priceInput || '0') > 0 ? '#000000' : '#666666'}
                   textAlign="center"
                 >
-                  Sell - {parseFloat(priceInput || '0') > 0 ? priceInput : '0'} TIPS
+                  {t('screens.nftSell.buttons.sell', { price: parseFloat(priceInput || '0') > 0 ? priceInput : '0' })}
                 </Text>
               )}
             </Pressable>
