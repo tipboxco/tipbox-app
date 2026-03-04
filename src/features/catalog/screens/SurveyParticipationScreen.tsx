@@ -11,6 +11,7 @@ import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { useSafeAreaValues } from '@/src/utils';
 import { useSurveyQuestions, useSubmitSurveyAnswer } from '../api/hooks';
 import type { SurveyQuestion, SurveyAnswerOption } from '../types';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SurveyParticipationScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'SurveyParticipationScreen'>;
 type SurveyParticipationScreenRouteProp = RouteProp<BrandStackParamList, 'SurveyParticipationScreen'>;
@@ -21,6 +22,7 @@ const SurveyParticipationScreen: React.FC = () => {
   const navigation = useNavigation<SurveyParticipationScreenNavigationProp>();
   const route = useRoute<SurveyParticipationScreenRouteProp>();
   const bottomInset = useSafeAreaValues('bottom');
+  const { t } = useTranslation('catalog');
 
   const { surveyId, brandId } = route.params;
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -87,7 +89,7 @@ const SurveyParticipationScreen: React.FC = () => {
     return (
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
-          <Text color={isDark ? '$textDark400' : '$textLight500'}>Loading survey...</Text>
+          <Text color={isDark ? '$textDark400' : '$textLight500'}>{t('catalog.surveyParticipation.loading')}</Text>
         </VStack>
       </SafeAreaView>
     );
@@ -98,13 +100,13 @@ const SurveyParticipationScreen: React.FC = () => {
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
           <Header
-            title="Anket"
+            title={t('catalog.surveyParticipation.title')}
             showBackButton={true}
             onBackPress={() => navigation.goBack()}
           />
           <VStack flex={1} justifyContent="center" alignItems="center" px="$4">
             <Text color={isDark ? '$textDark400' : '$textLight500'}>
-              {error ? 'Error loading survey' : 'No questions found'}
+              {error ? t('catalog.surveyParticipation.error') : t('catalog.surveyParticipation.noQuestionsFound')}
             </Text>
           </VStack>
         </VStack>
@@ -117,7 +119,7 @@ const SurveyParticipationScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Anket"
+          title={t('catalog.surveyParticipation.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -184,7 +186,7 @@ const SurveyParticipationScreen: React.FC = () => {
                     fontWeight="$medium"
                     color="#BEDA36"
                   >
-                    Önceki Soruya Dön
+                    {t('catalog.surveyParticipation.previous')}
                   </Text>
                 </HStack>
               </Pressable>
@@ -273,10 +275,10 @@ const SurveyParticipationScreen: React.FC = () => {
                   color={selectedAnswerId ? '#000000' : '#686868'}
                 >
                   {submitAnswerMutation.isPending
-                    ? 'Sending...'
+                    ? t('catalog.surveyParticipation.sending')
                     : isLastQuestion
-                    ? 'Tamamla'
-                    : 'Sonraki Soru'
+                    ? t('catalog.surveyParticipation.submit')
+                    : t('catalog.surveyParticipation.next')
                   }
                 </Text>
               </Pressable>

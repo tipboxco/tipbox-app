@@ -13,6 +13,7 @@ import SurveyCard from '../components/SurveyCard';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandSurveys, useBrandHistory } from '../api/hooks';
 import type { Survey } from '../types';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SurveyScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'SurveyScreen'>;
 type SurveyScreenRouteProp = {
@@ -31,6 +32,7 @@ const SurveyScreen: React.FC = () => {
   const brandId = route.params?.brandId;
   const [activeTab, setActiveTab] = useState('Polls');
   const bottomInset = useSafeAreaValues('bottom');
+  const { t } = useTranslation('catalog');
 
   // Surveys (Polls) API hook
   const {
@@ -99,7 +101,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                Henüz rozet yok.
+                {t('catalog.survey.noBadgesYet')}
               </Text>
             </VStack>
           );
@@ -156,7 +158,7 @@ const SurveyScreen: React.FC = () => {
             <VStack py={20} alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-                Loading surveys...
+                {t('catalog.survey.loadingSurveys')}
               </Text>
             </VStack>
           );
@@ -166,7 +168,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color="#CE4A4A" fontSize="$sm">
-                Error loading surveys: {surveysError.message}
+                {t('catalog.survey.errorLoadingSurveys')}: {surveysError.message}
               </Text>
             </VStack>
           );
@@ -176,7 +178,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                No surveys yet.
+                {t('catalog.survey.noSurveysYet')}
               </Text>
             </VStack>
           );
@@ -211,7 +213,7 @@ const SurveyScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Anket & Oyunlaştırmalar"
+          title={t('catalog.survey.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -273,10 +275,10 @@ const SurveyScreen: React.FC = () => {
             </Box>
             <VStack flex={1} ml="$3">
               <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12} fontWeight="$bold" numberOfLines={1}>
-                {brandHistory?.name ?? '—'} Marka Geçmişim
+                {brandHistory?.name ?? '—'} {t('catalog.survey.brandHistory')}
               </Text>
               <Text color="#9B9B9B" fontSize={12} fontWeight="$semibold">
-                {brandHistory?.totalPoints ?? 0} Points
+                {brandHistory?.totalPoints ?? 0} {t('catalog.survey.points')}
               </Text>
             </VStack>
             <ChevronRightIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />

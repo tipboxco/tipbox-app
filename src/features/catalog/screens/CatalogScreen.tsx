@@ -23,6 +23,7 @@ import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlow
 import { useCatalogUIStore } from '../store/catalogUIStore';
 import { useCatalogNavigationStore, catalogNavigationStore } from '../store/catalogNavigationStore';
 import { useBottomOffset } from '@/src/utils';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
@@ -76,6 +77,7 @@ const CatalogScreenComponent = () => {
   const navigation = useNavigation<CatalogScreenNavigationProp>();
   const route = useRoute<CatalogScreenRouteProp>();
   const toast = useToast();
+  const { t } = useTranslation('catalog');
   
   // Catalog Navigation Store - persist edilmiş state
   const {
@@ -382,7 +384,7 @@ const CatalogScreenComponent = () => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[CatalogScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId);
-        showErrorToast('Error', 'Please select a category, product group or product first.');
+        showErrorToast(t('catalogScreen.error'), t('catalogScreen.pleaseSelectFirst'));
         return;
       }
       
@@ -454,7 +456,7 @@ const CatalogScreenComponent = () => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[CatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
-        showErrorToast('Error', 'Please select a category, product group or product first.');
+        showErrorToast(t('catalogScreen.error'), t('catalogScreen.pleaseSelectFirst'));
         return;
       }
       
@@ -637,11 +639,11 @@ const CatalogScreenComponent = () => {
   const getTitle = () => {
     switch (currentMode) {
       case 'brand-catalog':
-        return 'Brand Catalog';
+        return t('catalogScreen.brandCatalog');
       case 'brand-selection':
-        return 'Brand Catalog';
+        return t('catalogScreen.brandCatalog');
       default:
-        return 'Product Catalog';
+        return t('catalogScreen.productCatalog');
     }
   };
 
@@ -826,7 +828,7 @@ const CatalogScreenComponent = () => {
               <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
               <Input flex={1} borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder="Search brand or category"
+                  placeholder={t('catalogScreen.searchBrandOrCategory')}
                   placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                   color={isDark ? '#000' : '#000'}
                   fontSize="$xs"

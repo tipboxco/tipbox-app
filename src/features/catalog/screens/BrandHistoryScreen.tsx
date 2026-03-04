@@ -12,6 +12,7 @@ import {
   Pressable,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -34,17 +35,12 @@ const TAB_KEYS: TabKey[] = ['posts', 'polls', 'badges'];
 type BrandHistoryScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'BrandHistoryScreen'>;
 type BrandHistoryScreenRouteProp = RouteProp<BrandStackParamList, 'BrandHistoryScreen'>;
 
-const TAB_LABELS: Record<TabKey, string> = {
-  posts: 'Posts',
-  polls: 'Polls',
-  badges: 'Badges',
-};
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const BrandHistoryScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('catalog');
   const navigation = useNavigation<BrandHistoryScreenNavigationProp>();
   const route = useRoute<BrandHistoryScreenRouteProp>();
   const pagerRef = useRef<PagerView>(null);
@@ -155,7 +151,7 @@ const BrandHistoryScreen: React.FC = () => {
             fontWeight={currentPage === index ? '$bold' : '$normal'}
             color={currentPage === index ? (isDark ? '#FFFFFF' : '#000000') : tabInactiveColor}
           >
-            {TAB_LABELS[tab]}
+            {t(`catalog.brandHistory.tabs.${tab}`)}
           </Text>
         </Pressable>
       ))}
@@ -168,7 +164,7 @@ const BrandHistoryScreen: React.FC = () => {
         <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
           <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
           <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            Loading posts...
+            {t('catalog.brandHistory.loadingPosts')}
           </Text>
         </VStack>
       );
@@ -177,7 +173,7 @@ const BrandHistoryScreen: React.FC = () => {
       return (
         <VStack alignItems="center" py="$8">
           <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            No posts found
+            {t('catalog.brandHistory.noPosts')}
           </Text>
         </VStack>
       );
@@ -202,7 +198,7 @@ const BrandHistoryScreen: React.FC = () => {
         <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
           <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
           <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            Loading surveys...
+            {t('catalog.brandHistory.loadingSurveys')}
           </Text>
         </VStack>
       );
@@ -211,7 +207,7 @@ const BrandHistoryScreen: React.FC = () => {
       return (
         <VStack alignItems="center" py="$8">
           <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            No surveys found
+            {t('catalog.brandHistory.noSurveys')}
           </Text>
         </VStack>
       );
@@ -246,7 +242,7 @@ const BrandHistoryScreen: React.FC = () => {
       return (
         <VStack alignItems="center" py="$8">
           <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            No badges yet
+            {t('catalog.brandHistory.noBadges')}
           </Text>
         </VStack>
       );
@@ -300,7 +296,7 @@ const BrandHistoryScreen: React.FC = () => {
             textAlign="center"
             fontWeight="$normal"
           >
-            See More Collections
+            {t('catalog.brandHistory.seeMoreCollections')}
           </Text>
         </Pressable>
       </Box>
@@ -311,7 +307,7 @@ const BrandHistoryScreen: React.FC = () => {
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         <Header
-          title="Marka Geçmişim"
+          title={t('catalog.brandHistory.title')}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />

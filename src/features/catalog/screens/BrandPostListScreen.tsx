@@ -2,6 +2,7 @@ import React, { useMemo, memo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, VStack, ActivityIndicator, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -21,6 +22,7 @@ type BrandPostListScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandPostL
 const BrandPostListScreenComponent: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('catalog');
   const navigation = useNavigation<BrandPostListScreenNavigationProp>();
   const route = useRoute<BrandPostListScreenRouteProp>();
   const bottomInset = useSafeAreaValues('bottom');
@@ -136,7 +138,7 @@ const BrandPostListScreenComponent: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Posts"
+          title={t('catalog.brandPostList.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -158,13 +160,13 @@ const BrandPostListScreenComponent: React.FC = () => {
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  Loading posts...
+                  {t('catalog.brandPostList.loading')}
                 </Text>
               </VStack>
             ) : posts.length === 0 ? (
               <VStack alignItems="center" py="$8">
                 <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  No posts found
+                  {t('catalog.brandPostList.noPosts')}
                 </Text>
               </VStack>
             ) : (

@@ -3,6 +3,7 @@ import { View } from 'react-native-safe-area-context';
 import { ScrollView, VStack, Text } from '@gluestack-ui/themed';
 import { ActivityIndicator } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -23,6 +24,7 @@ type BrandEventsScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandEventsS
 const BrandEventsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('catalog');
   const navigation = useNavigation<BrandEventsScreenNavigationProp>();
   const route = useRoute<BrandEventsScreenRouteProp>();
   const bottomInset = useSafeAreaValues('bottom');
@@ -93,7 +95,7 @@ const BrandEventsScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Events"
+          title={t('catalog.brandEvents.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -115,13 +117,13 @@ const BrandEventsScreen: React.FC = () => {
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  Loading events...
+                  {t('catalog.brandEvents.loading')}
                 </Text>
               </VStack>
             ) : events.length === 0 ? (
               <VStack alignItems="center" py="$8">
                 <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  No events found
+                  {t('catalog.brandEvents.noEvents')}
                 </Text>
               </VStack>
             ) : (

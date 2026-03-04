@@ -45,6 +45,7 @@ import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAn
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import { CardType, ProductInfoType } from '@/src/types/common';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 
@@ -62,6 +63,7 @@ const BrandDetailScreen: React.FC = () => {
     const route = useRoute<BrandDetailScreenRouteProp>();
     const insets = useSafeAreaInsets();
     const bottomInset = insets.bottom;
+    const { t } = useTranslation('catalog');
 
     // Route params'dan brandId'yi güvenli şekilde al
     const brandId = route.params?.brandId;
@@ -547,7 +549,7 @@ const BrandDetailScreen: React.FC = () => {
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                     <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4" fontSize="$sm">
-                        Loading...
+                        {t('brandDetail.loading')}
                     </Text>
                 </Box>
             </View>
@@ -560,13 +562,13 @@ const BrandDetailScreen: React.FC = () => {
             <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
-                        title="Brand Not Found"
+                        title={t('brandDetail.brandNotFound')}
                         showBackButton={true}
                         onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                         <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                            {brandCatalogError ? `Error: ${brandCatalogError.message}` : 'Brand not found'}
+                            {brandCatalogError ? `${t('brandDetail.error')}: ${brandCatalogError.message}` : t('brandDetail.brandNotFound')}
                         </Text>
                     </Box>
                 </Box>
@@ -616,7 +618,7 @@ const BrandDetailScreen: React.FC = () => {
                                 fontSize="$xs"
                                 fontWeight="$medium"
                             >
-                                {brandCatalog?.followers} Followers
+                                {t('brandDetail.followers', { count: brandCatalog?.followers })}
                             </Text>
                         </HStack>
                     </VStack>
@@ -638,7 +640,7 @@ const BrandDetailScreen: React.FC = () => {
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
-                                {brandCatalog?.isJoined ? 'Leave' : 'Join'}
+                                {brandCatalog?.isJoined ? t('brandDetail.leave') : t('brandDetail.join')}
                             </ButtonText>
                         )}
                     </Button>
@@ -725,7 +727,7 @@ const BrandDetailScreen: React.FC = () => {
                                 lineHeight="$sm"
                                 mb="$2"
                             >
-                                Discover all experiences related to {brandCatalog.name}.
+                                {t('brandDetail.discoverExperiences', { brandName: brandCatalog.name })}
                             </Text>
                         </VStack>
                     </Box>
@@ -759,7 +761,7 @@ const BrandDetailScreen: React.FC = () => {
                                     fontSize="$xs"
                                     fontWeight="$medium"
                                 >
-                                    {brandCatalog.followers} Followers
+                                    {t('brandDetail.followers', { count: brandCatalog.followers })}
                                 </Text>
                             </HStack>
                         </VStack>
@@ -781,7 +783,7 @@ const BrandDetailScreen: React.FC = () => {
                                     fontWeight="$bold"
                                     textAlign="center"
                                 >
-                                    {brandCatalog.isJoined ? 'Leave' : 'Join'}
+                                    {brandCatalog.isJoined ? t('brandDetail.leave') : t('brandDetail.join')}
                                 </ButtonText>
                             )}
                         </Button>
@@ -805,7 +807,7 @@ const BrandDetailScreen: React.FC = () => {
                                 fontSize="$sm"
                                 fontWeight="$bold"
                             >
-                                Browse
+                                {t('brandDetail.browse')}
                             </Text>
                         </HStack>
 
@@ -836,7 +838,7 @@ const BrandDetailScreen: React.FC = () => {
                                         fontWeight="$bold"
                                         textAlign="left"
                                     >
-                                        Surveys & Gamification
+                                        {t('brandDetail.surveysAndGamification')}
                                     </Text>
 
                                     {/* Description */}
@@ -846,7 +848,7 @@ const BrandDetailScreen: React.FC = () => {
                                         lineHeight="$xs"
                                         textAlign="left"
                                     >
-                                        A brief description about Surveys and Gamification
+                                        {t('brandDetail.surveysDescription')}
                                     </Text>
 
                                     {/* Button */}
@@ -870,7 +872,7 @@ const BrandDetailScreen: React.FC = () => {
                                                 fontSize="$2xs"
                                                 fontWeight="$bold"
                                             >
-                                                Explore
+                                                {t('brandDetail.explore')}
                                             </ButtonText>
                                             <ChevronRightIcon width={12} height={12} color="#000000" />
                                         </HStack>
@@ -903,7 +905,7 @@ const BrandDetailScreen: React.FC = () => {
                                         fontWeight="$bold"
                                         textAlign="left"
                                     >
-                                        Brand Products Book
+                                        {t('brandDetail.brandProductsBook')}
                                     </Text>
 
                                     {/* Description */}
@@ -913,7 +915,7 @@ const BrandDetailScreen: React.FC = () => {
                                         lineHeight="$xs"
                                         textAlign="left"
                                     >
-                                        A brief description about Brand Products Book
+                                        {t('brandDetail.brandProductsBookDescription')}
                                     </Text>
 
                                     {/* Button */}
@@ -937,7 +939,7 @@ const BrandDetailScreen: React.FC = () => {
                                                 fontSize="$2xs"
                                                 fontWeight="$bold"
                                             >
-                                                View
+                                                {t('brandDetail.view')}
                                             </ButtonText>
                                             <ChevronRightIcon width={12} height={12} color="#000000" />
                                         </HStack>
@@ -955,7 +957,7 @@ const BrandDetailScreen: React.FC = () => {
                                 fontSize="$sm"
                                 fontWeight="$bold"
                             >
-                                All Posts
+                                {t('brandDetail.allPosts')}
                             </Text>
                         </HStack>
 
@@ -964,19 +966,19 @@ const BrandDetailScreen: React.FC = () => {
                             <Box py="$4" alignItems="center">
                                 <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                                 <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$2" fontSize="$sm">
-                                    Loading...
+                                    {t('brandDetail.loading')}
                                 </Text>
                             </Box>
                         ) : brandFeedError ? (
                             <Box py="$4" alignItems="center">
                                 <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                                    Error: {brandFeedError.message}
+                                    {t('brandDetail.error')}: {brandFeedError.message}
                                 </Text>
                             </Box>
                         ) : allPosts.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm">
-                                    No posts yet
+                                    {t('brandDetail.noPosts')}
                                 </Text>
                             </Box>
                         ) : (

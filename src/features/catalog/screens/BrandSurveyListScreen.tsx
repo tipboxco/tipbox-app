@@ -12,6 +12,7 @@ import SurveyCard from '../components/SurveyCard';
 import { useSafeAreaValues } from '@/src/utils';
 import { useBrandSurveys } from '../api/hooks';
 import type { Survey } from '../types';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type BrandSurveyListScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandSurveyListScreen'>;
 type BrandSurveyListScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandSurveyListScreen'>;
@@ -22,7 +23,8 @@ const BrandSurveyListScreen: React.FC = () => {
   const navigation = useNavigation<BrandSurveyListScreenNavigationProp>();
   const route = useRoute<BrandSurveyListScreenRouteProp>();
   const bottomInset = useSafeAreaValues('bottom');
-  
+  const { t } = useTranslation('catalog');
+
   const { brandId } = route.params;
 
   // API hook
@@ -47,7 +49,7 @@ const BrandSurveyListScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Surveys"
+          title={t('catalog.brandSurveyList.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -69,13 +71,13 @@ const BrandSurveyListScreen: React.FC = () => {
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  Loading surveys...
+                  {t('catalog.brandSurveyList.loading')}
                 </Text>
               </VStack>
             ) : surveys.length === 0 ? (
               <VStack alignItems="center" py="$8">
                 <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  No surveys found
+                  {t('catalog.brandSurveyList.noSurveys')}
                 </Text>
               </VStack>
             ) : (

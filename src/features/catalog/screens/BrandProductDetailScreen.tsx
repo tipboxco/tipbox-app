@@ -16,13 +16,13 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useSafeAreaValues, toImageSource, useBottomOffset, formatRelativeTime, isSameImageSource } from '@/src/utils';
 import { navigationService } from '@/src/services/NavigationService';
-import { 
-  useBrandProductDetail, 
-  useBrandProductFeed, 
-  useBrandProductReviews, 
-  useBrandProductBenchmarks, 
-  useBrandProductTips, 
-  useBrandProductQuestions, 
+import {
+  useBrandProductDetail,
+  useBrandProductFeed,
+  useBrandProductReviews,
+  useBrandProductBenchmarks,
+  useBrandProductTips,
+  useBrandProductQuestions,
   useBrandProductNews
 } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
@@ -45,8 +45,19 @@ import Animated, {
   withTiming,
   useAnimatedScrollHandler,
 } from 'react-native-reanimated';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
+
+// Define TABS dynamically using t() - we'll use a function to get translated tabs
+const getTabsWithTranslation = (t: any) => [
+  { key: 'feed', title: t('brandProductDetail.tabs.feed') },
+  { key: 'reviews', title: t('brandProductDetail.tabs.reviews') },
+  { key: 'benchmarks', title: t('brandProductDetail.tabs.benchmarks') },
+  { key: 'tips', title: t('brandProductDetail.tabs.tips') },
+  { key: 'questions', title: t('brandProductDetail.tabs.questions') },
+  { key: 'news', title: t('brandProductDetail.tabs.news') },
+] as const;
 
 const TABS = [
   { key: 'feed', title: 'Feed' },
@@ -369,6 +380,8 @@ interface TabsBarProps {
 }
 
 const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout }) => {
+  const { t } = useTranslation('catalog');
+  const translatedTabs = getTabsWithTranslation(t);
   const activeColor = isDark ? '#FFFFFF' : '#000000';
   const inactiveColor = '#A3A3A3';
   const scrollViewRef = useRef<Animated.ScrollView>(null);
@@ -390,10 +403,10 @@ const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, is
     return 80;
   }, [tabWidths]);
   
-  const activeTabIndex = TABS.findIndex(tab => tab.key === activeTab);
+  const activeTabIndex = translatedTabs.findIndex(tab => tab.key === activeTab);
   const activeTabWidth = activeTabIndex >= 0 ? getTabWidth(activeTabIndex) : 80;
-  
-  const tabStyles = TABS.map((_, index) => {
+
+  const tabStyles = translatedTabs.map((_, index) => {
     return useAnimatedStyle(() => {
       const color = interpolateColor(
         progress.value,
@@ -431,11 +444,11 @@ const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, is
     
     const widths = tabWidthsShared.value;
     const positions = tabPositionsShared.value;
-    
+
     if (widths.length === 0 || positions.length === 0) {
       return { transform: [{ translateX: 0 }], width: 0 };
     }
-    
+
     const currentWidth = widths[currentIndex] || 80;
     const nextWidth = widths[nextIndex] || currentWidth;
     const currentPosition = positions[currentIndex] || 0;
@@ -486,7 +499,7 @@ const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, is
             onTabContainerLayout(width);
           }}
         >
-          {TABS.map((tab, index) => {
+          {translatedTabs.map((tab, index) => {
             const tabStyle = getTabStyle(index);
             return (
               <Pressable
@@ -533,7 +546,7 @@ const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, is
             );
           })}
 
-          {activeTabWidth > 0 && tabPositions.length === TABS.length && (
+          {activeTabWidth > 0 && tabPositions.length === translatedTabs.length && (
             <Animated.View
               style={[
                 {
@@ -559,6 +572,7 @@ const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, is
 const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId, isDark, bottomPadding }) => {
   const flatListRef = useRef<FlatList>(null);
   const navigation = useNavigation();
+  const { t } = useTranslation('catalog');
 
   // API hooks for each tab - Lazy loading: Sadece aktif tab'ın query'si enabled
   // İlk açılışta sadece Feed yüklenecek, diğer tab'lara geçildiğinde o tab'ın verisi çekilecek
@@ -726,11 +740,11 @@ const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId
     return (
       <Box py={20} alignItems="center">
         <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-          {tabKey === 'news' ? 'No news found yet.' : 'No content found yet.'}
+          {tabKey === 'news' ? t('brandProductDetail.noNews') : t('brandProductDetail.noContent')}
         </Text>
       </Box>
     );
-  }, [activeTabQuery.isLoading, activeTabQuery.data, tabKey, isDark]);
+  }, [activeTabQuery.isLoading, activeTabQuery.data, tabKey, isDark, t]);
   
   const renderPostCard = useCallback((postData: MappedPost | { type: 'news'; id: string; data: any }) => {
     if (postData.type === 'news') {
@@ -856,6 +870,7 @@ const BrandProductDetailScreen: React.FC = () => {
     const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
     const route = useRoute<BrandProductDetailScreenRouteProp>();
     const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
+    const { t } = useTranslation('catalog');
 
   const { brandId, productId, productName: initialProductName, productImage: initialProductImage } = route.params;
 
@@ -916,7 +931,7 @@ const BrandProductDetailScreen: React.FC = () => {
             <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 {/* Header */}
                 <Header
-                    title="Product Details"
+                    title={t('brandProductDetail.title')}
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />

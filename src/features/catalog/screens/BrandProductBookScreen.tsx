@@ -12,6 +12,7 @@ import {
     InputField,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -41,6 +42,7 @@ type BrandProductBookScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandPr
 const BrandProductBookScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('catalog');
     const navigation = useNavigation<BrandProductBookScreenNavigationProp>();
     const route = useRoute<BrandProductBookScreenRouteProp>();
     const bottomInset = useSafeAreaValues('bottom');
@@ -248,14 +250,14 @@ const BrandProductBookScreen: React.FC = () => {
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
-                        title="Brand Products Book"
+                        title={t('catalog.brandProductBook.title')}
                         showBackButton={true}
                         onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center">
                         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                         <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4" fontSize="$sm">
-                            Loading...
+                            {t('catalog.brandProductBook.loading')}
                         </Text>
                     </Box>
                 </Box>
@@ -269,13 +271,13 @@ const BrandProductBookScreen: React.FC = () => {
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
-                        title="Brand Products Book"
+                        title={t('catalog.brandProductBook.title')}
                         showBackButton={true}
                         onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                         <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                            {productBookError ? `Error: ${productBookError.message}` : 'Product list not found'}
+                            {productBookError ? `${t('catalog.brandProductBook.error')}: ${productBookError.message}` : t('catalog.brandProductBook.productListNotFound')}
                         </Text>
                     </Box>
                 </Box>
@@ -287,7 +289,7 @@ const BrandProductBookScreen: React.FC = () => {
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 <Header
-                    title="Brand Products Book"
+                    title={t('catalog.brandProductBook.title')}
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />
@@ -305,7 +307,7 @@ const BrandProductBookScreen: React.FC = () => {
                             <MagnifyingGlassIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
                             <Input flex={1} borderWidth={0} bg="transparent">
                                 <InputField
-                                    placeholder="Select product group or search product name"
+                                    placeholder={t('catalog.brandProductBook.searchPlaceholder')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize="$2xs"
@@ -333,7 +335,7 @@ const BrandProductBookScreen: React.FC = () => {
                         {allCategories.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm">
-                                    No products yet
+                                    {t('catalog.brandProductBook.noProducts')}
                                 </Text>
                             </Box>
                         ) : (

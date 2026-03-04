@@ -22,6 +22,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { useBottomOffset } from '@/src/utils';
 import { useShallow } from 'zustand/react/shallow';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
@@ -47,11 +48,11 @@ interface ProductCatalogScreenProps {
   initialBreadcrumbItems?: BreadcrumbItem[];
 }
 
-export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ 
-  onCreatePost, 
-  onStateChange, 
-  scrollViewPaddingBottom = 52, 
-  selectMode, 
+export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
+  onCreatePost,
+  onStateChange,
+  scrollViewPaddingBottom = 52,
+  selectMode,
   returnScreen,
   initialView,
   initialSelectedCategoryId,
@@ -65,6 +66,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>(initialBreadcrumbItems || []);
   const toast = useToast();
+  const { t } = useTranslation('catalog');
 
   // Helper function to show error toast
   const showErrorToast = useCallback((title: string, message: string) => {
@@ -1239,7 +1241,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           selectedProductGroupId,
           currentView,
         });
-        showErrorToast('Error', 'Please select a product, product group or subcategory.');
+        showErrorToast(t('catalogScreen.error'), t('catalogScreen.pleaseSelectSubcategory'));
         return;
       }
       
@@ -1332,7 +1334,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       // Store'da ID yoksa hata göster
       if (!determinedContextType || !determinedContextId) {
         console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
-        showErrorToast('Error', 'Please select a product, product group or subcategory.');
+        showErrorToast(t('catalogScreen.error'), t('catalogScreen.pleaseSelectSubcategory'));
         return;
       }
       
@@ -1514,7 +1516,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
           <Input flex={1} borderWidth={0} bg="transparent">
             <InputField
-              placeholder="Select product group or search product name"
+              placeholder={t('productCatalog.searchPlaceholder')}
               placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
               color={isDark ? '#000' : '#000'}
               fontSize="$xs"
@@ -1529,7 +1531,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       <Breadcrumb
         items={breadcrumbItems}
         onItemPress={handleBreadcrumbPress}
-        rootLabel="Categories"
+        rootLabel={t('productCatalog.categories')}
       />
 
       {/* Action Buttons - Show for productgroups and products (after subcategory is selected) */}
@@ -1806,7 +1808,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
               ) : currentData && currentData.length === 0 && searchQuery.trim().length > 0 ? (
                 <Box py="$8" alignItems="center" px="$4">
                   <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
-                    No results for "{searchQuery.trim()}"
+                    {t('productCatalog.noSearchResults', { query: searchQuery.trim() })}
                   </Text>
                 </Box>
               ) : null}

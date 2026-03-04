@@ -16,6 +16,7 @@ import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { toImageSource } from '@/src/utils';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type BrandScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'CatalogScreen'>;
 
@@ -53,6 +54,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandScreenNavigationProp>();
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  const { t } = useTranslation('catalog');
   // Use external search query if provided, otherwise use internal state
   const searchQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
   const [currentStep, setCurrentStep] = useState<'categories' | 'brands'>(initialStep || 'categories');
@@ -387,7 +389,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       {/* Optional Header (for standalone BrandScreen usage) */}
       {showHeader && (
         <Header
-          title={currentStep === 'categories' ? 'Select Category' : 'Select Brand'}
+          title={currentStep === 'categories' ? t('brandScreen.selectCategory') : t('brandScreen.selectBrand')}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />
@@ -413,7 +415,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
             <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
             <Input flex={1} borderWidth={0} bg="transparent">
               <InputField
-                placeholder="Search brand or category"
+                placeholder={t('brandScreen.searchPlaceholder')}
                 placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                 color={isDark ? '#000' : '#000'}
                 fontSize="$xs"
@@ -429,13 +431,13 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       <Breadcrumb
         items={breadcrumbItems}
         onItemPress={handleBreadcrumbPress}
-        rootLabel="Brand Category"
+        rootLabel={t('brandScreen.brandCategory')}
       />
 
       {/* Loading State */}
       {currentStep === 'brands' && isBrandsLoading && (
         <Box flex={1} justifyContent="center" alignItems="center" py="$8">
-          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm">Loading...</Text>
+          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm">{t('brandScreen.loadingBrands')}</Text>
         </Box>
       )}
 
@@ -452,12 +454,12 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       {hasGlobalSearch ? (
         isLoadingGlobalBrandSearch ? (
           <Box flex={1} justifyContent="center" alignItems="center" py="$8">
-            <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm">Loading...</Text>
+            <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm">{t('brandScreen.loadingBrands')}</Text>
           </Box>
         ) : globalBrandSearchResults.length === 0 ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
             <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
-              No search results
+              {t('brandScreen.noSearchResults')}
             </Text>
           </Box>
         ) : (
@@ -548,7 +550,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
               {/* Load More Indicator */}
               {isFetchingNextGlobalBrandSearchPage && (
                 <Box py="$4" alignItems="center">
-                  <Text color={isDark ? '#999' : '#666'} fontSize="$sm">Loading more...</Text>
+                  <Text color={isDark ? '#999' : '#666'} fontSize="$sm">{t('brandScreen.loadingMore')}</Text>
                 </Box>
               )}
             </VStack>
@@ -560,7 +562,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
           {currentStep === 'brands' && !isBrandsLoading && !brandsError && currentData && currentData.length === 0 && (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
               <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm" textAlign="center">
-                No brands found in this category yet
+                {t('brandScreen.noBrands')}
               </Text>
             </Box>
           )}
@@ -618,7 +620,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
                 {/* Load more brands (paginated) */}
                 {currentStep === 'brands' && isFetchingNextBrandsPage && (
                   <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '#999' : '#666'} fontSize="$sm">Loading more...</Text>
+                    <Text color={isDark ? '#999' : '#666'} fontSize="$sm">{t('brandScreen.loadingMore')}</Text>
                   </Box>
                 )}
               </VStack>

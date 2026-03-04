@@ -17,6 +17,7 @@ import {
 import { CheckIcon as CheckIconSolid } from 'react-native-heroicons/solid';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useEventDetail, useJoinEvent, useEventRequirements } from '@/src/features/events/api/hooks';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type BrandEventsDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandEventsDetailScreen'>;
 type BrandEventsDetailScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandEventsDetailScreen'>;
@@ -27,6 +28,7 @@ const BrandEventsDetailScreen: React.FC = () => {
   const navigation = useNavigation<BrandEventsDetailScreenNavigationProp>();
   const route = useRoute<BrandEventsDetailScreenRouteProp>();
   const bottomInset = useSafeAreaValues('bottom');
+  const { t } = useTranslation('catalog');
 
   const eventId = route.params?.eventId;
 
@@ -56,7 +58,7 @@ const BrandEventsDetailScreen: React.FC = () => {
         bg: 'rgba(215, 215, 215, 0.8)',
         borderColor: '#ADADAD',
         textColor: '#000000',
-        text: 'Joined',
+        text: t('catalog.brandEventDetail.joined'),
                     icon: 'check' as const, // CheckIcon kullanılacak
       };
     }
@@ -64,7 +66,7 @@ const BrandEventsDetailScreen: React.FC = () => {
       bg: '#E8FF6B',
       borderColor: '#D8FF08',
       textColor: '#000000',
-      text: 'Join',
+      text: t('catalog.brandEventDetail.join'),
       icon: null,
     };
   };
@@ -147,7 +149,7 @@ const BrandEventsDetailScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Surveys & Gamification"
+          title={t('catalog.brandEventDetail.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -160,13 +162,13 @@ const BrandEventsDetailScreen: React.FC = () => {
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                Loading event...
+                {t('catalog.brandEventDetail.loading')}
               </Text>
             </VStack>
           ) : !eventDetail ? (
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                Event not found
+                {t('catalog.brandEventDetail.eventNotFound')}
               </Text>
             </VStack>
           ) : (
@@ -261,7 +263,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                     fontWeight="$bold"
                     mb="$1"
                   >
-                    Description
+                    {t('catalog.brandEventDetail.description')}
                   </Text>
                   <Text
                     color={isDark ? '#FFFFFF' : '#000000'}
@@ -303,7 +305,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                   fontSize={11}
                   fontWeight="$bold"
                 >
-                  Statistics
+                  {t('catalog.brandEventDetail.statistics')}
                 </Text>
               </HStack>
 
@@ -332,7 +334,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                     fontSize={10}
                     fontWeight="$medium"
                   >
-                    Participants
+                    {t('catalog.brandEventDetail.participants')}
                   </Text>
                 </HStack>
               </VStack>
@@ -366,7 +368,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                     fontSize={11}
                     fontWeight="$bold"
                   >
-                    Rewards
+                    {t('catalog.brandEventDetail.rewards')}
                   </Text>
                 </HStack>
 
@@ -403,7 +405,7 @@ const BrandEventsDetailScreen: React.FC = () => {
               <VStack alignItems="center" py="$4">
                 <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$2" fontSize={12} color="$textLight500" $dark-color="$textDark400">
-                  Loading requirements...
+                  {t('catalog.brandEventDetail.loadingRequirements')}
                 </Text>
               </VStack>
             ) : requirements && requirements.requirements && requirements.requirements.length > 0 ? (
@@ -423,7 +425,7 @@ const BrandEventsDetailScreen: React.FC = () => {
             ) : (
               <VStack alignItems="center" py="$4">
                 <Text fontSize={12} color="$textLight500" $dark-color="$textDark400">
-                  No requirements found
+                  {t('catalog.brandEventDetail.noRequirements')}
                 </Text>
               </VStack>
             )}

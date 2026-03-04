@@ -12,8 +12,8 @@ import { BookOpenIcon, HeartIcon, ShareIcon, ChevronLeftIcon, ChatBubbleLeftRigh
 import { HeartIcon as HeartSolidIcon, BookmarkIcon, BookmarkIcon as BookmarkSolidIcon } from 'react-native-heroicons/solid';
 import { toImageSource, formatRelativeTime } from '@/src/utils';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { 
-  useNewsDetail, 
+import {
+  useNewsDetail,
   useBrandProductNewsDetail,
   useLikeNews,
   useUnlikeNews,
@@ -30,6 +30,7 @@ import { TrashIcon } from 'react-native-heroicons/outline';
 import { useQueryClient } from '@tanstack/react-query';
 import { catalogKeys } from '../api/hooks';
 import CommentsCard from '@/src/components/CommentsCard';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type NewsDetailScreenNavigationProp = NativeStackNavigationProp<NewsStackParamList, 'NewsDetailScreen'>;
 type NewsDetailScreenRouteProp = RouteProp<NewsStackParamList, 'NewsDetailScreen'>;
@@ -40,6 +41,7 @@ const NewsDetailScreenComponent: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NewsDetailScreenNavigationProp>();
   const route = useRoute<NewsDetailScreenRouteProp>();
+  const { t } = useTranslation('catalog');
 
   const { newsId, brandId, productId } = route.params;
   
@@ -193,7 +195,7 @@ const NewsDetailScreenComponent: React.FC = () => {
         bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       >
         <Header
-          title="Brand History Book"
+          title={t('catalog.newsDetail.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -258,13 +260,13 @@ const NewsDetailScreenComponent: React.FC = () => {
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                Loading news...
+                {t('catalog.newsDetail.loading')}
               </Text>
             </VStack>
           ) : error ? (
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                Error loading news
+                {t('catalog.newsDetail.error')}
               </Text>
             </VStack>
           ) : newsDetail ? (
@@ -392,6 +394,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   const updateCommentMutation = useUpdateComment();
   const currentUserId = useAppStore((state) => state.user?.id);
   const queryClient = useQueryClient();
+  const { t } = useTranslation('catalog');
   
   // Auto focus input when bottom sheet opens
   useEffect(() => {
@@ -536,7 +539,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
       <Box
         px="$4"
         py="$3"
-        
+
         borderBottomWidth={1}
         borderBottomColor={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
       >
@@ -545,7 +548,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
           fontSize={18}
           fontWeight="$bold"
         >
-          Comments
+          {t('catalog.newsDetail.comments')}
         </Text>
       </Box>
       
@@ -567,7 +570,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
           ) : (
             <Box py="$8" alignItems="center">
               <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-                No comments yet. Be the first to comment!
+                {t('catalog.newsDetail.noCommentsYet')}
               </Text>
             </Box>
           )
@@ -602,7 +605,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
           >
             <InputField
               ref={inputRef}
-              placeholder="Write a comment..."
+              placeholder={t('catalog.newsDetail.writeComment')}
               placeholderTextColor={isDark ? '#666666' : '#999999'}
               value={commentText}
               onChangeText={setCommentText}
