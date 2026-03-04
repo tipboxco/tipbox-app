@@ -13,6 +13,7 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
 import { usePaymentDashboard } from '@/src/features/settings/api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
@@ -67,17 +68,18 @@ import type { Badge } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TABS = [
-  { key: 'feed',        title: 'Feed' },
-  { key: 'reviews',     title: 'Experience' },
-  { key: 'benchmarks',  title: 'Benchmarks' },
-  { key: 'tips',        title: 'Tips & Tricks' },
-  { key: 'replies',     title: 'Questions' },
-  { key: 'badge',       title: 'Badges' },
-  { key: 'collections', title: 'Collections' },
+// TABS will be defined inside the component to use t() function
+const TAB_KEYS = [
+  'feed',
+  'reviews',
+  'benchmarks',
+  'tips',
+  'replies',
+  'badge',
+  'collections',
 ] as const;
 
-type TabKey = typeof TABS[number]['key'];
+type TabKey = typeof TAB_KEYS[number];
 
 type ProfileScreenProps = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
 
@@ -427,17 +429,18 @@ const NFTBadgeRibbon: React.FC = () => (
 
 
 // Badges tab filtreleri - Figma: All Badges, Event Badges, Collections
-const BADGE_FILTERS = ['All Badges', 'Event Badges', 'Collections'] as const;
-type BadgeFilterKey = (typeof BADGE_FILTERS)[number];
+const BADGE_FILTER_KEYS = ['allBadges', 'eventBadges', 'collections'] as const;
+type BadgeFilterKey = (typeof BADGE_FILTER_KEYS)[number];
 
 // Tab Content Component - Sadece içeriği render eder (FlatList yok)
 const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef, profileBadges = [], onBadgePress, hasPrimePass = false }) => {
-  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
+  const { t } = useTranslation('profile');
+  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('allBadges');
   const filteredBadges = useMemo(() => {
     if (tabKey !== 'badge') return [];
-    if (badgeFilter === 'All Badges') return profileBadges;
-    if (badgeFilter === 'Event Badges') return profileBadges.filter((b) => b.type === 'event');
-    if (badgeFilter === 'Collections') return profileBadges.filter((b) => b.type === 'collection');
+    if (badgeFilter === 'allBadges') return profileBadges;
+    if (badgeFilter === 'eventBadges') return profileBadges.filter((b) => b.type === 'event');
+    if (badgeFilter === 'collections') return profileBadges.filter((b) => b.type === 'collection');
     return profileBadges;
   }, [tabKey, profileBadges, badgeFilter]);
 
@@ -562,7 +565,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
       <Box flex={1} px={16} pt={8}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
           <HStack space="sm" alignItems="center">
-            {BADGE_FILTERS.map((filter) => {
+            {BADGE_FILTER_KEYS.map((filter) => {
               const isActive = badgeFilter === filter;
               return (
                 <Pressable
@@ -580,7 +583,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
                     fontWeight="$semibold"
                     color={isActive ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666')}
                   >
-                    {filter}
+                    {t(`badges.${filter}`)}
                   </Text>
                 </Pressable>
               );
@@ -590,7 +593,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
         {filteredBadges.length === 0 ? (
           <Box py={32} alignItems="center">
             <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-              {badgeFilter === 'All Badges' ? 'No badges yet' : `No ${badgeFilter.toLowerCase()} yet`}
+              {badgeFilter === 'allBadges' ? t('emptyStates.noBadges') : t('emptyStates.noEventBadges', { type: t(`badges.${badgeFilter}`).toLowerCase() })}
             </Text>
           </Box>
         ) : (
@@ -653,7 +656,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
     return (
       <Box py={20} alignItems="center">
         <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-          Collections content coming soon.
+          {t('emptyStates.collectionsComingSoon')}
         </Text>
       </Box>
     );
@@ -673,7 +676,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
     return (
       <Box py={20} alignItems="center">
         <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-          No content found yet.
+          {t('emptyStates.noContent')}
         </Text>
       </Box>
     );
@@ -697,6 +700,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
 };
 
 const ProfileScreen = ({ route }: ProfileScreenProps) => {
+  const { t } = useTranslation('profile');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   // PERFORMANCE FIX: Sadece user.id'yi select et - tüm user objesi yerine
@@ -706,6 +710,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const rootNavigation = useNavigation<any>();
   const safeAreaTop = useSafeAreaValues('top');
   const safeAreaBottom = useSafeAreaValues('bottom');
+
+  // Define tabs with translations
+  const TABS = useMemo(() => [
+    { key: 'feed' as const,        title: t('tabs.feed') },
+    { key: 'reviews' as const,     title: t('tabs.reviews') },
+    { key: 'benchmarks' as const,  title: t('tabs.benchmarks') },
+    { key: 'tips' as const,        title: t('tabs.tipsAndTricks') },
+    { key: 'replies' as const,     title: t('tabs.replies') },
+    { key: 'badge' as const,       title: t('tabs.badge') },
+    { key: 'collections' as const, title: t('tabs.collections') },
+  ], [t]);
   
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
@@ -863,31 +878,31 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     if (validTabKeys.includes(tabKey as TabKey)) {
       const typedTabKey = tabKey as TabKey;
       setActiveTab(typedTabKey);
-      
+
       // Tab değiştiğinde scroll pozisyonunu en üste al
       if (scrollViewRef.current) {
         scrollViewRef.current.scrollTo({ y: 0, animated: false });
       }
     }
-  }, []);
+  }, [TABS]);
   
   // Handle Send TIPS - Bottom sheet aç
   const handleSendTips = useCallback((amount: number, message?: string) => {
     if (!user?.id || !targetUserId) {
-      Alert.alert('Error', 'User information not found');
+      Alert.alert(t('alerts.errorTitle'), t('alerts.errorUserInfo'));
       return;
     }
 
     // Amount validation (minimum 0.01)
     if (amount <= 0 || amount < 0.01) {
-      Alert.alert('Error', 'TIPS amount must be at least 0.01');
+      Alert.alert(t('alerts.errorTitle'), t('alerts.errorTipsMinimum'));
       return;
     }
 
     // Message validation (boş string olamaz)
     const finalMessage = message?.trim() || '';
     if (finalMessage.length === 0) {
-      Alert.alert('Error', 'Message cannot be empty');
+      Alert.alert(t('alerts.errorTitle'), t('alerts.errorMessageEmpty'));
       return;
     }
 
@@ -919,15 +934,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         onSuccess: (response) => {
           console.log('[ProfileScreen] ✅ TIPS sent successfully:', response);
           showCustomToast(toast, {
-            title: 'TIPS Sent',
-            description: `${amount} TIPS has been sent successfully`,
+            title: t('toast.tipsSent'),
+            description: t('toast.tipsSentDescription', { amount }),
             action: 'success',
           });
         },
         onError: (error: any) => {
           console.error('[ProfileScreen] ❌ TIPS send failed:', error);
           const errorMessage = error.response?.data?.message || error.message || 'An error occurred while sending TIPS';
-          Alert.alert('Error', errorMessage);
+          Alert.alert(t('alerts.errorTitle'), errorMessage);
         },
       }
     );
@@ -1004,17 +1019,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
   const handleReport = useCallback(() => {
     if (!user?.id || !targetUserId) return;
-    
+
     Alert.alert(
-      'Report User',
-      'Are you sure you want to report this user?',
+      t('menu.reportTitle'),
+      t('menu.reportMessage'),
       [
         {
-          text: 'Cancel',
+          text: t('actions.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Report',
+          text: t('actions.report'),
           style: 'destructive',
           onPress: () => {
             reportUser({
@@ -1029,19 +1044,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         },
       ]
     );
-  }, [user?.id, targetUserId, reportUser]);
+  }, [user?.id, targetUserId, reportUser, t]);
 
   const handleBlock = useCallback(() => {
     Alert.alert(
-      'Block User',
-      'Are you sure you want to block this user? Blocked users cannot interact with you.',
+      t('menu.blockTitle'),
+      t('menu.blockMessage'),
       [
         {
-          text: 'Cancel',
+          text: t('actions.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Block',
+          text: t('actions.block'),
           style: 'destructive',
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
@@ -1053,7 +1068,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         },
       ]
     );
-  }, [targetUserId, navigation]);
+  }, [targetUserId, navigation, t]);
 
   // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
   // FlatList scroll edildiğinde pozisyon değişir, onLayout her değişiklikte çağrılır
@@ -1239,8 +1254,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.log('[ProfileScreen] ✅ User unmuted successfully');
             }
             showCustomToast(toast, {
-              title: 'Unmuted',
-              description: `${currentProfile.name} can now send notifications`,
+              title: t('toast.unmuted'),
+              description: t('toast.unmutedDescription', { name: currentProfile.name }),
               action: 'success',
             });
           },
@@ -1249,8 +1264,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.error('[ProfileScreen] ❌ Unmute error:', error);
             }
             showCustomToast(toast, {
-              title: 'Error',
-              description: 'An error occurred while unmuting',
+              title: t('toast.error'),
+              description: t('toast.errorUnmuting'),
               action: 'error',
             });
           },
@@ -1268,8 +1283,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.log('[ProfileScreen] ✅ User muted successfully');
             }
             showCustomToast(toast, {
-              title: 'User Muted',
-              description: `${currentProfile.name} will no longer send notifications`,
+              title: t('toast.muted'),
+              description: t('toast.mutedDescription', { name: currentProfile.name }),
               action: 'info',
             });
           },
@@ -1278,8 +1293,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.error('[ProfileScreen] ❌ Mute error:', error);
             }
             showCustomToast(toast, {
-              title: 'Error',
-              description: 'An error occurred while muting user',
+              title: t('toast.error'),
+              description: t('toast.errorMuting'),
               action: 'error',
             });
           },
@@ -1492,7 +1507,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     fontSize={10}
                     fontWeight="$semibold"
                   >
-                    Edit Profile
+                    {t('actions.edit')}
                   </Text>
                 </Pressable>
               ) : (
@@ -1615,7 +1630,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       fontSize={10}
                       fontWeight="$semibold"
                     >
-                      {isTrusting ? "Adding..." : isUntrusting ? "Removing..." : (profile.isTrusted ? "Un Trust" : "Trust")}
+                      {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : (profile.isTrusted ? t('actions.unTrust') : t('actions.trust'))}
                     </Text>
                   </Pressable>
                 </>
@@ -1658,7 +1673,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               color={isDark ? '$textDark400' : '$textLight600'}
               fontSize="$xs"
             >
-              Posts
+              {t('stats.posts')}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
@@ -1688,7 +1703,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   color={isDark ? '$textDark400' : '$textLight600'}
                   fontSize="$xs"
                 >
-                  Trust
+                  {t('stats.trust')}
                 </Text>
               </HStack>
             </Pressable>
@@ -1720,7 +1735,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   color={isDark ? '$textDark400' : '$textLight600'}
                   fontSize="$xs"
                 >
-                  Truster
+                  {t('stats.truster')}
                 </Text>
               </HStack>
             </Pressable>
@@ -1763,7 +1778,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 fontWeight="$semibold"
                 textAlign="center"
               >
-                {profile.name}'s Inventory
+                {t('profileScreen.inventory', { name: profile.name })}
               </Text>
             </Pressable>
           </Box>
@@ -1888,7 +1903,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       fontWeight="$regular"
                       textAlign="center"
                     >
-                      Edit Highlight Badges
+                      {t('profileScreen.editHighlightBadges')}
                     </Text>
                   </Pressable>
                 </VStack>
@@ -1912,7 +1927,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     mt="$4"
                     fontWeight="$regular"
                   >
-                    {isOwnProfile ? 'Edit Highlight Badges' : 'Highlight Badges'}
+                    {isOwnProfile ? t('profileScreen.editHighlightBadges') : t('profileScreen.highlightBadges')}
                   </Text>
                 </Pressable>
               )}
@@ -1921,7 +1936,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, hasPrimePass, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus]);
+  }, [userProfile, isDark, isOwnProfile, hasPrimePass, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus, t]);
 
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
@@ -1958,7 +1973,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     return (
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>
         <Text color="#CE4A4A" fontSize="$sm">
-          {profileError?.message || 'Profil yüklenirken bir hata oluştu'}
+          {profileError?.message || t('errors.profileLoadError')}
         </Text>
       </Box>
     );
@@ -2071,12 +2086,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Share
+                        {t('menu.share')}
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Divider 
-                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                  <Divider
+                    bg={isDark ? '#333333' : '#E9E9E9'}
                     mx={0}
                   />
                   {/* Mute / Unmute */}
@@ -2113,14 +2128,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        {(isMuting || isUnmuting) 
-                          ? (userProfile?.isMuted ? 'Unmuting...' : 'Muting...')
-                          : (userProfile?.isMuted ? 'Unmute' : 'Mute')}
+                        {(isMuting || isUnmuting)
+                          ? (userProfile?.isMuted ? t('actions.unmuting') : t('actions.muting'))
+                          : (userProfile?.isMuted ? t('actions.unmute') : t('actions.mute'))}
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Divider 
-                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                  <Divider
+                    bg={isDark ? '#333333' : '#E9E9E9'}
                     mx={0}
                   />
                   {/* Report */}
@@ -2138,12 +2153,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Report
+                        {t('menu.report')}
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Divider 
-                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                  <Divider
+                    bg={isDark ? '#333333' : '#E9E9E9'}
                     mx={0}
                   />
                   {/* Block */}
@@ -2161,7 +2176,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Block
+                        {t('menu.block')}
                       </Text>
                     </HStack>
                   </Pressable>

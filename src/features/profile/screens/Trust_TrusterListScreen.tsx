@@ -33,6 +33,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useTrustList, useTrusterList, useUserProfile } from '../api/hooks';
 import { ProfileStackParamList } from '../navigation';
 import { useSafeAreaValues, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
@@ -48,6 +49,7 @@ type TrustListScreenRouteProp = {
 
 
 export const Trust_TrusterListScreen = () => {
+    const { t } = useTranslation('profile');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const route = useRoute<TrustListScreenRouteProp>();
@@ -262,7 +264,7 @@ export const Trust_TrusterListScreen = () => {
                         fontSize="$md"
                         fontWeight="$bold"
                     >
-                        Sort
+                        {t('profile.trustList.sort')}
                     </Text>
                 </HStack>
 
@@ -280,7 +282,7 @@ export const Trust_TrusterListScreen = () => {
                                 fontSize="$sm"
                                 fontWeight="$normal"
                             >
-                                Default
+                                {t('profile.trustList.sortDefault')}
                             </Text>
                             <Box
                                 width={20}
@@ -315,7 +317,7 @@ export const Trust_TrusterListScreen = () => {
                                 fontSize="$sm"
                                 fontWeight="$normal"
                             >
-                                Sort by: Newest
+                                {t('profile.trustList.sortNewest')}
                             </Text>
                             <Box
                                 width={20}
@@ -350,7 +352,7 @@ export const Trust_TrusterListScreen = () => {
                                 fontSize="$sm"
                                 fontWeight="$normal"
                             >
-                                Sort by: Oldest
+                                {t('profile.trustList.sortOldest')}
                             </Text>
                             <Box
                                 width={20}
@@ -403,7 +405,7 @@ export const Trust_TrusterListScreen = () => {
             <Box flex={1} bg={backgroundColor}>
                 {/* Header */}
                 <Header
-                    title={userProfile?.name || 'Loading...'}
+                    title={userProfile?.name || t('profile.trustList.loading')}
                     showBackButton
                     onBackPress={() => navigation.goBack()}
                 />
@@ -431,7 +433,7 @@ export const Trust_TrusterListScreen = () => {
                         />
                         <Input flex={1} borderWidth={0} bg="transparent">
                             <InputField
-                                placeholder={activeTab === 'trust' ? "Search for a user in the Trust List." : "Search for a user in the Truster List."}
+                                placeholder={activeTab === 'trust' ? t('profile.trustList.searchTrust') : t('profile.trustList.searchTruster')}
                                 placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                                 color={isDark ? '#000' : '#000'}
                                 fontSize="$xs"
@@ -486,7 +488,7 @@ export const Trust_TrusterListScreen = () => {
                                     numberOfLines={1}
                                     ellipsizeMode="tail"
                                 >
-                                    Trust
+                                    {t('profile.trustList.trust')}
                                 </Animated.Text>
                             </VStack>
                         </Pressable>
@@ -511,7 +513,7 @@ export const Trust_TrusterListScreen = () => {
                                     numberOfLines={1}
                                     ellipsizeMode="tail"
                                 >
-                                    Truster
+                                    {t('profile.trustList.truster')}
                                 </Animated.Text>
                             </VStack>
                         </Pressable>
@@ -560,8 +562,8 @@ export const Trust_TrusterListScreen = () => {
                         >
                             {/* Suggested Users Section */}
                             <SuggestionCard
-                                title="View Suggested Users"
-                                subtitle="Based on the categories you are interested in."
+                                title={t('profile.trustList.viewSuggested')}
+                                subtitle={t('profile.trustList.viewSuggestedSubtitle')}
                                 avatars={[
                                     {
                                         id: '1',
@@ -587,23 +589,23 @@ export const Trust_TrusterListScreen = () => {
                             {/* Trust Users List */}
                             {shouldShowTrustLoading ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#fff' : '#000'}>Loading...</Text>
+                                    <Text color={isDark ? '#fff' : '#000'}>{t('profile.trustList.loading')}</Text>
                                 </Box>
                             ) : !userId ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı ID bulunamadı</Text>
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('profile.trustList.noUserId')}</Text>
                                 </Box>
                             ) : trustListError ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color="#CE4A4A">Hata: {trustListError.message}</Text>
+                                    <Text color="#CE4A4A">{t('profile.trustList.error', { message: trustListError.message })}</Text>
                                 </Box>
                             ) : showTrustEmptyState ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı bulunamadı</Text>
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('profile.trustList.noUserFound')}</Text>
                                 </Box>
                             ) : filteredTrustUsers.length === 0 && !debouncedSearchQuery.trim() ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz trust listeniz boş</Text>
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('profile.trustList.trustListEmpty')}</Text>
                                 </Box>
                             ) : (
                                 filteredTrustUsers.map((user: TrustUserCardUser) => (
@@ -637,8 +639,8 @@ export const Trust_TrusterListScreen = () => {
                         >
                             {/* Suggested Users Section */}
                             <SuggestionCard
-                                title="View Suggested Users"
-                                subtitle="Based on the categories you are interested in."
+                                title={t('profile.trustList.viewSuggested')}
+                                subtitle={t('profile.trustList.viewSuggestedSubtitle')}
                                 avatars={[
                                     {
                                         id: '1',
@@ -664,23 +666,23 @@ export const Trust_TrusterListScreen = () => {
                             {/* Truster Users List */}
                             {shouldShowTrusterLoading ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#fff' : '#000'}>Loading...</Text>
+                                    <Text color={isDark ? '#fff' : '#000'}>{t('profile.trustList.loading')}</Text>
                                 </Box>
                             ) : !userId ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı ID bulunamadı</Text>
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('profile.trustList.noUserId')}</Text>
                                 </Box>
                             ) : trusterListError ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color="#CE4A4A">Hata: {trusterListError.message}</Text>
+                                    <Text color="#CE4A4A">{t('profile.trustList.error', { message: trusterListError.message })}</Text>
                                 </Box>
                             ) : showTrusterEmptyState ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı bulunamadı</Text>
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('profile.trustList.noUserFound')}</Text>
                                 </Box>
                             ) : filteredTrusterUsers.length === 0 && !searchQuery.trim() ? (
                                 <Box py={20} alignItems="center">
-                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz truster listeniz boş</Text>
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('profile.trustList.trusterListEmpty')}</Text>
                                 </Box>
                             ) : (
                                 filteredTrusterUsers.map((user: TrustUserCardUser) => (

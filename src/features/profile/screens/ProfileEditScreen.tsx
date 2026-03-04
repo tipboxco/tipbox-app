@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo, memo, useEffect, useReducer } from 'react';
 import { ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Modal as RNModal, StyleSheet, Pressable as RNPressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { 
-  Box, 
-  VStack, 
-  HStack, 
-  Text, 
-  Image, 
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Image,
   Pressable,
   Input,
   InputField,
@@ -32,25 +32,26 @@ import { useAppStore } from '@/src/store/appStore';
 import type { ProfileStackParamList } from '../navigation';
 import type { UserProfile } from '../types';
 import { showCustomToast } from '@/src/components/CustomToast';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
 // Badge listesi - API'den çekilebilir
 const AVAILABLE_BADGES = [
-  { id: 'everyday_consumer', label: 'Everyday Consumer' },
-  { id: 'home_appliance', label: 'Home Appliance Enthusiast' },
-  { id: 'product_reviewer', label: 'Product Reviewer' },
-  { id: 'tech_expert', label: 'Tech Expert' },
+  { id: 'everyday_consumer' },
+  { id: 'home_appliance' },
+  { id: 'product_reviewer' },
+  { id: 'tech_expert' },
 ] as const;
 
 // Avatar çerçevesi (kozmetik) listesi - API'den çekilebilir
 const AVAILABLE_COSMETICS = [
-  { id: 'frame_red', label: 'Red Frame', borderColor: '#E53935' },
-  { id: 'frame_gold', label: 'Gold Frame', borderColor: '#F9A825' },
-  { id: 'frame_blue', label: 'Blue Frame', borderColor: '#1E88E5' },
-  { id: 'frame_green', label: 'Green Frame', borderColor: '#43A047' },
-  { id: 'frame_purple', label: 'Purple Frame', borderColor: '#8E24AA' },
-  { id: 'frame_none', label: 'None', borderColor: 'transparent' },
+  { id: 'frame_red', borderColor: '#E53935' },
+  { id: 'frame_gold', borderColor: '#F9A825' },
+  { id: 'frame_blue', borderColor: '#1E88E5' },
+  { id: 'frame_green', borderColor: '#43A047' },
+  { id: 'frame_purple', borderColor: '#8E24AA' },
+  { id: 'frame_none', borderColor: 'transparent' },
 ] as const;
 
 // Badge item component - memoized for performance
@@ -62,20 +63,24 @@ interface BadgeItemProps {
   onSelect: (badgeId: string) => void;
 }
 
-const BadgeItem = memo<BadgeItemProps>(({ 
-  badge, 
-  isSelected, 
-  isUsedInOtherSlot, 
-  isDark, 
-  onSelect 
+const BadgeItem = memo<BadgeItemProps>(({
+  badge,
+  isSelected,
+  isUsedInOtherSlot,
+  isDark,
+  onSelect
 }) => {
+  const { t } = useTranslation('profile');
+
   const handlePress = useCallback(() => {
     if (isUsedInOtherSlot) {
-      Alert.alert('Warning', 'This badge is already used in another slot');
+      Alert.alert(t('profileEdit.warning'), t('profileEdit.warningBadgeUsed'));
       return;
     }
     onSelect(badge.id);
-  }, [badge.id, isUsedInOtherSlot, onSelect]);
+  }, [badge.id, isUsedInOtherSlot, onSelect, t]);
+
+  const badgeLabel = t(`profileEdit.badgeLabel.${badge.id}`);
 
   return (
     <Pressable
@@ -83,8 +88,8 @@ const BadgeItem = memo<BadgeItemProps>(({
       opacity={isUsedInOtherSlot ? 0.5 : 1}
       py="$1.5"
     >
-      <HStack 
-        justifyContent="space-between" 
+      <HStack
+        justifyContent="space-between"
         alignItems="center"
         space="md"
       >
@@ -121,13 +126,13 @@ const BadgeItem = memo<BadgeItemProps>(({
         <Text
           fontSize="$sm"
           fontWeight="$semibold"
-          color={isSelected 
-            ? (isDark ? '#FFFFFF' : '#000000') 
+          color={isSelected
+            ? (isDark ? '#FFFFFF' : '#000000')
             : (isDark ? '#999999' : '#666666')
           }
           flex={1}
         >
-          {badge.label}
+          {badgeLabel}
         </Text>
       </HStack>
     </Pressable>
@@ -137,6 +142,7 @@ const BadgeItem = memo<BadgeItemProps>(({
 BadgeItem.displayName = 'BadgeItem';
 
 const ProfileEditScreen: React.FC = () => {
+  const { t } = useTranslation('profile');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ProfileEditScreenNavigationProp>();
@@ -205,7 +211,7 @@ const ProfileEditScreen: React.FC = () => {
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              Select Badge {slot}
+              {t('profileEdit.selectBadge', { number: slot })}
             </Text>
           </HStack>
 
@@ -242,9 +248,8 @@ const ProfileEditScreen: React.FC = () => {
 
   // Badge label'ını al
   const getBadgeLabel = useCallback((badgeId: string) => {
-    const badge = AVAILABLE_BADGES.find((b) => b.id === badgeId);
-    return badge ? badge.label : 'Badge Seç';
-  }, []);
+    return t(`profileEdit.badgeLabel.${badgeId}`);
+  }, [t]);
 
   const openCosmeticModal = useCallback(() => {
     setCosmeticPreview(cosmetic);
@@ -263,10 +268,9 @@ const ProfileEditScreen: React.FC = () => {
   }, [cosmeticPreview]);
 
   const getCosmeticLabel = useCallback((cosmeticId: string | null) => {
-    if (!cosmeticId) return 'Avatar Frame Seç';
-    const c = AVAILABLE_COSMETICS.find((x) => x.id === cosmeticId);
-    return c ? c.label : 'Avatar Frame Seç';
-  }, []);
+    if (!cosmeticId) return t('profileEdit.avatarFrameSelect');
+    return t(`profileEdit.cosmeticLabel.${cosmeticId}`);
+  }, [t]);
 
   const getCosmeticBorderColor = useCallback((cosmeticId: string | null) => {
     if (!cosmeticId) return '#E53935';
@@ -296,8 +300,8 @@ const ProfileEditScreen: React.FC = () => {
     if (name.trim().length < 2) {
       console.log('[ProfileEditScreen] ❌ Validation hatası: Name çok kısa');
       showCustomToast(toast, {
-        title: 'Validation Error',
-        description: 'Name must be at least 2 characters',
+        title: t('profileEdit.validationError'),
+        description: t('profileEdit.validationNameMin'),
         action: 'error',
         duration: 3000,
       });
@@ -308,8 +312,8 @@ const ProfileEditScreen: React.FC = () => {
     if (bio.trim().length > 500) {
       console.log('[ProfileEditScreen] ❌ Validation hatası: Bio çok uzun');
       showCustomToast(toast, {
-        title: 'Validation Error',
-        description: 'Biography can be at most 500 characters',
+        title: t('profileEdit.validationError'),
+        description: t('profileEdit.validationBioMax'),
         action: 'error',
         duration: 3000,
       });
@@ -440,7 +444,7 @@ const ProfileEditScreen: React.FC = () => {
             status: error?.response?.status,
           });
           showCustomToast(toast, {
-            title: 'Avatar Upload Failed',
+            title: t('profileEdit.avatarUploadFailed'),
             description: errorMessage,
             action: 'error',
             duration: 3000,
@@ -575,7 +579,7 @@ const ProfileEditScreen: React.FC = () => {
             status: error?.response?.status,
           });
           showCustomToast(toast, {
-            title: 'Banner Upload Failed',
+            title: t('profileEdit.bannerUploadFailed'),
             description: errorMessage,
             action: 'error',
             duration: 3000,
@@ -600,7 +604,8 @@ const ProfileEditScreen: React.FC = () => {
         const uploadType = hasOnlyAvatarUpload ? 'avatar' : 'banner';
         console.log(`[ProfileEditScreen] ℹ️ Sadece ${uploadType} upload edildi - profile update atlanıyor`);
         // Cache zaten upload sonrası invalidate edildi
-        Alert.alert('Success', `${uploadType === 'avatar' ? 'Avatar' : 'Banner'} updated successfully!`, [
+        const successMessage = uploadType === 'avatar' ? t('profileEdit.successAvatarUpdated') : t('profileEdit.successBannerUpdated');
+        Alert.alert(t('profileEdit.success'), successMessage, [
           { text: 'OK', onPress: () => navigation.goBack() }
         ]);
         return;
@@ -673,7 +678,10 @@ const ProfileEditScreen: React.FC = () => {
         if (bannerUploaded) uploadTypes.push('banner');
         console.log(`[ProfileEditScreen] ℹ️ Sadece ${uploadTypes.join(' ve ')} upload edildi, form alanlarında değişiklik yok - profile update atlanıyor`);
         // Cache zaten upload sonrası invalidate edildi
-        Alert.alert('Success', `${uploadTypes.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ve ')} updated successfully!`, [
+        const successMessages = uploadTypes.map(type =>
+          type === 'avatar' ? t('profileEdit.successAvatarUpdated') : t('profileEdit.successBannerUpdated')
+        );
+        Alert.alert(t('profileEdit.success'), successMessages.join(' '), [
           { text: 'OK', onPress: () => navigation.goBack() }
         ]);
         return;
@@ -690,7 +698,7 @@ const ProfileEditScreen: React.FC = () => {
             responseKeys: data ? Object.keys(data) : [],
             fullResponse: JSON.stringify(data, null, 2),
           });
-          Alert.alert('Success', 'Profile updated successfully!', [
+          Alert.alert(t('profileEdit.success'), t('profileEdit.successProfileUpdated'), [
             { text: 'OK', onPress: () => navigation.goBack() }
           ]);
         },
@@ -709,15 +717,15 @@ const ProfileEditScreen: React.FC = () => {
             requestData: updateData,
             requestDataString: JSON.stringify(updateData, null, 2),
           });
-          
+
           // Backend'den gelen detaylı hata mesajını göster
-          const errorMessage = error?.response?.data?.message 
+          const errorMessage = error?.response?.data?.message
             || error?.response?.data?.error
-            || error?.message 
-            || 'An error occurred while updating profile';
-          
+            || error?.message
+            || t('profileEdit.errorUpdatingProfile');
+
           console.error('[ProfileEditScreen] ❌ Profile update hatası - kullanıcıya gösterilecek mesaj:', errorMessage);
-          Alert.alert('Error', errorMessage);
+          Alert.alert(t('profileEdit.error'), errorMessage);
         },
       });
     } catch (error: any) {
@@ -728,7 +736,7 @@ const ProfileEditScreen: React.FC = () => {
         errorStack: error?.stack,
         fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
       });
-      Alert.alert('Error', error?.message || 'An error occurred while saving profile');
+      Alert.alert(t('profileEdit.error'), error?.message || t('profileEdit.errorSavingProfile'));
     }
   };
 
@@ -747,8 +755,8 @@ const ProfileEditScreen: React.FC = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Error</ToastTitle>
-                  <ToastDescription>{result.error || 'An error occurred while selecting photo'}</ToastDescription>
+                  <ToastTitle>{t('profileEdit.error')}</ToastTitle>
+                  <ToastDescription>{result.error || t('profileEdit.errorSelectingPhoto')}</ToastDescription>
                 </Toast>
               </Box>
             );
@@ -763,8 +771,8 @@ const ProfileEditScreen: React.FC = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Error</ToastTitle>
-                <ToastDescription>An error occurred while selecting photo</ToastDescription>
+                <ToastTitle>{t('profileEdit.error')}</ToastTitle>
+                <ToastDescription>{t('profileEdit.errorSelectingPhoto')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -787,8 +795,8 @@ const ProfileEditScreen: React.FC = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Error</ToastTitle>
-                  <ToastDescription>{result.error || 'An error occurred while selecting photo'}</ToastDescription>
+                  <ToastTitle>{t('profileEdit.error')}</ToastTitle>
+                  <ToastDescription>{result.error || t('profileEdit.errorSelectingPhoto')}</ToastDescription>
                 </Toast>
               </Box>
             );
@@ -803,8 +811,8 @@ const ProfileEditScreen: React.FC = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Error</ToastTitle>
-                <ToastDescription>An error occurred while selecting photo</ToastDescription>
+                <ToastTitle>{t('profileEdit.error')}</ToastTitle>
+                <ToastDescription>{t('profileEdit.errorSelectingPhoto')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -828,8 +836,8 @@ const ProfileEditScreen: React.FC = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Error</ToastTitle>
-                  <ToastDescription>{result.error || 'An error occurred while selecting photo'}</ToastDescription>
+                  <ToastTitle>{t('profileEdit.error')}</ToastTitle>
+                  <ToastDescription>{result.error || t('profileEdit.errorSelectingPhoto')}</ToastDescription>
                 </Toast>
               </Box>
             );
@@ -844,8 +852,8 @@ const ProfileEditScreen: React.FC = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Error</ToastTitle>
-                <ToastDescription>An error occurred while selecting photo</ToastDescription>
+                <ToastTitle>{t('profileEdit.error')}</ToastTitle>
+                <ToastDescription>{t('profileEdit.errorSelectingPhoto')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -864,11 +872,11 @@ const ProfileEditScreen: React.FC = () => {
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <Header
-        title="Edit Profile"
+        title={t('profileEdit.title')}
         showBackButton
         onBackPress={() => navigation.goBack()}
         rightButton={{
-          text: 'Save',
+          text: t('actions.save'),
           backgroundColor: '#D0F205',
           borderWidth: 1,
           borderColor: '#B8CC04',
@@ -977,7 +985,7 @@ const ProfileEditScreen: React.FC = () => {
                 fontSize="$sm"
                 fontWeight="$semibold"
               >
-                Name
+                {t('profileEdit.name')}
               </Text>
               <Input
                 variant="outline"
@@ -989,7 +997,7 @@ const ProfileEditScreen: React.FC = () => {
                 <InputField
                   value={name}
                   onChangeText={setName}
-                  placeholder="Enter your name"
+                  placeholder={t('profileEdit.namePlaceholder')}
                   placeholderTextColor={isDark ? '#666' : '#999'}
                   color={isDark ? '$textDark50' : '$textLight900'}
                   fontSize="$sm"
@@ -1004,7 +1012,7 @@ const ProfileEditScreen: React.FC = () => {
                 fontSize="$sm"
                 fontWeight="$semibold"
               >
-                Bio
+                {t('profileEdit.bio')}
               </Text>
               <Textarea
                 bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
@@ -1017,7 +1025,7 @@ const ProfileEditScreen: React.FC = () => {
                   onChangeText={(text) => {
                     if (text.length <= 160) setBio(text);
                   }}
-                  placeholder="Tell us about yourself"
+                  placeholder={t('profileEdit.bioPlaceholder')}
                   placeholderTextColor={isDark ? '#666' : '#999'}
                   color={isDark ? '$textDark50' : '$textLight900'}
                   fontSize="$sm"
@@ -1033,7 +1041,7 @@ const ProfileEditScreen: React.FC = () => {
                 fontSize="$sm"
                 fontWeight="$semibold"
               >
-                Badge
+                {t('profileEdit.badge')}
               </Text>
               
               {/* Badge 1 */}
@@ -1051,7 +1059,7 @@ const ProfileEditScreen: React.FC = () => {
                   color={badge1 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
                   fontSize="$sm"
                 >
-                  {badge1 ? getBadgeLabel(badge1) : 'Select Badge 1'}
+                  {badge1 ? getBadgeLabel(badge1) : t('profileEdit.selectBadge', { number: 1 })}
                 </Text>
                 <Feather
                   name="chevron-down"
@@ -1075,7 +1083,7 @@ const ProfileEditScreen: React.FC = () => {
                   color={badge2 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
                   fontSize="$sm"
                 >
-                  {badge2 ? getBadgeLabel(badge2) : 'Select Badge 2'}
+                  {badge2 ? getBadgeLabel(badge2) : t('profileEdit.selectBadge', { number: 2 })}
                 </Text>
                 <Feather
                   name="chevron-down"
@@ -1099,7 +1107,7 @@ const ProfileEditScreen: React.FC = () => {
                   color={badge3 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
                   fontSize="$sm"
                 >
-                  {badge3 ? getBadgeLabel(badge3) : 'Select Badge 3'}
+                  {badge3 ? getBadgeLabel(badge3) : t('profileEdit.selectBadge', { number: 3 })}
                 </Text>
                 <Feather
                   name="chevron-down"
@@ -1186,7 +1194,7 @@ const ProfileEditScreen: React.FC = () => {
                 color={isDark ? '#B3B3B3' : '#737373'}
                 alignSelf="flex-start"
               >
-                Cosmetics
+                {t('profileEdit.cosmetics')}
               </Text>
 
               {/* Figma 6576-32081: Cosmetic yoksa tek dashed + plus butonu → MarketPlaceScreen'e yönlendir */}
@@ -1277,7 +1285,7 @@ const ProfileEditScreen: React.FC = () => {
                   alignItems="center"
                 >
                   <Text fontSize="$md" fontWeight="$semibold" color={isDark ? '#8C8C8C' : '#6B6B6B'}>
-                    Cancel
+                    {t('actions.cancel')}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -1289,7 +1297,7 @@ const ProfileEditScreen: React.FC = () => {
                   alignItems="center"
                 >
                   <Text fontSize="$md" fontWeight="$bold" color="#111111">
-                    Save
+                    {t('actions.save')}
                   </Text>
                 </Pressable>
               </HStack>

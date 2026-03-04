@@ -69,6 +69,7 @@
     "cosmetics": "Cosmetics",
     "namePlaceholder": "Enter your name",
     "bioPlaceholder": "Tell us about yourself",
+    "validationError": "Validation Error",
     "validationNameMin": "Name must be at least 2 characters",
     "validationBioMax": "Biography can be at most 500 characters",
     "avatarUploadFailed": "Avatar Upload Failed",
@@ -76,15 +77,28 @@
     "errorUploadingAvatar": "An error occurred while uploading avatar",
     "errorUploadingBanner": "An error occurred while uploading banner",
     "errorSelectingPhoto": "An error occurred while selecting photo",
+    "error": "Error",
+    "success": "Success",
     "successAvatarUpdated": "Avatar updated successfully!",
     "successBannerUpdated": "Banner updated successfully!",
     "successProfileUpdated": "Profile updated successfully!",
+    "errorUpdatingProfile": "An error occurred while updating profile",
+    "errorSavingProfile": "An error occurred while saving profile",
+    "warning": "Warning",
     "warningBadgeUsed": "This badge is already used in another slot",
     "badgeLabel": {
       "everyday_consumer": "Everyday Consumer",
       "home_appliance": "Home Appliance Enthusiast",
       "product_reviewer": "Product Reviewer",
       "tech_expert": "Tech Expert"
+    },
+    "cosmeticLabel": {
+      "frame_red": "Red Frame",
+      "frame_gold": "Gold Frame",
+      "frame_blue": "Blue Frame",
+      "frame_green": "Green Frame",
+      "frame_purple": "Purple Frame",
+      "frame_none": "None"
     }
   },
   "inventory": {
@@ -179,5 +193,8 @@
     "allBadges": "All Badges",
     "eventBadges": "Event Badges",
     "collections": "Collections"
+  },
+  "errors": {
+    "profileLoadError": "An error occurred while loading the profile"
   }
 }
