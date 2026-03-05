@@ -17,6 +17,7 @@ import { Keyboard, Platform, Alert, Modal as RNModal, View, ScrollView, Touchabl
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useWalletBalance } from '@/src/features/wallet/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface SendTipsBottomSheetProps {
     senderName: string;
@@ -33,6 +34,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     onClose,
     onSend,
 }) => {
+    const { t } = useTranslation('wallet');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [amount, setAmount] = useState('');
@@ -71,10 +73,10 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         
         // Balance check
         if (numericAmount > currentBalance) {
-            Alert.alert('Insufficient Balance', `Your current balance is ${currentBalance} TIPS. The amount you want to send exceeds your balance.`);
+            Alert.alert(t('sendTips.alerts.insufficientBalanceTitle'), t('sendTips.errors.insufficientBalance', { balance: currentBalance }));
             return;
         }
-        
+
         // Validation
         if (numericAmount >= 0.01 && finalDescription.length > 0) {
             // Open confirmation modal
@@ -87,19 +89,19 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         
         // Validation
         if (numericAmount <= 0 || numericAmount < 0.01) {
-            Alert.alert('Error', 'TIPS amount must be at least 0.01');
+            Alert.alert(t('sendTips.errors.errorTitle'), t('sendTips.errors.minimumAmount'));
             return;
         }
-        
+
         // Balance check (check again - balance may have changed)
         if (numericAmount > currentBalance) {
-            Alert.alert('Insufficient Balance', `Your current balance is ${currentBalance} TIPS. The amount you want to send exceeds your balance.`);
+            Alert.alert(t('sendTips.alerts.insufficientBalanceTitle'), t('sendTips.errors.insufficientBalance', { balance: currentBalance }));
             return;
         }
-        
+
         const finalDescription = description?.trim() || '';
         if (finalDescription.length === 0) {
-            Alert.alert('Error', 'Message cannot be empty');
+            Alert.alert(t('sendTips.errors.errorTitle'), t('sendTips.errors.emptyMessage'));
             return;
         }
         
@@ -204,7 +206,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                         fontWeight="$bold"
                         textAlign="center"
                     >
-                        Send Tips
+                        {t('sendTips.title')}
                     </Text>
                 </HStack>
                 {/* Banner ve Profil Bölümü */}
@@ -288,7 +290,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                             fontSize={11}
                             fontWeight="$medium"
                         >
-                            Tips Description (Optional)
+                            {t('sendTips.descriptionLabel')}
                         </Text>
 
                         <Box
@@ -305,7 +307,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                             >
                                 <TextareaInput
                                     ref={descriptionInputRef}
-                                    placeholder="E.g.: Thanks for the great content!"
+                                    placeholder={t('sendTips.descriptionPlaceholder')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize={13}
@@ -344,7 +346,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                             fontSize={11}
                             fontWeight="$medium"
                         >
-                            TIPS Amount
+                            {t('sendTips.amountLabel')}
                         </Text>
 
                         {/* TIPS Miktarı ve Alt Bilgiler - Tek Bileşen */}
@@ -371,7 +373,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                 >
                                     <InputField
                                         ref={amountInputRef}
-                                        placeholder="50"
+                                        placeholder={t('sendTips.amountPlaceholder')}
                                         placeholderTextColor="#B8B8B8"
                                         color={isDark ? '#FFFFFF' : '#000000'}
                                         fontSize={38}
@@ -398,7 +400,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                         fontSize={9}
                                         fontWeight="$semibold"
                                     >
-                                        Max
+                                        {t('sendTips.maxButton')}
                                     </Text>
                                 </Pressable>
                             </HStack>
@@ -422,7 +424,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     fontSize={9}
                                     fontWeight="$normal"
                                 >
-                                    {amount && parseFloat(amount) > 0 ? `$${getUSDAmount()}` : '$5'}
+                                    {amount && parseFloat(amount) > 0 ? t('sendTips.usdEquivalent', { amount: getUSDAmount() }) : t('sendTips.usdEquivalent', { amount: '5' })}
                                 </Text>
 
                                 {/* Current Balance */}
@@ -431,7 +433,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     fontSize={9}
                                     fontWeight="$normal"
                                 >
-                                    Current Balance: {currentBalance} TIPS
+                                    {t('sendTips.currentBalance', { balance: currentBalance })}
                                 </Text>
                             </HStack>
                         </Box>
@@ -455,7 +457,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
-                                Cancel
+                                {t('sendTips.cancelButton')}
                             </Text>
                         </Pressable>
 
@@ -475,7 +477,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
-                                Send
+                                {t('sendTips.sendButton')}
                             </Text>
                         </Pressable>
                     </HStack>
@@ -554,7 +556,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                             color={isDark ? '#FFFFFF' : '#000000'}
                                             lineHeight={14}
                                         >
-                                            Confirm Tips Payment
+                                            {t('sendTips.confirmPayment')}
                                         </Text>
 
                                         {/* Tips Description */}
@@ -564,7 +566,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                                             lineHeight={13}
                                         >
-                                            {description || 'No description provided'}
+                                            {description || t('sendTips.noDescription')}
                                         </Text>
 
                                         {/* TIPS Amount and Balance */}
@@ -594,7 +596,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                                     fontWeight="$normal"
                                                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                                                 >
-                                                    Current Balance
+                                                    {t('sendTips.currentBalance', { balance: '' }).replace(/:\s*$/, '')}
                                                 </Text>
                                                 <Text
                                                     fontSize={9}
@@ -621,7 +623,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                                     fontWeight="$bold"
                                                     textAlign="center"
                                                 >
-                                                    Confirm
+                                                    {t('sendTips.confirmButton')}
                                                 </Text>
                                             </Pressable>
 
@@ -640,7 +642,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                                     fontWeight="$normal"
                                                     textAlign="center"
                                                 >
-                                                    Cancel
+                                                    {t('sendTips.cancelButton')}
                                                 </Text>
                                             </Pressable>
                                         </VStack>

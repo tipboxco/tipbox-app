@@ -45,11 +45,6 @@
     "categories": "Categories",
     "noSearchResults": "No results for \"{{query}}\""
   },
-  "productSelect": {
-    "title": "Select Product",
-    "searchPlaceholder": "Select product group or search product name",
-    "noSearchResults": "No search results"
-  },
   "brandScreen": {
     "title": "Brand Catalog",
     "searchPlaceholder": "Search brand or category",
@@ -182,11 +177,10 @@
     "description": "Description",
     "statistic": "Statistic",
     "complete": "Complete",
-    "ofUser": "of {{count}}+ User",
-    "statistics": "Statistics"
+    "ofUser": "of {{count}}+ User"
   },
   "brandSurveyList": {
-    "title": "Surveys",
+    "title": "Brand Surveys",
     "loading": "Loading surveys...",
     "error": "Error loading surveys",
     "noSurveys": "No surveys found",
@@ -196,7 +190,7 @@
     "viewResults": "View Results"
   },
   "survey": {
-    "title": "Anket & Oyunlaştırmalar",
+    "title": "Survey",
     "loading": "Loading survey...",
     "error": "Error loading survey",
     "surveyNotFound": "Survey not found",
@@ -204,39 +198,28 @@
     "submit": "Submit",
     "submitting": "Submitting...",
     "submitted": "Survey submitted successfully",
-    "thankYou": "Thank you for participating!",
-    "loadingSurveys": "Loading surveys...",
-    "errorLoadingSurveys": "Error loading surveys",
-    "noSurveysYet": "No surveys yet.",
-    "noBadgesYet": "Henüz rozet yok.",
-    "brandHistory": "Marka Geçmişim",
-    "points": "Points"
+    "thankYou": "Thank you for participating!"
   },
   "surveyParticipation": {
-    "title": "Anket",
+    "title": "Survey Participation",
     "loading": "Loading survey...",
     "error": "Error loading survey",
     "surveyNotFound": "Survey not found",
     "question": "Question {{number}} of {{total}}",
-    "next": "Sonraki Soru",
-    "previous": "Önceki Soruya Dön",
-    "submit": "Tamamla",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
     "submitting": "Submitting...",
     "selectAnswer": "Please select an answer",
-    "answerRequired": "Answer is required",
-    "noQuestionsFound": "No questions found",
-    "sending": "Sending..."
+    "answerRequired": "Answer is required"
   },
   "newsDetail": {
-    "title": "Brand History Book",
+    "title": "News Details",
     "loading": "Loading news...",
     "error": "Error loading news",
     "newsNotFound": "News not found",
     "publishedOn": "Published on",
     "readMore": "Read More",
-    "relatedNews": "Related News",
-    "comments": "Comments",
-    "noCommentsYet": "No comments yet. Be the first to comment",
-    "writeComment": "Write a comment..."
+    "relatedNews": "Related News"
   }
 }

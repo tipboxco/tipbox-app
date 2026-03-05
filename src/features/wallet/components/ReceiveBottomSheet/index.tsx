@@ -40,7 +40,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
     try {
       await Share.share({
         message: `${userName}'s Wallet Address:\n${walletAddress}`,
-        title: 'Share Wallet Address',
+        title: t('receiveBottomSheet.shareTitle'),
       });
     } catch (error) {
       console.error('Share error:', error);

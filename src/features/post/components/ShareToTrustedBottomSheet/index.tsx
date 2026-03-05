@@ -13,6 +13,7 @@ import { ActivityIndicator, FlatList, Keyboard, StyleSheet, useWindowDimensions,
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@gluestack-ui/themed';
+import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
@@ -87,6 +88,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
   postAuthorName,
   onShareSuccess,
 }) => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { closeBottomSheet } = useGlobalBottomSheet();
@@ -168,8 +170,8 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
       );
       closeBottomSheet();
       showCustomToast(toast, {
-        title: 'Post Shared',
-        description: 'Your post has been shared successfully!',
+        title: t('share.success.title'),
+        description: t('share.success.message'),
         action: 'success',
       });
       onShareSuccess?.();
@@ -244,7 +246,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
           <Feather name="search" size={24} color={searchIconColor} />
           <Input flex={1} borderWidth={0} bg="transparent">
             <InputField
-              placeholder="Search"
+              placeholder={t('share.placeholders.search')}
               placeholderTextColor={searchPlaceholderColor}
               color={isDark ? '#FFFFFF' : '#000000'}
               fontSize="$xs"
@@ -260,16 +262,16 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
         <VStack alignItems="center" justifyContent="center" py="$12">
           <ActivityIndicator size="large" color={isDark ? '#fff' : '#000'} />
           <Text mt="$3" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            Loading...
+            {t('share.loading')}
           </Text>
         </VStack>
       ) : trustList.length === 0 ? (
         <VStack alignItems="center" py="$12">
           <Text fontSize="$md" fontWeight="$semibold" color="$textLight500" $dark-color="$textDark400">
-            {debouncedSearch ? 'No results found' : 'Trust list is empty'}
+            {debouncedSearch ? t('share.noResults') : t('share.emptyList')}
           </Text>
           <Text fontSize="$sm" color="$textLight400" $dark-color="$textDark500" mt="$1" textAlign="center" px="$4">
-            {debouncedSearch ? 'Try a different search.' : 'Add people to your trust list to share with them.'}
+            {debouncedSearch ? t('share.tryDifferentSearch') : t('share.addPeopleToTrustList')}
           </Text>
         </VStack>
       ) : (
@@ -321,7 +323,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
           maxHeight={120}
         >
           <InputField
-            placeholder="Write a message..."
+            placeholder={t('share.placeholders.writeMessage')}
             placeholderTextColor={messagePlaceholderColor}
             color={isDark ? '$textDark50' : '#111827'}
             value={message}
@@ -348,7 +350,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
             fontWeight="$bold"
             color={sendTextColor}
           >
-            {isSending ? 'Sending...' : 'Send'}
+            {isSending ? t('share.buttons.sending') : t('share.buttons.send')}
           </Text>
         </Pressable>
       </Box>

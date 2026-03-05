@@ -56,24 +56,38 @@ export const LanguageBottomSheet: React.FC<LanguageBottomSheetProps> = ({ onClos
       <VStack space="xs">
         {Object.entries(SUPPORTED_LANGUAGES).map(([code, language]) => {
           const isSelected = currentLanguage === code;
+          const isEnabled = language.enabled;
 
           return (
             <Pressable
               key={code}
-              onPress={() => handleLanguageChange(code as SupportedLanguage)}
+              onPress={() => isEnabled && handleLanguageChange(code as SupportedLanguage)}
               bg={isSelected ? (isDark ? '#2A2A2A' : '#F2F2F2') : 'transparent'}
               borderRadius="$md"
               p="$3"
+              opacity={isEnabled ? 1 : 0.4}
+              disabled={!isEnabled}
             >
               <HStack alignItems="center" justifyContent="space-between">
                 <VStack>
-                  <Text
-                    fontSize="$md"
-                    fontWeight={isSelected ? '$bold' : '$normal'}
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                  >
-                    {language.nativeName}
-                  </Text>
+                  <HStack alignItems="center" space="xs">
+                    <Text
+                      fontSize="$md"
+                      fontWeight={isSelected ? '$bold' : '$normal'}
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                    >
+                      {language.nativeName}
+                    </Text>
+                    {!isEnabled && (
+                      <Text
+                        fontSize="$xs"
+                        color={isDark ? '#666666' : '#999999'}
+                        fontWeight="$medium"
+                      >
+                        ({t('languages.comingSoon')})
+                      </Text>
+                    )}
+                  </HStack>
                   <Text
                     fontSize="$sm"
                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
@@ -82,7 +96,7 @@ export const LanguageBottomSheet: React.FC<LanguageBottomSheetProps> = ({ onClos
                   </Text>
                 </VStack>
 
-                {isSelected && (
+                {isSelected && isEnabled && (
                   <Icon
                     as={Check}
                     size="md"

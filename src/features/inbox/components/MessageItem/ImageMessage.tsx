@@ -8,6 +8,7 @@ import { WhatsAppContextMenu } from './WhatsAppContextMenu';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
+import { useTranslation } from 'react-i18next';
 
 // Haptic feedback - opsiyonel
 let Haptics: any = null;
@@ -36,11 +37,12 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
   onContextMenuStateChange,
   currentUserId,
 }) => {
+  const { t } = useTranslation('inbox');
   // ✅ FIX: isSent değerini yeniden hesapla - item.isSent yanlış olabilir
-  const isSent = currentUserId && item.senderId 
+  const isSent = currentUserId && item.senderId
     ? String(item.senderId) === String(currentUserId)
     : item.isSent; // Fallback: item.isSent kullan
-  
+
   const isDeleted = item.isDeleted;
   const isDeleting = item.isDeleting; // ✅ Optimistic delete state
   
@@ -219,18 +221,18 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
     //     onPress: () => {
     //       // Delete confirmation
     //       Alert.alert(
-    //         'Delete Message',
-    //         'Are you sure you want to delete this message?',
+    //         t('messageDetail.deleteConfirm.title'),
+    //         t('messageDetail.deleteConfirm.message'),
     //         [
     //           {
-    //             text: 'Cancel',
+    //             text: t('messageDetail.deleteConfirm.cancel'),
     //             style: 'cancel',
     //             onPress: () => {
     //               closeContextMenu();
     //             },
     //           },
     //           {
-    //             text: 'Delete',
+    //             text: t('messageDetail.deleteConfirm.delete'),
     //             style: 'destructive',
     //             onPress: () => {
     //               onDelete(item.id);
@@ -324,7 +326,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     fontSize="$xs"
                   >
-                    Loading...
+                    {t('messageDetail.status.loading')}
                   </Text>
                   {item.uploadProgress !== undefined && (
                     <Text
@@ -355,7 +357,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                     color="#F44336"
                     fontSize="$xs"
                   >
-                    Yükleme başarısız
+                    {t('messageDetail.status.uploadFailed')}
                   </Text>
                 </VStack>
               </Box>
@@ -421,7 +423,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                           color={isDark ? '#8C8C8C' : '#8C8C8C'}
                           fontSize="$xs"
                         >
-                          Görsel yüklenemedi
+                          {t('messageDetail.status.imageLoadFailed')}
                         </Text>
                       </VStack>
                     </Box>

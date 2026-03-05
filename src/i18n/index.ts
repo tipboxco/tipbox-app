@@ -4,7 +4,7 @@ import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY, SupportedLanguage } from './languages';
 
-// Import locale files
+// Import English locale files
 import common_en from '@/src/locales/en/common.json';
 import auth_en from '@/src/locales/en/auth.json';
 import wallet_en from '@/src/locales/en/wallet.json';
@@ -17,11 +17,22 @@ import explore_en from '@/src/locales/en/explore.json';
 import post_en from '@/src/locales/en/post.json';
 import marketplace_en from '@/src/locales/en/marketplace.json';
 import catalog_en from '@/src/locales/en/catalog.json';
+import notifications_en from '@/src/locales/en/notifications.json';
 
-// Turkish locale files will be imported after all screens are migrated
-// import common_tr from '@/src/locales/tr/common.json';
-// import auth_tr from '@/src/locales/tr/auth.json';
-// ... etc
+// Import Turkish locale files
+import common_tr from '@/src/locales/tr/common.json';
+import auth_tr from '@/src/locales/tr/auth.json';
+import wallet_tr from '@/src/locales/tr/wallet.json';
+import feed_tr from '@/src/locales/tr/feed.json';
+import events_tr from '@/src/locales/tr/events.json';
+import settings_tr from '@/src/locales/tr/settings.json';
+import inbox_tr from '@/src/locales/tr/inbox.json';
+import profile_tr from '@/src/locales/tr/profile.json';
+import explore_tr from '@/src/locales/tr/explore.json';
+import post_tr from '@/src/locales/tr/post.json';
+import marketplace_tr from '@/src/locales/tr/marketplace.json';
+import catalog_tr from '@/src/locales/tr/catalog.json';
+import notifications_tr from '@/src/locales/tr/notifications.json';
 
 // Define resources
 const resources = {
@@ -38,8 +49,23 @@ const resources = {
     post: post_en,
     marketplace: marketplace_en,
     catalog: catalog_en,
+    notifications: notifications_en,
   },
-  // Future languages will be added here after all screens are migrated
+  tr: {
+    common: common_tr,
+    auth: auth_tr,
+    wallet: wallet_tr,
+    feed: feed_tr,
+    events: events_tr,
+    settings: settings_tr,
+    inbox: inbox_tr,
+    profile: profile_tr,
+    explore: explore_tr,
+    post: post_tr,
+    marketplace: marketplace_tr,
+    catalog: catalog_tr,
+    notifications: notifications_tr,
+  },
 } as const;
 
 // Get device language
@@ -90,7 +116,7 @@ export const initializeI18n = async (): Promise<void> => {
       lng: savedLanguage,
       fallbackLng: DEFAULT_LANGUAGE,
       defaultNS: 'common',
-      ns: ['common', 'auth', 'wallet', 'feed', 'events', 'settings', 'inbox', 'profile', 'explore', 'post', 'marketplace', 'catalog'],
+      ns: ['common', 'auth', 'wallet', 'feed', 'events', 'settings', 'inbox', 'profile', 'explore', 'post', 'marketplace', 'catalog', 'notifications'],
 
       // React Native compatibility
       compatibilityJSON: 'v3',

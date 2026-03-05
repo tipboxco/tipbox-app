@@ -13,6 +13,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { usePaymentDashboard, useSubscriptionPlans } from '../../api/hooks';
+import { useTranslation } from 'react-i18next';
 
 const formatBillingDate = (dateStr: string) => {
   try {
@@ -28,6 +29,7 @@ const formatBillingDate = (dateStr: string) => {
 };
 
 export const SubscriptionTab: React.FC = () => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -39,25 +41,25 @@ export const SubscriptionTab: React.FC = () => {
 
   const subscriptionData = useMemo(() => {
     if (!activeSubscription)
-      return { planName: 'No active subscription', renewalDate: '', status: null as string | null };
+      return { planName: t('tabs.subscriptionTab.noActiveSubscription'), renewalDate: '', status: null as string | null };
     return {
       planName: activeSubscription.plan_name,
       renewalDate: formatBillingDate(activeSubscription.next_billing_date),
       status: activeSubscription.status,
     };
-  }, [activeSubscription]);
+  }, [activeSubscription, t]);
 
   const benefits = useMemo(
     () =>
       activeSubscription?.benefits?.length
         ? activeSubscription.benefits
         :         [
-            'Unlimited access to premium features',
-            'Priority customer support',
-            'Advanced analytics',
-            'Ad-free experience',
+            t('tabs.subscriptionTab.defaultBenefits.unlimitedAccess'),
+            t('tabs.subscriptionTab.defaultBenefits.prioritySupport'),
+            t('tabs.subscriptionTab.defaultBenefits.advancedAnalytics'),
+            t('tabs.subscriptionTab.defaultBenefits.adFree'),
           ],
-    [activeSubscription]
+    [activeSubscription, t]
   );
 
   const handleManage = () => {
@@ -91,7 +93,7 @@ export const SubscriptionTab: React.FC = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             px="$2"
           >
-            My Subscriptions
+            {t('tabs.subscriptionTab.mySubscriptions')}
           </Text>
 
           <Box
@@ -112,12 +114,12 @@ export const SubscriptionTab: React.FC = () => {
                 </Text>
                 {subscriptionData.renewalDate && (
                   <Text fontSize="$xs" fontWeight="$normal" color="#B9B9B9">
-                    Next billing: {subscriptionData.renewalDate}
+                    {t('tabs.subscriptionTab.nextBilling', { date: subscriptionData.renewalDate })}
                   </Text>
                 )}
                 {subscriptionData.status && (
                   <Text fontSize="$xs" fontWeight="$normal" color="#B9B9B9">
-                    Status: {subscriptionData.status}
+                    {t('tabs.subscriptionTab.status', { status: subscriptionData.status })}
                   </Text>
                 )}
               </VStack>
@@ -136,7 +138,7 @@ export const SubscriptionTab: React.FC = () => {
                     fontWeight="$medium"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
-                    Manage
+                    {t('tabs.subscriptionTab.manage')}
                   </ButtonText>
                 </Button>
               )}
@@ -152,7 +154,7 @@ export const SubscriptionTab: React.FC = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             px="$2"
           >
-            Plan Benefits
+            {t('tabs.subscriptionTab.planBenefits')}
           </Text>
 
           <Box
@@ -169,7 +171,7 @@ export const SubscriptionTab: React.FC = () => {
                 color={isDark ? '#FFFFFF' : '#000000'}
                 mb="$2"
               >
-                Benefits:
+                {t('tabs.subscriptionTab.benefits')}
               </Text>
               {benefits.map((benefit, index) => (
                 <HStack key={index} alignItems="flex-start" space="sm">
@@ -212,7 +214,7 @@ export const SubscriptionTab: React.FC = () => {
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              Other Premium Plans ({subscriptionPlans?.length ?? 0} plans)
+              {t('tabs.subscriptionTab.otherPremiumPlans', { count: subscriptionPlans?.length ?? 0 })}
             </Text>
             <Feather
               name="chevron-right"

@@ -545,7 +545,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           ) : (
             <Input flex={1} variant="outline" borderWidth={0}>
               <InputField
-                placeholder="Wallet Address..."
+                placeholder={t('sendBottomSheet.walletAddress.walletAddress')}
                 placeholderTextColor="#D9D9D9"
                 value={walletAddress}
                 onChangeText={setWalletAddress}
@@ -565,7 +565,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       {/* Recent Section */}
       <VStack space="sm" mt="$2">
         <Text fontSize={12} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
-          Recent
+          {t('sendBottomSheet.walletAddress.recent')}
         </Text>
         {(recentAddresses.length > 0 ? recentAddresses : mockRecentAddresses).map((item, index) => {
           const addressToShow = item.fullAddress || item.address || '';
@@ -592,7 +592,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                     {truncateAddress(addressToShow)}
                   </Text>
                   <Text fontSize={9} color="#B9B9B9" $dark-color="$textDark400">
-                    {item.lastUsed || 'Recently'}
+                    {item.lastUsed || t('sendBottomSheet.walletAddress.recently')}
                   </Text>
                 </HStack>
               </HStack>
@@ -613,7 +613,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         opacity={walletAddress.trim() ? 1 : 0.5}
       >
         <Text fontSize={14} fontWeight="$bold" color="#111111" textAlign="center">
-          Confirm
+          {t('sendBottomSheet.confirmation.confirmButton')}
         </Text>
       </Pressable>
     </VStack>
@@ -632,7 +632,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <HStack flex={1} justifyContent="center" alignItems="center">
           <UsersIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            Send TIPS
+            {t('sendBottomSheet.title')}
           </Text>
         </HStack>
         <Box w={24} />
@@ -651,9 +651,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         >
           <VStack space="md">
             <Text fontSize={11} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
-              To:
+              {t('sendBottomSheet.amount.toLabel')}
             </Text>
-            
+
             <HStack alignItems="center" space="md">
               {/* Friend Avatar */}
               <Box position="relative">
@@ -792,7 +792,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         >
           <HStack alignItems="center" space="md">
             <Text fontSize={10} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
-              To:
+              {t('sendBottomSheet.amount.toLabel')}
             </Text>
             {/* Friend Avatar */}
             <Box position="relative">
@@ -851,7 +851,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         >
           <HStack alignItems="center" space="md">
             <Text fontSize={11} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
-              To:
+              {t('sendBottomSheet.amount.toLabel')}
             </Text>
             {walletAddress && walletAddress.trim() && walletAddress !== '0x' ? (
               <Text 

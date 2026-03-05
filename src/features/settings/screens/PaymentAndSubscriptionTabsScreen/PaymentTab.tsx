@@ -30,6 +30,7 @@ import {
 } from '../../api/hooks';
 import type { PaymentApiErrorResponse } from '../../api/paymentApi';
 import type { AxiosError } from 'axios';
+import { useTranslation } from 'react-i18next';
 
 interface PaymentTabProps {
   onAddPaymentMethod?: () => void;
@@ -59,6 +60,7 @@ const formatInvoiceDate = (dateStr: string) => {
 };
 
 export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) => {
+  const { t } = useTranslation('settings');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [sortBy, setSortBy] = useState<'date_asc' | 'date_desc'>('date_desc');
@@ -109,13 +111,13 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
           const code = axiosErr.response?.data?.error_code;
           const message =
             code === 'CARD_IN_USE_BY_SUBSCRIPTION'
-              ? 'This card is in use by an active subscription. Please change your subscription payment method first.'
-              : axiosErr.response?.data?.message ?? 'An error occurred while deleting the card.';
+              ? t('tabs.paymentTab.errors.cardInUse')
+              : axiosErr.response?.data?.message ?? t('tabs.paymentTab.errors.deleteCardError');
           Alert.alert('Error', message);
         },
       });
     },
-    [deleteMutation]
+    [deleteMutation, t]
   );
 
   const handleEditCardName = useCallback((cardId: string) => {
@@ -131,11 +133,11 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
       {
         onSuccess: () => setEditCardId(null),
         onError: () => {
-          Alert.alert('Error', 'An error occurred while updating the card name.');
+          Alert.alert('Error', t('tabs.paymentTab.errors.updateCardError'));
         },
       }
     );
-  }, [editCardId, editCardAlias, updateMutation]);
+  }, [editCardId, editCardAlias, updateMutation, t]);
 
   const handleCardPress = useCallback((_cardId: string) => {
     // İsteğe bağlı: detay veya varsayılan yap
@@ -174,7 +176,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
               color={isDark ? '#FFFFFF' : '#000000'}
               px="$2"
             >
-              Saved Cards
+              {t('tabs.paymentTab.savedCards')}
             </Text>
             {savedCards.map((card) => (
               <SavedCard
@@ -215,7 +217,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
                 fontWeight="$bold"
                 color={isDark ? '#FFFFFF' : '#000000'}
               >
-                Add Payment Method
+                {t('tabs.paymentTab.addPaymentMethod')}
               </Text>
             </HStack>
             <Feather
@@ -235,7 +237,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
             px="$2"
             mb="$2"
           >
-            Billing History
+            {t('tabs.paymentTab.billingHistory')}
           </Text>
 
           <HStack alignItems="center" justifyContent="flex-end" mb="$3" px="$2">
@@ -254,7 +256,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
                     fontWeight="$medium"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
-                    {sortBy === 'date_desc' ? 'Date (newest first)' : 'Date (oldest first)'}
+                    {sortBy === 'date_desc' ? t('tabs.paymentTab.dateNewestFirst') : t('tabs.paymentTab.dateOldestFirst')}
                   </Text>
                   <Feather
                     name="chevron-down"
@@ -287,7 +289,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
               px="$2"
               py="$4"
             >
-              No invoices yet.
+              {t('tabs.paymentTab.noInvoicesYet')}
             </Text>
           )}
         </VStack>
@@ -303,7 +305,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              Update card name
+              {t('tabs.paymentTab.updateCardName')}
             </Text>
           </AlertDialogHeader>
           <AlertDialogBody mb="$4">
@@ -315,7 +317,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
               bg={isDark ? '#2A2A2A' : '#F5F5F5'}
             >
               <InputField
-                placeholder="e.g. Work Card"
+                placeholder={t('tabs.paymentTab.cardNamePlaceholder')}
                 placeholderTextColor="#B9B9B9"
                 value={editCardAlias}
                 onChangeText={setEditCardAlias}
@@ -333,7 +335,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
                 bg="transparent"
               >
                 <ButtonText color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} fontWeight="$medium">
-                  Cancel
+                  {t('tabs.paymentTab.cancel')}
                 </ButtonText>
               </Button>
               <Button
@@ -342,7 +344,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
                 bg="#E2FF46"
               >
                 <ButtonText color="#000000" fontSize={14} fontWeight="$bold">
-                  Save
+                  {t('tabs.paymentTab.save')}
                 </ButtonText>
               </Button>
             </HStack>

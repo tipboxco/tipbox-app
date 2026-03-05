@@ -12,6 +12,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { useTranslation } from 'react-i18next';
 
 export interface LikedUser {
     id: string;
@@ -44,6 +45,7 @@ export const LikedUsersBottomSheet: React.FC<LikedUsersBottomSheetProps> = ({
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('notifications');
 
     // Tüm kullanıcıları birleştir: primaryUser + otherUsers
     const allUsers: LikedUser[] = React.useMemo(() => {
@@ -120,7 +122,7 @@ export const LikedUsersBottomSheet: React.FC<LikedUsersBottomSheetProps> = ({
                     fontWeight="$bold"
                     textAlign="center"
                 >
-                    Beğenenler
+                    {t('likedUsers.title')}
                 </Text>
             </Box>
 
@@ -136,7 +138,7 @@ export const LikedUsersBottomSheet: React.FC<LikedUsersBottomSheetProps> = ({
                                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
                                 fontSize="$sm"
                             >
-                                Kullanıcı bulunamadı
+                                {t('likedUsers.emptyState')}
                             </Text>
                         </Box>
                     ) : (

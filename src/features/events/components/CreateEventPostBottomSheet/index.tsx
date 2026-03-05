@@ -22,6 +22,7 @@ import { Category as CatalogCategory } from '@/src/mock/catalog/productCatalog/t
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from 'react-i18next';
 
 type CreateEventPostBottomSheetNavigationProp = NativeStackNavigationProp<EventStackParamList>;
 
@@ -57,12 +58,13 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const { user } = useAppStore();
+    const { t } = useTranslation('events');
     const [currentView, setCurrentView] = useState<'options' | 'inventory' | 'catalog'>('options');
     const [searchQuery, setSearchQuery] = useState('');
 
     // Catalog navigation states
     const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([
-        { id: 'root', name: 'Categories', type: 'category' }
+        { id: 'root', name: t('createPost.categories'), type: 'category' }
     ]);
     const [currentCategories, setCurrentCategories] = useState<CatalogCategory[]>(catalogData);
     const [currentSubCategories, setCurrentSubCategories] = useState<any[]>([]);
@@ -113,7 +115,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
         
         const subCategoriesBreadcrumb: BreadcrumbItem = {
             id: 'subcategories',
-            name: 'Sub Categories',
+            name: t('createPost.subCategories'),
             type: 'subCategory'
         };
         
@@ -133,7 +135,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
         
         const productGroupsBreadcrumb: BreadcrumbItem = {
             id: 'productgroups',
-            name: 'Product Groups',
+            name: t('createPost.productGroups'),
             type: 'productGroup'
         };
         
@@ -154,7 +156,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
         
         const productsBreadcrumb: BreadcrumbItem = {
             id: 'products',
-            name: 'Products',
+            name: t('createPost.products'),
             type: 'product'
         };
         
@@ -178,7 +180,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
 
     const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         if (item.type === 'category' && item.id === 'root') {
-            setBreadcrumbItems([{ id: 'root', name: 'Categories', type: 'category' }]);
+            setBreadcrumbItems([{ id: 'root', name: t('createPost.categories'), type: 'category' }]);
             setCurrentCategories(catalogData);
             setCatalogView('categories');
         } else if (item.type === 'category') {
@@ -186,7 +188,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
             if (category) {
                 setBreadcrumbItems([
                     { id: category.id, name: category.name, type: 'category' },
-                    { id: 'subcategories', name: 'Sub Categories', type: 'subCategory' }
+                    { id: 'subcategories', name: t('createPost.subCategories'), type: 'subCategory' }
                 ]);
                 setCurrentSubCategories(category.subCategories);
                 setCatalogView('subcategories');
@@ -200,7 +202,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                 setBreadcrumbItems([
                     currentCategory!,
                     { id: subCategory.id, name: subCategory.name, type: 'subCategory' },
-                    { id: 'productgroups', name: 'Product Groups', type: 'productGroup' }
+                    { id: 'productgroups', name: t('createPost.productGroups'), type: 'productGroup' }
                 ]);
                 setCurrentProductGroups(subCategory.productGroups);
                 setCatalogView('productgroups');
@@ -216,7 +218,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                     currentCategory!,
                     currentSubCategory!,
                     { id: productGroup.id, name: productGroup.name, type: 'productGroup' },
-                    { id: 'products', name: 'Products', type: 'product' }
+                    { id: 'products', name: t('createPost.products'), type: 'product' }
                 ]);
                 setCurrentProducts(productGroup.products);
                 setCatalogView('products');
@@ -284,7 +286,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                             textAlign="center"
                             flex={1}
                         >
-                            Select Inventory aaa
+                            {t('createPost.selectInventory')}
                         </Text>
                         <Box w={24} />
                     </HStack>
@@ -308,7 +310,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                         />
                         <Input flex={1} borderWidth={0} bg="transparent" h={40}>
                             <InputField
-                                placeholder="Search for a product in inventory"
+                                placeholder={t('createPost.searchPlaceholders.inventory')}
                                 placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                                 color={isDark ? '#fff' : '#000'}
                                 fontSize={12}
@@ -338,7 +340,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                                     color={isDark ? '#999' : '#666'}
                                     fontSize={14}
                                 >
-                                    No products found
+                                    {t('createPost.noProductsFound')}
                                 </Text>
                             </Box>
                         )}
@@ -369,7 +371,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                             textAlign="center"
                             flex={1}
                         >
-                            Select Product Catalog
+                            {t('createPost.selectProductCatalog')}
                         </Text>
                         <Box w={24} />
                     </HStack>
@@ -385,14 +387,14 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                         space="sm"
                         mt="$4"
                     >
-                        <Feather 
-                            name="search" 
-                            size={20} 
-                            color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} 
+                        <Feather
+                            name="search"
+                            size={20}
+                            color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
                         />
                         <Input flex={1} borderWidth={0} bg="transparent" h={40}>
                             <InputField
-                                placeholder="Search for a product in catalog"
+                                placeholder={t('createPost.searchPlaceholders.catalog')}
                                 placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                                 color={isDark ? '#fff' : '#000'}
                                 fontSize={12}
@@ -449,7 +451,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                                     color={isDark ? '#999' : '#666'}
                                     fontSize={14}
                                 >
-                                    No products found
+                                    {t('createPost.noProductsFound')}
                                 </Text>
                             </Box>
                         )}
@@ -479,7 +481,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                         textAlign="center"
                         flex={1}
                     >
-                        Select Product
+                        {t('createPost.selectProduct')}
                     </Text>
                     <Box w={24} />
                 </HStack>
@@ -514,7 +516,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                                 color={isDark ? '$textDark50' : '#000000'}
                                 textAlign="center"
                             >
-                                Select Product Catalog
+                                {t('createPost.selectProductCatalog')}
                             </Text>
                         </VStack>
                     </Pressable>
@@ -545,7 +547,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                                 color={isDark ? '$textDark50' : '#000000'}
                                 textAlign="center"
                             >
-                                Select Inventory
+                                {t('createPost.selectInventory')}
                             </Text>
                         </VStack>
                     </Pressable>

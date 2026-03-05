@@ -12,6 +12,7 @@ import Animated, {
 import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { Svg, Rect } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 // Haptic feedback - opsiyonel (expo-haptics yoksa çalışmaz)
 let Haptics: any = null;
@@ -62,6 +63,7 @@ export const WhatsAppContextMenu: React.FC<WhatsAppContextMenuProps> = ({
   isDark,
   isSent,
 }) => {
+  const { t } = useTranslation('inbox');
   const overlayOpacity = useSharedValue(0);
   const reactionBarScale = useSharedValue(0);
   const reactionBarOpacity = useSharedValue(0);
@@ -266,7 +268,7 @@ export const WhatsAppContextMenu: React.FC<WhatsAppContextMenuProps> = ({
                   fontWeight: 'normal', // Mesaj bubble fontWeight="$normal" ile aynı (600'den normal'e)
                 }}
               >
-                Delete
+                {t('messageDetail.actions.delete')}
               </RNText>
             </TouchableOpacity>
           </Animated.View>

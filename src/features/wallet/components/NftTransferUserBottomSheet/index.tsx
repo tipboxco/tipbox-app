@@ -7,6 +7,7 @@ import { useAppStore } from '@/src/store/appStore';
 import { useTrustList } from '@/src/features/profile/api/hooks';
 import { DEFAULT_USER_AVATAR, toImageSource } from '@/src/utils';
 import type { NftTransferRecipientSnapshot } from '@/src/features/wallet/store/nft-transfer-flow-store';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface NftTransferUserBottomSheetProps {
   onClose: () => void;
@@ -14,6 +15,7 @@ interface NftTransferUserBottomSheetProps {
 }
 
 export const NftTransferUserBottomSheet: React.FC<NftTransferUserBottomSheetProps> = ({ onClose, onSelect }) => {
+  const { t } = useTranslation('wallet');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,7 +44,7 @@ export const NftTransferUserBottomSheet: React.FC<NftTransferUserBottomSheetProp
         </Pressable>
         <HStack flex={1} justifyContent="center" alignItems="center">
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            NFT Transfer
+            {t('nftTransfer.title')}
           </Text>
         </HStack>
         <Box w={24} />
@@ -62,7 +64,7 @@ export const NftTransferUserBottomSheet: React.FC<NftTransferUserBottomSheetProp
         <MagnifyingGlassIcon width={22} height={22} color={isDark ? '#8E8E93' : '#8E8E93'} />
         <Input flex={1} borderWidth={0} bg="transparent">
           <InputField
-            placeholder="Kullanıcı ara"
+            placeholder={t('nftTransfer.searchUser')}
             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
             color={isDark ? '#fff' : '#000'}
             fontSize={11}
@@ -78,23 +80,23 @@ export const NftTransferUserBottomSheet: React.FC<NftTransferUserBottomSheetProp
           <VStack alignItems="center" justifyContent="center" py="$8">
             <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
             <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-              Kullanıcılar yükleniyor...
+              {t('nftTransfer.loadingUsers')}
             </Text>
           </VStack>
         ) : error ? (
           <VStack alignItems="center" justifyContent="center" py="$8">
             <Text fontSize={14} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-              Kullanıcı listesi alınamadı
+              {t('nftTransfer.loadFailedUsers')}
             </Text>
             <Text mt="$2" fontSize={12} color="$textLight500" $dark-color="$textDark400" textAlign="center">
-              Lütfen daha sonra tekrar deneyin.
+              {t('nftTransfer.tryAgain')}
             </Text>
           </VStack>
         ) : filtered.length === 0 ? (
           <VStack alignItems="center" justifyContent="center" py="$8">
             <UsersIcon width={56} height={56} color={isDark ? '#666666' : '#CCCCCC'} />
             <Text mt="$4" fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-              Kullanıcı bulunamadı
+              {t('nftTransfer.emptyUsers')}
             </Text>
           </VStack>
         ) : (

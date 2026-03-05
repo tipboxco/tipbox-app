@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Pressable, InteractionManager, Keyboard, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
@@ -21,6 +22,7 @@ export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
   onInputPress,
   initialText = '',
 }) => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { closeBottomSheet } = useGlobalBottomSheet();
@@ -68,7 +70,7 @@ export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
           ref={inputRef}
           value={commentText}
           onChangeText={setCommentText}
-          placeholder="Write a comment..."
+          placeholder={t('comments.placeholders.writeComment')}
           placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
           style={{
             flex: 1,

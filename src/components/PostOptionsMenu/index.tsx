@@ -7,6 +7,7 @@ import {
   TrashIcon,
 } from 'react-native-heroicons/outline';
 import { Alert, Share } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useSharePost } from '@/src/features/interactions/api/hooks';
@@ -37,6 +38,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   postContextId,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { closeBottomSheet } = useGlobalBottomSheet();
@@ -53,9 +55,9 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     close();
     
     try {
-      const shareMessage = postContent 
+      const shareMessage = postContent
         ? `${postAuthorName ? `${postAuthorName}: ` : ''}${postContent.substring(0, 100)}${postContent.length > 100 ? '...' : ''}`
-        : `Check out this post on Tipbox!`;
+        : t('common.messages.checkOutPost');
       
       await Share.share({
         message: shareMessage,
@@ -85,9 +87,9 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     } else {
       // Diğer post tipleri için update özelliği yok
       // Bu kod bloğuna normalde ulaşılmamalı (showUpdateOption = false)
-      Alert.alert('Info', 'Update feature is only available for experience posts.');
+      Alert.alert(t('common.dialogs.info'), t('common.messages.updateOnlyForExperience'));
     }
-  }, [postId, postType, postContextType, postContextId, close]);
+  }, [postId, postType, postContextType, postContextId, close, t]);
 
   const handleDelete = useCallback(() => {
     closeBottomSheet();
@@ -95,18 +97,18 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     console.log('[PostOptionsMenu] 🗑️ Delete button clicked for post:', postId);
     
     Alert.alert(
-      'Delete Post',
-      'Are you sure you want to delete this post? This action cannot be undone.',
+      t('common.dialogs.deletePost.title'),
+      t('common.dialogs.deletePost.message'),
       [
         {
-          text: 'Cancel',
+          text: t('common.buttons.cancel'),
           style: 'cancel',
           onPress: () => {
             console.log('[PostOptionsMenu] ❌ Delete cancelled by user');
           },
         },
         {
-          text: 'Delete',
+          text: t('common.buttons.delete'),
           style: 'destructive',
           onPress: async () => {
             console.log('[PostOptionsMenu] ✅ Delete confirmed, sending DELETE request to /posts/' + postId);
@@ -120,7 +122,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                 timestamp: new Date().toISOString(),
               });
               
-              Alert.alert('Success', 'Post deleted successfully.');
+              Alert.alert(t('common.messages.success'), t('common.messages.postDeleted'));
               // Navigate back if needed
               navigationService.goBack();
             } catch (error: any) {
@@ -133,41 +135,41 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                 message: error.message,
                 timestamp: new Date().toISOString(),
               });
-              
+
               Alert.alert(
-                'Error',
-                error.response?.data?.message || 'An error occurred while deleting the post.'
+                t('common.messages.error'),
+                error.response?.data?.message || t('common.messages.deleteError')
               );
             }
           },
         },
       ]
     );
-  }, [postId, deletePostMutation, close]);
+  }, [postId, deletePostMutation, close, t]);
 
   const handleReport = useCallback(() => {
     close();
-    
+
     Alert.alert(
-      'Report Post',
-      'Are you sure you want to report this post?',
+      t('common.dialogs.reportPost.title'),
+      t('common.dialogs.reportPost.message'),
       [
         {
-          text: 'Cancel',
+          text: t('common.buttons.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Report',
+          text: t('common.buttons.report'),
           style: 'destructive',
           onPress: () => {
             // TODO: Post report API endpoint eklendiğinde buraya entegre edilecek
             console.log('[PostOptionsMenu] Report post:', postId);
-            Alert.alert('Success', 'Post reported. Thank you for your review.');
+            Alert.alert(t('common.messages.success'), t('common.messages.postReported'));
           },
         },
       ]
     );
-  }, [postId, close]);
+  }, [postId, close, t]);
 
   // CRITICAL: Update seçeneği sadece experience post tipinde görünür
   const showUpdateOption = isPostOwner && postType === 'experience';
@@ -198,7 +200,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                   fontSize="$md"
                   fontWeight="$medium"
                 >
-                  Güncelle
+                  {t('common.menu.update')}
                 </Text>
               </HStack>
             </Pressable>
@@ -219,7 +221,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                 fontSize="$md"
                 fontWeight="$medium"
               >
-                Sil
+                {t('common.menu.delete')}
               </Text>
             </HStack>
           </Pressable>
@@ -241,7 +243,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
             fontSize="$md"
             fontWeight="$medium"
           >
-            Dışarıda Paylaş
+            {t('common.menu.externalShare')}
           </Text>
         </HStack>
       </Pressable>
@@ -260,7 +262,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
               fontSize="$md"
               fontWeight="$medium"
             >
-              Raporla
+              {t('common.menu.report')}
             </Text>
           </HStack>
         </Pressable>

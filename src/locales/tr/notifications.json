@@ -1,0 +1,33 @@
+{
+  "likedUsers": {
+    "title": "Liked By",
+    "emptyState": "No users found"
+  },
+  "actions": {
+    "mute": {
+      "alreadyMuted": "{{name}} is already unmuted",
+      "success": "{{name}} can now send notifications",
+      "muteSuccess": "{{name}} will no longer send notifications",
+      "error": "Failed to mute user"
+    },
+    "block": {
+      "notBlocked": "{{username}} is not blocked",
+      "unblockSuccess": "{{username}} can now interact with you",
+      "blockSuccess": "{{username}} can no longer interact with you",
+      "error": "Failed to block user"
+    },
+    "report": {
+      "success": "Thank you for reporting. We'll review this report.",
+      "error": "Failed to report user"
+    }
+  },
+  "titles": {
+    "info": "Info",
+    "unmuted": "Unmuted",
+    "userMuted": "User Muted",
+    "userUnblocked": "User unblocked",
+    "userBlocked": "User blocked",
+    "userReported": "User reported",
+    "error": "Error"
+  }
+}

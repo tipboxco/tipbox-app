@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { VStack, HStack, Text, Pressable, Input, InputField, Box } from '@gluestack-ui/themed';
 import { Alert, TextInput, Keyboard, InputAccessoryView, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PencilSquareIcon, TrashIcon } from 'react-native-heroicons/outline';
@@ -21,10 +22,11 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
   nftTitle,
   onSuccess,
 }) => {
+  const { t } = useTranslation('marketplace');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { closeBottomSheet, openBottomSheet } = useGlobalBottomSheet();
-  
+
   const deleteListingMutation = useDeleteListing();
   const updatePriceMutation = useUpdateListingPrice();
 
@@ -32,38 +34,38 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
 
   const handleDelist = useCallback(() => {
     closeBottomSheet();
-    
+
     Alert.alert(
-      'Delist NFT',
-      `Are you sure you want to remove "${nftTitle}" from marketplace?`,
+      t('nftOptions.delist.title'),
+      t('nftOptions.delist.message', { nftTitle }),
       [
         {
-          text: 'No',
+          text: t('nftOptions.buttons.no'),
           style: 'cancel',
         },
         {
-          text: 'Yes',
+          text: t('nftOptions.buttons.yes'),
           style: 'destructive',
           onPress: () => {
             if (!listingId) {
-              Alert.alert('Error', 'Listing ID not found');
+              Alert.alert(t('common.error'), t('nftOptions.delist.listingNotFound'));
               return;
             }
 
             deleteListingMutation.mutate(listingId, {
               onSuccess: () => {
-                Alert.alert('Success', 'NFT has been delisted from marketplace');
+                Alert.alert(t('common.success'), t('nftOptions.delist.success'));
                 onSuccess?.('delist');
               },
               onError: (error: any) => {
-                Alert.alert('Error', error?.message || 'Failed to delist NFT');
+                Alert.alert(t('common.error'), error?.message || t('nftOptions.delist.failed'));
               },
             });
           },
         },
       ]
     );
-  }, [nftTitle, listingId, closeBottomSheet, deleteListingMutation, onSuccess]);
+  }, [t, nftTitle, listingId, closeBottomSheet, deleteListingMutation, onSuccess]);
 
   const handleEditPrice = useCallback(() => {
     closeBottomSheet();
@@ -76,28 +78,28 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
         <Box bg={isDark ? '$backgroundDark900' : '$white'} pb={20} pt={16} px={20}>
           <VStack space="lg">
             <Text fontSize="$xl" fontWeight="$bold" color={isDark ? '$textDark50' : '#000'}>
-              Edit Price
+              {t('nftOptions.editPrice.title')}
             </Text>
 
             {/* Current Price */}
             <VStack space="xs">
               <Text fontSize="$sm" color={isDark ? '$textDark400' : '#666'}>
-                Current Price
+                {t('nftOptions.editPrice.currentPrice')}
               </Text>
               <Text fontSize="$2xl" fontWeight="$bold" color={isDark ? '$textDark50' : '#000'}>
-                {currentPrice} TIPS
+                {currentPrice} {t('common.tips')}
               </Text>
             </VStack>
 
             {/* New Price Input */}
             <VStack space="xs">
               <Text fontSize="$sm" color={isDark ? '$textDark400' : '#666'}>
-                New Price (TIPS)
+                {t('nftOptions.editPrice.newPrice')}
               </Text>
               <TextInput
                 value={localPrice}
                 onChangeText={setLocalPrice}
-                placeholder="Enter new price"
+                placeholder={t('nftOptions.editPrice.placeholder')}
                 placeholderTextColor={isDark ? '#666' : '#999'}
                 keyboardType="numeric"
                 inputAccessoryViewID={inputAccessoryViewID}
@@ -119,10 +121,10 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
             {/* Gas Fee */}
             <HStack justifyContent="space-between" alignItems="center">
               <Text fontSize="$sm" color={isDark ? '$textDark400' : '#666'}>
-                Gas Fee (10%)
+                {t('nftOptions.editPrice.gasFee')}
               </Text>
               <Text fontSize="$sm" fontWeight="$semibold" color={isDark ? '$textDark50' : '#000'}>
-                {localPrice ? (parseFloat(localPrice) * 0.1).toFixed(2) : '0'} TIPS
+                {localPrice ? (parseFloat(localPrice) * 0.1).toFixed(2) : '0'} {t('common.tips')}
               </Text>
             </HStack>
 
@@ -134,10 +136,10 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
             >
               <HStack justifyContent="space-between" alignItems="center">
                 <Text fontSize="$md" fontWeight="$bold" color={isDark ? '$textDark50' : '#000'}>
-                  You will receive
+                  {t('nftOptions.editPrice.youWillReceive')}
                 </Text>
                 <Text fontSize="$md" fontWeight="$bold" color={isDark ? '#FFF' : '#000'}>
-                  {localPrice ? (parseFloat(localPrice) * 0.9).toFixed(2) : '0'} TIPS
+                  {localPrice ? (parseFloat(localPrice) * 0.9).toFixed(2) : '0'} {t('common.tips')}
                 </Text>
               </HStack>
             </Box>
@@ -153,7 +155,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                 alignItems="center"
               >
                 <Text fontSize="$md" fontWeight="$semibold" color={isDark ? '$textDark400' : '#666'}>
-                  Cancel
+                  {t('nftOptions.buttons.cancel')}
                 </Text>
               </Pressable>
 
@@ -163,47 +165,47 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                   const price = parseFloat(localPrice);
 
                   if (!price || price <= 0) {
-                    Alert.alert('Invalid Price', 'Please enter a valid price greater than 0.');
+                    Alert.alert(t('nftOptions.editPrice.invalidPrice'), t('nftOptions.editPrice.invalidPriceMessage'));
                     return;
                   }
 
                   if (!listingId) {
-                    Alert.alert('Error', 'Listing ID not found');
+                    Alert.alert(t('common.error'), t('nftOptions.delist.listingNotFound'));
                     return;
                   }
 
                   Alert.alert(
-                    'Confirm Price Update',
-                    `Update price to ${price} TIPS?`,
+                    t('nftOptions.editPrice.confirmTitle'),
+                    t('nftOptions.editPrice.confirmMessage', { price }),
                     [
-                      { text: 'No', style: 'cancel' },
+                      { text: t('nftOptions.buttons.no'), style: 'cancel' },
                       {
-                        text: 'Yes',
+                        text: t('nftOptions.buttons.yes'),
                         onPress: () => {
                           console.log('[NFTOptionsMenu] Updating price:', { listingId, amount: price });
-                          
+
                           updatePriceMutation.mutate(
                             { listingId, amount: price },
                             {
                               onSuccess: (data) => {
                                 console.log('[NFTOptionsMenu] ✅ Price updated successfully:', data);
-                                
+
                                 // Önce bottom sheet'i kapat
                                 closeBottomSheet();
-                                
+
                                 // Sonra success mesajını göster (setTimeout ile bottom sheet kapandıktan sonra)
                                 setTimeout(() => {
-                                  Alert.alert('Success', 'Price has been updated successfully!');
+                                  Alert.alert(t('common.success'), t('nftOptions.editPrice.success'));
                                 }, 500);
-                                
+
                                 // Parent component'i bilgilendir (NFT detail refetch için)
                                 onSuccess?.('updatePrice');
                               },
                               onError: (error: any) => {
                                 console.error('[NFTOptionsMenu] ❌ Failed to update price:', error);
-                                
+
                                 // Error durumunda bottom sheet'i kapatma, sadece mesajı göster
-                                Alert.alert('Error', error?.message || 'Failed to update price');
+                                Alert.alert(t('common.error'), error?.message || t('nftOptions.editPrice.failed'));
                               },
                             }
                           );
@@ -219,7 +221,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                 opacity={!localPrice || parseFloat(localPrice) <= 0 ? 0.5 : 1}
               >
                 <Text fontSize="$md" fontWeight="$bold" color="#000">
-                  Update Price
+                  {t('nftOptions.buttons.updatePrice')}
                 </Text>
               </Pressable>
             </HStack>
@@ -232,7 +234,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                 <Pressable onPress={() => Keyboard.dismiss()}>
                   <HStack justifyContent="flex-end">
                     <Text fontSize="$md" fontWeight="$semibold" color={isDark ? '#FFF' : '#000'}>
-                      Done
+                      {t('nftOptions.menu.done')}
                     </Text>
                   </HStack>
                 </Pressable>
@@ -278,7 +280,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
             fontSize="$md"
             fontWeight="$medium"
           >
-            Edit Price
+            {t('nftOptions.editPrice.title')}
           </Text>
         </HStack>
       </Pressable>
@@ -296,7 +298,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
             fontSize="$md"
             fontWeight="$medium"
           >
-            Delist NFT
+            {t('nftOptions.menu.delist')}
           </Text>
         </HStack>
       </Pressable>

@@ -4,6 +4,7 @@ import { Box, VStack, HStack, Text, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import ReanimatedAnimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { WhatsAppContextMenu } from './WhatsAppContextMenu';
+import { useTranslation } from 'react-i18next';
 
 // Haptic feedback - opsiyonel
 let Haptics: any = null;
@@ -35,9 +36,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onContextMenuStateChange,
   currentUserId,
 }) => {
+  const { t } = useTranslation('inbox');
   // ✅ FIX: isSent değerini yeniden hesapla - item.isSent yanlış olabilir
   // item.senderId ve currentUserId karşılaştırması yap
-  const isSent = currentUserId && item.senderId 
+  const isSent = currentUserId && item.senderId
     ? String(item.senderId) === String(currentUserId)
     : item.isSent; // Fallback: item.isSent kullan
   
@@ -281,16 +283,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       if (onReply) {
         actions.push({
           id: 'reply',
-          label: 'Reply',
+          label: t('messageDetail.actions.reply'),
           icon: 'corner-up-left',
           onPress: () => onReply(item),
         });
       }
-      
+
       if (isSent && onEdit) {
         actions.push({
           id: 'edit',
-          label: 'Edit',
+          label: t('messageDetail.actions.edit'),
           icon: 'edit',
           onPress: () => onEdit(item.id, item.text),
         });
@@ -322,11 +324,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     //       }
     //       // Delete confirmation
     //       Alert.alert(
-    //         'Delete Message',
-    //         'Are you sure you want to delete this message?',
+    //         t('messageDetail.deleteConfirm.title'),
+    //         t('messageDetail.deleteConfirm.message'),
     //         [
     //           {
-    //             text: 'Cancel',
+    //             text: t('messageDetail.deleteConfirm.cancel'),
     //             style: 'cancel',
     //             onPress: () => {
     //               if (__DEV__) {
@@ -336,7 +338,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     //             },
     //           },
     //           {
-    //             text: 'Delete',
+    //             text: t('messageDetail.deleteConfirm.delete'),
     //             style: 'destructive',
     //             onPress: () => {
     //               if (__DEV__) {
@@ -453,7 +455,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   fontWeight="$normal"
                   fontStyle={isDeleted ? 'italic' : 'normal'}
                 >
-                  {isDeleted ? 'Bu mesaj silindi' : (item.text || '(Mesaj içeriği yok)')}
+                  {isDeleted ? t('messageDetail.status.deleted') : (item.text || '(Mesaj içeriği yok)')}
                 </Text>
                 
               </VStack>

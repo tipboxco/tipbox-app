@@ -89,18 +89,37 @@ export const SettingsScreen = () => {
           title: t('settingsScreen.menuItems.supportSettings'),
           onPress: () => navigation.navigate('SupportSettings'),
         },
-        // Language selector temporarily disabled until all screens are migrated
-        // {
-        //   id: 'language',
-        //   icon: 'globe',
-        //   title: t('settingsScreen.menuItems.language', 'Language'),
-        //   onPress: () => {
-        //     openBottomSheet(
-        //       <LanguageBottomSheet onClose={closeBottomSheet} />,
-        //       { ... }
-        //     );
-        //   },
-        // },
+        {
+          id: 'language',
+          icon: 'globe',
+          title: t('settingsScreen.menuItems.language'),
+          onPress: () => {
+            openBottomSheet(
+              <LanguageBottomSheet onClose={closeBottomSheet} />,
+              {
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableDynamicSizing: true,
+                backgroundStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleIndicatorStyle: {
+                  backgroundColor: isDark ? '#333333' : '#B8B8B7',
+                  width: 40,
+                  height: 4,
+                },
+                paddingBottom: bottomOffset,
+              }
+            );
+          },
+        },
         {
           id: 'your-devices',
           icon: 'smartphone',

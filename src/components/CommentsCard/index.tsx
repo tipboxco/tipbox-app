@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { ImageSourcePropType, TextInput, Alert } from 'react-native';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
+import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CachedImage } from '@/src/components/CachedImage';
 import { TrashIcon, HeartIcon, PencilIcon } from 'react-native-heroicons/outline';
@@ -52,6 +53,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
   isLiking = false,
   isEditing = false,
 }) => {
+  const { t } = useTranslation();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isExpanded, setIsExpanded] = useState(false);
@@ -156,21 +158,21 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
   const handleDelete = useCallback(() => {
     if (!commentId || !postId || !onDelete || isDeleting) return;
     Alert.alert(
-      'Delete Comment',
-      'Are you sure you want to delete this comment?',
+      t('common.dialogs.deleteComment.title'),
+      t('common.dialogs.deleteComment.message'),
       [
         {
-          text: 'Cancel',
+          text: t('common.buttons.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Delete',
+          text: t('common.buttons.delete'),
           style: 'destructive',
           onPress: () => onDelete(commentId, postId),
         },
       ]
     );
-  }, [commentId, postId, onDelete, isDeleting]);
+  }, [commentId, postId, onDelete, isDeleting, t]);
 
   // Like handler - no optimistic update, wait for backend response
   const handleLike = useCallback(() => {
@@ -301,7 +303,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontSize={11}
                       fontWeight="$medium"
                     >
-                      Save
+                      {t('common.buttons.save')}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -319,7 +321,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontSize={11}
                       fontWeight="$medium"
                     >
-                      Cancel
+                      {t('common.buttons.cancel')}
                     </Text>
                   </Pressable>
                 </HStack>
@@ -347,7 +349,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontWeight="$medium"
                       textDecorationLine="underline"
                     >
-                      {isExpanded ? 'Show less' : 'Show more'}
+                      {isExpanded ? t('common.menu.showLess') : t('common.menu.showMore')}
                     </Text>
                   </Pressable>
                 )}
@@ -378,7 +380,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                   fontSize={11}
                   fontWeight="$medium"
                 >
-                  {localLikesCount > 0 ? localLikesCount : 'Like'}
+                  {localLikesCount > 0 ? localLikesCount : t('common.buttons.like')}
                 </Text>
               </Pressable>
             </HStack>

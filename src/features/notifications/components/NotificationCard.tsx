@@ -48,6 +48,7 @@ import { Platform, Share, Alert } from 'react-native';
 import { useSafeAreaValues } from '@/src/utils';
 import { Modal, Dimensions } from 'react-native';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 export interface NotificationCardProps {
     notification: Notification;
@@ -687,6 +688,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const { user } = useAppStore();
     const queryClient = useQueryClient();
     const toast = useToast();
+    const { t } = useTranslation('notifications');
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -1213,14 +1215,14 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         }
                         if (result === false) {
                             showCustomToast(toast, {
-                                title: 'Info',
-                                description: `${currentProfile.name || notification.username || 'User'} is already unmuted`,
+                                title: t('titles.info'),
+                                description: t('actions.mute.alreadyMuted', { name: currentProfile.name || notification.username || 'User' }),
                                 action: 'info',
                             });
                         } else {
                             showCustomToast(toast, {
-                                title: 'Unmuted',
-                                description: `${currentProfile.name || notification.username || 'User'} can now send notifications`,
+                                title: t('titles.unmuted'),
+                                description: t('actions.mute.success', { name: currentProfile.name || notification.username || 'User' }),
                                 action: 'success',
                             });
                         }
@@ -1229,9 +1231,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         if (__DEV__) {
                             console.error('[NotificationCard] ❌ Unmute error:', error);
                         }
-                        const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while unmuting';
+                        const errorMessage = error?.response?.data?.message || error?.message || t('actions.mute.error');
                         showCustomToast(toast, {
-                            title: 'Error',
+                            title: t('titles.error'),
                             description: errorMessage,
                             action: 'error',
                         });
@@ -1251,8 +1253,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             console.log('[NotificationCard] ✅ User muted successfully');
                         }
                         showCustomToast(toast, {
-                            title: 'User Muted',
-                            description: `${currentProfile.name || notification.username || 'User'} will no longer send notifications`,
+                            title: t('titles.userMuted'),
+                            description: t('actions.mute.muteSuccess', { name: currentProfile.name || notification.username || 'User' }),
                             action: 'info',
                         });
                     },
@@ -1260,9 +1262,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         if (__DEV__) {
                             console.error('[NotificationCard] ❌ Mute error:', error);
                         }
-                        const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while muting user';
+                        const errorMessage = error?.response?.data?.message || error?.message || t('actions.mute.error');
                         showCustomToast(toast, {
-                            title: 'Error',
+                            title: t('titles.error'),
                             description: errorMessage,
                             action: 'error',
                         });
@@ -1345,14 +1347,14 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                         }
                                         if (result === false) {
                                             showCustomToast(toast, {
-                                                title: 'Info',
-                                                description: `${username} is not blocked`,
+                                                title: t('titles.info'),
+                                                description: t('actions.block.notBlocked', { username }),
                                                 action: 'info',
                                             });
                                         } else {
                                             showCustomToast(toast, {
-                                                title: 'User unblocked',
-                                                description: `${username} can now interact with you`,
+                                                title: t('titles.userUnblocked'),
+                                                description: t('actions.block.unblockSuccess', { username }),
                                                 action: 'success',
                                             });
                                         }
@@ -1361,9 +1363,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                         if (__DEV__) {
                                             console.error('[NotificationCard] ❌ Unblock error:', error);
                                         }
-                                        const errorMessage = error?.response?.data?.message || error?.message || 'Failed to unblock user';
+                                        const errorMessage = error?.response?.data?.message || error?.message || t('actions.block.error');
                                         showCustomToast(toast, {
-                                            title: 'Error',
+                                            title: t('titles.error'),
                                             description: errorMessage,
                                             action: 'error',
                                         });
@@ -1396,8 +1398,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                             console.log('[NotificationCard] ✅ User blocked successfully');
                                         }
                                         showCustomToast(toast, {
-                                            title: 'User blocked',
-                                            description: `${username} can no longer interact with you`,
+                                            title: t('titles.userBlocked'),
+                                            description: t('actions.block.blockSuccess', { username }),
                                             action: 'info',
                                         });
                                         // Navigate back after blocking - goBack will handle if it can go back
@@ -1411,9 +1413,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                         if (__DEV__) {
                                             console.error('[NotificationCard] ❌ Block error:', error);
                                         }
-                                        const errorMessage = error?.response?.data?.message || error?.message || 'Failed to block user';
+                                        const errorMessage = error?.response?.data?.message || error?.message || t('actions.block.error');
                                         showCustomToast(toast, {
-                                            title: 'Error',
+                                            title: t('titles.error'),
                                             description: errorMessage,
                                             action: 'error',
                                         });
@@ -1483,8 +1485,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                         console.log('[NotificationCard] ✅ User reported successfully');
                                     }
                                     showCustomToast(toast, {
-                                        title: 'User reported',
-                                        description: `Thank you for reporting. We'll review this report.`,
+                                        title: t('titles.userReported'),
+                                        description: t('actions.report.success'),
                                         action: 'success',
                                     });
                                 },
@@ -1492,9 +1494,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                     if (__DEV__) {
                                         console.error('[NotificationCard] ❌ Report error:', error);
                                     }
-                                    const errorMessage = error?.response?.data?.message || error?.message || 'Failed to report user';
+                                    const errorMessage = error?.response?.data?.message || error?.message || t('actions.report.error');
                                     showCustomToast(toast, {
-                                        title: 'Error',
+                                        title: t('titles.error'),
                                         description: errorMessage,
                                         action: 'error',
                                     });

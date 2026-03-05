@@ -18,11 +18,13 @@ import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/src/components/Header';
 import { EventType } from '@/src/utils';
+import { useTranslation } from 'react-i18next';
 
 type ProductSelectScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ProductSelectScreenRouteProp = RouteProp<RootStackParamList, 'ProductSelect'>;
 
 export const ProductSelectScreen: React.FC = () => {
+  const { t } = useTranslation('catalog');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ProductSelectScreenNavigationProp>();
@@ -491,7 +493,7 @@ export const ProductSelectScreen: React.FC = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <Box flex={1} bg={backgroundColor}>
         <Header
-          title="Select Product"
+          title={t('productSelect.title')}
           leftAction="back"
         />
 
@@ -514,7 +516,7 @@ export const ProductSelectScreen: React.FC = () => {
             <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
             <Input flex={1} borderWidth={0} bg="transparent">
               <InputField
-                placeholder="Select product group or search product name"
+                placeholder={t('productSelect.searchPlaceholder')}
                 placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                 color={isDark ? '#000' : '#000'}
                 fontSize="$xs"
@@ -555,7 +557,7 @@ export const ProductSelectScreen: React.FC = () => {
               ) : globalSearchResults.length === 0 ? (
                 <Box py="$8" alignItems="center">
                   <Text color={isDark ? '#999' : '#666'} fontSize="$sm">
-                    No search results
+                    {t('productSelect.noSearchResults')}
                   </Text>
                 </Box>
               ) : (

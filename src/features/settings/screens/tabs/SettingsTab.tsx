@@ -4,8 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Moon } from 'lucide-react-native';
 import { OTAUpdateCard } from '../../components/OTAUpdateCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from 'react-i18next';
 
 export const SettingsTab = () => {
+  const { t } = useTranslation('settings');
   const { colorMode, toggleColorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -29,7 +31,7 @@ export const SettingsTab = () => {
             fontSize="$md"
             color={isDark ? '$textDark50' : '$textLight900'}
           >
-            Dark Mode
+            {t('tabs.settingsTab.darkMode')}
           </Text>
         </HStack>
         <Switch

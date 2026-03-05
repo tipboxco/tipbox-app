@@ -2,6 +2,7 @@ import React from 'react';
 import { HStack, Input, InputField, Pressable, Box } from '@gluestack-ui/themed';
 import { FunnelIcon } from 'react-native-heroicons/outline';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 export type NFTType = 'BADGE' | 'COSMETIC' | 'ALL';
@@ -19,6 +20,7 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
   selectedType = 'ALL',
   onFilterPress,
 }) => {
+  const { t } = useTranslation('marketplace');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -42,7 +44,7 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
       />
       <Input flex={1} borderWidth={0} bg="transparent">
         <InputField
-          placeholder="Search by NFT name or description"
+          placeholder={t('search.placeholder')}
           placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
           color={isDark ? '#000' : '#000'}
           fontSize="$xs"

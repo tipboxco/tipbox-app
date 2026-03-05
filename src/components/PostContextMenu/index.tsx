@@ -9,6 +9,7 @@ import {
   NoSymbolIcon,
   ArrowTopRightOnSquareIcon,
 } from 'react-native-heroicons/outline';
+import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useSharePost } from '@/src/features/interactions/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -52,6 +53,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
   onReportUser,
   onBlock,
 }) => {
+  const { t } = useTranslation();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -59,9 +61,9 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
 
   const handleExternalShare = useCallback(async () => {
     try {
-      const shareMessage = postContent 
+      const shareMessage = postContent
         ? `${postAuthorName ? `${postAuthorName}: ` : ''}${postContent.substring(0, 100)}${postContent.length > 100 ? '...' : ''}`
-        : `Check out this post on Tipbox!`;
+        : t('common.messages.checkOutPost');
       
       await Share.share({
         message: shareMessage,
@@ -74,25 +76,25 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
 
   const handleReportPost = useCallback(() => {
     Alert.alert(
-      'Post\'u Raporla',
-      'Bu post\'u raporlamak istediğinizden emin misiniz?',
+      t('common.dialogs.reportPost.title'),
+      t('common.dialogs.reportPost.message'),
       [
         {
-          text: 'İptal',
+          text: t('common.buttons.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Raporla',
+          text: t('common.buttons.report'),
           style: 'destructive',
           onPress: () => {
             // TODO: Post report API endpoint eklendiğinde buraya entegre edilecek
             console.log('[PostContextMenu] Report post:', postId);
-            Alert.alert('Success', 'Post reported. Thank you for your review.');
+            Alert.alert(t('common.messages.success'), t('common.messages.postReported'));
           },
         },
       ]
     );
-  }, [postId]);
+  }, [postId, t]);
 
   const handleMenuPress = useCallback(() => {
     // CRITICAL DEBUG: Check which menu items will be rendered
@@ -147,7 +149,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
                 fontSize="$md"
                 fontWeight="$medium"
               >
-                Profili Görüntüle
+                {t('common.menu.viewProfile')}
               </Text>
             </HStack>
           </Pressable>
@@ -187,7 +189,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
                     fontSize="$md"
                     fontWeight="$medium"
                   >
-                    {isTrusting ? 'Ekleniyor...' : isUntrusting ? 'Kaldırılıyor...' : (isTrusted ? 'Un Trust' : 'Trust')}
+                    {isTrusting ? t('common.messages.adding') : isUntrusting ? t('common.messages.removing') : (isTrusted ? t('common.menu.unTrust') : t('common.menu.trust'))}
                   </Text>
                 </HStack>
               </Pressable>
@@ -211,7 +213,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
                   fontSize="$md"
                   fontWeight="$medium"
                 >
-                  Dışarıda Paylaş
+                  {t('common.menu.externalShare')}
                 </Text>
               </HStack>
             </Pressable>
@@ -237,7 +239,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
                       fontSize="$md"
                       fontWeight="$medium"
                     >
-                      {isReporting ? 'Raporlanıyor...' : 'Kullanıcıyı Raporla'}
+                      {isReporting ? t('common.messages.reporting') : t('common.menu.reportUser')}
                     </Text>
                   </HStack>
                 </Pressable>
@@ -261,7 +263,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
                   fontSize="$md"
                   fontWeight="$medium"
                 >
-                  Post'u Raporla
+                  {t('common.menu.reportPost')}
                 </Text>
               </HStack>
             </Pressable>
@@ -313,7 +315,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
                   fontSize="$md"
                   fontWeight="$medium"
                 >
-                  Dışarıda Paylaş
+                  {t('common.menu.externalShare')}
                 </Text>
               </HStack>
             </Pressable>
@@ -333,7 +335,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
                   fontSize="$md"
                   fontWeight="$medium"
                 >
-                  Post'u Raporla
+                  {t('common.menu.reportPost')}
                 </Text>
               </HStack>
             </Pressable>

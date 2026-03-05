@@ -27,6 +27,7 @@ import type { NftTransferRecipientSnapshot } from '@/src/features/wallet/store/n
 import { useNftTransferFlowStore } from '@/src/features/wallet/store/nft-transfer-flow-store';
 import { useNftTransfer } from '@/src/features/wallet/api/hooks';
 import { deleteListing } from '@/src/features/marketplace/api/marketplaceApi';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 export interface NftTransferBottomSheetHandle {
   present: () => void;
@@ -40,6 +41,7 @@ interface NftTransferBottomSheetProps {
 
 export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, NftTransferBottomSheetProps>(
   ({ onRecipientSelected, onClose }, ref) => {
+    const { t } = useTranslation('wallet');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const insets = useSafeAreaInsets();
@@ -117,13 +119,13 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
           },
           {
             onSuccess: () => {
-              Alert.alert('Success', 'NFT transfer completed.');
+              Alert.alert(t('nftTransfer.toasts.success'), t('nftTransfer.toasts.successMessage'));
               bottomSheetRef.current?.dismiss();
               resolve();
             },
             onError: (err: any) => {
-              const msg = err?.response?.data?.message || err?.message || 'An error occurred during NFT transfer.';
-              Alert.alert('Error', msg);
+              const msg = err?.response?.data?.message || err?.message || t('nftTransfer.toasts.successMessage');
+              Alert.alert(t('nftTransfer.toasts.failed'), msg);
               reject(err);
             },
           }
@@ -134,17 +136,17 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
     const handleConfirmPress = useCallback(() => {
       if (!selected) return;
       if (!nftId) {
-        Alert.alert('Error', 'NFT selection not found. Please try again.');
+        Alert.alert(t('nftTransfer.toasts.nftNotFound'), t('nftTransfer.toasts.nftNotFoundMessage'));
         return;
       }
 
       Alert.alert(
-        'NFT Transfer',
-        `${selected.name} kullanıcısına transfer etmek istiyor musunuz?`,
+        t('nftTransfer.confirmDialog.title'),
+        t('nftTransfer.confirmDialog.message', { name: selected.name }),
         [
-          { text: 'No', style: 'cancel' },
+          { text: t('nftTransfer.confirmDialog.no'), style: 'cancel' },
           {
-            text: 'Yes',
+            text: t('nftTransfer.confirmDialog.yes'),
             style: 'destructive',
             onPress: () => {
               // fire-and-forget; error/success handled inside
@@ -183,7 +185,7 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
             </Pressable>
             <HStack flex={1} justifyContent="center" alignItems="center">
               <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                NFT Transfer
+                {t('nftTransfer.title')}
               </Text>
             </HStack>
             <Box w={24} />
@@ -203,7 +205,7 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
             <MagnifyingGlassIcon width={22} height={22} color="#8E8E93" />
             <Input flex={1} borderWidth={0} bg="transparent">
               <InputField
-                placeholder="Trust list içinde ara"
+                placeholder={t('nftTransfer.searchPlaceholder')}
                 placeholderTextColor="#B9B9B9"
                 color={isDark ? '#fff' : '#000'}
                 fontSize={11}
@@ -228,23 +230,23 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
               <VStack alignItems="center" justifyContent="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                  Trust list yükleniyor...
+                  {t('nftTransfer.loading')}
                 </Text>
               </VStack>
             ) : error ? (
               <VStack alignItems="center" justifyContent="center" py="$8">
                 <Text fontSize={14} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                  Trust list alınamadı
+                  {t('nftTransfer.loadFailed')}
                 </Text>
                 <Text mt="$2" fontSize={12} color="$textLight500" $dark-color="$textDark400" textAlign="center">
-                  Lütfen daha sonra tekrar deneyin.
+                  {t('nftTransfer.tryAgain')}
                 </Text>
               </VStack>
             ) : !trustList || trustList.length === 0 ? (
               <VStack alignItems="center" justifyContent="center" py="$8">
                 <UsersIcon width={56} height={56} color={isDark ? '#666666' : '#CCCCCC'} />
                 <Text mt="$4" fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                  Trust listeniz boş
+                  {t('nftTransfer.emptyList')}
                 </Text>
               </VStack>
             ) : (
@@ -331,12 +333,12 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
                 <HStack alignItems="center" space="sm">
                   <ActivityIndicator size="small" color="#111111" />
                   <Text fontSize={14} fontWeight="$bold" color="#111111">
-                    Transfer...
+                    {t('nftTransfer.transferring')}
                   </Text>
                 </HStack>
               ) : (
                 <Text fontSize={14} fontWeight="$bold" color={selected ? '#111111' : '#B1B1B1'} $dark-color={selected ? '#111111' : '#777777'}>
-                  Transfer
+                  {t('nftTransfer.transfer')}
                 </Text>
               )}
             </Pressable>

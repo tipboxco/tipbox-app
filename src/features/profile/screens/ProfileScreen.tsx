@@ -1602,10 +1602,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                           error?.response?.data?.message ||
                           error?.message ||
                           (error?.message === 'Network Error'
-                            ? 'Ağ bağlantısı hatası. İnternet bağlantınızı kontrol edin.'
-                            : 'İşlem başarısız. Lütfen tekrar deneyin.');
+                            ? t('errors.networkError')
+                            : t('errors.operationFailed'));
                         showCustomToast(toast, {
-                          title: 'Hata',
+                          title: t('errors.error'),
                           description: msg,
                           action: 'error',
                           duration: 4000,

@@ -12,6 +12,7 @@ import {
 } from '@gluestack-ui/themed';
 import { ChevronLeftIcon, MagnifyingGlassIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface Friend {
   id: string;
@@ -32,6 +33,7 @@ export const SendFriendBottomSheet: React.FC<SendFriendBottomSheetProps> = ({
   onFriendSelect,
   onBack,
 }) => {
+  const { t } = useTranslation('wallet');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,7 +53,7 @@ export const SendFriendBottomSheet: React.FC<SendFriendBottomSheetProps> = ({
         </Pressable>
         <HStack flex={1} justifyContent="center" alignItems="center">
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            Send TIPS
+            {t('sendFriend.title')}
           </Text>
         </HStack>
         <Box w={24} />
@@ -72,7 +74,7 @@ export const SendFriendBottomSheet: React.FC<SendFriendBottomSheetProps> = ({
         />
         <Input flex={1} borderWidth={0} bg="transparent">
           <InputField
-            placeholder="Search friend"
+            placeholder={t('sendFriend.searchPlaceholder')}
             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
             color={isDark ? '#fff' : '#000'}
             fontSize={11}
