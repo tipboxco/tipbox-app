@@ -111,5 +111,23 @@
     "block": "Block",
     "showMore": "Show more",
     "showLess": "Show less"
+  },
+  "drawer": {
+    "menuItems": {
+      "account": "Account",
+      "wallet": "Wallet",
+      "bookmarks": "Bookmarks",
+      "marketplace": "Marketplace",
+      "primePass": "Prime Pass",
+      "settings": "Settings"
+    },
+    "bottomItems": {
+      "feedback": "Feedback",
+      "voteNewFeatures": "Vote New Features",
+      "helpCenter": "Help Center",
+      "comingSoon": "Coming Soon",
+      "purchaseHistory": "Purchase History",
+      "logOut": "Log out"
+    }
   }
 }

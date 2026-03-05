@@ -6,9 +6,9 @@ import {
   Pressable,
   HStack,
   Image,
-  ScrollView,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from 'react-i18next';
 import { TouchableOpacity, Modal, View, ActivityIndicator } from 'react-native';
 import { navigationService } from '@/src/services/NavigationService';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -67,7 +67,8 @@ const styles = StyleSheet.create({
 const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+  const { t } = useTranslation(['common', 'profile']);
+
   // Drawer store'dan state oku (sync için)
   const { isOpen, closeDrawer, openDrawer } = useDrawerStore();
   
@@ -456,37 +457,37 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     {
       id: 'account',
       icon: UserCircleIcon,
-      label: 'Account',
+      label: t('drawer.menuItems.account'),
       onPress: handleNavigateToProfile,
     },
     {
       id: 'wallet',
       icon: CreditCardIcon,
-      label: 'Wallet',
+      label: t('drawer.menuItems.wallet'),
       onPress: handleNavigateToWallet,
     },
     {
       id: 'bookmarks',
       icon: BookmarkIcon,
-      label: 'Bookmarks',
+      label: t('drawer.menuItems.bookmarks'),
       onPress: handleNavigateToBookmarks,
     },
     {
       id: 'marketplace',
       icon: ShoppingBagIcon,
-      label: 'Marketplace',
+      label: t('drawer.menuItems.marketplace'),
       onPress: handleNavigateToMarketplace,
     },
     {
       id: 'prime-pass',
       icon: TrophyIcon,
-      label: 'Prime Pass',
+      label: t('drawer.menuItems.primePass'),
       onPress: handlePrimePassPress,
     },
     {
       id: 'settings',
       icon: Cog6ToothIcon,
-      label: 'Settings',
+      label: t('drawer.menuItems.settings'),
       onPress: handleNavigateToSettings,
     },
     // MoreSchoise seçeneği şimdilik gizlendi
@@ -497,57 +498,37 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     //   onPress: handleNavigateToMoreSchoise,
     // },
   ], [
+    t,
     handleNavigateToProfile,
     handleNavigateToWallet,
     handleNavigateToBookmarks,
     handleNavigateToMarketplace,
     handleNavigateToSettings,
+    handlePrimePassPress,
     // handleNavigateToMoreSchoise, // Şimdilik gizlendi
     handleCloseDrawer,
   ]);
 
   return (
-    <Box 
-      flex={1} 
-      bg={isDark ? '#000000' : '#FFFFFF'} 
-      w="100%" 
-      m={0} 
+    <Box
+      flex={1}
+      bg={isDark ? '#000000' : '#FFFFFF'}
+      w="100%"
+      m={0}
       p={0}
       style={{
         zIndex: 10000, // FIX: DrawerContent'in SafeAreaView'in üstünde görünmesi için
         elevation: 10000, // Android için elevation
       }}
     >
-      {/* ScrollView kullan - DrawerContentScrollView yerine */}
-      <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingTop: 0,
-          paddingBottom: 320, // Bottom menüler için padding - artırıldı
-          paddingLeft: 0,
-          paddingRight: 0,
-          margin: 0,
-          width: '100%',
-        }}
-        style={{
-          backgroundColor: isDark ? '#000000' : '#FFFFFF',
-          margin: 0,
-          padding: 0,
-          flex: 1,
-          width: '100%',
-        }}
-        scrollEnabled={true}
-        bounces={false}
-        overScrollMode="never"
-        alwaysBounceVertical={false}
+      {/* No scroll - tek parça drawer */}
+      <Box
+        flex={1}
+        bg={isDark ? '#000000' : '#FFFFFF'}
+        w="100%"
+        m={0}
+        p={0}
       >
-        <Box 
-          flex={1} 
-          bg={isDark ? '#000000' : '#FFFFFF'} 
-          w="100%" 
-          m={0} 
-          p={0}
-        >
           {/* Banner Section – FULL BLEED */}
           <Box h={280} w="100%" position="relative" bg={isDark ? '#000000' : '#FFFFFF'}>
           {/* Banner */}
@@ -649,7 +630,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                     {stats.posts}
                   </Text>
                   <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$xs">
-                    Posts
+                    {t('profile:stats.posts')}
                   </Text>
                 </VStack>
               </Pressable>
@@ -671,7 +652,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                     {stats.trust}
                   </Text>
                   <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$xs">
-                    Trust
+                    {t('profile:stats.trust')}
                   </Text>
                 </VStack>
               </Pressable>
@@ -693,7 +674,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                     {stats.truster}
                   </Text>
                   <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$xs">
-                    Truster
+                    {t('profile:stats.truster')}
                   </Text>
                 </VStack>
               </Pressable>
@@ -731,7 +712,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                 onPress={() => {
                   item.onPress();
                 }}
-                h={48}
+                h={44}
                 justifyContent="center"
                 bg="transparent"
                 px="$6"
@@ -754,30 +735,14 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             ))}
           </VStack>
 
-          {/* Bottom Line – FULL BLEED - 1px daha kalın */}
-          <Box h={1.5} w="100%" bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} mt="$3" />
-        </Box>
-      </ScrollView>
+          {/* Divider between Settings and Bottom Items */}
+          <Box h={1} w="100%" bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} my="$3" />
 
-      {/* Settings and Help – DIŞTA px yok, SATIRDA px var - Bottom Fixed */}
-      <Box
-        position="absolute"
-        bottom={0}
-        left={0}
-        right={0}
-        bg={isDark ? '#000000' : '#FFFFFF'}
-        pb={bottomPadding}
-      >
-        {/* Top separator - arkadaki öğeleri gizlemek için solid line */}
-        <Box
-          h={1.5}
-          w="100%"
-          bg={isDark ? '$backgroundDark200' : '$backgroundLight200'}
-        />
-        <VStack px="$0">
+          {/* Bottom Items – DIŞTA px yok, SATIRDA px var */}
+          <VStack px="$0" pb={bottomPadding}>
           <Pressable
             onPress={handleNavigateToFeedback}
-            h={48}
+            h={44}
             justifyContent="center"
             bg="transparent"
             px="$6"
@@ -787,20 +752,20 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <Box w={20} h={20} justifyContent="center" alignItems="center">
               <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>
-            <Text 
+            <Text
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$xs"
               fontWeight="$medium"
               flex={1}
               numberOfLines={1}
             >
-              Feedback
+              {t('drawer.bottomItems.feedback')}
             </Text>
           </HStack>
         </Pressable>
         <Pressable
           onPress={handleNavigateToVoteNewFeatures}
-          h={48}
+          h={44}
           justifyContent="center"
           bg="transparent"
           px="$6"
@@ -810,20 +775,20 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <Box w={20} h={20} justifyContent="center" alignItems="center">
               <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>
-            <Text 
+            <Text
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$xs"
               fontWeight="$medium"
               flex={1}
               numberOfLines={1}
             >
-              Vote New Features
+              {t('drawer.bottomItems.voteNewFeatures')}
             </Text>
           </HStack>
         </Pressable>
         <Pressable
           onPress={handleHelpCenterPress}
-          h={48}
+          h={44}
           justifyContent="center"
           bg="transparent"
           px="$6"
@@ -833,13 +798,13 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <Box w={20} h={20} justifyContent="center" alignItems="center">
               <QuestionMarkCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>
-            <Text 
+            <Text
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$xs"
               fontWeight="$medium"
               w={110}
             >
-              Help Center
+              {t('drawer.bottomItems.helpCenter')}
             </Text>
             <Box
               bg={isDark ? '$backgroundDark600' : '$backgroundLight300'}
@@ -852,14 +817,14 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                 fontSize="$2xs"
                 fontWeight="$medium"
               >
-                Coming Soon
+                {t('drawer.bottomItems.comingSoon')}
               </Text>
             </Box>
           </HStack>
         </Pressable>
         <Pressable
           onPress={handleNavigateToPurchaseHistory}
-          h={48}
+          h={44}
           justifyContent="center"
           bg="transparent"
           px="$6"
@@ -869,19 +834,19 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <Box w={20} h={20} justifyContent="center" alignItems="center">
               <ClockIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>
-            <Text 
+            <Text
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$xs"
               fontWeight="$medium"
               w={110}
             >
-              Purchase History
+              {t('drawer.bottomItems.purchaseHistory')}
             </Text>
           </HStack>
         </Pressable>
         <Pressable
           onPress={handleLogout}
-          h={48}
+          h={44}
           justifyContent="center"
           bg="transparent"
           px="$6"
@@ -891,18 +856,18 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <Box w={20} h={20} justifyContent="center" alignItems="center">
               <ArrowRightStartOnRectangleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>
-            <Text 
+            <Text
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$xs"
               fontWeight="$medium"
               w={110}
             >
-              Log out
+              {t('drawer.bottomItems.logOut')}
             </Text>
           </HStack>
         </Pressable>
       </VStack>
-      </Box>
+    </Box>
 
       {/* Prime Pass Video Modal */}
       <Modal

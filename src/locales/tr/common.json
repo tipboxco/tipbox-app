@@ -1,115 +1,133 @@
 {
   "buttons": {
-    "confirm": "Confirm",
-    "cancel": "Cancel",
-    "done": "Done",
-    "close": "Close",
-    "back": "Back",
-    "next": "Next",
-    "save": "Save",
-    "delete": "Delete",
-    "edit": "Edit",
-    "send": "Send",
-    "retry": "Retry",
-    "ok": "OK",
-    "report": "Report",
-    "share": "Share",
-    "update": "Update",
-    "block": "Block",
-    "yes": "Yes",
-    "no": "No",
-    "like": "Like"
+    "confirm": "",
+    "cancel": "",
+    "done": "",
+    "close": "",
+    "back": "",
+    "next": "",
+    "save": "",
+    "delete": "",
+    "edit": "",
+    "send": "",
+    "retry": "",
+    "ok": "",
+    "report": "",
+    "share": "",
+    "update": "",
+    "block": "",
+    "yes": "",
+    "no": "",
+    "like": ""
   },
   "labels": {
-    "email": "Email",
-    "password": "Password",
-    "username": "Username",
-    "name": "Name",
-    "or": "or"
+    "email": "",
+    "password": "",
+    "username": "",
+    "name": "",
+    "or": ""
   },
   "placeholders": {
-    "emailAddress": "Your email address",
-    "password": "Your password",
-    "search": "Search..."
+    "emailAddress": "",
+    "password": "",
+    "search": ""
   },
   "errors": {
-    "generic": "An error occurred",
-    "networkError": "Network error. Please try again.",
-    "invalidEmail": "Please enter a valid email address",
-    "invalidPassword": "Password must be at least 8 characters",
-    "required": "This field is required"
+    "generic": "",
+    "networkError": "",
+    "invalidEmail": "",
+    "invalidPassword": "",
+    "required": ""
   },
   "time": {
-    "justNow": "Just now",
-    "recently": "Recently",
-    "ago": "ago",
-    "year": "year",
-    "year_other": "years",
-    "month": "month",
-    "month_other": "months",
-    "day": "day",
-    "day_other": "days",
-    "hour": "hour",
-    "hour_other": "hours",
-    "minute": "minute",
-    "minute_other": "minutes",
-    "second": "second",
-    "second_other": "seconds"
+    "justNow": "",
+    "recently": "",
+    "ago": "",
+    "year": "",
+    "year_other": "",
+    "month": "",
+    "month_other": "",
+    "day": "",
+    "day_other": "",
+    "hour": "",
+    "hour_other": "",
+    "minute": "",
+    "minute_other": "",
+    "second": "",
+    "second_other": ""
   },
   "bookmarks": {
-    "title": "Bookmarks",
-    "loading": "Loading bookmarks...",
-    "error": "An error occurred while loading bookmarks",
-    "empty": "No bookmarks yet."
+    "title": "",
+    "loading": "",
+    "error": "",
+    "empty": ""
   },
   "moreSchoise": {
-    "title": "MoreSchoise",
+    "title": "",
     "tabs": {
-      "settings": "Settings",
-      "notification": "Notification",
-      "media": "Media",
-      "keyboard": "Keyboard"
+      "settings": "",
+      "notification": "",
+      "media": "",
+      "keyboard": ""
     }
   },
   "dialogs": {
     "deleteComment": {
-      "title": "Delete Comment",
-      "message": "Are you sure you want to delete this comment?"
+      "title": "",
+      "message": ""
     },
     "deletePost": {
-      "title": "Delete Post",
-      "message": "Are you sure you want to delete this post? This action cannot be undone."
+      "title": "",
+      "message": ""
     },
     "reportPost": {
-      "title": "Report Post",
-      "message": "Are you sure you want to report this post?"
+      "title": "",
+      "message": ""
     },
-    "info": "Info"
+    "info": ""
   },
   "messages": {
-    "success": "Success",
-    "error": "Error",
-    "postDeleted": "Post deleted successfully.",
-    "postReported": "Post reported. Thank you for your review.",
-    "deleteError": "An error occurred while deleting the post.",
-    "updateOnlyForExperience": "Update feature is only available for experience posts.",
-    "checkOutPost": "Check out this post on Tipbox!",
-    "adding": "Adding...",
-    "removing": "Removing...",
-    "reporting": "Reporting..."
+    "success": "",
+    "error": "",
+    "postDeleted": "",
+    "postReported": "",
+    "deleteError": "",
+    "updateOnlyForExperience": "",
+    "checkOutPost": "",
+    "adding": "",
+    "removing": "",
+    "reporting": ""
   },
   "menu": {
-    "update": "Update",
-    "delete": "Delete",
-    "externalShare": "Share Externally",
-    "report": "Report",
-    "viewProfile": "View Profile",
-    "trust": "Trust",
-    "unTrust": "Un Trust",
-    "reportUser": "Report User",
-    "reportPost": "Report Post",
-    "block": "Block",
-    "showMore": "Show more",
-    "showLess": "Show less"
+    "update": "",
+    "delete": "",
+    "externalShare": "",
+    "report": "",
+    "viewProfile": "",
+    "trust": "",
+    "unTrust": "",
+    "reportUser": "",
+    "reportPost": "",
+    "block": "",
+    "showMore": "",
+    "showLess": ""
+  },
+  "drawer": {
+    "menuItems": {
+      "account": "Hesap",
+      "wallet": "Cüzdan",
+      "bookmarks": "Kaydedilenler",
+      "marketplace": "Market",
+      "primePass": "Prime Pass",
+      "settings": "Ayarlar"
+    },
+    "bottomItems": {
+      "feedback": "Geri Bildirim",
+      "voteNewFeatures": "Yeni Özellikler İçin Oy Ver",
+      "helpCenter": "Yardım Merkezi",
+      "comingSoon": "Yakında",
+      "purchaseHistory": "Satın Alma Geçmişi",
+      "logOut": "Çıkış Yap"
+    }
   }
 }

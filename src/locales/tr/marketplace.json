@@ -1,179 +1,178 @@
 {
   "screens": {
     "marketplace": {
-      "title": "Marketplace",
+      "title": "",
       "tabs": {
-        "allNFTs": "All NFT's",
-        "myListings": "My Listings"
+        "allNFTs": "",
+        "myListings": ""
       },
       "errors": {
-        "loadingError": "An error occurred while loading NFTs: {{message}}",
-        "loadingMyListingsError": "An error occurred while loading your listings: {{message}}"
+        "loadingError": "",
+        "loadingMyListingsError": ""
       },
       "empty": {
-        "noNFTs": "No NFTs for sale yet.",
-        "noListings": "You don't have any active listings yet."
+        "noNFTs": "",
+        "noListings": ""
       }
     },
     "nftDetail": {
-      "title": "NFT Detail",
-      "owner": "Owner by",
-      "currentPrice": "Current Price",
-      "suggestedPrice": "Suggested Price",
-      "earnDate": "Earn Date",
-      "rarity": "Rarity",
-      "owners": "Owners",
-      "description": "Description",
-      "salesHistory": "Sales History",
-      "noSalesHistory": "No sales history available yet",
-      "viewCount": "{{count}}",
-      "editPriceNote": "Select \"Edit Price\" from the top right menu to change the price.",
-      "insufficientBalance": "Insufficient TIPS balance. You need {{amount}} TIPS.",
+      "title": "",
+      "owner": "",
+      "currentPrice": "",
+      "suggestedPrice": "",
+      "earnDate": "",
+      "rarity": {
+        "common": "",
+        "rare": "",
+        "epic": "",
+        "legendary": ""
+      },
+      "owners": "",
+      "description": "",
+      "salesHistory": "",
+      "noSalesHistory": "",
+      "viewCount": "",
+      "editPriceNote": "",
+      "insufficientBalance": "",
       "menu": {
-        "editPrice": "Edit Price",
-        "delistNFT": "Delist NFT"
+        "editPrice": "",
+        "delistNFT": ""
       },
       "buttons": {
-        "updatePrice": "Update Price",
-        "buyNFT": "Buy NFT - {{price}} TIPS",
-        "cancel": "Cancel"
+        "updatePrice": "",
+        "buyNFT": "",
+        "cancel": ""
       },
       "alerts": {
-        "confirmPurchase": "Confirm Purchase",
-        "confirmPurchaseMessage": "Are you sure you want to buy \"{{title}}\" for {{price}} TIPS?",
-        "insufficientBalanceTitle": "Insufficient Balance",
-        "insufficientBalanceMessage": "You need {{required}} TIPS but you only have {{available}} TIPS.",
-        "confirmPriceUpdate": "Confirm Price Update",
-        "confirmPriceUpdateMessage": "Update price to {{price}} TIPS?",
-        "confirmDelist": "Delist NFT",
-        "confirmDelistMessage": "Are you sure you want to remove \"{{title}}\" from marketplace?",
-        "errorNoListing": "Listing ID not found (cannot edit price)",
-        "errorNoListingDelist": "Listing ID not found (cannot delist)",
-        "errorNoActiveListing": "No active listing found for this NFT",
-        "invalidPrice": "Invalid Price",
-        "invalidPriceMessage": "Please enter a valid price greater than 0.",
-        "yes": "Yes",
-        "no": "No",
-        "ok": "OK"
+        "confirmPurchase": "",
+        "confirmPurchaseMessage": "",
+        "insufficientBalanceTitle": "",
+        "insufficientBalanceMessage": "",
+        "confirmPriceUpdate": "",
+        "confirmPriceUpdateMessage": "",
+        "confirmDelist": "",
+        "confirmDelistMessage": "",
+        "errorNoListing": "",
+        "errorNoListingDelist": "",
+        "errorNoActiveListing": "",
+        "invalidPrice": "",
+        "invalidPriceMessage": "",
+        "yes": "",
+        "no": "",
+        "ok": ""
       },
       "success": {
-        "priceUpdated": "Success",
-        "priceUpdatedMessage": "Price has been updated successfully!",
-        "delisted": "Success",
-        "delistedMessage": "NFT has been delisted from marketplace"
+        "priceUpdated": "",
+        "priceUpdatedMessage": "",
+        "delisted": "",
+        "delistedMessage": ""
       },
       "errors": {
-        "error": "Error",
-        "updatePriceFailed": "Failed to update price",
-        "delistFailed": "Failed to delist NFT",
-        "purchaseFailed": "Failed to purchase NFT",
-        "loadingFailed": "Failed to load NFT details"
-      },
-      "rarity": {
-        "common": "Common",
-        "rare": "Rare",
-        "epic": "Epic",
-        "legendary": "Legendary"
+        "error": "",
+        "updatePriceFailed": "",
+        "delistFailed": "",
+        "purchaseFailed": "",
+        "loadingFailed": ""
       }
     },
     "nftSell": {
-      "title": "Sell NFT",
-      "setPrice": "Set Price",
-      "updatePrice": "Update Price",
-      "currentPrice": "Current Price",
-      "suggestedPrice": "Suggested Price",
-      "rarity": "Rarity",
-      "gasFee": "Gas Fee (10%)",
-      "youWillEarn": "You Will Earn",
+      "title": "",
+      "setPrice": "",
+      "updatePrice": "",
+      "currentPrice": "",
+      "suggestedPrice": "",
+      "rarity": "",
+      "gasFee": "",
+      "youWillEarn": "",
       "buttons": {
-        "sell": "Sell - {{price}} TIPS",
-        "updatePriceButton": "Update Price - {{price}} TIPS",
-        "delist": "Delist from Marketplace",
-        "done": "Done"
+        "sell": "",
+        "updatePriceButton": "",
+        "delist": "",
+        "done": ""
       },
       "placeholders": {
-        "price": "0.00"
+        "price": ""
       },
       "alerts": {
-        "confirmListing": "Confirm Listing",
-        "confirmListingMessage": "Are you sure you want to list this NFT for {{price}} TIPS?",
-        "confirmPriceUpdate": "Confirm Price Update",
-        "confirmPriceUpdateMessage": "Update price from {{oldPrice}} TIPS to {{newPrice}} TIPS?",
-        "confirmDelist": "Confirm Delist",
-        "confirmDelistMessage": "Are you sure you want to remove this NFT from sale?",
-        "yes": "Yes",
-        "no": "No"
+        "confirmListing": "",
+        "confirmListingMessage": "",
+        "confirmPriceUpdate": "",
+        "confirmPriceUpdateMessage": "",
+        "confirmDelist": "",
+        "confirmDelistMessage": "",
+        "yes": "",
+        "no": ""
       },
       "toast": {
-        "invalidPrice": "Invalid Price",
-        "invalidPriceMessage": "Please enter a valid price greater than 0.",
-        "minimumTipsRequired": "Minimum {{amount}} TIPS required",
-        "noListingFound": "No Listing Found",
-        "noListingFoundMessage": "No active listing found",
-        "listingFailed": "Listing Failed",
-        "listingFailedMessage": "Failed to list NFT for sale",
-        "delistSuccess": "Delisted Successfully",
-        "delistSuccessMessage": "NFT removed from marketplace",
-        "delistFailed": "Delist Failed",
-        "delistFailedMessage": "Failed to delist NFT",
-        "priceUpdated": "Price Updated",
-        "priceUpdatedMessage": "Price updated successfully",
-        "updateFailed": "Update Failed",
-        "updateFailedMessage": "Failed to update price"
+        "invalidPrice": "",
+        "invalidPriceMessage": "",
+        "minimumTipsRequired": "",
+        "noListingFound": "",
+        "noListingFoundMessage": "",
+        "listingFailed": "",
+        "listingFailedMessage": "",
+        "delistSuccess": "",
+        "delistSuccessMessage": "",
+        "delistFailed": "",
+        "delistFailedMessage": "",
+        "priceUpdated": "",
+        "priceUpdatedMessage": "",
+        "updateFailed": "",
+        "updateFailedMessage": ""
       },
       "errors": {
-        "loadingError": "Failed to load NFT information"
+        "loadingError": ""
       }
     },
     "selectNFT": {
-      "title": "Select NFT",
-      "empty": "No NFTs found yet.",
-      "continueButton": "Continue ({{count}} selected)",
+      "title": "",
+      "empty": "",
+      "continueButton": "",
       "errors": {
-        "loadingError": "An error occurred while loading NFTs: {{message}}"
+        "loadingError": ""
       }
     }
   },
   "nftOptions": {
     "delist": {
-      "title": "Delist NFT",
-      "message": "Are you sure you want to remove \"{{nftTitle}}\" from marketplace?",
-      "success": "NFT has been delisted from marketplace",
-      "failed": "Failed to delist NFT",
-      "listingNotFound": "Listing ID not found"
+      "title": "",
+      "message": "",
+      "success": "",
+      "failed": "",
+      "listingNotFound": ""
     },
     "editPrice": {
-      "title": "Edit Price",
-      "currentPrice": "Current Price",
-      "newPrice": "New Price (TIPS)",
-      "placeholder": "Enter new price",
-      "gasFee": "Gas Fee (10%)",
-      "youWillReceive": "You will receive",
-      "confirmTitle": "Confirm Price Update",
-      "confirmMessage": "Update price to {{price}} TIPS?",
-      "invalidPrice": "Invalid Price",
-      "invalidPriceMessage": "Please enter a valid price greater than 0.",
-      "success": "Price has been updated successfully!",
-      "failed": "Failed to update price"
+      "title": "",
+      "currentPrice": "",
+      "newPrice": "",
+      "placeholder": "",
+      "gasFee": "",
+      "youWillReceive": "",
+      "confirmTitle": "",
+      "confirmMessage": "",
+      "invalidPrice": "",
+      "invalidPriceMessage": "",
+      "success": "",
+      "failed": ""
     },
     "menu": {
-      "done": "Done",
-      "delist": "Delist NFT"
+      "done": "",
+      "delist": ""
     },
     "buttons": {
-      "cancel": "Cancel",
-      "no": "No",
-      "yes": "Yes",
-      "updatePrice": "Update Price"
+      "cancel": "",
+      "no": "",
+      "yes": "",
+      "updatePrice": ""
     }
   },
   "search": {
-    "placeholder": "Search by NFT name or description"
+    "placeholder": ""
   },
   "common": {
-    "tips": "TIPS",
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success"
+    "tips": "",
+    "loading": "",
+    "error": "",
+    "success": ""
   }
 }

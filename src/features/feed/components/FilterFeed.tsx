@@ -3,13 +3,12 @@
  * Handles all filter logic for feed (interests, tags, category, sort)
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pressable, Text as RNText } from 'react-native';
 import { HStack, Box, Text, VStack } from '@/src/components/ui';
 import { CheckIcon as CheckIconSolid } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import type { FeedFilterParams } from '../api/feedApi';
-import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
 
 // Filter options - Tags dropdown
 export const TAG_OPTIONS = [
@@ -36,14 +35,17 @@ export const SORT_OPTIONS = [
   { value: 'top', label: 'Top' },
 ] as const;
 
+// Fixed categories - Beauty and Electronics
+export const CATEGORY_OPTIONS = [
+  { value: 'beauty', label: 'Beauty' },
+  { value: 'electronics', label: 'Electronics' },
+] as const;
+
 interface FilterFeedProps {
   filterId: 'interest' | 'tag' | 'category' | 'sort';
   filters: FeedFilterParams;
   onFiltersChange: (filters: FeedFilterParams) => void;
   onClose: () => void;
-  // Categories for category filter
-  catalogCategories?: CatalogCategory[];
-  catalogSubCategories?: CatalogSubCategory[];
 }
 
 export const FilterFeed: React.FC<FilterFeedProps> = ({
@@ -51,39 +53,9 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
   filters,
   onFiltersChange,
   onClose,
-  catalogCategories = [],
-  catalogSubCategories = [],
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-
-  // Merge categories
-  const allCategories = useMemo(() => {
-    const categoriesMap = new Map<string, { id: string; name: string; type: 'main' | 'sub' }>();
-    const seenIds = new Set<string>();
-
-    if (catalogCategories && Array.isArray(catalogCategories)) {
-      catalogCategories.forEach((cat: CatalogCategory) => {
-        if (seenIds.has(cat.categoryId)) return;
-        categoriesMap.set(cat.categoryId, { id: cat.categoryId, name: cat.name, type: 'main' });
-        seenIds.add(cat.categoryId);
-      });
-    }
-
-    if (catalogSubCategories && Array.isArray(catalogSubCategories)) {
-      catalogSubCategories.forEach((subCat: CatalogSubCategory) => {
-        if (seenIds.has(subCat.subCategoryId)) return;
-        categoriesMap.set(subCat.subCategoryId, {
-          id: subCat.subCategoryId,
-          name: subCat.name,
-          type: 'sub',
-        });
-        seenIds.add(subCat.subCategoryId);
-      });
-    }
-
-    return Array.from(categoriesMap.values());
-  }, [catalogCategories, catalogSubCategories]);
 
   // Get options based on filter type
   const getOptions = (): Array<{ value: string; label: string }> => {
@@ -93,7 +65,7 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
       case 'tag':
         return [...TAG_OPTIONS];
       case 'category':
-        return allCategories.map((cat) => ({ value: cat.id, label: cat.name }));
+        return [...CATEGORY_OPTIONS];
       case 'sort':
         return [...SORT_OPTIONS];
       default:

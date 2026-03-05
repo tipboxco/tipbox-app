@@ -1,34 +1,34 @@
 {
-  "title": "Explore",
+  "title": "",
   "search": {
-    "placeholder": "Search posts, products, or brands"
+    "placeholder": ""
   },
   "tabs": {
-    "hottest": "Hottest",
-    "news": "What's News"
+    "hottest": "",
+    "news": ""
   },
   "banners": {
-    "title": "Tipbox Explore",
-    "description1": "Keep exploring",
-    "description2": "Discover new content"
+    "title": "",
+    "description1": "",
+    "description2": ""
   },
   "hottest": {
-    "error": "An error occurred. Please try again.",
-    "empty": "No posts yet"
+    "error": "",
+    "empty": ""
   },
   "news": {
     "sections": {
       "events": {
-        "title": "New Community Events",
-        "seeAll": "See Event Catalog"
+        "title": "",
+        "seeAll": ""
       },
       "brands": {
-        "title": "New Brands",
-        "seeAll": "See Brand Catalog"
+        "title": "",
+        "seeAll": ""
       },
       "products": {
-        "title": "New Products",
-        "seeAll": "See Product Catalog"
+        "title": "",
+        "seeAll": ""
       }
     }
   }

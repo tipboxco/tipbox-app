@@ -1,109 +1,109 @@
 {
-  "title": "Inbox",
+  "title": "",
   "tabs": {
-    "messages": "Messages",
-    "notifications": "Notifications",
-    "supportRequests": "1-on-1 Support Requests"
+    "messages": "",
+    "notifications": "",
+    "supportRequests": ""
   },
   "search": {
-    "placeholder": "Search in inbox"
+    "placeholder": ""
   },
   "messages": {
-    "empty": "Start a conversation",
-    "newMessage": "New Message",
-    "typeMessage": "Type a message...",
-    "error": "Error: {{message}}"
+    "empty": "",
+    "newMessage": "",
+    "typeMessage": "",
+    "error": ""
   },
   "supportRequests": {
-    "empty": "No support requests yet",
-    "error": "Error: {{message}}",
+    "empty": "",
+    "error": "",
     "filters": {
-      "all": "All",
-      "pending": "Awaiting Resolution",
-      "active": "Active Requests",
-      "awaitingCompletion": "Awaiting Completion",
-      "completed": "Completed"
+      "all": "",
+      "pending": "",
+      "active": "",
+      "awaitingCompletion": "",
+      "completed": ""
     }
   },
   "supportMessageDetail": {
-    "empty": "No messages yet",
-    "loading": "Loading..."
+    "empty": "",
+    "loading": ""
   },
   "messageDetail": {
-    "yesterday": "Yesterday",
-    "typing": "typing...",
-    "placeholder": "Type a message...",
-    "imageAlt": "Sent image",
+    "yesterday": "",
+    "typing": "",
+    "placeholder": "",
+    "imageAlt": "",
     "months": {
-      "january": "January",
-      "february": "February",
-      "march": "March",
-      "april": "April",
-      "may": "May",
-      "june": "June",
-      "july": "July",
-      "august": "August",
-      "september": "September",
-      "october": "October",
-      "november": "November",
-      "december": "December"
+      "january": "",
+      "february": "",
+      "march": "",
+      "april": "",
+      "may": "",
+      "june": "",
+      "july": "",
+      "august": "",
+      "september": "",
+      "october": "",
+      "november": "",
+      "december": ""
     },
     "actions": {
-      "reply": "Reply",
-      "edit": "Edit",
-      "delete": "Delete",
-      "forward": "Forward",
-      "info": "Info",
-      "copy": "Copy"
+      "reply": "",
+      "edit": "",
+      "delete": "",
+      "forward": "",
+      "info": "",
+      "copy": ""
     },
     "deleteConfirm": {
-      "title": "Delete Message",
-      "message": "Are you sure you want to delete this message?",
-      "cancel": "Cancel",
-      "delete": "Delete"
+      "title": "",
+      "message": "",
+      "cancel": "",
+      "delete": ""
     },
     "status": {
-      "deleted": "This message was deleted",
-      "loading": "Loading...",
-      "uploadFailed": "Upload failed",
-      "imageLoadFailed": "Image failed to load"
+      "deleted": "",
+      "loading": "",
+      "uploadFailed": "",
+      "imageLoadFailed": ""
     }
   },
   "notifications": {
-    "title": "Notifications",
-    "empty": "No notifications yet",
-    "emptySearch": "No search results found.",
-    "markAllRead": "Mark All as Read",
+    "title": "",
+    "empty": "",
+    "emptySearch": "",
+    "markAllRead": "",
     "search": {
-      "placeholder": "Search notifications"
+      "placeholder": ""
     },
     "filters": {
-      "all": "All Notifications",
-      "replies": "Replies",
-      "truster": "Trust - Truster",
-      "tips": "TIPS"
+      "all": "",
+      "replies": "",
+      "truster": "",
+      "tips": ""
     },
     "dateGroups": {
-      "today": "Today",
-      "yesterday": "Yesterday",
-      "thisWeek": "This Week",
-      "thisMonth": "This Month"
+      "today": "",
+      "yesterday": "",
+      "thisWeek": "",
+      "thisMonth": ""
     },
     "errors": {
-      "loading": "An error occurred while loading notifications.",
-      "loginRequired": "Please login to view notifications.",
-      "unknown": "Unknown error"
+      "loading": "",
+      "loginRequired": "",
+      "unknown": ""
     },
     "actions": {
-      "tryAgain": "Try Again",
-      "showMore": "Show More"
+      "tryAgain": "",
+      "showMore": ""
     },
     "types": {
-      "like": "liked your post",
-      "comment": "commented on your post",
-      "follow": "started following you",
-      "tip": "sent you a tip",
-      "mention": "mentioned you"
+      "like": "",
+      "comment": "",
+      "follow": "",
+      "tip": "",
+      "mention": ""
     }
   }
 }

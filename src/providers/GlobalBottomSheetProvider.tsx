@@ -47,17 +47,20 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
    * STABİL FIX: Eğer sheet zaten açıksa, önce kapat sonra aç (content değişikliği için)
    */
   const openBottomSheet = useCallback((content: ReactNode, options?: BottomSheetOptions) => {
+    console.log('[GlobalBottomSheetProvider] openBottomSheet called');
 
     // Eğer önceki close cleanup bekliyorsa iptal et (yeni content'in silinmesini önler)
     cancelPendingCleanup();
     bumpOpId();
 
     setState(prev => {
+      console.log('[GlobalBottomSheetProvider] setState called, prev.index:', prev.index);
       // Eğer sheet zaten açıksa ve content değişiyorsa, önce index'i -1 yap
       // Sonra hemen 0 yap (gorhom'un internal state'i ile senkronize olması için)
       if (prev.index === 0 && prev.content !== content) {
         // Content değişiyor, önce kapat sonra aç
         // Ama burada direkt 0 yapıyoruz çünkü gorhom onChange ile handle edecek
+        console.log('[GlobalBottomSheetProvider] Content changed, setting index to 0');
         return {
           content,
           index: 0, // Open
@@ -65,6 +68,7 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
         };
       }
       // Normal açılış
+      console.log('[GlobalBottomSheetProvider] Normal open, setting index to 0');
       return {
         content,
         index: 0, // Open

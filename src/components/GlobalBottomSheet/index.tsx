@@ -170,8 +170,11 @@ export const GlobalBottomSheet: React.FC = () => {
 
   // Content yoksa render etme
   if (!content) {
+    console.log('[GlobalBottomSheet] No content, not rendering');
     return null;
   }
+
+  console.log('[GlobalBottomSheet] Rendering with index:', index);
 
   // DOĞRU MİMARİ: Sadece index ile kontrol
   // enableDynamicSizing true ise snapPoints undefined olmalı

@@ -1,236 +1,236 @@
 {
   "settingsScreen": {
-    "title": "Settings",
-    "searchPlaceholder": "Select product group or search product name",
+    "title": "",
+    "searchPlaceholder": "",
     "sections": {
-      "accountSecurity": "Account Security",
-      "accountPreferences": "Account Preferences",
-      "paymentSubscription": "Payment & Subscription Settings"
+      "accountSecurity": "",
+      "accountPreferences": "",
+      "paymentSubscription": ""
     },
     "menuItems": {
-      "changePassword": "Change Password",
-      "twoFactor": "Two-Factor Authentication",
-      "notificationSettings": "Notification Settings",
-      "privacySettings": "Privacy Settings",
-      "supportSettings": "1-on-1 Support Settings",
-      "language": "Language",
-      "yourDevices": "Your Devices",
-      "paymentSubscription": "Payment & Subscription",
-      "billingHistory": "Billing History"
+      "changePassword": "",
+      "twoFactor": "",
+      "notificationSettings": "",
+      "privacySettings": "",
+      "supportSettings": "",
+      "language": "",
+      "yourDevices": "",
+      "paymentSubscription": "",
+      "billingHistory": ""
     }
   },
   "notificationSettings": {
-    "title": "Notification Settings",
-    "pushNotifications": "Push Notifications",
-    "emailNotifications": "Email Notifications",
-    "smsNotifications": "SMS Notifications",
-    "trustTrusterNotifications": "Trust - Truster Notifications",
-    "oneononeNotifications": "1-on-1 Support Notifications",
-    "messageNotifications": "Message Notifications",
-    "collectionNotifications": "Collection Notifications",
-    "postNotifications": "Post Notifications",
-    "depositNotifications": "Deposit Notifications",
-    "allNotifications": "All Notifications",
-    "pauseNotifications": "Pause Notifications Temporarily"
+    "title": "",
+    "pushNotifications": "",
+    "emailNotifications": "",
+    "smsNotifications": "",
+    "trustTrusterNotifications": "",
+    "oneononeNotifications": "",
+    "messageNotifications": "",
+    "collectionNotifications": "",
+    "postNotifications": "",
+    "depositNotifications": "",
+    "allNotifications": "",
+    "pauseNotifications": ""
   },
   "privacySettings": {
-    "title": "Privacy Settings",
-    "blockedUsers": "Blocked Users",
-    "privateAccount": "Private Account",
-    "dataSharing": "Data Sharing",
-    "trustersOnly": "Trusters Only",
-    "everyone": "Everyone",
-    "nftCollections": "NFT / Badge Collections",
-    "nftCollectionsDesc": "Choose who can view your NFT / Badge Collections.",
-    "trustTrusterList": "Trust / Truster List",
-    "trustTrusterListDesc": "Choose who can view your Trust / Truster List.",
-    "supportSessionRequest": "1-on-1 Support Session Request",
-    "supportSessionRequestDesc": "Choose who can request a 1-on-1 Support Session."
+    "title": "",
+    "blockedUsers": "",
+    "privateAccount": "",
+    "dataSharing": "",
+    "trustersOnly": "",
+    "everyone": "",
+    "nftCollections": "",
+    "nftCollectionsDesc": "",
+    "trustTrusterList": "",
+    "trustTrusterListDesc": "",
+    "supportSessionRequest": "",
+    "supportSessionRequestDesc": ""
   },
   "supportSettings": {
-    "title": "1-on-1 Support Settings",
-    "enableSupport": "Enable Support",
-    "supportHours": "Support Hours",
-    "setTipsAmount": "Set TIPS Amount",
-    "descriptionPart1": "Set the minimum TIPS amount users must pay to open a 1-on-1",
-    "descriptionPart2": "Support Request.",
-    "descriptionPart3": "This amount is only required to open the request.",
-    "minimumNotice": "* Minimum of {{amount}} TIPS can be set.",
-    "changeLimitNotice": "* The amount can be changed once every 10 days.",
-    "save": "Save",
-    "saving": "Saving...",
-    "invalidPrice": "Invalid Price",
-    "minimumTipsRequired": "Minimum {{amount}} TIPS required",
-    "priceUpdated": "Price Updated",
-    "priceUpdatedSuccess": "Support session price has been updated successfully",
-    "errorUpdatingPrice": "An error occurred while updating price"
+    "title": "",
+    "enableSupport": "",
+    "supportHours": "",
+    "setTipsAmount": "",
+    "descriptionPart1": "",
+    "descriptionPart2": "",
+    "descriptionPart3": "",
+    "minimumNotice": "",
+    "changeLimitNotice": "",
+    "save": "",
+    "saving": "",
+    "invalidPrice": "",
+    "minimumTipsRequired": "",
+    "priceUpdated": "",
+    "priceUpdatedSuccess": "",
+    "errorUpdatingPrice": ""
   },
   "changePassword": {
-    "title": "Change Password",
-    "currentPassword": "Current Password",
-    "newPassword": "New Password",
-    "confirmNewPassword": "Confirm New Password",
-    "placeholder": "****************",
-    "lastUpdated": "Last updated: 26.03.2025",
-    "forgotPassword": "Forgot Password",
-    "changePasswordButton": "Change Password",
-    "changing": "Changing...",
+    "title": "",
+    "currentPassword": "",
+    "newPassword": "",
+    "confirmNewPassword": "",
+    "placeholder": "",
+    "lastUpdated": "",
+    "forgotPassword": "",
+    "changePasswordButton": "",
+    "changing": "",
     "errors": {
-      "currentPasswordRequired": "Current password is required",
-      "newPasswordRequired": "New password is required",
-      "passwordMinLength": "Password must be at least 6 characters",
-      "confirmPasswordRequired": "Please confirm your password",
-      "passwordsMustMatch": "Passwords must match"
+      "currentPasswordRequired": "",
+      "newPasswordRequired": "",
+      "passwordMinLength": "",
+      "confirmPasswordRequired": "",
+      "passwordsMustMatch": ""
     },
     "success": {
-      "title": "Password Changed",
-      "description": "Your password has been successfully updated."
+      "title": "",
+      "description": ""
     },
     "error": {
-      "title": "Error",
-      "fallbackMessage": "An error occurred while changing the password"
+      "title": "",
+      "fallbackMessage": ""
     },
     "validation": {
-      "title": "Validation Error"
+      "title": ""
     }
   },
   "forgotPassword": {
-    "title": "Forgot Password",
-    "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-    "email": "E-Mail",
-    "emailPlaceholder": "example@gmail.com",
-    "sendEmailButton": "Send E-Mail",
+    "title": "",
+    "description": "",
+    "email": "",
+    "emailPlaceholder": "",
+    "sendEmailButton": "",
     "verifyStep": {
-      "title": "Enter the confirmation code",
-      "description": "To reset your password, enter the 6-digit code we sent to"
+      "title": "",
+      "description": ""
     }
   },
   "twoFactorAuth": {
-    "title": "Two-Factor Authentication",
-    "enable": "Enable 2FA",
-    "disable": "Disable 2FA",
-    "sms": "SMS",
-    "authenticator": "Authenticator App",
+    "title": "",
+    "enable": "",
+    "disable": "",
+    "sms": "",
+    "authenticator": "",
     "googleAuthenticator": {
-      "title": "Google Authenticator",
-      "description": "Use Google Authenticator to protect your account"
+      "title": "",
+      "description": ""
     },
     "smsOption": {
-      "title": "SMS",
-      "description": "Receive a verification code via SMS to secure your account."
+      "title": "",
+      "description": ""
     },
-    "whyNeeded": "Why do we need this?"
+    "whyNeeded": ""
   },
   "smsVerification": {
-    "title": "SMS Verification",
-    "heading": "Enter Your Phone Number",
-    "description": "Enter the phone number to which the verification code will be sent.",
-    "phonePlaceholder": "5XX XXX XX XX",
-    "sendCodeButton": "Send Code",
+    "title": "",
+    "heading": "",
+    "description": "",
+    "phonePlaceholder": "",
+    "sendCodeButton": "",
     "errors": {
-      "missingInfoTitle": "Missing Information",
-      "missingInfoDescription": "Please enter your phone number.",
-      "errorTitle": "Error",
-      "fallbackMessage": "Failed to send SMS. Please try again."
+      "missingInfoTitle": "",
+      "missingInfoDescription": "",
+      "errorTitle": "",
+      "fallbackMessage": ""
     }
   },
   "paymentSubscription": {
-    "title": "Payment & Subscription",
-    "currentPlan": "Current Plan",
-    "paymentMethod": "Payment Method",
-    "billingHistory": "Billing History"
+    "title": "",
+    "currentPlan": "",
+    "paymentMethod": "",
+    "billingHistory": ""
   },
   "cannyWebView": {
-    "feedback": "Feedback",
-    "voteNewFeatures": "Vote New Features",
-    "sessionNotFound": "Oturum bulunamadı. Lütfen tekrar giriş yapın."
+    "feedback": "",
+    "voteNewFeatures": "",
+    "sessionNotFound": ""
   },
   "languages": {
-    "title": "Language",
-    "en": "English",
-    "tr": "Turkish",
-    "es": "Spanish",
-    "comingSoon": "Coming Soon"
+    "title": "",
+    "en": "",
+    "tr": "",
+    "es": "",
+    "comingSoon": ""
   },
   "smsVerifyCode": {
-    "headerTitle": "SMS Verification",
-    "title": "Onay Kodunu Gir",
-    "description": "Enter the 6-digit code we sent to the phone number",
-    "resendCode": "Resend Code",
-    "success": "Success",
-    "successMessage": "SMS verification completed successfully.",
-    "error": "Error",
-    "errorMessage": "Code verification failed. Please try again.",
-    "codeSent": "Code Sent",
-    "codeSentMessage": "New verification code has been sent."
+    "headerTitle": "",
+    "title": "",
+    "description": "",
+    "resendCode": "",
+    "success": "",
+    "successMessage": "",
+    "error": "",
+    "errorMessage": "",
+    "codeSent": "",
+    "codeSentMessage": ""
   },
   "googleAuthSetup": {
-    "headerTitle": "Google Authenticator",
-    "step1Title": "1. Download Google Authenticator",
-    "step1Description": "If you don't have it installed, download the Google Authenticator app.",
-    "step2Title": "2. Scan QR Code or Copy Key",
-    "step2Description": "Scan the QR code in the Google Authenticator app, or copy and paste the key into the app.",
-    "step3Title": "3. Enter 6-Digit Code",
-    "step3Description": "Enter the 6-digit code generated by Google Authenticator",
-    "showQRCode": "QR Kodu Görüntüle",
-    "qrCodePlaceholder": "QR Code burada gösterilecek",
-    "nextButton": "İleri",
-    "copied": "Copied",
-    "copiedMessage": "Key copied to clipboard"
+    "headerTitle": "",
+    "step1Title": "",
+    "step1Description": "",
+    "step2Title": "",
+    "step2Description": "",
+    "step3Title": "",
+    "step3Description": "",
+    "showQRCode": "",
+    "qrCodePlaceholder": "",
+    "nextButton": "",
+    "copied": "",
+    "copiedMessage": ""
   },
   "googleAuthVerify": {
-    "headerTitle": "Google Authenticator",
-    "title": "Enter Code",
-    "description": "Enter the 6-digit code generated by Google Authenticator",
-    "placeholder": "Enter code",
-    "completeButton": "Tamamla",
-    "invalidCode": "Invalid Code",
-    "invalidCodeMessage": "Please enter the 6-digit code.",
-    "success": "Success",
-    "successMessage": "Google Authenticator has been successfully enabled.",
-    "error": "Error",
-    "errorMessage": "Code verification failed. Please try again."
+    "headerTitle": "",
+    "title": "",
+    "description": "",
+    "placeholder": "",
+    "completeButton": "",
+    "invalidCode": "",
+    "invalidCodeMessage": "",
+    "success": "",
+    "successMessage": "",
+    "error": "",
+    "errorMessage": ""
   },
   "payment": {
-    "headerTitle": "Payment & Subscription",
-    "tabPaymentMethods": "Payment Methods",
-    "tabPremiumPlans": "Premium Plans"
+    "headerTitle": "",
+    "tabPaymentMethods": "",
+    "tabPremiumPlans": ""
   },
   "tabs": {
     "settingsTab": {
-      "darkMode": "Dark Mode"
+      "darkMode": ""
     },
     "paymentTab": {
-      "savedCards": "Saved Cards",
-      "addPaymentMethod": "Add Payment Method",
-      "billingHistory": "Billing History",
-      "dateNewestFirst": "Date (newest first)",
-      "dateOldestFirst": "Date (oldest first)",
-      "noInvoicesYet": "No invoices yet.",
-      "updateCardName": "Update card name",
-      "cardNamePlaceholder": "e.g. Work Card",
-      "cancel": "Cancel",
-      "save": "Save",
+      "savedCards": "",
+      "addPaymentMethod": "",
+      "billingHistory": "",
+      "dateNewestFirst": "",
+      "dateOldestFirst": "",
+      "noInvoicesYet": "",
+      "updateCardName": "",
+      "cardNamePlaceholder": "",
+      "cancel": "",
+      "save": "",
       "errors": {
-        "cardInUse": "This card is in use by an active subscription. Please change your subscription payment method first.",
-        "deleteCardError": "An error occurred while deleting the card.",
-        "updateCardError": "An error occurred while updating the card name."
+        "cardInUse": "",
+        "deleteCardError": "",
+        "updateCardError": ""
       }
     },
     "subscriptionTab": {
-      "mySubscriptions": "My Subscriptions",
-      "noActiveSubscription": "No active subscription",
-      "nextBilling": "Next billing: {{date}}",
-      "status": "Status: {{status}}",
-      "manage": "Manage",
-      "planBenefits": "Plan Benefits",
-      "benefits": "Benefits:",
-      "otherPremiumPlans": "Other Premium Plans ({{count}} plans)",
+      "mySubscriptions": "",
+      "noActiveSubscription": "",
+      "nextBilling": "",
+      "status": "",
+      "manage": "",
+      "planBenefits": "",
+      "benefits": "",
+      "otherPremiumPlans": "",
       "defaultBenefits": {
-        "unlimitedAccess": "Unlimited access to premium features",
-        "prioritySupport": "Priority customer support",
-        "advancedAnalytics": "Advanced analytics",
-        "adFree": "Ad-free experience"
+        "unlimitedAccess": "",
+        "prioritySupport": "",
+        "advancedAnalytics": "",
+        "adFree": ""
       }
     }
   }

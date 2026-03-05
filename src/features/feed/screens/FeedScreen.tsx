@@ -47,8 +47,6 @@ import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
 import { FilterButtons } from '../components/FilterButtons';
 import { FilterFeed } from '../components/FilterFeed';
-import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/catalog/api/hooks';
-import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
@@ -148,7 +146,7 @@ const FeedScreenInner = React.memo(() => {
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
   // Global bottom sheet hook
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const { openBottomSheet, closeBottomSheet, state: bottomSheetState } = useGlobalBottomSheet();
 
   // PERFORMANCE FIX: Drawer durumunu kontrol et - drawer açılırken/kapanırken FlatList scroll'unu önle
   // CRITICAL: isDragging state'ini kullan - swipe sırasında re-render önleme (JS thread'de kasma önleme)
@@ -290,39 +288,17 @@ const FeedScreenInner = React.memo(() => {
     }
   };
 
-  // Categories for filter
-  const { data: catalogCategoriesData } = useCatalogCategories();
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const { data: catalogSubCategoriesData } = useCatalogSubCategories(selectedCategoryId || undefined);
-
-  // Categories data
-  const catalogCategories = useMemo(() => {
-    if (!catalogCategoriesData?.items) return [];
-    return catalogCategoriesData.items;
-  }, [catalogCategoriesData]);
-
-  const catalogSubCategories = useMemo(() => {
-    if (!catalogSubCategoriesData?.items) return [];
-    return catalogSubCategoriesData.items;
-  }, [catalogSubCategoriesData]);
-
-  // Auto-select first category for sub-categories query
-  useEffect(() => {
-    if (!selectedCategoryId && catalogCategories && catalogCategories.length > 0) {
-      setSelectedCategoryId(catalogCategories[0].categoryId);
-    }
-  }, [catalogCategories, selectedCategoryId]);
 
   // Handle filter button press - open bottom sheet with FilterFeed
   const handleFilterButtonPress = useCallback((filterId: 'interest' | 'tag' | 'category' | 'sort') => {
+    console.log('[FeedScreen] Filter button pressed:', filterId);
+
     openBottomSheet(
       <FilterFeed
         filterId={filterId}
         filters={filters}
         onFiltersChange={setFilters}
         onClose={closeBottomSheet}
-        catalogCategories={catalogCategories}
-        catalogSubCategories={catalogSubCategories}
       />,
       {
         enablePanDownToClose: true,
@@ -334,7 +310,9 @@ const FeedScreenInner = React.memo(() => {
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
       }
     );
-  }, [filters, catalogCategories, catalogSubCategories, openBottomSheet, closeBottomSheet, insets.bottom]);
+
+    console.log('[FeedScreen] openBottomSheet called');
+  }, [filters, openBottomSheet, closeBottomSheet, insets.bottom]);
 
   const handleExpertPress = () => {
     // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
