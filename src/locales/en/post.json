@@ -285,12 +285,12 @@
       "notFound": "Post not found.",
       "notFoundDesc": "This post has been deleted or is no longer available.",
       "titles": {
-        "post": "Post Details",
-        "tips": "Tips & Tricks Details",
-        "question": "Question Details",
-        "benchmark": "Benchmark Details",
-        "experience": "Experience Details",
-        "update": "Update Details"
+        "post": "Post Detail",
+        "tips": "Tips & Tricks Detail",
+        "question": "Question Detail",
+        "benchmark": "Benchmark Detail",
+        "experience": "Experience Detail",
+        "update": "Update Detail"
       }
     }
   },
@@ -335,10 +335,5 @@
     "tryDifferentSearch": "Try a different search.",
     "emptyList": "Trust list is empty",
     "addPeopleToTrustList": "Add people to your trust list to share with them."
-  },
-  "comments": {
-    "placeholders": {
-      "writeComment": "Write a comment..."
-    }
   }
 }

@@ -499,14 +499,20 @@ export const PostDetailScreen = () => {
             }
         });
 
-        // Sort by selectedOption
+        // Sort by selectedOption (default: Newest - en yeni en üstte)
         const sorted = [...flat];
-        if (selectedOption === 'Newest') {
-            sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        } else if (selectedOption === 'Oldest') {
-            sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        } else if (selectedOption === 'Popular') {
-            sorted.sort((a, b) => (b.likesCount ?? 0) - (a.likesCount ?? 0));
+        switch (selectedOption) {
+            case 'Oldest':
+                sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                break;
+            case 'Popular':
+                sorted.sort((a, b) => (b.likesCount ?? 0) - (a.likesCount ?? 0));
+                break;
+            case 'Newest':
+            default:
+                // Default: Newest (en yeni en üstte - descending)
+                sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                break;
         }
         return sorted;
     }, [commentsData?.comments, selectedOption, likedCommentIds]);

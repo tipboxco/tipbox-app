@@ -57,6 +57,14 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
+  // Local state for filters - only apply when "Apply" is clicked
+  const [localFilters, setLocalFilters] = React.useState<FeedFilterParams>(filters);
+
+  // Update local state when filters prop changes (e.g., when bottom sheet reopens)
+  React.useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
   // Get options based on filter type
   const getOptions = (): Array<{ value: string; label: string }> => {
     switch (filterId) {
@@ -75,70 +83,76 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
 
   const options = getOptions();
 
-  // Check if value is selected
+  // Check if value is selected (use local state)
   const isSelected = (value: string) => {
     switch (filterId) {
       case 'interest':
-        return filters.interests?.includes(value) || false;
+        return localFilters.interests?.includes(value) || false;
       case 'tag':
-        return filters.tags?.includes(value) || false;
+        return localFilters.tags?.includes(value) || false;
       case 'category':
-        return filters.category === value;
+        return localFilters.category === value;
       case 'sort':
-        return filters.sort === value;
+        return localFilters.sort === value;
       default:
         return false;
     }
   };
 
-  // Handle toggle
+  // Handle toggle (update local state only)
   const handleToggle = (value: string) => {
     switch (filterId) {
       case 'interest': {
-        const currentInterests = filters.interests || [];
+        const currentInterests = localFilters.interests || [];
         const newInterests = currentInterests.includes(value)
           ? currentInterests.filter((v) => v !== value)
           : [...currentInterests, value];
-        onFiltersChange({ ...filters, interests: newInterests.length > 0 ? newInterests : undefined });
+        setLocalFilters({ ...localFilters, interests: newInterests.length > 0 ? newInterests : undefined });
         break;
       }
       case 'tag': {
-        const currentTags = filters.tags || [];
+        const currentTags = localFilters.tags || [];
         const newTags = currentTags.includes(value)
           ? currentTags.filter((v) => v !== value)
           : [...currentTags, value];
-        onFiltersChange({ ...filters, tags: newTags.length > 0 ? newTags : undefined });
+        setLocalFilters({ ...localFilters, tags: newTags.length > 0 ? newTags : undefined });
         break;
       }
       case 'category': {
-        const newCategory = filters.category === value ? undefined : value;
-        onFiltersChange({ ...filters, category: newCategory });
+        const newCategory = localFilters.category === value ? undefined : value;
+        setLocalFilters({ ...localFilters, category: newCategory });
         break;
       }
       case 'sort': {
-        const newSort = filters.sort === value ? undefined : (value as 'recent' | 'top');
-        onFiltersChange({ ...filters, sort: newSort });
+        const newSort = localFilters.sort === value ? undefined : (value as 'recent' | 'top');
+        setLocalFilters({ ...localFilters, sort: newSort });
         break;
       }
     }
   };
 
-  // Handle clear
+  // Handle clear (clear local state only)
   const handleClear = () => {
     switch (filterId) {
       case 'interest':
-        onFiltersChange({ ...filters, interests: undefined });
+        setLocalFilters({ ...localFilters, interests: undefined });
         break;
       case 'tag':
-        onFiltersChange({ ...filters, tags: undefined });
+        setLocalFilters({ ...localFilters, tags: undefined });
         break;
       case 'category':
-        onFiltersChange({ ...filters, category: undefined });
+        setLocalFilters({ ...localFilters, category: undefined });
         break;
       case 'sort':
-        onFiltersChange({ ...filters, sort: undefined });
+        setLocalFilters({ ...localFilters, sort: undefined });
         break;
     }
+  };
+
+  // Handle apply - apply local filters to parent
+  const handleApply = () => {
+    onFiltersChange(localFilters);
+    onClose();
   };
 
   // Get title
@@ -246,7 +260,7 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
               </Text>
             </Box>
           </Pressable>
-          <Pressable onPress={onClose} flex={1}>
+          <Pressable onPress={handleApply} flex={1}>
             <Box py="$1.5" bg="#829905" borderRadius={6} alignItems="center" justifyContent="center" minHeight={32}>
               <Text fontSize={12} fontWeight="$bold" color="#FFFFFF">
                 Apply

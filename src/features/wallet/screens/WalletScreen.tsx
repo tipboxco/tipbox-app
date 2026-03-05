@@ -64,12 +64,14 @@ export const WalletScreen: React.FC = () => {
       const bottomInset = typeof safeAreaValues.bottom === 'number' ? safeAreaValues.bottom : 0;
       const pagerRef = useRef<PagerView>(null);
       const tabContainerRef = useRef<any>(null);
+      const tipsScrollViewRef = useRef<ScrollView>(null);
+      const nftScrollViewRef = useRef<ScrollView>(null);
       const [tabContainerWidth, setTabContainerWidth] = useState(0);
       const [currentPage, setCurrentPage] = useState(0);
-      
+
       // Shared progress value for realtime tab animations (0 = TIPS, 1 = NFT)
       const progress = useSharedValue(0);
-      
+
       // Track if user is trying to swipe left on first page (to go back)
       const isSwipingBack = useRef(false);
 
@@ -387,8 +389,15 @@ export const WalletScreen: React.FC = () => {
       progress.value = withTiming(position, { duration: 0 });
       setActiveTab(position === 0 ? 'tips' : 'nft');
       setCurrentPage(position);
+
+      // Tab değiştiğinde scroll pozisyonunu sıfırla
+      if (position === 0) {
+        tipsScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+      } else {
+        nftScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+      }
     },
-    [progress]
+    [progress, tipsScrollViewRef, nftScrollViewRef]
   );
   
   // Tab 1 (TIPS) label color animation
@@ -843,8 +852,9 @@ export const WalletScreen: React.FC = () => {
       >
         {/* TIPS Tab */}
         <Box key="0" flex={1}>
-          <ScrollView 
-            showsVerticalScrollIndicator={false} 
+          <ScrollView
+            ref={tipsScrollViewRef}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{ 
               paddingHorizontal: 16,
               paddingTop: 16,
@@ -1152,8 +1162,9 @@ export const WalletScreen: React.FC = () => {
 
         {/* NFT Tab */}
         <Box key="1" flex={1}>
-          <ScrollView 
-            showsVerticalScrollIndicator={false} 
+          <ScrollView
+            ref={nftScrollViewRef}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{ 
               paddingHorizontal: 16,
               paddingTop: 16,

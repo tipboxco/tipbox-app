@@ -281,22 +281,32 @@
       }
     },
     "detail": {
-      "loading": "",
-      "notFound": "",
-      "notFoundDesc": "",
+      "loading": "Yükleniyor...",
+      "notFound": "Gönderi bulunamadı",
+      "notFoundDesc": "Bu gönderi silinmiş veya mevcut değil",
       "titles": {
-        "post": "",
-        "tips": "",
-        "question": "",
-        "benchmark": "",
-        "experience": "",
-        "update": ""
+        "post": "Gönderi Detayı",
+        "tips": "İpuçları Detayı",
+        "question": "Soru Detayı",
+        "benchmark": "Karşılaştırma Detayı",
+        "experience": "Deneyim Detayı",
+        "update": "Güncelleme Detayı"
       }
     }
   },
   "comments": {
+    "title": "Yorumlar",
+    "placeholder": "Yorum yaz...",
+    "loading": "Yorumlar yükleniyor...",
+    "empty": "Henüz yorum yok",
+    "sort": {
+      "title": "Sıralama",
+      "newest": "En Yeni",
+      "oldest": "En Eski",
+      "popular": "Popüler"
+    },
     "placeholders": {
-      "writeComment": ""
+      "writeComment": "Yorum yaz..."
     }
   },
   "actions": {

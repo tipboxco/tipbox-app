@@ -1,24 +1,24 @@
 {
   "buttons": {
-    "confirm": "",
-    "cancel": "",
-    "done": "",
-    "close": "",
-    "back": "",
-    "next": "",
-    "save": "",
-    "delete": "",
-    "edit": "",
-    "send": "",
-    "retry": "",
-    "ok": "",
-    "report": "",
-    "share": "",
-    "update": "",
-    "block": "",
-    "yes": "",
-    "no": "",
-    "like": ""
+    "confirm": "Onayla",
+    "cancel": "İptal",
+    "done": "Tamam",
+    "close": "Kapat",
+    "back": "Geri",
+    "next": "İleri",
+    "save": "Kaydet",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "send": "Gönder",
+    "retry": "Tekrar Dene",
+    "ok": "Tamam",
+    "report": "Şikayet Et",
+    "share": "Paylaş",
+    "update": "Güncelle",
+    "block": "Engelle",
+    "yes": "Evet",
+    "no": "Hayır",
+    "like": "Beğen"
   },
   "labels": {
     "email": "",
@@ -73,18 +73,18 @@
   },
   "dialogs": {
     "deleteComment": {
-      "title": "",
-      "message": ""
+      "title": "Yorumu Sil",
+      "message": "Bu yorumu silmek istediğinizden emin misiniz?"
     },
     "deletePost": {
-      "title": "",
-      "message": ""
+      "title": "Gönderiyi Sil",
+      "message": "Bu gönderiyi silmek istediğinizden emin misiniz?"
     },
     "reportPost": {
-      "title": "",
-      "message": ""
+      "title": "Gönderiyi Şikayet Et",
+      "message": "Bu gönderiyi neden şikayet ediyorsunuz?"
     },
-    "info": ""
+    "info": "Bilgi"
   },
   "messages": {
     "success": "",
@@ -99,18 +99,18 @@
     "reporting": ""
   },
   "menu": {
-    "update": "",
-    "delete": "",
-    "externalShare": "",
-    "report": "",
-    "viewProfile": "",
-    "trust": "",
-    "unTrust": "",
-    "reportUser": "",
-    "reportPost": "",
-    "block": "",
-    "showMore": "",
-    "showLess": ""
+    "update": "Güncelle",
+    "delete": "Sil",
+    "externalShare": "Paylaş",
+    "report": "Şikayet Et",
+    "viewProfile": "Profili Görüntüle",
+    "trust": "Takip Et",
+    "unTrust": "Takibi Bırak",
+    "reportUser": "Kullanıcıyı Şikayet Et",
+    "reportPost": "Gönderiyi Şikayet Et",
+    "block": "Engelle",
+    "showMore": "Devamını Gör",
+    "showLess": "Daha Az Göster"
   },
   "drawer": {
     "menuItems": {

@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  Modal,
   ScrollView,
   Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -57,6 +57,32 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   const [showMainDropdown, setShowMainDropdown] = useState(false);
   const [showSubDropdown, setShowSubDropdown] = useState(false);
 
+  // BottomSheet ref
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
+
+  // Handle visibility changes
+  useEffect(() => {
+    if (visible) {
+      bottomSheetRef.current?.expand();
+    } else {
+      bottomSheetRef.current?.close();
+    }
+  }, [visible]);
+
+  // Render backdrop
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+        onPress={onClose}
+      />
+    ),
+    [onClose]
+  );
+
   const handleDone = () => {
     onApply({
       mainCategory,
@@ -71,28 +97,35 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
     setSubCategory(undefined);
   };
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      {/* Backdrop */}
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        {/* Bottom Sheet Container */}
-        <Pressable
-          style={[
-            styles.container,
-            { backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB' },
-          ]}
-          onPress={(e) => e.stopPropagation()}
-        >
-          {/* Handle Bar */}
-          <View style={styles.handleBar}>
-            <View style={[styles.handle, { backgroundColor: isDark ? '#666' : '#B8B8B7' }]} />
-          </View>
+  const handleSheetChange = useCallback((index: number) => {
+    if (index === -1) {
+      onClose();
+    }
+  }, [onClose]);
 
+  if (!visible) return null;
+
+  return (
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={-1}
+      enableDynamicSizing
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      onChange={handleSheetChange}
+      backgroundStyle={{
+        backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+      }}
+      handleIndicatorStyle={{
+        backgroundColor: isDark ? '#666' : '#B8B8B7',
+      }}
+    >
+      <BottomSheetView
+        style={[
+          styles.container,
+          { backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB' },
+        ]}
+      >
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.title, { color: isDark ? '#FFF' : '#000' }]}>
@@ -139,10 +172,13 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 <View
                   style={[
                     styles.optionsList,
-                    { backgroundColor: isDark ? '#2A2A2A' : '#FFF' },
+                    {
+                      backgroundColor: isDark ? '#2A2A2A' : '#FFF',
+                      borderColor: '#BBB',
+                    },
                   ]}
                 >
-                  <ScrollView style={{ maxHeight: 200 }}>
+                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
                     {MAIN_CATEGORIES.map((option) => (
                       <Pressable
                         key={option.value}
@@ -199,10 +235,13 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 <View
                   style={[
                     styles.optionsList,
-                    { backgroundColor: isDark ? '#2A2A2A' : '#FFF' },
+                    {
+                      backgroundColor: isDark ? '#2A2A2A' : '#FFF',
+                      borderColor: '#BBB',
+                    },
                   ]}
                 >
-                  <ScrollView style={{ maxHeight: 200 }}>
+                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
                     {SUB_CATEGORIES.map((option) => (
                       <Pressable
                         key={option.value}
@@ -256,33 +295,14 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
               <Text style={styles.doneButtonText}>Done</Text>
             </Pressable>
           </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      </BottomSheetView>
+    </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
   container: {
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
     paddingBottom: 34, // Home indicator space
-    minHeight: 400,
-  },
-  handleBar: {
-    alignItems: 'center',
-    paddingTop: 21,
-    paddingBottom: 17,
-  },
-  handle: {
-    width: 70,
-    height: 5,
-    borderRadius: 10,
   },
   header: {
     alignItems: 'center',
@@ -298,7 +318,7 @@ const styles = StyleSheet.create({
   },
   fieldContainer: {
     position: 'relative',
-    zIndex: 1,
+    marginBottom: 8,
   },
   dropdown: {
     height: 42,
@@ -331,18 +351,10 @@ const styles = StyleSheet.create({
     color: '#C1BEBF',
   },
   optionsList: {
-    position: 'absolute',
-    top: 44,
-    left: 0,
-    right: 0,
+    marginTop: 4,
     borderWidth: 1,
-    borderColor: '#BBB',
     borderRadius: 5,
-    borderTopWidth: 0,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    zIndex: 1000,
-    elevation: 5,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

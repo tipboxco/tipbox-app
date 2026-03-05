@@ -117,28 +117,42 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     }))
   );
   
+  // ScrollView ref for scroll position control
+  const scrollViewRef = useRef<any>(null);
+
   // Seçili kategori ID'si (subcategories çekmek için) - Local state (API için)
   // Initial state'ten restore et
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(initialSelectedCategoryId);
-  
-  // Initial state'i restore et (sadece ilk render'da)
-  useEffect(() => {
-    if (initialView) {
-      setCurrentView(initialView);
-    }
-    if (initialSelectedSubCategoryId) {
-      setSelectedSubCategory(initialSelectedSubCategoryId);
-    }
-    if (initialSelectedProductGroupId) {
-      setSelectedProductGroup(initialSelectedProductGroupId);
-    }
-    if (initialSelectedCategoryId) {
-      setSelectedCategoryId(initialSelectedCategoryId);
-    }
-    if (initialBreadcrumbItems && initialBreadcrumbItems.length > 0) {
-      setBreadcrumbItems(initialBreadcrumbItems);
-    }
-  }, []); // Sadece mount'ta çalış
+
+  // CRITICAL FIX: Always reset to root on screen focus
+  // This ensures the screen always starts at "Categories" (index 0), not at a deep navigation state
+  // Track if this is the initial focus to reset state
+  const isInitialFocusRef = useRef(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Only reset on initial focus, not on subsequent focuses (coming back from deeper screens)
+      if (isInitialFocusRef.current) {
+        isInitialFocusRef.current = false;
+
+        // Reset to root state - always start at "Categories"
+        setBreadcrumbItems([]);
+        setSelectedCategoryId(undefined);
+        setSelectedSubCategoryId(undefined);
+        setSelectedProductGroupId(undefined);
+        setSelectedProductLocal(null);
+        setCurrentView('categories');
+
+        // Scroll to top
+        scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+      }
+
+      // Reset the flag when the screen is unfocused (navigating away)
+      return () => {
+        isInitialFocusRef.current = true;
+      };
+    }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView])
+  );
   
   // Seçili alt kategori ID'si setter - Store'dan oku
   const setSelectedSubCategoryId = useCatalogUIStore((state) => state.setSelectedSubCategory);
@@ -570,6 +584,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     setSelectedProductGroupId(undefined);
     setSelectedProductLocal(null);
     setCurrentView('categories');
+
+    // Scroll pozisyonunu sıfırla
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
   }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView, setSelectedProductLocal]);
 
   const handleCategoryPress = (category: { id: string; name: string; image: any }) => {
@@ -588,6 +605,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       },
     ]);
     setCurrentView('subcategories');
+
+    // Scroll pozisyonunu sıfırla
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
   };
 
   const handleSubCategoryPress = (subCategory: CatalogSubCategory & { id: string; image: any }) => {
@@ -605,13 +625,13 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
             data: fallbackCategory,
           }
         : null);
-    
+
     // Seçili alt kategori ID'sini set et (product groups API çağrısı için)
     setSelectedSubCategoryId(subCategory.id);
     setSelectedProductGroupId(undefined); // ProductGroup'u temizle
     setSelectedProduct(undefined); // Product ID'yi de temizle (store'da yanlış ID kalmasın)
     setSelectedProductLocal(null);
-    
+
     // Product groups'u prefetch et (hızlı yükleme için)
     prefetchProductGroups(subCategory.id);
 
@@ -627,13 +647,16 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       ].filter(Boolean) as BreadcrumbItem[]
     );
     setCurrentView('productgroups');
+
+    // Scroll pozisyonunu sıfırla
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
   };
 
   const handleProductGroupPress = (productGroup: CatalogProductGroup & { id: string; image: any }) => {
     // Seçili ürün grubu ID'sini set et (products API çağrısı için)
     setSelectedProductGroupId(productGroup.id);
     setSelectedProductLocal(null);
-    
+
     // Products'ı prefetch et (hızlı yükleme için)
     prefetchProducts(productGroup.id);
 
@@ -653,6 +676,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       ].filter(Boolean) as BreadcrumbItem[]
     );
     setCurrentView('products');
+
+    // Scroll pozisyonunu sıfırla
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
   };
 
   const handleProductPress = (product: CatalogProduct & { id: string; image: any; description?: string }) => {
@@ -817,6 +843,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     setSelectedProductLocal(null);
     setSelectedProduct(undefined);
     setCurrentView('subcategories');
+    // Scroll pozisyonunu sıfırla
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
     return;
   }
 
@@ -830,6 +858,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     setSelectedProductLocal(null);
     setSelectedProduct(undefined);
     setCurrentView('productgroups');
+    // Scroll pozisyonunu sıfırla
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
     return;
   }
 
@@ -844,6 +874,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     setSelectedProductLocal(null);
     setSelectedProduct(undefined);
     setCurrentView('products');
+    // Scroll pozisyonunu sıfırla
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
     return;
   }
 
@@ -860,6 +892,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       // Store'a product ID'yi kaydet
       setSelectedProduct(item.data?.id);
       setCurrentView('products');
+      // Scroll pozisyonunu sıfırla
+      scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
     }
   };
 
@@ -1544,8 +1578,9 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       )}
 
       {/* Dynamic Grid */}
-      <ScrollView 
-        flex={1} 
+      <ScrollView
+        ref={scrollViewRef}
+        flex={1}
         px="$4"
         onScroll={(event) => {
           // Global search için infinite scroll (sadece global sonuçlar gösterilirken)
@@ -1717,7 +1752,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                 ) : (
                   <CategorySkeleton count={9} />
                 )
-              ) : currentData && currentData.length > 0 ? (
+              ) : currentData.length > 0 ? (
                 <>
                   {/* currentData'yı gruplara böl - categories için 2'li, diğerleri için 3'lü */}
                   {Array.from({ length: Math.ceil(currentData.length / (currentView === 'categories' ? 2 : 3)) }).map((_, rowIndex) => {
@@ -1805,10 +1840,16 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                     );
                   })}
                 </>
-              ) : currentData && currentData.length === 0 && searchQuery.trim().length > 0 ? (
+              ) : currentData.length === 0 && searchQuery.trim().length > 0 ? (
                 <Box py="$8" alignItems="center" px="$4">
                   <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
                     {t('productCatalog.noSearchResults', { query: searchQuery.trim() })}
+                  </Text>
+                </Box>
+              ) : currentData.length === 0 ? (
+                <Box py="$8" alignItems="center" px="$4">
+                  <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
+                    {t('productCatalog.noDataAvailable')}
                   </Text>
                 </Box>
               ) : null}

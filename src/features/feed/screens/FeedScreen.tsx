@@ -142,6 +142,23 @@ const FeedScreenInner = React.memo(() => {
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
 
+  // Filter değişikliğini takip et - ilk render hariç
+  const isInitialMount = useRef(true);
+
+  // Filter değiştiğinde scroll pozisyonunu sıfırla
+  useEffect(() => {
+    // İlk render'da çalışma
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Filter değiştiğinde scroll pozisyonunu sıfırla
+    if (feedListRef.current) {
+      feedListRef.current.scrollToOffset({ offset: 0, animated: false });
+    }
+  }, [filters, feedListRef]);
+
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 

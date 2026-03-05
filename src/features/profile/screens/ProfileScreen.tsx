@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   interpolateColor,
 } from 'react-native-reanimated';
+import PagerView from 'react-native-pager-view';
 import { AnimatedTabBar } from '../components/AnimatedTabBar';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -869,20 +870,37 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
-  
-  // Tab değiştiğinde scroll pozisyonunu sıfırla
+  const pagerViewRef = useRef<PagerView>(null);
+
+  // Tab değiştiğinde hem key hem index güncelle ve PagerView'ı sync et
   const handleTabChange = useCallback((tabKey: string) => {
     // Type guard - sadece valide TabKey değerleri kabul et
     const validTabKeys = TABS.map(t => t.key);
     if (validTabKeys.includes(tabKey as TabKey)) {
       const typedTabKey = tabKey as TabKey;
-      setActiveTab(typedTabKey);
+      const newIndex = TABS.findIndex(t => t.key === typedTabKey);
 
-      // Tab değiştiğinde scroll pozisyonunu en üste al
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: 0, animated: false });
+      if (newIndex !== -1) {
+        setActiveTab(typedTabKey);
+        setActiveTabIndex(newIndex);
+
+        // PagerView'ı yeni sayfaya kaydır
+        if (pagerViewRef.current) {
+          pagerViewRef.current.setPage(newIndex);
+        }
       }
+    }
+  }, [TABS]);
+
+  // PagerView sayfa değiştiğinde tab'ı güncelle
+  const handlePageSelected = useCallback((e: any) => {
+    const newIndex = e.nativeEvent.position;
+    if (newIndex >= 0 && newIndex < TABS.length) {
+      const newTabKey = TABS[newIndex].key;
+      setActiveTab(newTabKey);
+      setActiveTabIndex(newIndex);
     }
   }, [TABS]);
   
@@ -1982,14 +2000,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <StatusBar style="light" />
-      {/* Tüm ekran scroll edilebilir - Banner, Header, Tab Bar ve Content hepsi içinde */}
+
+      {/* Profile Header - Scrollable with Pull-to-Refresh */}
       <ScrollView
         ref={scrollViewRef}
-        showsVerticalScrollIndicator={true}
-        onScroll={handleScroll}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
         scrollEventThrottle={16}
-        bounces={false}
-        overScrollMode="never"
         refreshControl={
           <RefreshControl
             refreshing={refreshing || false}
@@ -1998,34 +2015,60 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             colors={isDark ? ['#FFFFFF'] : ['#000000']}
           />
         }
-        contentContainerStyle={{
-          paddingBottom: bottomPadding,
-        }}
       >
-        {/* Profile Header - Scroll edilebilir */}
-        <Box>
-          {profileHeader}
-        </Box>
-
-        {/* Tab Bar - Animated with smooth transitions */}
-        <AnimatedTabBar 
-          tabs={TABS} 
-          activeTab={activeTab} 
-          onTabChange={handleTabChange} 
-          isDark={isDark}
-        />
-
-        {/* Tab Content - Scroll edilebilir */}
-        <TabContent
-          tabKey={activeTab}
-          targetUserId={targetUserId || ''}
-          isDark={isDark}
-          onQueryRef={handleTabQueryRef}
-          profileBadges={userProfile?.badges ?? []}
-          onBadgePress={handleBadgePress}
-          hasPrimePass={hasPrimePass}
-        />
+        {profileHeader}
       </ScrollView>
+
+      {/* Tab Bar - Fixed */}
+      <AnimatedTabBar
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        isDark={isDark}
+      />
+
+      {/* Tab Content - Swipeable with PagerView */}
+      <PagerView
+        ref={pagerViewRef}
+        style={{ flex: 1 }}
+        initialPage={activeTabIndex}
+        onPageSelected={handlePageSelected}
+        overdrag={true}
+        scrollEnabled={true}
+        keyboardDismissMode="on-drag"
+        offscreenPageLimit={1}
+      >
+        {TABS.map((tab, index) => {
+          // Her tab için unique scroll view ref oluştur
+          const isActiveTab = index === activeTabIndex;
+
+          return (
+            <View key={tab.key} collapsable={false} style={{ flex: 1 }}>
+              <ScrollView
+                key={`scroll-${tab.key}-${activeTabIndex}`}
+                showsVerticalScrollIndicator={true}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                bounces={false}
+                overScrollMode="never"
+                contentContainerStyle={{
+                  paddingBottom: bottomPadding,
+                }}
+              >
+                <TabContent
+                  tabKey={tab.key}
+                  targetUserId={targetUserId || ''}
+                  isDark={isDark}
+                  onQueryRef={handleTabQueryRef}
+                  profileBadges={userProfile?.badges ?? []}
+                  onBadgePress={handleBadgePress}
+                  hasPrimePass={hasPrimePass}
+                />
+              </ScrollView>
+            </View>
+          );
+        })}
+      </PagerView>
 
 
       {/* Profile Menu Modal - React Native Modal */}

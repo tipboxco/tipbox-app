@@ -10,6 +10,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   View,
+  ScrollView,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -287,9 +288,8 @@ const NotificationsScreenComponent: React.FC = () => {
       return () => {
         // Ekran blur olduğunda drawer gesture'ı tekrar enable et
         setGestureEnabled(true);
-        // CRITICAL: Ref'i resetle - bir sonraki focus'ta tekrar çalışsın
-        // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde ref resetlenmemeli
-        hasMarkedAllAsReadRef.current = false;
+        // CRITICAL FIX: Ref'i resetleme - sadece component unmount olduğunda resetlensin
+        // Her blur'da resetlenmemeli (tab değişikliğinde sürekli mark-all-read yapılmasını önler)
       };
     }, [setGestureEnabled, shouldFetchNotifications, queryClient])
   );
@@ -450,6 +450,9 @@ const NotificationsScreenComponent: React.FC = () => {
       const position = e.nativeEvent.position;
       progress.value = withTiming(position, { duration: 0 });
       setCurrentPage(position);
+
+      // Tab değiştiğinde scroll pozisyonunu sıfırla (otomatik olarak FlashList key değişimi ile)
+      // FlashList her tab için ayrı instance olduğu için otomatik sıfırlanır
     },
     [progress]
   );
@@ -557,9 +560,10 @@ const NotificationsScreenComponent: React.FC = () => {
 
   // Figma: Pill tab - seçili = koyu arka plan, seçili değil = açık gri
   const tabActiveBg = isDark ? '#1A1A1A' : '#000000';
-  const tabInactiveBg = isDark ? '#2A2A2A' : '#F2F2F2';
+  const tabInactiveBg = isDark ? '#2A2A2A' : '#F1F1F1';
   const tabActiveText = '#FFFFFF';
   const tabInactiveText = isDark ? '#8C8C8C' : '#8C8C8C';
+  const tabBorderColor = isDark ? '#333' : '#EFEFEF';
 
   // Her tab için seçili mi (animasyonlu)
   const tab0Active = useAnimatedStyle(
@@ -1089,52 +1093,63 @@ const NotificationsScreenComponent: React.FC = () => {
           </HStack>
         </VStack>
 
-        {/* Tab Header - Figma: pill/chip style */}
-        <VStack pt={0} pb='$2' px='$4' bg={tabHeaderBgColor}>
-          <HStack
-            ref={tabContainerRef}
-            space='xs'
-            onLayout={event => {
-              const width = event.nativeEvent.layout.width;
-              setTabContainerWidth(width);
+        {/* Tab Header - Figma: pill/chip style with horizontal scroll */}
+        <Box
+          pt={0}
+          pb='$2'
+          bg={tabHeaderBgColor}
+          ref={tabContainerRef}
+          onLayout={event => {
+            const width = event.nativeEvent.layout.width;
+            setTabContainerWidth(width);
+          }}
+        >
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              gap: 8,
             }}
+            bounces={false}
           >
             {filters.map((filter, index) => (
               <Pressable
                 key={filter.id}
-                flex={1}
                 onPress={() => handleTabPress(index)}
-                alignItems='center'
-                justifyContent='center'
               >
                 <Animated.View
                   style={[
                     {
-                      paddingVertical: 8,
+                      paddingVertical: 3,
                       paddingHorizontal: 12,
-                      borderRadius: 20,
-                      minWidth: 60,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: tabBorderColor,
                       alignItems: 'center',
                       justifyContent: 'center',
+                      minHeight: 28,
                     },
                     getTabBgStyle(index),
                   ]}
                 >
                   <Animated.Text
                     style={[
-                      { fontSize: 13, fontWeight: '600' },
+                      {
+                        fontSize: 12,
+                        fontWeight: '600',
+                      },
                       getTabTextStyle(index),
                     ]}
                     numberOfLines={1}
-                    ellipsizeMode='tail'
                   >
                     {filter.label}
                   </Animated.Text>
                 </Animated.View>
               </Pressable>
             ))}
-          </HStack>
-        </VStack>
+          </ScrollView>
+        </Box>
 
         {/* PagerView - Native swipe tab switching */}
         <AnimatedPagerView

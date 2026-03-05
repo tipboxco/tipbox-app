@@ -47,33 +47,15 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
    * STABİL FIX: Eğer sheet zaten açıksa, önce kapat sonra aç (content değişikliği için)
    */
   const openBottomSheet = useCallback((content: ReactNode, options?: BottomSheetOptions) => {
-    console.log('[GlobalBottomSheetProvider] openBottomSheet called');
-
-    // Eğer önceki close cleanup bekliyorsa iptal et (yeni content'in silinmesini önler)
+    // CRITICAL FIX: Cleanup iptal ve instant state update
     cancelPendingCleanup();
     bumpOpId();
 
-    setState(prev => {
-      console.log('[GlobalBottomSheetProvider] setState called, prev.index:', prev.index);
-      // Eğer sheet zaten açıksa ve content değişiyorsa, önce index'i -1 yap
-      // Sonra hemen 0 yap (gorhom'un internal state'i ile senkronize olması için)
-      if (prev.index === 0 && prev.content !== content) {
-        // Content değişiyor, önce kapat sonra aç
-        // Ama burada direkt 0 yapıyoruz çünkü gorhom onChange ile handle edecek
-        console.log('[GlobalBottomSheetProvider] Content changed, setting index to 0');
-        return {
-          content,
-          index: 0, // Open
-          options: options || null,
-        };
-      }
-      // Normal açılış
-      console.log('[GlobalBottomSheetProvider] Normal open, setting index to 0');
-      return {
-        content,
-        index: 0, // Open
-        options: options || null,
-      };
+    // PERFORMANCE: Tek setState ile instant açılış (no animation delay)
+    setState({
+      content,
+      index: 0, // Open
+      options: options || null,
     });
   }, []);
 
@@ -96,9 +78,9 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
         index: -1, // Closed
       };
     });
-    // Content'i temizle. animateOnMount true ise kapanış animasyonu bitene kadar bekle (~200ms).
-    // PERFORMANCE FIX: Cleanup delay'leri kısalt (daha hızlı sheet değişimi)
-    const cleanupDelay = optionsRef.current?.animateOnMount ? 200 : 100;
+    // CRITICAL FIX: Cleanup delay'i minimal yap (instant açılış için)
+    // animateOnMount false ise cleanup anlık, true ise minimal bekleme
+    const cleanupDelay = optionsRef.current?.animateOnMount ? 150 : 0;
     cleanupTimeoutRef.current = setTimeout(() => {
       setState(prev => {
         // Eğer bu close'tan sonra başka bir open/close olduysa cleanup yapma

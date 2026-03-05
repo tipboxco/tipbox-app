@@ -442,14 +442,6 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             </HStack>
           </Pressable>
         </HStack>
-        <Box>
-          <Image
-            source={require('@/assets/common/Vector.png')}
-            alt={'vector'}
-            width={24}
-            height={24}
-          />
-        </Box>
       </HStack>
     </VStack>
   );

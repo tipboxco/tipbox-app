@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { CatalogStackParamList } from '../navigation';
 import { Search } from 'lucide-react-native';
@@ -59,19 +59,30 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   const searchQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
   const [currentStep, setCurrentStep] = useState<'categories' | 'brands'>(initialStep || 'categories');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>(initialBreadcrumbItems || []);
-  
-  // Initial state'i restore et (sadece ilk render'da)
-  useEffect(() => {
-    if (initialStep) {
-      setCurrentStep(initialStep);
-    } else if (initialCategoryId) {
-      // Initial category ID varsa brands step'ine geç
-      setCurrentStep('brands');
-    }
-    if (initialBreadcrumbItems && initialBreadcrumbItems.length > 0) {
-      setBreadcrumbItems(initialBreadcrumbItems);
-    }
-  }, []); // Sadece mount'ta çalış
+
+  // CRITICAL FIX: Always reset to root on screen focus
+  // This ensures the screen always starts at "Brand Category" (index 0), not at a deep navigation state
+  // Track if this is the initial focus to reset state
+  const isInitialFocusRef = useRef(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Only reset on initial focus, not on subsequent focuses (coming back from deeper screens)
+      if (isInitialFocusRef.current) {
+        isInitialFocusRef.current = false;
+
+        // Reset to root state - always start at "Brand Category"
+        setBreadcrumbItems([]);
+        setCurrentStep('categories');
+        onCategorySelect(null); // Clear selected category
+      }
+
+      // Reset the flag when the screen is unfocused (navigating away)
+      return () => {
+        isInitialFocusRef.current = true;
+      };
+    }, [onCategorySelect])
+  );
   
   // PERFORMANCE FIX: Store onStateChange in ref to prevent infinite loops
   // onStateChange prop may have a new reference on every render from parent

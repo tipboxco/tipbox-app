@@ -53,7 +53,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
   isLiking = false,
   isEditing = false,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isExpanded, setIsExpanded] = useState(false);
@@ -158,15 +158,15 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
   const handleDelete = useCallback(() => {
     if (!commentId || !postId || !onDelete || isDeleting) return;
     Alert.alert(
-      t('common.dialogs.deleteComment.title'),
-      t('common.dialogs.deleteComment.message'),
+      t('dialogs.deleteComment.title'),
+      t('dialogs.deleteComment.message'),
       [
         {
-          text: t('common.buttons.cancel'),
+          text: t('buttons.cancel'),
           style: 'cancel',
         },
         {
-          text: t('common.buttons.delete'),
+          text: t('buttons.delete'),
           style: 'destructive',
           onPress: () => onDelete(commentId, postId),
         },
@@ -303,7 +303,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontSize={11}
                       fontWeight="$medium"
                     >
-                      {t('common.buttons.save')}
+                      {t('buttons.save')}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -321,7 +321,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontSize={11}
                       fontWeight="$medium"
                     >
-                      {t('common.buttons.cancel')}
+                      {t('buttons.cancel')}
                     </Text>
                   </Pressable>
                 </HStack>
@@ -349,7 +349,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontWeight="$medium"
                       textDecorationLine="underline"
                     >
-                      {isExpanded ? t('common.menu.showLess') : t('common.menu.showMore')}
+                      {isExpanded ? t('menu.showLess') : t('menu.showMore')}
                     </Text>
                   </Pressable>
                 )}
@@ -380,7 +380,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                   fontSize={11}
                   fontWeight="$medium"
                 >
-                  {localLikesCount > 0 ? localLikesCount : t('common.buttons.like')}
+                  {localLikesCount > 0 ? localLikesCount : t('buttons.like')}
                 </Text>
               </Pressable>
             </HStack>

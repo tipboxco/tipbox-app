@@ -153,10 +153,14 @@ export const LoginScreen = () => {
             duration: 3000,
           });
 
+          // Navigate to main screen
           navigation.reset({
             index: 0,
             routes: [{ name: 'Main' as never }],
           });
+
+          // Başarılı login'den sonra catch bloğuna düşmeyi önle
+          return;
         }
         else {
           showCustomToast(toast, {
