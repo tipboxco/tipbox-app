@@ -165,7 +165,8 @@ export const GlobalBottomSheet: React.FC = () => {
   const paddingBottom = mergedOptions.paddingBottom ?? (Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8);
 
   // animateOnMount true ise açılış/kapanış için aynı timing config (kapanış da animasyonlu olsun)
-  const timingConfigs = useBottomSheetTimingConfigs({ duration: 300 });
+  // PERFORMANCE FIX: Duration'ı 300ms'den 180ms'ye düşür (daha hızlı açılış/kapanış)
+  const timingConfigs = useBottomSheetTimingConfigs({ duration: 180 });
   const animationConfigs = mergedOptions.animateOnMount ? timingConfigs : undefined;
 
   // Content yoksa render etme
@@ -200,7 +201,7 @@ export const GlobalBottomSheet: React.FC = () => {
         enableOverDrag={mergedOptions.enableOverDrag}
         enableHandlePanningGesture={mergedOptions.enableHandlePanningGesture}
         enableContentPanningGesture={mergedOptions.enableContentPanningGesture}
-        animateOnMount={mergedOptions.animateOnMount !== undefined ? mergedOptions.animateOnMount : (mergedOptions.detached ? true : true)}
+        animateOnMount={mergedOptions.animateOnMount !== undefined ? mergedOptions.animateOnMount : false}
         animationConfigs={mergedOptions.animationConfigs ?? animationConfigs}
         backdropComponent={renderBackdrop}
         onChange={handleSheetChanges}

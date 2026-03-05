@@ -96,8 +96,9 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
         index: -1, // Closed
       };
     });
-    // Content'i temizle. animateOnMount true ise kapanış animasyonu bitene kadar bekle (~400ms).
-    const cleanupDelay = optionsRef.current?.animateOnMount ? 400 : 250;
+    // Content'i temizle. animateOnMount true ise kapanış animasyonu bitene kadar bekle (~200ms).
+    // PERFORMANCE FIX: Cleanup delay'leri kısalt (daha hızlı sheet değişimi)
+    const cleanupDelay = optionsRef.current?.animateOnMount ? 200 : 100;
     cleanupTimeoutRef.current = setTimeout(() => {
       setState(prev => {
         // Eğer bu close'tan sonra başka bir open/close olduysa cleanup yapma
