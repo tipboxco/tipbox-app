@@ -1,236 +1,236 @@
 {
   "settingsScreen": {
-    "title": "",
-    "searchPlaceholder": "",
+    "title": "Ayarlar",
+    "searchPlaceholder": "Ürün grubu seç veya ürün adı ara",
     "sections": {
-      "accountSecurity": "",
-      "accountPreferences": "",
-      "paymentSubscription": ""
+      "accountSecurity": "Hesap Güvenliği",
+      "accountPreferences": "Hesap Tercihleri",
+      "paymentSubscription": "Ödeme ve Abonelik Ayarları"
     },
     "menuItems": {
-      "changePassword": "",
-      "twoFactor": "",
-      "notificationSettings": "",
-      "privacySettings": "",
-      "supportSettings": "",
-      "language": "",
-      "yourDevices": "",
-      "paymentSubscription": "",
-      "billingHistory": ""
+      "changePassword": "Şifre Değiştir",
+      "twoFactor": "İki Faktörlü Kimlik Doğrulama",
+      "notificationSettings": "Bildirim Ayarları",
+      "privacySettings": "Gizlilik Ayarları",
+      "supportSettings": "1-1 Destek Ayarları",
+      "language": "Dil",
+      "yourDevices": "Cihazlarınız",
+      "paymentSubscription": "Ödeme ve Abonelik",
+      "billingHistory": "Fatura Geçmişi"
     }
   },
   "notificationSettings": {
-    "title": "",
-    "pushNotifications": "",
-    "emailNotifications": "",
-    "smsNotifications": "",
-    "trustTrusterNotifications": "",
-    "oneononeNotifications": "",
-    "messageNotifications": "",
-    "collectionNotifications": "",
-    "postNotifications": "",
-    "depositNotifications": "",
-    "allNotifications": "",
-    "pauseNotifications": ""
+    "title": "Bildirim Ayarları",
+    "pushNotifications": "Anlık Bildirimler",
+    "emailNotifications": "E-posta Bildirimleri",
+    "smsNotifications": "SMS Bildirimleri",
+    "trustTrusterNotifications": "Trust - Truster Bildirimleri",
+    "oneononeNotifications": "1-1 Destek Bildirimleri",
+    "messageNotifications": "Mesaj Bildirimleri",
+    "collectionNotifications": "Koleksiyon Bildirimleri",
+    "postNotifications": "Gönderi Bildirimleri",
+    "depositNotifications": "Para Yatırma Bildirimleri",
+    "allNotifications": "Tüm Bildirimler",
+    "pauseNotifications": "Bildirimleri Geçici Olarak Duraklat"
   },
   "privacySettings": {
-    "title": "",
-    "blockedUsers": "",
-    "privateAccount": "",
-    "dataSharing": "",
-    "trustersOnly": "",
-    "everyone": "",
-    "nftCollections": "",
-    "nftCollectionsDesc": "",
-    "trustTrusterList": "",
-    "trustTrusterListDesc": "",
-    "supportSessionRequest": "",
-    "supportSessionRequestDesc": ""
+    "title": "Gizlilik Ayarları",
+    "blockedUsers": "Engellenen Kullanıcılar",
+    "privateAccount": "Gizli Hesap",
+    "dataSharing": "Veri Paylaşımı",
+    "trustersOnly": "Yalnızca Truster'lar",
+    "everyone": "Herkes",
+    "nftCollections": "NFT / Rozet Koleksiyonları",
+    "nftCollectionsDesc": "NFT / Rozet Koleksiyonlarınızı kimlerin görebileceğini seçin.",
+    "trustTrusterList": "Trust / Truster Listesi",
+    "trustTrusterListDesc": "Trust / Truster Listenizi kimlerin görebileceğini seçin.",
+    "supportSessionRequest": "1-1 Destek Oturumu Talebi",
+    "supportSessionRequestDesc": "Kimlerin 1-1 Destek Oturumu talep edebileceğini seçin."
   },
   "supportSettings": {
-    "title": "",
-    "enableSupport": "",
-    "supportHours": "",
-    "setTipsAmount": "",
-    "descriptionPart1": "",
-    "descriptionPart2": "",
-    "descriptionPart3": "",
-    "minimumNotice": "",
-    "changeLimitNotice": "",
-    "save": "",
-    "saving": "",
-    "invalidPrice": "",
-    "minimumTipsRequired": "",
-    "priceUpdated": "",
-    "priceUpdatedSuccess": "",
-    "errorUpdatingPrice": ""
+    "title": "1-1 Destek Ayarları",
+    "enableSupport": "Desteği Etkinleştir",
+    "supportHours": "Destek Saatleri",
+    "setTipsAmount": "TIPS Miktarını Belirle",
+    "descriptionPart1": "Kullanıcıların 1-1 Destek Talebi açmak için",
+    "descriptionPart2": "ödemeleri gereken minimum TIPS miktarını belirleyin.",
+    "descriptionPart3": "Bu miktar yalnızca talebi açmak için gereklidir.",
+    "minimumNotice": "* En az {{amount}} TIPS belirlenebilir.",
+    "changeLimitNotice": "* Miktar her 10 günde bir değiştirilebilir.",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor...",
+    "invalidPrice": "Geçersiz Fiyat",
+    "minimumTipsRequired": "En az {{amount}} TIPS gerekli",
+    "priceUpdated": "Fiyat Güncellendi",
+    "priceUpdatedSuccess": "Destek oturumu fiyatı başarıyla güncellendi",
+    "errorUpdatingPrice": "Fiyat güncellenirken bir hata oluştu"
   },
   "changePassword": {
-    "title": "",
-    "currentPassword": "",
-    "newPassword": "",
-    "confirmNewPassword": "",
-    "placeholder": "",
-    "lastUpdated": "",
-    "forgotPassword": "",
-    "changePasswordButton": "",
-    "changing": "",
+    "title": "Şifre Değiştir",
+    "currentPassword": "Mevcut Şifre",
+    "newPassword": "Yeni Şifre",
+    "confirmNewPassword": "Yeni Şifreyi Onayla",
+    "placeholder": "****************",
+    "lastUpdated": "Son güncelleme: 26.03.2025",
+    "forgotPassword": "Şifremi Unuttum",
+    "changePasswordButton": "Şifreyi Değiştir",
+    "changing": "Değiştiriliyor...",
     "errors": {
-      "currentPasswordRequired": "",
-      "newPasswordRequired": "",
-      "passwordMinLength": "",
-      "confirmPasswordRequired": "",
-      "passwordsMustMatch": ""
+      "currentPasswordRequired": "Mevcut şifre gereklidir",
+      "newPasswordRequired": "Yeni şifre gereklidir",
+      "passwordMinLength": "Şifre en az 6 karakter olmalıdır",
+      "confirmPasswordRequired": "Lütfen şifrenizi onaylayın",
+      "passwordsMustMatch": "Şifreler eşleşmelidir"
     },
     "success": {
-      "title": "",
-      "description": ""
+      "title": "Şifre Değiştirildi",
+      "description": "Şifreniz başarıyla güncellendi."
     },
     "error": {
-      "title": "",
-      "fallbackMessage": ""
+      "title": "Hata",
+      "fallbackMessage": "Şifre değiştirilirken bir hata oluştu"
     },
     "validation": {
-      "title": ""
+      "title": "Doğrulama Hatası"
     }
   },
   "forgotPassword": {
-    "title": "",
-    "description": "",
-    "email": "",
-    "emailPlaceholder": "",
-    "sendEmailButton": "",
+    "title": "Şifremi Unuttum",
+    "description": "Şifrenizi sıfırlamak için e-posta adresinizi girin.",
+    "email": "E-Posta",
+    "emailPlaceholder": "ornek@gmail.com",
+    "sendEmailButton": "E-Posta Gönder",
     "verifyStep": {
-      "title": "",
-      "description": ""
+      "title": "Onay kodunu girin",
+      "description": "Şifrenizi sıfırlamak için şu adrese gönderdiğimiz 6 haneli kodu girin:"
     }
   },
   "twoFactorAuth": {
-    "title": "",
-    "enable": "",
-    "disable": "",
-    "sms": "",
-    "authenticator": "",
+    "title": "İki Faktörlü Kimlik Doğrulama",
+    "enable": "2FA Etkinleştir",
+    "disable": "2FA Devre Dışı Bırak",
+    "sms": "SMS",
+    "authenticator": "Doğrulayıcı Uygulama",
     "googleAuthenticator": {
-      "title": "",
-      "description": ""
+      "title": "Google Authenticator",
+      "description": "Hesabınızı korumak için Google Authenticator kullanın"
     },
     "smsOption": {
-      "title": "",
-      "description": ""
+      "title": "SMS",
+      "description": "Hesabınızı güvence altına almak için SMS ile doğrulama kodu alın."
     },
-    "whyNeeded": ""
+    "whyNeeded": "Buna neden ihtiyacımız var?"
   },
   "smsVerification": {
-    "title": "",
-    "heading": "",
-    "description": "",
-    "phonePlaceholder": "",
-    "sendCodeButton": "",
+    "title": "SMS Doğrulama",
+    "heading": "Telefon Numaranızı Girin",
+    "description": "Doğrulama kodunun gönderileceği telefon numarasını girin.",
+    "phonePlaceholder": "5XX XXX XX XX",
+    "sendCodeButton": "Kod Gönder",
     "errors": {
-      "missingInfoTitle": "",
-      "missingInfoDescription": "",
-      "errorTitle": "",
-      "fallbackMessage": ""
+      "missingInfoTitle": "Eksik Bilgi",
+      "missingInfoDescription": "Lütfen telefon numaranızı girin.",
+      "errorTitle": "Hata",
+      "fallbackMessage": "SMS gönderilemedi. Lütfen tekrar deneyin."
     }
   },
   "paymentSubscription": {
-    "title": "",
-    "currentPlan": "",
-    "paymentMethod": "",
-    "billingHistory": ""
+    "title": "Ödeme ve Abonelik",
+    "currentPlan": "Mevcut Plan",
+    "paymentMethod": "Ödeme Yöntemi",
+    "billingHistory": "Fatura Geçmişi"
   },
   "cannyWebView": {
-    "feedback": "",
-    "voteNewFeatures": "",
-    "sessionNotFound": ""
+    "feedback": "Geri Bildirim",
+    "voteNewFeatures": "Yeni Özellikler İçin Oy Ver",
+    "sessionNotFound": "Oturum bulunamadı. Lütfen tekrar giriş yapın."
   },
   "languages": {
-    "title": "",
-    "en": "",
-    "tr": "",
-    "es": "",
-    "comingSoon": ""
+    "title": "Dil",
+    "en": "İngilizce",
+    "tr": "Türkçe",
+    "es": "İspanyolca",
+    "comingSoon": "Yakında"
   },
   "smsVerifyCode": {
-    "headerTitle": "",
-    "title": "",
-    "description": "",
-    "resendCode": "",
-    "success": "",
-    "successMessage": "",
-    "error": "",
-    "errorMessage": "",
-    "codeSent": "",
-    "codeSentMessage": ""
+    "headerTitle": "SMS Doğrulama",
+    "title": "Onay Kodunu Girin",
+    "description": "Telefon numaranıza gönderdiğimiz 6 haneli kodu girin",
+    "resendCode": "Kodu Tekrar Gönder",
+    "success": "Başarılı",
+    "successMessage": "SMS doğrulaması başarıyla tamamlandı.",
+    "error": "Hata",
+    "errorMessage": "Kod doğrulaması başarısız. Lütfen tekrar deneyin.",
+    "codeSent": "Kod Gönderildi",
+    "codeSentMessage": "Yeni doğrulama kodu gönderildi."
   },
   "googleAuthSetup": {
-    "headerTitle": "",
-    "step1Title": "",
-    "step1Description": "",
-    "step2Title": "",
-    "step2Description": "",
-    "step3Title": "",
-    "step3Description": "",
-    "showQRCode": "",
-    "qrCodePlaceholder": "",
-    "nextButton": "",
-    "copied": "",
-    "copiedMessage": ""
+    "headerTitle": "Google Authenticator",
+    "step1Title": "1. Google Authenticator'ı İndirin",
+    "step1Description": "Yüklü değilse, Google Authenticator uygulamasını indirin.",
+    "step2Title": "2. QR Kodu Tarayın veya Anahtarı Kopyalayın",
+    "step2Description": "Google Authenticator uygulamasında QR kodu tarayın veya anahtarı kopyalayıp uygulamaya yapıştırın.",
+    "step3Title": "3. 6 Haneli Kodu Girin",
+    "step3Description": "Google Authenticator tarafından oluşturulan 6 haneli kodu girin",
+    "showQRCode": "QR Kodu Görüntüle",
+    "qrCodePlaceholder": "QR Kod burada gösterilecek",
+    "nextButton": "İleri",
+    "copied": "Kopyalandı",
+    "copiedMessage": "Anahtar panoya kopyalandı"
   },
   "googleAuthVerify": {
-    "headerTitle": "",
-    "title": "",
-    "description": "",
-    "placeholder": "",
-    "completeButton": "",
-    "invalidCode": "",
-    "invalidCodeMessage": "",
-    "success": "",
-    "successMessage": "",
-    "error": "",
-    "errorMessage": ""
+    "headerTitle": "Google Authenticator",
+    "title": "Kodu Girin",
+    "description": "Google Authenticator tarafından oluşturulan 6 haneli kodu girin",
+    "placeholder": "Kodu girin",
+    "completeButton": "Tamamla",
+    "invalidCode": "Geçersiz Kod",
+    "invalidCodeMessage": "Lütfen 6 haneli kodu girin.",
+    "success": "Başarılı",
+    "successMessage": "Google Authenticator başarıyla etkinleştirildi.",
+    "error": "Hata",
+    "errorMessage": "Kod doğrulaması başarısız. Lütfen tekrar deneyin."
   },
   "payment": {
-    "headerTitle": "",
-    "tabPaymentMethods": "",
-    "tabPremiumPlans": ""
+    "headerTitle": "Ödeme ve Abonelik",
+    "tabPaymentMethods": "Ödeme Yöntemleri",
+    "tabPremiumPlans": "Premium Planlar"
   },
   "tabs": {
     "settingsTab": {
-      "darkMode": ""
+      "darkMode": "Karanlık Mod"
     },
     "paymentTab": {
-      "savedCards": "",
-      "addPaymentMethod": "",
-      "billingHistory": "",
-      "dateNewestFirst": "",
-      "dateOldestFirst": "",
-      "noInvoicesYet": "",
-      "updateCardName": "",
-      "cardNamePlaceholder": "",
-      "cancel": "",
-      "save": "",
+      "savedCards": "Kayıtlı Kartlar",
+      "addPaymentMethod": "Ödeme Yöntemi Ekle",
+      "billingHistory": "Fatura Geçmişi",
+      "dateNewestFirst": "Tarih (en yeni)",
+      "dateOldestFirst": "Tarih (en eski)",
+      "noInvoicesYet": "Henüz fatura yok.",
+      "updateCardName": "Kart adını güncelle",
+      "cardNamePlaceholder": "ör: İş Kartı",
+      "cancel": "İptal",
+      "save": "Kaydet",
       "errors": {
-        "cardInUse": "",
-        "deleteCardError": "",
-        "updateCardError": ""
+        "cardInUse": "Bu kart aktif bir abonelik tarafından kullanılıyor. Lütfen önce abonelik ödeme yönteminizi değiştirin.",
+        "deleteCardError": "Kart silinirken bir hata oluştu.",
+        "updateCardError": "Kart adı güncellenirken bir hata oluştu."
       }
     },
     "subscriptionTab": {
-      "mySubscriptions": "",
-      "noActiveSubscription": "",
-      "nextBilling": "",
-      "status": "",
-      "manage": "",
-      "planBenefits": "",
-      "benefits": "",
-      "otherPremiumPlans": "",
+      "mySubscriptions": "Aboneliklerim",
+      "noActiveSubscription": "Aktif abonelik yok",
+      "nextBilling": "Sonraki faturalama: {{date}}",
+      "status": "Durum: {{status}}",
+      "manage": "Yönet",
+      "planBenefits": "Plan Avantajları",
+      "benefits": "Avantajlar:",
+      "otherPremiumPlans": "Diğer Premium Planlar ({{count}} plan)",
       "defaultBenefits": {
-        "unlimitedAccess": "",
-        "prioritySupport": "",
-        "advancedAnalytics": "",
-        "adFree": ""
+        "unlimitedAccess": "Premium özelliklere sınırsız erişim",
+        "prioritySupport": "Öncelikli müşteri desteği",
+        "advancedAnalytics": "Gelişmiş analitik",
+        "adFree": "Reklamsız deneyim"
       }
     }
   }

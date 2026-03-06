@@ -1,109 +1,109 @@
 {
-  "title": "",
+  "title": "Gelen Kutusu",
   "tabs": {
-    "messages": "",
-    "notifications": "",
-    "supportRequests": ""
+    "messages": "Mesajlar",
+    "notifications": "Bildirimler",
+    "supportRequests": "1-1 Destek Talepleri"
   },
   "search": {
-    "placeholder": ""
+    "placeholder": "Gelen kutusunda ara"
   },
   "messages": {
-    "empty": "",
-    "newMessage": "",
-    "typeMessage": "",
-    "error": ""
+    "empty": "Bir sohbet başlatın",
+    "newMessage": "Yeni Mesaj",
+    "typeMessage": "Bir mesaj yazın...",
+    "error": "Hata: {{message}}"
   },
   "supportRequests": {
-    "empty": "",
-    "error": "",
+    "empty": "Henüz destek talebi yok",
+    "error": "Hata: {{message}}",
     "filters": {
-      "all": "",
-      "pending": "",
-      "active": "",
-      "awaitingCompletion": "",
-      "completed": ""
+      "all": "Tümü",
+      "pending": "Çözüm Bekleyen",
+      "active": "Aktif Talepler",
+      "awaitingCompletion": "Tamamlanma Bekleyen",
+      "completed": "Tamamlanan"
     }
   },
   "supportMessageDetail": {
-    "empty": "",
-    "loading": ""
+    "empty": "Henüz mesaj yok",
+    "loading": "Yükleniyor..."
   },
   "messageDetail": {
-    "yesterday": "",
-    "typing": "",
-    "placeholder": "",
-    "imageAlt": "",
+    "yesterday": "Dün",
+    "typing": "yazıyor...",
+    "placeholder": "Bir mesaj yazın...",
+    "imageAlt": "Gönderilen görsel",
     "months": {
-      "january": "",
-      "february": "",
-      "march": "",
-      "april": "",
-      "may": "",
-      "june": "",
-      "july": "",
-      "august": "",
-      "september": "",
-      "october": "",
-      "november": "",
-      "december": ""
+      "january": "Ocak",
+      "february": "Şubat",
+      "march": "Mart",
+      "april": "Nisan",
+      "may": "Mayıs",
+      "june": "Haziran",
+      "july": "Temmuz",
+      "august": "Ağustos",
+      "september": "Eylül",
+      "october": "Ekim",
+      "november": "Kasım",
+      "december": "Aralık"
     },
     "actions": {
-      "reply": "",
-      "edit": "",
-      "delete": "",
-      "forward": "",
-      "info": "",
-      "copy": ""
+      "reply": "Yanıtla",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "forward": "İlet",
+      "info": "Bilgi",
+      "copy": "Kopyala"
     },
     "deleteConfirm": {
-      "title": "",
-      "message": "",
-      "cancel": "",
-      "delete": ""
+      "title": "Mesajı Sil",
+      "message": "Bu mesajı silmek istediğinizden emin misiniz?",
+      "cancel": "İptal",
+      "delete": "Sil"
     },
     "status": {
-      "deleted": "",
-      "loading": "",
-      "uploadFailed": "",
-      "imageLoadFailed": ""
+      "deleted": "Bu mesaj silindi",
+      "loading": "Yükleniyor...",
+      "uploadFailed": "Yükleme başarısız",
+      "imageLoadFailed": "Görsel yüklenemedi"
     }
   },
   "notifications": {
-    "title": "",
-    "empty": "",
-    "emptySearch": "",
-    "markAllRead": "",
+    "title": "Bildirimler",
+    "empty": "Henüz bildirim yok",
+    "emptySearch": "Arama sonucu bulunamadı.",
+    "markAllRead": "Tümünü Okundu İşaretle",
     "search": {
-      "placeholder": ""
+      "placeholder": "Bildirimlerde ara"
     },
     "filters": {
-      "all": "",
-      "replies": "",
-      "truster": "",
-      "tips": ""
+      "all": "Tüm Bildirimler",
+      "replies": "Yanıtlar",
+      "truster": "Trust - Truster",
+      "tips": "TIPS"
     },
     "dateGroups": {
-      "today": "",
-      "yesterday": "",
-      "thisWeek": "",
-      "thisMonth": ""
+      "today": "Bugün",
+      "yesterday": "Dün",
+      "thisWeek": "Bu Hafta",
+      "thisMonth": "Bu Ay"
     },
     "errors": {
-      "loading": "",
-      "loginRequired": "",
-      "unknown": ""
+      "loading": "Bildirimler yüklenirken bir hata oluştu.",
+      "loginRequired": "Bildirimleri görmek için lütfen giriş yapın.",
+      "unknown": "Bilinmeyen hata"
     },
     "actions": {
-      "tryAgain": "",
-      "showMore": ""
+      "tryAgain": "Tekrar Dene",
+      "showMore": "Daha Fazla Göster"
     },
     "types": {
-      "like": "",
-      "comment": "",
-      "follow": "",
-      "tip": "",
-      "mention": ""
+      "like": "gönderinizi beğendi",
+      "comment": "gönderinize yorum yaptı",
+      "follow": "sizi takip etmeye başladı",
+      "tip": "size bahşiş gönderdi",
+      "mention": "sizden bahsetti"
     }
   }
 }

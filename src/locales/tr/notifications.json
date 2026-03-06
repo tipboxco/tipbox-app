@@ -1,33 +1,33 @@
 {
   "likedUsers": {
-    "title": "",
-    "emptyState": ""
+    "title": "Beğenenler",
+    "emptyState": "Kullanıcı bulunamadı"
   },
   "actions": {
     "mute": {
-      "alreadyMuted": "",
-      "success": "",
-      "muteSuccess": "",
-      "error": ""
+      "alreadyMuted": "{{name}} zaten sessize alınmamış durumda",
+      "success": "{{name}} artık bildirim gönderebilir",
+      "muteSuccess": "{{name}} artık bildirim göndermeyecek",
+      "error": "Kullanıcı sessize alınamadı"
     },
     "block": {
-      "notBlocked": "",
-      "unblockSuccess": "",
-      "blockSuccess": "",
-      "error": ""
+      "notBlocked": "{{username}} engellenmemiş",
+      "unblockSuccess": "{{username}} artık sizinle etkileşime geçebilir",
+      "blockSuccess": "{{username}} artık sizinle etkileşime geçemez",
+      "error": "Kullanıcı engellenemedi"
     },
     "report": {
-      "success": "",
-      "error": ""
+      "success": "Şikayetiniz için teşekkürler. Bu raporu inceleyeceğiz.",
+      "error": "Kullanıcı şikayet edilemedi"
     }
   },
   "titles": {
-    "info": "",
-    "unmuted": "",
-    "userMuted": "",
-    "userUnblocked": "",
-    "userBlocked": "",
-    "userReported": "",
-    "error": ""
+    "info": "Bilgi",
+    "unmuted": "Sessizden Çıkarıldı",
+    "userMuted": "Kullanıcı Sessize Alındı",
+    "userUnblocked": "Kullanıcı engeli kaldırıldı",
+    "userBlocked": "Kullanıcı engellendi",
+    "userReported": "Kullanıcı şikayet edildi",
+    "error": "Hata"
   }
 }

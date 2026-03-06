@@ -21,54 +21,54 @@
     "like": "Beğen"
   },
   "labels": {
-    "email": "",
-    "password": "",
-    "username": "",
-    "name": "",
-    "or": ""
+    "email": "E-posta",
+    "password": "Şifre",
+    "username": "Kullanıcı Adı",
+    "name": "Ad",
+    "or": "veya"
   },
   "placeholders": {
-    "emailAddress": "",
-    "password": "",
-    "search": ""
+    "emailAddress": "E-posta adresiniz",
+    "password": "Şifreniz",
+    "search": "Ara..."
   },
   "errors": {
-    "generic": "",
-    "networkError": "",
-    "invalidEmail": "",
-    "invalidPassword": "",
-    "required": ""
+    "generic": "Bir hata oluştu",
+    "networkError": "Ağ hatası. Lütfen tekrar deneyin.",
+    "invalidEmail": "Lütfen geçerli bir e-posta adresi girin",
+    "invalidPassword": "Şifre en az 8 karakter olmalıdır",
+    "required": "Bu alan gereklidir"
   },
   "time": {
-    "justNow": "",
-    "recently": "",
-    "ago": "",
-    "year": "",
-    "year_other": "",
-    "month": "",
-    "month_other": "",
-    "day": "",
-    "day_other": "",
-    "hour": "",
-    "hour_other": "",
-    "minute": "",
-    "minute_other": "",
-    "second": "",
-    "second_other": ""
+    "justNow": "Az önce",
+    "recently": "Yakın zamanda",
+    "ago": "önce",
+    "year": "yıl",
+    "year_other": "yıl",
+    "month": "ay",
+    "month_other": "ay",
+    "day": "gün",
+    "day_other": "gün",
+    "hour": "saat",
+    "hour_other": "saat",
+    "minute": "dakika",
+    "minute_other": "dakika",
+    "second": "saniye",
+    "second_other": "saniye"
   },
   "bookmarks": {
-    "title": "",
-    "loading": "",
-    "error": "",
-    "empty": ""
+    "title": "Kaydedilenler",
+    "loading": "Kaydedilenler yükleniyor...",
+    "error": "Kaydedilenler yüklenirken bir hata oluştu",
+    "empty": "Henüz kayıt yok."
   },
   "moreSchoise": {
-    "title": "",
+    "title": "Daha Fazla Seçenek",
     "tabs": {
-      "settings": "",
-      "notification": "",
-      "media": "",
-      "keyboard": ""
+      "settings": "Ayarlar",
+      "notification": "Bildirim",
+      "media": "Medya",
+      "keyboard": "Klavye"
     }
   },
   "dialogs": {
@@ -78,25 +78,25 @@
     },
     "deletePost": {
       "title": "Gönderiyi Sil",
-      "message": "Bu gönderiyi silmek istediğinizden emin misiniz?"
+      "message": "Bu gönderiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
     },
     "reportPost": {
       "title": "Gönderiyi Şikayet Et",
-      "message": "Bu gönderiyi neden şikayet ediyorsunuz?"
+      "message": "Bu gönderiyi şikayet etmek istediğinizden emin misiniz?"
     },
     "info": "Bilgi"
   },
   "messages": {
-    "success": "",
-    "error": "",
-    "postDeleted": "",
-    "postReported": "",
-    "deleteError": "",
-    "updateOnlyForExperience": "",
-    "checkOutPost": "",
-    "adding": "",
-    "removing": "",
-    "reporting": ""
+    "success": "Başarılı",
+    "error": "Hata",
+    "postDeleted": "Gönderi başarıyla silindi.",
+    "postReported": "Gönderi şikayet edildi. İncelemeniz için teşekkürler.",
+    "deleteError": "Gönderi silinirken bir hata oluştu.",
+    "updateOnlyForExperience": "Güncelleme özelliği yalnızca deneyim gönderileri için kullanılabilir.",
+    "checkOutPost": "Tipbox'taki bu gönderiyi inceleyin!",
+    "adding": "Ekleniyor...",
+    "removing": "Kaldırılıyor...",
+    "reporting": "Şikayet ediliyor..."
   },
   "menu": {
     "update": "Güncelle",

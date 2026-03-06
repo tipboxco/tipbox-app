@@ -1,289 +1,289 @@
 {
   "create": {
     "header": {
-      "title": "",
-      "share": ""
+      "title": "Gönderi Yaz",
+      "share": "Paylaş"
     },
     "form": {
-      "postDescription": "",
-      "postPlaceholder": "",
-      "images": ""
+      "postDescription": "Gönderi Açıklaması",
+      "postPlaceholder": "Gönderinizi buraya yazın...",
+      "images": "Görseller"
     },
     "toast": {
       "limitExceeded": {
-        "title": "",
-        "description": ""
+        "title": "Sınır Aşıldı",
+        "description": "En fazla 10 görsel seçebilirsiniz."
       },
       "postCreated": {
-        "title": "",
-        "description": ""
+        "title": "Gönderi Oluşturuldu",
+        "description": "Gönderiniz başarıyla oluşturuldu!"
       },
       "error": {
-        "title": "",
-        "description": ""
+        "title": "Hata",
+        "description": "Gönderi oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
       },
       "validation": {
-        "title": "",
-        "description": ""
+        "title": "Doğrulama",
+        "description": "Lütfen gönderinizi kontrol edip tekrar deneyin."
       }
     },
     "experience": {
       "header": {
-        "title": "",
-        "addToInventory": "",
-        "next": "",
-        "save": "",
-        "share": "",
-        "done": "",
-        "processing": ""
+        "title": "Deneyim Gönderisi",
+        "addToInventory": "Envantere Ekle",
+        "next": "İleri",
+        "save": "Kaydet",
+        "share": "Paylaş",
+        "done": "Tamam",
+        "processing": "İşleniyor..."
       },
       "step1": {
-        "selectDuration": "",
-        "selectLocation": "",
-        "selectPurpose": ""
+        "selectDuration": "Süre seçin",
+        "selectLocation": "Konum seçin",
+        "selectPurpose": "Amaç seçin"
       },
       "step2": {
-        "experience": "",
-        "experiencePlaceholder": "",
-        "images": ""
+        "experience": "Deneyim",
+        "experiencePlaceholder": "Deneyiminizi buraya yazın...",
+        "images": "Görseller"
       },
       "step3": {
-        "priceAndShopping": "",
-        "productAndUsage": "",
-        "rateExperience": "",
-        "priceExperiencePlaceholder": "",
-        "productExperiencePlaceholder": "",
-        "images": ""
+        "priceAndShopping": "Fiyat ve Alışveriş Deneyimi",
+        "productAndUsage": "Ürün ve Kullanım Deneyimi",
+        "rateExperience": "Deneyimi Değerlendir",
+        "priceExperiencePlaceholder": "Fiyat ve alışveriş deneyiminizi anlatın...",
+        "productExperiencePlaceholder": "Ürün ve kullanım deneyiminizi anlatın...",
+        "images": "Görseller"
       },
       "ai": {
-        "processingContent": "",
-        "timeoutError": "",
-        "structureError": "",
-        "generalError": "",
-        "splitRequired": ""
+        "processingContent": "Deneyim içeriği işleniyor...",
+        "timeoutError": "Yapay zeka işlemi zaman aşımına uğradı. Lütfen tekrar deneyin veya manuel olarak devam edin.",
+        "structureError": "Yapay zeka deneyiminizi yapılandıramadı. Lütfen tekrar deneyin veya manuel olarak devam edin.",
+        "generalError": "Deneyim metni işlenirken bir hata oluştu. Lütfen tekrar deneyin.",
+        "splitRequired": "Lütfen önce deneyiminizi yapılandırmak için yapay zeka bölme özelliğini kullanın."
       },
       "validation": {
-        "productNotSelected": "",
-        "experienceTextTooShort": "",
-        "productSelectionRequired": "",
-        "experienceCategoryRequired": "",
-        "durationRequired": "",
-        "locationRequired": "",
-        "purposeRequired": "",
-        "contextMissing": ""
+        "productNotSelected": "Ürün seçilmedi. Lütfen bir ürün seçin.",
+        "experienceTextTooShort": "Deneyim metni en az 10 karakter olmalıdır.",
+        "productSelectionRequired": "Ürün seçimi gereklidir.",
+        "experienceCategoryRequired": "En az bir deneyim kategorisi doldurulmalıdır.",
+        "durationRequired": "Süre seçimi gereklidir.",
+        "locationRequired": "Konum seçimi gereklidir.",
+        "purposeRequired": "Amaç seçimi gereklidir.",
+        "contextMissing": "Bağlam bilgisi bulunamadı. Lütfen tekrar deneyin."
       },
       "inventory": {
         "alreadyInInventory": {
-          "title": "",
-          "description": ""
+          "title": "Zaten envanterinizde",
+          "description": "Bu ürün zaten envanterinizde. Deneyiminizi paylaşmaya devam edebilirsiniz."
         },
         "addError": {
-          "title": "",
-          "description": ""
+          "title": "Envanter hatası",
+          "description": "Ürün envantere eklenemedi."
         },
         "productNotInInventory": {
-          "title": "",
-          "description": ""
+          "title": "Ürün Envanterde Değil",
+          "description": "Bu ürünü \"Sahibim\" olarak işaretlemek için önce envanterinize eklemeniz gerekir. Lütfen envanterinize ekleyin veya \"Denedim\" seçeneğini tercih edin."
         }
       },
       "success": {
-        "title": "",
-        "description": ""
+        "title": "Gönderi Oluşturuldu",
+        "description": "Deneyim gönderiniz başarıyla oluşturuldu!"
       },
-      "sending": ""
+      "sending": "Gönderiliyor..."
     },
     "benchmark": {
       "header": {
-        "title": "",
-        "share": ""
+        "title": "Karşılaştırma Gönderisi",
+        "share": "Paylaş"
       },
       "labels": {
-        "productBenchmark": "",
-        "description": ""
+        "productBenchmark": "Ürün Karşılaştırması",
+        "description": "Karşılaştırma Açıklaması"
       },
       "placeholders": {
-        "description": ""
+        "description": "Karşılaştırma açıklamanızı buraya yazın..."
       },
       "modal": {
-        "title": "",
-        "fromInventory": "",
-        "fromCatalog": "",
-        "cancel": "",
-        "selectFromInventoryTitle": ""
+        "title": "İkinci Ürünü Seç",
+        "fromInventory": "Envanterden",
+        "fromCatalog": "Katalogdan",
+        "cancel": "İptal",
+        "selectFromInventoryTitle": "Envanterden Seç"
       },
       "validation": {
-        "twoProductsRequired": "",
-        "descriptionRequired": "",
+        "twoProductsRequired": "İki ürün seçilmelidir.",
+        "descriptionRequired": "Karşılaştırma açıklaması gereklidir.",
         "firstProductMustBeInInventory": {
-          "title": "",
-          "description": ""
+          "title": "İlk Ürün Envanterde Olmalı",
+          "description": "İlk ürün envanterinizden olmalıdır. Lütfen envanterinizden bir ürün seçin."
         }
       },
       "success": {
-        "title": "",
-        "description": ""
+        "title": "Gönderi Oluşturuldu",
+        "description": "Karşılaştırma gönderiniz başarıyla oluşturuldu!"
       }
     },
     "question": {
       "header": {
-        "title": "",
-        "share": ""
+        "title": "Soru Gönderisi",
+        "share": "Paylaş"
       },
       "labels": {
-        "description": "",
-        "images": "",
-        "boostSection": ""
+        "description": "Soru Açıklaması",
+        "images": "Görseller",
+        "boostSection": "Bu Soruyu Öne Çıkar"
       },
       "placeholders": {
-        "description": ""
+        "description": "Sorunuzu buraya yazın..."
       },
       "boost": {
-        "title": "",
-        "calculating": "",
-        "active": "",
-        "activeTips": "",
-        "description": "",
-        "available": "",
-        "boostPrice": "",
-        "tipsAvailable": "",
-        "errorLoading": ""
+        "title": "Soruyu Öne Çıkar",
+        "calculating": "Öne çıkarma fiyatı hesaplanıyor...",
+        "active": "Öne çıkarma aktif",
+        "activeTips": "Öne çıkarma aktif - {{price}} TIPS",
+        "description": "Sorunuzu 24 saat boyunca öne çıkararak daha fazla kişiye ulaşın ve daha fazla yanıt alın.",
+        "available": "Kullanılabilir",
+        "boostPrice": "Öne Çıkarma Fiyatı",
+        "tipsAvailable": "Şu anda {{tips}} TIPS kullanılabilir",
+        "errorLoading": "Öne çıkarma fiyatı yüklenirken hata oluştu"
       },
       "validation": {
-        "contextMissing": "",
+        "contextMissing": "Bağlam bilgisi bulunamadı. Lütfen tekrar deneyin.",
         "productNotFound": {
-          "title": "",
-          "description": ""
+          "title": "Ürün Bulunamadı",
+          "description": "Seçilen ürün bulunamadı. Lütfen başka bir ürün seçmeyi deneyin."
         }
       },
       "success": {
-        "title": "",
-        "description": ""
+        "title": "Soru Gönderisi Oluşturuldu",
+        "description": "Soru gönderiniz başarıyla paylaşıldı!"
       }
     },
     "tipsAndTricks": {
       "header": {
-        "title": "",
-        "share": ""
+        "title": "İpuçları ve Püf Noktaları",
+        "share": "Paylaş"
       },
       "labels": {
-        "description": "",
-        "category": "",
-        "images": ""
+        "description": "İpuçları ve Püf Noktaları Açıklaması",
+        "category": "İpuçları ve Püf Noktaları Kategorisi",
+        "images": "Görseller"
       },
       "placeholders": {
-        "description": "",
-        "categorySelect": ""
+        "description": "İpuçları ve Püf Noktalarınızı buraya yazın...",
+        "categorySelect": "İpuçları ve Püf Noktaları kategorisini seçin"
       },
       "validation": {
-        "contextMissing": "",
-        "invalidContext": ""
+        "contextMissing": "Bağlam bilgisi bulunamadı. Lütfen tekrar deneyin.",
+        "invalidContext": "Geçersiz bağlam bilgisi. Lütfen tekrar deneyin."
       },
       "success": {
-        "title": "",
-        "description": ""
+        "title": "Gönderi Oluşturuldu",
+        "description": "İpuçları ve Püf Noktaları gönderiniz başarıyla oluşturuldu!"
       },
       "errors": {
-        "serverError": "",
-        "badRequest": "",
-        "unauthorized": "",
-        "forbidden": ""
+        "serverError": "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.",
+        "badRequest": "Geçersiz istek verisi. Lütfen girdinizi kontrol edin.",
+        "unauthorized": "Kimlik doğrulama başarısız. Lütfen tekrar giriş yapın.",
+        "forbidden": "Bu gönderiyi oluşturma yetkiniz yok."
       }
     },
     "update": {
       "header": {
-        "title": "",
-        "share": ""
+        "title": "Gönderiyi Güncelle",
+        "share": "Paylaş"
       },
       "labels": {
-        "originalPost": "",
-        "description": "",
-        "images": ""
+        "originalPost": "Orijinal Deneyim Gönderisi",
+        "description": "Güncelleme Açıklaması",
+        "images": "Görseller"
       },
       "placeholders": {
-        "description": ""
+        "description": "Güncellemenizi buraya yazın..."
       },
       "validation": {
-        "experiencePostIdRequired": "",
-        "invalidUsage": ""
+        "experiencePostIdRequired": "Deneyim gönderisi ID'si gereklidir. Lütfen tekrar deneyin.",
+        "invalidUsage": "Geçersiz ekran kullanımı. Lütfen önce bir deneyim gönderisi seçin."
       },
       "success": {
         "postUpdated": {
-          "title": "",
-          "description": ""
+          "title": "Gönderi Güncellendi",
+          "description": "Gönderiniz başarıyla güncellendi!"
         },
         "postCreated": {
-          "title": "",
-          "description": ""
+          "title": "Güncelleme Gönderisi Oluşturuldu",
+          "description": "Güncelleme gönderiniz başarıyla oluşturuldu!"
         }
       },
       "errors": {
         "legacyNotSupported": {
-          "title": "",
-          "description": ""
+          "title": "Eski Değerlendirme Desteklenmiyor",
+          "description": "Bu, ilişkili deneyim gönderisi olmayan eski bir envanter öğesidir. Lütfen önce bu ürün için yeni bir deneyim gönderisi oluşturun."
         },
         "experiencePostNotFound": {
-          "title": "",
-          "description": ""
+          "title": "Deneyim Gönderisi Bulunamadı",
+          "description": "Seçilen deneyim gönderisi bulunamadı. Lütfen tekrar deneyin."
         }
       }
     },
     "common": {
       "buttons": {
-        "next": "",
-        "save": "",
-        "share": "",
-        "cancel": "",
-        "done": ""
+        "next": "İleri",
+        "save": "Kaydet",
+        "share": "Paylaş",
+        "cancel": "İptal",
+        "done": "Tamam"
       },
       "validation": {
-        "imageUriNotFound": "",
-        "imagePickerError": ""
+        "imageUriNotFound": "Seçilen görsellerin URI'leri bulunamadı.",
+        "imagePickerError": "Görsel seçilirken bir hata oluştu"
       },
       "errors": {
-        "title": "",
-        "general": ""
+        "title": "Hata",
+        "general": "Gönderi oluşturulurken bir hata oluştu. Lütfen tekrar deneyin."
       }
     }
   },
   "selectExperience": {
     "header": {
-      "title": ""
+      "title": "Deneyim Gönderisi Seçin"
     },
     "noUser": {
-      "message": ""
+      "message": "Giriş yapmanız gerekiyor."
     },
     "loading": {
-      "message": ""
+      "message": "Deneyim gönderileriniz yükleniyor..."
     },
     "error": {
-      "message": ""
+      "message": "Liste yüklenirken bir hata oluştu."
     },
     "empty": {
-      "message": ""
+      "message": "Henüz deneyim gönderiniz yok. Önce bir ürün için deneyim gönderisi oluşturun, ardından bu ekrandan güncelleme ekleyebilirsiniz."
     },
     "legacyWarning": {
-      "badge": "",
+      "badge": "Bu eski bir değerlendirmedir. Eski değerlendirmeler için güncelleme gönderisi oluşturulamaz.",
       "toast": {
-        "title": "",
-        "description": ""
+        "title": "Eski Değerlendirme",
+        "description": "Eski envanter tabanlı değerlendirmeler için güncelleme gönderisi oluşturulamaz. Lütfen önce bu ürün için yeni bir deneyim gönderisi oluşturun."
       }
     }
   },
   "screens": {
     "posts": {
-      "title": "",
-      "empty": "",
+      "title": "Gönderiler",
+      "empty": "Bu bağlamda henüz gönderi bulunamadı.",
       "errors": {
-        "failedToLoad": "",
-        "unknownError": "",
-        "notInInventory": "",
-        "notInInventoryDesc": ""
+        "failedToLoad": "Akış Yüklenemedi",
+        "unknownError": "Bilinmeyen bir hata oluştu",
+        "notInInventory": "Ürün envanterde değil",
+        "notInInventoryDesc": "Bu ürün envanterinizde değil. Gönderi oluşturmak için önce envanterinize ekleyin."
       }
     },
     "detail": {
       "loading": "Yükleniyor...",
-      "notFound": "Gönderi bulunamadı",
-      "notFoundDesc": "Bu gönderi silinmiş veya mevcut değil",
+      "notFound": "Gönderi bulunamadı.",
+      "notFoundDesc": "Bu gönderi silinmiş veya artık mevcut değil.",
       "titles": {
         "post": "Gönderi Detayı",
         "tips": "İpuçları Detayı",
@@ -296,42 +296,44 @@
   },
   "comments": {
     "title": "Yorumlar",
-    "placeholder": "Yorum yaz...",
     "loading": "Yorumlar yükleniyor...",
-    "empty": "Henüz yorum yok",
+    "empty": "Henüz yorum yok. İlk yorumu siz yapın!",
+    "placeholder": "Bir mesaj yazın...",
     "sort": {
-      "title": "Sıralama",
+      "title": "Yorumları Sırala",
+      "newest": "En Yeniler",
+      "oldest": "En Eskiler",
+      "popular": "En Popüler"
+    },
+    "sortOptions": {
       "newest": "En Yeni",
       "oldest": "En Eski",
       "popular": "Popüler"
-    },
-    "placeholders": {
-      "writeComment": "Yorum yaz..."
     }
   },
   "actions": {
-    "like": "",
-    "comment": "",
-    "share": "",
-    "tip": ""
+    "like": "Beğen",
+    "comment": "Yorum",
+    "share": "Paylaş",
+    "tip": "Bahşiş"
   },
   "share": {
     "success": {
-      "title": "",
-      "message": ""
+      "title": "Gönderi Paylaşıldı",
+      "message": "Gönderiniz başarıyla paylaşıldı!"
     },
     "placeholders": {
-      "search": "",
-      "writeMessage": ""
+      "search": "Ara",
+      "writeMessage": "Bir mesaj yazın..."
     },
     "buttons": {
-      "send": "",
-      "sending": ""
+      "send": "Gönder",
+      "sending": "Gönderiliyor..."
     },
-    "loading": "",
-    "noResults": "",
-    "tryDifferentSearch": "",
-    "emptyList": "",
-    "addPeopleToTrustList": ""
+    "loading": "Yükleniyor...",
+    "noResults": "Sonuç bulunamadı",
+    "tryDifferentSearch": "Farklı bir arama deneyin.",
+    "emptyList": "Trust listesi boş",
+    "addPeopleToTrustList": "Paylaşmak için trust listenize kişi ekleyin."
   }
 }

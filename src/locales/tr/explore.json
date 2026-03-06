@@ -1,34 +1,34 @@
 {
-  "title": "",
+  "title": "Keşfet",
   "search": {
-    "placeholder": ""
+    "placeholder": "Gönderi, ürün veya marka ara"
   },
   "tabs": {
-    "hottest": "",
-    "news": ""
+    "hottest": "En Popüler",
+    "news": "Neler Yeni"
   },
   "banners": {
-    "title": "",
-    "description1": "",
-    "description2": ""
+    "title": "Tipbox Keşfet",
+    "description1": "Keşfetmeye devam et",
+    "description2": "Yeni içerikler keşfet"
   },
   "hottest": {
-    "error": "",
-    "empty": ""
+    "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "empty": "Henüz gönderi yok"
   },
   "news": {
     "sections": {
       "events": {
-        "title": "",
-        "seeAll": ""
+        "title": "Yeni Topluluk Etkinlikleri",
+        "seeAll": "Etkinlik Kataloğunu Gör"
       },
       "brands": {
-        "title": "",
-        "seeAll": ""
+        "title": "Yeni Markalar",
+        "seeAll": "Marka Kataloğunu Gör"
       },
       "products": {
-        "title": "",
-        "seeAll": ""
+        "title": "Yeni Ürünler",
+        "seeAll": "Ürün Kataloğunu Gör"
       }
     }
   }

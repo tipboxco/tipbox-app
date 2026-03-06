@@ -1,178 +1,179 @@
 {
   "screens": {
     "marketplace": {
-      "title": "",
+      "title": "Market",
       "tabs": {
-        "allNFTs": "",
-        "myListings": ""
+        "allNFTs": "Tüm NFT'ler",
+        "myListings": "İlanlarım"
       },
       "errors": {
-        "loadingError": "",
-        "loadingMyListingsError": ""
+        "loadingError": "NFT'ler yüklenirken bir hata oluştu: {{message}}",
+        "loadingMyListingsError": "İlanlarınız yüklenirken bir hata oluştu: {{message}}"
       },
       "empty": {
-        "noNFTs": "",
-        "noListings": ""
+        "noNFTs": "Henüz satışta NFT yok.",
+        "noListings": "Henüz aktif ilanınız yok."
       }
     },
     "nftDetail": {
-      "title": "",
-      "owner": "",
-      "currentPrice": "",
-      "suggestedPrice": "",
-      "earnDate": "",
-      "rarity": {
-        "common": "",
-        "rare": "",
-        "epic": "",
-        "legendary": ""
-      },
-      "owners": "",
-      "description": "",
-      "salesHistory": "",
-      "noSalesHistory": "",
-      "viewCount": "",
-      "editPriceNote": "",
-      "insufficientBalance": "",
+      "title": "NFT Detayı",
+      "owner": "Sahibi",
+      "currentPrice": "Mevcut Fiyat",
+      "suggestedPrice": "Önerilen Fiyat",
+      "earnDate": "Kazanma Tarihi",
+      "rarity": "Nadirlik",
+      "owners": "Sahipler",
+      "description": "Açıklama",
+      "salesHistory": "Satış Geçmişi",
+      "noSalesHistory": "Henüz satış geçmişi bulunmuyor",
+      "viewCount": "{{count}}",
+      "editPriceNote": "Fiyatı değiştirmek için sağ üst menüden \"Fiyat Düzenle\" seçeneğini kullanın.",
+      "insufficientBalance": "Yetersiz TIPS bakiyesi. {{amount}} TIPS'e ihtiyacınız var.",
       "menu": {
-        "editPrice": "",
-        "delistNFT": ""
+        "editPrice": "Fiyat Düzenle",
+        "delistNFT": "NFT'yi Kaldır"
       },
       "buttons": {
-        "updatePrice": "",
-        "buyNFT": "",
-        "cancel": ""
+        "updatePrice": "Fiyatı Güncelle",
+        "buyNFT": "NFT Satın Al - {{price}} TIPS",
+        "cancel": "İptal"
       },
       "alerts": {
-        "confirmPurchase": "",
-        "confirmPurchaseMessage": "",
-        "insufficientBalanceTitle": "",
-        "insufficientBalanceMessage": "",
-        "confirmPriceUpdate": "",
-        "confirmPriceUpdateMessage": "",
-        "confirmDelist": "",
-        "confirmDelistMessage": "",
-        "errorNoListing": "",
-        "errorNoListingDelist": "",
-        "errorNoActiveListing": "",
-        "invalidPrice": "",
-        "invalidPriceMessage": "",
-        "yes": "",
-        "no": "",
-        "ok": ""
+        "confirmPurchase": "Satın Alma Onayı",
+        "confirmPurchaseMessage": "\"{{title}}\" adlı NFT'yi {{price}} TIPS karşılığında satın almak istediğinizden emin misiniz?",
+        "insufficientBalanceTitle": "Yetersiz Bakiye",
+        "insufficientBalanceMessage": "{{required}} TIPS'e ihtiyacınız var ancak yalnızca {{available}} TIPS'iniz mevcut.",
+        "confirmPriceUpdate": "Fiyat Güncelleme Onayı",
+        "confirmPriceUpdateMessage": "Fiyat {{price}} TIPS olarak güncellensin mi?",
+        "confirmDelist": "NFT'yi Kaldır",
+        "confirmDelistMessage": "\"{{title}}\" adlı NFT'yi marketten kaldırmak istediğinizden emin misiniz?",
+        "errorNoListing": "İlan ID bulunamadı (fiyat düzenlenemiyor)",
+        "errorNoListingDelist": "İlan ID bulunamadı (kaldırılamıyor)",
+        "errorNoActiveListing": "Bu NFT için aktif ilan bulunamadı",
+        "invalidPrice": "Geçersiz Fiyat",
+        "invalidPriceMessage": "Lütfen 0'dan büyük geçerli bir fiyat girin.",
+        "yes": "Evet",
+        "no": "Hayır",
+        "ok": "Tamam"
       },
       "success": {
-        "priceUpdated": "",
-        "priceUpdatedMessage": "",
-        "delisted": "",
-        "delistedMessage": ""
+        "priceUpdated": "Başarılı",
+        "priceUpdatedMessage": "Fiyat başarıyla güncellendi!",
+        "delisted": "Başarılı",
+        "delistedMessage": "NFT marketten kaldırıldı"
       },
       "errors": {
-        "error": "",
-        "updatePriceFailed": "",
-        "delistFailed": "",
-        "purchaseFailed": "",
-        "loadingFailed": ""
+        "error": "Hata",
+        "updatePriceFailed": "Fiyat güncellenemedi",
+        "delistFailed": "NFT kaldırılamadı",
+        "purchaseFailed": "NFT satın alınamadı",
+        "loadingFailed": "NFT detayları yüklenemedi"
+      },
+      "rarity": {
+        "common": "Yaygın",
+        "rare": "Nadir",
+        "epic": "Epik",
+        "legendary": "Efsanevi"
       }
     },
     "nftSell": {
-      "title": "",
-      "setPrice": "",
-      "updatePrice": "",
-      "currentPrice": "",
-      "suggestedPrice": "",
-      "rarity": "",
-      "gasFee": "",
-      "youWillEarn": "",
+      "title": "NFT Sat",
+      "setPrice": "Fiyat Belirle",
+      "updatePrice": "Fiyatı Güncelle",
+      "currentPrice": "Mevcut Fiyat",
+      "suggestedPrice": "Önerilen Fiyat",
+      "rarity": "Nadirlik",
+      "gasFee": "Gas Ücreti (%10)",
+      "youWillEarn": "Kazanacağınız Miktar",
       "buttons": {
-        "sell": "",
-        "updatePriceButton": "",
-        "delist": "",
-        "done": ""
+        "sell": "Sat - {{price}} TIPS",
+        "updatePriceButton": "Fiyatı Güncelle - {{price}} TIPS",
+        "delist": "Marketten Kaldır",
+        "done": "Tamam"
       },
       "placeholders": {
-        "price": ""
+        "price": "0.00"
       },
       "alerts": {
-        "confirmListing": "",
-        "confirmListingMessage": "",
-        "confirmPriceUpdate": "",
-        "confirmPriceUpdateMessage": "",
-        "confirmDelist": "",
-        "confirmDelistMessage": "",
-        "yes": "",
-        "no": ""
+        "confirmListing": "İlan Onayı",
+        "confirmListingMessage": "Bu NFT'yi {{price}} TIPS karşılığında listelemek istediğinizden emin misiniz?",
+        "confirmPriceUpdate": "Fiyat Güncelleme Onayı",
+        "confirmPriceUpdateMessage": "Fiyat {{oldPrice}} TIPS'ten {{newPrice}} TIPS'e güncellensin mi?",
+        "confirmDelist": "Kaldırma Onayı",
+        "confirmDelistMessage": "Bu NFT'yi satıştan kaldırmak istediğinizden emin misiniz?",
+        "yes": "Evet",
+        "no": "Hayır"
       },
       "toast": {
-        "invalidPrice": "",
-        "invalidPriceMessage": "",
-        "minimumTipsRequired": "",
-        "noListingFound": "",
-        "noListingFoundMessage": "",
-        "listingFailed": "",
-        "listingFailedMessage": "",
-        "delistSuccess": "",
-        "delistSuccessMessage": "",
-        "delistFailed": "",
-        "delistFailedMessage": "",
-        "priceUpdated": "",
-        "priceUpdatedMessage": "",
-        "updateFailed": "",
-        "updateFailedMessage": ""
+        "invalidPrice": "Geçersiz Fiyat",
+        "invalidPriceMessage": "Lütfen 0'dan büyük geçerli bir fiyat girin.",
+        "minimumTipsRequired": "En az {{amount}} TIPS gerekli",
+        "noListingFound": "İlan Bulunamadı",
+        "noListingFoundMessage": "Aktif ilan bulunamadı",
+        "listingFailed": "İlan Başarısız",
+        "listingFailedMessage": "NFT satışa konulamadı",
+        "delistSuccess": "Başarıyla Kaldırıldı",
+        "delistSuccessMessage": "NFT marketten kaldırıldı",
+        "delistFailed": "Kaldırma Başarısız",
+        "delistFailedMessage": "NFT kaldırılamadı",
+        "priceUpdated": "Fiyat Güncellendi",
+        "priceUpdatedMessage": "Fiyat başarıyla güncellendi",
+        "updateFailed": "Güncelleme Başarısız",
+        "updateFailedMessage": "Fiyat güncellenemedi"
       },
       "errors": {
-        "loadingError": ""
+        "loadingError": "NFT bilgileri yüklenemedi"
       }
     },
     "selectNFT": {
-      "title": "",
-      "empty": "",
-      "continueButton": "",
+      "title": "NFT Seç",
+      "empty": "Henüz NFT bulunamadı.",
+      "continueButton": "Devam Et ({{count}} seçili)",
       "errors": {
-        "loadingError": ""
+        "loadingError": "NFT'ler yüklenirken bir hata oluştu: {{message}}"
       }
     }
   },
   "nftOptions": {
     "delist": {
-      "title": "",
-      "message": "",
-      "success": "",
-      "failed": "",
-      "listingNotFound": ""
+      "title": "NFT'yi Kaldır",
+      "message": "\"{{nftTitle}}\" adlı NFT'yi marketten kaldırmak istediğinizden emin misiniz?",
+      "success": "NFT marketten kaldırıldı",
+      "failed": "NFT kaldırılamadı",
+      "listingNotFound": "İlan ID bulunamadı"
     },
     "editPrice": {
-      "title": "",
-      "currentPrice": "",
-      "newPrice": "",
-      "placeholder": "",
-      "gasFee": "",
-      "youWillReceive": "",
-      "confirmTitle": "",
-      "confirmMessage": "",
-      "invalidPrice": "",
-      "invalidPriceMessage": "",
-      "success": "",
-      "failed": ""
+      "title": "Fiyat Düzenle",
+      "currentPrice": "Mevcut Fiyat",
+      "newPrice": "Yeni Fiyat (TIPS)",
+      "placeholder": "Yeni fiyat girin",
+      "gasFee": "Gas Ücreti (%10)",
+      "youWillReceive": "Alacağınız miktar",
+      "confirmTitle": "Fiyat Güncelleme Onayı",
+      "confirmMessage": "Fiyat {{price}} TIPS olarak güncellensin mi?",
+      "invalidPrice": "Geçersiz Fiyat",
+      "invalidPriceMessage": "Lütfen 0'dan büyük geçerli bir fiyat girin.",
+      "success": "Fiyat başarıyla güncellendi!",
+      "failed": "Fiyat güncellenemedi"
     },
     "menu": {
-      "done": "",
-      "delist": ""
+      "done": "Tamam",
+      "delist": "NFT'yi Kaldır"
     },
     "buttons": {
-      "cancel": "",
-      "no": "",
-      "yes": "",
-      "updatePrice": ""
+      "cancel": "İptal",
+      "no": "Hayır",
+      "yes": "Evet",
+      "updatePrice": "Fiyatı Güncelle"
     }
   },
   "search": {
-    "placeholder": ""
+    "placeholder": "NFT adı veya açıklaması ile ara"
   },
   "common": {
-    "tips": "",
-    "loading": "",
-    "error": "",
-    "success": ""
+    "tips": "TIPS",
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı"
   }
 }
