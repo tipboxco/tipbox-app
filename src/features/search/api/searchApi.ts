@@ -72,14 +72,17 @@ export const search = async (params: SearchParams): Promise<SearchResponse> => {
     
     return response.data;
   } catch (error: any) {
-    console.error('[search] API Error:', {
-      url: `/search?${queryParams.toString()}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      params,
-    });
+    // CRITICAL FIX: 404 hatası için log gösterme (endpoint henüz implement edilmemiş)
+    if (error.response?.status !== 404) {
+      console.error('[search] API Error:', {
+        url: `/search?${queryParams.toString()}`,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        params,
+      });
+    }
     throw error;
   }
 };

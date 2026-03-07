@@ -34,7 +34,14 @@ export const useSearch = (
     enabled: enabled, // enabled kontrolü SearchModal'dan geliyor
     staleTime: 30 * 1000, // 30 saniye - arama sonuçları kısa süreli cache'lenebilir
     gcTime: 5 * 60 * 1000, // 5 dakika - cache'de tut
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // 404 hatası için retry yapma (endpoint implement edilmemiş)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      // Diğer hatalar için 1 kez retry
+      return failureCount < 1;
+    },
     retryDelay: 1000,
   });
 };

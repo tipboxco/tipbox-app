@@ -550,19 +550,22 @@ export const getInventory = async (
       },
     };
   } catch (error: any) {
-    const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
-    console.error('[getInventory] API Error:', {
-      url: '/inventory',
-      fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/inventory` : undefined,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      code: error.code,
-      errno: error.errno,
-    });
-    if (__DEV__ && error) {
-      console.error('[getInventory] Full error:', error);
+    // CRITICAL FIX: 404 hatası için log gösterme (endpoint henüz implement edilmemiş)
+    if (error.response?.status !== 404) {
+      const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
+      console.error('[getInventory] API Error:', {
+        url: '/inventory',
+        fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/inventory` : undefined,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+      });
+      if (__DEV__ && error) {
+        console.error('[getInventory] Full error:', error);
+      }
     }
     throw error;
   }
@@ -846,6 +849,46 @@ export const getUserPosts = async (
       },
     };
   } catch (error: any) {
+    // Network Error kontrolü - Backend endpoint mevcut değil veya servis çalışmıyor olabilir
+    if (error.message === 'Network Error' || !error.response) {
+      if (__DEV__) {
+        console.warn('[getUserPosts] ⚠️ Network Error - Backend endpoint may not be implemented:', {
+          url: `/users/${userId}/feed`,
+          message: 'This endpoint may not be available on the backend server. Returning empty response.',
+        });
+      }
+
+      // Boş response döndür (kullanıcıya hata göstermek yerine boş liste göster)
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+
+    // 404 hatası: Endpoint backend'de mevcut değil
+    if (error.response?.status === 404) {
+      if (__DEV__) {
+        console.warn('[getUserPosts] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
+          url: `/users/${userId}/feed`,
+          userId,
+          message: 'This endpoint is not available on the backend server. Please contact backend team.',
+        });
+      }
+
+      // Boş response döndür (kullanıcıya hata göstermek yerine boş liste göster)
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+
+    // Diğer hatalar için error log
     console.error('[getUserPosts] API Error:', {
       url: `/users/${userId}/feed`,
       status: error.response?.status,

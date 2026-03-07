@@ -88,7 +88,14 @@ export const useNotificationSettings = () => {
     gcTime: 5 * 60 * 1000, // 5 dakika cache'de tut
     refetchOnMount: false, // Sadece stale ise refetch et
     refetchOnWindowFocus: false, // Window focus'ta refetch etme
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // 404 hatası için retry yapma (endpoint implement edilmemiş)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      // Diğer hatalar için 1 kez retry
+      return failureCount < 1;
+    },
   });
 };
 

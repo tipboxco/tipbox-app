@@ -64,20 +64,7 @@ export const useNotifications = (params?: GetNotificationsParams, enabled: boole
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // CRITICAL FIX: Cache varsa kullan, yoksa fetch et (sonsuz döngü önleme)
     refetchOnWindowFocus: false, // CRITICAL FIX: Cache varsa kullan, yoksa fetch et (sonsuz döngü önleme)
-    retry: (failureCount, error: any) => {
-      // 500 hatası için retry yapma (backend sorunu)
-      if (error?.response?.status === 500) {
-        console.warn('[useNotifications] Server error (500), skipping retry');
-        return false;
-      }
-      // 401 hatası için retry yapma (authentication sorunu)
-      if (error?.response?.status === 401) {
-        console.warn('[useNotifications] Authentication error (401), skipping retry');
-        return false;
-      }
-      // Diğer hatalar için 1 kez retry yap
-      return failureCount < 1;
-    },
+    retry: false, // PERFORMANCE FIX: Retry'ı devre dışı bırak - ilk hata durumunda hemen göster
   });
 };
 
@@ -101,9 +88,23 @@ export const useUnreadCount = (enabled: boolean = true) => {
     enabled, // Authenticated kontrolü için
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma (refetchInterval ile güncellenir)
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
-    refetchInterval: enabled ? 30 * 1000 : false, // Fallback: 30s polling (WebSocket ile anlık güncelleme tercih edilmeli)
+    refetchInterval: (query) => {
+      // CRITICAL FIX: 404 hatası alınırsa refetch interval'ı durdur (endpoint mevcut değil)
+      const error = query.state.error as any;
+      if (error?.response?.status === 404) {
+        return false; // Polling'i durdur
+      }
+      return enabled ? 30 * 1000 : false; // Fallback: 30s polling
+    },
     refetchOnWindowFocus: false, // Cache varsa kullan, yoksa fetch et
     retry: (failureCount, error: any) => {
+      // CRITICAL FIX: 404 hatası için retry yapma (endpoint mevcut değil)
+      if (error?.response?.status === 404) {
+        if (__DEV__) {
+          console.warn('[useUnreadCount] ⚠️ Endpoint not found (404) - /notifications/unread-count might not be implemented yet');
+        }
+        return false;
+      }
       // 500 hatası için retry yapma (backend sorunu)
       if (error?.response?.status === 500) {
         console.warn('[useUnreadCount] Server error (500), skipping retry');

@@ -64,13 +64,16 @@ export const getNotificationSettings = async (): Promise<NotificationSetting[]> 
     
     return validSettings;
   } catch (error: any) {
-    console.error('[getNotificationSettings] API Error:', {
-      url: '/users/settings/notifications',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
+    // CRITICAL FIX: 404 hatası için log gösterme (endpoint henüz implement edilmemiş)
+    if (error.response?.status !== 404) {
+      console.error('[getNotificationSettings] API Error:', {
+        url: '/users/settings/notifications',
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+      });
+    }
     throw error;
   }
 };

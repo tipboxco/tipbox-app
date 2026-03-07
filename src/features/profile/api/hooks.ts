@@ -304,7 +304,14 @@ export const useInventory = (limit: number = 20) => {
     gcTime: 0,     // Cache'de tutma - hemen temizle
     refetchOnMount: 'always',  // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // 404 hatası için retry yapma (endpoint implement edilmemiş)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      // Diğer hatalar için 1 kez retry
+      return failureCount < 1;
+    },
     // PERFORMANCE FIX: Sadece data, hasNextPage ve error değişikliklerinde render et
     // isFetchingNextPage değişiklikleri render tetiklemez
     notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
