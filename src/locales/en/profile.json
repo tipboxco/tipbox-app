@@ -50,7 +50,8 @@
     "collectionsComingSoon": "Collections content coming soon.",
     "noBadgesYet": "No badges yet",
     "noEventBadges": "No {{type}} yet",
-    "noCollectionBadges": "No {{type}} yet"
+    "noCollectionBadges": "No {{type}} yet",
+    "seeMoreCollections": "See More Collections"
   },
   "profileScreen": {
     "inventory": "{{name}}'s Inventory",

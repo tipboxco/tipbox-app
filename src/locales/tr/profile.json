@@ -50,7 +50,8 @@
     "collectionsComingSoon": "Koleksiyon içeriği yakında.",
     "noBadgesYet": "Henüz rozet yok",
     "noEventBadges": "Henüz {{type}} yok",
-    "noCollectionBadges": "Henüz {{type}} yok"
+    "noCollectionBadges": "Henüz {{type}} yok",
+    "seeMoreCollections": "Daha Fazla Koleksiyon Gör"
   },
   "profileScreen": {
     "inventory": "{{name}} Envanteri",

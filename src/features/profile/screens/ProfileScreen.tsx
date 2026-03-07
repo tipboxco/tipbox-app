@@ -2,21 +2,17 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Pressable, HStack, VStack, Image, Divider } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent, Divider } from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   interpolateColor,
 } from 'react-native-reanimated';
-import PagerView from 'react-native-pager-view';
-import { AnimatedTabBar } from '../components/AnimatedTabBar';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useTranslation } from '@/src/hooks/useTranslation';
 import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
-import { usePaymentDashboard } from '@/src/features/settings/api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -47,6 +43,7 @@ import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
+import { LadderTab } from '../components/TabContents';
 import {
   ArrowUpTrayIcon,
   FlagIcon,
@@ -61,26 +58,25 @@ import {
   BellSlashIcon,
   UserMinusIcon,
   UserPlusIcon,
-  PlusIcon,
 } from 'react-native-heroicons/outline';
 import { FeedSkeleton } from '@/src/components/Skeletons';
-import ProfileBadgeBottomSheet from '@/src/features/profile/components/ProfileBadgeBottomSheet';
+import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
+import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import type { Badge } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// TABS will be defined inside the component to use t() function
-const TAB_KEYS = [
-  'feed',
-  'reviews',
-  'benchmarks',
-  'tips',
-  'replies',
-  'badge',
-  'collections',
+const TABS = [
+  { key: 'feed',        title: 'Feed' },
+  { key: 'reviews',     title: 'Experience' },
+  { key: 'benchmarks',  title: 'Benchmarks' },
+  { key: 'tips',        title: 'Tips & Tricks' },
+  { key: 'replies',     title: 'Questions' },
+  { key: 'ladders',     title: 'Ladders' },
 ] as const;
 
-type TabKey = typeof TAB_KEYS[number];
+type TabKey = typeof TABS[number]['key'];
 
 type ProfileScreenProps = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
 
@@ -142,7 +138,9 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
     return null;
   }
   
-  const avatarSource = toImageSource(review.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
+  const avatarSource = review.user?.avatar
+    ? toImageSource(review.user.avatar)!
+      : require('@/assets/avatar/default-useravatar.png');
   
   // API bazen product bazen contextData döner - ikisini de kontrol et
   const productData = review.product || review.contextData;
@@ -393,58 +391,91 @@ interface TabContentProps {
   targetUserId: string;
   isDark: boolean;
   onQueryRef?: (tabKey: TabKey, query: any) => void;
-  profileBadges?: Badge[];
-  onBadgePress?: (badge: Badge) => void;
-  hasPrimePass?: boolean;
 }
 
-// NFT ribbon: Prime Pass kullanıcıları badge'i NFT olarak satabilir; sol üstte gösterilir
-const NFTBadgeRibbon: React.FC = () => (
-  <View
-    style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: 36,
-      height: 36,
-      backgroundColor: '#D0F205',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transform: [{ rotate: '-45deg' }],
-      zIndex: 1,
-    }}
-  >
-    <RNText
-      style={{
-        fontSize: 9,
-        fontWeight: 'bold',
-        color: '#111111',
-        transform: [{ rotate: '45deg' }],
-      }}
+// TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
+interface TabsBarProps {
+  activeTab: TabKey;
+  onChangeTab: (tab: TabKey) => void;
+  isDark: boolean;
+}
+
+const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => {
+  const activeColor = isDark ? '#FFFFFF' : '#000000';
+  const inactiveColor = '#A3A3A3';
+
+  return (
+    <Box
+      mb={0}
+      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+      borderBottomWidth={StyleSheet.hairlineWidth}
+      borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
     >
-      NFT
-    </RNText>
-  </View>
-);
-
-
-
-// Badges tab filtreleri - Figma: All Badges, Event Badges, Collections
-const BADGE_FILTER_KEYS = ['allBadges', 'eventBadges', 'collections'] as const;
-type BadgeFilterKey = (typeof BADGE_FILTER_KEYS)[number];
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ 
+          paddingHorizontal: 16,
+        }}
+        scrollEnabled={true}
+        bounces={false}
+      >
+        <HStack
+          borderBottomWidth={1}
+          borderColor="#E9E9E9"
+          p={0}
+          mb={0}
+          position="relative"
+          space="md"
+        >
+          {TABS.map((tab, index) => {
+            const isActive = tab.key === activeTab;
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => onChangeTab(tab.key)}
+                alignItems="center"
+                py="$1"
+                px="$2"
+              >
+                <VStack alignItems="center" space="xs">
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 'bold',
+                      color: isActive ? activeColor : inactiveColor,
+                    }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {tab.title}
+                  </Text>
+                </VStack>
+                {/* Active indicator */}
+                {isActive && (
+                  <Box
+                    position="absolute"
+                    bottom={0}
+                    left="50%"
+                    height={2}
+                    width={40}
+                    backgroundColor={isDark ? '#FFFFFF' : '#000000'}
+                    style={{
+                      transform: [{ translateX: -15 }],
+                    }}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </HStack>
+      </ScrollView>
+    </Box>
+  );
+};
 
 // Tab Content Component - Sadece içeriği render eder (FlatList yok)
-const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef, profileBadges = [], onBadgePress, hasPrimePass = false }) => {
-  const { t } = useTranslation('profile');
-  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('allBadges');
-  const filteredBadges = useMemo(() => {
-    if (tabKey !== 'badge') return [];
-    if (badgeFilter === 'allBadges') return profileBadges;
-    if (badgeFilter === 'eventBadges') return profileBadges.filter((b) => b.type === 'event');
-    if (badgeFilter === 'collections') return profileBadges.filter((b) => b.type === 'collection');
-    return profileBadges;
-  }, [tabKey, profileBadges, badgeFilter]);
-
+const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef }) => {
   // API hooks for each tab - sadece aktif tab'ın query'sini enable et
   const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
   const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
@@ -473,7 +504,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
   
   // Flatten and map posts based on active tab
   const mappedPosts = useMemo(() => {
-    if (tabKey === 'badge' || tabKey === 'collections') return [];
+    if (tabKey === 'ladders') return [];
     
     const queryData = activeTabQuery.data as any;
     if (!queryData?.pages) return [];
@@ -560,105 +591,17 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
     }
   }, []);
   
-  // Render Badges tab: filtreler (All Badges, Event Badges, Collections) + grid (2 per row)
-  if (tabKey === 'badge') {
+  // Render LadderTab
+  if (tabKey === 'ladders') {
     return (
-      <Box flex={1} px={16} pt={8}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-          <HStack space="sm" alignItems="center">
-            {BADGE_FILTER_KEYS.map((filter) => {
-              const isActive = badgeFilter === filter;
-              return (
-                <Pressable
-                  key={filter}
-                  onPress={() => setBadgeFilter(filter)}
-                  bg={isActive ? (isDark ? '#333' : '#E9E9E9') : (isDark ? '#1A1A1A' : '#FFF')}
-                  borderWidth={1}
-                  borderColor={isDark ? '#444' : '#E9E9E9'}
-                  borderRadius={8}
-                  px="$3"
-                  py="$2"
-                >
-                  <Text
-                    fontSize="$sm"
-                    fontWeight="$semibold"
-                    color={isActive ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666')}
-                  >
-                    {t(`badges.${filter}`)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </HStack>
-        </ScrollView>
-        {filteredBadges.length === 0 ? (
-          <Box py={32} alignItems="center">
-            <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-              {badgeFilter === 'allBadges' ? t('emptyStates.noBadges') : t('emptyStates.noEventBadges', { type: t(`badges.${badgeFilter}`).toLowerCase() })}
-            </Text>
-          </Box>
-        ) : (
-          <Box flexDirection="row" flexWrap="wrap" justifyContent="space-between">
-            {filteredBadges.map((badge) => {
-              const isCollectionCard = badgeFilter === 'Collections';
-              // Collection kısmında card: Figma 6498-33367 (borderRadius 16, aynı bg/border)
-              const cardBorderRadius = isCollectionCard ? 16 : 5;
-              return (
-                <Box key={badge.id} position="relative" width={114} height={130} mb={12}>
-                  {hasPrimePass && <NFTBadgeRibbon />}
-                  <Pressable
-                    onPress={() => onBadgePress?.(badge)}
-                    width={114}
-                    height={130}
-                    alignItems="center"
-                    justifyContent="center"
-                    bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                    borderWidth={1}
-                    borderColor={isDark ? '#333' : '#E9E9E9'}
-                    borderRadius={cardBorderRadius}
-                    p="$2"
-                    overflow="hidden"
-                    position="absolute"
-                    top={0}
-                    left={0}
-                    right={0}
-                    bottom={0}
-                  >
-                    <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
-                    <Image
-                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                      alt={badge.title}
-                      style={{ width: 56, height: 56 }}
-                      resizeMode="contain"
-                    />
-                  </Box>
-                    <Text
-                      mt="$1"
-                      fontSize="$2xs"
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '$textLight900'}
-                      textAlign="center"
-                      numberOfLines={2}
-                    >
-                      {badge.title}
-                    </Text>
-                  </Pressable>
-                </Box>
-              );
-            })}
-          </Box>
-        )}
-      </Box>
-    );
-  }
-
-  // Render Collections tab (coming soon)
-  if (tabKey === 'collections') {
-    return (
-      <Box py={20} alignItems="center">
-        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-          {t('emptyStates.collectionsComingSoon')}
-        </Text>
+      <Box>
+        <LadderTab 
+          onQueryRef={(query) => {
+            if (onQueryRef) {
+              onQueryRef(tabKey, query);
+            }
+          }}
+        />
       </Box>
     );
   }
@@ -677,7 +620,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
     return (
       <Box py={20} alignItems="center">
         <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-          {t('emptyStates.noContent')}
+          No content found yet.
         </Text>
       </Box>
     );
@@ -711,17 +654,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const rootNavigation = useNavigation<any>();
   const safeAreaTop = useSafeAreaValues('top');
   const safeAreaBottom = useSafeAreaValues('bottom');
-
-  // Define tabs with translations
-  const TABS = useMemo(() => [
-    { key: 'feed' as const,        title: t('tabs.feed') },
-    { key: 'reviews' as const,     title: t('tabs.reviews') },
-    { key: 'benchmarks' as const,  title: t('tabs.benchmarks') },
-    { key: 'tips' as const,        title: t('tabs.tipsAndTricks') },
-    { key: 'replies' as const,     title: t('tabs.replies') },
-    { key: 'badge' as const,       title: t('tabs.badge') },
-    { key: 'collections' as const, title: t('tabs.collections') },
-  ], [t]);
   
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
@@ -753,9 +685,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const isProfileLoading = profileQueryResult.isLoading;
   const profileError = profileQueryResult.error;
   const refetchProfile = profileQueryResult.refetch;
-
-  // Payment dashboard: Prime Pass kontrolü (badge'leri NFT olarak satabilmek için)
-  const { data: paymentDashboard } = usePaymentDashboard();
   
   // PERFORMANCE FIX: Trust/Truster sayıları userProfile.stats'tan alınır
   // Liste verilerine burada ihtiyaç yok - sadece Trust_TrusterListScreen'de fetch edilir
@@ -767,22 +696,79 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
   const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
   
-  // PERFORMANCE FIX: Ekran focus olduğunda profil verilerini invalidate et
-  // invalidateQueries ile broad key kullanarak tek bir çağrıda tüm profile cache'ini invalidate et
-  // React Query otomatik olarak sadece aktif (mounted) query'leri refetch eder
+  // Badge modal state
+  const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
+  
+  // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
+  // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
   useFocusEffect(
     useCallback(() => {
+      // Sadece kendi profilimizdeysek (targetUserId === user?.id) refetch et
       if (targetUserId && user?.id && targetUserId === user.id) {
+        // Activity indicator göster
         setIsRefreshingOnFocus(true);
-
-        // Tek bir invalidate çağrısı: profileKeys.all tüm profile query'lerini kapsar
-        // React Query sadece aktif query'leri refetch eder (6 yerine sadece görünen tab'ınki)
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.all,
-          exact: false,
+        
+        // Tüm profil verilerini invalidate et ve backend'den yeni veriyi çek
+        // CreatePostScreen'lerde zaten invalidate yapılıyor ama burada da yapıyoruz
+        // çünkü diğer yerlerden de ProfileScreen'e yönlendirilebilir
+        Promise.all([
+          // Cache'i invalidate et - yeni gönderi için cache'i temizle
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userPosts(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.profile(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userReviews(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userBenchmarks(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userTipsAndTricks(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userReplies(targetUserId),
+            exact: false 
+          }),
+        ]).then(() => {
+          // Cache invalidate edildikten sonra backend'den yeni veriyi çek
+          return Promise.all([
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userPosts(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.profile(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userReviews(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userBenchmarks(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userTipsAndTricks(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userReplies(targetUserId),
+              exact: false 
+            }),
+          ]);
         }).then(() => {
+          // Refetch tamamlandıktan sonra activity indicator'ı kapat
           setIsRefreshingOnFocus(false);
-        }).catch(() => {
+        }).catch((error) => {
           setIsRefreshingOnFocus(false);
         });
       }
@@ -850,18 +836,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === targetUserId;
-
-  // Prime Pass: aktif abonelik ve plan adında "prime" varsa badge'ler NFT olarak satılabilir
-  const hasPrimePass = useMemo(
-    () =>
-      Boolean(
-        isOwnProfile &&
-          paymentDashboard?.active_subscription?.status === 'active' &&
-          paymentDashboard?.active_subscription?.plan_name?.toLowerCase().includes('prime')
-      ),
-    [isOwnProfile, paymentDashboard?.active_subscription]
-  );
-
+  
   // Context menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -870,57 +845,35 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
-  const pagerViewRef = useRef<PagerView>(null);
-
-  // Tab değiştiğinde hem key hem index güncelle ve PagerView'ı sync et
-  const handleTabChange = useCallback((tabKey: string) => {
-    // Type guard - sadece valide TabKey değerleri kabul et
-    const validTabKeys = TABS.map(t => t.key);
-    if (validTabKeys.includes(tabKey as TabKey)) {
-      const typedTabKey = tabKey as TabKey;
-      const newIndex = TABS.findIndex(t => t.key === typedTabKey);
-
-      if (newIndex !== -1) {
-        setActiveTab(typedTabKey);
-        setActiveTabIndex(newIndex);
-
-        // PagerView'ı yeni sayfaya kaydır
-        if (pagerViewRef.current) {
-          pagerViewRef.current.setPage(newIndex);
-        }
-      }
+  
+  // Tab değiştiğinde scroll pozisyonunu sıfırla
+  const handleTabChange = useCallback((tabKey: TabKey) => {
+    setActiveTab(tabKey);
+    
+    // Tab değiştiğinde scroll pozisyonunu en üste al
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: false });
     }
-  }, [TABS]);
-
-  // PagerView sayfa değiştiğinde tab'ı güncelle
-  const handlePageSelected = useCallback((e: any) => {
-    const newIndex = e.nativeEvent.position;
-    if (newIndex >= 0 && newIndex < TABS.length) {
-      const newTabKey = TABS[newIndex].key;
-      setActiveTab(newTabKey);
-      setActiveTabIndex(newIndex);
-    }
-  }, [TABS]);
+  }, []);
   
   // Handle Send TIPS - Bottom sheet aç
   const handleSendTips = useCallback((amount: number, message?: string) => {
     if (!user?.id || !targetUserId) {
-      Alert.alert(t('alerts.errorTitle'), t('alerts.errorUserInfo'));
+      Alert.alert('Error', 'User information not found');
       return;
     }
 
     // Amount validation (minimum 0.01)
     if (amount <= 0 || amount < 0.01) {
-      Alert.alert(t('alerts.errorTitle'), t('alerts.errorTipsMinimum'));
+      Alert.alert('Error', 'TIPS amount must be at least 0.01');
       return;
     }
 
     // Message validation (boş string olamaz)
     const finalMessage = message?.trim() || '';
     if (finalMessage.length === 0) {
-      Alert.alert(t('alerts.errorTitle'), t('alerts.errorMessageEmpty'));
+      Alert.alert('Error', 'Message cannot be empty');
       return;
     }
 
@@ -952,15 +905,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         onSuccess: (response) => {
           console.log('[ProfileScreen] ✅ TIPS sent successfully:', response);
           showCustomToast(toast, {
-            title: t('toast.tipsSent'),
-            description: t('toast.tipsSentDescription', { amount }),
+            title: 'TIPS Sent',
+            description: `${amount} TIPS has been sent successfully`,
             action: 'success',
           });
         },
         onError: (error: any) => {
           console.error('[ProfileScreen] ❌ TIPS send failed:', error);
           const errorMessage = error.response?.data?.message || error.message || 'An error occurred while sending TIPS';
-          Alert.alert(t('alerts.errorTitle'), errorMessage);
+          Alert.alert('Error', errorMessage);
         },
       }
     );
@@ -980,7 +933,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         <SendTipsBottomSheet
           senderName={userProfile.name || 'Unknown'}
           senderTitle={userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : ''}
-          senderAvatar={toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')}
+          senderAvatar={userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png')}
           onClose={closeBottomSheet}
           onSend={handleSendTips}
         />,
@@ -1019,7 +972,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       recipientUserId: targetUserId,
       senderName: userProfile.name || 'Unknown',
       senderTitle: userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : '',
-      senderAvatar: toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png'),
+      senderAvatar: userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png'),
     });
   }, [user?.id, targetUserId, userProfile]);
 
@@ -1037,17 +990,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
   const handleReport = useCallback(() => {
     if (!user?.id || !targetUserId) return;
-
+    
     Alert.alert(
-      t('menu.reportTitle'),
-      t('menu.reportMessage'),
+      'Report User',
+      'Are you sure you want to report this user?',
       [
         {
-          text: t('actions.cancel'),
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: t('actions.report'),
+          text: 'Report',
           style: 'destructive',
           onPress: () => {
             reportUser({
@@ -1062,19 +1015,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         },
       ]
     );
-  }, [user?.id, targetUserId, reportUser, t]);
+  }, [user?.id, targetUserId, reportUser]);
 
   const handleBlock = useCallback(() => {
     Alert.alert(
-      t('menu.blockTitle'),
-      t('menu.blockMessage'),
+      'Block User',
+      'Are you sure you want to block this user? Blocked users cannot interact with you.',
       [
         {
-          text: t('actions.cancel'),
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: t('actions.block'),
+          text: 'Block',
           style: 'destructive',
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
@@ -1086,7 +1039,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         },
       ]
     );
-  }, [targetUserId, navigation, t]);
+  }, [targetUserId, navigation]);
 
   // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
   // FlatList scroll edildiğinde pozisyon değişir, onLayout her değişiklikte çağrılır
@@ -1272,8 +1225,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.log('[ProfileScreen] ✅ User unmuted successfully');
             }
             showCustomToast(toast, {
-              title: t('toast.unmuted'),
-              description: t('toast.unmutedDescription', { name: currentProfile.name }),
+              title: 'Unmuted',
+              description: `${currentProfile.name} can now send notifications`,
               action: 'success',
             });
           },
@@ -1282,8 +1235,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.error('[ProfileScreen] ❌ Unmute error:', error);
             }
             showCustomToast(toast, {
-              title: t('toast.error'),
-              description: t('toast.errorUnmuting'),
+              title: 'Error',
+              description: 'An error occurred while unmuting',
               action: 'error',
             });
           },
@@ -1301,8 +1254,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.log('[ProfileScreen] ✅ User muted successfully');
             }
             showCustomToast(toast, {
-              title: t('toast.muted'),
-              description: t('toast.mutedDescription', { name: currentProfile.name }),
+              title: 'User Muted',
+              description: `${currentProfile.name} will no longer send notifications`,
               action: 'info',
             });
           },
@@ -1311,8 +1264,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.error('[ProfileScreen] ❌ Mute error:', error);
             }
             showCustomToast(toast, {
-              title: t('toast.error'),
-              description: t('toast.errorMuting'),
+              title: 'Error',
+              description: 'An error occurred while muting user',
               action: 'error',
             });
           },
@@ -1321,22 +1274,32 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [targetUserId, user?.id, userProfile, muteUser, unmuteUser, toast, isMuting, isUnmuting, queryClient]);
 
-  // Handle badge press - open bottom sheet (Figma 6594-24141)
-  const handleBadgePress = useCallback(
-    (badge: Badge) => {
-      openBottomSheet(
-        <ProfileBadgeBottomSheet badge={badge} onClose={closeBottomSheet} />,
-        {
-          enableDynamicSizing: true,
-          enablePanDownToClose: true,
-          enableHandle: true,
-          backdropPressBehavior: 'close',
-          animateOnMount: true,
-        }
-      );
-    },
-    [openBottomSheet, closeBottomSheet]
-  );
+  // Map Badge to SeeAllReward format for BadgeBottomSheet
+  const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
+    const imageSource = badge.image ? toImageSource(badge.image) : require('@/assets/defaultImages/default-badge.png');
+    
+    return {
+      id: badge.id,
+      title: badge.title,
+      image: imageSource,
+      description: `You earned the "${badge.title}" badge!`,
+      category: 'achievement',
+      isUnlocked: true, // Profile'da gösterilen badge'ler zaten kazanılmış
+      completed: 1,
+      task: 1,
+    };
+  }, []);
+
+  // Handle badge press - open modal
+  const handleBadgePress = useCallback((badge: Badge) => {
+    const badgeData = mapBadgeToSeeAllReward(badge);
+    setSelectedBadge(badgeData);
+  }, [mapBadgeToSeeAllReward]);
+
+  // Handle modal close
+  const handleCloseModal = useCallback(() => {
+    setSelectedBadge(null);
+  }, []);
 
   
   // ListHeaderComponent: Banner + Profile Info
@@ -1373,22 +1336,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           overflow="hidden" 
           position="relative"
         >
-          {(() => {
-            const bannerSource = toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png');
-            const bannerUrlDisplay = profile.bannerUrl ?? '(boş)';
-            const resolvedDisplay = typeof bannerSource === 'object' && bannerSource && 'uri' in bannerSource && bannerSource.uri
-              ? bannerSource.uri
-              : '[varsayılan asset]';
-            console.log('[ProfileScreen] 🖼️ Ekranda kullanılan banner – profile.bannerUrl:', bannerUrlDisplay, '| resolved URL:', resolvedDisplay);
-            return (
-              <Image
-                source={bannerSource}
-                alt="Profile Banner"
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-              />
-            );
-          })()}
+          <Image
+            source={toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png')}
+            alt="Profile Banner"
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+          />
           {/* Overlay */}
           <Box
             position="absolute"
@@ -1525,7 +1478,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     fontSize={10}
                     fontWeight="$semibold"
                   >
-                    {t('actions.edit')}
+                    Edit Profile
                   </Text>
                 </Pressable>
               ) : (
@@ -1615,24 +1568,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     gap={2}
                     onPress={() => {
                       if (!targetUserId) return;
-                      const onTrustError = (error: any) => {
-                        const msg =
-                          error?.response?.data?.message ||
-                          error?.message ||
-                          (error?.message === 'Network Error'
-                            ? t('errors.networkError')
-                            : t('errors.operationFailed'));
-                        showCustomToast(toast, {
-                          title: t('errors.error'),
-                          description: msg,
-                          action: 'error',
-                          duration: 4000,
-                        });
-                      };
                       if (profile.isTrusted) {
-                        untrustUser(targetUserId, { onError: onTrustError });
+                        untrustUser(targetUserId);
                       } else {
-                        trustUser(targetUserId, { onError: onTrustError });
+                        trustUser(targetUserId);
                       }
                     }}
                     disabled={isTrusting || isUntrusting}
@@ -1648,7 +1587,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       fontSize={10}
                       fontWeight="$semibold"
                     >
-                      {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : (profile.isTrusted ? t('actions.unTrust') : t('actions.trust'))}
+                      {isTrusting ? "Adding..." : isUntrusting ? "Removing..." : (profile.isTrusted ? "Un Trust" : "Trust")}
                     </Text>
                   </Pressable>
                 </>
@@ -1691,7 +1630,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               color={isDark ? '$textDark400' : '$textLight600'}
               fontSize="$xs"
             >
-              {t('stats.posts')}
+              Posts
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
@@ -1721,7 +1660,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   color={isDark ? '$textDark400' : '$textLight600'}
                   fontSize="$xs"
                 >
-                  {t('stats.trust')}
+                  Trust
                 </Text>
               </HStack>
             </Pressable>
@@ -1753,7 +1692,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   color={isDark ? '$textDark400' : '$textLight600'}
                   fontSize="$xs"
                 >
-                  {t('stats.truster')}
+                  Truster
                 </Text>
               </HStack>
             </Pressable>
@@ -1796,7 +1735,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 fontWeight="$semibold"
                 textAlign="center"
               >
-                {t('profileScreen.inventory', { name: profile.name })}
+                {profile.name}'s Inventory
               </Text>
             </Pressable>
           </Box>
@@ -1810,7 +1749,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               p={14}
               h={130}
             >
-              <HStack space="md" justifyContent="flex-start">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 16 }}
+              >
                 {[0, 1, 2, 3].map((index) => (
                   <VStack key={index} space="xs" alignItems="center">
                     <Box
@@ -1827,7 +1770,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     />
                   </VStack>
                 ))}
-              </HStack>
+              </ScrollView>
               <Box
                 w={120}
                 h={12}
@@ -1845,75 +1788,70 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               p={profile.badges && profile.badges.length > 0 ? 14 : 8}
             >
               {profile.badges && profile.badges.length > 0 ? (
-                <HStack space="md" justifyContent="flex-start" alignItems="center" flex={1}>
-                  {profile.badges.slice(0, 4).map((badge) => (
-                    <Box key={badge.id} position="relative">
-                      {hasPrimePass && <NFTBadgeRibbon />}
-                      <Pressable onPress={() => handleBadgePress(badge)}>
-                        <VStack space="xs" alignItems="center">
-                          <Box
-                            w={70}
-                            h={70}
-                            borderRadius={5}
-                            borderWidth={0}
-                            overflow="hidden"
-                            justifyContent="center"
-                            alignItems="center"
-                          >
-                            <Image
-                              source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                              alt={badge.title}
-                              w={60}
-                              h={60}
-                              resizeMode="contain"
-                            />
-                          </Box>
-                          <Text
-                            color={isDark ? '$textDark400' : '#000000'}
-                            fontSize="$2xs"
-                            fontWeight="$bold"
-                            textAlign="center"
-                          >
-                            {badge.title}
-                          </Text>
-                        </VStack>
-                      </Pressable>
-                    </Box>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 16 }}
+                >
+                  {profile.badges.map((badge) => (
+                    <Pressable
+                      key={badge.id}
+                      onPress={() => handleBadgePress(badge)}
+                    >
+                      <VStack space="xs" alignItems="center">
+                        <Box
+                          w={70}
+                          h={70}
+                          borderRadius={5}
+                          borderWidth={0}
+                          overflow="hidden"
+                          justifyContent="center"
+                          alignItems="center"
+                        >
+                          <Image
+                            source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                            alt={badge.title}
+                            w={60}
+                            h={60}
+                            resizeMode="contain"
+                          />
+                        </Box>
+                        <Text
+                          color={isDark ? '$textDark400' : '#000000'}
+                          fontSize="$2xs"
+                          fontWeight="$bold"
+                          textAlign="center"
+                        >
+                          {badge.title}
+                        </Text>
+                      </VStack>
+                    </Pressable>
                   ))}
-                </HStack>
+                </ScrollView>
               ) : (
-                /* Figma 6498-34134: Badge yoksa 4 dashed kare + "Edit Highlight Badges" */
-                <VStack space="md" alignItems="center" flex={1}>
-                  <HStack space="md" justifyContent="center" alignItems="center">
-                    {[0, 1, 2, 3].map((index) => (
-                      <Box
-                        key={index}
-                        w={70}
-                        h={70}
-                        borderRadius={5}
-                        borderWidth={2}
-                        borderColor={isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)'}
-                        borderStyle="dashed"
-                        justifyContent="center"
-                        alignItems="center"
-                        bg={isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'}
-                      >
-                        <PlusIcon
-                          width={28}
-                          height={28}
-                          color={isDark ? '#999999' : '#737373'}
-                        />
-                      </Box>
-                    ))}
-                  </HStack>
-                  <Pressable
-                    onPress={() => {
-                      if (isOwnProfile) {
-                        navigation.navigate('EditHighlightBadges', { initialBadgeIds: [] });
-                      }
-                    }}
-                    disabled={!isOwnProfile}
-                    opacity={isOwnProfile ? 1 : 0.7}
+                <Box position="relative" flex={1} height={70}>
+                  {/* 1 tane dashed badge placeholder - solda */}
+                  <Box
+                    w={70}
+                    h={70}
+                    borderRadius={5}
+                    borderWidth={2}
+                    borderColor={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
+                    borderStyle="dashed"
+                    justifyContent="center"
+                    alignItems="center"
+                    bg={isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'}
+                  />
+                  {/* "No badges yet" text - ortada (absolute position) */}
+                  <Box
+                    position="absolute"
+                    left={0}
+                    right={0}
+                    top={0}
+                    bottom={0}
+                    justifyContent="center"
+                    alignItems="center"
+                    pointerEvents="none"
                   >
                     <Text
                       color={isDark ? '$textDark400' : '$textLight600'}
@@ -1921,22 +1859,16 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       fontWeight="$regular"
                       textAlign="center"
                     >
-                      {t('profileScreen.editHighlightBadges')}
+                      {t('emptyStates.noBadgesYet')}
                     </Text>
-                  </Pressable>
-                </VStack>
+                  </Box>
+                </Box>
               )}
               {profile.badges && profile.badges.length > 0 && (
                 <Pressable
                   onPress={() => {
-                    if (isOwnProfile) {
-                      navigation.navigate('EditHighlightBadges', {
-                        initialBadgeIds: profile.badges?.map((b) => b.id) ?? [],
-                      });
-                    }
+                    navigation.navigate('Collections');
                   }}
-                  disabled={!isOwnProfile}
-                  opacity={isOwnProfile ? 1 : 0.7}
                 >
                   <Text
                     color={isDark ? '$textDark400' : '$textLight600'}
@@ -1945,7 +1877,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     mt="$4"
                     fontWeight="$regular"
                   >
-                    {isOwnProfile ? t('profileScreen.editHighlightBadges') : t('profileScreen.highlightBadges')}
+                    {t('emptyStates.seeMoreCollections')}
                   </Text>
                 </Pressable>
               )}
@@ -1954,8 +1886,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, hasPrimePass, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus, t]);
-
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus]);
+  
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
   const profileHeader = useMemo(() => {
@@ -1985,13 +1917,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [activeTab]);
   
-  // CRITICAL FIX: Error sadece loading bittikten sonra gösterilmeli
-  // Loading sırasında geçici error'ları gösterme (flash of error problemi)
-  if (!isProfileLoading && (profileError || !userProfile)) {
+  if (profileError || !userProfile) {
     return (
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>
         <Text color="#CE4A4A" fontSize="$sm">
-          {profileError?.message || t('errors.profileLoadError')}
+          {profileError?.message || 'Profil yüklenirken bir hata oluştu'}
         </Text>
       </Box>
     );
@@ -2000,13 +1930,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <StatusBar style="light" />
-
-      {/* Profile Header - Scrollable with Pull-to-Refresh */}
+      {/* Tüm ekran scroll edilebilir - Banner, Header, Tab Bar ve Content hepsi içinde */}
       <ScrollView
         ref={scrollViewRef}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
+        showsVerticalScrollIndicator={true}
+        onScroll={handleScroll}
         scrollEventThrottle={16}
+        bounces={false}
+        overScrollMode="never"
         refreshControl={
           <RefreshControl
             refreshing={refreshing || false}
@@ -2015,60 +1946,30 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             colors={isDark ? ['#FFFFFF'] : ['#000000']}
           />
         }
+        contentContainerStyle={{
+          paddingBottom: bottomPadding,
+        }}
       >
-        {profileHeader}
+        {/* Profile Header - Scroll edilebilir */}
+        <Box>
+          {profileHeader}
+        </Box>
+
+        {/* Tab Bar - Scroll edilebilir */}
+        <TabsBar 
+          activeTab={activeTab} 
+          onChangeTab={handleTabChange} 
+          isDark={isDark}
+        />
+
+        {/* Tab Content - Scroll edilebilir */}
+        <TabContent
+          tabKey={activeTab}
+          targetUserId={targetUserId || ''}
+          isDark={isDark}
+          onQueryRef={handleTabQueryRef}
+        />
       </ScrollView>
-
-      {/* Tab Bar - Fixed */}
-      <AnimatedTabBar
-        tabs={TABS}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        isDark={isDark}
-      />
-
-      {/* Tab Content - Swipeable with PagerView */}
-      <PagerView
-        ref={pagerViewRef}
-        style={{ flex: 1 }}
-        initialPage={activeTabIndex}
-        onPageSelected={handlePageSelected}
-        overdrag={true}
-        scrollEnabled={true}
-        keyboardDismissMode="on-drag"
-        offscreenPageLimit={1}
-      >
-        {TABS.map((tab, index) => {
-          // Her tab için unique scroll view ref oluştur
-          const isActiveTab = index === activeTabIndex;
-
-          return (
-            <View key={tab.key} collapsable={false} style={{ flex: 1 }}>
-              <ScrollView
-                key={`scroll-${tab.key}-${activeTabIndex}`}
-                showsVerticalScrollIndicator={true}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                bounces={false}
-                overScrollMode="never"
-                contentContainerStyle={{
-                  paddingBottom: bottomPadding,
-                }}
-              >
-                <TabContent
-                  tabKey={tab.key}
-                  targetUserId={targetUserId || ''}
-                  isDark={isDark}
-                  onQueryRef={handleTabQueryRef}
-                  profileBadges={userProfile?.badges ?? []}
-                  onBadgePress={handleBadgePress}
-                  hasPrimePass={hasPrimePass}
-                />
-              </ScrollView>
-            </View>
-          );
-        })}
-      </PagerView>
 
 
       {/* Profile Menu Modal - React Native Modal */}
@@ -2129,12 +2030,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        {t('menu.share')}
+                        Share
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Divider
-                    bg={isDark ? '#333333' : '#E9E9E9'}
+                  <Divider 
+                    bg={isDark ? '#333333' : '#E9E9E9'} 
                     mx={0}
                   />
                   {/* Mute / Unmute */}
@@ -2171,14 +2072,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        {(isMuting || isUnmuting)
-                          ? (userProfile?.isMuted ? t('actions.unmuting') : t('actions.muting'))
-                          : (userProfile?.isMuted ? t('actions.unmute') : t('actions.mute'))}
+                        {(isMuting || isUnmuting) 
+                          ? (userProfile?.isMuted ? 'Unmuting...' : 'Muting...')
+                          : (userProfile?.isMuted ? 'Unmute' : 'Mute')}
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Divider
-                    bg={isDark ? '#333333' : '#E9E9E9'}
+                  <Divider 
+                    bg={isDark ? '#333333' : '#E9E9E9'} 
                     mx={0}
                   />
                   {/* Report */}
@@ -2196,12 +2097,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        {t('menu.report')}
+                        Report
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Divider
-                    bg={isDark ? '#333333' : '#E9E9E9'}
+                  <Divider 
+                    bg={isDark ? '#333333' : '#E9E9E9'} 
                     mx={0}
                   />
                   {/* Block */}
@@ -2219,7 +2120,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        {t('menu.block')}
+                        Block
                       </Text>
                     </HStack>
                   </Pressable>
@@ -2230,6 +2131,31 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         </RNModal>
       )}
 
+      {/* Badge Detail Modal */}
+      <Modal
+        isOpen={!!selectedBadge}
+        onClose={handleCloseModal}
+        size="lg"
+        closeOnOverlayClick={true}
+      >
+        <ModalBackdrop onPress={handleCloseModal} />
+        {selectedBadge ? (
+          <ModalContent
+            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
+            borderRadius={20}
+            marginHorizontal={24}
+            marginBottom={safeAreaBottom + 24}
+            maxHeight="80%"
+          >
+            <BadgeBottomSheet
+              data={selectedBadge}
+              onClose={handleCloseModal}
+              hideFollowLadder={isOwnProfile}
+              eventId="" // Profile badge'leri event'e bağlı değil
+            />
+          </ModalContent>
+        ) : null}
+      </Modal>
     </Box>
   );
 };
