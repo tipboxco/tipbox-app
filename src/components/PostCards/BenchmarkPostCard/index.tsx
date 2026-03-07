@@ -450,7 +450,6 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
         <View
             style={{
                 backgroundColor: isDark ? '#000000' : '#FFFFFF',
-                marginBottom: 16,
                 position: 'relative',
             }}
         >

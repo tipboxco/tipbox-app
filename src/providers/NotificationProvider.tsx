@@ -136,13 +136,21 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   
   // Hata durumunda log (ama uygulamayı durdurma)
   // ÖNEMLİ: Sadece authenticated olduğunda hata logla (login ekranında hata göstermemek için)
-  if (unreadCountError && isAuthenticated && isAuthReady) {
-    // Sadece bir kez log göster (log spam'ı önle)
-    console.warn('[NotificationProvider] ⚠️ Unread count error (using default 0):', {
-      status: (unreadCountError as any)?.response?.status,
-      message: (unreadCountError as any)?.response?.data?.message || (unreadCountError as any)?.message,
-    });
-  }
+  // CRITICAL FIX: 404 hatası için log gösterme (endpoint henüz implement edilmemiş)
+  const errorRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (unreadCountError && isAuthenticated && isAuthReady && !errorRef.current) {
+      const status = (unreadCountError as any)?.response?.status;
+      // 404 hatası için log gösterme (endpoint henüz implement edilmemiş)
+      if (status !== 404) {
+        errorRef.current = true; // Sadece bir kez log göster
+        console.warn('[NotificationProvider] ⚠️ Unread count error (using default 0):', {
+          status,
+          message: (unreadCountError as any)?.response?.data?.message || (unreadCountError as any)?.message,
+        });
+      }
+    }
+  }, [unreadCountError, isAuthenticated, isAuthReady]);
   
   // Toast kaldırıldı - Expo bildirimleri kullanılıyor
 
@@ -178,8 +186,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
         // Pending token varsa tekrar dene
         await notificationService.retryPendingPushToken();
-      } catch (error) {
-        console.error('[NotificationProvider] ❌ Failed to initialize notification service:', error);
+      } catch (error: any) {
+        // CRITICAL FIX: 404 hatası için log gösterme (endpoint henüz implement edilmemiş)
+        if (error?.response?.status !== 404) {
+          console.error('[NotificationProvider] ❌ Failed to initialize notification service:', error);
+        }
       }
     };
 
