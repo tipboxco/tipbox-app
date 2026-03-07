@@ -3,7 +3,7 @@
  * .env üzerinden CANNY_REDIRECT_HOST, CANNY_COMPANY_ID, CANNY_REDIRECT_TARGET okunur
  */
 
-let cannyRedirectHost = 'https://api-test.tipbox.co';
+let cannyRedirectHost = 'https://api-test.tipbox.co/api';
 let cannyCompanyId = '695fcdc8fc0b828e91820b7c';
 let cannyRedirectTarget = 'https://tipbox.canny.io/test-feedback';
 
