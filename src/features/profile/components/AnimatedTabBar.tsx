@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
-  ScrollView,
+  FlatList,
   View,
   LayoutChangeEvent,
   NativeScrollEvent,
@@ -12,6 +12,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  interpolate,
+  Extrapolate,
 } from 'react-native-reanimated';
 import { Box, Text, Pressable, HStack, VStack } from '@gluestack-ui/themed';
 
@@ -30,6 +32,7 @@ interface AnimatedTabBarProps {
   activeTab: string;
   onTabChange: (tabKey: string) => void;
   isDark: boolean;
+  scrollPosition?: Animated.SharedValue<number>;
 }
 
 /**
@@ -49,16 +52,19 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
   activeTab,
   onTabChange,
   isDark,
+  scrollPosition,
 }) => {
-  const scrollViewRef = useRef<ScrollView>(null);
-  
+  const flatListRef = useRef<FlatList>(null);
+
   // Shared animation values
   const indicatorX = useSharedValue(0);
   const indicatorWidth = useSharedValue(60);
-  
+
   // Local state
   const [tabLayouts, setTabLayouts] = useState<Map<string, TabLayout>>(new Map());
   const [scrollViewWidth, setScrollViewWidth] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [scrollX, setScrollX] = useState(0);
 
   // Track individual tab layout measurements
   const handleTabLayout = useCallback(
@@ -95,38 +101,66 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
     return Math.round(avgWidth + avgGap);
   }, [tabLayouts]);
 
-  // Scroll to align active tab to LEFT edge (flex-start)
+  // Scroll to align active tab to CENTER (better visibility)
   const scrollToTabLeft = useCallback((tabKey: string) => {
     const layout = tabLayouts.get(tabKey);
-    if (!layout || !scrollViewRef.current) return;
+    if (!layout || !scrollViewRef.current || !scrollViewWidth) {
+      console.log('[AnimatedTabBar] ❌ Cannot scroll - missing data:', {
+        hasLayout: !!layout,
+        hasScrollRef: !!scrollViewRef.current,
+        scrollViewWidth,
+        tabKey,
+      });
+      return;
+    }
 
-    // Calculate scroll position to align tab to LEFT edge
-    // Subtract horizontal padding (16px) to account for contentContainerStyle padding
+    // Calculate scroll position to center the tab in viewport
     const HORIZONTAL_PADDING = 16;
-    const scrollPos = Math.max(0, layout.x - HORIZONTAL_PADDING);
+    const tabCenter = layout.x + (layout.width / 2);
+    const viewportCenter = scrollViewWidth / 2;
+
+    // Scroll to center the tab, accounting for padding
+    const scrollPos = Math.max(0, tabCenter - viewportCenter);
+
+    console.log('[AnimatedTabBar] 📍 Scrolling to center tab:', {
+      tabKey,
+      tabCenter,
+      viewportCenter,
+      scrollPos,
+      layoutX: layout.x,
+      layoutWidth: layout.width,
+    });
 
     scrollViewRef.current.scrollTo({
       x: scrollPos,
       animated: true,
     });
-  }, [tabLayouts]);
+  }, [tabLayouts, scrollViewWidth]);
 
-  // Handle momentum scroll end - snap to leftmost visible tab (flex-start)
+  // Handle scroll - track position
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const scrollX = event.nativeEvent.contentOffset.x;
+      setScrollX(scrollX);
+    },
+    []
+  );
+
+  // Handle momentum scroll end - snap to nearest centered tab
   const handleScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const scrollX = event.nativeEvent.contentOffset.x;
-      const HORIZONTAL_PADDING = 16;
 
-      // Viewport left edge (considering padding)
-      const viewportLeft = scrollX + HORIZONTAL_PADDING;
+      // Viewport center
+      const viewportCenter = scrollX + (scrollViewWidth / 2);
 
-      // Find the leftmost tab that starts at or after viewport left edge
+      // Find the tab closest to viewport center
       let nearestKey: string | null = null;
       let minDistance = Infinity;
 
       for (const [key, layout] of tabLayouts.entries()) {
-        const tabLeft = layout.x;
-        const distance = Math.abs(tabLeft - viewportLeft);
+        const tabCenter = layout.x + (layout.width / 2);
+        const distance = Math.abs(tabCenter - viewportCenter);
 
         if (distance < minDistance) {
           minDistance = distance;
@@ -134,17 +168,26 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
         }
       }
 
+      console.log('[AnimatedTabBar] 🔚 Scroll ended:', {
+        scrollX,
+        viewportCenter,
+        nearestKey,
+        minDistance,
+        willChange: nearestKey !== activeTab,
+      });
+
       if (nearestKey && nearestKey !== activeTab) {
         onTabChange(nearestKey);
       }
     },
-    [tabLayouts, activeTab, onTabChange]
+    [tabLayouts, activeTab, onTabChange, scrollViewWidth]
   );
 
-  // Update indicator when active tab changes
+  // ANIMATION FIX: Update indicator when active tab changes OR when scroll position changes (realtime)
   useEffect(() => {
     const activeLayout = tabLayouts.get(activeTab);
-    if (activeLayout) {
+    if (activeLayout && !scrollPosition) {
+      // Fallback: No scrollPosition prop, use spring animation
       indicatorX.value = withSpring(activeLayout.x, {
         damping: 12,
         mass: 1,
@@ -155,91 +198,187 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
         mass: 1,
         overshootClamping: false,
       });
-
-      // Scroll to align tab to left edge (flex-start)
-      const timer = setTimeout(() => {
-        scrollToTabLeft(activeTab);
-      }, 50);
-
-      return () => clearTimeout(timer);
     }
-  }, [activeTab, tabLayouts, indicatorX, indicatorWidth, scrollToTabLeft]);
+  }, [activeTab, tabLayouts, indicatorX, indicatorWidth, scrollPosition]);
 
-  // Animated indicator style
-  const animatedIndicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: indicatorX.value }],
-    width: indicatorWidth.value,
-    height: 3,
-    backgroundColor: isDark ? '#FFFFFF' : '#000000',
-  }));
+  // ANIMATION FIX: Animated indicator style - interpolate based on scroll position
+  const animatedIndicatorStyle = useAnimatedStyle(() => {
+    if (!scrollPosition || tabLayouts.size === 0) {
+      // Fallback: Use static position
+      return {
+        transform: [{ translateX: indicatorX.value }],
+        width: indicatorWidth.value,
+        height: 3,
+        backgroundColor: isDark ? '#FFFFFF' : '#000000',
+      };
+    }
+
+    // Realtime animation: Interpolate between tab positions based on scroll
+    const currentIndex = Math.floor(scrollPosition.value);
+    const nextIndex = Math.ceil(scrollPosition.value);
+
+    const currentTab = tabs[currentIndex];
+    const nextTab = tabs[nextIndex];
+
+    if (!currentTab || !nextTab) {
+      return {
+        transform: [{ translateX: indicatorX.value }],
+        width: indicatorWidth.value,
+        height: 3,
+        backgroundColor: isDark ? '#FFFFFF' : '#000000',
+      };
+    }
+
+    const currentLayout = tabLayouts.get(currentTab.key);
+    const nextLayout = tabLayouts.get(nextTab.key);
+
+    if (!currentLayout || !nextLayout) {
+      return {
+        transform: [{ translateX: indicatorX.value }],
+        width: indicatorWidth.value,
+        height: 3,
+        backgroundColor: isDark ? '#FFFFFF' : '#000000',
+      };
+    }
+
+    // Interpolate X position and width
+    const progress = scrollPosition.value - currentIndex;
+    const x = interpolate(
+      progress,
+      [0, 1],
+      [currentLayout.x, nextLayout.x],
+      Extrapolate.CLAMP
+    );
+    const width = interpolate(
+      progress,
+      [0, 1],
+      [currentLayout.width, nextLayout.width],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [{ translateX: x }],
+      width,
+      height: 3,
+      backgroundColor: isDark ? '#FFFFFF' : '#000000',
+    };
+  }, [scrollPosition, tabLayouts, tabs, isDark, indicatorX, indicatorWidth]);
 
   const activeColor = isDark ? '#FFFFFF' : '#000000';
   const inactiveColor = '#A3A3A3';
 
+  // Check if there's more content to scroll
+  const hasMoreRight = contentWidth > scrollViewWidth && scrollX < (contentWidth - scrollViewWidth - 10);
+  const hasMoreLeft = scrollX > 10;
+
   return (
-    <Box
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-      borderBottomWidth={StyleSheet.hairlineWidth}
-      borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
+    <View
+      style={{
+        backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF',
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+        position: 'relative',
+      }}
     >
-      <ScrollView
-        ref={scrollViewRef}
+      <FlatList
+        ref={flatListRef}
+        data={tabs}
         horizontal
         showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.key}
         contentContainerStyle={{ paddingHorizontal: 16 }}
         scrollEventThrottle={16}
-        decelerationRate="fast"
-        onMomentumScrollEnd={handleScrollEnd}
-        snapToInterval={snapInterval}
-        snapToAlignment="start"
+        onScroll={handleScroll}
         onLayout={(e) => setScrollViewWidth(e.nativeEvent.layout.width)}
-        bounces={false}
-      >
-        <VStack position="relative">
-          <HStack space="md" mb={0} position="relative">
-            {tabs.map((tab) => {
-              const isActive = tab.key === activeTab;
-              return (
-                <Pressable
-                  key={tab.key}
-                  onPress={() => onTabChange(tab.key)}
-                  onLayout={(e) => handleTabLayout(tab.key, e)}
-                  py="$3"
-                  px="$2"
-                  minWidth={60}
-                  alignItems="center"
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 'bold',
-                      color: isActive ? activeColor : inactiveColor,
-                    }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {tab.title}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </HStack>
+        onContentSizeChange={(w) => setContentWidth(w)}
+        renderItem={({ item }) => {
+          const isActive = item.key === activeTab;
+          return (
+            <Pressable
+              key={item.key}
+              onPress={() => onTabChange(item.key)}
+              onLayout={(e) => handleTabLayout(item.key, e)}
+              py="$3"
+              px="$2"
+              minWidth={60}
+              alignItems="center"
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                  color: isActive ? activeColor : inactiveColor,
+                }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.title}
+              </Text>
+            </Pressable>
+          );
+        }}
+      />
 
-          {/* Animated indicator bar */}
-          <Animated.View
-            style={[
-              {
+      {/* Left fade indicator - shows there's more content to the left */}
+      {hasMoreLeft && (
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 40,
+            pointerEvents: 'none',
+          }}
+        >
+          {/* Gradient simulation using multiple layers */}
+          {[0.9, 0.7, 0.5, 0.3, 0.1].map((opacity, index) => (
+            <View
+              key={index}
+              style={{
                 position: 'absolute',
+                left: index * 8,
+                top: 0,
                 bottom: 0,
-                left: 0,
-                height: 3,
-              },
-              animatedIndicatorStyle,
-            ]}
-          />
-        </VStack>
-      </ScrollView>
-    </Box>
+                width: 8,
+                backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF',
+                opacity,
+              }}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* Right fade indicator - shows there's more content to the right */}
+      {hasMoreRight && (
+        <View
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 40,
+            pointerEvents: 'none',
+          }}
+        >
+          {/* Gradient simulation using multiple layers */}
+          {[0.9, 0.7, 0.5, 0.3, 0.1].map((opacity, index) => (
+            <View
+              key={index}
+              style={{
+                position: 'absolute',
+                right: index * 8,
+                top: 0,
+                bottom: 0,
+                width: 8,
+                backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF',
+                opacity,
+              }}
+            />
+          ))}
+        </View>
+      )}
+    </View>
   );
 };
 

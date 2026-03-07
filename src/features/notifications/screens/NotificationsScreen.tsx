@@ -558,12 +558,14 @@ const NotificationsScreenComponent: React.FC = () => {
     extractNotificationsFromResponse,
   ]);
 
-  // Figma: Pill tab - seçili = koyu arka plan, seçili değil = açık gri
-  const tabActiveBg = isDark ? '#1A1A1A' : '#000000';
-  const tabInactiveBg = isDark ? '#2A2A2A' : '#F1F1F1';
-  const tabActiveText = '#FFFFFF';
-  const tabInactiveText = isDark ? '#8C8C8C' : '#8C8C8C';
-  const tabBorderColor = isDark ? '#333' : '#EFEFEF';
+  // DESIGN: SupportRequestFilterGroup ile aynı tasarım
+  // Active = açık gri arka plan, siyah text
+  // Inactive = transparent arka plan, siyah text
+  const tabActiveBg = '#F1F1F1';
+  const tabInactiveBg = 'transparent';
+  const tabActiveText = '#000000';
+  const tabInactiveText = '#000000';
+  const tabBorderColor = '#EFEFEF';
 
   // Her tab için seçili mi (animasyonlu)
   const tab0Active = useAnimatedStyle(
@@ -574,7 +576,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabActiveBg, tabActiveBg, tabInactiveBg]
       ),
     }),
-    [isDark]
+    []
   );
   const tab1Active = useAnimatedStyle(
     () => ({
@@ -584,7 +586,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveBg, tabActiveBg, tabInactiveBg]
       ),
     }),
-    [isDark]
+    []
   );
   const tab2Active = useAnimatedStyle(
     () => ({
@@ -594,7 +596,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveBg, tabActiveBg, tabInactiveBg]
       ),
     }),
-    [isDark]
+    []
   );
   const tab3Active = useAnimatedStyle(
     () => ({
@@ -604,7 +606,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveBg, tabActiveBg, tabActiveBg]
       ),
     }),
-    [isDark]
+    []
   );
 
   const tab0TextStyle = useAnimatedStyle(
