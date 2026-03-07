@@ -234,7 +234,7 @@ BrandItem.displayName = 'BrandItem';
 // 🎯 OPTIMIZATION: Memoized Product Item Component
 interface ProductItemProps {
   product: any;
-  onPress: (productId: string) => void;
+  onPress: (product: any) => void;
 }
 
 const ProductItem = memo<ProductItemProps>(({ product, onPress }) => {
@@ -251,7 +251,7 @@ const ProductItem = memo<ProductItemProps>(({ product, onPress }) => {
         image={imageSource}
         title={product.name}
         subName={product.model || product.specs || ''}
-        onPress={() => onPress(product.id)}
+        onPress={() => onPress(product)}
       />
     </Box>
   );
@@ -657,31 +657,34 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
 
   // Navigate to product post list screen when product item is clicked
   const handleProductPress = useCallback(
-    (productId: string) => {
-      if (!productId) {
-        console.warn('[SearchModal] handleProductPress: productId is missing');
+    (product: any) => {
+      if (!product || !product.id) {
+        console.warn('[SearchModal] handleProductPress: product or productId is missing');
         return;
       }
       handleClose();
       setTimeout(() => {
-        // Navigate to Post stack → PostsScreen (productId as contextId)
+        // Navigate to Post stack → PostsScreen with product info
+        const productImage = toImageSource(product.image) || require('@/assets/inventory/product_01.png');
+
         navigationService.navigate(ROOT_ROUTES.POST, {
           screen: 'PostsScreen',
           params: {
             stage: 'Product',
-            name: '', // Product name will come from API or won't be shown in PostsScreen
+            name: product.name || '',
             productInfo: {
-              image: require('@/assets/inventory/product_01.png'), // Placeholder, will come from API
-              title: '', // Placeholder, will come from API
+              image: productImage,
+              title: product.name || '',
+              subName: product.model || product.specs || '',
             },
             selectedProduct: {
-              id: productId,
-              name: '', // Placeholder, will come from API
-              description: '',
-              image: require('@/assets/inventory/product_01.png'), // Placeholder
+              id: product.id,
+              name: product.name || '',
+              description: product.model || product.specs || '',
+              image: productImage,
             },
             contextType: ProductInfoType.PRODUCT,
-            contextId: productId, // Send Product ID as contextId
+            contextId: product.id,
           },
         });
       }, 300);

@@ -386,6 +386,11 @@ export const useAcceptSupportRequest = () => {
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
       // ✅ CRITICAL FIX: Tüm thread messages cache'lerini invalidate et (support request thread'leri dahil)
       queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
+
+      // ✅ WALLET FIX: Support request accept edildiğinde wallet balance'ı güncelle
+      // Backend accept işleminden sonra expert'e TIPS transfer eder, balance'ı refetch etmeliyiz
+      queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet', 'transactions'] });
     },
   });
 };

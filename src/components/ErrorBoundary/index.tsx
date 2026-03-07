@@ -1,6 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Text, VStack, Button } from '@gluestack-ui/themed';
-import { useColorMode } from '@/src/hooks/useColorMode';
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
 import { Sentry } from '@/src/config/sentry.config';
 
 interface Props {
@@ -95,6 +94,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
 /**
  * Default Error Fallback Component
+ * CRITICAL FIX: Uses pure React Native components instead of Gluestack-UI
+ * This prevents "StyledProvider not found" errors when ErrorBoundary catches errors
  */
 interface ErrorFallbackProps {
   error: Error | null;
@@ -102,56 +103,82 @@ interface ErrorFallbackProps {
 }
 
 const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, onReset }) => {
-  const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px="$4">
-      <VStack space="md" alignItems="center">
-        <Text
-          color={isDark ? '$textDark50' : '$textLight900'}
-          fontSize="$xl"
-          fontWeight="$bold"
-          textAlign="center"
-        >
+    <View style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
+      <View style={styles.content}>
+        <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#000000' }]}>
           Bir Hata Oluştu
         </Text>
-        <Text
-          color={isDark ? '$textDark400' : '$textLight600'}
-          fontSize="$sm"
-          textAlign="center"
-        >
+        <Text style={[styles.message, { color: isDark ? '#A0A0A0' : '#666666' }]}>
           Üzgünüz, beklenmeyen bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı deneyin.
         </Text>
         {__DEV__ && error && (
-          <Box
-            bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
-            p="$4"
-            borderRadius="$md"
-            maxWidth="100%"
-          >
-            <Text
-              color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize="$xs"
-              fontFamily="monospace"
-            >
+          <View style={[styles.errorBox, { backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5' }]}>
+            <Text style={[styles.errorText, { color: isDark ? '#A0A0A0' : '#666666' }]}>
               {error.toString()}
             </Text>
-          </Box>
+          </View>
         )}
-        <Button
+        <TouchableOpacity
           onPress={onReset}
-          bg="$primary500"
-          borderRadius="$md"
-          px="$6"
-          py="$3"
+          style={styles.button}
+          activeOpacity={0.8}
         >
-          <Text color="$white" fontSize="$sm" fontWeight="$medium">
+          <Text style={styles.buttonText}>
             Tekrar Dene
           </Text>
-        </Button>
-      </VStack>
-    </Box>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  content: {
+    alignItems: 'center',
+    maxWidth: 400,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  message: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  errorBox: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    maxWidth: '100%',
+  },
+  errorText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+  },
+  button: {
+    backgroundColor: '#E8FF6B',
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  buttonText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});
 

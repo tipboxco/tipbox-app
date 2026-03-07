@@ -49,6 +49,7 @@ import { useSafeAreaValues } from '@/src/utils';
 import { Modal, Dimensions } from 'react-native';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Sentry } from '@/src/config/sentry.config';
 
 export interface NotificationCardProps {
     notification: Notification;
@@ -67,139 +68,156 @@ export interface NotificationCardProps {
  * Gruplandırılmış ve tekil bildirimler için optimize edilmiş
  */
 const getNotificationMessage = (
-    type: NotificationType, 
-    username: string, 
-    data: any, 
-    isGrouped?: boolean, 
-    count?: number
+    type: NotificationType,
+    username: string,
+    data: any,
+    isGrouped?: boolean,
+    count?: number,
+    t?: any
 ): string => {
-    // Username direkt notification.username'den gelir
-    const displayUsername = username || 'User';
-    
+    try {
+        // Username direkt notification.username'den gelir
+        const displayUsername = username || 'User';
+
+        // Translation function fallback with error handling
+        const translate = t || ((key: string, params?: any) => {
+            try {
+                return key;
+            } catch (e) {
+                console.error('[getNotificationMessage] Translate error:', e);
+                return 'Notification';
+            }
+        });
+
     // Gruplandırılmış bildirimler için özel mesaj formatı (Instagram benzeri)
     if (isGrouped && count && count > 1) {
         const otherCount = count - 1;
+        const people = otherCount === 1 ? translate('common.person') : translate('common.people');
+
         switch (type) {
             case 'POST_LIKED':
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha gönderini beğendi`;
+                return translate('messages.grouped.postLiked', { username: displayUsername, count: otherCount, people });
             case 'POST_COMMENTED':
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha yorum yaptı`;
+                return translate('messages.grouped.postCommented', { username: displayUsername, count: otherCount, people });
             case 'POST_SHARED':
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha paylaştı`;
+                return translate('messages.grouped.postShared', { username: displayUsername, count: otherCount, people });
             case 'POST_FAVORITED':
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha favoriledi`;
+                return translate('messages.grouped.postFavorited', { username: displayUsername, count: otherCount, people });
             case 'COMMENT_LIKED':
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha yorumunu beğendi`;
+                return translate('messages.grouped.commentLiked', { username: displayUsername, count: otherCount, people });
             case 'COMMENT_REPLIED':
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha yanıt verdi`;
+                return translate('messages.grouped.commentReplied', { username: displayUsername, count: otherCount, people });
             case 'NEW_TRUSTER':
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha seni takip etmeye başladı`;
+                return translate('messages.grouped.newTruster', { username: displayUsername, count: otherCount, people });
             case 'NEW_TRUSTED_BY':
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha seni takip ediyor`;
+                return translate('messages.grouped.newTrustedBy', { username: displayUsername, count: otherCount, people });
             default:
-                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha etkileşimde bulundu`;
+                return `${displayUsername} ${translate('common.and')} ${otherCount} ${people} ${translate('common.more')}`;
         }
     }
-    
-    // Tekil bildirimler için standart mesajlar (Figma metinleri)
+
+    // Tekil bildirimler için standart mesajlar
     switch (type) {
         // POST INTERACTIONS
         case 'POST_LIKED':
-            return `${displayUsername}, bir gönderini beğendi!`;
+            return translate('messages.single.postLiked', { username: displayUsername });
         case 'POST_COMMENTED':
-            return `${displayUsername}, bir gönderine yorum yaptı!`;
+            return translate('messages.single.postCommented', { username: displayUsername });
         case 'POST_SHARED':
-            return `${displayUsername} paylaştı`;
+            return translate('messages.single.postShared', { username: displayUsername });
         case 'POST_FAVORITED':
-            return `${displayUsername} favoriledi`;
-        
+            return translate('messages.single.postFavorited', { username: displayUsername });
+
         // COMMENT INTERACTIONS
         case 'COMMENT_LIKED':
-            return `${displayUsername} yorumunu beğendi`;
+            return translate('messages.single.commentLiked', { username: displayUsername });
         case 'COMMENT_REPLIED':
-            return `${displayUsername} yanıt verdi`;
-        
+            return translate('messages.single.commentReplied', { username: displayUsername });
+
         // TRUST/FOLLOW NOTIFICATIONS
         case 'NEW_TRUSTER':
-            return `${displayUsername} seni trust listesine ekledi!`;
+            return translate('messages.single.newTruster', { username: displayUsername });
         case 'NEW_TRUSTED_BY':
-            return `${displayUsername} seni trust listesine ekledi!`;
-        
+            return translate('messages.single.newTrustedBy', { username: displayUsername });
+
         // MESSAGING NOTIFICATIONS
         case 'DM_REQUEST_RECEIVED':
-            // Username varsa göster, yoksa generic mesaj
-            return displayUsername && displayUsername !== 'User' 
-                ? `${displayUsername} sent a message request`
-                : 'User sent a message request';
+            return translate('messages.single.dmRequestReceived', { username: displayUsername && displayUsername !== 'User' ? displayUsername : 'User' });
         case 'DM_REQUEST_ACCEPTED':
-            return `${displayUsername} accepted your message request`;
+            return translate('messages.single.dmRequestAccepted', { username: displayUsername });
         case 'DM_REQUEST_DECLINED':
-            return `${displayUsername} declined your message request`;
+            return translate('messages.single.dmRequestDeclined', { username: displayUsername });
         case 'SUPPORT_REQUEST_ACCEPTED':
             const expertName = data?.expertName || displayUsername;
-            return `${expertName} destek talebini kabul etti`;
+            return translate('messages.single.supportRequestAccepted', { expertName });
         case 'NEW_MESSAGE':
-            return `${displayUsername} yeni mesaj gönderdi`;
-        
-        // TIPS NOTIFICATIONS – use API fields when present
+            return translate('messages.single.newMessage', { username: displayUsername });
+
+        // TIPS NOTIFICATIONS
         case 'TIPS_RECEIVED': {
             const senderUsername = data?.senderUsername || displayUsername;
             const amount = data?.amount;
-            if (amount != null) return `${senderUsername} sent you ${amount} TIPS`;
-            return `${senderUsername} sent you a tip`;
+            if (amount != null) return translate('messages.single.tipsReceived', { username: senderUsername, amount });
+            return translate('messages.single.tipsReceived', { username: senderUsername, amount: '' });
         }
         case 'TIPS_SENT':
-            return `${displayUsername}'e bahşiş gönderildi`;
+            return translate('messages.single.tipsSent', { username: displayUsername });
         case 'TRANSACTION_CONFIRMED':
             if (data?.actionType === 'DEPOSIT') {
-                const title = data?.title || notification.title;
-                const msg = data?.message || notification.message;
+                const title = data?.title || (data as any).notification?.title;
+                const msg = data?.message || (data as any).notification?.message;
                 if (title) return title;
                 if (msg) return msg;
                 const amt = data?.amount;
                 const from = data?.senderUsername || (data?.fromAddress ? 'External wallet' : null);
-                if (amt != null && from) return `${from}: +${amt} TIPS`;
-                if (amt != null) return `Deposit: +${amt} TIPS`;
-                return 'Deposit received';
+                if (amt != null && from) return translate('messages.deposit.from', { from, amount: amt });
+                if (amt != null) return translate('messages.deposit.amount', { amount: amt });
+                return translate('messages.deposit.received');
             }
             return data?.title || data?.message || 'Transaction confirmed';
-        
-        // GAMIFICATION NOTIFICATIONS (Figma: "Tebrikler!, Wishmaker rozetini kazandın!")
+
+        // GAMIFICATION NOTIFICATIONS
         case 'NEW_BADGE':
-            return 'Tebrikler!, Wishmaker rozetini kazandın!';
+            return translate('messages.single.newBadge');
         case 'ACHIEVEMENT_UNLOCKED':
-            return 'Tebrikler! Rozet kazandın!';
+            return translate('messages.single.achievementUnlocked');
         case 'REWARD_EARNED':
             const rewardAmount = data?.amount || 0;
-            return `${rewardAmount} TIPS kazandın!`;
-        
+            return translate('messages.single.rewardEarned', { amount: rewardAmount });
+
         // EXPERT NOTIFICATIONS
         case 'EXPERT_REQUEST_AVAILABLE':
-            return 'Yeni uzman sorusu mevcut';
+            return translate('messages.single.expertRequestAvailable');
         case 'EXPERT_REQUEST_ANSWERED':
             const expertNameAnswered = data?.expertName || displayUsername;
-            return `${expertNameAnswered} soruyu yanıtladı`;
-        
-        // EVENT NOTIFICATIONS (Figma: "Weekend Belgrad Walk etkinliği başlıyor!")
+            return translate('messages.single.expertRequestAnswered', { expertName: expertNameAnswered });
+
+        // EVENT NOTIFICATIONS
         case 'EVENT_STARTED':
-            return data?.eventName ? `"${data.eventName}" etkinliği başlıyor!` : 'Etkinlik başladı!';
+            return data?.eventName ? translate('messages.single.eventStarted', { eventName: data.eventName }) : translate('messages.single.eventStarted', { eventName: '' });
         case 'EVENT_ENDING_SOON':
-            return 'Etkinlik yakında bitiyor!';
+            return translate('messages.single.eventEndingSoon');
         case 'EVENT_REWARD_AVAILABLE':
-            return 'Etkinlik ödülü mevcut!';
-        
+            return translate('messages.single.eventRewardAvailable');
+
         // COLLECTION NOTIFICATIONS
         case 'COLLECTION_POST_ADDED':
-            return 'Post added to collection';
+            return translate('messages.single.collectionPostAdded');
         case 'COLLECTION_SHARED':
-            return 'Collection shared';
-        
-        // SYSTEM NOTIFICATIONS (Figma: "Apple, yeni bir anket yayınladı!")
+            return translate('messages.single.collectionShared');
+
+        // SYSTEM NOTIFICATIONS
         case 'SYSTEM_ANNOUNCEMENT':
-            return data?.publisherName ? `${data.publisherName}, yeni bir anket yayınladı!` : 'Yeni duyuru';
-        
+            return data?.publisherName ? translate('messages.single.systemAnnouncement', { publisherName: data.publisherName }) : translate('messages.single.systemAnnouncement', { publisherName: '' });
+
         default:
-            return 'Yeni bildirim';
+            return translate('common.newNotification');
+    }
+    } catch (error) {
+        console.error('[getNotificationMessage] ❌ Error generating message:', error);
+        console.error('[getNotificationMessage] Type:', type, 'Username:', username);
+        // Fallback to safe default
+        return 'New notification';
     }
 };
 
@@ -399,7 +417,8 @@ const TipsCard: React.FC<{
 const TrustCard: React.FC<{
     notification: Notification;
     onPress?: () => void;
-}> = ({ notification, onPress }) => {
+    t: any;
+}> = ({ notification, onPress, t }) => {
     return (
         <Pressable
             bg="#E8FF6B"
@@ -414,7 +433,7 @@ const TrustCard: React.FC<{
                 fontSize={13}
                 fontWeight="$semibold"
             >
-                Profili Görüntüle
+                {t('buttons.viewProfile')}
             </Text>
         </Pressable>
     );
@@ -427,7 +446,8 @@ const TrustCard: React.FC<{
 const ChatButton: React.FC<{
     notification: Notification;
     onPress?: () => void;
-}> = ({ notification, onPress }) => {
+    t: any;
+}> = ({ notification, onPress, t }) => {
     return (
         <Pressable
             bg="#E8FF6B"
@@ -442,7 +462,7 @@ const ChatButton: React.FC<{
                 fontSize={13}
                 fontWeight="$semibold"
             >
-                Görüntüle
+                {t('buttons.view')}
             </Text>
         </Pressable>
     );
@@ -670,7 +690,7 @@ const DepositCard: React.FC<{
  * Main Notification Card Component
  * Tüm bildirim tipleri için tek bir component
  */
-export const NotificationCard: React.FC<NotificationCardProps> = ({
+const NotificationCardInner: React.FC<NotificationCardProps> = ({
     notification,
     onPress,
     onMarkAsRead,
@@ -688,7 +708,29 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const { user } = useAppStore();
     const queryClient = useQueryClient();
     const toast = useToast();
-    const { t } = useTranslation('notifications');
+
+    // CRITICAL FIX: Safe translation with error handling
+    const { t: rawT, ready } = useTranslation('notifications');
+
+    // Safe wrapper around t() to prevent crashes from missing translations
+    const t = React.useCallback((key: string, params?: any) => {
+        try {
+            if (!ready) {
+                console.warn('[NotificationCard] Translation not ready, using key:', key);
+                return key;
+            }
+            const result = rawT(key, params);
+            // If translation returns the key itself, it means translation is missing
+            if (result === key) {
+                console.warn('[NotificationCard] Missing translation for key:', key);
+            }
+            return result;
+        } catch (error) {
+            console.error('[NotificationCard] Translation error:', error, 'key:', key);
+            // Fallback to key itself
+            return key;
+        }
+    }, [rawT, ready]);
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -1738,13 +1780,14 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                     username,
                                     data,
                                     isGrouped,
-                                    groupedCount
+                                    groupedCount,
+                                    t
                                 );
 
-                                // Gruplandırılmış bildirimlerde "ve X kişi daha" tıklanabilir
+                                // Gruplandırılmış bildirimlerde "and X people more" tıklanabilir
                                 if (isGrouped && groupedCount > 1 && otherUsers.length > 0) {
                                     const otherCount = groupedCount - 1;
-                                    const otherText = `ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha`;
+                                    const otherText = `${t('common.and')} ${otherCount} ${otherCount === 1 ? t('common.person') : t('common.people')} ${t('common.more')}`;
 
                                     if (message.includes(otherText)) {
                                         const parts = message.split(otherText);
@@ -1877,10 +1920,11 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                     <ChatButton
                                         notification={notification}
                                         onPress={handleChatPress}
+                                        t={t}
                                     />
                                 )}
                                 {showTrustButton && (
-                                    <TrustCard notification={notification} onPress={handleTrustPress} />
+                                    <TrustCard notification={notification} onPress={handleTrustPress} t={t} />
                                 )}
                             </HStack>
                         )}
@@ -2007,6 +2051,58 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 
         </Pressable>
     );
+};
+
+/**
+ * Error Boundary Wrapper for NotificationCard
+ * CRITICAL FIX: Prevents app crashes from notification rendering errors
+ */
+export const NotificationCard: React.FC<NotificationCardProps> = (props) => {
+    const { colorMode } = useColorMode();
+    const isDark = colorMode === 'dark';
+
+    try {
+        return <NotificationCardInner {...props} />;
+    } catch (error) {
+        console.error('[NotificationCard] ❌ Render error:', error);
+        console.error('[NotificationCard] Notification data:', props.notification);
+
+        // Sentry'e gönder
+        if (typeof Sentry !== 'undefined') {
+            Sentry.captureException(error, {
+                tags: {
+                    component: 'NotificationCard',
+                    notification_type: props.notification?.type,
+                },
+                contexts: {
+                    notification: {
+                        id: props.notification?.id,
+                        type: props.notification?.type,
+                        data: props.notification?.data,
+                    },
+                },
+            });
+        }
+
+        // Fallback UI - crash yerine basit bir error card göster
+        return (
+            <Box
+                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                px="$4"
+                py="$3"
+                borderBottomWidth={1}
+                borderBottomColor={isDark ? '#333' : '#E9E9E9'}
+            >
+                <Text
+                    color={isDark ? '#666666' : '#999999'}
+                    fontSize={13}
+                    fontStyle="italic"
+                >
+                    Unable to display notification
+                </Text>
+            </Box>
+        );
+    }
 };
 
 export default NotificationCard;

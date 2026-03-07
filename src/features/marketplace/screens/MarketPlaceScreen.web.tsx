@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Box, Text, Pressable } from '@/src/components/ui';
 import { FlatList, ActivityIndicator, RefreshControl, View } from 'react-native';
@@ -217,7 +217,19 @@ const MarketPlaceScreen = () => {
   }, [queryClient, refetchAll, refetchMy]);
 
   // Flatten all pages into a single array
-  const allNFTListings = allData?.pages.flatMap((page) => page) ?? [];
+  // CRITICAL FIX: Safe array flatMap to prevent Hermes crashes (NULL pointer dereference)
+  const allNFTListings = useMemo(() => {
+    if (!allData?.pages || !Array.isArray(allData.pages)) {
+      return [];
+    }
+    return allData.pages.flatMap((page) => {
+      // Ensure page is a valid object/array before flattening
+      if (!page || (typeof page !== 'object' && !Array.isArray(page))) {
+        return [];
+      }
+      return Array.isArray(page) ? page : [page];
+    });
+  }, [allData?.pages]);
   
   // My Listings - filter only ACTIVE status for display
   const myListedNFTs = (myListingsData || []).filter(nft => nft.listing?.status === 'ACTIVE');

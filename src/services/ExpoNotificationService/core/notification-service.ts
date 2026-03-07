@@ -256,6 +256,13 @@ export class NotificationService {
       });
 
       this.state.expoPushToken = token.data;
+
+      // TESTING: Log token for manual notification testing
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📱 EXPO PUSH TOKEN (copy this for testing):');
+      console.log(token.data);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       return token.data;
     } catch (error) {
       console.error('[NotificationService] Get Expo push token error:', error);
@@ -270,6 +277,13 @@ export class NotificationService {
     try {
       const token = await Notifications.getDevicePushTokenAsync();
       this.state.devicePushToken = token;
+
+      // TESTING: Log device token for manual notification testing
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📱 DEVICE PUSH TOKEN (iOS APNs):');
+      console.log(JSON.stringify(token, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       return token;
     } catch (error) {
       console.error('[NotificationService] Get device push token error:', error);

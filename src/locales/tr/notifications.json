@@ -29,5 +29,61 @@
     "userBlocked": "Kullanıcı engellendi",
     "userReported": "Kullanıcı şikayet edildi",
     "error": "Hata"
+  },
+  "buttons": {
+    "view": "Görüntüle",
+    "viewProfile": "Profili Görüntüle"
+  },
+  "common": {
+    "newNotification": "Yeni bildirim",
+    "person": "kişi",
+    "people": "kişi",
+    "more": "daha",
+    "and": "ve"
+  },
+  "messages": {
+    "grouped": {
+      "postLiked": "{{username}} ve {{count}} {{people}} daha gönderini beğendi",
+      "postCommented": "{{username}} ve {{count}} {{people}} daha yorum yaptı",
+      "postShared": "{{username}} ve {{count}} {{people}} daha paylaştı",
+      "postFavorited": "{{username}} ve {{count}} {{people}} daha favoriledi",
+      "commentLiked": "{{username}} ve {{count}} {{people}} daha yorumunu beğendi",
+      "commentReplied": "{{username}} ve {{count}} {{people}} daha yanıt verdi",
+      "newTruster": "{{username}} ve {{count}} {{people}} daha seni takip etmeye başladı",
+      "newTrustedBy": "{{username}} ve {{count}} {{people}} daha seni takip ediyor"
+    },
+    "single": {
+      "postLiked": "{{username}}, bir gönderini beğendi!",
+      "postCommented": "{{username}}, bir gönderine yorum yaptı!",
+      "postShared": "{{username}} paylaştı",
+      "postFavorited": "{{username}} favoriledi",
+      "commentLiked": "{{username}} yorumunu beğendi",
+      "commentReplied": "{{username}} yanıt verdi",
+      "newTruster": "{{username}} seni trust listesine ekledi!",
+      "newTrustedBy": "{{username}} seni trust listesine ekledi!",
+      "dmRequestReceived": "{{username}} mesaj isteği gönderdi",
+      "dmRequestAccepted": "{{username}} mesaj isteğini kabul etti",
+      "dmRequestDeclined": "{{username}} mesaj isteğini reddetti",
+      "supportRequestAccepted": "{{expertName}} destek talebini kabul etti",
+      "newMessage": "{{username}} yeni mesaj gönderdi",
+      "tipsReceived": "{{username}} sana {{amount}} TIPS gönderdi",
+      "tipsSent": "{{username}}'e bahşiş gönderildi",
+      "newBadge": "Tebrikler!, Wishmaker rozetini kazandın!",
+      "achievementUnlocked": "Tebrikler! Rozet kazandın!",
+      "rewardEarned": "{{amount}} TIPS kazandın!",
+      "expertRequestAvailable": "Yeni uzman sorusu mevcut",
+      "expertRequestAnswered": "{{expertName}} soruyu yanıtladı",
+      "eventStarted": "{{eventName}} etkinliği başlıyor!",
+      "eventEndingSoon": "Etkinlik yakında bitiyor!",
+      "eventRewardAvailable": "Etkinlik ödülü mevcut!",
+      "collectionPostAdded": "Gönderi koleksiyona eklendi",
+      "collectionShared": "Koleksiyon paylaşıldı",
+      "systemAnnouncement": "{{publisherName}}, yeni bir anket yayınladı!"
+    },
+    "deposit": {
+      "received": "Para yatırıldı",
+      "from": "{{from}}: +{{amount}} TIPS",
+      "amount": "Para yatırma: +{{amount}} TIPS"
+    }
   }
 }

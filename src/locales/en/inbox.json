@@ -87,7 +87,8 @@
       "today": "Today",
       "yesterday": "Yesterday",
       "thisWeek": "This Week",
-      "thisMonth": "This Month"
+      "thisMonth": "This Month",
+      "earlier": "Earlier"
     },
     "errors": {
       "loading": "An error occurred while loading notifications.",

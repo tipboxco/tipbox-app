@@ -17,7 +17,7 @@ import { NotificationBadge } from '@/src/components/NotificationBadge';
 import { MessageBadge } from '@/src/components/MessageBadge';
 import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/notifications/api/hooks';
 import { useMessages } from '@/src/features/inbox/api/hooks';
-import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { useNavigation, useNavigationState, CommonActions } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
 import { useNotificationStore } from '@/src/store/notificationStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -441,17 +441,6 @@ export const TabNavigator = () => {
     return <IconComponent {...iconProps} />;
   }, [unreadCount, hasUnreadMessages]);
 
-  // PERFORMANCE FIX: Tab press handler'ını useCallback ile memoize et
-  const handleNotificationTabPress = useCallback(() => {
-    // Bildirim ikonuna tıklandığında tüm bildirimleri read olarak işaretle
-    if (unreadCount > 0) {
-      markAllAsReadMutation.mutate(undefined, {
-        onSuccess: () => {
-          console.log('[TabNavigator] ✅ All notifications marked as read');
-        },
-      });
-    }
-  }, [unreadCount, markAllAsReadMutation]);
 
   // PERFORMANCE FIX: Timeout ref for cleanup on unmount
   const feedScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -464,8 +453,47 @@ export const TabNavigator = () => {
     };
   }, []);
 
-  // CRITICAL FIX: Instagram-style scroll-to-top handler
-  const handleFeedTabPress = useCallback(() => {
+  // PERFORMANCE FIX: Generic tab press handler with stack reset
+  // Her tab için: başka tab'dayken o tab'a basıldığında stack'i reset et
+  const createTabPressHandler = useCallback((tabName: string, additionalAction?: () => void) => {
+    return () => {
+      try {
+        const state = navigation.getState();
+        const currentRoute = state?.routes?.[state?.index];
+        const currentTabName = currentRoute?.name;
+
+        // Eğer zaten bu tab'dayken tekrar basıldıysa
+        if (currentTabName === tabName) {
+          const tabRoute = state?.routes?.find((route: any) => route.name === tabName);
+
+          // Stack'te birden fazla ekran varsa reset et
+          if (tabRoute?.state?.routes && tabRoute.state.routes.length > 1) {
+            const firstScreenName = tabRoute.state.routes[0]?.name;
+            if (firstScreenName) {
+              navigation.dispatch({
+                ...CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: firstScreenName }],
+                }),
+                source: tabRoute.key,
+                target: tabRoute.state.key,
+              });
+            }
+          }
+        }
+
+        // Ek aksiyonları çalıştır (örn: scroll to top, lazy load)
+        if (additionalAction) {
+          additionalAction();
+        }
+      } catch (error) {
+        console.warn(`[TabNavigator] ${tabName} tab press error:`, error);
+      }
+    };
+  }, [navigation]);
+
+  // Feed tab için özel scroll-to-top action
+  const feedScrollAction = useCallback(() => {
     // Clear any previous pending timeout
     if (feedScrollTimeoutRef.current) {
       clearTimeout(feedScrollTimeoutRef.current);
@@ -480,13 +508,42 @@ export const TabNavigator = () => {
     });
   }, []);
 
+  // Feed tab press: Stack reset + scroll to top
+  const handleFeedTabPress = createTabPressHandler('FeedStack', feedScrollAction);
+
+  // Diğer tab'lar için press handler'lar
+  const handleExploreTabPress = createTabPressHandler('ExploreStack');
+  const handleCatalogTabPress = createTabPressHandler('CatalogStack');
+  const handleEventsTabPress = createTabPressHandler('EventsStack');
+  const handleNotificationsTabPress = useCallback(() => {
+    // Stack reset
+    createTabPressHandler('NotificationStack')();
+    // Bildirim ikonuna tıklandığında tüm bildirimleri read olarak işaretle
+    if (unreadCount > 0) {
+      markAllAsReadMutation.mutate(undefined, {
+        onSuccess: () => {
+          console.log('[TabNavigator] ✅ All notifications marked as read');
+        },
+      });
+    }
+  }, [unreadCount, markAllAsReadMutation, createTabPressHandler]);
+
+  const handleInboxTabPressWithReset = useCallback(() => {
+    // Stack reset
+    createTabPressHandler('InboxStack')();
+    // Lazy loading
+    handleInboxTabPress();
+  }, [createTabPressHandler, handleInboxTabPress]);
+
   // PERFORMANCE FIX: Inbox tab press handler
   // Inbox'a ilk kez girildiğinde mesajları yükle (lazy loading)
   const handleInboxTabPress = useCallback(() => {
     if (!hasVisitedInbox) {
       setHasVisitedInbox(true);
     }
+    // Stack reset'i generic handler ile yapılıyor
   }, [hasVisitedInbox]);
+
 
   // ARCHITECTURE FIX: Edge-to-Edge Design Pattern
   // Manual inset management for full-bleed design with controlled background colors
@@ -537,27 +594,36 @@ export const TabNavigator = () => {
           <Tab.Screen
             name="ExploreStack"
             component={ExploreNavigator}
+            listeners={{
+              tabPress: handleExploreTabPress,
+            }}
           />
           <Tab.Screen
             name="CatalogStack"
             component={CatalogNavigator}
+            listeners={{
+              tabPress: handleCatalogTabPress,
+            }}
           />
           <Tab.Screen
             name="EventsStack"
             component={EventsNavigator}
+            listeners={{
+              tabPress: handleEventsTabPress,
+            }}
           />
           <Tab.Screen
             name="NotificationStack"
             component={NotificationsNavigator}
             listeners={{
-              tabPress: handleNotificationTabPress,
+              tabPress: handleNotificationsTabPress,
             }}
           />
           <Tab.Screen
             name="InboxStack"
             component={InboxNavigator}
             listeners={{
-              tabPress: handleInboxTabPress,
+              tabPress: handleInboxTabPressWithReset,
             }}
           />
         </Tab.Navigator>

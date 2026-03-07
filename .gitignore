@@ -93,6 +93,9 @@ yarn-error.*
 .env
 .env*.local
 
+# Sentry
+.sentryclirc
+
 # typescript
 *.tsbuildinfo
 

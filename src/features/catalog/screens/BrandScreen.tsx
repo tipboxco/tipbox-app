@@ -21,7 +21,7 @@ import { useTranslation } from '@/src/hooks/useTranslation';
 type BrandScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'CatalogScreen'>;
 
 interface BrandScreenProps {
-  selectedCategory: any;
+  selectedCategory?: any | null; // CRITICAL FIX: Made optional and nullable to prevent crashes
   onCategorySelect: (category: any) => void;
   scrollViewPaddingBottom?: number;
   onScroll?: (event: any) => void;

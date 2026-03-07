@@ -379,6 +379,14 @@ const NotificationsScreenComponent: React.FC = () => {
             ? notification.createdAt
             : (notification as any).createdAt;
         const notificationDate = new Date(createdAt);
+
+        // CRITICAL FIX: Validate date before processing
+        if (isNaN(notificationDate.getTime())) {
+          console.warn('[NotificationsScreen] Invalid date for notification:', notification);
+          // Skip invalid notifications instead of showing "Invalid Date"
+          return;
+        }
+
         const notificationDateOnly = new Date(
           notificationDate.getFullYear(),
           notificationDate.getMonth(),
@@ -387,13 +395,13 @@ const NotificationsScreenComponent: React.FC = () => {
 
         let groupLabel: string;
         if (notificationDateOnly.getTime() === today.getTime()) {
-          groupLabel = t('notifications.dateGroups.today');
+          groupLabel = t('dateGroups.today');
         } else if (notificationDateOnly.getTime() === yesterday.getTime()) {
-          groupLabel = t('notifications.dateGroups.yesterday');
+          groupLabel = t('dateGroups.yesterday');
         } else if (notificationDateOnly >= thisWeek) {
-          groupLabel = t('notifications.dateGroups.thisWeek');
+          groupLabel = t('dateGroups.thisWeek');
         } else if (notificationDateOnly >= thisMonth) {
-          groupLabel = t('notifications.dateGroups.thisMonth');
+          groupLabel = t('dateGroups.thisMonth');
         } else {
           // Month and year format: "January 2024"
           const monthKeys = [
@@ -410,8 +418,15 @@ const NotificationsScreenComponent: React.FC = () => {
             'november',
             'december',
           ];
-          const monthKey = monthKeys[notificationDate.getMonth()];
-          groupLabel = `${t(`messageDetail.months.${monthKey}`)} ${notificationDate.getFullYear()}`;
+          const monthIndex = notificationDate.getMonth();
+          const monthKey = monthKeys[monthIndex];
+          // CRITICAL FIX: Validate monthKey to prevent "messageDetail.months.undefined"
+          if (monthKey && !isNaN(notificationDate.getFullYear())) {
+            groupLabel = `${t(`messageDetail.months.${monthKey}`)} ${notificationDate.getFullYear()}`;
+          } else {
+            // CRITICAL FIX: Use fallback text instead of toLocaleDateString() which returns "Invalid Date"
+            groupLabel = t('dateGroups.earlier') || 'Earlier';
+          }
         }
 
         // Yeni grup başladıysa header ekle
@@ -945,8 +960,11 @@ const NotificationsScreenComponent: React.FC = () => {
       // CRITICAL FIX: hasNextPage undefined olabilir, bu durumda false olarak değerlendir
       // Backend'den pagination gelmeyebilir, bu durumda hasNextPage false olur
       // Eğer data varsa ve son sayfada limit kadar bildirim varsa, muhtemelen daha fazla sayfa var
+      // CRITICAL FIX: Safe array access to prevent Hermes crash (NULL pointer at array index)
       const currentPageData =
-        notificationsResponse?.pages?.[notificationsResponse.pages.length - 1];
+        notificationsResponse?.pages?.length > 0
+          ? notificationsResponse.pages[notificationsResponse.pages.length - 1]
+          : null;
       const currentPageNotifications = currentPageData?.data || [];
       // Son sayfada limit kadar bildirim varsa, muhtemelen daha fazla sayfa var
       const limit = 20;

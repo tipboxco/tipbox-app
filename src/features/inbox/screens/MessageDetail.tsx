@@ -372,6 +372,12 @@ const MessageDetailScreen: React.FC = () => {
   // Typing timeout ref
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // FlashList ref - Klavye açıldığında scroll için
+  const flashListRef = useRef<any>(null);
+
+  // Content size tracking - scroll tetiklemek için
+  const prevContentHeightRef = useRef<number>(0);
+
   // REMOVED: Klavye yüksekliği artık useKeyboard hook'undan geliyor
   // const [keyboardHeight, setKeyboardHeight] = useState(0);
   // const keyboardHeightRef = useRef(0);
@@ -380,6 +386,25 @@ const MessageDetailScreen: React.FC = () => {
 
   // PERFORMANCE: Keyboard visibility'i keyboardHeight'tan hesapla
   const isKeyboardVisible = keyboardHeight > 0;
+
+  // LOG: Keyboard height değişimlerini takip et
+  useEffect(() => {
+    console.log('⌨️ [KEYBOARD] Height changed:', {
+      height: keyboardHeight,
+      isVisible: isKeyboardVisible,
+      time: new Date().toISOString().split('T')[1],
+    });
+  }, [keyboardHeight, isKeyboardVisible]);
+
+  // REMOVED: Scroll logic moved to onContentSizeChange for better timing
+  // Keyboard visibility tracking kept for reference
+  useEffect(() => {
+    console.log('🔄 [KEYBOARD STATE] Changed', {
+      isKeyboardVisible,
+      messageCount: visibleMessages?.length || 0,
+      time: new Date().toISOString().split('T')[1],
+    });
+  }, [isKeyboardVisible, visibleMessages]);
 
   // Thread mesajlarını yükle
   // Pagination state
@@ -2901,20 +2926,20 @@ const MessageDetailScreen: React.FC = () => {
 
   const renderMessageItem = useCallback(({ item, index }: { item: MessageDetailItem; index: number }) => {
     
-    // CRITICAL FIX: Date header logic (inverted list için)
-    // Normal FlashList (WhatsApp style): index 0 = newest (bottom), index length-1 = oldest (top)
+    // CRITICAL FIX: Date header logic (normal list için)
+    // Normal FlashList (WhatsApp style): index 0 = oldest (top), index length-1 = newest (bottom)
     const showDateHeader = (() => {
       if (!item.sentAt) return false;
 
-      // En eski mesaj (en üstte) - her zaman tarih göster
-      if (index === visibleMessages.length - 1) return true;
+      // İlk mesaj (en eski, en üstte) - her zaman tarih göster
+      if (index === 0) return true;
 
-      // Bir sonraki mesaj (daha eski, görsel olarak üstte)
-      const nextItem = visibleMessages[index + 1];
-      if (!nextItem?.sentAt) return false;
+      // Bir önceki mesaj (daha eski, görsel olarak üstte)
+      const prevItem = visibleMessages[index - 1];
+      if (!prevItem?.sentAt) return false;
 
-      // Farklı günlerdeyse tarih göster
-      return !isSameDay(item.sentAt, nextItem.sentAt);
+      // Önceki mesaj farklı gündeyse tarih göster
+      return !isSameDay(item.sentAt, prevItem.sentAt);
     })();
     
     // Date header render with divider line (WhatsApp style)
@@ -3440,225 +3465,331 @@ const MessageDetailScreen: React.FC = () => {
 
   // CRITICAL FIX: SafeAreaView kullanmıyoruz, flicker önlemek için manuel insets kullanıyoruz
   // Üstte top inset kadar, altta bottom inset kadar view kullan
+  // KEYBOARD FIX: KeyboardAvoidingView kaldırıldı, absolute pozisyonlama kullanılıyor
+  const INPUT_HEIGHT = 60; // MessageInput yüksekliği (px + py dahil)
+  const ACTION_BUTTONS_HEIGHT = 60; // Action buttons yüksekliği
+
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Top inset view - Status bar için */}
-      <Box 
-        height={insets.top} 
+      <Box
+        height={insets.top}
         bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       />
-      
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
-        enabled={Platform.OS === 'ios'}
-      >
-        {/* Header */}
-        <MessageDetailHeader
-          senderName={params.senderName}
-          senderTitle={params.senderTitle}
-          senderAvatar={params.senderAvatar}
-          onBackPress={() => navigation.goBack()}
-          onMenuPress={() => {}}
-          onShare={handleShare}
-          onReport={handleReport}
-          onBlock={handleBlock}
-          onMute={handleMute}
-          onUnmute={handleUnmute}
-          isMuted={isMuted}
-          recipientUserId={effectiveRecipientUserId}
-        />
 
-          {/* ✅ WhatsApp Engine: Normal FlashList (WhatsApp style) - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir */}
-          <Box flex={1}>
-            {isLoadingMessages && messages.length === 0 ? (
-              // Loading state - Mesajlar yüklenene kadar göster
-              <Box flex={1} justifyContent="center" alignItems="center">
-                <VStack space="md" alignItems="center">
-                  <ActivityIndicator 
-                    size="large" 
-                    color={isDark ? '#6366F1' : '#6366F1'} 
-                  />
-                  <Text 
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'} 
-                    fontSize="$sm"
-                  >
-                    Loading messages...
-                  </Text>
-                </VStack>
-              </Box>
-            ) : (
-              <FlashList<MessageDetailItem>
-                data={visibleMessages} // ✅ FIX: Silinen mesajları filtrele
-                renderItem={renderMessageItem}
-                keyExtractor={(item) => item.id}
-                // PERFORMANCE: FlashList için getItemType ekle (recycling optimization)
-                getItemType={(item) => {
-                  // Mesaj tiplerine göre item type döndür (FlashList recycling için)
-                  if (item.type === 'image') return 'image';
-                  if (item.type === 'support_request') return 'support_request';
-                  if (item.type === 'tips') return 'tips';
-                  if (item.type === 'sharedpost') return 'sharedpost';
-                  return 'message'; // default text message
-                }}
-                // PERFORMANCE: Estimated item size (ortalama mesaj yüksekliği)
-                estimatedItemSize={80}
-                // ✅ WhatsApp tarzı: En yeni mesajlar altta (normal mode)
-                inverted={false}
-                // PERFORMANCE: Pull-to-refresh ekle (eski mesajları yükle)
-                refreshControl={
-                  <RefreshControl
-                    refreshing={isLoadingMoreMessages}
-                    onRefresh={() => {
-                      if (hasMoreMessages && !isLoadingMoreMessages && oldestMessageId) {
-                        loadOlderMessages();
-                      }
-                    }}
-                    tintColor={isDark ? '#6366F1' : '#6366F1'}
-                    colors={['#6366F1']}
-                  />
-                }
-                // CRITICAL FIX: WhatsApp tarzı padding
-                contentContainerStyle={{
-                  paddingHorizontal: 8,
-                  // Header'dan sonra minimal padding (en eski mesajlar üstte)
-                  paddingTop: 16,
-                  // FAB butonlar için padding (en yeni mesajlar altta)
-                  paddingBottom: 160,
-                }}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="interactive"
-                viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-                // PERFORMANCE: Pagination - Yukarı scroll yapıldığında eski mesajları getir
-                onEndReached={() => {
+      {/* Header */}
+      <MessageDetailHeader
+        senderName={params.senderName}
+        senderTitle={params.senderTitle}
+        senderAvatar={params.senderAvatar}
+        onBackPress={() => navigation.goBack()}
+        onMenuPress={() => {}}
+        onShare={handleShare}
+        onReport={handleReport}
+        onBlock={handleBlock}
+        onMute={handleMute}
+        onUnmute={handleUnmute}
+        isMuted={isMuted}
+        recipientUserId={effectiveRecipientUserId}
+      />
+
+      {/* ✅ WhatsApp Engine: Normal FlashList (WhatsApp style) - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir */}
+      <Box flex={1}>
+        {isLoadingMessages && messages.length === 0 ? (
+          // Loading state - Mesajlar yüklenene kadar göster
+          <Box flex={1} justifyContent="center" alignItems="center">
+            <VStack space="md" alignItems="center">
+              <ActivityIndicator
+                size="large"
+                color={isDark ? '#6366F1' : '#6366F1'}
+              />
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize="$sm"
+              >
+                Loading messages...
+              </Text>
+            </VStack>
+          </Box>
+        ) : (
+          <FlashList<MessageDetailItem>
+            ref={flashListRef}
+            data={visibleMessages} // ✅ FIX: Silinen mesajları filtrele
+            renderItem={renderMessageItem}
+            keyExtractor={(item) => item.id}
+            // PERFORMANCE: FlashList için getItemType ekle (recycling optimization)
+            getItemType={(item) => {
+              // Mesaj tiplerine göre item type döndür (FlashList recycling için)
+              if (item.type === 'image') return 'image';
+              if (item.type === 'support_request') return 'support_request';
+              if (item.type === 'tips') return 'tips';
+              if (item.type === 'sharedpost') return 'sharedpost';
+              return 'message'; // default text message
+            }}
+            // PERFORMANCE: Estimated item size (ortalama mesaj yüksekliği)
+            estimatedItemSize={80}
+            // KEYBOARD FIX: Content size değiştiğinde scroll et
+            onContentSizeChange={(width, height) => {
+              console.log('📏 [FLASHLIST] Content size changed:', {
+                contentHeight: height,
+                prevHeight: prevContentHeightRef.current,
+                heightIncreased: height > prevContentHeightRef.current,
+                time: new Date().toISOString().split('T')[1],
+              });
+
+              // Klavye açıkken ve content size arttıysa (yeni padding uygulandı)
+              if (
+                isKeyboardVisible &&
+                height > prevContentHeightRef.current &&
+                flashListRef.current &&
+                visibleMessages &&
+                visibleMessages.length > 0
+              ) {
+                console.log('🚀 [SCROLL] Content size increased with keyboard open - Scrolling NOW!', {
+                  time: new Date().toISOString().split('T')[1],
+                });
+
+                // Küçük bir gecikme ekle (layout'un tamamen bitmesi için)
+                requestAnimationFrame(() => {
+                  // DEBUG: Ref durumunu detaylı kontrol et
+                  console.log('🔍 [DEBUG] FlashList Ref Check:', {
+                    refExists: !!flashListRef.current,
+                    refType: typeof flashListRef.current,
+                    isNull: flashListRef.current === null,
+                    isUndefined: flashListRef.current === undefined,
+                    time: new Date().toISOString().split('T')[1],
+                  });
+
+                  if (!flashListRef.current) {
+                    console.error('❌ [DEBUG] FlashList ref is NULL/UNDEFINED - Cannot scroll!');
+                    return;
+                  }
+
+                  // DEBUG: Mevcut metodları kontrol et
+                  console.log('🔍 [DEBUG] Available methods on ref:', {
+                    hasScrollToIndex: typeof flashListRef.current.scrollToIndex === 'function',
+                    hasScrollToOffset: typeof flashListRef.current.scrollToOffset === 'function',
+                    hasScrollToEnd: typeof flashListRef.current.scrollToEnd === 'function',
+                    allMethods: Object.keys(flashListRef.current).filter(key =>
+                      typeof flashListRef.current[key] === 'function'
+                    ),
+                    time: new Date().toISOString().split('T')[1],
+                  });
+
+                  try {
+                    const lastIndex = visibleMessages.length - 1;
+                    const ACTION_BUTTONS_OFFSET = 80;
+
+                    console.log('📞 [DEBUG] Calling scrollToIndex with params:', {
+                      index: lastIndex,
+                      animated: true,
+                      viewPosition: 1,
+                      viewOffset: ACTION_BUTTONS_OFFSET,
+                      time: new Date().toISOString().split('T')[1],
+                    });
+
+                    const result = flashListRef.current.scrollToIndex({
+                      index: lastIndex,
+                      animated: true,
+                      viewPosition: 1,
+                      viewOffset: ACTION_BUTTONS_OFFSET,
+                    });
+
+                    console.log('✅ [DEBUG] scrollToIndex executed, result:', {
+                      result: result,
+                      resultType: typeof result,
+                      time: new Date().toISOString().split('T')[1],
+                    });
+
+                    console.log('✅ [SCROLL] scrollToIndex CALLED from onContentSizeChange', {
+                      index: lastIndex,
+                      viewOffset: ACTION_BUTTONS_OFFSET,
+                      time: new Date().toISOString().split('T')[1],
+                    });
+                  } catch (error) {
+                    console.error('❌ [DEBUG] scrollToIndex threw error:', {
+                      error: error,
+                      errorMessage: error instanceof Error ? error.message : String(error),
+                      errorStack: error instanceof Error ? error.stack : 'N/A',
+                      time: new Date().toISOString().split('T')[1],
+                    });
+                  }
+                });
+              }
+
+              // Önceki height'ı güncelle
+              prevContentHeightRef.current = height;
+            }}
+            onLayout={(event) => {
+              console.log('🎨 [FLASHLIST] Layout complete:', {
+                layoutHeight: event.nativeEvent.layout.height,
+                time: new Date().toISOString().split('T')[1],
+              });
+            }}
+            // ✅ WhatsApp tarzı: En yeni mesajlar altta (normal mode)
+            inverted={false}
+            // PERFORMANCE: Pull-to-refresh ekle (eski mesajları yükle)
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoadingMoreMessages}
+                onRefresh={() => {
                   if (hasMoreMessages && !isLoadingMoreMessages && oldestMessageId) {
                     loadOlderMessages();
                   }
                 }}
-                onEndReachedThreshold={0.5}
-                // PERFORMANCE: Loading indicator - Eski mesajlar yüklenirken göster
-                ListFooterComponent={
-                  isLoadingMoreMessages ? (
-                    <Box py="$4" alignItems="center">
-                      <ActivityIndicator size="small" color={isDark ? '#6366F1' : '#6366F1'} />
-                      <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$xs" mt="$2">
-                        Loading older messages...
-                      </Text>
-                    </Box>
-                  ) : null
-                }
-                ListEmptyComponent={
-                  !isLoadingMessages ? (
-                    <Box flex={1} alignItems="center" justifyContent="center">
-                      <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$md">
-                        No messages yet
-                      </Text>
-                    </Box>
-                  ) : null
-                }
+                tintColor={isDark ? '#6366F1' : '#6366F1'}
+                colors={['#6366F1']}
               />
-            )}
-          </Box>
-
-          {/* Typing Indicator */}
-          {isTyping && typingUserId && typingUserId !== user?.id && (
-            <Box 
-              px="$2" 
-              py="$2" 
-              bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-              zIndex={1002}
-              elevation={1002}
-            >
-              <HStack space="xs" alignItems="center">
-                <Text
-                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  fontSize="$xs"
-                  fontStyle="italic"
-                >
-                  {params.senderName || 'Kullanıcı'} yazıyor
-                </Text>
-                <HStack space="xs" alignItems="center">
-                  <Box
-                    width={6}
-                    height={6}
-                    borderRadius={3}
-                    bg={isDark ? '#8C8C8C' : '#8C8C8C'}
-                    style={{ opacity: 0.4 }}
-                  />
-                  <Box
-                    width={6}
-                    height={6}
-                    borderRadius={3}
-                    bg={isDark ? '#8C8C8C' : '#8C8C8C'}
-                    style={{ opacity: 0.6 }}
-                  />
-                  <Box
-                    width={6}
-                    height={6}
-                    borderRadius={3}
-                    bg={isDark ? '#8C8C8C' : '#8C8C8C'}
-                    style={{ opacity: 0.8 }}
-                  />
-                </HStack>
-              </HStack>
-            </Box>
-          )}
-
-          {/* Action Buttons - Klavye ve input üstünde görünmeli */}
-          {/* CRITICAL FIX: Bottom inset artık ayrı view olarak eklendi, burada sadece input height + bottom inset ekle */}
-          <Box
-            position="absolute"
-            bottom={isKeyboardVisible 
-              ? keyboardHeight + 60
-              : 60 + insets.bottom}
-            right={16}
-            zIndex={1003}
-            elevation={1003}
-          >
-            <MessageDetailActionButtons
-              onSendTipsPress={handleSendTipsPress}
-              onRequestSupportPress={handleRequestSupportPress}
-              keyboardHeight={keyboardHeight}
-              isKeyboardVisible={isKeyboardVisible}
-              keyboardAnim={null}
-            />
-          </Box>
-
-          {/* Mesaj Input - Klavye üstünde görünmeli */}
-          <Box 
-            pb={isKeyboardVisible 
-              ? (Platform.OS === 'ios' ? 4 : 0) 
-              : 0}
-            zIndex={1004}
-            elevation={1004}
-            position="relative"
-            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-          >
-            <MessageInput
-              onSendMessage={handleSendMessage}
-              onAddImage={handleAddImage}
-              onSendImage={handleSendImage}
-              placeholder="Type your message..."
-              threadId={threadId}
-              onTypingStart={handleTypingStart}
-              onTypingStop={handleTypingStop}
-              selectedImage={selectedImage}
-              onClearSelectedImage={() => setSelectedImage(null)}
-            />
-          </Box>
-
-        </KeyboardAvoidingView>
-        
-        {/* Bottom inset view - Home indicator için (klavye kapalıyken) */}
-        {!isKeyboardVisible && (
-          <Box 
-            height={insets.bottom} 
-            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+            }
+            // KEYBOARD FIX: Bottom padding klavye ve input yüksekliğine göre dinamik
+            contentContainerStyle={{
+              paddingHorizontal: 8,
+              // Header'dan sonra minimal padding (en eski mesajlar üstte)
+              paddingTop: 16,
+              // Input + action buttons + klavye için padding (en yeni mesajlar altta)
+              paddingBottom: isKeyboardVisible
+                ? keyboardHeight + INPUT_HEIGHT + ACTION_BUTTONS_HEIGHT + 16
+                : INPUT_HEIGHT + ACTION_BUTTONS_HEIGHT + insets.bottom + 16,
+            }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+            // PERFORMANCE: Pagination - Yukarı scroll yapıldığında eski mesajları getir
+            onEndReached={() => {
+              if (hasMoreMessages && !isLoadingMoreMessages && oldestMessageId) {
+                loadOlderMessages();
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            // PERFORMANCE: Loading indicator - Eski mesajlar yüklenirken göster
+            ListFooterComponent={
+              isLoadingMoreMessages ? (
+                <Box py="$4" alignItems="center">
+                  <ActivityIndicator size="small" color={isDark ? '#6366F1' : '#6366F1'} />
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$xs" mt="$2">
+                    Loading older messages...
+                  </Text>
+                </Box>
+              ) : null
+            }
+            ListEmptyComponent={
+              !isLoadingMessages ? (
+                <Box flex={1} alignItems="center" justifyContent="center">
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$md">
+                    No messages yet
+                  </Text>
+                </Box>
+              ) : null
+            }
           />
         )}
       </Box>
+
+      {/* Typing Indicator - Input üstünde */}
+      {isTyping && typingUserId && typingUserId !== user?.id && (
+        <Box
+          position="absolute"
+          bottom={isKeyboardVisible
+            ? keyboardHeight + INPUT_HEIGHT
+            : INPUT_HEIGHT + insets.bottom}
+          left={0}
+          right={0}
+          px="$2"
+          py="$2"
+          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+          zIndex={1002}
+          elevation={1002}
+        >
+          <HStack space="xs" alignItems="center">
+            <Text
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              fontSize="$xs"
+              fontStyle="italic"
+            >
+              {params.senderName || 'Kullanıcı'} yazıyor
+            </Text>
+            <HStack space="xs" alignItems="center">
+              <Box
+                width={6}
+                height={6}
+                borderRadius={3}
+                bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                style={{ opacity: 0.4 }}
+              />
+              <Box
+                width={6}
+                height={6}
+                borderRadius={3}
+                bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                style={{ opacity: 0.6 }}
+              />
+              <Box
+                width={6}
+                height={6}
+                borderRadius={3}
+                bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                style={{ opacity: 0.8 }}
+              />
+            </HStack>
+          </HStack>
+        </Box>
+      )}
+
+      {/* Background Container - Input'un ALT kısmını kaplayacak şekilde */}
+      <Box
+        position="absolute"
+        bottom={0}
+        left={0}
+        right={0}
+        height={isKeyboardVisible ? keyboardHeight + INPUT_HEIGHT : INPUT_HEIGHT + insets.bottom}
+        bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+        zIndex={1001}
+        elevation={1001}
+      />
+
+      {/* Action Buttons - Input üstünde, absolute pozisyon */}
+      <Box
+        position="absolute"
+        bottom={isKeyboardVisible
+          ? keyboardHeight + INPUT_HEIGHT + 8
+          : INPUT_HEIGHT + insets.bottom + 8}
+        right={16}
+        zIndex={1003}
+        elevation={1003}
+      >
+        <MessageDetailActionButtons
+          onSendTipsPress={handleSendTipsPress}
+          onRequestSupportPress={handleRequestSupportPress}
+          keyboardHeight={keyboardHeight}
+          isKeyboardVisible={isKeyboardVisible}
+          keyboardAnim={null}
+        />
+      </Box>
+
+      {/* Mesaj Input - Klavye üstünde, absolute pozisyon */}
+      <Box
+        position="absolute"
+        bottom={isKeyboardVisible ? keyboardHeight : insets.bottom}
+        left={0}
+        right={0}
+        zIndex={1004}
+        elevation={1004}
+        bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+      >
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          onAddImage={handleAddImage}
+          onSendImage={handleSendImage}
+          placeholder="Type your message..."
+          threadId={threadId}
+          onTypingStart={handleTypingStart}
+          onTypingStop={handleTypingStop}
+          selectedImage={selectedImage}
+          onClearSelectedImage={() => setSelectedImage(null)}
+        />
+      </Box>
+    </Box>
   );
 };
 

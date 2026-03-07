@@ -29,5 +29,61 @@
     "userBlocked": "User blocked",
     "userReported": "User reported",
     "error": "Error"
+  },
+  "buttons": {
+    "view": "View",
+    "viewProfile": "View Profile"
+  },
+  "common": {
+    "newNotification": "New notification",
+    "person": "person",
+    "people": "people",
+    "more": "more",
+    "and": "and"
+  },
+  "messages": {
+    "grouped": {
+      "postLiked": "{{username}} and {{count}} {{people}} liked your post",
+      "postCommented": "{{username}} and {{count}} {{people}} commented",
+      "postShared": "{{username}} and {{count}} {{people}} shared",
+      "postFavorited": "{{username}} and {{count}} {{people}} favorited",
+      "commentLiked": "{{username}} and {{count}} {{people}} liked your comment",
+      "commentReplied": "{{username}} and {{count}} {{people}} replied",
+      "newTruster": "{{username}} and {{count}} {{people}} started following you",
+      "newTrustedBy": "{{username}} and {{count}} {{people}} are following you"
+    },
+    "single": {
+      "postLiked": "{{username}} liked your post!",
+      "postCommented": "{{username}} commented on your post!",
+      "postShared": "{{username}} shared",
+      "postFavorited": "{{username}} favorited",
+      "commentLiked": "{{username}} liked your comment",
+      "commentReplied": "{{username}} replied",
+      "newTruster": "{{username}} added you to their trust list!",
+      "newTrustedBy": "{{username}} added you to their trust list!",
+      "dmRequestReceived": "{{username}} sent a message request",
+      "dmRequestAccepted": "{{username}} accepted your message request",
+      "dmRequestDeclined": "{{username}} declined your message request",
+      "supportRequestAccepted": "{{expertName}} accepted the support request",
+      "newMessage": "{{username}} sent a new message",
+      "tipsReceived": "{{username}} sent you {{amount}} TIPS",
+      "tipsSent": "Tip sent to {{username}}",
+      "newBadge": "Congratulations! You earned the Wishmaker badge!",
+      "achievementUnlocked": "Congratulations! You earned a badge!",
+      "rewardEarned": "You earned {{amount}} TIPS!",
+      "expertRequestAvailable": "New expert question available",
+      "expertRequestAnswered": "{{expertName}} answered the question",
+      "eventStarted": "{{eventName}} event is starting!",
+      "eventEndingSoon": "Event ending soon!",
+      "eventRewardAvailable": "Event reward available!",
+      "collectionPostAdded": "Post added to collection",
+      "collectionShared": "Collection shared",
+      "systemAnnouncement": "{{publisherName}} published a new survey!"
+    },
+    "deposit": {
+      "received": "Deposit received",
+      "from": "{{from}}: +{{amount}} TIPS",
+      "amount": "Deposit: +{{amount}} TIPS"
+    }
   }
 }

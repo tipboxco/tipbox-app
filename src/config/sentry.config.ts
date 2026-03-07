@@ -26,6 +26,8 @@ const mockSentry = {
   setTag: () => {},
   setContext: () => {},
   addBreadcrumb: () => {},
+  wrap: (fn: any) => fn, // CRITICAL FIX: wrap function for React Native integration
+  withScope: (callback: any) => callback({}),
   ReactNavigationInstrumentation: class MockInstrumentation {
     registerNavigationContainer() {}
   },
@@ -51,8 +53,9 @@ if (isDevelopment) {
   // Development build veya production - Gerçek Sentry kullan
   try {
     const SentryModule = require('@sentry/react-native');
-    Sentry = SentryModule;
-    routingInstrumentation = new SentryModule.ReactNavigationInstrumentation();
+    // CRITICAL FIX: Use default export or all named exports
+    Sentry = SentryModule.default || SentryModule;
+    routingInstrumentation = new (SentryModule.ReactNavigationInstrumentation || SentryModule.default?.ReactNavigationInstrumentation)();
     console.log('[Sentry] 🚀 Real Sentry loaded - ready to track errors');
   } catch (error) {
     console.error('[Sentry] ❌ Failed to load Sentry module:', error);
@@ -80,18 +83,30 @@ export const initSentry = () => {
   }
 
   try {
+    // Release tracking - Sentry best practices
+    // Format: app-name@version+build (e.g., tipbox@1.0.0+123)
+    const appVersion = Constants.expoConfig?.version || '1.0.0';
+    const buildNumber = Constants.expoConfig?.ios?.buildNumber ||
+                       Constants.expoConfig?.android?.versionCode?.toString() || '1';
+    const releaseVersion = `tipbox@${appVersion}+${buildNumber}`;
+
     Sentry.init({
       dsn: SENTRY_DSN,
 
-      // Environment
+      // Environment - More specific environment detection
       environment: __DEV__ ? 'development' : 'production',
 
-      // Release tracking
-      release: Constants.expoConfig?.version || '1.0.0',
-      dist: Constants.expoConfig?.ios?.buildNumber || Constants.expoConfig?.android?.versionCode?.toString() || '1',
+      // Release tracking - Unique identifier for this version
+      release: releaseVersion,
+
+      // Dist - Unique build identifier (should be unique for each build)
+      dist: buildNumber,
 
       // Performance Monitoring
-      tracesSampleRate: 0.2, // %20 transaction sampling (production'da düşük tut)
+      tracesSampleRate: __DEV__ ? 1.0 : 0.2, // Development'ta %100, production'da %20 sampling
+
+      // User Interaction Tracing - Touch events ve UI interactions
+      enableUserInteractionTracing: true,
 
       // Session tracking
       enableAutoSessionTracking: true,
@@ -145,7 +160,40 @@ export const initSentry = () => {
         new Sentry.ReactNativeTracing({
           // Routing instrumentation
           routingInstrumentation,
+
+          // API trace propagation - Sentry trace header'larını bu domain'lere ekle
           tracePropagationTargets: ['api-test.tipbox.co', 'api.tipbox.co'],
+
+          // Transaction timeout ayarları
+          idleTimeoutMs: 1000, // Transaction idle olduğunda 1 saniye sonra sonlanır
+          finalTimeoutMs: 600000, // Maximum transaction süresi: 10 dakika
+
+          // Span filtering - Gereksiz span'ları filtrele
+          shouldCreateSpanForRequest: (url) => {
+            // Asset request'lerini ve static file'ları filtrele
+            if (url.includes('/assets/') ||
+                url.includes('.png') ||
+                url.includes('.jpg') ||
+                url.includes('.svg')) {
+              return false;
+            }
+            return true;
+          },
+
+          // Span customization - Span'ları customize et
+          beforeStartSpan: (context) => {
+            // API request'lere ekstra tag'ler ekle
+            if (context.name.includes('api')) {
+              return {
+                ...context,
+                data: {
+                  ...context.data,
+                  'custom.api_version': 'v1',
+                },
+              };
+            }
+            return context;
+          },
         }),
       ],
     });
@@ -161,3 +209,30 @@ export { routingInstrumentation };
 
 // Sentry instance'ını export et (manuel error logging için)
 export { Sentry };
+
+/**
+ * Gesture Tracking Helper
+ * React Native Gesture Handler gesture'larını Sentry'de track etmek için kullan
+ *
+ * @example
+ * import { sentryTraceGesture } from '@/src/config/sentry.config';
+ *
+ * const gesture = Gesture.Race(
+ *   sentryTraceGesture("pinch-to-zoom", pinch),
+ *   sentryTraceGesture("long-press", longPress)
+ * );
+ */
+export const sentryTraceGesture = (gestureName: string, gesture: any) => {
+  // Expo Go veya mock Sentry kullanılıyorsa, gesture'ı olduğu gibi döndür
+  if (isDevelopment || !Sentry.sentryTraceGesture) {
+    return gesture;
+  }
+
+  // Gerçek Sentry'de gesture tracking'i aktif et
+  try {
+    return Sentry.sentryTraceGesture(gestureName, gesture);
+  } catch (error) {
+    console.warn('[Sentry] Failed to trace gesture:', gestureName, error);
+    return gesture;
+  }
+};

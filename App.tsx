@@ -19,8 +19,8 @@ import { GlobalUIHost } from '@/src/components/GlobalUIHost';
 import { TranslationCacheService } from '@/src/services/TranslationCacheService';
 import { useSyncInventoryToStore } from '@/src/features/post/hooks/useSyncInventoryToStore';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
-
-
+import { Sentry } from '@/src/config/sentry.config';
+import { FloatingSentryTestButton } from '@/src/components/SentryTestButton';
 
 // PERFORMANCE FIX: Keep splash screen visible until auth is ready
 // Prevents showing blank screen during initialization
@@ -108,6 +108,8 @@ const AppInner = () => {
         <PortalProvider>
           <BottomSheetModalProvider>
             <Navigation />
+            {/* Development only: Floating Sentry test button */}
+            <FloatingSentryTestButton />
           </BottomSheetModalProvider>
         </PortalProvider>
       </GluestackProvider>
@@ -115,7 +117,7 @@ const AppInner = () => {
   );
 };
 
-export default function App() {
+function App() {
   return (
     <ErrorBoundary>
       <QueryProvider>
@@ -126,3 +128,11 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
+// CRITICAL FIX: Conditionally wrap with Sentry only if Sentry.wrap is available
+// This prevents crashes when Sentry is not fully initialized or in Expo Go
+export default typeof Sentry?.wrap === 'function'
+  ? Sentry.wrap(App, {
+      touchEventBoundaryProps: { labelName: 'sentry-label' },
+    })
+  : App;

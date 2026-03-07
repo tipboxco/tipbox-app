@@ -14,13 +14,20 @@ export const useSyncInventoryToStore = () => {
   );
 
   useEffect(() => {
-    if (inventoryData?.pages) {
+    // CRITICAL FIX: Safe array flatMap to prevent Hermes crash (NULL pointer dereference)
+    if (inventoryData?.pages && Array.isArray(inventoryData.pages)) {
       // Extract all product IDs from inventory pages
       const productIds = new Set(
         inventoryData.pages
-          .flatMap((page) => page.items ?? [])
-          .map((item) => item.productId)
-          .filter(Boolean) as string[]
+          .flatMap((page) => {
+            // Ensure page and page.items exist
+            if (!page?.items || !Array.isArray(page.items)) {
+              return [];
+            }
+            return page.items;
+          })
+          .map((item) => item?.productId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
       );
 
       // Update store with new IDs

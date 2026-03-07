@@ -1,0 +1,17 @@
+[auth]
+token=YOUR_SENTRY_AUTH_TOKEN_HERE
+
+[defaults]
+url=https://sentry.io/
+org=tipbox-rh
+project=tipbox-app
+
+# How to get your auth token:
+# 1. Go to https://sentry.io/settings/account/api/auth-tokens/
+# 2. Create a new token with these scopes:
+#    - project:read
+#    - project:write
+#    - project:releases
+#    - org:read
+# 3. Copy the token and replace YOUR_SENTRY_AUTH_TOKEN_HERE above
+# 4. Rename this file to .sentryclirc (remove .example)

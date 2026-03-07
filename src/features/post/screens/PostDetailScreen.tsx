@@ -319,13 +319,6 @@ export const PostDetailScreen = () => {
     
     // Keyboard height tracking for dynamic padding
     const keyboardHeight = useKeyboard();
-    // Son klavye yüksekliğini sakla (klavye kapalıyken de kullanmak için)
-    const lastKeyboardHeightRef = useRef<number>(Platform.OS === 'ios' ? 336 : 300); // Default klavye yüksekliği
-    useEffect(() => {
-        if (keyboardHeight > 0) {
-            lastKeyboardHeightRef.current = keyboardHeight;
-        }
-    }, [keyboardHeight]);
 
     // Global bottom sheet
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -715,11 +708,11 @@ export const PostDetailScreen = () => {
     const keyExtractor = useCallback((item: { id: string }) => item.id, []);
 
     // FlatList contentContainerStyle - useMemo ile memoize edildi (keyboardHeight değişikliğinde sadece style güncellenir)
-    const contentContainerStyle = useMemo(() => ({ 
-        paddingBottom: keyboardHeight > 0 
-            ? keyboardHeight + 80
-            : lastKeyboardHeightRef.current + 80
-    }), [keyboardHeight]);
+    const contentContainerStyle = useMemo(() => ({
+        paddingBottom: keyboardHeight > 0
+            ? keyboardHeight + 80 // Klavye açıkken: klavye yüksekliği + input height
+            : 80 + insets.bottom // Klavye kapalıyken: sadece input height + safe area
+    }), [keyboardHeight, insets.bottom]);
 
     // 404: Post bulunamadı (silinmiş veya geçersiz ID) - yükleme bittikten sonra göster
     if (!isLoadingPost && is404) {
