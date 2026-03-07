@@ -160,25 +160,25 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                 <VStack px={16} space="xs">
                     <VStack space="xs">
                         {renderTrigger(
-                            t('post.create.experience.step1.selectDuration'),
+                            t('create.experience.step1.selectDuration'),
                             durationDisplayName,
-                            () => openSelectSheet(t('post.create.experience.step1.selectDuration'), durationSheetOptions, selectedDuration, onDurationChange)
+                            () => openSelectSheet(t('create.experience.step1.selectDuration'), durationSheetOptions, selectedDuration, onDurationChange)
                         )}
                     </VStack>
 
                     <VStack space="xs">
                         {renderTrigger(
-                            t('post.create.experience.step1.selectLocation'),
+                            t('create.experience.step1.selectLocation'),
                             locationDisplayName,
-                            () => openSelectSheet(t('post.create.experience.step1.selectLocation'), locationSheetOptions, selectedCondition, onConditionChange)
+                            () => openSelectSheet(t('create.experience.step1.selectLocation'), locationSheetOptions, selectedCondition, onConditionChange)
                         )}
                     </VStack>
 
                     <VStack space="xs">
                         {renderTrigger(
-                            t('post.create.experience.step1.selectPurpose'),
+                            t('create.experience.step1.selectPurpose'),
                             purposeDisplayName,
-                            () => openSelectSheet(t('post.create.experience.step1.selectPurpose'), purposeSheetOptions, selectedFrequency, onFrequencyChange)
+                            () => openSelectSheet(t('create.experience.step1.selectPurpose'), purposeSheetOptions, selectedFrequency, onFrequencyChange)
                         )}
                     </VStack>
                 </VStack>
