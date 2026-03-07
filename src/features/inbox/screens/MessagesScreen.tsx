@@ -199,7 +199,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             );
         });
         // Trust optimistic update; no invalidate to avoid cache flicker and redundant network
-    }, [queryClient, searchParams]);
+    }, [queryClient]);
 
     // Socket event handler - user_typing event (kullanıcı typing yapıyor)
     // Store kullanıldığı için sadece ilgili MessageCardRow re-render olur, tüm ekran değil
@@ -269,24 +269,16 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     );
 
     // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
-    // ✅ FIX: Screen focus olduğunda cache'i kontrol et ve gerekirse refetch yap
+    // ✅ FIX: Screen focus olduğunda typing state'i temizle
+    // NOT: Refetch yapmıyoruz çünkü optimistic update yeterli ve socket event'leri cache'i güncel tutuyor
     useFocusEffect(
         useCallback(() => {
             closeBottomSheet();
 
-            const queryKey = [...inboxKeys.messages(), searchParams];
-            const cachedData = queryClient.getQueryData<InboxMessage[]>(queryKey);
-            const hasUnreadMessages = cachedData?.some(msg => msg.isUnread || (msg.unreadCount && msg.unreadCount > 0));
-
-            if (hasUnreadMessages && (!isConnected || !cachedData)) {
-                if (__DEV__) console.log('[MessagesScreen] 🔄 Screen focused with unread messages, refetching...');
-                refetch();
-            }
-
             return () => {
                 inboxTypingStore.clearAll();
             };
-        }, [closeBottomSheet, queryClient, searchParams, isConnected, refetch])
+        }, [closeBottomSheet])
     );
     
     const handleMessagePress = (messageId: string) => {

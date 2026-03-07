@@ -14,7 +14,6 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Keyboard, Platform, Alert, Modal as RNModal, View, ScrollView, TouchableWithoutFeedback, Dimensions } from 'react-native';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useWalletBalance } from '@/src/features/wallet/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { useTranslation } from '@/src/hooks/useTranslation';
@@ -189,10 +188,10 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     };
 
     return (
-        <BottomSheetScrollView
+        <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ 
-                paddingBottom: isKeyboardVisible ? 120 : 20 
+            contentContainerStyle={{
+                paddingBottom: isKeyboardVisible ? 120 : 20
             }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -653,7 +652,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                     </View>
                 </TouchableWithoutFeedback>
             </RNModal>
-        </BottomSheetScrollView>
+        </ScrollView>
     );
 };
 

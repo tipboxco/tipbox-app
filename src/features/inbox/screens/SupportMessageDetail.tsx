@@ -185,6 +185,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const keyboardHeightRef = useRef(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -711,6 +712,11 @@ const SupportMessageDetailScreen: React.FC = () => {
 
   // ✅ WhatsApp Engine: Güvenli scroll helper - Inverted FlatList için scrollToEnd kullan
   const safeScrollToEnd = useCallback((animated: boolean = true) => {
+    // Component unmount olduysa scroll yapma
+    if (!isMountedRef.current) {
+      return;
+    }
+
     try {
       if (flatListRef.current) {
         flatListRef.current.scrollToEnd({ animated });
@@ -788,6 +794,9 @@ const SupportMessageDetailScreen: React.FC = () => {
       if (threadId && isConnected) {
         socketStopTyping(threadId);
       }
+
+      // Component unmount olduğunu işaretle
+      isMountedRef.current = false;
     };
   }, [isConnected, threadId, on, off, handleThreadJoined, handleNewMessage, handleUserTyping, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled, socketStopTyping]);
 

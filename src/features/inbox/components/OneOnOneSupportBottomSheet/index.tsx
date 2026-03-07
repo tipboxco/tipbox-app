@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     VStack,
     HStack,
@@ -41,6 +41,9 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [showSupportTypeDropdown, setShowSupportTypeDropdown] = useState(false);
+
+    // Scroll ref for keyboard handling
+    const scrollViewRef = useRef<any>(null);
 
     // Kullanıcının mevcut bakiyesi (normalde prop veya store'dan gelecek)
     const currentBalance = 500;
@@ -150,6 +153,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
 
     return (
         <BottomSheetScrollView
+            ref={scrollViewRef}
             style={{ flex: 1 }}
             contentContainerStyle={{ paddingBottom: isKeyboardVisible ? 120 : 20 }}
             showsVerticalScrollIndicator={false}
@@ -453,6 +457,13 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                         value={amount}
                                         onChangeText={handleAmountChange}
                                         keyboardType="numeric"
+                                        onFocus={() => {
+                                            // Klavye açıldığında input'u görünür yap
+                                            setTimeout(() => {
+                                                // BottomSheetScrollView doesn't have scrollToEnd, use scrollTo with large offset
+                                                scrollViewRef.current?.scrollTo({ y: 9999, animated: true });
+                                            }, 100);
+                                        }}
                                     />
                                 </Input>
 

@@ -210,8 +210,8 @@ const isWithin5Minutes = (date1: string | Date, date2: string | Date): boolean =
   }
 };
 
-// ✅ WhatsApp Engine: Yeni mesajı doğru pozisyona ekle (descending order - inverted FlashList için)
-// Inverted FlashList: index 0 = en yeni mesaj (ekranın altında), index length-1 = en eski mesaj (ekranın üstünde)
+// ✅ WhatsApp tarzı: Yeni mesajı doğru pozisyona ekle (ascending order)
+// Normal FlashList: index 0 = en eski mesaj (ekranın üstünde), index length-1 = en yeni mesaj (ekranın altında)
 const insertMessageInOrder = (
   messages: MessageDetailItem[],
   newMessage: MessageDetailItem
@@ -223,25 +223,25 @@ const insertMessageInOrder = (
     updated[existingIndex] = newMessage;
     return updated;
   }
-  
-  // ✅ WhatsApp Engine: Descending order (en yeni başta, en eski sonda)
-  // Inverted FlashList için: Yeni mesajı başa ekle (unshift) - en yeni mesaj index 0'da olmalı
+
+  // ✅ WhatsApp tarzı: Ascending order (en eski başta, en yeni sonda)
+  // Normal FlashList için: Yeni mesajı doğru pozisyona ekle
   const newSentAt = new Date(newMessage.sentAt).getTime();
-  
-  // En yeni mesajdan başlayarak kontrol et (descending order için)
-  // Yeni mesaj daha yeni ise, buraya ekle (bu mesajdan önce, yani başa)
+
+  // En eski mesajdan başlayarak kontrol et (ascending order için)
+  // Yeni mesaj daha eski ise, buraya ekle
   for (let i = 0; i < messages.length; i++) {
     const currentSentAt = new Date(messages[i].sentAt).getTime();
-    
-    // Yeni mesaj daha yeni ise, buraya ekle (başa, index 0'a yakın)
-    if (newSentAt > currentSentAt) {
+
+    // Yeni mesaj daha eski ise, buraya ekle (önce ekle)
+    if (newSentAt < currentSentAt) {
       const updated = [...messages];
       updated.splice(i, 0, newMessage);
       return updated;
     }
   }
-  
-  // Tüm mesajlardan daha eski veya eşit ise, sona ekle (en eski mesaj olarak)
+
+  // Tüm mesajlardan daha yeni veya eşit ise, sona ekle (en yeni mesaj olarak)
   return [...messages, newMessage];
 };
 
@@ -256,7 +256,6 @@ const MessageDetailScreen: React.FC = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<MessageDetailScreenNavigationProp>();
   const route = useRoute();
-  const flashListRef = useRef<FlashList<MessageDetailItem>>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
 
   // PERFORMANCE: useKeyboard hook kullan (manuel listener yerine)
@@ -377,57 +376,7 @@ const MessageDetailScreen: React.FC = () => {
   // const [keyboardHeight, setKeyboardHeight] = useState(0);
   // const keyboardHeightRef = useRef(0);
 
-  // FlashList content size ref (scroll logic için)
-  const contentSizeRef = useRef({ width: 0, height: 0 });
-  const layoutSizeRef = useRef({ width: 0, height: 0 });
-
-  // PERFORMANCE: Güvenli scroll helper - Inverted FlashList için scrollToEnd kullan
-  // Inverted FlashList: index 0 = en yeni mesaj (ekranın altında), scrollToEnd en yeni mesaja scroll yapar
-  const safeScrollToEnd = useCallback((animated: boolean = true) => {
-    try {
-      // Inverted FlashList'te en yeni mesaj index 0'da, scrollToEnd en yeni mesaja scroll yapar
-      if (flashListRef.current) {
-        flashListRef.current.scrollToEnd({ animated });
-      }
-    } catch (error) {
-      // Hata durumunda scrollToOffset ile en yeni mesajın offset'ini hesapla
-      try {
-        // Inverted list'te offset 0 = en yeni mesaj (index 0)
-        flashListRef.current?.scrollToOffset({ offset: 0, animated });
-      } catch (offsetError) {
-        // Sessizce yakala
-      }
-    }
-  }, []);
-
-  // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth)
-  const scrollByMessageHeight = useCallback((messageText: string) => {
-    try {
-      // Mesaj baloncuğu height'ını tahmin et
-      // Text padding: px="$3" py="$2" = ~12px top/bottom = 24px total
-      // Font size: 11, line height: ~16px
-      // Her satır ~20px, minimum ~40px (padding dahil)
-      // Max width: 80% of screen, average ~30 karakter/satır
-      const lines = Math.ceil(messageText.length / 30); // Ortalama 30 karakter/satır
-      const textHeight = Math.max(20, lines * 20); // Minimum 20px (tek satır)
-      const messageHeight = textHeight + 24; // Padding (12px top + 12px bottom)
-      
-     
-      
-      // PERFORMANCE: Inverted FlashList'te scrollToEnd en yeni mesaja scroll yapar
-      flashListRef.current?.scrollToEnd({ animated: true });
-      
-      // Ekstra smooth scroll için küçük bir delay ile tekrar scroll
-      // Bu sayede mesaj baloncuğu tam görünür olur
-      setTimeout(() => {
-        safeScrollToEnd(true);
-      }, 100);
-    } catch (error) {
-      // Hata durumunda normal scroll yap
-      safeScrollToEnd(true);
-    }
-    // CRITICAL FIX: safeScrollToEnd dependency'den çıkarıldı - flashListRef.current zaten güncel
-  }, []);
+  // REMOVED: Ref ve scroll fonksiyonları - inverted mode otomatik scroll sağlıyor
 
   // PERFORMANCE: Keyboard visibility'i keyboardHeight'tan hesapla
   const isKeyboardVisible = keyboardHeight > 0;
@@ -445,13 +394,7 @@ const MessageDetailScreen: React.FC = () => {
   );
   
 
-  // PERFORMANCE: Keyboard açılınca/kapanınca scroll (setTimeout kaldırıldı)
-  useEffect(() => {
-    if (isKeyboardVisible) {
-      // Klavye açıldı, en yeni mesaja scroll yap
-      safeScrollToEnd(true);
-    }
-  }, [isKeyboardVisible, safeScrollToEnd]);
+  // REMOVED: Keyboard scroll - inverted mode otomatik scroll sağlıyor
 
   // Pagination: Eski mesajları yükle (yukarı scroll yapıldığında)
   const loadOlderMessages = useCallback(async () => {
@@ -537,17 +480,17 @@ const MessageDetailScreen: React.FC = () => {
           };
         });
         
-        // ✅ WhatsApp Engine: Inverted FlashList için - Eski mesajları sona ekle (en yeni başta, en eski sonda)
+        // ✅ WhatsApp tarzı: Eski mesajları sona ekle (en eski başta, en yeni sonda)
         const merged = [...prev, ...convertedOlderMessages];
         merged.sort((a, b) => {
           const timeA = new Date(a.sentAt).getTime();
           const timeB = new Date(b.sentAt).getTime();
-          return timeB - timeA; // Descending (en yeni başta, en eski sonda) - inverted FlashList için
+          return timeA - timeB; // Ascending (en eski başta, en yeni sonda)
         });
         
-          // ✅ WhatsApp Engine: En eski mesaj ID'sini güncelle (inverted FlashList'te en eski mesaj dizinin sonunda)
+          // ✅ WhatsApp Engine: En eski mesaj ID'sini güncelle (inverted FlashList'te en eski mesaj dizinin başında)
           if (merged.length > 0) {
-            setOldestMessageId(merged[merged.length - 1].id);
+            setOldestMessageId(merged[0]?.id);
           }
         
         return merged;
@@ -708,19 +651,19 @@ const MessageDetailScreen: React.FC = () => {
           
           // Backend mesajları + henüz backend'e gitmemiş pending mesajlar
           const merged = [...convertedMessages, ...pendingMessagesToKeep];
-          
-          // ✅ WhatsApp Engine: Timestamp'e göre sırala (descending - en yeni başta, en eski sonda)
-          // Inverted FlashList için: index 0 = en yeni mesaj (ekranın altında)
+
+          // ✅ WhatsApp tarzı: Timestamp'e göre sırala (ascending - en eski başta, en yeni sonda)
+          // Normal FlashList için: index 0 = en eski mesaj (ekranın üstünde)
           // CRITICAL FIX: sentAt kullan (ISO timestamp, formatMessageTime string'i değil)
           merged.sort((a, b) => {
             const timeA = new Date(a.sentAt).getTime();
             const timeB = new Date(b.sentAt).getTime();
-            return timeB - timeA; // Descending (en yeni başta, en eski sonda) - inverted FlashList için
+            return timeA - timeB; // Ascending (en eski başta, en yeni sonda)
           });
           
-          // ✅ WhatsApp Engine: En eski mesaj ID'sini kaydet (pagination için - inverted FlashList'te en eski mesaj dizinin sonunda)
+          // ✅ WhatsApp Engine: En eski mesaj ID'sini kaydet (pagination için - inverted FlashList'te en eski mesaj dizinin başında)
           if (merged.length > 0) {
-            setOldestMessageId(merged[merged.length - 1].id);
+            setOldestMessageId(merged[0]?.id);
           }
           
           // Backend'den gelen pagination bilgisini kontrol et (hasMore)
@@ -735,9 +678,8 @@ const MessageDetailScreen: React.FC = () => {
           
           return merged;
         });
-        
-        // ✅ Normal FlatList kullanıldığı için en yeni mesajlara scroll yap
-        // Manuel scroll mantığına gerek yok - inverted prop otomatik hallediyor
+
+        // REMOVED: Auto scroll - inverted mode handles this
       } else {
         // Pending mesajları koru (henüz backend'e gitmemiş olanlar)
         setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
@@ -748,7 +690,6 @@ const MessageDetailScreen: React.FC = () => {
     }
     // CRITICAL FIX: params değerleri paramsRef.current üzerinden kullanılıyor, dependency'den çıkarıldı
     // queryClient stable olduğu için dependency'den çıkarıldı
-    // safeScrollToEnd dependency'den çıkarıldı - flashListRef.current zaten güncel
   }, [threadMessages, isLoadingMessages, user?.id, threadId, isConnected, queryClient]);
 
   // 4️⃣ CHAT EKRANI AÇILDIĞINDA - Thread ID kontrolü, socket bağlantısı, thread join, event listener'lar
@@ -829,8 +770,13 @@ const MessageDetailScreen: React.FC = () => {
           setIsSocketReady(false);
         }
         
-        // CRITICAL FIX: Mark thread as read (optimistic update + invalidate)
-        queryClient.setQueryData(inboxKeys.messages(), (oldData: any[] | undefined) => {
+        // CRITICAL FIX: Mark thread as read (optimistic update only - no invalidate)
+        // ✅ Backend GET /inbox/:threadId çağrısı otomatik olarak thread'i okundu yapıyor
+        // ve thread_read socket event'i gönderiyor. Bu event geldiğinde MessagesScreen'deki
+        // handleThreadRead handler'ı cache'i güncelleyecek. Invalidate yaparsak optimistic
+        // update ezilir ve backend'den data gelene kadar eski unread count görünür.
+        const baseKey = inboxKeys.messages();
+        queryClient.setQueriesData({ queryKey: baseKey }, (oldData: any[] | undefined) => {
           if (!oldData) return oldData;
           return oldData.map((msg: any) =>
             msg.id === currentThreadId
@@ -838,9 +784,6 @@ const MessageDetailScreen: React.FC = () => {
               : msg
           );
         });
-
-        // Invalidate cache (backend'den fresh data)
-        queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
 
         // 5. Mesaj geçmişini yükle (REST API)
         // useThreadMessages hook'u otomatik olarak yükleyecek
@@ -963,10 +906,7 @@ const MessageDetailScreen: React.FC = () => {
         }
       }
 
-      // ✅ WhatsApp Engine: Inverted FlashList'te scrollToIndex(0) = en yeni mesajlara scroll (altta)
-      setTimeout(() => {
-        safeScrollToEnd(true);
-      }, 100);
+      // REMOVED: Auto scroll - inverted mode handles this
     } else if (eventData.messageType === 'image' || eventData.messageType === 'video' || eventData.messageType === 'audio' || eventData.messageType === 'file') {
       // Image/Video/Audio/File mesajı - Backend'den gelen new_message event'i
       // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
@@ -1048,10 +988,7 @@ const MessageDetailScreen: React.FC = () => {
         }
       }
       
-      // ✅ WhatsApp Engine: Inverted FlashList'te scrollToIndex(0) = en yeni mesajlara scroll (altta)
-      setTimeout(() => {
-        safeScrollToEnd(true);
-      }, 100);
+      // REMOVED: Auto scroll - inverted mode handles this
     } else if (eventData.messageType === 'send-tips') {
       // TIPS mesajı - anında local state'e ekle
       // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
@@ -1132,10 +1069,7 @@ const MessageDetailScreen: React.FC = () => {
         }
       }
       
-      // ✅ WhatsApp Engine: Inverted FlashList'te scrollToIndex(0) = en yeni mesajlara scroll (altta)
-      setTimeout(() => {
-        safeScrollToEnd(true);
-      }, 100);
+      // REMOVED: Auto scroll - inverted mode handles this
     } else if (eventData.messageType === 'support-request') {
       // Support request mesajı - şu an için sadece log
 
@@ -1188,7 +1122,7 @@ const MessageDetailScreen: React.FC = () => {
           )
         );
       }
-      setTimeout(() => safeScrollToEnd(true), 100);
+      // REMOVED: Auto scroll - inverted mode handles this
     }
 
     // Mesaj listesini invalidate et (inbox listesini güncelle)
@@ -2005,10 +1939,7 @@ const MessageDetailScreen: React.FC = () => {
     // ✅ WhatsApp Engine: Inverted FlatList - Yeni mesajı başa ekle (en yeni mesaj index 0'da)
     setMessages((prev) => [optimisticTipsMessage, ...prev]);
 
-    // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth animasyon)
-    setTimeout(() => {
-      scrollByMessageHeight(finalMessage);
-    }, 50);
+    // REMOVED: Auto scroll - inverted mode handles this
 
     sendGiftMutation.mutate(
       requestData,
@@ -2047,7 +1978,6 @@ const MessageDetailScreen: React.FC = () => {
         },
       }
     );
-    // CRITICAL FIX: scrollByMessageHeight, queryClient dependency'den çıkarıldı
   }, [user, route, sendGiftMutation, closeBottomSheet, effectiveRecipientUserId, threadId]);
 
   // Handle Send TIPS button press
@@ -2156,9 +2086,7 @@ const MessageDetailScreen: React.FC = () => {
           // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
           setMessages((prev) => [...prev, newSupportRequest]);
 
-          setTimeout(() => {
-            safeScrollToEnd(true);
-          }, 100);
+          // REMOVED: Auto scroll - inverted mode handles this
 
           Alert.alert('Success', 'Support request sent successfully');
           closeBottomSheet();
@@ -2252,11 +2180,7 @@ const MessageDetailScreen: React.FC = () => {
     // Bu sayede flicker olmaz - mesaj zaten doğru pozisyonda görünür
     setMessages((prev) => insertMessageInOrder(prev, newMessage));
 
-    // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth animasyon)
-    // State update tamamlandıktan sonra scroll yap
-    setTimeout(() => {
-      scrollByMessageHeight(messageText.trim());
-    }, 50);
+    // REMOVED: Auto scroll - inverted mode handles this
 
     // 3. Socket bağlantısı kontrolü - Socket bağlıysa socket ile gönder
     // Dokümana göre: send_message event'i recipientId bekliyor (threadId değil)
@@ -2303,7 +2227,6 @@ const MessageDetailScreen: React.FC = () => {
         Alert.alert('Error', 'Recipient user information not found');
       }
     }
-    // CRITICAL FIX: scrollByMessageHeight, queryClient, refetchMessages dependency'den çıkarıldı
   }, [user?.id, threadId, effectiveRecipientUserId, route, isConnected, isSocketReady, socketSendMessage, sendDirectMessageMutation]);
 
   // Typing indicator handlers
@@ -2328,12 +2251,7 @@ const MessageDetailScreen: React.FC = () => {
       [id]: !prev[id]
     }));
 
-    // Eğer açılıyorsa (şu an kapalı), scroll'u aşağı kaydır (normal FlatList için end)
-    if (!isCurrentlyExpanded) {
-      setTimeout(() => {
-        safeScrollToEnd(true);
-      }, 100);
-    }
+    // REMOVED: Auto scroll - inverted mode handles this
   };
 
   // Handle Accept Support Request
@@ -2817,7 +2735,7 @@ const MessageDetailScreen: React.FC = () => {
 
           return newMessages;
         });
-        setTimeout(() => safeScrollToEnd(true), 100);
+        // REMOVED: Auto scroll - inverted mode handles this
         
         // Seçilen görseli temizle
         setSelectedImage(null);
@@ -2909,7 +2827,7 @@ const MessageDetailScreen: React.FC = () => {
 
         Alert.alert('Error', errorMessage);
       }
-    }, [threadId, effectiveRecipientUserId, safeScrollToEnd]);
+    }, [threadId, effectiveRecipientUserId]);
 
   // Mesaj öğesi render fonksiyonu
   // ✅ FIX: useCallback ile memoize et - flicker'ı önlemek için
@@ -2984,7 +2902,7 @@ const MessageDetailScreen: React.FC = () => {
   const renderMessageItem = useCallback(({ item, index }: { item: MessageDetailItem; index: number }) => {
     
     // CRITICAL FIX: Date header logic (inverted list için)
-    // Inverted FlashList: index 0 = newest (bottom), index length-1 = oldest (top)
+    // Normal FlashList (WhatsApp style): index 0 = newest (bottom), index length-1 = oldest (top)
     const showDateHeader = (() => {
       if (!item.sentAt) return false;
 
@@ -3552,7 +3470,7 @@ const MessageDetailScreen: React.FC = () => {
           recipientUserId={effectiveRecipientUserId}
         />
 
-          {/* ✅ WhatsApp Engine: Inverted FlashList - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir */}
+          {/* ✅ WhatsApp Engine: Normal FlashList (WhatsApp style) - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir */}
           <Box flex={1}>
             {isLoadingMessages && messages.length === 0 ? (
               // Loading state - Mesajlar yüklenene kadar göster
@@ -3572,7 +3490,6 @@ const MessageDetailScreen: React.FC = () => {
               </Box>
             ) : (
               <FlashList<MessageDetailItem>
-                ref={flashListRef}
                 data={visibleMessages} // ✅ FIX: Silinen mesajları filtrele
                 renderItem={renderMessageItem}
                 keyExtractor={(item) => item.id}
@@ -3587,8 +3504,8 @@ const MessageDetailScreen: React.FC = () => {
                 }}
                 // PERFORMANCE: Estimated item size (ortalama mesaj yüksekliği)
                 estimatedItemSize={80}
-                // ✅ WhatsApp Engine: Inverted mode - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir
-                inverted={true}
+                // ✅ WhatsApp tarzı: En yeni mesajlar altta (normal mode)
+                inverted={false}
                 // PERFORMANCE: Pull-to-refresh ekle (eski mesajları yükle)
                 refreshControl={
                   <RefreshControl
@@ -3614,7 +3531,7 @@ const MessageDetailScreen: React.FC = () => {
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="interactive"
                 viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-                // PERFORMANCE: Pagination - Inverted FlashList'te yukarı scroll yapıldığında eski mesajları getir
+                // PERFORMANCE: Pagination - Yukarı scroll yapıldığında eski mesajları getir
                 onEndReached={() => {
                   if (hasMoreMessages && !isLoadingMoreMessages && oldestMessageId) {
                     loadOlderMessages();
@@ -3641,15 +3558,6 @@ const MessageDetailScreen: React.FC = () => {
                     </Box>
                   ) : null
                 }
-                onContentSizeChange={(width, height) => {
-                  // Content size'ı kaydet (viewability için)
-                  contentSizeRef.current = { width, height };
-                }}
-                onLayout={(event) => {
-                  // Layout size'ı kaydet (viewability için)
-                  const { width, height } = event.nativeEvent.layout;
-                  layoutSizeRef.current = { width, height };
-                }}
               />
             )}
           </Box>
