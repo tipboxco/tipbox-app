@@ -82,9 +82,12 @@ const FeedScreenInner = React.memo(() => {
   );
 
   // FIX: Network hatasını log'la ama UI'ı bloke etme
+  // CRITICAL FIX: 404 hatası için warning gösterme (endpoint henüz implement edilmemiş)
   useEffect(() => {
     if (preloadQuery.error) {
-      if (__DEV__) {
+      const status = (preloadQuery.error as any)?.response?.status;
+      // 404 hatası için warning gösterme
+      if (__DEV__ && status !== 404) {
         console.warn('[FeedScreen] Search preload failed (silent):', preloadQuery.error.message);
       }
       // Hata olsa bile devam et, SearchModal kendi loading state'ini handle eder
@@ -164,6 +167,9 @@ const FeedScreenInner = React.memo(() => {
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet, state: bottomSheetState } = useGlobalBottomSheet();
+
+  // PERFORMANCE FIX: Track bottom sheet opening state to prevent race condition
+  const [isBottomSheetOpening, setIsBottomSheetOpening] = useState(false);
 
   // PERFORMANCE FIX: Drawer durumunu kontrol et - drawer açılırken/kapanırken FlatList scroll'unu önle
   // CRITICAL: isDragging state'ini kullan - swipe sırasında re-render önleme (JS thread'de kasma önleme)
@@ -307,15 +313,28 @@ const FeedScreenInner = React.memo(() => {
 
 
   // Handle filter button press - open bottom sheet with FilterFeed
+  // PERFORMANCE FIX: Guard against race condition + optimize animation config
   const handleFilterButtonPress = useCallback((filterId: 'interest' | 'tag' | 'category' | 'sort') => {
+    // CRITICAL FIX: Guard - prevent opening if already opening or open
+    if (isBottomSheetOpening || bottomSheetState.index === 0) {
+      console.log('[FeedScreen] Bottom sheet already opening/open, ignoring click');
+      return;
+    }
+
     console.log('[FeedScreen] Filter button pressed:', filterId);
+
+    // Mark as opening
+    setIsBottomSheetOpening(true);
 
     openBottomSheet(
       <FilterFeed
         filterId={filterId}
         filters={filters}
         onFiltersChange={setFilters}
-        onClose={closeBottomSheet}
+        onClose={() => {
+          closeBottomSheet();
+          setIsBottomSheetOpening(false);
+        }}
       />,
       {
         enablePanDownToClose: true,
@@ -323,13 +342,21 @@ const FeedScreenInner = React.memo(() => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
-        animateOnMount: false,
+        animateOnMount: true, // PERFORMANCE FIX: Enable animation for native feel
+        animationConfigs: {
+          duration: 160, // PERFORMANCE FIX: 160ms - fast but smooth
+        },
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
       }
     );
 
+    // PERFORMANCE FIX: Reset opening state after animation completes
+    setTimeout(() => {
+      setIsBottomSheetOpening(false);
+    }, 200); // Animation duration (160ms) + buffer (40ms)
+
     console.log('[FeedScreen] openBottomSheet called');
-  }, [filters, openBottomSheet, closeBottomSheet, insets.bottom]);
+  }, [filters, openBottomSheet, closeBottomSheet, insets.bottom, bottomSheetState.index, isBottomSheetOpening]);
 
   const handleExpertPress = () => {
     // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints

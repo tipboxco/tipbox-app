@@ -1,9 +1,11 @@
 /**
  * FilterButtons - Simple filter buttons for FeedScreen
  * Opens GlobalBottomSheet with filter options
+ *
+ * PERFORMANCE FIX: Debounce + disabled state to prevent race condition
  */
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Pressable } from 'react-native';
 import { HStack, Box, Text } from '@/src/components/ui';
 import { ChevronDownIcon } from 'react-native-heroicons/outline';
@@ -15,6 +17,9 @@ interface FilterButtonsProps {
 }
 
 export const FilterButtons: React.FC<FilterButtonsProps> = ({ filters, onFilterPress }) => {
+  // PERFORMANCE FIX: Track pressed button to prevent double-click race condition
+  const [pressedButton, setPressedButton] = useState<string | null>(null);
+
   // Get filter count
   const getFilterCount = (filterId: string) => {
     switch (filterId) {
@@ -31,6 +36,25 @@ export const FilterButtons: React.FC<FilterButtonsProps> = ({ filters, onFilterP
     }
   };
 
+  // PERFORMANCE FIX: Debounced press handler to prevent race condition
+  const handlePress = useCallback((filterId: 'interest' | 'tag' | 'category' | 'sort') => {
+    // Guard: If button already pressed, ignore
+    if (pressedButton === filterId) {
+      return;
+    }
+
+    // Mark button as pressed
+    setPressedButton(filterId);
+
+    // Call parent handler
+    onFilterPress(filterId);
+
+    // Reset after 300ms (enough time for bottom sheet to open)
+    setTimeout(() => {
+      setPressedButton(null);
+    }, 300);
+  }, [pressedButton, onFilterPress]);
+
   // Render filter button
   const renderFilterButton = (
     filterId: 'interest' | 'tag' | 'category' | 'sort',
@@ -38,9 +62,13 @@ export const FilterButtons: React.FC<FilterButtonsProps> = ({ filters, onFilterP
   ) => {
     const count = getFilterCount(filterId);
     const isActive = count > 0;
+    const isPressed = pressedButton === filterId;
 
     return (
-      <Pressable onPress={() => onFilterPress(filterId)}>
+      <Pressable
+        onPress={() => handlePress(filterId)}
+        disabled={isPressed}
+      >
         <Box
           flexDirection="row"
           alignItems="center"
@@ -52,6 +80,7 @@ export const FilterButtons: React.FC<FilterButtonsProps> = ({ filters, onFilterP
           borderColor={isActive ? '#E2FF46' : '#E9E9E9'}
           borderRadius={10}
           height={26}
+          opacity={isPressed ? 0.6 : 1}
         >
           <HStack alignItems="center" space="xs">
             <Text color={isActive ? '#000000' : '#000000'} fontSize="$xs" fontWeight="$semibold">

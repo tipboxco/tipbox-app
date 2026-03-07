@@ -1,9 +1,11 @@
 /**
  * FilterFeed - Filter options component for GlobalBottomSheet
  * Handles all filter logic for feed (interests, tags, category, sort)
+ *
+ * PERFORMANCE FIX: Memoization to reduce render time
  */
 
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Pressable, Text as RNText } from 'react-native';
 import { HStack, Box, Text, VStack } from '@/src/components/ui';
 import { CheckIcon as CheckIconSolid } from 'react-native-heroicons/solid';
@@ -48,7 +50,7 @@ interface FilterFeedProps {
   onClose: () => void;
 }
 
-export const FilterFeed: React.FC<FilterFeedProps> = ({
+export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
   filterId,
   filters,
   onFiltersChange,
@@ -65,26 +67,24 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
     setLocalFilters(filters);
   }, [filters]);
 
-  // Get options based on filter type
-  const getOptions = (): Array<{ value: string; label: string }> => {
+  // PERFORMANCE FIX: Memoize options to prevent re-creation on every render
+  const options = useMemo(() => {
     switch (filterId) {
       case 'interest':
-        return [...INTEREST_OPTIONS];
+        return INTEREST_OPTIONS; // Return constant directly (no spread)
       case 'tag':
-        return [...TAG_OPTIONS];
+        return TAG_OPTIONS;
       case 'category':
-        return [...CATEGORY_OPTIONS];
+        return CATEGORY_OPTIONS;
       case 'sort':
-        return [...SORT_OPTIONS];
+        return SORT_OPTIONS;
       default:
         return [];
     }
-  };
+  }, [filterId]);
 
-  const options = getOptions();
-
-  // Check if value is selected (use local state)
-  const isSelected = (value: string) => {
+  // PERFORMANCE FIX: Memoize isSelected function
+  const isSelected = useCallback((value: string) => {
     switch (filterId) {
       case 'interest':
         return localFilters.interests?.includes(value) || false;
@@ -97,10 +97,10 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
       default:
         return false;
     }
-  };
+  }, [filterId, localFilters]);
 
-  // Handle toggle (update local state only)
-  const handleToggle = (value: string) => {
+  // PERFORMANCE FIX: Memoize handleToggle function
+  const handleToggle = useCallback((value: string) => {
     switch (filterId) {
       case 'interest': {
         const currentInterests = localFilters.interests || [];
@@ -129,10 +129,10 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
         break;
       }
     }
-  };
+  }, [filterId, localFilters]);
 
-  // Handle clear (clear local state only)
-  const handleClear = () => {
+  // PERFORMANCE FIX: Memoize handleClear function
+  const handleClear = useCallback(() => {
     switch (filterId) {
       case 'interest':
         setLocalFilters({ ...localFilters, interests: undefined });
@@ -147,16 +147,16 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
         setLocalFilters({ ...localFilters, sort: undefined });
         break;
     }
-  };
+  }, [filterId, localFilters]);
 
-  // Handle apply - apply local filters to parent
-  const handleApply = () => {
+  // PERFORMANCE FIX: Memoize handleApply function
+  const handleApply = useCallback(() => {
     onFiltersChange(localFilters);
     onClose();
-  };
+  }, [localFilters, onFiltersChange, onClose]);
 
-  // Get title
-  const getTitle = () => {
+  // PERFORMANCE FIX: Memoize title
+  const title = useMemo(() => {
     switch (filterId) {
       case 'interest':
         return 'Interests';
@@ -169,18 +169,21 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
       default:
         return '';
     }
-  };
+  }, [filterId]);
 
-  // Group options into rows of 3
-  const rows: Array<Array<{ value: string; label: string }>> = [];
-  for (let i = 0; i < options.length; i += 3) {
-    rows.push(options.slice(i, i + 3));
-  }
+  // PERFORMANCE FIX: Memoize rows to prevent re-calculation on every render
+  const rows = useMemo(() => {
+    const result: Array<Array<typeof options[number]>> = [];
+    for (let i = 0; i < options.length; i += 3) {
+      result.push(options.slice(i, i + 3));
+    }
+    return result;
+  }, [options]);
 
   return (
     <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%">
       <Text fontSize={16} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'} mb="$4" textAlign="center">
-        {getTitle()}
+        {title}
       </Text>
 
       {options.length === 0 ? (
@@ -271,4 +274,4 @@ export const FilterFeed: React.FC<FilterFeedProps> = ({
       </Box>
     </VStack>
   );
-};
+});
