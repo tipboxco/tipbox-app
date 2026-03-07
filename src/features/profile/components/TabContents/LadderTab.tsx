@@ -29,11 +29,11 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect, onQueryR
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const userId = useCurrentUserIdOrLogout();
-  
+
   // Render sayısını takip et ve değişen değerleri log'la
   const renderCountRef = useRef(0);
   const prevValuesRef = useRef<any>({});
-  
+
   // Ladder Badges API hook with infinite scroll
   const ladderQuery = useUserLadderBadges(userId, 5);
   const {

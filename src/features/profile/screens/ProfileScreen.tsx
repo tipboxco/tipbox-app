@@ -64,6 +64,8 @@ import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet'
 import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import type { Badge } from '../types';
 import { useTranslation } from 'react-i18next';
+import { AnimatedTabBar } from '../components/AnimatedTabBar';
+import PagerView from 'react-native-pager-view';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -391,6 +393,7 @@ interface TabContentProps {
   targetUserId: string;
   isDark: boolean;
   onQueryRef?: (tabKey: TabKey, query: any) => void;
+  isActive?: boolean; // Sadece aktif tab API çağrısı yapmalı
 }
 
 // TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
@@ -475,13 +478,13 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
 };
 
 // Tab Content Component - Sadece içeriği render eder (FlatList yok)
-const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef }) => {
+const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef, isActive = true }) => {
   // API hooks for each tab - sadece aktif tab'ın query'sini enable et
-  const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
-  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: tabKey === 'benchmarks' });
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: tabKey === 'tips' });
-  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: tabKey === 'replies' });
+  const feedQuery = useUserPosts(targetUserId, 5, { enabled: isActive && tabKey === 'feed' && !!targetUserId });
+  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: isActive && tabKey === 'reviews' && !!targetUserId });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: isActive && tabKey === 'benchmarks' && !!targetUserId });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: isActive && tabKey === 'tips' && !!targetUserId });
+  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: isActive && tabKey === 'replies' && !!targetUserId });
   
   // Get active tab query
   const activeTabQuery = useMemo(() => {
@@ -595,7 +598,7 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
   if (tabKey === 'ladders') {
     return (
       <Box>
-        <LadderTab 
+        <LadderTab
           onQueryRef={(query) => {
             if (onQueryRef) {
               onQueryRef(tabKey, query);
@@ -845,17 +848,34 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const scrollViewRef = useRef<ScrollView>(null);
-  
-  // Tab değiştiğinde scroll pozisyonunu sıfırla
+  const headerScrollViewRef = useRef<ScrollView>(null);
+  const pagerViewRef = useRef<PagerView>(null);
+  const tabBarRef = useRef<any>(null);
+
+  // Tab değiştiğinde PagerView'ı ve tab bar'ı sync et
   const handleTabChange = useCallback((tabKey: TabKey) => {
-    setActiveTab(tabKey);
-    
-    // Tab değiştiğinde scroll pozisyonunu en üste al
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 0, animated: false });
+    const tabIndex = TABS.findIndex(tab => tab.key === tabKey);
+    if (tabIndex !== -1) {
+      // PagerView'ı ilgili sayfaya kaydır
+      if (pagerViewRef.current) {
+        pagerViewRef.current.setPage(tabIndex);
+      }
+      setActiveTab(tabKey);
     }
   }, []);
+
+  // PagerView sayfa değiştiğinde active tab'ı güncelle
+  const handlePageSelected = useCallback((e: any) => {
+    const position = e.nativeEvent.position;
+    const newTab = TABS[position];
+    if (newTab && newTab.key !== activeTab) {
+      setActiveTab(newTab.key);
+      // Tab bar'ı da ilgili tab'a scroll et
+      if (tabBarRef.current) {
+        tabBarRef.current.scrollToTab(newTab.key);
+      }
+    }
+  }, [activeTab]);
   
   // Handle Send TIPS - Bottom sheet aç
   const handleSendTips = useCallback((amount: number, message?: string) => {
@@ -1930,14 +1950,16 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <StatusBar style="light" />
-      {/* Tüm ekran scroll edilebilir - Banner, Header, Tab Bar ve Content hepsi içinde */}
+
+      {/* Ana ScrollView - Tüm ekran dikey scrollable */}
       <ScrollView
-        ref={scrollViewRef}
+        ref={headerScrollViewRef}
         showsVerticalScrollIndicator={true}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
+        bounces={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        bounces={false}
-        overScrollMode="never"
         refreshControl={
           <RefreshControl
             refreshing={refreshing || false}
@@ -1946,29 +1968,53 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             colors={isDark ? ['#FFFFFF'] : ['#000000']}
           />
         }
-        contentContainerStyle={{
-          paddingBottom: bottomPadding,
-        }}
+        stickyHeaderIndices={[1]}
       >
-        {/* Profile Header - Scroll edilebilir */}
-        <Box>
-          {profileHeader}
+        {/* Profile Info */}
+        {profileHeader}
+
+        {/* AnimatedTabBar - Sticky */}
+        <AnimatedTabBar
+          ref={tabBarRef}
+          tabs={TABS}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          isDark={isDark}
+        />
+
+        {/* PagerView - Horizontal paging */}
+        <Box height={SCREEN_WIDTH * 1.5}>
+          <PagerView
+            ref={pagerViewRef}
+            style={{ flex: 1 }}
+            initialPage={0}
+            onPageSelected={handlePageSelected}
+          >
+            {TABS.map((tab) => (
+              <View key={tab.key} style={{ flex: 1 }}>
+                <ScrollView
+                  showsVerticalScrollIndicator={true}
+                  scrollEnabled={true}
+                  nestedScrollEnabled={true}
+                  bounces={true}
+                  onScroll={handleScroll}
+                  scrollEventThrottle={16}
+                  contentContainerStyle={{
+                    flexGrow: 1,
+                  }}
+                >
+                  <TabContent
+                    tabKey={tab.key}
+                    targetUserId={targetUserId || ''}
+                    isDark={isDark}
+                    onQueryRef={handleTabQueryRef}
+                    isActive={tab.key === activeTab}
+                  />
+                </ScrollView>
+              </View>
+            ))}
+          </PagerView>
         </Box>
-
-        {/* Tab Bar - Scroll edilebilir */}
-        <TabsBar 
-          activeTab={activeTab} 
-          onChangeTab={handleTabChange} 
-          isDark={isDark}
-        />
-
-        {/* Tab Content - Scroll edilebilir */}
-        <TabContent
-          tabKey={activeTab}
-          targetUserId={targetUserId || ''}
-          isDark={isDark}
-          onQueryRef={handleTabQueryRef}
-        />
       </ScrollView>
 
 

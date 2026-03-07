@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
 import {
   FlatList,
   View,
@@ -35,25 +35,26 @@ interface AnimatedTabBarProps {
   scrollPosition?: Animated.SharedValue<number>;
 }
 
+export interface AnimatedTabBarRef {
+  scrollToTab: (tabKey: string) => void;
+}
+
 /**
- * AnimatedTabBar with LEFT-ALIGNED (flex-start) Dynamic Snap-to-Interval
+ * AnimatedTabBar with PagerView sync support
  *
  * Features:
- * - Active tab always snaps to LEFT edge of viewport (flex-start behavior)
- * - Dynamic snap interval based on actual tab widths
- * - Smooth momentum scroll with automatic snap to leftmost visible tab
- * - Spring animations for indicator and position changes
- * - Horizontal padding: 16px (left/right)
- *
- * Reference: https://www.animatereactnative.com/post/dynamic-snap-to-interval-%2B-dyanmic-widths
+ * - Horizontal swipe between tabs
+ * - Snap to tab positions
+ * - Sync with PagerView
+ * - Spring animations for indicator
  */
-export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
+export const AnimatedTabBar = forwardRef<AnimatedTabBarRef, AnimatedTabBarProps>(({
   tabs,
   activeTab,
   onTabChange,
   isDark,
   scrollPosition,
-}) => {
+}, ref) => {
   const flatListRef = useRef<FlatList>(null);
 
   // Shared animation values
@@ -79,63 +80,46 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
     []
   );
 
-  // Calculate dynamic snap interval from actual tab dimensions
-  const snapInterval = useMemo(() => {
-    if (tabLayouts.size === 0) return 100;
-    
-    let totalWidth = 0;
-    let totalGaps = 0;
-    const layouts = Array.from(tabLayouts.values());
-    
-    for (let i = 0; i < layouts.length; i++) {
-      totalWidth += layouts[i].width;
-      if (i < layouts.length - 1) {
-        // Gap between tabs (HStack space="md" = 12px in Gluestack)
-        totalGaps += layouts[i + 1].x - (layouts[i].x + layouts[i].width);
-      }
-    }
-    
-    const avgWidth = totalWidth / layouts.length;
-    const avgGap = layouts.length > 1 ? totalGaps / (layouts.length - 1) : 0;
-    
-    return Math.round(avgWidth + avgGap);
+  // Calculate snap offsets for each tab
+  const snapToOffsets = useMemo(() => {
+    if (tabLayouts.size === 0) return undefined;
+
+    // Her tab'ın X pozisyonunu array yap - FlatList buraya snap yapar
+    const offsets = Array.from(tabLayouts.values())
+      .sort((a, b) => a.x - b.x) // X'e göre sırala
+      .map(layout => layout.x);
+
+    console.log('[AnimatedTabBar] 📍 Snap offsets:', offsets);
+    return offsets;
   }, [tabLayouts]);
 
   // Scroll to align active tab to CENTER (better visibility)
   const scrollToTabLeft = useCallback((tabKey: string) => {
     const layout = tabLayouts.get(tabKey);
-    if (!layout || !scrollViewRef.current || !scrollViewWidth) {
-      console.log('[AnimatedTabBar] ❌ Cannot scroll - missing data:', {
-        hasLayout: !!layout,
-        hasScrollRef: !!scrollViewRef.current,
-        scrollViewWidth,
-        tabKey,
-      });
+    if (!layout || !flatListRef.current || !scrollViewWidth) {
       return;
     }
 
     // Calculate scroll position to center the tab in viewport
-    const HORIZONTAL_PADDING = 16;
     const tabCenter = layout.x + (layout.width / 2);
     const viewportCenter = scrollViewWidth / 2;
 
-    // Scroll to center the tab, accounting for padding
+    // Scroll to center the tab
     const scrollPos = Math.max(0, tabCenter - viewportCenter);
 
-    console.log('[AnimatedTabBar] 📍 Scrolling to center tab:', {
-      tabKey,
-      tabCenter,
-      viewportCenter,
-      scrollPos,
-      layoutX: layout.x,
-      layoutWidth: layout.width,
-    });
-
-    scrollViewRef.current.scrollTo({
-      x: scrollPos,
+    // FlatList uses scrollToOffset instead of scrollTo
+    flatListRef.current.scrollToOffset({
+      offset: scrollPos,
       animated: true,
     });
   }, [tabLayouts, scrollViewWidth]);
+
+  // Expose scrollToTab method via ref
+  useImperativeHandle(ref, () => ({
+    scrollToTab: (tabKey: string) => {
+      scrollToTabLeft(tabKey);
+    },
+  }), [scrollToTabLeft]);
 
   // Handle scroll - track position
   const handleScroll = useCallback(
@@ -146,21 +130,22 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
     []
   );
 
-  // Handle momentum scroll end - snap to nearest centered tab
+  // Handle scroll end - basit: scrollX'e en yakın tab'ı bul
   const handleScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const scrollX = event.nativeEvent.contentOffset.x;
 
-      // Viewport center
-      const viewportCenter = scrollX + (scrollViewWidth / 2);
+      // tabLayouts boş ise bekle
+      if (tabLayouts.size === 0) {
+        return;
+      }
 
-      // Find the tab closest to viewport center
+      // scrollX'e en yakın tab'ı bul (basit mesafe hesabı)
       let nearestKey: string | null = null;
       let minDistance = Infinity;
 
       for (const [key, layout] of tabLayouts.entries()) {
-        const tabCenter = layout.x + (layout.width / 2);
-        const distance = Math.abs(tabCenter - viewportCenter);
+        const distance = Math.abs(layout.x - scrollX);
 
         if (distance < minDistance) {
           minDistance = distance;
@@ -168,19 +153,17 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
         }
       }
 
-      console.log('[AnimatedTabBar] 🔚 Scroll ended:', {
+      console.log('[AnimatedTabBar] 🔚 Scroll ended - nearest tab:', {
         scrollX,
-        viewportCenter,
         nearestKey,
-        minDistance,
-        willChange: nearestKey !== activeTab,
+        currentActiveTab: activeTab,
       });
 
       if (nearestKey && nearestKey !== activeTab) {
         onTabChange(nearestKey);
       }
     },
-    [tabLayouts, activeTab, onTabChange, scrollViewWidth]
+    [tabLayouts, activeTab, onTabChange]
   );
 
   // ANIMATION FIX: Update indicator when active tab changes OR when scroll position changes (realtime)
@@ -283,12 +266,22 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
       <FlatList
         ref={flatListRef}
         data={tabs}
-        horizontal
+        horizontal={true}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
+        directionalLockEnabled={true}
+        alwaysBounceVertical={false}
+        alwaysBounceHorizontal={true}
         showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.key}
         contentContainerStyle={{ paddingHorizontal: 16 }}
         scrollEventThrottle={16}
+        snapToOffsets={snapToOffsets}
+        decelerationRate="fast"
         onScroll={handleScroll}
+        onScrollEndDrag={handleScrollEnd}
+        onMomentumScrollEnd={handleScrollEnd}
         onLayout={(e) => setScrollViewWidth(e.nativeEvent.layout.width)}
         onContentSizeChange={(w) => setContentWidth(w)}
         renderItem={({ item }) => {
@@ -380,6 +373,8 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
       )}
     </View>
   );
-};
+});
+
+AnimatedTabBar.displayName = 'AnimatedTabBar';
 
 export default AnimatedTabBar;
