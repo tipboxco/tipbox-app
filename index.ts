@@ -3,6 +3,10 @@ import 'react-native-gesture-handler';
 import { LogBox } from 'react-native';
 import { registerRootComponent } from 'expo';
 
+// Sentry'yi en başta başlat (error tracking için)
+import { initSentry } from './src/config/sentry.config';
+initSentry();
+
 import App from './App';
 
 // Suppress warnings
@@ -17,6 +21,8 @@ LogBox.ignoreLogs([
   'expo-notifications: Android Push notifications',
   'expo-notifications',
   'functionality is not fully supported in Expo Go',
+  // Sentry warnings - Development'ta Sentry devre dışı olduğu için bu uyarılar önemsiz
+  '[Sentry]',
 ]);
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

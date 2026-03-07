@@ -1,5 +1,6 @@
 import { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { TokenService } from '../TokenService';
+import { Sentry } from '../../config/sentry.config';
 // ARCHITECTURE FIX: Lazy import to break circular dependency
 // appStore imports interceptors (updateTokenCache, clearTokenCache)
 // interceptors imports appStore (useAppStore.getState())
@@ -326,6 +327,32 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
         } finally {
           isRefreshing = false;
         }
+      }
+
+      // Sentry Error Tracking - Sadece kritik hatalar için
+      // Filtrelenen hatalar: 401 (auth), 404 (not found), network errors
+      const shouldTrackError =
+        error.response?.status && // Response var mı?
+        error.response.status >= 500 && // 5xx server errors
+        !error.message?.includes('Network request failed') && // Network hatası değil
+        !error.message?.includes('timeout'); // Timeout değil
+
+      if (shouldTrackError) {
+        Sentry.captureException(error, {
+          tags: {
+            type: 'api_error',
+            status: error.response?.status?.toString() || 'unknown',
+            endpoint: error.config?.url || 'unknown',
+          },
+          contexts: {
+            api: {
+              url: error.config?.url,
+              method: error.config?.method,
+              status: error.response?.status,
+              statusText: error.response?.statusText,
+            },
+          },
+        });
       }
 
       return Promise.reject(error);
