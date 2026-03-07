@@ -98,7 +98,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                     fontWeight="$semibold"
                     color={isDark ? '$textDark50' : '#3B3B3B'}
                 >
-                    {t('post.create.experience.step3.rateExperience')}
+                    {t('create.experience.step3.rateExperience')}
                 </Text>
                 <HStack space="xs">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -170,7 +170,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#3B3B3B'}
                                     >
-                                        {t('post.create.experience.step3.priceAndShopping')}
+                                        {t('create.experience.step3.priceAndShopping')}
                                     </Text>
                                 </HStack>
                                 {/* Edit Icon */}
@@ -191,7 +191,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                 height={priceTextAreaHeight}
                             >
                                 <TextareaInput
-                                    placeholder={t('post.create.experience.step3.priceExperiencePlaceholder')}
+                                    placeholder={t('create.experience.step3.priceExperiencePlaceholder')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '$textDark50' : '#000000'}
                                     fontSize={14}
@@ -246,7 +246,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                         fontWeight="$semibold"
                                         color={isDark ? '$textDark50' : '#3B3B3B'}
                                     >
-                                        {t('post.create.experience.step3.productAndUsage')}
+                                        {t('create.experience.step3.productAndUsage')}
                                     </Text>
                                 </HStack>
                                 {/* Edit Icon */}
@@ -267,7 +267,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                 height={productTextAreaHeight}
                             >
                                 <TextareaInput
-                                    placeholder={t('post.create.experience.step3.productExperiencePlaceholder')}
+                                    placeholder={t('create.experience.step3.productExperiencePlaceholder')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '$textDark50' : '#000000'}
                                     fontSize={14}
@@ -335,7 +335,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                         fontSize={14}
                         fontWeight="$bold"
                     >
-                        {t('post.create.experience.step3.images')}
+                        {t('create.experience.step3.images')}
                     </Text>
                     <HStack space="sm" flexWrap="wrap">
                         {/* Display selected images */}
