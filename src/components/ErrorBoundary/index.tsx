@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Box, Text, VStack, Button } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { Sentry } from '@/src/config/sentry.config';
 
 interface Props {
   children: ReactNode;
@@ -40,14 +41,27 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to console (in production, this should go to crash reporting service)
+    // Log error to console
     console.error('[ErrorBoundary] ❌ Error caught by boundary:', error);
     console.error('[ErrorBoundary] Error Info:', errorInfo);
-    
-    // In production, send to crash reporting service (e.g., Sentry)
-    if (!__DEV__) {
-      // TODO: Integrate with Sentry or similar service
-      // Sentry.captureException(error, { contexts: { react: errorInfo } });
+
+    // CRITICAL FIX: Send React component errors to Sentry
+    // This captures all React render errors, lifecycle errors, and event handler errors
+    try {
+      Sentry.captureException(error, {
+        contexts: {
+          react: {
+            componentStack: errorInfo.componentStack,
+          },
+        },
+        tags: {
+          error_boundary: 'react_component_error',
+        },
+        level: 'error',
+      });
+      console.log('[ErrorBoundary] 📤 Error sent to Sentry');
+    } catch (sentryError) {
+      console.error('[ErrorBoundary] ⚠️ Failed to send error to Sentry:', sentryError);
     }
 
     this.setState({

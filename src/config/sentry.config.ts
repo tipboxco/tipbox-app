@@ -12,8 +12,10 @@ import Constants from 'expo-constants';
  * - Production build'de normal Sentry kullanılır
  */
 
-// Development modda mı kontrol et
-const isDevelopment = __DEV__;
+// CRITICAL FIX: Sadece Expo Go'da mock kullan, development build'de gerçek Sentry kullan
+// Expo Go kontrolü için Constants.appOwnership veya execution environment kontrolü
+const isExpoGo = Constants.appOwnership === 'expo';
+const isDevelopment = __DEV__ && isExpoGo; // Sadece Expo Go + dev modda mock kullan
 
 // Mock Sentry objeleri - Expo Go için
 const mockSentry = {
@@ -36,23 +38,22 @@ const mockRoutingInstrumentation = {
   registerNavigationContainer: () => {},
 };
 
-// Development modda mock objeler kullan, production'da gerçek Sentry
+// Sadece Expo Go'da mock objeler kullan, development build'de de gerçek Sentry kullan
 let Sentry: any;
 let routingInstrumentation: any;
 
 if (isDevelopment) {
-  // Development modda (Expo Go) - Mock objeler kullan
+  // Expo Go modda - Mock objeler kullan
   Sentry = mockSentry;
   routingInstrumentation = mockRoutingInstrumentation;
-  console.log('[Sentry] 🚧 Running in development mode with Expo Go - using mock Sentry');
+  console.log('[Sentry] 🚧 Running in Expo Go - using mock Sentry');
 } else {
-  // Production modda - Gerçek Sentry kullan
+  // Development build veya production - Gerçek Sentry kullan
   try {
-    // Sadece production'da import et
     const SentryModule = require('@sentry/react-native');
     Sentry = SentryModule;
     routingInstrumentation = new SentryModule.ReactNavigationInstrumentation();
-    console.log('[Sentry] 🚀 Running in production mode - real Sentry loaded');
+    console.log('[Sentry] 🚀 Real Sentry loaded - ready to track errors');
   } catch (error) {
     console.error('[Sentry] ❌ Failed to load Sentry module:', error);
     // Fallback to mock
@@ -64,13 +65,17 @@ if (isDevelopment) {
 // Sentry DSN - Environment variable'dan alınır
 const SENTRY_DSN = Constants.expoConfig?.extra?.sentryDsn || '';
 
-// Sentry'yi sadece production'da ve DSN varsa başlat
-const isProduction = process.env.NODE_ENV === 'production';
-const shouldInitializeSentry = isProduction && SENTRY_DSN && !isDevelopment;
+// CRITICAL FIX: Test ve production'da Sentry'yi başlat, sadece Expo Go'da başlatma
+// DSN varsa ve Expo Go değilse Sentry'yi başlat
+const shouldInitializeSentry = SENTRY_DSN && !isDevelopment;
 
 export const initSentry = () => {
   if (!shouldInitializeSentry) {
-    console.log('[Sentry] ⏭️  Skipped initialization (development mode or no DSN)');
+    console.log('[Sentry] ⏭️  Skipped initialization (Expo Go or no DSN)', {
+      isExpoGo,
+      hasDSN: !!SENTRY_DSN,
+      isDevelopment,
+    });
     return;
   }
 
@@ -94,10 +99,10 @@ export const initSentry = () => {
 
       // Error filtering
       beforeSend(event, hint) {
-        // Development'ta Sentry'ye gönderme
+        // CRITICAL FIX: Test environment'ta da event'leri gönder
+        // Sadece development build'de log yap, event'i göndermeye devam et
         if (__DEV__) {
-          console.log('[Sentry] Error caught (dev mode, not sent):', hint.originalException);
-          return null;
+          console.log('[Sentry] 📤 Sending error to Sentry:', hint.originalException);
         }
 
         // Network errors'ı filtrele (çok fazla gürültü yaratabilir)
@@ -107,6 +112,7 @@ export const initSentry = () => {
           if (message?.includes('Network request failed') ||
               message?.includes('timeout') ||
               message?.includes('ECONNREFUSED')) {
+            console.log('[Sentry] 🚫 Filtered network error (not sent):', message);
             return null; // Network hatalarını gönderme
           }
         }
@@ -123,8 +129,8 @@ export const initSentry = () => {
         return breadcrumb;
       },
 
-      // Debug mode (sadece geliştirme için)
-      debug: false,
+      // Debug mode - development build'de aktif, production'da kapalı
+      debug: __DEV__,
 
       // Native crash handling
       enableNative: true,

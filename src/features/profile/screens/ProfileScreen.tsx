@@ -1937,6 +1937,16 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [activeTab]);
   
+  // Loading state - profile yüklenirken loading indicator göster
+  if (isProfileLoading && !userProfile) {
+    return (
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }
+
+  // Error state - profile yüklenemezse hata mesajı göster
   if (profileError || !userProfile) {
     return (
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>

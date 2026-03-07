@@ -18,6 +18,7 @@ import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProv
 import { GlobalUIHost } from '@/src/components/GlobalUIHost';
 import { TranslationCacheService } from '@/src/services/TranslationCacheService';
 import { useSyncInventoryToStore } from '@/src/features/post/hooks/useSyncInventoryToStore';
+import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 
 
 
@@ -116,10 +117,12 @@ const AppInner = () => {
 
 export default function App() {
   return (
-    <QueryProvider>
-      <AppProviders>
-        <AppInner />
-      </AppProviders>
-    </QueryProvider>
+    <ErrorBoundary>
+      <QueryProvider>
+        <AppProviders>
+          <AppInner />
+        </AppProviders>
+      </QueryProvider>
+    </ErrorBoundary>
   );
 }

@@ -131,7 +131,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
 
   useFocusEffect(
     useCallback(() => {
-      // Only reset on initial focus, not on subsequent focuses (coming back from deeper screens)
+      // Only reset on initial mount (tab change), not on subsequent focuses (coming back from PostsScreen)
       if (isInitialFocusRef.current) {
         isInitialFocusRef.current = false;
 
@@ -147,10 +147,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
       }
 
-      // Reset the flag when the screen is unfocused (navigating away)
-      return () => {
-        isInitialFocusRef.current = true;
-      };
+      // CRITICAL FIX: Don't reset the flag on cleanup
+      // This ensures state is preserved when navigating to PostsScreen and back
+      // Flag will only be reset when component unmounts (tab change)
     }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView])
   );
   
