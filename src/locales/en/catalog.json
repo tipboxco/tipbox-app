@@ -137,7 +137,7 @@
     "sortBy": "Sort by"
   },
   "brandHistory": {
-    "title": "Marka Geçmişim",
+    "title": "My Brand History",
     "loading": "Loading history...",
     "error": "Error loading history",
     "noHistory": "No history found",
@@ -165,7 +165,7 @@
     "viewDetails": "View Details"
   },
   "brandEventDetail": {
-    "title": "Anketler & Oyunlaştırmalar",
+    "title": "Surveys & Gamification",
     "loading": "Loading event...",
     "error": "Error loading event",
     "eventNotFound": "Event not found",
@@ -197,7 +197,7 @@
     "viewResults": "View Results"
   },
   "survey": {
-    "title": "Anket & Oyunlaştırmalar",
+    "title": "Surveys & Gamification",
     "loading": "Loading survey...",
     "error": "Error loading survey",
     "surveyNotFound": "Survey not found",
@@ -209,19 +209,19 @@
     "loadingSurveys": "Loading surveys...",
     "errorLoadingSurveys": "Error loading surveys",
     "noSurveysYet": "No surveys yet.",
-    "noBadgesYet": "Henüz rozet yok.",
-    "brandHistory": "Marka Geçmişim",
+    "noBadgesYet": "No badges yet.",
+    "brandHistory": "My Brand History",
     "points": "Points"
   },
   "surveyParticipation": {
-    "title": "Anket",
+    "title": "Survey",
     "loading": "Loading survey...",
     "error": "Error loading survey",
     "surveyNotFound": "Survey not found",
     "question": "Question {{number}} of {{total}}",
-    "next": "Sonraki Soru",
-    "previous": "Önceki Soruya Dön",
-    "submit": "Tamamla",
+    "next": "Next Question",
+    "previous": "Previous Question",
+    "submit": "Complete",
     "submitting": "Submitting...",
     "selectAnswer": "Please select an answer",
     "answerRequired": "Answer is required",

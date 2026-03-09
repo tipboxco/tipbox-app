@@ -49,7 +49,6 @@ import { useSafeAreaValues } from '@/src/utils';
 import { Modal, Dimensions } from 'react-native';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Sentry } from '@/src/config/sentry.config';
 
 export interface NotificationCardProps {
     notification: Notification;
@@ -2066,23 +2065,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = (props) => {
     } catch (error) {
         console.error('[NotificationCard] ❌ Render error:', error);
         console.error('[NotificationCard] Notification data:', props.notification);
-
-        // Sentry'e gönder
-        if (typeof Sentry !== 'undefined') {
-            Sentry.captureException(error, {
-                tags: {
-                    component: 'NotificationCard',
-                    notification_type: props.notification?.type,
-                },
-                contexts: {
-                    notification: {
-                        id: props.notification?.id,
-                        type: props.notification?.type,
-                        data: props.notification?.data,
-                    },
-                },
-            });
-        }
 
         // Fallback UI - crash yerine basit bir error card göster
         return (

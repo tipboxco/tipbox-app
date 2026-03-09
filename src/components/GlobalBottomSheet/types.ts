@@ -54,19 +54,28 @@ export interface BottomSheetOptions {
   detached?: boolean;
   bottomInset?: number;
   style?: ViewStyle;
+
+  // Animation config
+  animationConfigs?: any;
+
+  // Scroll wrapper
+  // true: content'i BottomSheetView ile wrap et (default)
+  // false: content'i wrap etme, custom scroll view kullanımına izin ver (BottomSheetFlatList, BottomSheetScrollView vb.)
+  wrapWithScrollView?: boolean;
 }
 
 /**
  * Default Bottom Sheet Options
  * Tüm bottom sheet'ler için varsayılan ayarlar
  */
-export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom'>> & {
+export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom' | 'animationConfigs'>> & {
   onChange?: (index: number) => void;
   onClose?: () => void;
   backgroundStyle?: ViewStyle;
   handleStyle?: ViewStyle;
   handleIndicatorStyle?: ViewStyle;
   paddingBottom?: number;
+  animationConfigs?: any;
 } = {
   // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
   // Dynamic sizing adapts to content height automatically
@@ -84,6 +93,14 @@ export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'on
   keyboardBehavior: 'extend',
   keyboardBlurBehavior: 'restore',
   android_keyboardInputMode: 'adjustResize',
+  // Scroll wrapper
+  wrapWithScrollView: true,
+  detached: false,
+  bottomInset: 0,
+  enableHandle: true,
+  maxDynamicContentSize: 0,
+  snapPoints: [],
+  initialSnapIndex: 0,
 };
 
 /**

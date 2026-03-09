@@ -247,13 +247,13 @@
   },
   "selectExperience": {
     "header": {
-      "title": "Experience Post Seçin"
+      "title": "Select Experience Post"
     },
     "noUser": {
-      "message": "Giriş yapmanız gerekiyor."
+      "message": "You need to log in."
     },
     "loading": {
-      "message": "Deneyim gönderileriniz yükleniyor..."
+      "message": "Loading your experience posts..."
     },
     "error": {
       "message": "An error occurred while loading the list."

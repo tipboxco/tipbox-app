@@ -11,7 +11,6 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { GlobalBottomSheet } from '@/src/components/GlobalBottomSheet';
-import { routingInstrumentation } from '@/src/config/sentry.config';
 // Drawer artık React Navigation DrawerNavigator içinde
 // FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için
 
@@ -136,9 +135,6 @@ const NavigationInner = () => {
             checkAndConsumePendingNavigation();
             // NavigationService queue'sunu da consume et
             navigationService.consumePendingNavigationQueue();
-
-            // Sentry Navigation Tracking: Register navigation ref
-            routingInstrumentation.registerNavigationContainer(navigationRef);
           }}
           onStateChange={(state) => {
             // ARCHITECTURE FIX: Navigation state change event listener

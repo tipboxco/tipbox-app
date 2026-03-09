@@ -1,6 +1,5 @@
 import { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { TokenService } from '../TokenService';
-import { Sentry } from '../../config/sentry.config';
 // ARCHITECTURE FIX: Lazy import to break circular dependency
 // appStore imports interceptors (updateTokenCache, clearTokenCache)
 // interceptors imports appStore (useAppStore.getState())
@@ -160,18 +159,36 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
       // Backend standart format: { success: true, data: T }
       // Interceptor otomatik olarak 'data' alanini unwrap eder
       // Boylece tum API fonksiyonlari dogrudan T tipini alir
+      //
+      // CRITICAL FIX: Pagination ve metadata koruması
+      // Eğer response'da pagination, dateGroups, participants gibi metadata varsa
+      // unwrap yapma - bu metadata'lar kaybolur ve React Query crash olur
       if (
         response.data &&
         typeof response.data === 'object' &&
         response.data.success === true &&
         'data' in response.data
       ) {
-        if (__DEV__) {
-          console.log(`[ApiInterceptor] 📦 Unwrapping response: ${response.config.url}`);
+        // Metadata kontrolü - pagination, dateGroups, participants, vb.
+        const hasMetadata = Object.keys(response.data).some(
+          key => !['success', 'data'].includes(key)
+        );
+
+        if (!hasMetadata) {
+          // Metadata yok, güvenle unwrap yapabiliriz
+          if (__DEV__) {
+            console.log(`[ApiInterceptor] 📦 Unwrapping response: ${response.config.url}`);
+          }
+          // CRITICAL: React Query undefined kabul etmiyor
+          // data field'ı undefined ise null döndür
+          response.data = response.data.data !== undefined ? response.data.data : null;
+        } else {
+          // Metadata var, unwrap yapma - full response'u koru
+          if (__DEV__) {
+            console.log(`[ApiInterceptor] 📦 Preserving metadata for: ${response.config.url}`);
+          }
+          // Response'u olduğu gibi döndür
         }
-        // CRITICAL: React Query undefined kabul etmiyor
-        // data field'ı undefined ise null döndür
-        response.data = response.data.data !== undefined ? response.data.data : null;
       }
       return response;
     },
@@ -338,20 +355,10 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
         !error.message?.includes('timeout'); // Timeout değil
 
       if (shouldTrackError) {
-        Sentry.captureException(error, {
-          tags: {
-            type: 'api_error',
-            status: error.response?.status?.toString() || 'unknown',
-            endpoint: error.config?.url || 'unknown',
-          },
-          contexts: {
-            api: {
-              url: error.config?.url,
-              method: error.config?.method,
-              status: error.response?.status,
-              statusText: error.response?.statusText,
-            },
-          },
+        console.error('[ApiInterceptor] ❌ Server Error:', {
+          status: error.response?.status,
+          endpoint: error.config?.url,
+          method: error.config?.method,
         });
       }
 

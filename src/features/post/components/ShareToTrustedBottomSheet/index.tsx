@@ -9,7 +9,8 @@ import {
   InputField,
   Image,
 } from '@gluestack-ui/themed';
-import { ActivityIndicator, FlatList, Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Keyboard, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@gluestack-ui/themed';

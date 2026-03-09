@@ -1,6 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
-import { Sentry } from '@/src/config/sentry.config';
 
 interface Props {
   children: ReactNode;
@@ -43,25 +42,6 @@ export class ErrorBoundary extends Component<Props, State> {
     // Log error to console
     console.error('[ErrorBoundary] ❌ Error caught by boundary:', error);
     console.error('[ErrorBoundary] Error Info:', errorInfo);
-
-    // CRITICAL FIX: Send React component errors to Sentry
-    // This captures all React render errors, lifecycle errors, and event handler errors
-    try {
-      Sentry.captureException(error, {
-        contexts: {
-          react: {
-            componentStack: errorInfo.componentStack,
-          },
-        },
-        tags: {
-          error_boundary: 'react_component_error',
-        },
-        level: 'error',
-      });
-      console.log('[ErrorBoundary] 📤 Error sent to Sentry');
-    } catch (sentryError) {
-      console.error('[ErrorBoundary] ⚠️ Failed to send error to Sentry:', sentryError);
-    }
 
     this.setState({
       error,

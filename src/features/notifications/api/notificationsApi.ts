@@ -130,59 +130,59 @@ export const getNotifications = async (
       };
     }>('/notifications', { params });
     
+    // CRITICAL FIX: Interceptor artık metadata varsa unwrap yapmıyor
+    // Bu yüzden response.data.data yerine response.data'yı kullanıyoruz
+    const responseData = response.data;
+
     // ✅ YENİ: Optimize format kontrolü (dateGroups varsa optimize format kullan)
-    if (response.data?.dateGroups && response.data.dateGroups.length > 0) {
+    if (responseData?.dateGroups && responseData.dateGroups.length > 0) {
       console.log('[getNotifications] ✅ Optimize format kullanılıyor (dateGroups)');
-      
+
       // Participants bilgisini al (yeni format)
-      const participants = response.data.participants;
-      
+      const participants = responseData.participants;
+
       if (!participants) {
         console.warn('[getNotifications] ⚠️ Participants bilgisi yok, optimize format kullanılamıyor');
         // Fallback to old format
       } else {
         // Optimize format'tan flat array'e çevir
         const allNotifications = convertOptimizedNotificationsToFlat(
-          response.data.dateGroups,
+          responseData.dateGroups,
           participants
         );
-        
+
         console.log('[getNotifications] ✅ Optimize format\'tan normalize edildi:', allNotifications.length, 'bildirim');
-        
+
         return {
-          success: response.data.success ?? true,
+          success: responseData.success ?? true,
           data: allNotifications,
-          pagination: response.data.pagination,
+          pagination: responseData.pagination,
           participants: participants,
-          dateGroups: response.data.dateGroups, // Optimize format'ı da döndür (ileride direkt kullanılabilir)
+          dateGroups: responseData.dateGroups, // Optimize format'ı da döndür (ileride direkt kullanılabilir)
         };
       }
     }
-    
+
     // ✅ Eski format (backward compatibility)
     // Response data kontrolü - Backend formatı: { success: boolean, data: Array<...>, pagination: {...} }
     let notificationsArray: any[] = [];
     let pagination: any = null;
-    
-    if (response.data) {
+
+    if (responseData) {
       // Backend formatı: { success, data: [...], pagination: {...} }
-      if ((response.data as any).data && Array.isArray((response.data as any).data)) {
-        notificationsArray = (response.data as any).data;
-        pagination = (response.data as any).pagination;
+      if (responseData.data && Array.isArray(responseData.data)) {
+        notificationsArray = responseData.data;
+        pagination = responseData.pagination;
       }
-      // Format 2: Backend direkt array döndürüyor (fallback)
-      else if (Array.isArray(response.data)) {
-        notificationsArray = response.data;
-      }
-      // Format 3: Response.data zaten array (nested - fallback)
-      else if (Array.isArray((response.data as any))) {
-        notificationsArray = response.data as any;
+      // Format 2: Backend direkt array döndürüyor (interceptor unwrap yapmış - metadata yok)
+      else if (Array.isArray(responseData)) {
+        notificationsArray = responseData;
       }
     }
     
     if (notificationsArray.length === 0) {
       return {
-        success: (response.data as any)?.success ?? false,
+        success: responseData?.success ?? false,
         data: [],
         pagination: pagination,
       };
@@ -244,13 +244,13 @@ export const getNotifications = async (
     });
     
     const result: GetNotificationsResponse = {
-      success: (response.data as any)?.success ?? true,
+      success: responseData?.success ?? true,
       data: mappedData,
       pagination: pagination || undefined,
     };
-    
+
     // CRITICAL FIX: Log'ları kaldırdık - sürekli istek sorununu önlemek için
-    
+
     return result;
   } catch (error: any) {
     // CRITICAL FIX: Hata durumunu logla

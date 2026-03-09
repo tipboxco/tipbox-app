@@ -213,20 +213,27 @@ export const GlobalBottomSheet: React.FC = () => {
         android_keyboardInputMode={mergedOptions.android_keyboardInputMode ?? 'adjustResize'}
         detached={mergedOptions.detached ?? false}
         bottomInset={mergedOptions.bottomInset}
-       
+
         style={sheetContainerStyle}
       >
-        <BottomSheetView 
-          style={{ 
-            paddingBottom,
-            minHeight: 200,
-          }}
-        >
-          {content}
-          {keyboardHeight > 0 && (
-            <View style={{ height: keyboardHeight }} />
-          )}
-        </BottomSheetView>
+        {mergedOptions.wrapWithScrollView !== false ? (
+          // Default: content'i BottomSheetView ile wrap et
+          <BottomSheetView
+            style={{
+              paddingBottom,
+              minHeight: 200,
+            }}
+          >
+            {content}
+            {keyboardHeight > 0 && (
+              <View style={{ height: keyboardHeight }} />
+            )}
+          </BottomSheetView>
+        ) : (
+          // Custom scroll view mode: content'i wrap etme
+          // ShareToTrustedBottomSheet gibi componentler kendi BottomSheetFlatList'lerini kullanabilir
+          content
+        )}
       </BottomSheet>
   );
 };

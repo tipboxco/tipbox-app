@@ -116,21 +116,12 @@
         }
       ],
       "expo-video",
-      "expo-router",
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "tipbox-rh",
-          "project": "tipbox-app",
-          "url": "https://sentry.io/"
-        }
-      ]
+      "expo-router"
     ],
     "extra": {
       "eas": {
         "projectId": "e740cd51-8289-4b1d-af1d-a7159ea5bbc2"
-      },
-      "sentryDsn": "https://d9859d5405c7ed247b84d8112291a107@o4510999354605568.ingest.us.sentry.io/4510999365091328"
+      }
     },
     "owner": "tipboxco"
   }

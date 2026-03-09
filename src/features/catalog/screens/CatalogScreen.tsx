@@ -229,11 +229,21 @@ const CatalogScreenComponent = () => {
   const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
   
 
-  const handleBrandCategorySelection = (category: Category) => {
+  const handleBrandCategorySelection = (category: Category | null) => {
     dispatch({ type: 'SET_SELECTED_CATEGORY', payload: category });
     // Brand catalog modunda kal, sadece seçilen kategoriyi güncelle
     // Kullanıcı floating button ile brand-selection moduna geçebilir
-    
+
+    // CRITICAL FIX: Null check to prevent crash
+    if (category === null) {
+      // Reset to categories step when category is cleared
+      setBrandCatalogState({
+        selectedCategoryId: undefined,
+        currentStep: 'categories',
+      });
+      return;
+    }
+
     // Store'a kaydet
     setBrandCatalogState({
       selectedCategoryId: category.id,

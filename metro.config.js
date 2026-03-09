@@ -1,9 +1,8 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
-const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 
-// Sentry config ile başla (source maps için Debug ID injection)
-const config = getSentryExpoConfig(__dirname);
+// Default config ile başla
+const config = getDefaultConfig(__dirname);
 
 // Socket.IO client için gerekli: mjs, cjs extension'ları ekle
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs', 'cjs'];
