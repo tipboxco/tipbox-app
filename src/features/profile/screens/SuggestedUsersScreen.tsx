@@ -65,10 +65,10 @@ export const SuggestedUsersScreen = () => {
 
     const handleAddTrust = (userId: string) => {
         console.log('Add trust clicked for user:', userId);
-        
+
         // Optimistic update: Show immediately in UI
         setLocalTrustedUsers(prev => new Set(prev).add(userId));
-        
+
         addTrustMutation.mutate(userId, {
             onSuccess: () => {
                 console.log('✅ Trust added successfully');
@@ -85,6 +85,12 @@ export const SuggestedUsersScreen = () => {
                 });
             },
         });
+    };
+
+    // ADDED: Navigate to user profile
+    const handleUserPress = (userId: string) => {
+        console.log('Navigate to user profile:', userId);
+        navigation.navigate('Profile', { userId });
     };
 
     const handleLoadMore = () => {
@@ -159,6 +165,7 @@ export const SuggestedUsersScreen = () => {
                         mutualTrustCount={item.mutualTrustCount}
                         isTrusted={item.isTrusted || localTrustedUsers.has(item.id)}
                         onAddTrust={handleAddTrust}
+                        onPress={handleUserPress}
                         showBorder={false}
                     />
                 )}

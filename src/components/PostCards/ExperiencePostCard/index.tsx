@@ -48,7 +48,6 @@ import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
-import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
@@ -80,8 +79,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const menuTriggerRef = React.useRef<View>(null);
   const triggerPositionRef = React.useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const { openBottomSheet } = useGlobalBottomSheet();
-  const { openPostShareSheet } = usePostShare();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
   // Animated counter states
   const [likesCount, setLikesCount] = useState(data.stats.likes);
@@ -144,16 +142,22 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
 
   const handleShare = useCallback(() => {
     // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
-    openPostShareSheet({
-      postId: data.id,
-      postContent: data.content?.[0]?.content ?? '',
-      postAuthorName: data.user?.name,
-      onShareSuccess: () => {
-        setIsShared(true);
-        setSharesCount((prev) => prev + 1);
-      },
-    });
-  }, [data.id, data.content, data.user?.name, openPostShareSheet]);
+    openBottomSheet(
+      <ShareToTrustedBottomSheet
+        postId={data.id}
+        postContent={data.content?.[0]?.content ?? ''}
+        postAuthorName={data.user?.name}
+        onShareSuccess={() => {
+          setIsShared(true);
+          setSharesCount((prev) => prev + 1);
+        }}
+        onClose={closeBottomSheet}
+      />,
+      {
+        snapPoints: ['65%'],
+      }
+    );
+  }, [data.id, data.content, data.user?.name, openBottomSheet, closeBottomSheet]);
 
   const handleComment = () => {
     if (isDetailMode) return; // Detay modunda navigation yapma

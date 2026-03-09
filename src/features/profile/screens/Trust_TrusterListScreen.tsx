@@ -613,6 +613,7 @@ export const Trust_TrusterListScreen = () => {
                                         key={user.id}
                                         user={user}
                                         showBorder={false}
+                                        listType="trust"
                                         onUserPress={() => {
                                             profileNavigation.navigate('ProfileMain', { userId: user.id });
                                         }}
@@ -690,6 +691,7 @@ export const Trust_TrusterListScreen = () => {
                                         key={user.id}
                                         user={user}
                                         showBorder={false}
+                                        listType="truster"
                                         onUserPress={() => {
                                             profileNavigation.navigate('ProfileMain', { userId: user.id });
                                         }}

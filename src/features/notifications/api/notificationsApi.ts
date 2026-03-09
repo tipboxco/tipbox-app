@@ -217,7 +217,32 @@ export const getNotifications = async (
       if (isGrouped && !item.count && hasPrimaryUser) {
         count = (item.otherUsers?.length || 0) + 1; // primaryUser + otherUsers
       }
-      
+
+      // CRITICAL FIX: Validate and normalize date fields
+      // Backend sometimes sends empty objects {} or invalid dates
+      const validateDate = (dateValue: any): string => {
+        // If it's already a valid date string, use it
+        if (typeof dateValue === 'string' && dateValue.length > 0) {
+          const parsedDate = new Date(dateValue);
+          if (!isNaN(parsedDate.getTime())) {
+            return dateValue;
+          }
+        }
+        // Fallback: use current date (but log warning)
+        if (__DEV__) {
+          console.warn('[getNotifications] ⚠️ Invalid date, using current date as fallback:', {
+            notificationId: item.id,
+            type: item.type,
+            receivedDate: dateValue,
+          });
+        }
+        return new Date().toISOString();
+      };
+
+      const createdAt = validateDate(item.createdAt);
+      const readAt = item.readAt ? validateDate(item.readAt) : undefined;
+      const updatedAt = item.updatedAt ? validateDate(item.updatedAt) : undefined;
+
       return {
         id: item.id,
         userId: item.userId,
@@ -229,9 +254,9 @@ export const getNotifications = async (
         // CRITICAL FIX: imageUrl root seviyede kaldırıldı, sadece data içinde olacak
         // imageUrl property'si kaldırıldı - sadece data.imageUrl kullanılacak
         read,
-        readAt: item.readAt,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
+        readAt,
+        createdAt,
+        updatedAt,
         data: notificationData, // Backend'den gelen data objesini direkt kullan (postId, imageUrl, description, vb. içerir)
         metadata: notificationData, // Backward compatibility için metadata'ya da kopyala
         navigation: notificationData?.navigation,

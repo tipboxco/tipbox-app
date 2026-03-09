@@ -37,6 +37,12 @@ interface TrustUserCardProps {
   onPopoverOpen?: () => void; // Deprecated, kept for backward compatibility
   onPopoverClose?: () => void; // Deprecated, kept for backward compatibility
   onUserPress?: () => void;
+  /**
+   * Kullanıcının hangi listeden geldiğini belirtir
+   * - 'trust': Kullanıcının güvendiği kişiler (Remove işlemi yapılabilir)
+   * - 'truster': Kullanıcıya güvenenler (Remove işlemi YAPILAMAZ)
+   */
+  listType?: 'trust' | 'truster';
 }
 
 export const TrustUserCard = ({
@@ -46,6 +52,7 @@ export const TrustUserCard = ({
   onPopoverOpen,
   onPopoverClose,
   onUserPress,
+  listType = 'trust', // Default: trust listesi (geriye dönük uyumluluk için)
 }: TrustUserCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -393,30 +400,37 @@ export const TrustUserCard = ({
             }
           ]}
         >
-          <RNPressable 
+          <RNPressable
             onPress={(e) => e.stopPropagation()}
             style={{ flex: 1 }}
           >
             <VStack width="100%">
-              <RNPressable
-                onPress={() => {
-                  setIsMenuOpen(false);
-                  handleRemoveFromTrustList();
-                }}
-                style={{ paddingHorizontal: 12, paddingVertical: 8 }}
-              >
-                <HStack alignItems="center" space="xs">
-                  <XCircleIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
-                  <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize="$sm"
-                    fontWeight="$medium"
+              {/* Remove from Trust List - Sadece trust listesinde göster */}
+              {listType === 'trust' && (
+                <>
+                  <RNPressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleRemoveFromTrustList();
+                    }}
+                    style={{ paddingHorizontal: 12, paddingVertical: 8 }}
                   >
-                    Remove from Trust List
-                  </Text>
-                </HStack>
-              </RNPressable>
-              <View style={{ height: 1, backgroundColor: isDark ? '#333333' : '#E9E9E9' }} />
+                    <HStack alignItems="center" space="xs">
+                      <XCircleIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Remove from Trust List
+                      </Text>
+                    </HStack>
+                  </RNPressable>
+                  <View style={{ height: 1, backgroundColor: isDark ? '#333333' : '#E9E9E9' }} />
+                </>
+              )}
+
+              {/* Mute/Unmute */}
               <RNPressable
                 onPress={() => {
                   setIsMenuOpen(false);
@@ -437,6 +451,8 @@ export const TrustUserCard = ({
                 </HStack>
               </RNPressable>
               <View style={{ height: 1, backgroundColor: isDark ? '#333333' : '#E9E9E9' }} />
+
+              {/* Block/Unblock */}
               <RNPressable
                 onPress={() => {
                   setIsMenuOpen(false);

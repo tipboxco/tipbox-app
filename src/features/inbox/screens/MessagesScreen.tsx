@@ -29,6 +29,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { MessageSkeleton } from '@/src/components/Skeletons';
 import { inboxTypingStore } from '../store/typingStore';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { AutoSkeletonView } from 'react-native-auto-skeleton';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -555,41 +556,49 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     <Text color="#CE4A4A">{t('messages.error', { message: error.message })}</Text>
                 </Box>
             ) : (
-                <FlatList
-                    data={getFilteredMessages()}
-                    showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => (
-                        <MessageCardRow item={item} onPress={handleMessagePress} />
-                    )}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ 
-                        paddingHorizontal: 16, 
-                        paddingTop: 0, 
-                        paddingBottom: bottomInset,
-                        flexGrow: getFilteredMessages().length === 0 ? 1 : 0,
-                    }}
-                    ListEmptyComponent={
-                        !isLoading ? (
-                            <Box py={40} alignItems="center" justifyContent="center" flex={1}>
-                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('messages.empty')}</Text>
-                            </Box>
-                        ) : null
-                    }
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={isManualRefreshing}
-                            onRefresh={async () => {
-                                setIsManualRefreshing(true);
-                                try {
-                                    await refetch();
-                                } finally {
-                                    setIsManualRefreshing(false);
-                                }
-                            }}
-                            tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
-                        />
-                    }
-                />
+                <AutoSkeletonView
+                    isLoading={isLoading && !messages}
+                    animationType="gradient"
+                    duration={1200}
+                    skeletonColor={isDark ? '#1A1A1A' : '#E1E9EE'}
+                    highlightColor={isDark ? '#2A2A2A' : '#F2F8FC'}
+                >
+                    <FlatList
+                        data={isLoading && !messages ? Array(8).fill({}) : getFilteredMessages()}
+                        showsVerticalScrollIndicator={false}
+                        renderItem={({ item }) => (
+                            <MessageCardRow item={item} onPress={handleMessagePress} />
+                        )}
+                        keyExtractor={(item, index) => item.id || `skeleton-${index}`}
+                        contentContainerStyle={{
+                            paddingHorizontal: 16,
+                            paddingTop: 0,
+                            paddingBottom: bottomInset,
+                            flexGrow: getFilteredMessages().length === 0 ? 1 : 0,
+                        }}
+                        ListEmptyComponent={
+                            !isLoading ? (
+                                <Box py={40} alignItems="center" justifyContent="center" flex={1}>
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('messages.empty')}</Text>
+                                </Box>
+                            ) : null
+                        }
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={isManualRefreshing}
+                                onRefresh={async () => {
+                                    setIsManualRefreshing(true);
+                                    try {
+                                        await refetch();
+                                    } finally {
+                                        setIsManualRefreshing(false);
+                                    }
+                                }}
+                                tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+                            />
+                        }
+                    />
+                </AutoSkeletonView>
             )}
         </VStack>
     );

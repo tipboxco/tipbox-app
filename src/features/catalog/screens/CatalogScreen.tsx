@@ -73,7 +73,8 @@ const initialState: CatalogScreenState = {
 
 const CatalogScreenComponent = () => {
   const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
+  // PERFORMANCE FIX: Memoize isDark to prevent unnecessary re-renders
+  const isDark = useMemo(() => colorMode === 'dark', [colorMode]);
   const navigation = useNavigation<CatalogScreenNavigationProp>();
   const route = useRoute<CatalogScreenRouteProp>();
   const toast = useToast();
@@ -102,6 +103,8 @@ const CatalogScreenComponent = () => {
   const initialMode = initialModeFromRoute ?? initialModeFromStore;
   
   // Route params'tan gelen index'leri store'a kaydet
+  // CRITICAL FIX: setBrandCatalogState, setProductCatalogState removed from dependencies
+  // Zustand functions are stable and don't need to be in dependency array
   useEffect(() => {
     if (routeBrandCategoryId && routeView === 'brands') {
       setBrandCatalogState({
@@ -119,7 +122,7 @@ const CatalogScreenComponent = () => {
       } else if (routeProductCategoryId) {
         view = 'subcategories';
       }
-      
+
       setProductCatalogState({
         selectedCategoryId: routeProductCategoryId,
         selectedSubCategoryId: routeProductSubCategoryId,
@@ -127,7 +130,8 @@ const CatalogScreenComponent = () => {
         currentView: view,
       });
     }
-  }, [routeBrandCategoryId, routeProductCategoryId, routeProductSubCategoryId, routeProductGroupId, routeView, setBrandCatalogState, setProductCatalogState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeBrandCategoryId, routeProductCategoryId, routeProductSubCategoryId, routeProductGroupId, routeView]); // Zustand setters intentionally excluded
   
   // PERFORMANCE FIX: Use reducer for related state management
   const [catalogState, dispatch] = useReducer(catalogScreenReducer, {
@@ -137,24 +141,27 @@ const CatalogScreenComponent = () => {
   const { currentMode, selectedCategory, selectedProductLocal, breadcrumbItems } = catalogState;
   
   // Update mode when route params change or restore from store
+  // CRITICAL FIX: setLastCatalogType removed from dependencies (Zustand functions are stable)
+  // This prevents infinite loop where setLastCatalogType updates store, which triggers useEffect again
   useEffect(() => {
     // newMode can only be 'product' or 'brand-catalog' (never 'brand-selection')
     // 'brand-selection' is only set by user action (FAB button), not by route params
     const newMode: 'product' | 'brand-catalog' = routeView === 'brands' ? 'brand-catalog' : routeView === 'products' ? 'product' : (lastCatalogType === 'brand' ? 'brand-catalog' : 'product');
-    
+
     // CONTROL FIX: Always update mode when route params change
     // This ensures correct mode is set when navigating from ExploreScreen
     // PERFORMANCE FIX: Only dispatch if mode actually changed to prevent re-render loops
     // Note: If currentMode is 'brand-selection', we still update to newMode (from route/store)
     if (newMode !== currentMode) {
       dispatch({ type: 'SET_CURRENT_MODE', payload: newMode });
-      
+
       // Store'a kaydet
       // newMode is always 'product' or 'brand-catalog', never 'brand-selection'
       const catalogType: 'product' | 'brand' = newMode === 'brand-catalog' ? 'brand' : 'product';
       setLastCatalogType(catalogType);
     }
-  }, [routeView, lastCatalogType, currentMode, setLastCatalogType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeView, lastCatalogType, currentMode]); // setLastCatalogType intentionally excluded - Zustand function is stable
   
   // UI-specific state (keep as useState for simplicity)
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
@@ -229,7 +236,11 @@ const CatalogScreenComponent = () => {
   const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
   
 
-  const handleBrandCategorySelection = (category: Category | null) => {
+  // CRITICAL FIX: Wrap in useCallback to prevent infinite loop
+  // BrandScreen's useFocusEffect depends on this function
+  // Without useCallback, this creates a new reference on every render,
+  // triggering useFocusEffect infinitely
+  const handleBrandCategorySelection = useCallback((category: Category | null) => {
     dispatch({ type: 'SET_SELECTED_CATEGORY', payload: category });
     // Brand catalog modunda kal, sadece seçilen kategoriyi güncelle
     // Kullanıcı floating button ile brand-selection moduna geçebilir
@@ -249,7 +260,7 @@ const CatalogScreenComponent = () => {
       selectedCategoryId: category.id,
       currentStep: 'brands',
     });
-  };
+  }, []); // Empty deps - dispatch and setBrandCatalogState are stable
 
   const handleViewChange = useCallback((view: 'options' | 'experience' | 'product-selection') => {
     // View change is handled internally by CreatePostBottomSheet
@@ -657,6 +668,15 @@ const CatalogScreenComponent = () => {
     }
   };
 
+  // CRITICAL FIX: Use refs to prevent infinite loop caused by useCallback dependencies
+  const selectedProductLocalRef = useRef(selectedProductLocal);
+  const breadcrumbItemsRef = useRef(breadcrumbItems);
+
+  useEffect(() => {
+    selectedProductLocalRef.current = selectedProductLocal;
+    breadcrumbItemsRef.current = breadcrumbItems;
+  }, [selectedProductLocal, breadcrumbItems]);
+
   const handleProductCatalogStateChange = useCallback((data: {
     selectedProduct: any | null;
     currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
@@ -667,12 +687,13 @@ const CatalogScreenComponent = () => {
     // PERFORMANCE FIX: Only update if values actually changed
     // Get current store state to compare
     const currentStoreState = useCatalogUIStore.getState();
-    
+
     // Update local state for product object (for UI display) - only if changed
-    if (selectedProductLocal !== data.selectedProduct) {
+    // CRITICAL FIX: Use ref to get current value without dependency
+    if (selectedProductLocalRef.current !== data.selectedProduct) {
       dispatch({ type: 'SET_SELECTED_PRODUCT_LOCAL', payload: data.selectedProduct });
     }
-    
+
     // Update store with IDs - only if values changed (store already checks internally, but we can skip dispatch if same)
     if (currentStoreState.selectedProductId !== data.selectedProduct?.id) {
       setSelectedProduct(data.selectedProduct?.id);
@@ -686,32 +707,34 @@ const CatalogScreenComponent = () => {
     if (currentStoreState.selectedProductGroupId !== data.selectedProductGroupId) {
       setSelectedProductGroup(data.selectedProductGroupId);
     }
-    
+
     // Update breadcrumb items - only if changed
-    const breadcrumbChanged = breadcrumbItems.length !== data.breadcrumbItems.length ||
-      breadcrumbItems.some((item, idx) => 
+    // CRITICAL FIX: Use ref to get current value without dependency
+    const currentBreadcrumbItems = breadcrumbItemsRef.current;
+    const breadcrumbChanged = currentBreadcrumbItems.length !== data.breadcrumbItems.length ||
+      currentBreadcrumbItems.some((item, idx) =>
         item?.id !== data.breadcrumbItems[idx]?.id ||
         item?.type !== data.breadcrumbItems[idx]?.type
       );
     if (breadcrumbChanged) {
       dispatch({ type: 'SET_BREADCRUMB_ITEMS', payload: data.breadcrumbItems });
     }
-    
+
     // PERFORMANCE FIX: Only update navigation store if values actually changed
     // This prevents infinite loop where setProductCatalogState updates props,
     // which causes ProductCatalogScreen to re-render and call onStateChange again
     const currentNavState = catalogNavigationStore.getState().productCatalogState;
-    const navStateChanged = 
+    const navStateChanged =
       currentNavState.currentView !== data.currentView ||
       currentNavState.selectedSubCategoryId !== data.selectedSubCategoryId ||
       currentNavState.selectedProductGroupId !== data.selectedProductGroupId ||
       currentNavState.selectedProductId !== data.selectedProduct?.id ||
       currentNavState.breadcrumbItems.length !== data.breadcrumbItems.length ||
-      currentNavState.breadcrumbItems.some((item, idx) => 
+      currentNavState.breadcrumbItems.some((item, idx) =>
         item?.id !== data.breadcrumbItems[idx]?.id ||
         item?.type !== data.breadcrumbItems[idx]?.type
       );
-    
+
     if (navStateChanged) {
       // Catalog Navigation Store'a kaydet (persist için)
       setProductCatalogState({
@@ -722,7 +745,7 @@ const CatalogScreenComponent = () => {
         breadcrumbItems: data.breadcrumbItems,
       });
     }
-  }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup, selectedProductLocal, breadcrumbItems, setProductCatalogState]);
+  }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup, setProductCatalogState]);
 
   const renderContent = () => {
     const paddingBottom = 52;

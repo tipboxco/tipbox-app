@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText } from 'react-native';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent, Divider } from '@gluestack-ui/themed';
@@ -43,7 +43,7 @@ import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
-import { LadderTab } from '../components/TabContents';
+import CollectionsTab from '@/src/features/events/components/TabContents/CollectionsTab';
 import {
   ArrowUpTrayIcon,
   FlagIcon,
@@ -75,7 +75,8 @@ const TABS = [
   { key: 'benchmarks',  title: 'Benchmarks' },
   { key: 'tips',        title: 'Tips & Tricks' },
   { key: 'replies',     title: 'Questions' },
-  { key: 'ladders',     title: 'Ladders' },
+  { key: 'badge',       title: 'Badges' },
+  { key: 'collections', title: 'Collections' },
 ] as const;
 
 type TabKey = typeof TABS[number]['key'];
@@ -379,13 +380,17 @@ const mapUpdateToCardData = (item: any): UpdateCardData => {
 };
 
 // Mapped post type
-type MappedPost = 
+type MappedPost =
   | { type: 'post'; id: string; data: PostCardData }
   | { type: 'update'; id: string; data: UpdateCardData }
   | { type: 'experience'; id: string; data: ExperiencePostCardData }
   | { type: 'benchmark'; id: string; data: BenchmarkCardData }
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };
+
+// Badge filters
+const BADGE_FILTERS = ['All Badges', 'Event Badges', 'Collections'] as const;
+type BadgeFilterKey = typeof BADGE_FILTERS[number];
 
 // Tab content props
 interface TabContentProps {
@@ -394,6 +399,8 @@ interface TabContentProps {
   isDark: boolean;
   onQueryRef?: (tabKey: TabKey, query: any) => void;
   isActive?: boolean; // Sadece aktif tab API çağrısı yapmalı
+  profileBadges?: Badge[];
+  onBadgePress?: (badge: Badge) => void;
 }
 
 // TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
@@ -477,19 +484,30 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
   );
 };
 
-// Tab Content Component - Sadece içeriği render eder (FlatList yok)
-const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef, isActive = true }) => {
-  // API hooks for each tab - sadece aktif tab'ın query'sini enable et
+// Tab Content Component
+const TabContent: React.FC<TabContentProps> = ({
+  tabKey,
+  targetUserId,
+  isDark,
+  onQueryRef,
+  isActive = true,
+  profileBadges = [],
+  onBadgePress
+}) => {
+  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
+  // API hooks for each tab
+  // FEED TAB FIX: Feed tab için TÜM query'leri enable et (posts, reviews, benchmarks, tips, replies)
+  // Diğer tab'lar için sadece kendi query'lerini enable et
   const feedQuery = useUserPosts(targetUserId, 5, { enabled: isActive && tabKey === 'feed' && !!targetUserId });
-  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: isActive && tabKey === 'reviews' && !!targetUserId });
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: isActive && tabKey === 'benchmarks' && !!targetUserId });
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: isActive && tabKey === 'tips' && !!targetUserId });
-  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: isActive && tabKey === 'replies' && !!targetUserId });
-  
+  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: isActive && (tabKey === 'feed' || tabKey === 'reviews') && !!targetUserId });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: isActive && (tabKey === 'feed' || tabKey === 'benchmarks') && !!targetUserId });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: isActive && (tabKey === 'feed' || tabKey === 'tips') && !!targetUserId });
+  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: isActive && (tabKey === 'feed' || tabKey === 'replies') && !!targetUserId });
+
   // Get active tab query
   const activeTabQuery = useMemo(() => {
     switch (tabKey) {
-      case 'feed': return feedQuery;
+      case 'feed': return feedQuery; // Feed tab için feedQuery'yi döndür (diğer query'ler mappedPosts'ta birleştirilecek)
       case 'reviews': return reviewsQuery;
       case 'benchmarks': return benchmarksQuery;
       case 'tips': return tipsQuery;
@@ -504,25 +522,66 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
       onQueryRef(tabKey, activeTabQuery);
     }
   }, [tabKey, activeTabQuery, onQueryRef]);
-  
+
+  // Filter badges based on selected filter
+  const filteredBadges = useMemo(() => {
+    if (tabKey !== 'badge') return [];
+    if (badgeFilter === 'All Badges') return profileBadges;
+    if (badgeFilter === 'Event Badges') return profileBadges.filter((b) => b.type === 'event');
+    if (badgeFilter === 'Collections') return profileBadges.filter((b) => b.type === 'collection');
+    return profileBadges;
+  }, [tabKey, profileBadges, badgeFilter]);
+
   // Flatten and map posts based on active tab
   const mappedPosts = useMemo(() => {
-    if (tabKey === 'ladders') return [];
-    
-    const queryData = activeTabQuery.data as any;
-    if (!queryData?.pages) return [];
-    
-    const allItems = queryData.pages.flatMap((page: any) => page?.items ?? []) ?? [];
+    if (tabKey === 'badge' || tabKey === 'collections') return [];
+
+    // FEED TAB FIX: Feed tab için TÜM query'lerin sonuçlarını birleştir
+    let allItems: any[] = [];
+
+    if (tabKey === 'feed') {
+      // Feed tab: TÜM query sonuçlarını birleştir
+      const feedData = feedQuery.data as any;
+      const reviewsData = reviewsQuery.data as any;
+      const benchmarksData = benchmarksQuery.data as any;
+      const tipsData = tipsQuery.data as any;
+      const repliesData = repliesQuery.data as any;
+
+      // Her query'nin items'larını flat'le ve birleştir
+      const feedItems = feedData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
+      const reviewItems = reviewsData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
+      const benchmarkItems = benchmarksData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
+      const tipsItems = tipsData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
+      const repliesItems = repliesData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
+
+      // Tüm item'ları birleştir
+      allItems = [
+        ...feedItems,
+        ...reviewItems,
+        ...benchmarkItems,
+        ...tipsItems,
+        ...repliesItems,
+      ];
+    } else {
+      // Diğer tab'lar: Sadece aktif tab'ın query'sini kullan
+      const queryData = activeTabQuery.data as any;
+      if (!queryData?.pages) return [];
+      allItems = queryData.pages.flatMap((page: any) => page?.items ?? []) ?? [];
+    }
+
+    // Geçerli item'ları filtrele (id olan item'lar)
     const validItems = allItems.filter((item: any) => item?.id);
-    const uniqueItems = validItems.filter((item: any, index: number, self: any[]) => 
+
+    // Benzersiz item'ları al (duplicate'leri kaldır)
+    const uniqueItems = validItems.filter((item: any, index: number, self: any[]) =>
       index === self.findIndex((t: any) => t?.id === item?.id)
     );
-    
+
     const mapped: MappedPost[] = [];
-    
+
     for (const item of uniqueItems) {
       let mappedItem: MappedPost | null = null;
-      
+
       switch (item.type) {
         case CardType.UPDATE:
           const updateData = mapUpdateToCardData(item);
@@ -566,14 +625,14 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
           }
           break;
       }
-      
+
       if (mappedItem) {
         mapped.push(mappedItem);
       }
     }
-    
+
     return mapped;
-  }, [activeTabQuery.data, tabKey]);
+  }, [tabKey, feedQuery.data, reviewsQuery.data, benchmarksQuery.data, tipsQuery.data, repliesQuery.data, activeTabQuery.data]);
   
   // Render post card
   const renderPostCard = useCallback((postData: MappedPost) => {
@@ -593,24 +652,108 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
         return <PostCard data={postData.data} />;
     }
   }, []);
-  
-  // Render LadderTab
-  if (tabKey === 'ladders') {
+
+  // Render Badge Tab
+  if (tabKey === 'badge') {
     return (
-      <Box>
-        <LadderTab
-          onQueryRef={(query) => {
-            if (onQueryRef) {
-              onQueryRef(tabKey, query);
-            }
-          }}
-        />
-      </Box>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Box px={16} pt={8}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+            <HStack space="sm" alignItems="center">
+              {BADGE_FILTERS.map((filter) => {
+                const isActive = badgeFilter === filter;
+                return (
+                  <Pressable
+                    key={filter}
+                    onPress={() => setBadgeFilter(filter)}
+                    bg={isActive ? (isDark ? '#333' : '#E9E9E9') : (isDark ? '#1A1A1A' : '#FFF')}
+                    borderWidth={1}
+                    borderColor={isDark ? '#444' : '#E9E9E9'}
+                    borderRadius={8}
+                    px="$3"
+                    py="$2"
+                  >
+                    <Text
+                      fontSize="$sm"
+                      fontWeight="$semibold"
+                      color={isActive ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666')}
+                    >
+                      {filter}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </HStack>
+          </ScrollView>
+          {filteredBadges.length === 0 ? (
+            <Box py={32} alignItems="center">
+              <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+                {badgeFilter === 'All Badges' ? 'No badges yet' : `No ${badgeFilter.toLowerCase()} yet`}
+              </Text>
+            </Box>
+          ) : (
+            <Box flexDirection="row" flexWrap="wrap" justifyContent="space-between">
+              {filteredBadges.map((badge) => (
+                <Pressable
+                  key={badge.id}
+                  onPress={() => onBadgePress?.(badge)}
+                  width={114}
+                  height={130}
+                  mb={12}
+                  alignItems="center"
+                  justifyContent="center"
+                  bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                  borderWidth={1}
+                  borderColor={isDark ? '#333' : '#E9E9E9'}
+                  borderRadius={5}
+                  p="$2"
+                >
+                  <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
+                    <Image
+                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                      alt={badge.title}
+                      style={{ width: 56, height: 56 }}
+                      resizeMode="contain"
+                    />
+                  </Box>
+                  <Text
+                    mt="$1"
+                    fontSize="$2xs"
+                    fontWeight="$semibold"
+                    color={isDark ? '$textDark50' : '$textLight900'}
+                    textAlign="center"
+                    numberOfLines={2}
+                  >
+                    {badge.title}
+                  </Text>
+                </Pressable>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </ScrollView>
+    );
+  }
+
+  // Render Collections Tab
+  if (tabKey === 'collections') {
+    return (
+      <CollectionsTab />
     );
   }
 
   // Loading state
-  if (activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0])) {
+  // FEED TAB FIX: Feed tab için TÜM query'lerin loading durumunu kontrol et
+  const isLoading = tabKey === 'feed'
+    ? (feedQuery.isLoading || reviewsQuery.isLoading || benchmarksQuery.isLoading || tipsQuery.isLoading || repliesQuery.isLoading) &&
+      !(feedQuery.data as any)?.pages?.[0] &&
+      !(reviewsQuery.data as any)?.pages?.[0] &&
+      !(benchmarksQuery.data as any)?.pages?.[0] &&
+      !(tipsQuery.data as any)?.pages?.[0] &&
+      !(repliesQuery.data as any)?.pages?.[0]
+    : activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]);
+
+  if (isLoading) {
     return (
       <Box py={20}>
         <FeedSkeleton count={3} />
@@ -630,19 +773,29 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
   }
 
   // Render posts
+  // FEED TAB FIX: Feed tab için TÜM query'lerin fetchingNextPage durumunu kontrol et
+  const isFetchingNextPage = tabKey === 'feed'
+    ? feedQuery.isFetchingNextPage || reviewsQuery.isFetchingNextPage || benchmarksQuery.isFetchingNextPage || tipsQuery.isFetchingNextPage || repliesQuery.isFetchingNextPage
+    : activeTabQuery.isFetchingNextPage;
+
   return (
-    <Box px={16} pt={8}>
-      {mappedPosts.map((item) => (
-        <Box key={item.id} mb={16}>
-          {renderPostCard(item)}
-        </Box>
-      ))}
-      {activeTabQuery.isFetchingNextPage && (
-        <Box py={20} alignItems="center">
-          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-        </Box>
-      )}
-    </Box>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      bounces={true}
+    >
+      <Box px={16} pt={8}>
+        {mappedPosts.map((item) => (
+          <Box key={item.id} mb={16}>
+            {renderPostCard(item)}
+          </Box>
+        ))}
+        {isFetchingNextPage && (
+          <Box py={20} alignItems="center">
+            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
+        )}
+      </Box>
+    </ScrollView>
   );
 };
 
@@ -1961,15 +2114,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <StatusBar style="light" />
 
-      {/* Ana ScrollView - Tüm ekran dikey scrollable */}
       <ScrollView
-        ref={headerScrollViewRef}
         showsVerticalScrollIndicator={true}
-        scrollEnabled={true}
-        nestedScrollEnabled={true}
         bounces={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
+        stickyHeaderIndices={[1]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing || false}
@@ -1978,12 +2126,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             colors={isDark ? ['#FFFFFF'] : ['#000000']}
           />
         }
-        stickyHeaderIndices={[1]}
       >
-        {/* Profile Info */}
+        {/* Profile Header - Common for all tabs */}
         {profileHeader}
 
-        {/* AnimatedTabBar - Sticky */}
+        {/* Tab Bar - Sticky */}
         <AnimatedTabBar
           ref={tabBarRef}
           tabs={TABS}
@@ -1992,8 +2139,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           isDark={isDark}
         />
 
-        {/* PagerView - Horizontal paging */}
-        <Box height={SCREEN_WIDTH * 1.5}>
+        {/* PagerView - Only tab contents */}
+        <Box height={800}>
           <PagerView
             ref={pagerViewRef}
             style={{ flex: 1 }}
@@ -2002,25 +2149,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           >
             {TABS.map((tab) => (
               <View key={tab.key} style={{ flex: 1 }}>
-                <ScrollView
-                  showsVerticalScrollIndicator={true}
-                  scrollEnabled={true}
-                  nestedScrollEnabled={true}
-                  bounces={true}
-                  onScroll={handleScroll}
-                  scrollEventThrottle={16}
-                  contentContainerStyle={{
-                    flexGrow: 1,
-                  }}
-                >
-                  <TabContent
-                    tabKey={tab.key}
-                    targetUserId={targetUserId || ''}
-                    isDark={isDark}
-                    onQueryRef={handleTabQueryRef}
-                    isActive={tab.key === activeTab}
-                  />
-                </ScrollView>
+                <TabContent
+                  tabKey={tab.key}
+                  targetUserId={targetUserId || ''}
+                  isDark={isDark}
+                  onQueryRef={handleTabQueryRef}
+                  isActive={tab.key === activeTab}
+                  profileBadges={userProfile?.badges || []}
+                  onBadgePress={handleBadgePress}
+                />
               </View>
             ))}
           </PagerView>

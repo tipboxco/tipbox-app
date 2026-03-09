@@ -250,14 +250,14 @@ const BrandProductBookScreen: React.FC = () => {
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
-                        title={t('catalog.brandProductBook.title')}
+                        title={t('brandProductBook.title')}
                         showBackButton={true}
                         onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center">
                         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                         <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4" fontSize="$sm">
-                            {t('catalog.brandProductBook.loading')}
+                            {t('brandProductBook.loading')}
                         </Text>
                     </Box>
                 </Box>
@@ -271,13 +271,13 @@ const BrandProductBookScreen: React.FC = () => {
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
-                        title={t('catalog.brandProductBook.title')}
+                        title={t('brandProductBook.title')}
                         showBackButton={true}
                         onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                         <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                            {productBookError ? `${t('catalog.brandProductBook.error')}: ${productBookError.message}` : t('catalog.brandProductBook.productListNotFound')}
+                            {productBookError ? `${t('brandProductBook.error')}: ${productBookError.message}` : t('brandProductBook.productListNotFound')}
                         </Text>
                     </Box>
                 </Box>
@@ -289,7 +289,7 @@ const BrandProductBookScreen: React.FC = () => {
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 <Header
-                    title={t('catalog.brandProductBook.title')}
+                    title={t('brandProductBook.title')}
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />
@@ -307,7 +307,7 @@ const BrandProductBookScreen: React.FC = () => {
                             <MagnifyingGlassIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
                             <Input flex={1} borderWidth={0} bg="transparent">
                                 <InputField
-                                    placeholder={t('catalog.brandProductBook.searchPlaceholder')}
+                                    placeholder={t('brandProductBook.searchPlaceholder')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize="$2xs"
@@ -335,7 +335,7 @@ const BrandProductBookScreen: React.FC = () => {
                         {allCategories.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm">
-                                    {t('catalog.brandProductBook.noProducts')}
+                                    {t('brandProductBook.noProducts')}
                                 </Text>
                             </Box>
                         ) : (

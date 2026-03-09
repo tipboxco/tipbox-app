@@ -48,7 +48,6 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
-import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface PostCardProps {
@@ -94,9 +93,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   
   // User action hooks
   const { mutate: reportUser } = useReportUser();
-  const { openBottomSheet } = useGlobalBottomSheet();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const insets = useSafeAreaInsets();
-  const { openPostShareSheet } = usePostShare();
   
   // Post owner actions
   const updatePostMutation = useUpdatePost();
@@ -169,16 +167,22 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
 
   const handleShare = useCallback(() => {
     // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
-    openPostShareSheet({
-      postId: data.id,
-      postContent: data.content,
-      postAuthorName: data.user?.name,
-      onShareSuccess: () => {
-        setIsShared(true);
-        setSharesCount((prev) => prev + 1);
-      },
-    });
-  }, [data.id, data.content, data.user?.name, openPostShareSheet]);
+    openBottomSheet(
+      <ShareToTrustedBottomSheet
+        postId={data.id}
+        postContent={data.content}
+        postAuthorName={data.user?.name}
+        onShareSuccess={() => {
+          setIsShared(true);
+          setSharesCount((prev) => prev + 1);
+        }}
+        onClose={closeBottomSheet}
+      />,
+      {
+        snapPoints: ['65%'],
+      }
+    );
+  }, [data.id, data.content, data.user?.name, openBottomSheet, closeBottomSheet]);
 
   const handleComment = () => {
     if (isDetailMode) return; // Detay modunda navigation yapma
@@ -428,13 +432,14 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const isBoosted = data.source === 'BOOSTED';
 
   return (
-    <View
-      style={{
-        backgroundColor: isDark ? '#000000' : '#FFFFFF',
-        marginBottom: 16,
-        position: 'relative',
-      }}
-    >
+    <>
+      <View
+        style={{
+          backgroundColor: isDark ? '#000000' : '#FFFFFF',
+          marginBottom: 16,
+          position: 'relative',
+        }}
+      >
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
@@ -880,7 +885,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         )}
       </HStack>
 
-    </View>
+      </View>
+    </>
   );
 };
 

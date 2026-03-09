@@ -39,7 +39,6 @@ import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
-import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
@@ -154,8 +153,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     // Product text expansion states - tüm ürünler için ortak
     const [isNameExpanded, setIsNameExpanded] = useState(false);
     const [isSubNameExpanded, setIsSubNameExpanded] = useState(false);
-    const { openBottomSheet } = useGlobalBottomSheet();
-    const { openPostShareSheet } = usePostShare();
+    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
     // Translation hooks (only in detail mode)
     const deviceLocale = useDeviceLocale();
@@ -227,17 +225,22 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     };
 
     const handleShare = React.useCallback(() => {
-        // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
-        openPostShareSheet({
-            postId: data.id,
-            postContent: data.content,
-            postAuthorName: data.user?.name,
-            onShareSuccess: () => {
-                setIsShared(true);
-                setSharesCount((prev) => prev + 1);
-            },
-        });
-    }, [data.id, data.content, data.user?.name, openPostShareSheet]);
+        openBottomSheet(
+            <ShareToTrustedBottomSheet
+                postId={data.id}
+                postContent={data.content}
+                postAuthorName={data.user?.name}
+                onShareSuccess={() => {
+                    setIsShared(true);
+                    setSharesCount((prev) => prev + 1);
+                }}
+                onClose={closeBottomSheet}
+            />,
+            {
+                snapPoints: ['65%'],
+            }
+        );
+    }, [data.id, data.content, data.user?.name, openBottomSheet, closeBottomSheet]);
 
     const handleComment = () => {
         if (isDetailMode && onCommentPress) {

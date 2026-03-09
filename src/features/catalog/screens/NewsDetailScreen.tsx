@@ -195,7 +195,7 @@ const NewsDetailScreenComponent: React.FC = () => {
         bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       >
         <Header
-          title={t('catalog.newsDetail.title')}
+          title={t('newsDetail.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -260,13 +260,13 @@ const NewsDetailScreenComponent: React.FC = () => {
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                {t('catalog.newsDetail.loading')}
+                {t('newsDetail.loading')}
               </Text>
             </VStack>
           ) : error ? (
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                {t('catalog.newsDetail.error')}
+                {t('newsDetail.error')}
               </Text>
             </VStack>
           ) : newsDetail ? (
@@ -548,7 +548,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
           fontSize={18}
           fontWeight="$bold"
         >
-          {t('catalog.newsDetail.comments')}
+          {t('newsDetail.comments')}
         </Text>
       </Box>
       
@@ -570,7 +570,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
           ) : (
             <Box py="$8" alignItems="center">
               <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-                {t('catalog.newsDetail.noCommentsYet')}
+                {t('newsDetail.noCommentsYet')}
               </Text>
             </Box>
           )
@@ -605,7 +605,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
           >
             <InputField
               ref={inputRef}
-              placeholder={t('catalog.newsDetail.writeComment')}
+              placeholder={t('newsDetail.writeComment')}
               placeholderTextColor={isDark ? '#666666' : '#999999'}
               value={commentText}
               onChangeText={setCommentText}

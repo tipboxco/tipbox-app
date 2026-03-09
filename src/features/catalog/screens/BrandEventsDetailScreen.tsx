@@ -58,7 +58,7 @@ const BrandEventsDetailScreen: React.FC = () => {
         bg: 'rgba(215, 215, 215, 0.8)',
         borderColor: '#ADADAD',
         textColor: '#000000',
-        text: t('catalog.brandEventDetail.joined'),
+        text: t('brandEventDetail.joined'),
                     icon: 'check' as const, // CheckIcon kullanılacak
       };
     }
@@ -66,7 +66,7 @@ const BrandEventsDetailScreen: React.FC = () => {
       bg: '#E8FF6B',
       borderColor: '#D8FF08',
       textColor: '#000000',
-      text: t('catalog.brandEventDetail.join'),
+      text: t('brandEventDetail.join'),
       icon: null,
     };
   };
@@ -149,7 +149,7 @@ const BrandEventsDetailScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title={t('catalog.brandEventDetail.title')}
+          title={t('brandEventDetail.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -162,13 +162,13 @@ const BrandEventsDetailScreen: React.FC = () => {
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                {t('catalog.brandEventDetail.loading')}
+                {t('brandEventDetail.loading')}
               </Text>
             </VStack>
           ) : !eventDetail ? (
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                {t('catalog.brandEventDetail.eventNotFound')}
+                {t('brandEventDetail.eventNotFound')}
               </Text>
             </VStack>
           ) : (
@@ -263,7 +263,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                     fontWeight="$bold"
                     mb="$1"
                   >
-                    {t('catalog.brandEventDetail.description')}
+                    {t('brandEventDetail.description')}
                   </Text>
                   <Text
                     color={isDark ? '#FFFFFF' : '#000000'}
@@ -305,7 +305,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                   fontSize={11}
                   fontWeight="$bold"
                 >
-                  {t('catalog.brandEventDetail.statistics')}
+                  {t('brandEventDetail.statistics')}
                 </Text>
               </HStack>
 
@@ -334,7 +334,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                     fontSize={10}
                     fontWeight="$medium"
                   >
-                    {t('catalog.brandEventDetail.participants')}
+                    {t('brandEventDetail.participants')}
                   </Text>
                 </HStack>
               </VStack>
@@ -368,7 +368,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                     fontSize={11}
                     fontWeight="$bold"
                   >
-                    {t('catalog.brandEventDetail.rewards')}
+                    {t('brandEventDetail.rewards')}
                   </Text>
                 </HStack>
 
@@ -405,7 +405,7 @@ const BrandEventsDetailScreen: React.FC = () => {
               <VStack alignItems="center" py="$4">
                 <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$2" fontSize={12} color="$textLight500" $dark-color="$textDark400">
-                  {t('catalog.brandEventDetail.loadingRequirements')}
+                  {t('brandEventDetail.loadingRequirements')}
                 </Text>
               </VStack>
             ) : requirements && requirements.requirements && requirements.requirements.length > 0 ? (
@@ -425,7 +425,7 @@ const BrandEventsDetailScreen: React.FC = () => {
             ) : (
               <VStack alignItems="center" py="$4">
                 <Text fontSize={12} color="$textLight500" $dark-color="$textDark400">
-                  {t('catalog.brandEventDetail.noRequirements')}
+                  {t('brandEventDetail.noRequirements')}
                 </Text>
               </VStack>
             )}

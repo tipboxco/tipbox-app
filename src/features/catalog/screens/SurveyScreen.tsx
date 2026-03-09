@@ -101,7 +101,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                {t('catalog.survey.noBadgesYet')}
+                {t('survey.noBadgesYet')}
               </Text>
             </VStack>
           );
@@ -158,7 +158,7 @@ const SurveyScreen: React.FC = () => {
             <VStack py={20} alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-                {t('catalog.survey.loadingSurveys')}
+                {t('survey.loadingSurveys')}
               </Text>
             </VStack>
           );
@@ -168,7 +168,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color="#CE4A4A" fontSize="$sm">
-                {t('catalog.survey.errorLoadingSurveys')}: {surveysError.message}
+                {t('survey.errorLoadingSurveys')}: {surveysError.message}
               </Text>
             </VStack>
           );
@@ -178,7 +178,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                {t('catalog.survey.noSurveysYet')}
+                {t('survey.noSurveysYet')}
               </Text>
             </VStack>
           );
@@ -213,7 +213,7 @@ const SurveyScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title={t('catalog.survey.title')}
+          title={t('survey.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -275,10 +275,10 @@ const SurveyScreen: React.FC = () => {
             </Box>
             <VStack flex={1} ml="$3">
               <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12} fontWeight="$bold" numberOfLines={1}>
-                {brandHistory?.name ?? '—'} {t('catalog.survey.brandHistory')}
+                {brandHistory?.name ?? '—'} {t('survey.brandHistory')}
               </Text>
               <Text color="#9B9B9B" fontSize={12} fontWeight="$semibold">
-                {brandHistory?.totalPoints ?? 0} {t('catalog.survey.points')}
+                {brandHistory?.totalPoints ?? 0} {t('survey.points')}
               </Text>
             </VStack>
             <ChevronRightIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />

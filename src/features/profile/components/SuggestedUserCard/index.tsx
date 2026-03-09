@@ -18,18 +18,20 @@ interface SuggestedUserCardProps {
     mutualTrustCount?: number;
     isTrusted: boolean;
     onAddTrust: (userId: string) => void;
+    onPress?: (userId: string) => void; // ADDED: Handler for clicking on user card
     showBorder?: boolean;
 }
 
-export const SuggestedUserCard = ({ 
+export const SuggestedUserCard = ({
     id,
-    name, 
-    titles, 
+    name,
+    titles,
     avatar,
     mutualTrustCount,
     isTrusted,
     onAddTrust,
-    showBorder = true 
+    onPress, // ADDED
+    showBorder = true
 }: SuggestedUserCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -38,69 +40,76 @@ export const SuggestedUserCard = ({
     const titleText = titles.join(' - ');
 
     return (
-        <HStack 
-            alignItems="center" 
-            justifyContent="space-between" 
-            px={16} 
+        <HStack
+            alignItems="center"
+            justifyContent="space-between"
+            px={16}
             py={12}
             borderBottomWidth={showBorder ? 1 : 0}
             borderBottomColor={isDark ? '#333' : '#E9E9E9'}
         >
-            <HStack alignItems="center" space="md" maxWidth={240} flex={1}>
-                {/* Avatar */}
-                <Box
-                    width={54}
-                    height={54}
-                    borderRadius={100}
-                    bg="#CE4A4A"
-                    alignItems="center"
-                    justifyContent="center"
-                >
+            {/* UPDATED: Wrap user info in Pressable for navigation */}
+            <Pressable
+                onPress={() => onPress?.(id)}
+                flex={1}
+                maxWidth={240}
+            >
+                <HStack alignItems="center" space="md">
+                    {/* Avatar */}
                     <Box
-                        width={50}
-                        height={50}
-                        borderRadius={23}
-                        overflow="hidden"
+                        width={54}
+                        height={54}
+                        borderRadius={100}
+                        bg="#CE4A4A"
+                        alignItems="center"
+                        justifyContent="center"
                     >
-                        <Image
-                            source={toImageSource(avatar) || DEFAULT_USER_AVATAR}
-                            alt={name}
+                        <Box
                             width={50}
                             height={50}
                             borderRadius={23}
-                            resizeMode="cover"
-                        />
+                            overflow="hidden"
+                        >
+                            <Image
+                                source={toImageSource(avatar) || DEFAULT_USER_AVATAR}
+                                alt={name}
+                                width={50}
+                                height={50}
+                                borderRadius={23}
+                                resizeMode="cover"
+                            />
+                        </Box>
                     </Box>
-                </Box>
 
-                {/* Text Content */}
-                <VStack flex={1} space="xs">
-                    <Text
-                        color={isDark ? '#fff' : '#000'}
-                        fontSize="$sm"
-                        fontWeight="$semibold"
-                        numberOfLines={1}
-                    >
-                        {name}
-                    </Text>
-                    <Text
-                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                        fontSize="$xs"
-                        numberOfLines={2}
-                    >
-                        {titleText}
-                    </Text>
-                    {mutualTrustCount && mutualTrustCount > 0 ? (
+                    {/* Text Content */}
+                    <VStack flex={1} space="xs">
+                        <Text
+                            color={isDark ? '#fff' : '#000'}
+                            fontSize="$sm"
+                            fontWeight="$semibold"
+                            numberOfLines={1}
+                        >
+                            {name}
+                        </Text>
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                             fontSize="$xs"
-                            numberOfLines={1}
+                            numberOfLines={2}
                         >
-                            {mutualTrustCount} mutual friends
+                            {titleText}
                         </Text>
-                    ) : null}
-                </VStack>
-            </HStack>
+                        {mutualTrustCount && mutualTrustCount > 0 ? (
+                            <Text
+                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                fontSize="$xs"
+                                numberOfLines={1}
+                            >
+                                {mutualTrustCount} mutual friends
+                            </Text>
+                        ) : null}
+                    </VStack>
+                </HStack>
+            </Pressable>
 
             {/* Add Trust Button */}
             <Pressable 

@@ -43,7 +43,6 @@ import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
-import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
@@ -83,8 +82,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   const bookmarkPostMutation = useBookmarkPost();
   const unbookmarkPostMutation = useUnbookmarkPost();
   const { data: postStatus } = usePostStatus(data.id);
-  const { openBottomSheet } = useGlobalBottomSheet();
-  const { openPostShareSheet } = usePostShare();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const insets = useSafeAreaInsets();
   const { mutate: reportUser } = useReportUser();
   const updatePostMutation = useUpdatePost();
@@ -158,16 +156,21 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   };
 
   const handleShare = () => {
-    // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
-    openPostShareSheet({
-      postId: data.id,
-      postContent: data.content,
-      postAuthorName: data.user?.name,
-      onShareSuccess: () => {
-        setIsShared(true);
-        setSharesCount((prev) => prev + 1);
-      },
-    });
+    openBottomSheet(
+      <ShareToTrustedBottomSheet
+        postId={data.id}
+        postContent={data.content}
+        postAuthorName={data.user?.name}
+        onShareSuccess={() => {
+          setIsShared(true);
+          setSharesCount((prev) => prev + 1);
+        }}
+        onClose={closeBottomSheet}
+      />,
+      {
+        snapPoints: ['65%'],
+      }
+    );
   };
 
   const handleComment = () => {

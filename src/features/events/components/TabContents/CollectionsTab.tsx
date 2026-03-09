@@ -245,31 +245,21 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      style={styles.container}
+    >
       {FilterChips}
-      <FlatList
-        data={rows}
-        numColumns={1}
-        key="rows-layout"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.listContent, { paddingBottom: bottomInset + 24 }]}
-        ListEmptyComponent={EmptyComponent}
-        ListFooterComponent={ListFooter}
-        renderItem={renderRow}
-        keyExtractor={(item, index) =>
-          `row-${index}-${item.items.map((c) => c.id).join('-')}`
-        }
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.3}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching && !isFetchingNextPage}
-            onRefresh={handleRefresh}
-            tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
-          />
-        }
-      />
-    </View>
+      <View style={[styles.listContent, { paddingBottom: bottomInset + 24 }]}>
+        {rows.length === 0 ? EmptyComponent : null}
+        {rows.map((item, index) => (
+          <View key={`row-${index}-${item.items.map((c) => c.id).join('-')}`}>
+            {renderRow({ item })}
+          </View>
+        ))}
+        {ListFooter}
+      </View>
+    </ScrollView>
   );
 };
 

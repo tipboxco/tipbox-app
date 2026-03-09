@@ -14,10 +14,11 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
+import { useDrawerStore } from '@/src/store/drawerStore';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead, useAddReaction, useRemoveReaction, useDeleteMessage, useMuteThread, useUnmuteThread, useMessages } from '../api/hooks';
 import { getThreadMessages } from '../api/messagesApi';
@@ -260,6 +261,21 @@ const MessageDetailScreen: React.FC = () => {
 
   // PERFORMANCE: useKeyboard hook kullan (manuel listener yerine)
   const keyboardHeight = useKeyboard();
+
+  // CRITICAL: Drawer gesture'ı disable et (input tıklanınca gesture çakışmasını önle)
+  const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Ekran focus aldığında drawer gesture'ı disable et
+      setGestureEnabled(false);
+      return () => {
+        // Ekran blur olduğunda drawer gesture'ı tekrar enable et
+        setGestureEnabled(true);
+      };
+    }, [setGestureEnabled])
+  );
+
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   // Seçilen görsel state'i (caption için)

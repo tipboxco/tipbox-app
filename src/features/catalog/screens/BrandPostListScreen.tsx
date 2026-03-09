@@ -138,7 +138,7 @@ const BrandPostListScreenComponent: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title={t('catalog.brandPostList.title')}
+          title={t('brandPostList.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -160,13 +160,13 @@ const BrandPostListScreenComponent: React.FC = () => {
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  {t('catalog.brandPostList.loading')}
+                  {t('brandPostList.loading')}
                 </Text>
               </VStack>
             ) : posts.length === 0 ? (
               <VStack alignItems="center" py="$8">
                 <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  {t('catalog.brandPostList.noPosts')}
+                  {t('brandPostList.noPosts')}
                 </Text>
               </VStack>
             ) : (

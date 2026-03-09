@@ -51,7 +51,8 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   onStateChange,
 }) => {
   const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
+  // PERFORMANCE FIX: Memoize isDark to prevent unnecessary re-renders
+  const isDark = useMemo(() => colorMode === 'dark', [colorMode]);
   const navigation = useNavigation<BrandScreenNavigationProp>();
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const { t } = useTranslation('catalog');
@@ -262,8 +263,8 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         categories: allCategories.map(cat => ({
           categoryId: cat.categoryId,
           categoryName: cat.categoryName,
-          brandsCount: cat.brands.length,
-          brands: cat.brands.map(b => ({
+          brandsCount: cat.brands?.length || 0,
+          brands: (cat.brands || []).map(b => ({
             brandId: b.brandId || b.id,
             name: b.name,
             image: b.image,
@@ -275,6 +276,18 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     // Backend'den gelen veriyi temizle ve doğrula
     const cleanedCategories = allCategories
       .map(category => {
+        // CRITICAL FIX: Null check for category.brands to prevent crash
+        if (!category.brands || !Array.isArray(category.brands)) {
+          if (__DEV__) {
+            console.warn('[BrandScreen] ⚠️ Category has no brands array:', {
+              categoryId: category.categoryId,
+              categoryName: category.categoryName,
+              brands: category.brands,
+            });
+          }
+          return null;
+        }
+
         // Her category için unique brand'leri filtrele
         // Aynı brandId'ye sahip brand'leri tekilleştir
         const uniqueBrands = category.brands.reduce((acc, brand) => {

@@ -15,12 +15,13 @@ export const useColorMode = (): ColorModeContextType => {
   const toggleColorMode = useAppStore((state) => state.toggleColorMode);
 
   // FIX: useMemo ile obje referansını stabilize et - React.memo ile uyumluluk için
-  // Zustand fonksiyonları zaten stabil, ama obje referansını stabilize etmek için useMemo kullanıyoruz
+  // CRITICAL FIX: toggleColorMode Zustand fonksiyonu zaten stabil, dependency'den çıkarıldı
+  // Sadece colorMode değiştiğinde yeni obje döndür
   return useMemo(
     () => ({
       colorMode,
       toggleColorMode,
     }),
-    [colorMode, toggleColorMode]
+    [colorMode] // toggleColorMode dependency'den çıkarıldı - Zustand fonksiyonları stabil
   );
 }; 

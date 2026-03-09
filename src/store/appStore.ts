@@ -400,9 +400,10 @@ export const useAppStore = create<AppState>()(
       }),
       {
         name: 'app-storage',
-        // PERFORMANCE FIX: Use debounced storage to reduce AsyncStorage I/O
-        // Multiple state changes within 300ms are batched into single write
-        storage: createJSONStorage(() => debouncedStorage as any),
+        // CRITICAL FIX: Temporarily disable DebouncedAsyncStorage to debug infinite loop
+        // If this fixes the issue, the problem is in DebouncedAsyncStorage
+        storage: createJSONStorage(() => AsyncStorage),
+        // storage: createJSONStorage(() => debouncedStorage as any),
         partialize: (state) => ({
           isAuthenticated: state.isAuthenticated,
           user: state.user,

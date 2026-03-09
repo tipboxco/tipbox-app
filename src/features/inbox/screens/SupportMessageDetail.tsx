@@ -16,7 +16,7 @@ import {
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MessageDetailHeader from '../components/MessageDetailHeader';
 import MessageInput from '../components/MessageInput';
@@ -25,6 +25,7 @@ import SupportChatParticipants from '../components/SupportChatParticipants';
 import StarRating from '../components/StarRating';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useAppStore } from '@/src/store/appStore';
+import { useDrawerStore } from '@/src/store/drawerStore';
 import { useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useCloseSupportRequest, useFinalizeSupportRequest, useReportSupportRequest, inboxKeys } from '../api/hooks';
 import { apiService } from '@/src/services/ApiService';
 import type { GetThreadMessagesResponse } from '../api/messagesApi';
@@ -141,6 +142,20 @@ const SupportMessageDetailScreen: React.FC = () => {
   const [closeModalRating, setCloseModalRating] = useState(0);
   const { user } = useAppStore();
   const queryClient = useQueryClient();
+
+  // CRITICAL: Drawer gesture'ı disable et (input tıklanınca gesture çakışmasını önle)
+  const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Ekran focus aldığında drawer gesture'ı disable et
+      setGestureEnabled(false);
+      return () => {
+        // Ekran blur olduğunda drawer gesture'ı tekrar enable et
+        setGestureEnabled(true);
+      };
+    }, [setGestureEnabled])
+  );
   const acceptMutation = useAcceptSupportRequest();
   const rejectMutation = useRejectSupportRequest();
   const cancelMutation = useCancelSupportRequest();

@@ -164,7 +164,7 @@ const BrandHistoryScreen: React.FC = () => {
         <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
           <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
           <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            {t('catalog.brandHistory.loadingPosts')}
+            {t('brandHistory.loadingPosts')}
           </Text>
         </VStack>
       );
@@ -173,7 +173,7 @@ const BrandHistoryScreen: React.FC = () => {
       return (
         <VStack alignItems="center" py="$8">
           <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            {t('catalog.brandHistory.noPosts')}
+            {t('brandHistory.noPosts')}
           </Text>
         </VStack>
       );
@@ -198,7 +198,7 @@ const BrandHistoryScreen: React.FC = () => {
         <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
           <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
           <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            {t('catalog.brandHistory.loadingSurveys')}
+            {t('brandHistory.loadingSurveys')}
           </Text>
         </VStack>
       );
@@ -207,7 +207,7 @@ const BrandHistoryScreen: React.FC = () => {
       return (
         <VStack alignItems="center" py="$8">
           <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            {t('catalog.brandHistory.noSurveys')}
+            {t('brandHistory.noSurveys')}
           </Text>
         </VStack>
       );
@@ -242,7 +242,7 @@ const BrandHistoryScreen: React.FC = () => {
       return (
         <VStack alignItems="center" py="$8">
           <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-            {t('catalog.brandHistory.noBadges')}
+            {t('brandHistory.noBadges')}
           </Text>
         </VStack>
       );
@@ -296,7 +296,7 @@ const BrandHistoryScreen: React.FC = () => {
             textAlign="center"
             fontWeight="$normal"
           >
-            {t('catalog.brandHistory.seeMoreCollections')}
+            {t('brandHistory.seeMoreCollections')}
           </Text>
         </Pressable>
       </Box>
@@ -307,7 +307,7 @@ const BrandHistoryScreen: React.FC = () => {
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         <Header
-          title={t('catalog.brandHistory.title')}
+          title={t('brandHistory.title')}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />

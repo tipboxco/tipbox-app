@@ -47,7 +47,6 @@ import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
-import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
@@ -68,8 +67,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
     const menuTriggerRef = useRef<View>(null);
     const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
     const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const { openBottomSheet } = useGlobalBottomSheet();
-  const { openPostShareSheet } = usePostShare();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
     
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
@@ -135,16 +133,21 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
     };
 
     const handleShare = () => {
-        // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
-        openPostShareSheet({
-            postId: data.id,
-            postContent: data.content,
-            postAuthorName: data.user?.name,
-            onShareSuccess: () => {
-                setIsShared(true);
-                setSharesCount((prev) => prev + 1);
-            },
-        });
+        openBottomSheet(
+            <ShareToTrustedBottomSheet
+                postId={data.id}
+                postContent={data.content}
+                postAuthorName={data.user?.name}
+                onShareSuccess={() => {
+                    setIsShared(true);
+                    setSharesCount((prev) => prev + 1);
+                }}
+                onClose={closeBottomSheet}
+            />,
+            {
+                snapPoints: ['65%'],
+            }
+        );
     };
 
     const handleComment = () => {

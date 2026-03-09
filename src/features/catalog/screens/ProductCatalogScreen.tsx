@@ -61,7 +61,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   initialBreadcrumbItems,
 }) => {
   const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
+  // PERFORMANCE FIX: Memoize isDark to prevent unnecessary re-renders
+  const isDark = useMemo(() => colorMode === 'dark', [colorMode]);
   const navigation = useNavigation<ProductCatalogScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>(initialBreadcrumbItems || []);
@@ -231,7 +232,13 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   } = useGlobalProductSearch(undefined, 20); // Disabled - yerel filtre kullanılıyor
 
   // API'den seçili ürün grubuna ait products'ı getir (yerel filtre getCurrentData'da yapılıyor)
-  const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(
+  const {
+    data: catalogProducts,
+    isLoading: isLoadingProducts,
+    fetchNextPage: fetchNextProductsPage,
+    hasNextPage: hasNextProductsPage,
+    isFetchingNextPage: isFetchingNextProductsPage,
+  } = useCatalogProducts(
     selectedProductGroupId ?? undefined,
     undefined
   );
@@ -1582,13 +1589,20 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         flex={1}
         px="$4"
         onScroll={(event) => {
+          const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+          const paddingToBottom = 20;
+          const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+
+          if (!isNearBottom) return;
+
           // Global search için infinite scroll (sadece global sonuçlar gösterilirken)
           if (showGlobalSearchResults && hasNextGlobalSearchPage && !isFetchingNextGlobalSearchPage) {
-            const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-            const paddingToBottom = 20;
-            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
-              fetchNextGlobalSearchPage();
-            }
+            fetchNextGlobalSearchPage();
+          }
+
+          // Normal products view için infinite scroll
+          if (!showGlobalSearchResults && currentView === 'products' && hasNextProductsPage && !isFetchingNextProductsPage) {
+            fetchNextProductsPage();
           }
         }}
         scrollEventThrottle={400}
@@ -1838,6 +1852,13 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                       </HStack>
                     );
                   })}
+
+                  {/* Load More Indicator - Normal products view için */}
+                  {!showGlobalSearchResults && currentView === 'products' && isFetchingNextProductsPage && (
+                    <Box py="$4" alignItems="center">
+                      <ProductSkeleton count={3} />
+                    </Box>
+                  )}
                 </>
               ) : currentData.length === 0 && searchQuery.trim().length > 0 ? (
                 <Box py="$8" alignItems="center" px="$4">

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, VStack, HStack } from '@gluestack-ui/themed';
+import { View } from 'react-native';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface MessageSkeletonProps {
@@ -10,80 +11,92 @@ export const MessageSkeleton: React.FC<MessageSkeletonProps> = ({ count = 5 }) =
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  const skeletonColor = isDark ? '#1A1A1A' : '#FFFFFF';
-  const shimmerColor = isDark ? '#2A2A2A' : '#E9E9E9';
+  // Skeleton colors based on theme
+  const skeletonColor = isDark ? '#1A1A1A' : '#E1E9EE';
+  const highlightColor = isDark ? '#2A2A2A' : '#F2F8FC';
 
   return (
-    <VStack flex={1}>
+    <View style={{ flex: 1, paddingHorizontal: 16 }}>
       {Array.from({ length: count }).map((_, index) => (
-        <Box
+        <SkeletonPlaceholder
           key={index}
-          bg={skeletonColor}
-          p="$3"
-          borderBottomWidth={1}
-          borderColor={isDark ? '#333' : '#E9E9E9'}
+          backgroundColor={skeletonColor}
+          highlightColor={highlightColor}
+          speed={800}
         >
-          <HStack space="md" alignItems="center">
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: 12,
+              borderBottomWidth: index < count - 1 ? 1 : 0,
+              borderBottomColor: isDark ? '#333' : '#E9E9E9',
+            }}
+          >
             {/* Avatar */}
-            <Box
-              width={48}
-              height={48}
-              borderRadius={24}
-              bg={shimmerColor}
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                marginRight: 12,
+              }}
             />
 
             {/* Message Content */}
-            <VStack flex={1} space="xs">
+            <View style={{ flex: 1 }}>
               {/* Sender Name */}
-              <Box
-                width={120}
-                height={11}
-                borderRadius={3}
-                bg={shimmerColor}
+              <View
+                style={{
+                  width: 120,
+                  height: 11,
+                  borderRadius: 4,
+                  marginBottom: 8,
+                }}
               />
-              
-              {/* Last Message - 2 lines */}
-              <Box
-                width="100%"
-                height={9}
-                borderRadius={3}
-                bg={shimmerColor}
-              />
-              <Box
-                width="75%"
-                height={9}
-                borderRadius={3}
-                bg={shimmerColor}
-              />
-            </VStack>
-          </HStack>
 
-          {/* Timestamp - Position Absolute */}
-          <HStack
-            position="absolute"
-            top="$3"
-            right="$3"
-            space="xs"
-            alignItems="center"
-          >
-            <Box
-              width={40}
-              height={9}
-              borderRadius={3}
-              bg={shimmerColor}
-            />
-            {/* Unread Badge (randomly show) */}
-            {index % 3 === 0 && (
-              <Box
-                width={8}
-                height={8}
-                borderRadius={4}
-                bg={shimmerColor}
+              {/* Last Message - 2 lines */}
+              <View
+                style={{
+                  width: '100%',
+                  height: 9,
+                  borderRadius: 4,
+                  marginBottom: 6,
+                }}
               />
-            )}
-          </HStack>
-        </Box>
+              <View
+                style={{
+                  width: '75%',
+                  height: 9,
+                  borderRadius: 4,
+                }}
+              />
+            </View>
+
+            {/* Timestamp & Unread Badge */}
+            <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 9,
+                  borderRadius: 4,
+                  marginBottom: 8,
+                }}
+              />
+              {/* Unread Badge (randomly show) */}
+              {index % 3 === 0 && (
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                  }}
+                />
+              )}
+            </View>
+          </View>
+        </SkeletonPlaceholder>
       ))}
-    </VStack>
+    </View>
   );
 };

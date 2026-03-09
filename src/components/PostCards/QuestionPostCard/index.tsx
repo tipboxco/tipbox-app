@@ -45,7 +45,6 @@ import { useUpdatePost, useDeletePost, useTogglePostBoost } from '@/src/features
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
-import { usePostShare } from '@/src/features/post/components/PostShareBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
@@ -66,8 +65,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
   const menuTriggerRef = useRef<View>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
-  const { openBottomSheet } = useGlobalBottomSheet();
-  const { openPostShareSheet } = usePostShare();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -152,17 +150,22 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
   };
 
   const handleShare = useCallback(() => {
-    // Share işlemini her zaman aç - kullanıcı istediği kadar share edebilsin
-    openPostShareSheet({
-      postId: data.id,
-      postContent: data.content,
-      postAuthorName: data.user?.name,
-      onShareSuccess: () => {
-        setIsShared(true);
-        setSharesCount((prev) => prev + 1);
-      },
-    });
-  }, [data.id, data.content, data.user?.name, openPostShareSheet]);
+    openBottomSheet(
+      <ShareToTrustedBottomSheet
+        postId={data.id}
+        postContent={data.content}
+        postAuthorName={data.user?.name}
+        onShareSuccess={() => {
+          setIsShared(true);
+          setSharesCount((prev) => prev + 1);
+        }}
+        onClose={closeBottomSheet}
+      />,
+      {
+        snapPoints: ['65%'],
+      }
+    );
+  }, [data.id, data.content, data.user?.name, openBottomSheet, closeBottomSheet]);
 
   const handleComment = () => {
     if (isDetailMode) return; // Detay modunda navigation yapma

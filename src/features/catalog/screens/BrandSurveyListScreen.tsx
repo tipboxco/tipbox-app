@@ -49,7 +49,7 @@ const BrandSurveyListScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title={t('catalog.brandSurveyList.title')}
+          title={t('brandSurveyList.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -71,13 +71,13 @@ const BrandSurveyListScreen: React.FC = () => {
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  {t('catalog.brandSurveyList.loading')}
+                  {t('brandSurveyList.loading')}
                 </Text>
               </VStack>
             ) : surveys.length === 0 ? (
               <VStack alignItems="center" py="$8">
                 <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                  {t('catalog.brandSurveyList.noSurveys')}
+                  {t('brandSurveyList.noSurveys')}
                 </Text>
               </VStack>
             ) : (

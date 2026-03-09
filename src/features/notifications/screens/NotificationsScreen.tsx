@@ -65,6 +65,8 @@ import { useNotificationStore } from '@/src/store/notificationStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { useBottomOffset } from '@/src/utils';
+import { NotificationSkeleton } from '@/src/components/Skeletons';
+import { AutoSkeletonView } from 'react-native-auto-skeleton';
 
 const { width } = Dimensions.get('window');
 
@@ -381,27 +383,32 @@ const NotificationsScreenComponent: React.FC = () => {
         const notificationDate = new Date(createdAt);
 
         // CRITICAL FIX: Validate date before processing
+        // If date is invalid, use current date as fallback instead of skipping
+        let validNotificationDate = notificationDate;
         if (isNaN(notificationDate.getTime())) {
-          console.warn('[NotificationsScreen] Invalid date for notification:', notification);
-          // Skip invalid notifications instead of showing "Invalid Date"
-          return;
+          console.warn('[NotificationsScreen] ⚠️ Invalid date for notification, using current date as fallback:', {
+            notificationId: 'id' in notification ? notification.id : 'unknown',
+            type: 'type' in notification ? notification.type : 'unknown',
+            receivedDate: createdAt,
+          });
+          validNotificationDate = new Date(); // Use current date as fallback
         }
 
         const notificationDateOnly = new Date(
-          notificationDate.getFullYear(),
-          notificationDate.getMonth(),
-          notificationDate.getDate()
+          validNotificationDate.getFullYear(),
+          validNotificationDate.getMonth(),
+          validNotificationDate.getDate()
         );
 
         let groupLabel: string;
         if (notificationDateOnly.getTime() === today.getTime()) {
-          groupLabel = t('dateGroups.today');
+          groupLabel = t('notifications.dateGroups.today');
         } else if (notificationDateOnly.getTime() === yesterday.getTime()) {
-          groupLabel = t('dateGroups.yesterday');
+          groupLabel = t('notifications.dateGroups.yesterday');
         } else if (notificationDateOnly >= thisWeek) {
-          groupLabel = t('dateGroups.thisWeek');
+          groupLabel = t('notifications.dateGroups.thisWeek');
         } else if (notificationDateOnly >= thisMonth) {
-          groupLabel = t('dateGroups.thisMonth');
+          groupLabel = t('notifications.dateGroups.thisMonth');
         } else {
           // Month and year format: "January 2024"
           const monthKeys = [
@@ -418,14 +425,14 @@ const NotificationsScreenComponent: React.FC = () => {
             'november',
             'december',
           ];
-          const monthIndex = notificationDate.getMonth();
+          const monthIndex = validNotificationDate.getMonth();
           const monthKey = monthKeys[monthIndex];
           // CRITICAL FIX: Validate monthKey to prevent "messageDetail.months.undefined"
-          if (monthKey && !isNaN(notificationDate.getFullYear())) {
-            groupLabel = `${t(`messageDetail.months.${monthKey}`)} ${notificationDate.getFullYear()}`;
+          if (monthKey && !isNaN(validNotificationDate.getFullYear())) {
+            groupLabel = `${t(`messageDetail.months.${monthKey}`)} ${validNotificationDate.getFullYear()}`;
           } else {
             // CRITICAL FIX: Use fallback text instead of toLocaleDateString() which returns "Invalid Date"
-            groupLabel = t('dateGroups.earlier') || 'Earlier';
+            groupLabel = t('notifications.dateGroups.earlier') || 'Earlier';
           }
         }
 
@@ -697,6 +704,19 @@ const NotificationsScreenComponent: React.FC = () => {
   // FlatList renderItem - useCallback ile memoize et
   const renderNotificationItem = React.useCallback(
     ({ item }: { item: { type: 'header' | 'notification'; data: any } }) => {
+      // Skeleton loading state için dummy render
+      if (!item || !item.type) {
+        return (
+          <Box px={16} py={12}>
+            <Box
+              width="100%"
+              height={80}
+              borderRadius={8}
+            />
+          </Box>
+        );
+      }
+
       if (item.type === 'header') {
         return (
           <Box px={16} py={12} bg={backgroundColor}>
@@ -709,6 +729,11 @@ const NotificationsScreenComponent: React.FC = () => {
             </Text>
           </Box>
         );
+      }
+
+      // Safety check: item.data olmalı
+      if (!item.data) {
+        return null;
       }
 
       return (
@@ -732,10 +757,15 @@ const NotificationsScreenComponent: React.FC = () => {
   // Key extractor - unique ID kullan
   const keyExtractor = React.useCallback(
     (item: { type: 'header' | 'notification'; data: any }, index: number) => {
+      // Skeleton loading state için fallback
+      if (!item || !item.type) {
+        return `skeleton-${index}`;
+      }
       if (item.type === 'header') {
         return `header-${item.data}-${index}`;
       }
-      return item.data.id;
+      // item.data veya item.data.id undefined olabilir (skeleton state)
+      return item.data?.id || `skeleton-${index}`;
     },
     []
   );
@@ -879,21 +909,7 @@ const NotificationsScreenComponent: React.FC = () => {
         );
       }
 
-      // CRITICAL FIX: Feed/Profile pattern - Sadece ilk yüklemede loading göster (cache yoksa)
-      if (isInitialLoading) {
-        return (
-          <View
-            style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-          >
-            <ActivityIndicator
-              size='large'
-              color={isDark ? '#FFFFFF' : '#000000'}
-            />
-          </View>
-        );
-      }
-
-      if (filtered.length === 0) {
+      if (filtered.length === 0 && !isInitialLoading) {
         return (
           <Box flex={1} justifyContent='center' alignItems='center' px='$4'>
             <Text
@@ -996,70 +1012,91 @@ const NotificationsScreenComponent: React.FC = () => {
       // Estimated item height: avatar (48px) + content + extra content (post card, comment, etc.) + margins (~150px)
       const estimatedItemHeight = 150;
 
+      // Skeleton dummy data - AutoSkeletonView için
+      const skeletonData = Array.from({ length: 8 }, (_, i) => ({
+        type: 'notification' as const,
+        data: {
+          id: `skeleton-${i}`,
+          type: 'like',
+          username: 'loading',
+          avatar: null,
+          createdAt: new Date().toISOString(),
+          read: false,
+        },
+      }));
+
       return (
-        <FlashList
-          data={groupedData}
-          renderItem={renderNotificationItem}
-          keyExtractor={keyExtractor}
-          contentContainerStyle={{
-            paddingHorizontal: 0,
-            paddingTop: 8,
-            // paddingBottom kaldırıldı - sadece ListFooterComponent'te padding var
-          }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true);
-                refetch().finally(() => setRefreshing(false));
-              }}
-              tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
-            />
-          }
-          ListFooterComponent={
-            shouldShowLoadMore ? (
-              <Box px={16} py={24} pb={bottomOffset} alignItems='center'>
-                <Pressable
-                  onPress={() => {
-                    if (!isFetchingNextPage && hasNextPage) {
-                      fetchNextPage();
-                    }
-                  }}
-                  disabled={isFetchingNextPage}
-                >
-                  <HStack
-                    alignItems='center'
-                    justifyContent='center'
-                    space='sm'
+        <AutoSkeletonView
+          isLoading={isInitialLoading}
+          animationType="gradient"
+          duration={1200}
+          skeletonColor={isDark ? '#1A1A1A' : '#E1E9EE'}
+          highlightColor={isDark ? '#2A2A2A' : '#F2F8FC'}
+        >
+          <FlashList
+            data={isInitialLoading ? skeletonData : groupedData}
+            renderItem={renderNotificationItem}
+            keyExtractor={keyExtractor}
+            contentContainerStyle={{
+              paddingHorizontal: 0,
+              paddingTop: 8,
+              // paddingBottom kaldırıldı - sadece ListFooterComponent'te padding var
+            }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  refetch().finally(() => setRefreshing(false));
+                }}
+                tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+              />
+            }
+            ListFooterComponent={
+              shouldShowLoadMore ? (
+                <Box px={16} py={24} pb={bottomOffset} alignItems='center'>
+                  <Pressable
+                    onPress={() => {
+                      if (!isFetchingNextPage && hasNextPage) {
+                        fetchNextPage();
+                      }
+                    }}
+                    disabled={isFetchingNextPage}
                   >
-                    <Text
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                      fontSize={14}
-                      fontWeight='$medium'
+                    <HStack
+                      alignItems='center'
+                      justifyContent='center'
+                      space='sm'
                     >
-                      {t('notifications.actions.showMore')}
-                    </Text>
-                    <ChevronDownIcon
-                      width={20}
-                      height={20}
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </HStack>
-                </Pressable>
-                {isFetchingNextPage && (
-                  <View style={{ marginTop: 8 }}>
-                    <ActivityIndicator
-                      size='small'
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </View>
-                )}
-              </Box>
-            ) : null
-          }
-          style={{ flex: 1 }}
-        />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize={14}
+                        fontWeight='$medium'
+                      >
+                        {t('notifications.actions.showMore')}
+                      </Text>
+                      <ChevronDownIcon
+                        width={20}
+                        height={20}
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                      />
+                    </HStack>
+                  </Pressable>
+                  {isFetchingNextPage && (
+                    <View style={{ marginTop: 8 }}>
+                      <ActivityIndicator
+                        size='small'
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                      />
+                    </View>
+                  )}
+                </Box>
+              ) : null
+            }
+            style={{ flex: 1 }}
+          />
+        </AutoSkeletonView>
       );
     },
     [
