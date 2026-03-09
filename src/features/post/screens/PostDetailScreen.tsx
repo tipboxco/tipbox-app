@@ -710,9 +710,9 @@ export const PostDetailScreen = () => {
     // FlatList contentContainerStyle - useMemo ile memoize edildi (keyboardHeight değişikliğinde sadece style güncellenir)
     const contentContainerStyle = useMemo(() => ({
         paddingBottom: keyboardHeight > 0
-            ? keyboardHeight + 80 // Klavye açıkken: klavye yüksekliği + input height
-            : 80 + insets.bottom // Klavye kapalıyken: sadece input height + safe area
-    }), [keyboardHeight, insets.bottom]);
+            ? keyboardHeight + 100 // Klavye açıkken: klavye yüksekliği + input container height
+            : 100 // Klavye kapalıyken: input container için alan bırak (paddingVertical 32 + height 40 + gap)
+    }), [keyboardHeight]);
 
     // 404: Post bulunamadı (silinmiş veya geçersiz ID) - yükleme bittikten sonra göster
     if (!isLoadingPost && is404) {
@@ -732,8 +732,8 @@ export const PostDetailScreen = () => {
     }
 
     return (
-        <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#fff' }}>
-          
+        <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#fff' }}>
+
           <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
@@ -777,8 +777,7 @@ export const PostDetailScreen = () => {
                     gap: 8,
                     paddingHorizontal: 16,
                     paddingVertical: 16,
-                    alignSelf: 'flex-end',
-                    marginBottom: keyboardHeight === 0 ? (Platform.OS === 'ios' ? insets.bottom : 16) : 0,
+                    backgroundColor: isDark ? '#000000' : '#FFFFFF',
                 }}
             >
                
@@ -811,15 +810,17 @@ export const PostDetailScreen = () => {
                         backgroundColor: commentText.trim() && !createCommentMutation.isPending
                             ? '#6366F1'
                             : isDark
-                            ? '#2A2A2A'
-                            : '#F2F2F2',
+                            ? '#3A3A3A'
+                            : '#E5E5E5',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        borderWidth: commentText.trim() ? 0 : 1,
+                        borderColor: isDark ? '#4A4A4A' : '#D0D0D0',
                     }}
                     disabled={!commentText.trim() || createCommentMutation.isPending}
                 >
                     {createCommentMutation.isPending ? (
-                        <Text style={{ color: isDark ? '#8C8C8C' : '#8C8C8C' }}>...</Text>
+                        <Text style={{ color: isDark ? '#999999' : '#666666' }}>...</Text>
                     ) : (
                         <Feather
                             name="send"
@@ -828,8 +829,8 @@ export const PostDetailScreen = () => {
                                 commentText.trim()
                                     ? '#FFFFFF'
                                     : isDark
-                                    ? '#8C8C8C'
-                                    : '#8C8C8C'
+                                    ? '#999999'
+                                    : '#666666'
                             }
                         />
                     )}

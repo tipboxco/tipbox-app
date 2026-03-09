@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { ImageSourcePropType, TextInput, Alert } from 'react-native';
+import { ImageSourcePropType, TextInput, Alert, View, StyleSheet, Platform } from 'react-native';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CachedImage } from '@/src/components/CachedImage';
 import { TrashIcon, HeartIcon, PencilIcon } from 'react-native-heroicons/outline';
 import { HeartIcon as HeartIconSolid } from 'react-native-heroicons/solid';
+import { MenuView } from '@react-native-menu/menu';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 
 // Default user avatar
@@ -33,7 +34,7 @@ export interface CommentsCardProps {
   isEditing?: boolean;
 }
 
-export const CommentsCard: React.FC<CommentsCardProps> = ({
+const CommentsCard: React.FC<CommentsCardProps> = ({
   userName,
   userTitle,
   avatar,
@@ -205,16 +206,49 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
     setIsEditMode(false);
   }, [commentId, postId, onEdit, editText, content]);
 
-  return (
-    <Box
-      position="relative"
-      borderBottomWidth={1}
-      borderBottomColor="#E9E9E9"
-      px={12}
-      py={8}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+  // Context menu actions for iOS
+  const handleContextMenuPress = useCallback((event: { nativeEvent: { event: string } }) => {
+    const { event: action } = event.nativeEvent;
+
+    if (action === 'edit') {
+      handleEditStart();
+    } else if (action === 'delete') {
+      handleDelete();
+    }
+  }, [handleEditStart, handleDelete]);
+
+  const menuActions = useMemo(() => {
+    if (!isOwnComment || isEditMode) return [];
+
+    const actions = [];
+    if (onEdit) {
+      actions.push({
+        id: 'edit',
+        title: t('buttons.edit'),
+        image: Platform.select({ ios: 'pencil', default: undefined }),
+      });
+    }
+    if (onDelete) {
+      actions.push({
+        id: 'delete',
+        title: t('buttons.delete'),
+        image: Platform.select({ ios: 'trash', default: undefined }),
+        attributes: { destructive: true },
+      });
+    }
+    return actions;
+  }, [isOwnComment, isEditMode, onEdit, onDelete, t]);
+
+  const CommentContent = (
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF',
+        }
+      ]}
     >
-      <HStack alignItems="flex-start" space="sm">
+        <HStack alignItems="flex-start" space="sm">
         {/* Avatar */}
         <CachedImage
           source={avatarSource}
@@ -236,13 +270,22 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
           {/* Name & Title */}
           {userTitle ? (
             <VStack space="xs">
-              <Text
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize="$xs"
-                fontWeight="$bold"
-              >
-                {userName}
-              </Text>
+              <HStack alignItems="center" justifyContent="space-between">
+                <Text
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  fontSize="$xs"
+                  fontWeight="$bold"
+                >
+                  {userName}
+                </Text>
+                <Text
+                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  fontSize="$xs"
+                  fontWeight="$medium"
+                >
+                  {timeAgo}
+                </Text>
+              </HStack>
               <Text
                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
                 fontSize="$xs"
@@ -253,13 +296,20 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
               </Text>
             </VStack>
           ) : (
-            <HStack alignItems="center" space="xs">
+            <HStack alignItems="center" space="xs" justifyContent="space-between">
               <Text
                 color={isDark ? '#FFFFFF' : '#000000'}
                 fontSize="$sm"
                 fontWeight="$bold"
               >
                 {userName}
+              </Text>
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize="$xs"
+                fontWeight="$medium"
+              >
+                {timeAgo}
               </Text>
             </HStack>
           )}
@@ -387,56 +437,32 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
           </VStack>
         </VStack>
       </HStack>
-
-      {/* Time and Action Buttons */}
-      <HStack
-        position="absolute"
-        top={8}
-        right={12}
-        alignItems="center"
-        space="sm"
-      >
-        {/* Edit Button - sadece kullanıcının kendi yorumunda göster */}
-        {isOwnComment && onEdit && !isEditMode && (
-          <Pressable
-            onPress={handleEditStart}
-            disabled={isEditing}
-            opacity={isEditing ? 0.5 : 1}
-            p={4}
-          >
-            <PencilIcon
-              width={16}
-              height={16}
-              color={isDark ? '#829905' : '#829905'}
-            />
-          </Pressable>
-        )}
-        {/* Delete Button - sadece kullanıcının kendi yorumunda göster */}
-        {isOwnComment && onDelete && !isEditMode && (
-          <Pressable
-            onPress={handleDelete}
-            disabled={isDeleting}
-            opacity={isDeleting ? 0.5 : 1}
-            p={4}
-          >
-            <TrashIcon
-              width={16}
-              height={16}
-              color={isDark ? '#FF3040' : '#FF3040'}
-            />
-          </Pressable>
-        )}
-        <Text
-          color={isDark ? '#8C8C8C' : '#8C8C8C'}
-          fontSize="$xs"
-          fontWeight="$medium"
-        >
-          {timeAgo}
-        </Text>
-      </HStack>
-    </Box>
+    </View>
   );
+
+  // Sadece kendi yorumunda context menu göster
+  if (isOwnComment && !isEditMode && menuActions.length > 0) {
+    return (
+      <MenuView
+        onPressAction={handleContextMenuPress}
+        actions={menuActions}
+      >
+        {CommentContent}
+      </MenuView>
+    );
+  }
+
+  return CommentContent;
 };
+
+const styles = StyleSheet.create({
+  container: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9E9E9',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+});
 
 export default CommentsCard;
 
