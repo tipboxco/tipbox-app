@@ -379,14 +379,14 @@ const HeaderComponent = ({
               ) : title ? (
                 <Text
                   color={headerTextColor}
-                  fontSize="$md"
+                  fontSize={titleFontSize}
                   fontWeight="$bold"
                   textAlign="center"
                   numberOfLines={1}
                   ellipsizeMode="tail"
                   maxWidth="100%"
                 >
-                  {truncatedTitle}
+                  {title}
                 </Text>
               ) : null}
             </Box>
