@@ -34,6 +34,7 @@ import { ReceiveBottomSheet } from '../components/ReceiveBottomSheet';
 import { ClaimBottomSheet } from '../components/ClaimBottomSheet';
 import { SwapBottomSheet } from '../components/SwapBottomSheet';
 import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
+import { SelectFriendBottomSheet } from '../components/SelectFriendBottomSheet';
 import { NFTFilterBottomSheet } from '../components/NFTFilterBottomSheet';
 import { NFTSortBottomSheet, SortOption } from '../components/NFTSortBottomSheet';
 import { TransactionFilterBottomSheet, TransactionFilterValue } from '../components/TransactionFilterBottomSheet';
@@ -254,12 +255,36 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, bottomInset, isDark]);
 
   const handleNavigateToFriendSelect = useCallback(() => {
-    navigation.navigate('SelectFriendScreen', {
-      onSelect: (friendData) => {
-        setPendingFriend(friendData);
-      },
-    });
-  }, [navigation]);
+    // Close current bottom sheet first
+    closeBottomSheet();
+
+    // Open SelectFriendBottomSheet after a short delay
+    setTimeout(() => {
+      openBottomSheet(
+        <SelectFriendBottomSheet
+          onClose={closeBottomSheet}
+          onSelect={(friendData) => {
+            setPendingFriend(friendData);
+          }}
+        />,
+        {
+          enableDynamicSizing: false,
+          snapPoints: ['75%'], // Friend selection list
+          enablePanDownToClose: true,
+          enableOverDrag: false,
+          enableHandlePanningGesture: true,
+          enableContentPanningGesture: true,
+          animateOnMount: true,
+          paddingBottom: bottomInset,
+          handleIndicatorStyle: {
+            backgroundColor: isDark ? '#333333' : '#B8B8B7',
+            width: 70,
+            height: 5,
+          },
+        }
+      );
+    }, 300);
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
   const handleSendPress = useCallback(() => {
     const bottomSheetContent = (

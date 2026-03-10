@@ -86,15 +86,5 @@ export type RootStackParamList = {
     productGroupFilter?: string;
   };
 
-  // SelectFriendScreen - Global friend selection screen (for wallet send)
-  SelectFriendScreen: {
-    onSelect: (friend: {
-      id: string;
-      name: string;
-      title?: string;
-      bio?: string;
-      avatar: any;
-    }) => void;
-  };
 };
 
