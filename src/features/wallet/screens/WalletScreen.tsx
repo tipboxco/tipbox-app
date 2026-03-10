@@ -340,10 +340,19 @@ export const WalletScreen: React.FC = () => {
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
   const handleReceivePress = useCallback(() => {
+    // Guard: Don't open if wallet info is not loaded
+    if (!walletInfo?.walletIdentifier) {
+      Alert.alert(
+        t('receiveBottomSheet.error'),
+        t('receiveBottomSheet.walletNotReady')
+      );
+      return;
+    }
+
     openBottomSheet(
       <ReceiveBottomSheet
         onClose={closeBottomSheet}
-        walletAddress={walletInfo?.walletIdentifier || ''}
+        walletAddress={walletInfo.walletIdentifier}
         userName={user?.fullName || 'User'}
       />,
       {

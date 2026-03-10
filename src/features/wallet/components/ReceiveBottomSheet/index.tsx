@@ -31,6 +31,9 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
     return `${address.substring(0, startLength)}****${address.substring(address.length - endLength)}`;
   };
 
+  // If wallet address is empty, show error state
+  const hasValidAddress = walletAddress && walletAddress.trim().length > 0;
+
   const handleCopyAddress = async () => {
     await Clipboard.setStringAsync(walletAddress);
     Alert.alert(t('receiveBottomSheet.copied'), t('receiveBottomSheet.addressCopied'));
@@ -75,20 +78,38 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
         {/* Content */}
         <VStack px="$4" py="$6" space="xl" alignItems="center">
           {/* QR Code */}
-          <Box
-            bg={isDark ? '$backgroundDark900' : '$white'}
-            p="$4"
-            borderRadius={12}
-            borderWidth={1}
-            borderColor={isDark ? '$borderDark700' : '$borderLight200'}
-          >
-            <QRCode
-              value={walletAddress}
-              size={200}
-              color={isDark ? '#FFFFFF' : '#000000'}
-              backgroundColor={isDark ? '#1A1A1A' : '#FFFFFF'}
-            />
-          </Box>
+          {hasValidAddress ? (
+            <Box
+              bg={isDark ? '$backgroundDark900' : '$white'}
+              p="$4"
+              borderRadius={12}
+              borderWidth={1}
+              borderColor={isDark ? '$borderDark700' : '$borderLight200'}
+            >
+              <QRCode
+                value={walletAddress}
+                size={200}
+                color={isDark ? '#FFFFFF' : '#000000'}
+                backgroundColor={isDark ? '#1A1A1A' : '#FFFFFF'}
+              />
+            </Box>
+          ) : (
+            <Box
+              bg={isDark ? '$backgroundDark900' : '$backgroundLight50'}
+              p="$6"
+              borderRadius={12}
+              borderWidth={1}
+              borderColor={isDark ? '$borderDark700' : '$borderLight200'}
+              w={232}
+              h={232}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Text fontSize={14} color={isDark ? '$textDark400' : '$textLight500'} textAlign="center">
+                {t('receiveBottomSheet.noWalletAddress')}
+              </Text>
+            </Box>
+          )}
 
           {/* User Info */}
           <VStack space="xs" alignItems="center">
@@ -101,67 +122,71 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
           </VStack>
 
           {/* Wallet Address Card */}
-          <Box
-            bg={isDark ? '$backgroundDark900' : '$backgroundLight50'}
-            p="$4"
-            borderRadius={8}
-            borderWidth={1}
-            borderColor={isDark ? '$borderDark700' : '$borderLight200'}
-            w="100%"
-          >
-            <VStack space="sm">
-              <Text fontSize={12} fontWeight="$semibold" color={isDark ? '$textDark400' : '$textLight500'}>
-                {t('receiveBottomSheet.walletAddress')}
-              </Text>
-              <Text 
-                fontSize={11} 
-                color={isDark ? '$textDark50' : '$textLight900'} 
-                fontFamily="$mono"
-                numberOfLines={1}
-              >
-                {truncateAddress(walletAddress)}
-              </Text>
-            </VStack>
-          </Box>
-
-          {/* Action Buttons */}
-          <HStack space="md" w="100%">
-            {/* Copy Button */}
-            <Pressable
-              onPress={handleCopyAddress}
-              flex={1}
-              bg={isDark ? '$backgroundDark800' : '$backgroundLight0'}
+          {hasValidAddress && (
+            <Box
+              bg={isDark ? '$backgroundDark900' : '$backgroundLight50'}
+              p="$4"
+              borderRadius={8}
               borderWidth={1}
               borderColor={isDark ? '$borderDark700' : '$borderLight200'}
-              borderRadius={10}
-              py="$3"
-              px="$4"
+              w="100%"
             >
-              <HStack space="sm" alignItems="center" justifyContent="center">
-                <DocumentDuplicateIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                <Text fontSize={14} fontWeight="$semibold" color={isDark ? '$textDark50' : '$textLight900'}>
-                  {t('receiveBottomSheet.copy')}
+              <VStack space="sm">
+                <Text fontSize={12} fontWeight="$semibold" color={isDark ? '$textDark400' : '$textLight500'}>
+                  {t('receiveBottomSheet.walletAddress')}
                 </Text>
-              </HStack>
-            </Pressable>
+                <Text
+                  fontSize={11}
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  fontFamily="$mono"
+                  numberOfLines={1}
+                >
+                  {truncateAddress(walletAddress)}
+                </Text>
+              </VStack>
+            </Box>
+          )}
 
-            {/* Share Button */}
-            <Pressable
-              onPress={handleShare}
-              flex={1}
-              bg="#E8FF6B"
-              borderRadius={10}
-              py="$3"
-              px="$4"
-            >
-              <HStack space="sm" alignItems="center" justifyContent="center">
-                <ShareIcon width={20} height={20} color="#000000" />
-                <Text fontSize={14} fontWeight="$semibold" color="#000000">
-                  {t('receiveBottomSheet.share')}
-                </Text>
-              </HStack>
-            </Pressable>
-          </HStack>
+          {/* Action Buttons */}
+          {hasValidAddress && (
+            <HStack space="md" w="100%">
+              {/* Copy Button */}
+              <Pressable
+                onPress={handleCopyAddress}
+                flex={1}
+                bg={isDark ? '$backgroundDark800' : '$backgroundLight0'}
+                borderWidth={1}
+                borderColor={isDark ? '$borderDark700' : '$borderLight200'}
+                borderRadius={10}
+                py="$3"
+                px="$4"
+              >
+                <HStack space="sm" alignItems="center" justifyContent="center">
+                  <DocumentDuplicateIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <Text fontSize={14} fontWeight="$semibold" color={isDark ? '$textDark50' : '$textLight900'}>
+                    {t('receiveBottomSheet.copy')}
+                  </Text>
+                </HStack>
+              </Pressable>
+
+              {/* Share Button */}
+              <Pressable
+                onPress={handleShare}
+                flex={1}
+                bg="#E8FF6B"
+                borderRadius={10}
+                py="$3"
+                px="$4"
+              >
+                <HStack space="sm" alignItems="center" justifyContent="center">
+                  <ShareIcon width={20} height={20} color="#000000" />
+                  <Text fontSize={14} fontWeight="$semibold" color="#000000">
+                    {t('receiveBottomSheet.share')}
+                  </Text>
+                </HStack>
+              </Pressable>
+            </HStack>
+          )}
 
           {/* Info Text */}
           <Box
