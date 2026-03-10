@@ -644,6 +644,12 @@ export const createExperiencePost = async (
       status: data.status,
       imagesCount: data.images?.length || 0,
     });
+
+    console.log('[createExperiencePost] 🚨 CRITICAL: Experience ratings in API layer:', {
+      priceRating: data.experience.find(e => e.type === 'price_and_shopping')?.rating,
+      productRating: data.experience.find(e => e.type === 'product_and_usage')?.rating,
+      fullExperienceArray: JSON.stringify(data.experience, null, 2),
+    });
     
     // Zorunlu alan kontrolü
     if (!data.selectedDurationId || data.selectedDurationId.trim() === '') {

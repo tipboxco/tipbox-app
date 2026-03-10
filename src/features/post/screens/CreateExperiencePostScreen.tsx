@@ -231,12 +231,19 @@ export const CreateExperiencePostScreen = () => {
 
                     console.log('[CreateExperiencePostScreen] ✅ Split response received:', response);
 
+                    // CRITICAL DEBUG: Log AI ratings to verify they're different
+                    console.log('[CreateExperiencePostScreen] 🤖 AI Split Ratings:', {
+                        priceRating: response.priceAndShopping?.rating,
+                        productRating: response.productAndUsage?.rating,
+                    });
+
                     // Cümle sonundaki ekstra "(" kaldır (AI bazen ekliyor)
                     const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
                     // AI response'u form'a set et
                     if (response.priceAndShopping) {
                         setValue('priceExperienceText', trimTrailingParen(response.priceAndShopping.content));
                         setValue('priceRating', response.priceAndShopping.rating);
+                        console.log('[CreateExperiencePostScreen] 💰 Set priceRating to:', response.priceAndShopping.rating);
                     } else {
                         setValue('priceExperienceText', '');
                         setValue('priceRating', 0);
@@ -245,6 +252,7 @@ export const CreateExperiencePostScreen = () => {
                     if (response.productAndUsage) {
                         setValue('productExperienceText', trimTrailingParen(response.productAndUsage.content));
                         setValue('productRating', response.productAndUsage.rating);
+                        console.log('[CreateExperiencePostScreen] 📦 Set productRating to:', response.productAndUsage.rating);
                     } else {
                         setValue('productExperienceText', '');
                         setValue('productRating', 0);
@@ -324,7 +332,13 @@ export const CreateExperiencePostScreen = () => {
         }
         isSubmittingRef.current = true;
         try {
-            console.log('[CreateExperiencePostScreen] Form submitted:', data);
+            console.log('[CreateExperiencePostScreen] 📝 Form submitted with data:', data);
+            console.log('[CreateExperiencePostScreen] ⭐ CRITICAL: Form ratings at submit time:', {
+                priceRating: data.priceRating,
+                productRating: data.productRating,
+                priceExperienceText: data.priceExperienceText?.substring(0, 30) + '...',
+                productExperienceText: data.productExperienceText?.substring(0, 30) + '...',
+            });
             
             // ContextType ve contextId kontrolü
             if (!contextType || !contextId) {
@@ -351,7 +365,7 @@ export const CreateExperiencePostScreen = () => {
         
         // Experience array'ini oluştur
         const experience = [];
-        
+
         // Price and shopping experience
         if (data.priceExperienceText && data.priceRating) {
             experience.push({
@@ -360,7 +374,7 @@ export const CreateExperiencePostScreen = () => {
                 rating: data.priceRating,
             });
         }
-        
+
         // Product and usage experience
         if (data.productExperienceText && data.productRating) {
             experience.push({
@@ -369,6 +383,13 @@ export const CreateExperiencePostScreen = () => {
                 rating: data.productRating,
             });
         }
+
+        // CRITICAL DEBUG: Log experience array to verify ratings are different
+        console.log('[CreateExperiencePostScreen] 🔍 Experience array being sent:', JSON.stringify(experience, null, 2));
+        console.log('[CreateExperiencePostScreen] 🔍 Form data ratings:', {
+            priceRating: data.priceRating,
+            productRating: data.productRating,
+        });
         
         // Experience array kontrolü
         if (experience.length === 0) {
@@ -459,24 +480,36 @@ export const CreateExperiencePostScreen = () => {
             // Önce envantere ekle, sonra post oluştur
             if (willAddToInventory) {
                 console.log('[CreateExperiencePostScreen] 📦 Adding product to inventory first...');
+                console.log('[CreateExperiencePostScreen] 🚫 CRITICAL: NOT sending images to inventory (backend will use catalog image)');
+                console.log('[CreateExperiencePostScreen] ℹ️ Post images (user gallery) will only be used for the post:', {
+                    postImagesCount: data.selectedImages?.length || 0,
+                    productId: data.selectedProduct!.id,
+                    productName: data.selectedProduct!.name,
+                });
                 try {
-                    // Envanterde ürünün katalog görseli kullanılmalı; post görselleri gönderilmez.
-                    const productImg = data.selectedProduct!.image;
-                    const productImageUrl =
-                        typeof productImg === 'string'
-                            ? productImg
-                            : (productImg as { uri?: string } | undefined)?.uri;
-                    const inventoryResponse = await addInventoryItemMutation.mutateAsync({
+                    // CRITICAL FIX: Inventory'e HİÇBİR görsel gönderme!
+                    // Backend, productId'ye göre katalog görselini otomatik kullanır.
+                    // Post görselleri (data.selectedImages) sadece experience post için kullanılır.
+
+                    const inventoryPayload = {
                         productId: data.selectedProduct!.id,
                         selectedDurationId: selectedDurationId,
                         selectedLocationId: selectedLocationId,
                         selectedPurposeId: selectedPurposeId,
                         content: data.experienceText,
                         experience: experience,
-                        status: 'own',
-                        // Sadece ürünün katalog görseli; post görselleri (data.selectedImages) eklenmez.
-                        images: productImageUrl ? [productImageUrl] : undefined,
+                        status: 'own' as const,
+                        // ❌ ASLA images gönderme - backend katalog görselini kullanır
+                        // images parametresi YOK!
+                    };
+
+                    console.log('[CreateExperiencePostScreen] 🚨 CRITICAL: Inventory payload BEFORE mutation:', JSON.stringify(inventoryPayload, null, 2));
+                    console.log('[CreateExperiencePostScreen] 🚨 Inventory experience array ratings:', {
+                        priceRating: inventoryPayload.experience.find(e => e.type === 'price_and_shopping')?.rating,
+                        productRating: inventoryPayload.experience.find(e => e.type === 'product_and_usage')?.rating,
                     });
+
+                    const inventoryResponse = await addInventoryItemMutation.mutateAsync(inventoryPayload);
                     console.log('[CreateExperiencePostScreen] ✅ Product added to inventory:', inventoryResponse);
                 } catch (inventoryError: any) {
                     const errMsg =
@@ -514,7 +547,8 @@ export const CreateExperiencePostScreen = () => {
                 });
                 return;
             }
-            const response = await createExperiencePostMutation.mutateAsync({
+
+            const postPayload = {
                 contextType: apiContextType,
                 contextId: contextId,
                 productId: data.selectedProduct?.id, // Backend için productId eklendi
@@ -526,7 +560,15 @@ export const CreateExperiencePostScreen = () => {
                 experience: experience,
                 status: status,
                 images: data.selectedImages || [],
+            };
+
+            console.log('[CreateExperiencePostScreen] 🚨 CRITICAL: Post payload BEFORE mutation:', JSON.stringify(postPayload, null, 2));
+            console.log('[CreateExperiencePostScreen] 🚨 Post experience array ratings:', {
+                priceRating: postPayload.experience.find((e: any) => e.type === 'price_and_shopping')?.rating,
+                productRating: postPayload.experience.find((e: any) => e.type === 'product_and_usage')?.rating,
             });
+
+            const response = await createExperiencePostMutation.mutateAsync(postPayload);
             
             console.log('[CreateExperiencePostScreen] ✅ API Response:', response);
 

@@ -451,10 +451,18 @@ export const addInventoryItem = async (
   data: AddInventoryItemRequest
 ): Promise<AddInventoryItemResponse> => {
   try {
+    console.log('[addInventoryItem] 🚨 CRITICAL: Request payload:', JSON.stringify(data, null, 2));
+    console.log('[addInventoryItem] 🚨 Experience ratings in API:', {
+      priceRating: data.experience.find(e => e.type === 'price_and_shopping')?.rating,
+      productRating: data.experience.find(e => e.type === 'product_and_usage')?.rating,
+    });
+
     const response = await apiService.getClient().post<AddInventoryItemResponse>(
       '/inventory',
       data
     );
+
+    console.log('[addInventoryItem] ✅ Success response:', response.data);
     return response.data;
   } catch (error: any) {
     console.error('[addInventoryItem] API Error:', {
