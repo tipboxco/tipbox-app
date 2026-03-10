@@ -27,13 +27,39 @@
   },
   "supportMessageDetail": {
     "empty": "Henüz mesaj yok",
-    "loading": "Yükleniyor..."
+    "loading": "Yükleniyor...",
+    "errors": {
+      "failedToSendMessage": "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
+      "errorFinalizingSupport": "Destek talebi sonlandırılırken bir hata oluştu",
+      "errorClosingSupport": "Destek talebi kapatılırken bir hata oluştu",
+      "errorReportingUser": "Kullanıcı şikayet edilirken bir hata oluştu",
+      "errorSelectingImage": "Görsel seçilirken bir hata oluştu",
+      "errorUploadingImage": "Görsel yüklenirken bir hata oluştu",
+      "errorBlockingUser": "Kullanıcı engellenirken bir hata oluştu",
+      "requestIdNotFound": "Talep ID'si bulunamadı",
+      "errorAcceptingRequest": "Talep kabul edilirken bir hata oluştu",
+      "errorRejectingRequest": "Talep reddedilirken bir hata oluştu",
+      "errorCancellingRequest": "Talep iptal edilirken bir hata oluştu",
+      "reportReasonRequired": "Şikayet nedeni gereklidir",
+      "threadIdNotFound": "Thread ID'si bulunamadı"
+    },
+    "success": {
+      "requestAccepted": "Talep kabul edildi",
+      "requestRejected": "Talep reddedildi",
+      "requestCancelled": "Talep iptal edildi",
+      "requestFinalized": "Talep sonlandırıldı",
+      "requestClosed": "Talep kapatıldı",
+      "requestReported": "Talep şikayet edildi",
+      "userReported": "Kullanıcı şikayet edildi",
+      "userBlocked": "Kullanıcı engellendi"
+    }
   },
   "messageDetail": {
     "yesterday": "Dün",
     "typing": "yazıyor...",
     "placeholder": "Bir mesaj yazın...",
     "imageAlt": "Gönderilen görsel",
+    "userImageAlt": "{{userName}} kullanıcı resmi",
     "months": {
       "january": "Ocak",
       "february": "Şubat",
@@ -67,6 +93,42 @@
       "loading": "Yükleniyor...",
       "uploadFailed": "Yükleme başarısız",
       "imageLoadFailed": "Görsel yüklenemedi"
+    },
+    "errors": {
+      "failedToStartChat": "Sohbet başlatılamadı. Lütfen tekrar deneyin.",
+      "failedToJoinThread": "Thread'e katılma başarısız: {{reason}}",
+      "failedToSendMessage": "Mesaj gönderilemedi: {{reason}}",
+      "supportThreadIdNotFound": "Destek thread ID'si bulunamadı",
+      "errorReportingUser": "Kullanıcı şikayet edilirken bir hata oluştu",
+      "failedToMuteNotifications": "Bildirimler kapatılamadı",
+      "failedToUnmuteNotifications": "Bildirimler açılamadı",
+      "errorBlockingUser": "Kullanıcı engellenirken bir hata oluştu",
+      "userInfoNotFound": "Kullanıcı bilgisi bulunamadı",
+      "recipientInfoNotFound": "Alıcı kullanıcı bilgisi bulunamadı",
+      "tipsMinimumAmount": "TIPS miktarı en az 0.01 olmalıdır",
+      "tipsGreaterThanZero": "TIPS miktarı 0'dan büyük olmalıdır",
+      "messageCannotBeEmpty": "Mesaj boş olamaz",
+      "errorSendingTips": "TIPS gönderilirken bir hata oluştu",
+      "errorSendingSupportRequest": "Destek talebi gönderilirken bir hata oluştu",
+      "errorSendingMessage": "Mesaj gönderilirken bir hata oluştu",
+      "errorDeletingMessage": "Mesaj silinemedi",
+      "errorSelectingImage": "Görsel seçilirken bir hata oluştu",
+      "errorUploadingImage": "Görsel yüklenirken bir hata oluştu",
+      "requestIdNotFound": "Talep ID'si bulunamadı",
+      "errorAcceptingSupportRequest": "Destek talebi kabul edilirken bir hata oluştu",
+      "errorRejectingSupportRequest": "Destek talebi reddedilirken bir hata oluştu",
+      "errorCancellingSupportRequest": "Destek talebi iptal edilirken bir hata oluştu",
+      "messageIdNotFound": "Mesaj ID'si bulunamadı",
+      "messageNotFound": "Mesaj bulunamadı",
+      "threadIdNotFound": "Thread ID'si bulunamadı"
+    },
+    "success": {
+      "userReported": "Kullanıcı şikayet edildi",
+      "notificationsMuted": "Bildirimler kapatıldı",
+      "notificationsUnmuted": "Bildirimler açıldı",
+      "userBlocked": "Kullanıcı engellendi",
+      "supportRequestSent": "Destek talebi gönderildi",
+      "supportRequestRejected": "Destek talebi reddedildi"
     }
   },
   "notifications": {

@@ -25,7 +25,12 @@
     "password": "Şifre",
     "username": "Kullanıcı Adı",
     "name": "Ad",
-    "or": "veya"
+    "or": "veya",
+    "user": "Kullanıcı",
+    "error": "Hata",
+    "validationError": "Doğrulama Hatası",
+    "info": "Bilgi",
+    "success": "Başarılı"
   },
   "placeholders": {
     "emailAddress": "E-posta adresiniz",

@@ -25,7 +25,12 @@
     "password": "Password",
     "username": "Username",
     "name": "Name",
-    "or": "or"
+    "or": "or",
+    "user": "User",
+    "error": "Error",
+    "validationError": "Validation Error",
+    "info": "Info",
+    "success": "Success"
   },
   "placeholders": {
     "emailAddress": "Your email address",

@@ -31,7 +31,9 @@
     "postNotifications": "Gönderi Bildirimleri",
     "depositNotifications": "Para Yatırma Bildirimleri",
     "allNotifications": "Tüm Bildirimler",
-    "pauseNotifications": "Bildirimleri Geçici Olarak Duraklat"
+    "pauseNotifications": "Bildirimleri Geçici Olarak Duraklat",
+    "updateError": "Bildirim ayarları güncellenirken bir hata oluştu",
+    "loadError": "Bildirim ayarları yüklenirken bir hata oluştu"
   },
   "privacySettings": {
     "title": "Gizlilik Ayarları",
@@ -45,7 +47,9 @@
     "trustTrusterList": "Trust / Truster Listesi",
     "trustTrusterListDesc": "Trust / Truster Listenizi kimlerin görebileceğini seçin.",
     "supportSessionRequest": "1-1 Destek Oturumu Talebi",
-    "supportSessionRequestDesc": "Kimlerin 1-1 Destek Oturumu talep edebileceğini seçin."
+    "supportSessionRequestDesc": "Kimlerin 1-1 Destek Oturumu talep edebileceğini seçin.",
+    "updateError": "Gizlilik ayarları güncellenirken bir hata oluştu",
+    "loadError": "Gizlilik ayarları yüklenirken bir hata oluştu"
   },
   "supportSettings": {
     "title": "1-1 Destek Ayarları",
@@ -63,7 +67,8 @@
     "minimumTipsRequired": "En az {{amount}} TIPS gerekli",
     "priceUpdated": "Fiyat Güncellendi",
     "priceUpdatedSuccess": "Destek oturumu fiyatı başarıyla güncellendi",
-    "errorUpdatingPrice": "Fiyat güncellenirken bir hata oluştu"
+    "errorUpdatingPrice": "Fiyat güncellenirken bir hata oluştu",
+    "priceLoadError": "Fiyat bilgisi yüklenirken bir hata oluştu"
   },
   "changePassword": {
     "title": "Şifre Değiştir",
@@ -88,11 +93,17 @@
     },
     "error": {
       "title": "Hata",
-      "fallbackMessage": "Şifre değiştirilirken bir hata oluştu"
+      "fallbackMessage": "Şifre değiştirilirken bir hata oluştu",
+      "updateError": "Şifre değiştirilirken bir hata oluştu"
     },
     "validation": {
       "title": "Doğrulama Hatası"
     }
+  },
+  "yourDevices": {
+    "title": "Cihazlarınız",
+    "removeError": "Cihaz kaldırılırken bir hata oluştu",
+    "loadError": "Cihazlar yüklenirken bir hata oluştu"
   },
   "forgotPassword": {
     "title": "Şifremi Unuttum",
@@ -214,7 +225,8 @@
       "errors": {
         "cardInUse": "Bu kart aktif bir abonelik tarafından kullanılıyor. Lütfen önce abonelik ödeme yönteminizi değiştirin.",
         "deleteCardError": "Kart silinirken bir hata oluştu.",
-        "updateCardError": "Kart adı güncellenirken bir hata oluştu."
+        "updateCardError": "Kart adı güncellenirken bir hata oluştu.",
+        "addCardError": "Kart eklenirken bir hata oluştu."
       }
     },
     "subscriptionTab": {

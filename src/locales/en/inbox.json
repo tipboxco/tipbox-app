@@ -27,13 +27,39 @@
   },
   "supportMessageDetail": {
     "empty": "No messages yet",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "errors": {
+      "failedToSendMessage": "Failed to send message. Please try again.",
+      "errorFinalizingSupport": "An error occurred while finalizing the support request",
+      "errorClosingSupport": "An error occurred while closing the support request",
+      "errorReportingUser": "An error occurred while reporting the user",
+      "errorSelectingImage": "An error occurred while selecting image",
+      "errorUploadingImage": "An error occurred while uploading image",
+      "errorBlockingUser": "An error occurred while blocking the user",
+      "requestIdNotFound": "Request ID not found",
+      "errorAcceptingRequest": "An error occurred while accepting the request",
+      "errorRejectingRequest": "An error occurred while rejecting the request",
+      "errorCancellingRequest": "An error occurred while cancelling the request",
+      "reportReasonRequired": "Report reason is required",
+      "threadIdNotFound": "Thread ID not found"
+    },
+    "success": {
+      "requestAccepted": "Request accepted",
+      "requestRejected": "Request rejected",
+      "requestCancelled": "Request cancelled",
+      "requestFinalized": "Request finalized",
+      "requestClosed": "Request closed",
+      "requestReported": "Request reported",
+      "userReported": "User reported",
+      "userBlocked": "User blocked"
+    }
   },
   "messageDetail": {
     "yesterday": "Yesterday",
     "typing": "typing...",
     "placeholder": "Type a message...",
     "imageAlt": "Sent image",
+    "userImageAlt": "{{userName}} user image",
     "months": {
       "january": "January",
       "february": "February",
@@ -67,6 +93,42 @@
       "loading": "Loading...",
       "uploadFailed": "Upload failed",
       "imageLoadFailed": "Image failed to load"
+    },
+    "errors": {
+      "failedToStartChat": "Failed to start chat. Please try again.",
+      "failedToJoinThread": "Failed to join thread: {{reason}}",
+      "failedToSendMessage": "Failed to send message: {{reason}}",
+      "supportThreadIdNotFound": "Support thread ID not found",
+      "errorReportingUser": "An error occurred while reporting the user",
+      "failedToMuteNotifications": "Failed to mute notifications",
+      "failedToUnmuteNotifications": "Failed to unmute notifications",
+      "errorBlockingUser": "An error occurred while blocking the user",
+      "userInfoNotFound": "User information not found",
+      "recipientInfoNotFound": "Recipient user information not found",
+      "tipsMinimumAmount": "TIPS amount must be at least 0.01",
+      "tipsGreaterThanZero": "TIPS amount must be greater than 0",
+      "messageCannotBeEmpty": "Message cannot be empty",
+      "errorSendingTips": "An error occurred while sending TIPS",
+      "errorSendingSupportRequest": "An error occurred while sending the support request",
+      "errorSendingMessage": "An error occurred while sending the message",
+      "errorDeletingMessage": "Failed to delete message",
+      "errorSelectingImage": "An error occurred while selecting image",
+      "errorUploadingImage": "An error occurred while uploading image",
+      "requestIdNotFound": "Request ID not found",
+      "errorAcceptingSupportRequest": "An error occurred while accepting the support request",
+      "errorRejectingSupportRequest": "An error occurred while rejecting the support request",
+      "errorCancellingSupportRequest": "An error occurred while cancelling the support request",
+      "messageIdNotFound": "Message ID not found",
+      "messageNotFound": "Message not found",
+      "threadIdNotFound": "Thread ID not found"
+    },
+    "success": {
+      "userReported": "User reported",
+      "notificationsMuted": "Notifications muted",
+      "notificationsUnmuted": "Notifications unmuted",
+      "userBlocked": "User blocked",
+      "supportRequestSent": "Support request sent",
+      "supportRequestRejected": "Support request rejected"
     }
   },
   "notifications": {

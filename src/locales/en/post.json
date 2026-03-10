@@ -277,7 +277,8 @@
         "failedToLoad": "Failed to Load Feed",
         "unknownError": "An unknown error occurred",
         "notInInventory": "Product not in inventory",
-        "notInInventoryDesc": "This product is not in your inventory. Add it to your inventory first to create a post."
+        "notInInventoryDesc": "This product is not in your inventory. Add it to your inventory first to create a post.",
+        "boostError": "An error occurred while changing boost"
       }
     },
     "detail": {
@@ -335,5 +336,14 @@
     "tryDifferentSearch": "Try a different search.",
     "emptyList": "Trust list is empty",
     "addPeopleToTrustList": "Add people to your trust list to share with them."
+  },
+  "altTexts": {
+    "benchmarks": "Benchmarks",
+    "lastPhoto": "Last photo",
+    "cameraPhoto": "Selected camera photo",
+    "galleryImage": "Selected gallery image {{index}}",
+    "selectedImage": "Selected image {{index}}",
+    "productImage": "Product image",
+    "userPostImage": "User post image"
   }
 }

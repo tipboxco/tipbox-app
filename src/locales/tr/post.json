@@ -277,7 +277,8 @@
         "failedToLoad": "Akış Yüklenemedi",
         "unknownError": "Bilinmeyen bir hata oluştu",
         "notInInventory": "Ürün envanterde değil",
-        "notInInventoryDesc": "Bu ürün envanterinizde değil. Gönderi oluşturmak için önce envanterinize ekleyin."
+        "notInInventoryDesc": "Bu ürün envanterinizde değil. Gönderi oluşturmak için önce envanterinize ekleyin.",
+        "boostError": "Öne çıkarma değiştirilirken bir hata oluştu"
       }
     },
     "detail": {
@@ -335,5 +336,14 @@
     "tryDifferentSearch": "Farklı bir arama deneyin.",
     "emptyList": "Trust listesi boş",
     "addPeopleToTrustList": "Paylaşmak için trust listenize kişi ekleyin."
+  },
+  "altTexts": {
+    "benchmarks": "Karşılaştırmalar",
+    "lastPhoto": "Son fotoğraf",
+    "cameraPhoto": "Kameradan seçilen fotoğraf",
+    "galleryImage": "Galeriden seçilen görsel {{index}}",
+    "selectedImage": "Seçilen görsel {{index}}",
+    "productImage": "Ürün görseli",
+    "userPostImage": "Kullanıcı gönderi görseli"
   }
 }
