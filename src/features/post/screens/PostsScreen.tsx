@@ -409,10 +409,13 @@ export const PostsScreen = () => {
   const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
     console.log('Post type selected:', type, 'experienceOption:', experienceOption);
 
-    // Product feed: require product in inventory before navigating (except Experience + "tried")
+    // Product feed: require product in inventory before navigating
+    // EXCEPTIONS: Question (users can ask about products they don't own), Experience + "tried"
     // Check before closing sheet so toast appears on top of the open bottom sheet
     if (stage === 'Product' && feedContextId && !checkProduct(feedContextId)) {
-      const allowWithoutInventory = type === 'experience' && experienceOption === 'tried';
+      const allowWithoutInventory =
+        type === 'question' || // Question posts don't require inventory (users pay TIPS for boost)
+        (type === 'experience' && experienceOption === 'tried');
       if (!allowWithoutInventory) {
         showCustomToast(toast, {
           title: t('screens.posts.errors.notInInventory'),
@@ -1261,6 +1264,8 @@ export const PostsScreen = () => {
         stage={getCatalogStage()}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['60%'], // Full list visibility without scrolling
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,

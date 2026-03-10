@@ -167,16 +167,18 @@ export const CreateQuestionPostScreen = () => {
   const availableTips = storeBalance !== null && storeBalance !== undefined ? storeBalance : (walletBalance?.balance || 0);
   
   const queryClient = useQueryClient();
-  
+
   // Fetch dynamic boost price from API
   const { data: boostPriceData, isLoading: isLoadingBoostPrice, error: boostPriceError } = useBoostPrice();
-  
+
   // Get context information from flow store
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
   const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
   const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
+
+  // ✅ QUESTION POST: Envanter kontrolü YAPILMAZ (kullanıcılar sahip olmadıkları ürünler hakkında soru sorabilir)
   
   // Debug: Log boost price state
   React.useEffect(() => {
@@ -200,6 +202,7 @@ export const CreateQuestionPostScreen = () => {
       storeState: useCreatePostFlowStore.getState(),
     });
   }, [contextType, contextId, productInfoSnapshot, isValidFlow]);
+
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -290,7 +293,7 @@ export const CreateQuestionPostScreen = () => {
     isSubmittingRef.current = true;
     try {
     console.log('[CreateQuestionPostScreen] Form submitted:', data);
-    
+
     // Debug: Check store state
     const storeState = useCreatePostFlowStore.getState();
     console.log('[CreateQuestionPostScreen] 🔍 Store State Check:', {
@@ -304,7 +307,7 @@ export const CreateQuestionPostScreen = () => {
         isExpired: storeState.expiresAt ? Date.now() > storeState.expiresAt : false,
       },
     });
-    
+
     // Check contextType and contextId
     if (!contextType || !contextId) {
       console.error('[CreateQuestionPostScreen] ❌ Missing context:', { contextType, contextId });
@@ -315,7 +318,9 @@ export const CreateQuestionPostScreen = () => {
       });
       return;
     }
-    
+
+    // ✅ QUESTION POST: Envanter kontrolü YOK (kullanıcılar sahip olmadıkları ürünler hakkında soru sorabilir)
+
     // Convert to API contextType
     const apiContextType = mapProductInfoTypeToContextType(contextType);
     
