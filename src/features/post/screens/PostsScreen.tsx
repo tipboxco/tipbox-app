@@ -391,6 +391,8 @@ export const PostsScreen = () => {
         onClose={closeBottomSheet}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['55%'], // Filter + Sort seçenekleri için yeterli alan
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
