@@ -377,8 +377,8 @@ export const Trust_TrusterListScreen = () => {
                 </VStack>
             </VStack>,
             {
+                snapPoints: ['75%'],
                 enablePanDownToClose: true,
-                enableDynamicSizing: true,
                 animateOnMount: true,
                 paddingBottom: bottomInset,
                 backgroundStyle: {

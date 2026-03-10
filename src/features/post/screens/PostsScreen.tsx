@@ -391,14 +391,17 @@ export const PostsScreen = () => {
         onClose={closeBottomSheet}
       />,
       {
-        enableDynamicSizing: false,
-        snapPoints: ['55%'], // Filter + Sort seçenekleri için yeterli alan
+        snapPoints: ['75%'],
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         animateOnMount: true,
         paddingBottom: bottomOffset,
+        backgroundStyle: {
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        },
         onChange: (index: number) => {
           if (index === -1) {
             setBottomSheetKey(prev => prev + 1);
