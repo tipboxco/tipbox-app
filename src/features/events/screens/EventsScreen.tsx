@@ -127,12 +127,16 @@ const EventsScreen: React.FC = () => {
   // Open Collections Filter Bottom Sheet
   const handleOpenCollectionsFilter = useCallback(() => {
     openBottomSheet(
-      <CollectionsBottomSheet onApply={handleCollectionsFilterApply} isDark={isDark} />,
+      <CollectionsBottomSheet
+        onApply={handleCollectionsFilterApply}
+        isDark={isDark}
+        initialFilters={collectionFilters}
+      />,
       {
         snapPoints: ['65%'], // Same as ShareToTrustedBottomSheet
       }
     );
-  }, [openBottomSheet, handleCollectionsFilterApply, isDark]);
+  }, [openBottomSheet, handleCollectionsFilterApply, isDark, collectionFilters]);
 
   const handleEventPress = (eventId: string) => {
     if (!eventId) {
@@ -276,12 +280,37 @@ const EventsScreen: React.FC = () => {
                     : handleOpenCollectionsFilter()
                 }
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{ position: 'relative' }}
               >
                 <FunnelIcon
                   width={20}
                   height={20}
-                  color={isDark ? '#FFF' : '#000'}
+                  color={
+                    activeTab === 'collections' &&
+                    (collectionFilters?.mainCategoryId ||
+                     collectionFilters?.subCategoryId ||
+                     collectionFilters?.productGroupId)
+                      ? '#E8FF6B' // Active filter color
+                      : isDark ? '#FFF' : '#000'
+                  }
                 />
+                {/* Active Filter Badge */}
+                {activeTab === 'collections' &&
+                 (collectionFilters?.mainCategoryId ||
+                  collectionFilters?.subCategoryId ||
+                  collectionFilters?.productGroupId) && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: '#E8FF6B',
+                    }}
+                  />
+                )}
               </Pressable>
             </View>
           </View>

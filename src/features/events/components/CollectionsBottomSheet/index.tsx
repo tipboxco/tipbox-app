@@ -15,16 +15,18 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 interface CollectionsBottomSheetProps {
   onApply: (filters: CollectionFilters) => void;
   isDark?: boolean;
+  initialFilters?: CollectionFilters | null;
 }
 
 const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   onApply,
   isDark = false,
+  initialFilters,
 }) => {
   const { closeBottomSheet } = useGlobalBottomSheet();
-  const [mainCategoryId, setMainCategoryId] = useState<string | undefined>();
-  const [subCategoryId, setSubCategoryId] = useState<string | undefined>();
-  const [productGroupId, setProductGroupId] = useState<string | undefined>();
+  const [mainCategoryId, setMainCategoryId] = useState<string | undefined>(initialFilters?.mainCategoryId);
+  const [subCategoryId, setSubCategoryId] = useState<string | undefined>(initialFilters?.subCategoryId);
+  const [productGroupId, setProductGroupId] = useState<string | undefined>(initialFilters?.productGroupId);
   const [showMainDropdown, setShowMainDropdown] = useState(false);
   const [showSubDropdown, setShowSubDropdown] = useState(false);
   const [showProductGroupDropdown, setShowProductGroupDropdown] = useState(false);
@@ -405,7 +407,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
       {/* Apply Button */}
       <Pressable
         style={{
-          backgroundColor: '#E8FF6B',
+          backgroundColor: isDark ? '#FFFFFF' : '#000000',
           marginHorizontal: 16,
           marginTop: 16,
           height: 48,
@@ -415,8 +417,8 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
         }}
         onPress={handleDone}
       >
-        <Text style={{ color: '#000', fontSize: 16, fontWeight: 'bold' }}>
-          Apply Filters
+        <Text style={{ color: isDark ? '#000000' : '#FFFFFF', fontSize: 16, fontWeight: 'bold' }}>
+          Apply
         </Text>
       </Pressable>
     </View>
