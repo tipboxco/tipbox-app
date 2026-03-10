@@ -973,8 +973,10 @@ export const useMainCategories = () => {
   return useQuery<MedusaCategory[], Error>({
     queryKey: eventsKeys.mainCategories(),
     queryFn: getMainCategories,
-    staleTime: 24 * 60 * 60 * 1000, // 24 saat - kategoriler sık değişmez
-    gcTime: 48 * 60 * 60 * 1000, // 48 saat
+    staleTime: 0, // DEBUG: Cache'i devre dışı bırak, her seferinde fresh data çek
+    gcTime: 0, // DEBUG: Cache'i sakla
+    refetchOnMount: true, // Her mount'ta yeniden fetch et
+    retry: 2, // Hata durumunda 2 kez tekrar dene
   });
 };
 

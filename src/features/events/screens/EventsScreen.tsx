@@ -30,6 +30,7 @@ import FilterBottomSheet, { FilterSelection } from '../components/FilterBottomSh
 import CollectionsBottomSheet from '../components/CollectionsBottomSheet';
 import type { CollectionFilters } from '../types/medusa.types';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -42,11 +43,12 @@ const EventsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<EventsScreenNavigationProp>();
+  const { openBottomSheet } = useGlobalBottomSheet();
   const pagerRef = useRef<PagerView>(null);
   const tabContainerRef = useRef<any>(null);
   const [tabContainerWidth, setTabContainerWidth] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
-  
+
   // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
   const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
   const openDrawer = useDrawerStore((state) => state.openDrawer);
@@ -88,7 +90,6 @@ const EventsScreen: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [showCommunityFilterSheet, setShowCommunityFilterSheet] = useState(false);
   /** Community tab filter (FilterBottomSheet) - CommunityTab'a geçirilir, query params ile API'ye gider */
   const [communityFilters, setCommunityFilters] = useState<FilterSelection | null>(null);
@@ -121,8 +122,17 @@ const EventsScreen: React.FC = () => {
   // Collections filter apply handler (Collections tab - CollectionsBottomSheet)
   const handleCollectionsFilterApply = useCallback((filters: CollectionFilters) => {
     setCollectionFilters(filters);
-    setShowFilterSheet(false);
   }, []);
+
+  // Open Collections Filter Bottom Sheet
+  const handleOpenCollectionsFilter = useCallback(() => {
+    openBottomSheet(
+      <CollectionsBottomSheet onApply={handleCollectionsFilterApply} isDark={isDark} />,
+      {
+        snapPoints: ['65%'], // Same as ShareToTrustedBottomSheet
+      }
+    );
+  }, [openBottomSheet, handleCollectionsFilterApply, isDark]);
 
   const handleEventPress = (eventId: string) => {
     if (!eventId) {
@@ -263,7 +273,7 @@ const EventsScreen: React.FC = () => {
                 onPress={() =>
                   activeTab === 'community'
                     ? setShowCommunityFilterSheet(true)
-                    : setShowFilterSheet(true)
+                    : handleOpenCollectionsFilter()
                 }
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -356,13 +366,6 @@ const EventsScreen: React.FC = () => {
         visible={showCommunityFilterSheet}
         onClose={() => setShowCommunityFilterSheet(false)}
         onApply={handleFilterApply}
-        isDark={isDark}
-      />
-      {/* Collections Filter Bottom Sheet - Medusa entegrasyonlu */}
-      <CollectionsBottomSheet
-        visible={showFilterSheet}
-        onClose={() => setShowFilterSheet(false)}
-        onApply={handleCollectionsFilterApply}
         isDark={isDark}
       />
     </SafeAreaView>

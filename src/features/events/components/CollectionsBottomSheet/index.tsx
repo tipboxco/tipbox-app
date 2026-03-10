@@ -1,34 +1,27 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Feather } from '@expo/vector-icons';
 import { useMainCategories, useSubCategories } from '../../api/hooks';
 import type { CollectionFilters } from '../../types/medusa.types';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const OPTION_ITEM_HEIGHT = 48;
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 interface CollectionsBottomSheetProps {
-  visible: boolean;
-  onClose: () => void;
   onApply: (filters: CollectionFilters) => void;
   isDark?: boolean;
 }
 
 const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
-  visible,
-  onClose,
   onApply,
   isDark = false,
 }) => {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const insets = useSafeAreaInsets();
+  const { closeBottomSheet } = useGlobalBottomSheet();
   const [mainCategoryId, setMainCategoryId] = useState<string | undefined>();
   const [subCategoryId, setSubCategoryId] = useState<string | undefined>();
   const [productGroupId, setProductGroupId] = useState<string | undefined>();
@@ -40,12 +33,6 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   const mainCategoryRef = useRef<View>(null);
   const subCategoryRef = useRef<View>(null);
   const productGroupRef = useRef<View>(null);
-
-  // Dropdown açık mı kontrolü - herhangi biri açıksa 75%'e snap et
-  const isAnyDropdownOpen = showMainDropdown || showSubDropdown || showProductGroupDropdown;
-
-  // SnapPoints: default 45%, dropdown açıkken 70%
-  const snapPoints = useMemo(() => ['40%', '70%'], []);
 
   // Medusa'dan gerçek kategori verileri
   const { data: mainCategoriesData, isLoading: isLoadingMain } = useMainCategories();
@@ -62,38 +49,19 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
     () => (mainCategoriesData ?? []).map((c) => ({ id: c.id, name: c.name })),
     [mainCategoriesData]
   );
-  const subCategories = useMemo(
-    () => (subCategoriesData ?? []).map((c) => ({ id: c.id, name: c.name })),
-    [subCategoriesData]
-  );
+
+  const subCategories = useMemo(() => {
+    console.log('[CollectionsBottomSheet] 🔍 subCategoriesData:', subCategoriesData);
+    console.log('[CollectionsBottomSheet] 🔍 mainCategoryId:', mainCategoryId);
+    const mapped = (subCategoriesData ?? []).map((c) => ({ id: c.id, name: c.name }));
+    console.log('[CollectionsBottomSheet] 🔍 Mapped subCategories:', mapped);
+    return mapped;
+  }, [subCategoriesData, mainCategoryId]);
+
   const productGroups = useMemo(
     () => (productGroupsData ?? []).map((c) => ({ id: c.id, name: c.name })),
     [productGroupsData]
   );
-
-  // Visible değiştiğinde bottom sheet'i aç/kapat
-  useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.present();
-      // Present sonrası default snap point'e git
-      setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(0);
-      }, 100);
-    } else {
-      bottomSheetRef.current?.dismiss();
-    }
-  }, [visible]);
-
-  // Dropdown açıldığında/kapandığında snap point değiştir
-  useEffect(() => {
-    if (visible) {
-      if (isAnyDropdownOpen) {
-        bottomSheetRef.current?.snapToIndex(1); // 75%'e expand et
-      } else {
-        bottomSheetRef.current?.snapToIndex(0); // 50%'e küçült
-      }
-    }
-  }, [isAnyDropdownOpen, visible]);
 
   useEffect(() => {
     setSubCategoryId(undefined);
@@ -156,8 +124,8 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
       subCategoryId,
       productGroupId,
     });
-    onClose();
-  }, [mainCategoryId, subCategoryId, productGroupId, onApply, onClose]);
+    closeBottomSheet();
+  }, [mainCategoryId, subCategoryId, productGroupId, onApply, closeBottomSheet]);
 
   const getSelectedMainCategoryName = () => {
     if (!mainCategoryId) return 'Main Category';
@@ -177,56 +145,20 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
     return group?.name || 'Product Group';
   };
 
-  const handleSheetChanges = useCallback((index: number) => {
-    if (index === -1) {
-      onClose();
-    }
-  }, [onClose]);
-
-  if (!visible) return null;
-
   return (
-    <BottomSheetModal
-      ref={bottomSheetRef}
-      snapPoints={snapPoints}
-      index={0}
-      enablePanDownToClose
-      onDismiss={onClose}
-      onChange={handleSheetChanges}
-      backgroundStyle={{
-        backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-      }}
-      handleIndicatorStyle={{
-        backgroundColor: isDark ? '#666' : '#B8B8B7',
-        width: 70,
-        height: 5,
-        borderRadius: 10,
-      }}
-      bottomInset={insets.bottom}
-      detached={false}
-      enableDynamicSizing={false}
-      enableHandlePanningGesture={true}
-      enableContentPanningGesture={false}
-      activeOffsetY={[-5, 5]}
-      failOffsetX={[-5, 5]}
-    >
-      {/* Header - Filter daima üstte sabit */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: isDark ? '#FFF' : '#000' }]}>Filter</Text>
-      </View>
+    <View style={{ paddingBottom: 20, paddingTop: 8, minHeight: 200 }}>
+      {/* Header */}
+      <Text style={[styles.title, { color: isDark ? '#FFF' : '#000', textAlign: 'center', marginBottom: 16 }]}>
+        Filter
+      </Text>
 
-      {/* ScrollView içinde tüm içerik + Footer */}
-      <BottomSheetScrollView
+      {/* Scrollable Content */}
+      <ScrollView
         ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        style={{ maxHeight: 400 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
         showsVerticalScrollIndicator={true}
-        bounces={true}
-        scrollEnabled={true}
         nestedScrollEnabled={true}
-        keyboardShouldPersistTaps="handled"
       >
           {/* Main Category */}
           <View ref={mainCategoryRef} style={styles.fieldContainer}>
@@ -268,9 +200,13 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               )}
             </Pressable>
 
-            {/* Main Category Options - Inline */}
+            {/* Main Category Options - Scrollable */}
             {showMainDropdown && !isLoadingMain && (
-              <View style={styles.inlineOptionsList}>
+              <ScrollView
+                style={styles.inlineOptionsList}
+                nestedScrollEnabled={true}
+                showsVerticalScrollIndicator={true}
+              >
                 {mainCategories.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
@@ -279,22 +215,12 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                   </View>
                 ) : (
                   <>
-                    <Pressable
-                      style={styles.simpleOptionItem}
-                      onPress={() => {
-                        setMainCategoryId(undefined);
-                        setShowMainDropdown(false);
-                      }}
-                    >
-                      <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
-                        All Categories
-                      </Text>
-                    </Pressable>
                     {mainCategories.map((option) => (
                       <Pressable
                         key={option.id}
                         style={styles.simpleOptionItem}
                         onPress={() => {
+                          console.log('[CollectionsBottomSheet] 🎯 Main category selected:', option.id, option.name);
                           setMainCategoryId(option.id);
                           setShowMainDropdown(false);
                         }}
@@ -309,7 +235,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                     ))}
                   </>
                 )}
-              </View>
+              </ScrollView>
             )}
           </View>
 
@@ -356,9 +282,13 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               )}
             </Pressable>
 
-            {/* Sub Category Options - Inline */}
+            {/* Sub Category Options - Scrollable */}
             {showSubDropdown && !isLoadingSub && mainCategoryId && (
-              <View style={styles.inlineOptionsList}>
+              <ScrollView
+                style={styles.inlineOptionsList}
+                nestedScrollEnabled={true}
+                showsVerticalScrollIndicator={true}
+              >
                 {subCategories.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
@@ -367,17 +297,6 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                   </View>
                 ) : (
                   <>
-                    <Pressable
-                      style={styles.simpleOptionItem}
-                      onPress={() => {
-                        setSubCategoryId(undefined);
-                        setShowSubDropdown(false);
-                      }}
-                    >
-                      <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
-                        All Sub Categories
-                      </Text>
-                    </Pressable>
                     {subCategories.map((option) => (
                       <Pressable
                         key={option.id}
@@ -397,7 +316,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                     ))}
                   </>
                 )}
-              </View>
+              </ScrollView>
             )}
           </View>
 
@@ -444,9 +363,13 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               )}
             </Pressable>
 
-            {/* Product Group Options - Inline */}
+            {/* Product Group Options - Scrollable */}
             {showProductGroupDropdown && !isLoadingProductGroup && subCategoryId && (
-              <View style={styles.inlineOptionsList}>
+              <ScrollView
+                style={styles.inlineOptionsList}
+                nestedScrollEnabled={true}
+                showsVerticalScrollIndicator={true}
+              >
                 {productGroups.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
@@ -455,17 +378,6 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                   </View>
                 ) : (
                   <>
-                    <Pressable
-                      style={styles.simpleOptionItem}
-                      onPress={() => {
-                        setProductGroupId(undefined);
-                        setShowProductGroupDropdown(false);
-                      }}
-                    >
-                      <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
-                        All Product Groups
-                      </Text>
-                    </Pressable>
                     {productGroups.map((option) => (
                       <Pressable
                         key={option.id}
@@ -485,43 +397,36 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                     ))}
                   </>
                 )}
-              </View>
+              </ScrollView>
             )}
           </View>
+      </ScrollView>
 
-          {/* Footer - Done Button - ScrollView içinde */}
-          <View style={styles.footer}>
-            <Pressable
-              style={({ pressed }) => [styles.doneButton, { opacity: pressed ? 0.8 : 1 }]}
-              onPress={handleDone}
-            >
-              <Text style={styles.doneButtonText}>Done</Text>
-            </Pressable>
-          </View>
-        </BottomSheetScrollView>
-    </BottomSheetModal>
+      {/* Apply Button */}
+      <Pressable
+        style={{
+          backgroundColor: '#E8FF6B',
+          marginHorizontal: 16,
+          marginTop: 16,
+          height: 48,
+          borderRadius: 8,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+        onPress={handleDone}
+      >
+        <Text style={{ color: '#000', fontSize: 16, fontWeight: 'bold' }}>
+          Apply Filters
+        </Text>
+      </Pressable>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    alignItems: 'center',
-    paddingBottom: 18,
-    paddingHorizontal: 20,
-    paddingTop: 0,
-    backgroundColor: 'transparent',
-  },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 8,
   },
   fieldContainer: {
     marginBottom: 8,
@@ -553,6 +458,7 @@ const styles = StyleSheet.create({
   inlineOptionsList: {
     marginTop: 8,
     paddingVertical: 8,
+    maxHeight: 200, // Maksimum yükseklik - scroll için
   },
   simpleOptionItem: {
     paddingHorizontal: 12,
@@ -575,27 +481,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    textAlign: 'center',
-  },
-  footer: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    paddingTop: 16,
-    paddingBottom: 34,
-    marginTop: 0,
-  },
-  doneButton: {
-    width: '100%',
-    height: 44,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#D8FF08',
-  },
-  doneButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#111',
     textAlign: 'center',
   },
 });
