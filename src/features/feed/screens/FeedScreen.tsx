@@ -28,7 +28,7 @@ import { useFeed, useFeedFiltered, feedKeys } from '../api/hooks';
 import { getFeed, getFilteredFeed } from '../api/feedApi';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
-import { toImageSource, isSameImageSource } from '@/src/utils';
+import { toImageSource, useBottomOffset, isSameImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
@@ -162,8 +162,8 @@ const FeedScreenInner = React.memo(() => {
     }
   }, [filters, feedListRef]);
 
-  // Bottom padding for FlatList content - tab bar kadar (içerik tab bar arkasında kalmasın)
-  const bottomPadding = tabBarHeight;
+  // Bottom padding for FlatList content
+  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet, state: bottomSheetState } = useGlobalBottomSheet();
@@ -340,11 +340,11 @@ const FeedScreenInner = React.memo(() => {
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
-        enableContentPanningGesture: false, // CRITICAL FIX: Disable content panning for better UX
-        snapPoints: ['45%'], // CRITICAL FIX: Use string format like ShareToTrustedBottomSheet
-        animateOnMount: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true, // PERFORMANCE FIX: Enable animation for native feel
         animationConfigs: {
-          duration: 160,
+          duration: 160, // PERFORMANCE FIX: 160ms - fast but smooth
         },
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
       }
@@ -359,7 +359,7 @@ const FeedScreenInner = React.memo(() => {
   }, [filters, openBottomSheet, closeBottomSheet, insets.bottom, bottomSheetState.index, isBottomSheetOpening]);
 
   const handleExpertPress = () => {
-    // CRITICAL FIX: Use snapPoints instead of enableDynamicSizing
+    // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
     openBottomSheet(
       <>
         {/* Header */}
@@ -382,8 +382,8 @@ const FeedScreenInner = React.memo(() => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        snapPoints: ['50%'], // CRITICAL FIX: Use string format like ShareToTrustedBottomSheet
-        animateOnMount: false,
+        enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
       }
     );
@@ -1066,10 +1066,9 @@ const FeedScreenInner = React.memo(() => {
     () => ({
       paddingHorizontal: 16,
       paddingTop: 8,
-      paddingBottom: bottomPadding,
-      flexGrow: feedItems.length === 0 ? 1 : 0, // Boş listede center için flexGrow
+      paddingBottom: bottomPadding
     }),
-    [bottomPadding, feedItems.length]
+    [bottomPadding]
   );
 
   const getItemLayout = useCallback(
