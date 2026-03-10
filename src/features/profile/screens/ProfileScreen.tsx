@@ -401,6 +401,7 @@ interface TabContentProps {
   isActive?: boolean; // Sadece aktif tab API çağrısı yapmalı
   profileBadges?: Badge[];
   onBadgePress?: (badge: Badge) => void;
+  bottomPadding?: number;
 }
 
 // TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
@@ -492,7 +493,8 @@ const TabContent: React.FC<TabContentProps> = ({
   onQueryRef,
   isActive = true,
   profileBadges = [],
-  onBadgePress
+  onBadgePress,
+  bottomPadding = 0
 }) => {
   const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
   // API hooks for each tab
@@ -656,7 +658,7 @@ const TabContent: React.FC<TabContentProps> = ({
   // Render Badge Tab
   if (tabKey === 'badge') {
     return (
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <Box px={16} pt={8}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             <HStack space="sm" alignItems="center">
@@ -782,6 +784,7 @@ const TabContent: React.FC<TabContentProps> = ({
     <ScrollView
       showsVerticalScrollIndicator={false}
       bounces={true}
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
     >
       <Box px={16} pt={8}>
         {mappedPosts.map((item) => (
@@ -2169,6 +2172,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   isActive={tab.key === activeTab}
                   profileBadges={userProfile?.badges || []}
                   onBadgePress={handleBadgePress}
+                  bottomPadding={bottomPadding}
                 />
               </View>
             ))}

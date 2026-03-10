@@ -611,36 +611,41 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
               showsVerticalScrollIndicator={false}
             >
               <VStack space="md" pt="$4">
-                {currentData.map((item, index) => (
-                  <HStack key={`row-${index}`} space="md" justifyContent="space-between">
-                    {[0, 1, 2].map((colIndex) => {
-                      const itemIndex = index * 3 + colIndex;
-                      const currentItem = currentData[itemIndex];
-                      
-                      if (!currentItem) {
-                        return <Box key={`empty-${index}-${colIndex}`} flex={1} />;
-                      }
-                      
-                      if (currentStep === 'categories') {
-                        return (
-                          <CategoryCard
-                            key={`category-${currentItem.id}-${index}-${colIndex}`}
-                            category={currentItem as CategoryCardCategory}
-                            onPress={() => handleCategoryPress(currentItem as CategoryCardCategory)}
-                          />
-                        );
-                      } else {
-                        return (
-                          <BrandCard
-                            key={`brand-${currentItem.id}-${index}-${colIndex}`}
-                            brand={currentItem as BrandCardModel}
-                            onPress={() => handleBrandPress(currentItem as BrandCardModel)}
-                          />
-                        );
-                      }
-                    })}
-                  </HStack>
-                ))}
+                {Array.from({ length: Math.ceil(currentData.length / 3) }).map((_, rowIndex) => {
+                  const itemsPerRow = 3;
+                  const startIndex = rowIndex * itemsPerRow;
+                  const rowItems = currentData.slice(startIndex, startIndex + itemsPerRow);
+
+                  return (
+                    <HStack key={`row-${rowIndex}`} space="md">
+                      {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
+                        const currentItem = rowItems[colIndex];
+
+                        if (!currentItem) {
+                          return <Box key={`empty-${rowIndex}-${colIndex}`} flex={1} />;
+                        }
+
+                        if (currentStep === 'categories') {
+                          return (
+                            <CategoryCard
+                              key={`category-${currentItem.id}-${rowIndex}-${colIndex}`}
+                              category={currentItem as CategoryCardCategory}
+                              onPress={() => handleCategoryPress(currentItem as CategoryCardCategory)}
+                            />
+                          );
+                        } else {
+                          return (
+                            <BrandCard
+                              key={`brand-${currentItem.id}-${rowIndex}-${colIndex}`}
+                              brand={currentItem as BrandCardModel}
+                              onPress={() => handleBrandPress(currentItem as BrandCardModel)}
+                            />
+                          );
+                        }
+                      })}
+                    </HStack>
+                  );
+                })}
                 {/* Load more brands (paginated) */}
                 {currentStep === 'brands' && isFetchingNextBrandsPage && (
                   <Box py="$4" alignItems="center">
