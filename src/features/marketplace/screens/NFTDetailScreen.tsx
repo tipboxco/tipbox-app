@@ -545,7 +545,7 @@ const NFTDetailScreen = () => {
                                             ref={priceInputRef}
                                             value={priceDraft}
                                             onChangeText={setPriceDraft}
-                                            placeholder="0.00"
+                                            placeholder={t('screens.nftDetail.placeholders.price')}
                                             placeholderTextColor={isDark ? '#666666' : '#AAAAAA'}
                                             keyboardType="decimal-pad"
                                             editable={isEditingPrice}

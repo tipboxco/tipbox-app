@@ -47,7 +47,7 @@ export const OTAUpdateCard = () => {
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$md"
             >
-              {t('settings:ota.errorOccurred')}
+              {t('ota.errorOccurred')}
             </Text>
           </HStack>
           <Text
@@ -61,7 +61,7 @@ export const OTAUpdateCard = () => {
             onPress={checkForUpdate}
             isDisabled={isChecking}
           >
-            <Text>{t('settings:ota.retry')}</Text>
+            <Text>{t('ota.retry')}</Text>
           </Button>
         </VStack>
       );
@@ -78,7 +78,7 @@ export const OTAUpdateCard = () => {
             color={isDark ? '$textDark50' : '$textLight900'}
             fontSize="$md"
           >
-            {t('settings:ota.checkingUpdates')}
+            {t('ota.checkingUpdates')}
           </Text>
         </HStack>
       );
@@ -95,7 +95,7 @@ export const OTAUpdateCard = () => {
             color={isDark ? '$textDark50' : '$textLight900'}
             fontSize="$md"
           >
-            {t('settings:ota.appUpToDate')}
+            {t('ota.appUpToDate')}
           </Text>
         </HStack>
       );
@@ -113,7 +113,7 @@ export const OTAUpdateCard = () => {
             fontSize="$md"
             fontWeight="$semibold"
           >
-            {t('settings:ota.newUpdateAvailable')}
+            {t('ota.newUpdateAvailable')}
           </Text>
         </HStack>
 
@@ -136,7 +136,7 @@ export const OTAUpdateCard = () => {
                 color={isDark ? '$textDark200' : '$textLight700'}
                 fontSize="$sm"
               >
-                {t('settings:ota.changelog', { changelog: updateInfo.changelog })}
+                {t('ota.changelog', { changelog: updateInfo.changelog })}
               </Text>
             )}
           </VStack>
@@ -159,10 +159,10 @@ export const OTAUpdateCard = () => {
         >
           <Text color="$white">
             {downloadProgress === 100
-              ? t('settings:ota.installUpdate')
+              ? t('ota.installUpdate')
               : downloadProgress > 0
-                ? t('settings:ota.downloading')
-                : t('settings:ota.downloadUpdate')}
+                ? t('ota.downloading')
+                : t('ota.downloadUpdate')}
           </Text>
         </Button>
 
@@ -172,7 +172,7 @@ export const OTAUpdateCard = () => {
             fontSize="$xs"
             textAlign="center"
           >
-            {t('settings:ota.requiredUpdate')}
+            {t('ota.requiredUpdate')}
           </Text>
         )}
       </VStack>

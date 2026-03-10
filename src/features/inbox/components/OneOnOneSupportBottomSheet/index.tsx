@@ -14,6 +14,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { ChatBubbleLeftIcon, Cog6ToothIcon, CubeIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Keyboard, Platform } from 'react-native';
 import OneOnOneSupportRequestModal from '../OneOnOneSupportRequestModal';
@@ -35,6 +36,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('inbox');
     const [supportType, setSupportType] = useState<'GENERAL' | 'TECHNICAL' | 'PRODUCT' | ''>('');
     const [message, setMessage] = useState('');
     const [amount, setAmount] = useState('');
@@ -66,7 +68,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
             case 'PRODUCT':
                 return 'Product';
             default:
-                return 'Select Support Type';
+                return t('support.selectType');
         }
     };
 
@@ -386,7 +388,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                 minHeight={150}
                             >
                                 <TextareaInput
-                                    placeholder="Describe your problem or request in detail..."
+                                    placeholder={t('support.placeholders.describeIssue')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize={13}
@@ -449,7 +451,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                     height={60}
                                 >
                                     <InputField
-                                        placeholder="50"
+                                        placeholder={t('support.placeholders.amount')}
                                         placeholderTextColor="#B8B8B8"
                                         color={isDark ? '#FFFFFF' : '#000000'}
                                         fontSize={38}

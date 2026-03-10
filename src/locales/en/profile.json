@@ -104,6 +104,7 @@
   },
   "inventory": {
     "title": "{{name}}'s Inventory",
+    "myInventory": "My Inventory",
     "inventory": "Inventory",
     "searchPlaceholder": "Search product in your inventory",
     "noResults": "No search results found",

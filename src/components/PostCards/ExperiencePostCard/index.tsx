@@ -51,6 +51,7 @@ import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareT
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 
 interface PostCardProps {
@@ -67,6 +68,7 @@ interface PostCardProps {
 
 export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress, showHeader = true, showActions = true }: PostCardProps) => {
   const { colorMode } = useColorMode();
+  const { t } = useTranslation();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
   const { user } = useAppStore();
@@ -178,23 +180,23 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
 
   // Report categories with labels
   const reportCategories = React.useMemo<Array<{ value: UserReportCategory; label: string }>>(() => [
-    { value: 'SPAM', label: 'Spam' },
-    { value: 'HARASSMENT', label: 'Harassment' },
-    { value: 'SCAM', label: 'Scam' },
-    { value: 'INAPPROPRIATE_CONTENT', label: 'Inappropriate Content' },
-    { value: 'FAKE_ACCOUNT', label: 'Fake Account' },
-    { value: 'OTHER', label: 'Other' },
-  ], []);
+    { value: 'SPAM', label: t('common:report.categories.spam') },
+    { value: 'HARASSMENT', label: t('common:report.categories.harassment') },
+    { value: 'SCAM', label: t('common:report.categories.scam') },
+    { value: 'INAPPROPRIATE_CONTENT', label: t('common:report.categories.inappropriateContent') },
+    { value: 'FAKE_ACCOUNT', label: t('common:report.categories.fakeAccount') },
+    { value: 'OTHER', label: t('common:report.categories.other') },
+  ], [t]);
 
   const handleReport = React.useCallback(() => {
     if (!user?.id || !targetUserId) return;
-    
+
     const username = data.user?.name || 'User';
-    
+
     // Report category seçimi için alert
     Alert.alert(
-      'Report User',
-      `Why are you reporting ${username}?`,
+      t('common:report.reportUserTitle'),
+      t('common:report.reasonQuestion', { username }),
       [
         ...reportCategories.map((category) => ({
           text: category.label,
@@ -211,24 +213,24 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               },
               {
                 onSuccess: () => {
-                  Alert.alert('Success', 'User reported successfully. Thank you for your review.');
+                  Alert.alert(t('common:report.successTitle'), t('common:report.successMessage'));
                 },
                 onError: (error: any) => {
                   const errorMessage = error?.response?.data?.message || error?.message || 'Failed to report user';
-                  Alert.alert('Error', errorMessage);
+                  Alert.alert(t('common:report.errorTitle'), errorMessage);
                 },
               }
             );
           },
         })),
         {
-          text: 'Cancel',
+          text: t('common:buttons.cancel'),
           style: 'cancel',
         },
       ],
       { cancelable: true }
     );
-  }, [user?.id, targetUserId, reportUser, reportCategories, data.user?.name]);
+  }, [user?.id, targetUserId, reportUser, reportCategories, data.user?.name, t]);
 
   // Post owner actions
   const handleUpdate = React.useCallback(() => {
@@ -260,31 +262,31 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
 
   const handleDelete = React.useCallback(() => {
     Alert.alert(
-      'Delete Post',
-      'Are you sure you want to delete this post? This action cannot be undone.',
+      t('post:delete.confirmTitle'),
+      t('post:delete.confirmMessage'),
       [
         {
-          text: 'Cancel',
+          text: t('common:buttons.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Delete',
+          text: t('common:buttons.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await deletePostMutation.mutateAsync(data.id);
-              Alert.alert('Success', 'Post deleted successfully.');
+              Alert.alert(t('post:delete.successTitle'), t('post:delete.successMessage'));
             } catch (error: any) {
               Alert.alert(
-                'Hata',
-                error.response?.data?.message || 'Post silinirken bir hata oluştu.'
+                t('post:delete.errorTitle'),
+                error.response?.data?.message || t('post:delete.errorMessage')
               );
             }
           },
         },
       ]
     );
-  }, [data.id, deletePostMutation]);
+  }, [data.id, deletePostMutation, t]);
 
   // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
   // FlatList scroll edildiğinde pozisyon değişir, onLayout her değişiklikte çağrılır
@@ -501,7 +503,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Update
+                        {t('post:menu.update')}
                       </Text>
                     </HStack>
                   </Pressable>
@@ -523,7 +525,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Delete
+                        {t('post:menu.delete')}
                       </Text>
                     </HStack>
                   </Pressable>
@@ -544,7 +546,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        View Profile
+                        {t('common:menu.viewProfile')}
                       </Text>
                     </HStack>
                   </Pressable>
@@ -566,7 +568,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Report
+                        {t('common:menu.report')}
                       </Text>
                     </HStack>
                   </Pressable>

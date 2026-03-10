@@ -134,5 +134,50 @@
       "purchaseHistory": "Satın Alma Geçmişi",
       "logOut": "Çıkış Yap"
     }
+  },
+  "inventory": {
+    "selectFromInventory": "Envanterden Seç",
+    "searchProductsPlaceholder": "Ürün ara...",
+    "loadingMessage": "Envanter yükleniyor...",
+    "failedToLoad": "Envanter yüklenemedi",
+    "pleaseRetry": "Lütfen daha sonra tekrar deneyin",
+    "noProductsInCategory": "Aynı kategoride ürün yok",
+    "noProductsFound": "Ürün bulunamadı",
+    "emptyInventory": "Envanteriniz boş",
+    "categoryFilterInfo": "Sadece aynı kategorideki ürünler karşılaştırılabilir",
+    "tryDifferentSearch": "Farklı arama terimleri deneyin",
+    "addProductsFirst": "Önce envanterinize ürün ekleyin"
+  },
+  "report": {
+    "categories": {
+      "spam": "Spam",
+      "harassment": "Taciz",
+      "scam": "Dolandırıcılık",
+      "inappropriate": "Uygunsuz İçerik",
+      "fakeAccount": "Sahte Hesap",
+      "other": "Diğer"
+    },
+    "reportUserTitle": "Kullanıcıyı Şikayet Et",
+    "reasonQuestion": "{{username}} kullanıcısını neden şikayet ediyorsunuz?",
+    "successTitle": "Başarılı",
+    "successMessage": "Kullanıcı başarıyla şikayet edildi. İncelemeniz için teşekkürler.",
+    "errorTitle": "Hata",
+    "reportAction": "Şikayet Et"
+  },
+  "date": {
+    "months": {
+      "january": "Oca",
+      "february": "Şub",
+      "march": "Mar",
+      "april": "Nis",
+      "may": "May",
+      "june": "Haz",
+      "july": "Tem",
+      "august": "Ağu",
+      "september": "Eyl",
+      "october": "Eki",
+      "november": "Kas",
+      "december": "Ara"
+    }
   }
 }

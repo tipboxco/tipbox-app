@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Box, HStack, VStack, Text as GluestackText } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import DraggableKeyboard from '@/src/components/DraggableKeyboard';
 
 interface KeyboardProps {}
@@ -18,7 +19,8 @@ interface Comment {
 export const Keyboard: React.FC<KeyboardProps> = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+  const { t } = useTranslation('settings');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Mock yorum verileri
@@ -95,16 +97,16 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
             textAlign="center"
             marginBottom={20}
           >
-            Yorumlar ve Mesajlaşma
+            {t('keyboard.title')}
           </GluestackText>
-          
+
           <GluestackText
             size="md"
             color={isDark ? '#94A3B8' : '#6B7280'}
             textAlign="center"
             marginBottom={30}
           >
-            Yorumları görmek ve yeni yorum eklemek için aşağıdaki butona tıklayın
+            {t('keyboard.description')}
           </GluestackText>
           
           <Pressable
@@ -121,7 +123,7 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
               fontWeight="$semibold"
               size="md"
             >
-              Yorumları Aç
+              {t('keyboard.openComments')}
             </GluestackText>
           </Pressable>
         </View>
@@ -153,7 +155,7 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
                 fontWeight="$bold"
                 color={isDark ? '#F1F5F9' : '#111827'}
               >
-                Yorumlar ({comments.length})
+                {t('keyboard.comments', { count: comments.length })}
               </GluestackText>
               
               <Pressable
@@ -234,7 +236,7 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
                 onSendMessage={handleSendMessage}
                 onAddImage={handleAddImage}
                 onAddEmoji={handleAddEmoji}
-                placeholder="Write your comment..."
+                placeholder={t('keyboard.placeholders.comment')}
                 minHeight={140}
               />
             </View>

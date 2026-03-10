@@ -383,7 +383,7 @@ export const SwapScreen: React.FC = () => {
                           value={payAmount}
                           onChangeText={handleAmountChange}
                           keyboardType="decimal-pad"
-                          placeholder="0"
+                          placeholder={t('swapScreen.placeholders.amount')}
                           placeholderTextColor="#DDDDDD"
                           fontSize={38}
                           fontWeight="$bold"

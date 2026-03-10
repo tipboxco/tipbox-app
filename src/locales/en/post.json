@@ -359,5 +359,22 @@
     "selectedImage": "Selected image {{index}}",
     "productImage": "Product image",
     "userPostImage": "User post image"
+  },
+  "delete": {
+    "confirmTitle": "Delete Post",
+    "confirmMessage": "Are you sure you want to delete this post? This action cannot be undone.",
+    "successTitle": "Success",
+    "successMessage": "Post deleted successfully.",
+    "errorTitle": "Error",
+    "errorMessage": "An error occurred while deleting the post."
+  },
+  "menu": {
+    "update": "Update",
+    "delete": "Delete",
+    "viewProfile": "View Profile",
+    "report": "Report"
+  },
+  "placeholders": {
+    "productTitle": "Dyson V15s\nDetect Submarine™ Wet & Dry Cordl..."
   }
 }

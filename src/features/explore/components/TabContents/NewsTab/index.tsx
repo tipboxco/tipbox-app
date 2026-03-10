@@ -78,7 +78,20 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       const start = new Date(startDate);
       const end = new Date(endDate);
 
-      const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+      const months = [
+        t('common:date.months.january'),
+        t('common:date.months.february'),
+        t('common:date.months.march'),
+        t('common:date.months.april'),
+        t('common:date.months.may'),
+        t('common:date.months.june'),
+        t('common:date.months.july'),
+        t('common:date.months.august'),
+        t('common:date.months.september'),
+        t('common:date.months.october'),
+        t('common:date.months.november'),
+        t('common:date.months.december'),
+      ];
 
       const formatDate = (date: Date): string => {
         const day = date.getDate().toString().padStart(2, '0');
@@ -127,7 +140,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     }
     
     return Array.from(uniqueItemsMap.values()).map(mapEventToCardData);
-  }, [eventsData?.pages]);
+  }, [eventsData?.pages, t]);
 
   // Map API brand data to BrandCard format
   const mapBrandToCardData = (brand: any) => {

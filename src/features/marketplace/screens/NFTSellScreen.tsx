@@ -490,7 +490,7 @@ export const NFTSellScreen = () => {
                     <TextInput
                       value={priceInput}
                       onChangeText={setPriceInput}
-                      placeholder="0.00"
+                      placeholder={t('screens.nftSell.placeholders.price')}
                       placeholderTextColor={isDark ? '#666666' : '#AAAAAA'}
                       keyboardType="decimal-pad"
                       inputAccessoryViewID={inputAccessoryViewID}

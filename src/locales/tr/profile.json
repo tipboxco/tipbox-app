@@ -104,6 +104,7 @@
   },
   "inventory": {
     "title": "{{name}} Envanteri",
+    "myInventory": "Benim Envanterim",
     "inventory": "Envanter",
     "searchPlaceholder": "Envanterinizde ürün arayın",
     "noResults": "Arama sonucu bulunamadı",

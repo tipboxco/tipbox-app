@@ -141,7 +141,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                         fontSize={10}
                         fontWeight="$bold"
                     >
-                        {t('post:create.experience.step0.selectProduct')}
+                        {t('create.experience.step0.selectProduct')}
                     </Text>
 
                     {/* Select Product Button or ProductInfoCard */}
@@ -168,7 +168,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                                         fontSize={10}
                                         fontWeight="$medium"
                                     >
-                                        {t('post:create.experience.step0.selectProduct')}
+                                        {t('create.experience.step0.selectProduct')}
                                     </Text>
                                 </HStack>
                             </Box>
@@ -202,7 +202,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder={t('post:create.experience.step0.placeholders.duration')}
+                                    placeholder={t('create.experience.step0.placeholders.duration')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={selectedDuration ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}
@@ -245,7 +245,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder={t('post:create.experience.step0.placeholders.location')}
+                                    placeholder={t('create.experience.step0.placeholders.location')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={selectedLocation ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}
@@ -288,7 +288,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder={t('post:create.experience.step0.placeholders.purpose')}
+                                    placeholder={t('create.experience.step0.placeholders.purpose')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={selectedPurpose ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}

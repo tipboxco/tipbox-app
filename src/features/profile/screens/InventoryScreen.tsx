@@ -245,7 +245,13 @@ const InventoryScreen = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
-        title={userProfile?.name ? t('inventory.title', { name: userProfile.name }) : t('inventory.inventory')}
+        title={
+          showCreateButton
+            ? t('inventory.myInventory')
+            : userProfile?.name
+            ? t('inventory.title', { name: userProfile.name })
+            : t('inventory.inventory')
+        }
         showBackButton
         onBackPress={() => navigation.goBack()}
       />

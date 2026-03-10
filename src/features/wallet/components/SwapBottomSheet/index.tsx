@@ -9,6 +9,7 @@ import {
   ArrowsRightLeftIcon,
 } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SuccessBottomSheet } from '../SuccessBottomSheet';
@@ -23,7 +24,8 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+  const { t } = useTranslation('wallet');
+
   // API: Wallet Balance
   const { data: walletBalance, isLoading: isLoadingBalance, error: balanceError } = useWalletBalance();
   
@@ -362,7 +364,7 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
                         value={payAmount}
                         onChangeText={handleAmountChange}
                         keyboardType="decimal-pad"
-                        placeholder="0"
+                        placeholder={t('swapBottomSheet.placeholders.amount')}
                         placeholderTextColor="#DDDDDD"
                         fontSize={38}
                         fontWeight="$bold"

@@ -3798,7 +3798,7 @@ const MessageDetailScreen: React.FC = () => {
           onSendMessage={handleSendMessage}
           onAddImage={handleAddImage}
           onSendImage={handleSendImage}
-          placeholder="Type your message..."
+          placeholder={t('messageDetail.placeholder')}
           threadId={threadId}
           onTypingStart={handleTypingStart}
           onTypingStop={handleTypingStop}

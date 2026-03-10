@@ -74,6 +74,9 @@
         "rare": "Nadir",
         "epic": "Epik",
         "legendary": "Efsanevi"
+      },
+      "placeholders": {
+        "price": "0.00"
       }
     },
     "nftSell": {

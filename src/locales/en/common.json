@@ -134,5 +134,50 @@
       "purchaseHistory": "Purchase History",
       "logOut": "Log out"
     }
+  },
+  "inventory": {
+    "selectFromInventory": "Select from Inventory",
+    "searchProductsPlaceholder": "Search products...",
+    "loadingMessage": "Loading inventory...",
+    "failedToLoad": "Failed to load inventory",
+    "pleaseRetry": "Please try again later",
+    "noProductsInCategory": "No products in the same category",
+    "noProductsFound": "No products found",
+    "emptyInventory": "Your inventory is empty",
+    "categoryFilterInfo": "Only products in the same category can be compared",
+    "tryDifferentSearch": "Try different search terms",
+    "addProductsFirst": "Add products to your inventory first"
+  },
+  "report": {
+    "categories": {
+      "spam": "Spam",
+      "harassment": "Harassment",
+      "scam": "Scam",
+      "inappropriate": "Inappropriate Content",
+      "fakeAccount": "Fake Account",
+      "other": "Other"
+    },
+    "reportUserTitle": "Report User",
+    "reasonQuestion": "Why are you reporting {{username}}?",
+    "successTitle": "Success",
+    "successMessage": "User reported successfully. Thank you for your review.",
+    "errorTitle": "Error",
+    "reportAction": "Report"
+  },
+  "date": {
+    "months": {
+      "january": "Jan",
+      "february": "Feb",
+      "march": "Mar",
+      "april": "Apr",
+      "may": "May",
+      "june": "Jun",
+      "july": "Jul",
+      "august": "Aug",
+      "september": "Sep",
+      "october": "Oct",
+      "november": "Nov",
+      "december": "Dec"
+    }
   }
 }

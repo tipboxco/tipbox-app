@@ -360,14 +360,14 @@ const HeaderComponent = ({
         minHeight={HEADER_MIN_HEIGHT}
       >
         <HStack space="md" alignItems="center">
-            {/* Sol kısım - Sabit genişlik, flex-start */}
-            <Box width={40} alignItems="flex-start" justifyContent="center">
+            {/* Sol kısım - Minimum genişlik (sadece icon kadar), flex-start */}
+            <Box width={28} alignItems="flex-start" justifyContent="center">
               {renderLeftAction}
             </Box>
 
-            {/* Orta kısım - Flex9 (%90), center */}
+            {/* Orta kısım - Maksimum alan (flex=1), center */}
             {/* PERFORMANCE FIX: Static configuration - logo/title render memoized */}
-            <Box flex={9} alignItems="center" justifyContent="center">
+            <Box flex={1} alignItems="center" justifyContent="center">
               {logo ? (
                 <Image
                   source={logo}
@@ -391,13 +391,12 @@ const HeaderComponent = ({
               ) : null}
             </Box>
 
-            {/* Sağ kısım - Buton varsa içeriğe göre genişler (metin tam görünsün), yoksa 40px */}
+            {/* Sağ kısım - Minimum genişlik (sadece icon/button kadar), flex-end */}
             <Box
-              minWidth={40}
+              minWidth={28}
               flexShrink={0}
               alignItems="flex-end"
               justifyContent="center"
-              width={rightButton ? undefined : 40}
             >
               {renderRightActions}
             </Box>

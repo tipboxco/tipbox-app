@@ -11,6 +11,7 @@ import {
     Image,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Feather } from '@expo/vector-icons';
 import { InventoryItem } from '@/src/features/profile/types';
 import { useInventory } from '@/src/features/profile/api/hooks';
@@ -34,6 +35,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
     productGroupFilter,
 }) => {
     const { colorMode } = useColorMode();
+    const { t } = useTranslation('common');
     const isDark = colorMode === 'dark';
     const [searchQuery, setSearchQuery] = useState('');
     const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -211,7 +213,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                         fontWeight="$bold"
                         color={isDark ? '#FFFFFF' : '#000000'}
                     >
-                        Select from Inventory
+                        {t('inventory.selectFromInventory')}
                     </Text>
                     <Pressable onPress={() => refetch()} disabled={isLoading || isRefetching}>
                         <Feather
@@ -239,7 +241,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                             />
                         </Box>
                         <InputField
-                            placeholder="Search products..."
+                            placeholder={t('inventory.searchProductsPlaceholder')}
                             placeholderTextColor={isDark ? '#999' : '#999'}
                             color={isDark ? '$textDark50' : '$textLight900'}
                             fontSize={15}
@@ -273,7 +275,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                                 color={isDark ? '$textDark400' : '$textLight500'}
                                 fontSize={14}
                             >
-                                Loading inventory...
+                                {t('inventory.loadingMessage')}
                             </Text>
                         </Box>
                     )}
@@ -292,7 +294,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                                 fontSize={14}
                                 textAlign="center"
                             >
-                                Failed to load inventory
+                                {t('inventory.failedToLoad')}
                             </Text>
                             <Text
                                 mt="$2"
@@ -300,7 +302,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                                 fontSize={12}
                                 textAlign="center"
                             >
-                                {error?.message || 'Please try again later'}
+                                {error?.message || t('inventory.pleaseRetry')}
                             </Text>
                         </Box>
                     )}
@@ -320,10 +322,10 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                                 textAlign="center"
                             >
                                 {productGroupFilter
-                                    ? 'No products in the same category'
+                                    ? t('inventory.noProductsInCategory')
                                     : searchQuery.trim()
-                                        ? 'No products found'
-                                        : 'Your inventory is empty'}
+                                        ? t('inventory.noProductsFound')
+                                        : t('inventory.emptyInventory')}
                             </Text>
                             <Text
                                 mt="$2"
@@ -332,10 +334,10 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                                 textAlign="center"
                             >
                                 {productGroupFilter
-                                    ? 'Only products in the same category can be compared'
+                                    ? t('inventory.categoryFilterInfo')
                                     : searchQuery.trim()
-                                        ? 'Try different search terms'
-                                        : 'Add products to your inventory first'}
+                                        ? t('inventory.tryDifferentSearch')
+                                        : t('inventory.addProductsFirst')}
                             </Text>
                         </Box>
                     )}

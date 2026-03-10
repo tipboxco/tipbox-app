@@ -74,6 +74,9 @@
         "rare": "Rare",
         "epic": "Epic",
         "legendary": "Legendary"
+      },
+      "placeholders": {
+        "price": "0.00"
       }
     },
     "nftSell": {

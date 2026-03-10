@@ -138,7 +138,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         textAlign="center"
                         flex={1}
                     >
-                        {t('settings:paymentMethod.addPaymentMethod')}
+                        {t('paymentMethod.addPaymentMethod')}
                     </Text>
                     <Box w={24} h={24} />
                 </HStack>
@@ -171,7 +171,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     flex={1}
                                 >
-                                    Apple Pay
+                                    {t('paymentMethod.applePay')}
                                 </Text>
                             </HStack>
                         </Box>
@@ -203,7 +203,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                         fontWeight="$bold"
                                         color={isDark ? '#FFFFFF' : '#000000'}
                                     >
-                                        Credit Card
+                                        {t('paymentMethod.creditCard')}
                                     </Text>
                                 </HStack>
                                 <Feather
@@ -238,7 +238,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                     textAlign="center"
                     flex={1}
                 >
-                    Add Payment Method
+                    {t('paymentMethod.addPaymentMethod')}
                 </Text>
                 <Pressable onPress={onClose}>
                     <Feather
@@ -258,7 +258,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             fontWeight="$bold"
                             color={isDark ? '#FFFFFF' : '#000000'}
                         >
-                            Name on Card
+                            {t('paymentMethod.nameOnCard')}
                         </Text>
                         <Box
                             borderWidth={1}
@@ -270,7 +270,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         >
                             <Input borderWidth={0} bg="transparent">
                                 <InputField
-                                    placeholder="John Doe"
+                                    placeholder={t('paymentMethod.placeholders.nameOnCard')}
                                     placeholderTextColor="#B9B9B9"
                                     value={nameOnCard}
                                     onChangeText={setNameOnCard}
@@ -288,7 +288,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             fontWeight="$bold"
                             color={isDark ? '#FFFFFF' : '#000000'}
                         >
-                            Card Number
+                            {t('paymentMethod.cardNumber')}
                         </Text>
                         <Box
                             borderWidth={1}
@@ -300,7 +300,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         >
                             <Input borderWidth={0} bg="transparent">
                                 <InputField
-                                    placeholder="52093984***3945"
+                                    placeholder={t('paymentMethod.placeholders.cardNumber')}
                                     placeholderTextColor="#B9B9B9"
                                     value={cardNumber ? maskCardNumber(cardNumber) : ''}
                                     onChangeText={handleCardNumberChange}
@@ -321,7 +321,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                 fontWeight="$bold"
                                 color={isDark ? '#FFFFFF' : '#000000'}
                             >
-                                Expiration Date
+                                {t('paymentMethod.expirationDate')}
                             </Text>
                             <Box
                                 borderWidth={1}
@@ -333,7 +333,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             >
                                 <Input borderWidth={0} bg="transparent">
                                     <InputField
-                                        placeholder="MM/YY"
+                                        placeholder={t('paymentMethod.placeholders.expirationDate')}
                                         placeholderTextColor="#B9B9B9"
                                         value={expirationDate}
                                         onChangeText={handleExpirationDateChange}
@@ -352,7 +352,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                 fontWeight="$bold"
                                 color={isDark ? '#FFFFFF' : '#000000'}
                             >
-                                Security Code
+                                {t('paymentMethod.securityCode')}
                             </Text>
                             <Box
                                 borderWidth={1}
@@ -364,7 +364,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             >
                                 <Input borderWidth={0} bg="transparent">
                                     <InputField
-                                        placeholder="CVV"
+                                        placeholder={t('paymentMethod.placeholders.cvv')}
                                         placeholderTextColor="#B9B9B9"
                                         value={securityCode}
                                         onChangeText={setSecurityCode}
@@ -386,7 +386,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             fontWeight="$bold"
                             color={isDark ? '#FFFFFF' : '#000000'}
                         >
-                            Card Name
+                            {t('paymentMethod.cardName')}
                         </Text>
                         <Box
                             borderWidth={1}
@@ -398,7 +398,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         >
                             <Input borderWidth={0} bg="transparent">
                                 <InputField
-                                    placeholder="Work Card"
+                                    placeholder={t('paymentMethod.placeholders.cardName')}
                                     placeholderTextColor="#B9B9B9"
                                     value={cardName}
                                     onChangeText={setCardName}
@@ -428,7 +428,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         fontWeight="$bold"
                         textAlign="center"
                       >
-                        {addPaymentMethodMutation.isPending ? 'Saving...' : 'Save Card'}
+                        {addPaymentMethodMutation.isPending ? t('paymentMethod.saving') : t('paymentMethod.saveCard')}
                       </ButtonText>
                     </Button>
                 </VStack>

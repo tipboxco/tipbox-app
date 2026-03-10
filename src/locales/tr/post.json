@@ -359,5 +359,22 @@
     "selectedImage": "Seçilen görsel {{index}}",
     "productImage": "Ürün görseli",
     "userPostImage": "Kullanıcı gönderi görseli"
+  },
+  "delete": {
+    "confirmTitle": "Gönderiyi Sil",
+    "confirmMessage": "Bu gönderiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "successTitle": "Başarılı",
+    "successMessage": "Gönderi başarıyla silindi.",
+    "errorTitle": "Hata",
+    "errorMessage": "Gönderi silinirken bir hata oluştu."
+  },
+  "menu": {
+    "update": "Güncelle",
+    "delete": "Sil",
+    "viewProfile": "Profili Görüntüle",
+    "report": "Şikayet Et"
+  },
+  "placeholders": {
+    "productTitle": "Dyson V15s\nDetect Submarine™ Wet & Dry Cordl..."
   }
 }

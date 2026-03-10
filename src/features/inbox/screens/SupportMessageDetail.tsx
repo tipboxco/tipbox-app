@@ -2109,7 +2109,7 @@ const SupportMessageDetailScreen: React.FC = () => {
             onSendMessage={handleSendMessage}
             onAddImage={handleAddImage}
             onSendImage={handleSendImage}
-            placeholder="Write a message..."
+            placeholder={t('supportMessageDetail.placeholder')}
             threadId={threadId}
             onTypingStart={handleTypingStart}
             onTypingStop={handleTypingStop}
@@ -2699,7 +2699,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                       isReadOnly={false}
                     >
                       <InputField
-                        placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+                        placeholder={t('support.placeholders.describeIssue')}
                         value={reportDescription}
                         onChangeText={setReportDescription}
                         multiline
