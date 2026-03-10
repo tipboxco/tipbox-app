@@ -2172,7 +2172,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             onPageSelected={handlePageSelected}
           >
             {TABS.map((tab) => (
-              <View key={tab.key} style={{ flex: 1 }}>
+              <View key={tab.key}>
                 <TabContent
                   tabKey={tab.key}
                   targetUserId={targetUserId || ''}
