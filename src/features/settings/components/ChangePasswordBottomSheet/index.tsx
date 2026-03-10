@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SettingsStackParamList } from '../../navigation';
 import { useChangePassword } from '../../api/hooks';
+import { useTranslation } from 'react-i18next';
 
 interface ChangePasswordBottomSheetProps {
   onClose: () => void;
@@ -29,6 +30,7 @@ type ChangePasswordBottomSheetNavigationProp = NativeStackNavigationProp<Setting
 export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheetProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('settings');
   const navigation = useNavigation<ChangePasswordBottomSheetNavigationProp>();
   const toast = useToast();
   const changePasswordMutation = useChangePassword();
@@ -281,7 +283,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             const errorMessage =
               error?.response?.data?.message ||
               error?.message ||
-              'An error occurred while changing password';
+              t('changePassword.error.updateError');
 
             toast.show({
               placement: 'top',

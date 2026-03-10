@@ -17,6 +17,7 @@ import { DevicePhoneMobileIcon, CreditCardIcon } from 'react-native-heroicons/ou
 import { useAddPaymentMethod } from '../../api/hooks';
 import type { PaymentApiErrorResponse } from '../../api/paymentApi';
 import type { AxiosError } from 'axios';
+import { useTranslation } from 'react-i18next';
 
 interface AddPaymentMethodBottomSheetProps {
   onClose: () => void;
@@ -33,6 +34,7 @@ type PaymentMethodType = 'apple-pay' | 'credit-card' | null;
 export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomSheetProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('settings');
   const addPaymentMethodMutation = useAddPaymentMethod();
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType>(null);
@@ -109,7 +111,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
           const msg =
             (code && ERROR_MESSAGES[code]) ||
             axiosErr.response?.data?.message ||
-            'An error occurred while adding the card.';
+            t('tabs.paymentTab.errors.addCardError');
           setApiError(msg);
         },
       }

@@ -25,6 +25,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { XMarkIcon, DevicePhoneMobileIcon, EllipsisHorizontalIcon, ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { useDevices, useDeleteDevice } from '../../api/hooks';
 import type { Device } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 interface YourDevicesBottomSheetProps {
   onClose: () => void;
@@ -33,6 +34,7 @@ interface YourDevicesBottomSheetProps {
 export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('settings');
   const toast = useToast();
 
   // API hooks
@@ -77,9 +79,9 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
       });
       refetch();
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || 
-                          error?.message || 
-                          'An error occurred while removing device';
+      const errorMessage = error?.response?.data?.message ||
+                          error?.message ||
+                          t('yourDevices.removeError');
       toast.show({
         placement: 'top',
         render: ({ id }) => (
@@ -244,7 +246,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
         ) : error ? (
           <Box py="$10" px="$4" alignItems="center">
             <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-              {error.message || 'An error occurred while loading devices'}
+              {error.message || t('yourDevices.loadError')}
             </Text>
           </Box>
         ) : !devices || devices.length === 0 ? (
