@@ -15,7 +15,6 @@ import { QueryProvider } from '@/src/providers/QueryProvider';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { AppProviders } from '@/src/providers/ComposedProviders';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
-import { GlobalUIHost } from '@/src/components/GlobalUIHost';
 import { TranslationCacheService } from '@/src/services/TranslationCacheService';
 import { useSyncInventoryToStore } from '@/src/features/post/hooks/useSyncInventoryToStore';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';

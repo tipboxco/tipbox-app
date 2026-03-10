@@ -6,7 +6,12 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { CachedImage } from '@/src/components/CachedImage';
 import { TrashIcon, HeartIcon, PencilIcon } from 'react-native-heroicons/outline';
 import { HeartIcon as HeartIconSolid } from 'react-native-heroicons/solid';
-import { MenuView } from '@react-native-menu/menu';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 
 // Default user avatar
@@ -62,6 +67,11 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
   const [localLikesCount, setLocalLikesCount] = useState(likesCount);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editText, setEditText] = useState(content);
+
+  // Swipe gesture için shared value
+  const translateX = useSharedValue(0);
+  const ACTION_WIDTH = 70; // Her buton için genişlik
+  const SWIPE_THRESHOLD = -50; // Swipe'ın geçerli olması için minimum mesafe
   
   // Avatar source state - görsel yüklenemezse default avatar'a geçiş için
   const [avatarSource, setAvatarSource] = useState(avatar || DEFAULT_USER_AVATAR);
@@ -155,9 +165,86 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
     return commentId && userId && currentUserId && userId === currentUserId;
   }, [commentId, userId, currentUserId]);
 
+  // Swipe'ı kapat - smooth animasyon ile
+  const closeSwipe = useCallback(() => {
+    'worklet';
+    translateX.value = withSpring(0, {
+      damping: 25,
+      stiffness: 400,
+      mass: 0.8,
+      overshootClamping: false,
+      restDisplacementThreshold: 0.01,
+      restSpeedThreshold: 0.01,
+    });
+  }, [translateX]);
+
+  // Kaç tane action var (edit + delete)
+  const numActions = (onEdit ? 1 : 0) + (onDelete ? 1 : 0);
+  const maxSwipe = -(ACTION_WIDTH * numActions);
+
+  // Tap gesture - açıkken content'e dokunulduğunda kapat
+  const tapGesture = Gesture.Tap()
+    .maxDuration(250)
+    .onStart(() => {
+      if (translateX.value !== 0) {
+        translateX.value = withSpring(0, {
+          damping: 25,
+          stiffness: 400,
+          mass: 0.8,
+          overshootClamping: false,
+          restDisplacementThreshold: 0.01,
+          restSpeedThreshold: 0.01,
+        });
+      }
+    });
+
+  // Pan gesture (Reanimated v3 API)
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10]) // 10px'den fazla kaydırınca aktif ol
+    .failOffsetY([-10, 10]) // Dikey scroll ile çakışma olmasın
+    .onUpdate((event) => {
+      // Sadece sola kaydırmaya izin ver ve max genişliği sınırla
+      const newValue = event.translationX;
+
+      // Sola kaydırma (negatif değerler) ve sağa kaydırmayı engelle
+      if (newValue > 0) {
+        translateX.value = 0;
+      } else if (newValue < maxSwipe) {
+        translateX.value = maxSwipe;
+      } else {
+        translateX.value = newValue;
+      }
+    })
+    .onEnd((event) => {
+      // Hızlı swipe veya threshold'u geçtiyse aç, değilse kapat
+      const springConfig = {
+        damping: 25,
+        stiffness: 400,
+        mass: 0.8,
+        overshootClamping: false,
+        restDisplacementThreshold: 0.01,
+        restSpeedThreshold: 0.01,
+      };
+
+      if (event.translationX < SWIPE_THRESHOLD || event.velocityX < -500) {
+        translateX.value = withSpring(maxSwipe, springConfig);
+      } else {
+        translateX.value = withSpring(0, springConfig);
+      }
+    });
+
+  // Gesture'ları birleştir - hem tap hem pan çalışsın
+  const composedGesture = Gesture.Race(tapGesture, panGesture);
+
+  // Animated style
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
   // Delete handler
   const handleDelete = useCallback(() => {
     if (!commentId || !postId || !onDelete || isDeleting) return;
+    closeSwipe(); // Swipe'ı kapat
     Alert.alert(
       t('dialogs.deleteComment.title'),
       t('dialogs.deleteComment.message'),
@@ -173,24 +260,30 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
         },
       ]
     );
-  }, [commentId, postId, onDelete, isDeleting, t]);
+  }, [commentId, postId, onDelete, isDeleting, t, closeSwipe]);
 
   // Like handler - no optimistic update, wait for backend response
   const handleLike = useCallback(() => {
     if (!commentId || !postId || isLiking) return;
-    
+
+    // Swipe açıksa kapat
+    if (translateX.value !== 0) {
+      closeSwipe();
+    }
+
     if (isLiked) {
       onUnlike?.(commentId, postId);
     } else {
       onLike?.(commentId, postId);
     }
-  }, [commentId, postId, isLiked, isLiking, onLike, onUnlike]);
+  }, [commentId, postId, isLiked, isLiking, onLike, onUnlike, translateX, closeSwipe]);
 
   // Edit handlers
   const handleEditStart = useCallback(() => {
+    closeSwipe(); // Swipe'ı kapat
     setIsEditMode(true);
     setEditText(content);
-  }, [content]);
+  }, [content, closeSwipe]);
 
   const handleEditCancel = useCallback(() => {
     setIsEditMode(false);
@@ -206,38 +299,6 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
     setIsEditMode(false);
   }, [commentId, postId, onEdit, editText, content]);
 
-  // Context menu actions for iOS
-  const handleContextMenuPress = useCallback((event: { nativeEvent: { event: string } }) => {
-    const { event: action } = event.nativeEvent;
-
-    if (action === 'edit') {
-      handleEditStart();
-    } else if (action === 'delete') {
-      handleDelete();
-    }
-  }, [handleEditStart, handleDelete]);
-
-  const menuActions = useMemo(() => {
-    if (!isOwnComment || isEditMode) return [];
-
-    const actions = [];
-    if (onEdit) {
-      actions.push({
-        id: 'edit',
-        title: t('buttons.edit'),
-        image: Platform.select({ ios: 'pencil', default: undefined }),
-      });
-    }
-    if (onDelete) {
-      actions.push({
-        id: 'delete',
-        title: t('buttons.delete'),
-        image: Platform.select({ ios: 'trash', default: undefined }),
-        attributes: { destructive: true },
-      });
-    }
-    return actions;
-  }, [isOwnComment, isEditMode, onEdit, onDelete, t]);
 
   const CommentContent = (
     <View
@@ -406,7 +467,7 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
               </>
             )}
 
-            {/* Like Button - Her zaman görünür */}
+            {/* Like Button */}
             <HStack alignItems="center" space="xs" mt="$1">
               <Pressable
                 onPress={handleLike}
@@ -440,15 +501,61 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
     </View>
   );
 
-  // Sadece kendi yorumunda context menu göster
-  if (isOwnComment && !isEditMode && menuActions.length > 0) {
+  // Swipeable container sadece kendi yorumlarında aktif
+  if (isOwnComment && !isEditMode && (onEdit || onDelete)) {
     return (
-      <MenuView
-        onPressAction={handleContextMenuPress}
-        actions={menuActions}
-      >
-        {CommentContent}
-      </MenuView>
+      <View style={styles.swipeContainer}>
+        {/* Action Buttons (arkada, sağda) */}
+        <View style={styles.actionsContainer}>
+          {onEdit && (
+            <Pressable
+              onPress={handleEditStart}
+              disabled={isEditing}
+              style={[
+                styles.actionButton,
+                { backgroundColor: isDark ? '#3A3A3A' : '#E5E5E5', width: ACTION_WIDTH },
+              ]}
+            >
+              <PencilIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize={11}
+                fontWeight="$medium"
+                mt={4}
+              >
+                {t('buttons.edit')}
+              </Text>
+            </Pressable>
+          )}
+          {onDelete && (
+            <Pressable
+              onPress={handleDelete}
+              disabled={isDeleting}
+              style={[
+                styles.actionButton,
+                { backgroundColor: '#FF3040', width: ACTION_WIDTH },
+              ]}
+            >
+              <TrashIcon width={20} height={20} color="#FFFFFF" />
+              <Text
+                color="#FFFFFF"
+                fontSize={11}
+                fontWeight="$medium"
+                mt={4}
+              >
+                {t('buttons.delete')}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Swipeable Content */}
+        <GestureDetector gesture={composedGesture}>
+          <Animated.View style={[styles.swipeableContent, animatedStyle]}>
+            {CommentContent}
+          </Animated.View>
+        </GestureDetector>
+      </View>
     );
   }
 
@@ -461,6 +568,26 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E9E9E9',
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  swipeContainer: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  actionsContainer: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  actionButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  swipeableContent: {
+    backgroundColor: 'transparent',
   },
 });
 
