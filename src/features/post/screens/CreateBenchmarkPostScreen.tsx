@@ -106,7 +106,7 @@ const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ on
           >
             <Image
               source={require('@/assets/common/benchmarks.png')}
-              alt="benchmarks"
+              alt={t('altTexts.benchmarks')}
               width={40}
               height={40}
             />

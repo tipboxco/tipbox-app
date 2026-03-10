@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, VStack, HStack, Text, Pressable, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface ProductBenchmarkCardProps {
   product: {
@@ -20,6 +21,7 @@ export const ProductBenchmarkCard: React.FC<ProductBenchmarkCardProps> = ({
   isSelected = false,
   onPress,
 }) => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -52,7 +54,7 @@ export const ProductBenchmarkCard: React.FC<ProductBenchmarkCardProps> = ({
               h={130}
               borderRadius={10}
               source={product.image || require('@/assets/product/product_01.png')}
-              alt={product.name}
+              alt={t('altTexts.productImage')}
               resizeMode="cover"
             />
           </Box>

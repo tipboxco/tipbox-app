@@ -34,6 +34,7 @@ import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { useTogglePostBoost } from '@/src/features/post/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface QuestionPostCardDetailProps {
     data: QuestionPost;
@@ -41,12 +42,13 @@ interface QuestionPostCardDetailProps {
 }
 
 export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCardDetailProps) => {
+    const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const { user } = useAppStore();
     const targetUserId = data.user.id;
     const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
-    
+
     // Translation hooks
     const deviceLocale = useDeviceLocale();
     const {
@@ -167,8 +169,8 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                 onError: (error: any) => {
                     // Hata durumunda geri al
                     setIsBoosted(!value);
-                    
-                    const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while changing boost';
+
+                    const errorMessage = error?.response?.data?.message || error?.message || t('screens.posts.errors.boostError');
                     Alert.alert('Error', errorMessage);
                 },
             }
@@ -185,7 +187,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={toImageSource(data.user.avatar)!}
-                        alt={data.user.name}
+                        alt={t('altTexts.userPostImage')}
                         mr={8}
                         width={42}
                         height={42}
@@ -286,7 +288,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                     >
                         <Image
                             source={require('@/assets/boost.svg')}
-                            alt="boost"
+                            alt={t('altTexts.productImage')}
                             width={12}
                             height={12}
                         />
@@ -384,7 +386,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         <HStack alignItems="center" space="xs">
                             <Image
                                 source={require('@/assets/translate.png')}
-                                alt="translate"
+                                alt={t('altTexts.productImage')}
                                 width={16}
                                 height={16}
                             />
@@ -468,7 +470,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                 <Box>
                     <Image
                         source={require('@/assets/common/Vector.png')}
-                        alt={'vector'}
+                        alt={t('altTexts.productImage')}
                         width={24}
                         height={24}
                     />

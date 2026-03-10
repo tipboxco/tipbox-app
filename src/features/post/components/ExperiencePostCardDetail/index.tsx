@@ -31,6 +31,7 @@ import {
   useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface ExperiencePostCardDetailProps {
     data: PostCardType;
@@ -38,6 +39,7 @@ interface ExperiencePostCardDetailProps {
 }
 
 export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePostCardDetailProps) => {
+    const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [isLiked, setIsLiked] = useState(false);
@@ -113,7 +115,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                     <HStack alignItems="center" space="xs">
                         <Image
                             source={toImageSource(data.user?.avatar)!}
-                            alt={data.user?.name || ''}
+                            alt={t('altTexts.userPostImage')}
                             mr={8}
                             width={42}
                             height={42}

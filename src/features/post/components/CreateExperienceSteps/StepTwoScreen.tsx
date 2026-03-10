@@ -208,7 +208,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                                     width={64}
                                     height={64}
                                     resizeMode="cover"
-                                    alt={`Selected image ${index + 1}`}
+                                    alt={t('altTexts.selectedImage', { index: index + 1 })}
                                 />
                                 {onRemoveImage && (
                                     <Pressable

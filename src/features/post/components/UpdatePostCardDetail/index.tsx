@@ -36,6 +36,7 @@ import {
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface UpdatePostCardDetailProps {
   data: UpdatePost;
@@ -46,9 +47,10 @@ interface UpdatePostCardDetailProps {
 }
 
 export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, onCommentPress, disableBottomSheet = false }: UpdatePostCardDetailProps) => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+
   // Translation hooks
   const deviceLocale = useDeviceLocale();
   const {
@@ -221,7 +223,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         <HStack alignItems="center" space="xs">
           <Image
             source={toImageSource(data.user.avatar)!}
-            alt={data.user.name}
+            alt={t('altTexts.userPostImage')}
             mr={8}
             width={42}
             height={42}
@@ -347,7 +349,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             <HStack alignItems="center" space="xs">
               <Image
                 source={require('@/assets/translate.png')}
-                alt="translate"
+                alt={t('altTexts.productImage')}
                 width={16}
                 height={16}
               />

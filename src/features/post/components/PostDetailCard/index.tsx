@@ -30,6 +30,7 @@ import {
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface PostDetailCardProps {
     data: Post;
@@ -37,9 +38,10 @@ interface PostDetailCardProps {
 }
 
 export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) => {
+    const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    
+
     // Translation hooks
     const deviceLocale = useDeviceLocale();
     const {
@@ -138,7 +140,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                     {data.user?.avatar && (
                         <Image
                             source={toImageSource(data.user.avatar)!}
-                            alt={data.user?.name || 'User'}
+                            alt={t('altTexts.userPostImage')}
                             mr={8}
                             width={42}
                             height={42}
@@ -230,7 +232,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                         <HStack alignItems="center" space="xs">
                             <Image
                                 source={require('@/assets/translate.png')}
-                                alt="translate"
+                                alt={t('altTexts.productImage')}
                                 width={16}
                                 height={16}
                             />
@@ -328,7 +330,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                 <Box>
                     <Image
                         source={require('@/assets/common/Vector.png')}
-                        alt={'vector'}
+                        alt={t('altTexts.productImage')}
                         width={24}
                         height={24}
                     />

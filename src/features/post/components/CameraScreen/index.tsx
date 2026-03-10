@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Box, Image, Pressable, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Images } from 'lucide-react-native';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 
@@ -18,6 +19,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
   onClose,
   lastPhotoUri,
 }) => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [facing, setFacing] = useState<CameraType>('back');
@@ -132,7 +134,7 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
               <Image
                 source={{ uri: lastPhoto }}
                 style={styles.lastPhotoPreview}
-                alt="Last photo"
+                alt={t('altTexts.lastPhoto')}
               />
             ) : (
               <Box

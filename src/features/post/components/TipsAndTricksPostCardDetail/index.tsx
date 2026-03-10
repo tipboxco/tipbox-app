@@ -32,6 +32,7 @@ import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface TipsAndTricksPostCardDetailProps {
     data: TipsAndTricksPost;
@@ -39,9 +40,10 @@ interface TipsAndTricksPostCardDetailProps {
 }
 
 export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTricksPostCardDetailProps) => {
+    const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    
+
     // Translation hooks
     const deviceLocale = useDeviceLocale();
     const {
@@ -138,7 +140,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={toImageSource(data.user.avatar)!}
-                        alt={data.user.name}
+                        alt={t('altTexts.userPostImage')}
                         mr={8}
                         width={42}
                         height={42}
@@ -273,7 +275,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                         <HStack alignItems="center" space="xs">
                             <Image
                                 source={require('@/assets/translate.png')}
-                                alt="translate"
+                                alt={t('altTexts.productImage')}
                                 width={16}
                                 height={16}
                             />
@@ -357,7 +359,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                 <Box>
                     <Image
                         source={require('@/assets/common/Vector.png')}
-                        alt={'vector'}
+                        alt={t('altTexts.productImage')}
                         width={24}
                         height={24}
                     />

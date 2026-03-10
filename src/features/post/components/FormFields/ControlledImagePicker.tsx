@@ -3,6 +3,7 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { Box, HStack, Text, VStack, Pressable, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { ActivityIndicator } from 'react-native';
 
 interface ControlledImagePickerProps {
@@ -22,10 +23,11 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
   onRemoveImage,
   isLoading = false,
 }) => {
+  const { t } = useTranslation('post');
   const { control, watch } = useFormContext();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+
   const images = watch(name) || [];
 
   return (
@@ -70,7 +72,7 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
                     width={64}
                     height={64}
                     resizeMode="cover"
-                    alt={`Selected image ${index + 1}`}
+                    alt={t('altTexts.selectedImage', { index: index + 1 })}
                   />
                   <Pressable
                     position="absolute"
