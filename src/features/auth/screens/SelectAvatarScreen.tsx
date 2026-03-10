@@ -181,7 +181,7 @@ export const SelectAvatarScreen = () => {
                 <Box mt="$4">
                   {avatarsError && (
                     <Text color="$error500" fontSize="$sm" textAlign="center" mb="$2">
-                      Failed to load avatars. Please try again.
+                      {t('selectAvatarScreen.failedToLoadAvatars')}
                     </Text>
                   )}
                   {isLoadingAvatars ? (
@@ -258,7 +258,7 @@ export const SelectAvatarScreen = () => {
                     >
                       <Image
                         source={toImageSource(uploadedImage)}
-                        alt="Uploaded photo"
+                        alt={t('selectAvatarScreen.uploadedPhotoAlt')}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
                       />

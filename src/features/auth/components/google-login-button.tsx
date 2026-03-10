@@ -121,7 +121,7 @@ export function GoogleLoginButton({
 
       await useAppStore.getState().login({
         id: payload.userId,
-        fullName: payload.fullName || payload.email.split('@')[0] || 'Kullanıcı',
+        fullName: payload.fullName || payload.email.split('@')[0] || t('common:labels.user'),
         email: payload.email,
         avatar: payload.avatar || undefined,
         token: payload.token,

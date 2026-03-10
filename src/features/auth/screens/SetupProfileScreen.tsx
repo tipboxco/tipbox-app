@@ -182,7 +182,7 @@ export const SetupProfileScreen = () => {
       
       // selectedCategories kontrolü - global state'ten al
       if (!selectedCategories || selectedCategories.length === 0) {
-        Alert.alert('Error', 'Please select categories');
+        Alert.alert(t('common:labels.error'), t('setupProfileScreen.errorSelectCategories'));
         // SelectCategories ekranına git
         navigation.navigate('SelectCategories');
         return;
@@ -201,8 +201,8 @@ export const SetupProfileScreen = () => {
         // Başarılı olursa Onboarding ekranına yönlendir
         navigation.navigate('Onboarding');
       } catch (error: any) {
-        const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving profile information.';
-        Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
+        const errorMessage = error.response?.data?.message || error.message || t('setupProfileScreen.errorSavingProfile');
+        Alert.alert(t('common:labels.error'), errorMessage, [{ text: 'OK' }]);
         if (__DEV__) {
           console.error('[SetupProfileScreen] Profile setup error:', error);
         }
@@ -218,11 +218,11 @@ export const SetupProfileScreen = () => {
         });
       }
       setErrors(validationErrors);
-      
+
       if (validationErrors.fullName) {
-        Alert.alert('Validation Error', validationErrors.fullName);
+        Alert.alert(t('setupProfileScreen.validationError'), validationErrors.fullName);
       } else if (validationErrors.username) {
-        Alert.alert('Validation Error', validationErrors.username);
+        Alert.alert(t('setupProfileScreen.validationError'), validationErrors.username);
       }
     }
   }, [validationSchema, fullName, username, profileImage, selectedCategories, setupProfileMutation, navigation]);

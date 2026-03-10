@@ -38,7 +38,7 @@ export const WelcomeScreen = () => {
         >
           <Image
             source={require('@/src/Onboarding/onboarding0.png')}
-            alt="Tipbox Logo"
+            alt={t('welcomeScreen.logoAlt')}
             style={{ width: '100%', height: '100%' }}
             resizeMode="cover"
           />

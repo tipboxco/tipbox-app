@@ -216,14 +216,14 @@ export const SelectCategoriesScreen = () => {
                 textAlign="center"
                 mb="$4"
               >
-                Failed to load categories
+                {t('selectCategoriesScreen.failedToLoadCategories')}
               </Text>
               <Text
                 fontSize="$sm"
                 color={isDark ? '$textDark300' : '$textLight600'}
                 textAlign="center"
               >
-                {error instanceof Error ? error.message : 'An error occurred'}
+                {error instanceof Error ? error.message : t('selectCategoriesScreen.errorOccurred')}
               </Text>
             </Box>
           ) : categories && categories.length > 0 ? (
@@ -243,7 +243,7 @@ export const SelectCategoriesScreen = () => {
                 color={isDark ? '$textDark300' : '$textLight600'}
                 textAlign="center"
               >
-                No categories available
+                {t('selectCategoriesScreen.noCategoriesAvailable')}
               </Text>
             </Box>
           )}
@@ -269,7 +269,7 @@ export const SelectCategoriesScreen = () => {
                 fontWeight="$medium"
                 color="$white"
               >
-                {selectedCount}/{MIN_SELECTED} Selected
+                {t('selectCategoriesScreen.selectedCount', { count: selectedCount, min: MIN_SELECTED })}
               </Text>
               {selectedCount < MIN_SELECTED && (
                 <Text
