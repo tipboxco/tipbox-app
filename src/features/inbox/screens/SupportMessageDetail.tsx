@@ -862,7 +862,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         socketSendSupportMessage(threadId, messageText.trim());
       } catch (error) {
         console.error('[SupportMessageDetail] Socket send error:', error);
-        Alert.alert('Error', 'Failed to send message. Please try again.');
+        Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.failedToSendMessage'));
         // Optimistic mesajı geri al
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
       }
@@ -897,7 +897,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const handleAcceptRequest = (acceptRequestId?: string) => {
     const targetRequestId = acceptRequestId || requestId;
     if (!targetRequestId) {
-      Alert.alert('Error', 'Request ID not found');
+      Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.requestIdNotFound'));
       return;
     }
 
@@ -911,7 +911,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       acceptMutation.mutate(targetRequestId, {
         onSuccess: (data) => {
           console.log('[SupportMessageDetail] ✅ Support request accepted, threadId:', data.threadId);
-          Alert.alert('Success', 'Support request accepted');
+          Alert.alert(t('common:labels.success'), t('supportMessageDetail.success.requestAccepted'));
           // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
           queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
           queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
@@ -923,7 +923,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Support request accept error:', error);
-          Alert.alert('Error', error.message || 'Support request could not be accepted');
+          Alert.alert(t('common:labels.error'), error.message || t('supportMessageDetail.errors.errorAcceptingRequest'));
         },
       });
     }
@@ -933,7 +933,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const handleRejectRequest = (rejectRequestId?: string) => {
     const targetRequestId = rejectRequestId || requestId;
     if (!targetRequestId) {
-      Alert.alert('Error', 'Request ID not found');
+      Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.requestIdNotFound'));
       return;
     }
 
@@ -956,7 +956,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               rejectMutation.mutate(targetRequestId, {
                 onSuccess: () => {
                   console.log('[SupportMessageDetail] ✅ Support request rejected');
-                  Alert.alert('Success', 'Support request rejected');
+                  Alert.alert(t('common:labels.success'), t('supportMessageDetail.success.requestRejected'));
                   // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
                   queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
                   queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
@@ -968,7 +968,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                 },
                 onError: (error: any) => {
                   console.error('[SupportMessageDetail] ❌ Support request reject error:', error);
-                  Alert.alert('Error', error.message || 'Support request could not be rejected');
+                  Alert.alert(t('common:labels.error'), error.message || t('supportMessageDetail.errors.errorRejectingRequest'));
                 },
               });
             }
@@ -982,7 +982,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const handleCancelRequest = (cancelRequestId?: string) => {
     const targetRequestId = cancelRequestId || requestId;
     if (!targetRequestId) {
-      Alert.alert('Error', 'Request ID not found');
+      Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.requestIdNotFound'));
       return;
     }
 
@@ -1003,7 +1003,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               cancelMutation.mutate(targetRequestId, {
                 onSuccess: () => {
                   console.log('[SupportMessageDetail] ✅ Support request canceled');
-                  Alert.alert('Success', 'Support request cancelled');
+                  Alert.alert(t('common:labels.success'), t('supportMessageDetail.success.requestCancelled'));
                   // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
                   queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
                   queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
@@ -1015,7 +1015,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                 },
                 onError: (error: any) => {
                   console.error('[SupportMessageDetail] ❌ Support request cancel error:', error);
-                  Alert.alert('Error', error.message || 'Support request could not be cancelled');
+                  Alert.alert(t('common:labels.error'), error.message || t('supportMessageDetail.errors.errorCancellingRequest'));
                 },
               });
             }
@@ -1060,7 +1060,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   // Handle confirm close request
   const handleConfirmClose = (rating: number) => {
     if (!requestId) {
-      Alert.alert('Error', 'Request ID not found');
+      Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.requestIdNotFound'));
       return;
     }
 
@@ -1079,7 +1079,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         {
           onSuccess: () => {
             console.log('[SupportMessageDetail] ✅ Support request finalized successfully');
-            Alert.alert('Success', 'Support request finalized successfully');
+            Alert.alert(t('common:labels.success'), t('supportMessageDetail.success.requestFinalized'));
             setCloseModalRating(0); // Reset rating
             setIsCloseModalVisible(false);
             setIsFinalizeModal(false);
@@ -1138,7 +1138,7 @@ const SupportMessageDetailScreen: React.FC = () => {
           },
           onError: (error: any) => {
             console.error('[SupportMessageDetail] ❌ Finalize support request error:', error);
-            Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while finalizing the support request');
+            Alert.alert(t('common:labels.error'), error.response?.data?.error || error.message || t('supportMessageDetail.errors.errorFinalizingSupport'));
           },
         }
       );
@@ -1159,7 +1159,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       {
         onSuccess: () => {
           console.log('[SupportMessageDetail] ✅ Support request closed successfully');
-          Alert.alert('Success', 'Support request closed successfully');
+          Alert.alert(t('common:labels.success'), t('supportMessageDetail.success.requestClosed'));
           setCloseModalRating(0); // Reset rating
           setIsCloseModalVisible(false);
           setIsFinalizeModal(false);
@@ -1220,7 +1220,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Close support request error:', error);
-          Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while closing the support request');
+          Alert.alert(t('common:labels.error'), error.response?.data?.error || error.message || t('supportMessageDetail.errors.errorClosingSupport'));
         },
       }
     );
@@ -1278,12 +1278,12 @@ const SupportMessageDetailScreen: React.FC = () => {
   // Handle confirm report
   const handleConfirmReport = () => {
     if (!requestId) {
-      Alert.alert('Error', 'Request ID not found');
+      Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.requestIdNotFound'));
       return;
     }
 
     if (!reportReason || reportReason.trim().length === 0) {
-      Alert.alert('Error', 'Please specify a reason');
+      Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.reportReasonRequired'));
       return;
     }
 
@@ -1300,7 +1300,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       {
         onSuccess: () => {
           console.log('[SupportMessageDetail] ✅ Support request reported successfully');
-          Alert.alert('Success', 'Support request reported successfully');
+          Alert.alert(t('common:labels.success'), t('supportMessageDetail.success.requestReported'));
           setIsReportModalVisible(false);
           setReportReason('');
           setReportDescription('');
@@ -1315,7 +1315,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Report support request error:', error);
-          Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while reporting the support request');
+          Alert.alert(t('common:labels.error'), error.response?.data?.error || error.message || t('supportMessageDetail.errors.errorReportingUser'));
         },
       }
     );
@@ -1359,19 +1359,19 @@ const SupportMessageDetailScreen: React.FC = () => {
         });
       } else {
         if (result.error) {
-          Alert.alert('Error', typeof result.error === 'string' ? result.error : 'An error occurred while selecting image');
+          Alert.alert(t('common:labels.error'), typeof result.error === 'string' ? result.error : t('supportMessageDetail.errors.errorSelectingImage'));
         }
       }
     } catch (error: any) {
       console.error('[SupportMessageDetail] ❌ Image picker error:', error);
-      Alert.alert('Error', 'An error occurred while selecting image');
+      Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.errorSelectingImage'));
     }
   }, []);
   
   // Handle Send Image - Görsel + caption gönder
   const handleSendImage = useCallback(async (image: { uri: string; type: string; name: string; fileSize?: number }, caption: string) => {
     if (!threadId) {
-      Alert.alert('Error', 'Thread ID not found');
+      Alert.alert(t('common:labels.error'), t('supportMessageDetail.errors.threadIdNotFound'));
       return;
     }
 
@@ -1495,7 +1495,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       // Seçilen görseli geri yükle (hata durumunda)
       setSelectedImage(image);
       
-      Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while uploading image');
+      Alert.alert(t('common:labels.error'), error.response?.data?.error || error.message || t('supportMessageDetail.errors.errorUploadingImage'));
     }
   }, [threadId, user?.id, params.status]);
 
@@ -1866,8 +1866,8 @@ const SupportMessageDetailScreen: React.FC = () => {
                     targetUserId: params.recipientUserId!,
                     data: { category: 'OTHER', description: 'User reported from support message detail' },
                   }, {
-                    onSuccess: () => RNAlert.alert('Success', 'User reported'),
-                    onError: (error) => RNAlert.alert('Error', error.message || 'An error occurred while reporting the user'),
+                    onSuccess: () => RNAlert.alert(t('common:labels.success'), t('supportMessageDetail.success.userReported')),
+                    onError: (error) => RNAlert.alert(t('common:labels.error'), error.message || t('supportMessageDetail.errors.errorReportingUser')),
                   });
                 },
               },
@@ -1890,11 +1890,11 @@ const SupportMessageDetailScreen: React.FC = () => {
                     targetUserId: params.recipientUserId!,
                   }, {
                     onSuccess: () => {
-                      RNAlert.alert('Success', 'User blocked', [
-                        { text: 'OK', onPress: () => navigation.goBack() },
+                      RNAlert.alert(t('common:labels.success'), t('supportMessageDetail.success.userBlocked'), [
+                        { text: t('common:buttons.ok'), onPress: () => navigation.goBack() },
                       ]);
                     },
-                    onError: (error) => RNAlert.alert('Error', error.message || 'An error occurred while blocking the user'),
+                    onError: (error) => RNAlert.alert(t('common:labels.error'), error.message || t('supportMessageDetail.errors.errorBlockingUser')),
                   });
                 },
               },

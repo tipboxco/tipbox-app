@@ -844,7 +844,7 @@ const MessageDetailScreen: React.FC = () => {
           // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
           setActiveThreadId(currentRecipientUserId);
         } else {
-          Alert.alert('Error', 'Failed to start chat. Please try again.');
+          Alert.alert(t('common:labels.error'), t('messageDetail.errors.failedToStartChat'));
         }
       }
     };
@@ -1343,12 +1343,12 @@ const MessageDetailScreen: React.FC = () => {
 
   const handleThreadJoinError = useCallback((error: { threadId: string; reason: string }) => {
 
-    Alert.alert('Error', `Failed to join thread: ${error.reason}`);
+    Alert.alert(t('common:labels.error'), t('messageDetail.errors.failedToJoinThread', { reason: error.reason }));
   }, []);
 
   const handleMessageSendError = useCallback((error: { reason: string }) => {
 
-    Alert.alert('Error', `Failed to send message: ${error.reason}`);
+    Alert.alert(t('common:labels.error'), t('messageDetail.errors.failedToSendMessage', { reason: error.reason }));
   }, []);
 
   // Typing indicator handler
@@ -1483,7 +1483,7 @@ const MessageDetailScreen: React.FC = () => {
   // Bu fonksiyon handleSupportRequestAccepted'tan önce tanımlanmalı
   const handleGoToSupportChat = useCallback((supportThreadId: string, requestId: string) => {
     if (!supportThreadId) {
-      Alert.alert('Error', 'Support thread ID not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.supportThreadIdNotFound'));
       return;
     }
 
@@ -1845,10 +1845,10 @@ const MessageDetailScreen: React.FC = () => {
               },
             }, {
               onSuccess: () => {
-                Alert.alert('Success', 'User reported');
+                Alert.alert(t('common:labels.success'), t('messageDetail.success.userReported'));
               },
               onError: (error) => {
-                Alert.alert('Error', error.message || 'An error occurred while reporting the user');
+                Alert.alert(t('common:labels.error'), error.message || t('messageDetail.errors.errorReportingUser'));
               },
             });
           },
@@ -1863,10 +1863,10 @@ const MessageDetailScreen: React.FC = () => {
     
     muteThreadMutation.mutate(threadId, {
       onSuccess: () => {
-        Alert.alert('Success', 'Notifications for this conversation have been muted');
+        Alert.alert(t('common:labels.success'), t('messageDetail.success.notificationsMuted'));
       },
       onError: (error: any) => {
-        Alert.alert('Error', error?.message || 'Failed to mute notifications');
+        Alert.alert(t('common:labels.error'), error?.message || t('messageDetail.errors.failedToMuteNotifications'));
       },
     });
   }, [threadId, muteThreadMutation]);
@@ -1876,10 +1876,10 @@ const MessageDetailScreen: React.FC = () => {
     
     unmuteThreadMutation.mutate(threadId, {
       onSuccess: () => {
-        Alert.alert('Success', 'Notifications for this conversation have been unmuted');
+        Alert.alert(t('common:labels.success'), t('messageDetail.success.notificationsUnmuted'));
       },
       onError: (error: any) => {
-        Alert.alert('Error', error?.message || 'Failed to unmute notifications');
+        Alert.alert(t('common:labels.error'), error?.message || t('messageDetail.errors.failedToUnmuteNotifications'));
       },
     });
   }, [threadId, unmuteThreadMutation]);
@@ -1904,15 +1904,15 @@ const MessageDetailScreen: React.FC = () => {
               targetUserId: effectiveRecipientUserId,
             }, {
               onSuccess: () => {
-                Alert.alert('Success', 'User blocked', [
+                Alert.alert(t('common:labels.success'), t('messageDetail.success.userBlocked'), [
                   {
-                    text: 'OK',
+                    text: t('common:buttons.ok'),
                     onPress: () => navigation.goBack(),
                   },
                 ]);
               },
               onError: (error) => {
-                Alert.alert('Error', error.message || 'An error occurred while blocking the user');
+                Alert.alert(t('common:labels.error'), error.message || t('messageDetail.errors.errorBlockingUser'));
               },
             });
           },
@@ -1924,7 +1924,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Send TIPS
   const handleSendTips = useCallback((amount: number, message?: string) => {
     if (!user?.id) {
-      Alert.alert('Error', 'User information not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.userInfoNotFound'));
       return;
     }
 
@@ -1934,21 +1934,21 @@ const MessageDetailScreen: React.FC = () => {
     const finalRecipientUserId = effectiveRecipientUserId || routeParams.recipientUserId;
 
     if (!finalRecipientUserId) {
-      Alert.alert('Error', 'Recipient user information not found. Please try again from message detail.');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.recipientInfoNotFound'));
 
       return;
     }
 
     // Amount validation (minimum 0.01)
     if (amount <= 0 || amount < 0.01) {
-      Alert.alert('Error', 'TIPS amount must be at least 0.01');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.tipsMinimumAmount'));
       return;
     }
 
     // Message validation (boş string olamaz)
     const finalMessage = message?.trim() || '';
     if (finalMessage.length === 0) {
-      Alert.alert('Error', 'Message cannot be empty');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.messageCannotBeEmpty'));
       return;
     }
 
@@ -2010,11 +2010,11 @@ const MessageDetailScreen: React.FC = () => {
           // Hata durumunda optimistic mesajı geri al
           setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
           
-          const errorMessage = error.response?.data?.message || error.message || 'An error occurred while sending TIPS';
+          const errorMessage = error.response?.data?.message || error.message || t('messageDetail.errors.errorSendingTips');
           Alert.alert(
-            'Error', 
+            t('common:labels.error'),
             errorMessage,
-            [{ text: 'OK' }]
+            [{ text: t('common:buttons.ok') }]
           );
         },
       }
@@ -2060,7 +2060,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Send Support Request
   const handleSendSupport = useCallback((supportType: string, message: string, amount: number) => {
     if (!user?.id) {
-      Alert.alert('Error', 'User information not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.userInfoNotFound'));
       return;
     }
 
@@ -2070,7 +2070,7 @@ const MessageDetailScreen: React.FC = () => {
     const finalRecipientUserId = effectiveRecipientUserId || routeParams.recipientUserId;
 
     if (!finalRecipientUserId) {
-      Alert.alert('Error', 'Recipient user information not found. Please try again from message detail.');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.recipientInfoNotFound'));
 
       return;
     }
@@ -2086,13 +2086,13 @@ const MessageDetailScreen: React.FC = () => {
 
     // Amount validation
     if (amount <= 0) {
-      Alert.alert('Error', 'TIPS amount must be greater than 0');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.tipsGreaterThanZero'));
       return;
     }
 
     // Message validation
     if (!message || message.trim().length === 0) {
-      Alert.alert('Error', 'Message cannot be empty');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.messageCannotBeEmpty'));
       return;
     }
 
@@ -2129,11 +2129,11 @@ const MessageDetailScreen: React.FC = () => {
 
           // REMOVED: Auto scroll - inverted mode handles this
 
-          Alert.alert('Success', 'Support request sent successfully');
+          Alert.alert(t('common:labels.success'), t('messageDetail.success.supportRequestSent'));
           closeBottomSheet();
         },
         onError: (error) => {
-          Alert.alert('Error', error.message || 'An error occurred while sending the support request');
+          Alert.alert(t('common:labels.error'), error.message || t('messageDetail.errors.errorSendingSupportRequest'));
         },
       }
     );
@@ -2188,7 +2188,7 @@ const MessageDetailScreen: React.FC = () => {
     }
 
     if (!user?.id) {
-      Alert.alert('Error', 'User information not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.userInfoNotFound'));
       return;
     }
 
@@ -2196,12 +2196,12 @@ const MessageDetailScreen: React.FC = () => {
     // Eğer hala yoksa, route params'tan al
     const routeParams = (route.params as MessageDetailScreenParams) || {};
     const finalRecipientUserId = effectiveRecipientUserId || routeParams.recipientUserId;
-    
+
     // Thread ID yoksa finalRecipientUserId'yi kullan (fallback)
     const effectiveThreadId = threadId || finalRecipientUserId;
-    
+
     if (!effectiveThreadId || !finalRecipientUserId) {
-      Alert.alert('Error', 'Recipient user information not found.');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.recipientInfoNotFound'));
       return;
     }
 
@@ -2258,14 +2258,14 @@ const MessageDetailScreen: React.FC = () => {
 
               // Hata durumunda mesajı geri al
               setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
-              Alert.alert('Error', error.message || 'An error occurred while sending the message');
+              Alert.alert(t('common:labels.error'), error.message || t('messageDetail.errors.errorSendingMessage'));
             },
           }
         );
       } else {
         // finalRecipientUserId yoksa optimistic mesajı geri al
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
-        Alert.alert('Error', 'Recipient user information not found');
+        Alert.alert(t('common:labels.error'), t('messageDetail.errors.recipientInfoNotFound'));
       }
     }
   }, [user?.id, threadId, effectiveRecipientUserId, route, isConnected, isSocketReady, socketSendMessage, sendDirectMessageMutation]);
@@ -2298,7 +2298,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Accept Support Request
   const handleAcceptSupportRequest = useCallback((requestId: string) => {
     if (!requestId) {
-      Alert.alert('Error', 'Request ID not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.requestIdNotFound'));
       return;
     }
 
@@ -2372,8 +2372,9 @@ const MessageDetailScreen: React.FC = () => {
               return msg;
             })
           );
-          
-          Alert.alert('Error', error.message || 'Support request could not be accepted');
+
+
+          Alert.alert(t('common:labels.error'), error.message || t('messageDetail.errors.errorAcceptingSupportRequest'));
         },
       });
     }
@@ -2382,7 +2383,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Reject Support Request
   const handleRejectSupportRequest = useCallback((requestId: string) => {
     if (!requestId) {
-      Alert.alert('Error', 'Request ID not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.requestIdNotFound'));
       return;
     }
 
@@ -2405,11 +2406,11 @@ const MessageDetailScreen: React.FC = () => {
               rejectSupportRequestMutation.mutate(requestId, {
                 onSuccess: () => {
 
-                  Alert.alert('Success', 'Support request rejected');
+                  Alert.alert(t('common:labels.success'), t('messageDetail.success.supportRequestRejected'));
                 },
                 onError: (error: any) => {
 
-                  Alert.alert('Error', error.message || 'Support request could not be rejected');
+                  Alert.alert(t('common:labels.error'), error.message || t('messageDetail.errors.errorRejectingSupportRequest'));
                 },
               });
             }
@@ -2422,7 +2423,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Cancel Support Request
   const handleCancelSupportRequest = useCallback((requestId: string) => {
     if (!requestId) {
-      Alert.alert('Error', 'Request ID not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.requestIdNotFound'));
       return;
     }
 
@@ -2495,7 +2496,7 @@ const MessageDetailScreen: React.FC = () => {
                       return msg;
                     })
                   );
-                  Alert.alert('Error', error.message || 'Support request could not be cancelled');
+                  Alert.alert(t('common:labels.error'), error.message || t('messageDetail.errors.errorCancellingSupportRequest'));
                 },
               });
             }
@@ -2508,13 +2509,13 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Delete Message
   const handleDeleteMessage = useCallback((messageId: string) => {
     if (!messageId) {
-      Alert.alert('Error', 'Message ID not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.messageIdNotFound'));
       return;
     }
 
     const message = messages.find((msg) => msg.id === messageId);
     if (!message) {
-      Alert.alert('Error', 'Message not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.messageNotFound'));
       return;
     }
 
@@ -2554,7 +2555,7 @@ const MessageDetailScreen: React.FC = () => {
             return msg;
           })
         );
-        Alert.alert('Error', error.message || 'Failed to delete message');
+        Alert.alert(t('common:labels.error'), error.message || t('messageDetail.errors.errorDeletingMessage'));
       },
     });
   }, [messages, deleteMessageMutation]);
@@ -2716,19 +2717,19 @@ const MessageDetailScreen: React.FC = () => {
         });
       } else {
         if (result.error) {
-          Alert.alert('Error', typeof result.error === 'string' ? result.error : 'An error occurred while selecting image');
+          Alert.alert(t('common:labels.error'), typeof result.error === 'string' ? result.error : t('messageDetail.errors.errorSelectingImage'));
         }
       }
     } catch (error: any) {
 
-      Alert.alert('Error', 'An error occurred while selecting image');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.errorSelectingImage'));
     }
   }, []);
   
   // Handle Send Image - Görsel + caption gönder
   const handleSendImage = useCallback(async (image: { uri: string; type: string; name: string; fileSize?: number }, caption: string) => {
     if (!threadId || !effectiveRecipientUserId) {
-      Alert.alert('Error', 'Thread ID or recipient user not found');
+      Alert.alert(t('common:labels.error'), t('messageDetail.errors.threadIdNotFound'));
       return;
     }
 
@@ -2861,12 +2862,12 @@ const MessageDetailScreen: React.FC = () => {
         // Seçilen görseli geri yükle (hata durumunda)
         setSelectedImage(image);
         
-        const errorMessage = error.response?.data?.error?.message || 
-                            error.response?.data?.message || 
-                            error.message || 
-                            'An error occurred while uploading image';
+        const errorMessage = error.response?.data?.error?.message ||
+                            error.response?.data?.message ||
+                            error.message ||
+                            t('messageDetail.errors.errorUploadingImage');
 
-        Alert.alert('Error', errorMessage);
+        Alert.alert(t('common:labels.error'), errorMessage);
       }
     }, [threadId, effectiveRecipientUserId]);
 
@@ -3063,7 +3064,7 @@ const MessageDetailScreen: React.FC = () => {
                   toImageSource(item.senderAvatar || params.senderAvatar) ||
                   DEFAULT_USER_AVATAR
                 }
-                alt={item.senderName || params.senderName || 'User'}
+                alt={item.senderName || params.senderName || t('common:labels.user')}
                 width={32}
                 height={32}
                 borderRadius={16}
