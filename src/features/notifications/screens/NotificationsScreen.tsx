@@ -66,7 +66,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { useBottomOffset } from '@/src/utils';
 import { NotificationSkeleton } from '@/src/components/Skeletons';
-import { AutoSkeletonView } from 'react-native-auto-skeleton';
+// AutoSkeletonView removed - using simple loading instead
 
 const { width } = Dimensions.get('window');
 
@@ -1012,91 +1012,71 @@ const NotificationsScreenComponent: React.FC = () => {
       // Estimated item height: avatar (48px) + content + extra content (post card, comment, etc.) + margins (~150px)
       const estimatedItemHeight = 150;
 
-      // Skeleton dummy data - AutoSkeletonView için
-      const skeletonData = Array.from({ length: 8 }, (_, i) => ({
-        type: 'notification' as const,
-        data: {
-          id: `skeleton-${i}`,
-          type: 'like',
-          username: 'loading',
-          avatar: null,
-          createdAt: new Date().toISOString(),
-          read: false,
-        },
-      }));
-
       return (
-        <AutoSkeletonView
-          isLoading={isInitialLoading}
-          animationType="gradient"
-          duration={1200}
-          skeletonColor={isDark ? '#1A1A1A' : '#E1E9EE'}
-          highlightColor={isDark ? '#2A2A2A' : '#F2F8FC'}
-        >
-          <FlashList
-            data={isInitialLoading ? skeletonData : groupedData}
-            renderItem={renderNotificationItem}
-            keyExtractor={keyExtractor}
-            contentContainerStyle={{
-              paddingHorizontal: 0,
-              paddingTop: 8,
-              // paddingBottom kaldırıldı - sadece ListFooterComponent'te padding var
-            }}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => {
-                  setRefreshing(true);
-                  refetch().finally(() => setRefreshing(false));
-                }}
-                tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
-              />
-            }
-            ListFooterComponent={
-              shouldShowLoadMore ? (
-                <Box px={16} py={24} pb={bottomOffset} alignItems='center'>
-                  <Pressable
-                    onPress={() => {
-                      if (!isFetchingNextPage && hasNextPage) {
-                        fetchNextPage();
-                      }
-                    }}
-                    disabled={isFetchingNextPage}
+        <FlashList
+          data={groupedData}
+          renderItem={renderNotificationItem}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={{
+            paddingHorizontal: 0,
+            paddingTop: 8,
+            // paddingBottom kaldırıldı - sadece ListFooterComponent'te padding var
+          }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                refetch().finally(() => setRefreshing(false));
+              }}
+              tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+            />
+          }
+          ListEmptyComponent={null}
+          ListFooterComponent={
+            shouldShowLoadMore ? (
+              <Box px={16} py={24} pb={bottomOffset} alignItems='center'>
+                <Pressable
+                  onPress={() => {
+                    if (!isFetchingNextPage && hasNextPage) {
+                      fetchNextPage();
+                    }
+                  }}
+                  disabled={isFetchingNextPage}
+                >
+                  <HStack
+                    alignItems='center'
+                    justifyContent='center'
+                    space='sm'
                   >
-                    <HStack
-                      alignItems='center'
-                      justifyContent='center'
-                      space='sm'
+                    <Text
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize={14}
+                      fontWeight='$medium'
                     >
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={14}
-                        fontWeight='$medium'
-                      >
-                        {t('notifications.actions.showMore')}
-                      </Text>
-                      <ChevronDownIcon
-                        width={20}
-                        height={20}
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                      />
-                    </HStack>
-                  </Pressable>
-                  {isFetchingNextPage && (
-                    <View style={{ marginTop: 8 }}>
-                      <ActivityIndicator
-                        size='small'
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                      />
-                    </View>
-                  )}
-                </Box>
-              ) : null
-            }
-            style={{ flex: 1 }}
-          />
-        </AutoSkeletonView>
+                      {t('notifications.actions.showMore')}
+                    </Text>
+                    <ChevronDownIcon
+                      width={20}
+                      height={20}
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                    />
+                  </HStack>
+                </Pressable>
+                {isFetchingNextPage && (
+                  <View style={{ marginTop: 8 }}>
+                    <ActivityIndicator
+                      size='small'
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                    />
+                  </View>
+                )}
+              </Box>
+            ) : null
+          }
+          style={{ flex: 1 }}
+        />
       );
     },
     [

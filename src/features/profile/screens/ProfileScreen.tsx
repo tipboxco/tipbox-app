@@ -1005,6 +1005,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const pagerViewRef = useRef<PagerView>(null);
   const tabBarRef = useRef<any>(null);
 
+  // PagerView scroll position for realtime tab bar animation
+  const pagerScrollPosition = useSharedValue(0);
+
   // Tab değiştiğinde PagerView'ı ve tab bar'ı sync et
   const handleTabChange = useCallback((tabKey: TabKey) => {
     const tabIndex = TABS.findIndex(tab => tab.key === tabKey);
@@ -1017,13 +1020,20 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, []);
 
+  // PagerView scroll sırasında realtime progress tracking
+  const handlePageScroll = useCallback((e: any) => {
+    const { position, offset } = e.nativeEvent;
+    // position: mevcut sayfa index'i, offset: 0-1 arası progress (0 = tam sayfada, 1 = tam geçiş yapılmış)
+    pagerScrollPosition.value = position + offset;
+  }, []);
+
   // PagerView sayfa değiştiğinde active tab'ı güncelle
   const handlePageSelected = useCallback((e: any) => {
     const position = e.nativeEvent.position;
     const newTab = TABS[position];
     if (newTab && newTab.key !== activeTab) {
       setActiveTab(newTab.key);
-      // Tab bar'ı da ilgili tab'a scroll et
+      // Tab bar'ı da ilgili tab'a scroll et - smooth animation ile
       if (tabBarRef.current) {
         tabBarRef.current.scrollToTab(newTab.key);
       }
@@ -2137,6 +2147,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           isDark={isDark}
+          scrollPosition={pagerScrollPosition}
         />
 
         {/* PagerView - Only tab contents */}
@@ -2145,6 +2156,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             ref={pagerViewRef}
             style={{ flex: 1 }}
             initialPage={0}
+            onPageScroll={handlePageScroll}
             onPageSelected={handlePageSelected}
           >
             {TABS.map((tab) => (

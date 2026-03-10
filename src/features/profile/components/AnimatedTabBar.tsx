@@ -14,6 +14,8 @@ import Animated, {
   withSpring,
   interpolate,
   Extrapolate,
+  useAnimatedReaction,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Box, Text, Pressable, HStack, VStack } from '@gluestack-ui/themed';
 
@@ -63,35 +65,72 @@ export const AnimatedTabBar = forwardRef<AnimatedTabBarRef, AnimatedTabBarProps>
 
   // Local state
   const [tabLayouts, setTabLayouts] = useState<Map<string, TabLayout>>(new Map());
+  const [tabWidths, setTabWidths] = useState<Map<string, number>>(new Map());
   const [scrollViewWidth, setScrollViewWidth] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
   const [scrollX, setScrollX] = useState(0);
 
-  // Track individual tab layout measurements
+  // Refs to avoid dependency issues in useAnimatedReaction
+  const tabLayoutsRef = useRef(tabLayouts);
+  const scrollViewWidthRef = useRef(scrollViewWidth);
+  const tabsRef = useRef(tabs);
+
+  // Keep refs up to date
+  useEffect(() => {
+    tabLayoutsRef.current = tabLayouts;
+  }, [tabLayouts]);
+
+  useEffect(() => {
+    scrollViewWidthRef.current = scrollViewWidth;
+  }, [scrollViewWidth]);
+
+  useEffect(() => {
+    tabsRef.current = tabs;
+  }, [tabs]);
+
+  // Track individual tab width measurements (onLayout sadece width için)
   const handleTabLayout = useCallback(
     (key: string, event: LayoutChangeEvent) => {
-      const { x, width } = event.nativeEvent.layout;
-      setTabLayouts(prev => {
+      const { width } = event.nativeEvent.layout;
+      setTabWidths(prev => {
         const next = new Map(prev);
-        next.set(key, { x, width });
+        next.set(key, width);
         return next;
       });
     },
     []
   );
 
+  // Width'ler ölçüldükten sonra accumulated X pozisyonlarını hesapla
+  useEffect(() => {
+    // Tüm tab'ların width'i ölçülene kadar bekle
+    if (tabWidths.size !== tabs.length || tabs.length === 0) return;
+
+    const layouts = new Map<string, TabLayout>();
+    let accumulatedX = 16; // FlatList paddingHorizontal başlangıcı
+
+    tabs.forEach((tab) => {
+      const width = tabWidths.get(tab.key) || 60;
+      layouts.set(tab.key, { x: accumulatedX, width });
+      accumulatedX += width; // Bir sonraki tab'ın X pozisyonu
+    });
+
+    setTabLayouts(layouts);
+  }, [tabWidths, tabs]);
+
   // Calculate snap offsets for each tab
   const snapToOffsets = useMemo(() => {
-    if (tabLayouts.size === 0) return undefined;
+    if (tabLayouts.size === 0 || tabLayouts.size !== tabs.length) return undefined;
 
-    // Her tab'ın X pozisyonunu array yap - FlatList buraya snap yapar
-    const offsets = Array.from(tabLayouts.values())
-      .sort((a, b) => a.x - b.x) // X'e göre sırala
-      .map(layout => layout.x);
+    // Tab order'a göre X pozisyonlarını al (zaten accumulated order'da)
+    const offsets = tabs
+      .map(tab => tabLayouts.get(tab.key)?.x)
+      .filter((x): x is number => x !== undefined);
 
-    console.log('[AnimatedTabBar] 📍 Snap offsets:', offsets);
+    if (offsets.length !== tabs.length) return undefined;
+
     return offsets;
-  }, [tabLayouts]);
+  }, [tabLayouts, tabs]);
 
   // Scroll to align active tab to CENTER (better visibility)
   const scrollToTabLeft = useCallback((tabKey: string) => {
@@ -121,49 +160,71 @@ export const AnimatedTabBar = forwardRef<AnimatedTabBarRef, AnimatedTabBarProps>
     },
   }), [scrollToTabLeft]);
 
-  // Handle scroll - track position
+  // Helper: İki tab arasında interpolate ederek scroll yap (Ref kullanarak dependency sorununu çözdük)
+  const scrollToPosition = useCallback((scrollPos: number) => {
+    if (!flatListRef.current || scrollPos < 0) return;
+
+    const currentViewportWidth = scrollViewWidthRef.current;
+    const layouts = tabLayoutsRef.current;
+    const currentTabs = tabsRef.current;
+
+    if (layouts.size === 0 || !currentViewportWidth || currentTabs.length === 0) return;
+
+    const currentIndex = Math.floor(scrollPos);
+    const nextIndex = Math.min(Math.ceil(scrollPos), currentTabs.length - 1);
+    const progress = scrollPos - currentIndex;
+
+    const currentTabKey = currentTabs[currentIndex]?.key;
+    const nextTabKey = currentTabs[nextIndex]?.key;
+
+    if (!currentTabKey || !nextTabKey) return;
+
+    const currentLayout = layouts.get(currentTabKey);
+    const nextLayout = layouts.get(nextTabKey);
+
+    if (!currentLayout || !nextLayout) return;
+
+    // Current tab'ın center pozisyonu
+    const currentTabCenter = currentLayout.x + (currentLayout.width / 2);
+    // Next tab'ın center pozisyonu
+    const nextTabCenter = nextLayout.x + (nextLayout.width / 2);
+
+    // Interpolate between current and next
+    const interpolatedCenter = currentTabCenter + (nextTabCenter - currentTabCenter) * progress;
+
+    // Viewport center
+    const viewportCenter = currentViewportWidth / 2;
+
+    // Scroll position
+    const finalScrollPos = Math.max(0, interpolatedCenter - viewportCenter);
+
+    // Smooth scroll (animated: false for realtime)
+    flatListRef.current.scrollToOffset({
+      offset: finalScrollPos,
+      animated: false,
+    });
+  }, []);
+
+  // REALTIME SCROLL: PagerView scroll progress'e göre tab bar'ı da scroll et
+  useAnimatedReaction(
+    () => {
+      if (!scrollPosition) return -1;
+      return scrollPosition.value;
+    },
+    (currentScrollPos) => {
+      if (currentScrollPos < 0) return;
+      runOnJS(scrollToPosition)(currentScrollPos);
+    },
+    [scrollPosition]
+  );
+
+  // Handle scroll - sadece position tracking için (fade indicator için)
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const scrollX = event.nativeEvent.contentOffset.x;
       setScrollX(scrollX);
     },
     []
-  );
-
-  // Handle scroll end - basit: scrollX'e en yakın tab'ı bul
-  const handleScrollEnd = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const scrollX = event.nativeEvent.contentOffset.x;
-
-      // tabLayouts boş ise bekle
-      if (tabLayouts.size === 0) {
-        return;
-      }
-
-      // scrollX'e en yakın tab'ı bul (basit mesafe hesabı)
-      let nearestKey: string | null = null;
-      let minDistance = Infinity;
-
-      for (const [key, layout] of tabLayouts.entries()) {
-        const distance = Math.abs(layout.x - scrollX);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestKey = key;
-        }
-      }
-
-      console.log('[AnimatedTabBar] 🔚 Scroll ended - nearest tab:', {
-        scrollX,
-        nearestKey,
-        currentActiveTab: activeTab,
-      });
-
-      if (nearestKey && nearestKey !== activeTab) {
-        onTabChange(nearestKey);
-      }
-    },
-    [tabLayouts, activeTab, onTabChange]
   );
 
   // ANIMATION FIX: Update indicator when active tab changes OR when scroll position changes (realtime)
@@ -277,11 +338,7 @@ export const AnimatedTabBar = forwardRef<AnimatedTabBarRef, AnimatedTabBarProps>
         keyExtractor={(item) => item.key}
         contentContainerStyle={{ paddingHorizontal: 16 }}
         scrollEventThrottle={16}
-        snapToOffsets={snapToOffsets}
-        decelerationRate="fast"
         onScroll={handleScroll}
-        onScrollEndDrag={handleScrollEnd}
-        onMomentumScrollEnd={handleScrollEnd}
         onLayout={(e) => setScrollViewWidth(e.nativeEvent.layout.width)}
         onContentSizeChange={(w) => setContentWidth(w)}
         renderItem={({ item }) => {

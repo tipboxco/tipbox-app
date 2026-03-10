@@ -1472,8 +1472,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: true, // STABİL FIX: Smooth açılış animasyonu
+        snapPoints: ['50%'], // CRITICAL FIX: Use snapPoints instead of enableDynamicSizing
+        animateOnMount: true,
         paddingBottom: bottomOffset,
         onChange: (index: number) => {
           // Reset bottom sheet key when sheet closes to reset view state

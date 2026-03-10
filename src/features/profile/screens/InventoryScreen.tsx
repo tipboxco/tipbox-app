@@ -158,8 +158,8 @@ const InventoryScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+        snapPoints: ['50%'], // CRITICAL FIX: Use string format like ShareToTrustedBottomSheet
+        animateOnMount: false,
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8,
       }
     );

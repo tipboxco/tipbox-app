@@ -340,11 +340,11 @@ const FeedScreenInner = React.memo(() => {
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
-        enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: true, // PERFORMANCE FIX: Enable animation for native feel
+        enableContentPanningGesture: false, // CRITICAL FIX: Disable content panning for better UX
+        snapPoints: ['45%'], // CRITICAL FIX: Use string format like ShareToTrustedBottomSheet
+        animateOnMount: true,
         animationConfigs: {
-          duration: 160, // PERFORMANCE FIX: 160ms - fast but smooth
+          duration: 160,
         },
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
       }
@@ -359,7 +359,7 @@ const FeedScreenInner = React.memo(() => {
   }, [filters, openBottomSheet, closeBottomSheet, insets.bottom, bottomSheetState.index, isBottomSheetOpening]);
 
   const handleExpertPress = () => {
-    // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
+    // CRITICAL FIX: Use snapPoints instead of enableDynamicSizing
     openBottomSheet(
       <>
         {/* Header */}
@@ -382,8 +382,8 @@ const FeedScreenInner = React.memo(() => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
-        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+        snapPoints: ['50%'], // CRITICAL FIX: Use string format like ShareToTrustedBottomSheet
+        animateOnMount: false,
         paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
       }
     );
