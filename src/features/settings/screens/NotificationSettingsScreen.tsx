@@ -79,13 +79,13 @@ export const NotificationSettingsScreen = () => {
         } catch (error: any) {
             // Revert optimistic update on error
             setLocalSettings((prev) => ({ ...prev, [code]: !value }));
-            const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while updating notification settings';
+            const errorMessage = error?.response?.data?.message || error?.message || t('notificationSettings.updateError');
             toast.show({
                 placement: 'top',
                 render: ({ id }) => (
                     <Box maxWidth="90%" alignSelf="center" px="$4">
                         <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                            <ToastTitle>Error</ToastTitle>
+                            <ToastTitle>{t('common:labels.error')}</ToastTitle>
                             <ToastDescription>{errorMessage}</ToastDescription>
                         </Toast>
                     </Box>
@@ -183,7 +183,7 @@ export const NotificationSettingsScreen = () => {
                     ) : error ? (
                         <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
                             <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                                {error.message || 'An error occurred while loading notification settings'}
+                                {error.message || t('notificationSettings.loadError')}
                             </Text>
                         </Box>
                     ) : (

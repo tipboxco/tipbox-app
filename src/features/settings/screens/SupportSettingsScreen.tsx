@@ -153,7 +153,7 @@ export const SupportSettingsScreen = () => {
           ) : error ? (
             <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
               <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                {error.message || 'An error occurred while loading price information'}
+                {error.message || t('supportSettings.priceLoadError')}
               </Text>
             </Box>
           ) : (

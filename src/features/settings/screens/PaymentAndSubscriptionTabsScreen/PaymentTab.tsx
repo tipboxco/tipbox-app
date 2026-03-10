@@ -113,7 +113,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
             code === 'CARD_IN_USE_BY_SUBSCRIPTION'
               ? t('tabs.paymentTab.errors.cardInUse')
               : axiosErr.response?.data?.message ?? t('tabs.paymentTab.errors.deleteCardError');
-          Alert.alert('Error', message);
+          Alert.alert(t('common:labels.error'), message);
         },
       });
     },
@@ -133,7 +133,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
       {
         onSuccess: () => setEditCardId(null),
         onError: () => {
-          Alert.alert('Error', t('tabs.paymentTab.errors.updateCardError'));
+          Alert.alert(t('common:labels.error'), t('tabs.paymentTab.errors.updateCardError'));
         },
       }
     );

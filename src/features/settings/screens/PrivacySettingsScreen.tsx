@@ -86,13 +86,13 @@ export const PrivacySettingsScreen = () => {
         const current = prev[code];
         return { ...prev, [code]: current ?? 'everyone' };
       });
-      const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while updating privacy settings';
+      const errorMessage = error?.response?.data?.message || error?.message || t('privacySettings.updateError');
       toast.show({
         placement: 'top',
         render: ({ id }) => (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Error</ToastTitle>
+              <ToastTitle>{t('common:labels.error')}</ToastTitle>
               <ToastDescription>{errorMessage}</ToastDescription>
             </Toast>
           </Box>
@@ -256,7 +256,7 @@ export const PrivacySettingsScreen = () => {
           ) : error ? (
             <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
               <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                {error.message || 'An error occurred while loading privacy settings'}
+                {error.message || t('privacySettings.loadError')}
               </Text>
             </Box>
           ) : (

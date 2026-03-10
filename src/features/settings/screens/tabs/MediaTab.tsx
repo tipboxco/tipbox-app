@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Box, Button, ButtonText, VStack, ScrollView, HStack, Image } from '@gluestack-ui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
 
 export const MediaTab = () => {
+  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
@@ -84,7 +86,7 @@ export const MediaTab = () => {
                 h={200}
                 rounded="$lg"
                 source={{ uri: cameraPhoto }}
-                alt="Selected camera photo"
+                alt={t('altTexts.cameraPhoto')}
               />
             </Box>
           )}
@@ -96,7 +98,7 @@ export const MediaTab = () => {
                 h={200}
                 rounded="$lg"
                 source={{ uri }}
-                alt={`Selected gallery image ${index + 1}`}
+                alt={t('altTexts.galleryImage', { index: index + 1 })}
               />
             </Box>
           ))}
