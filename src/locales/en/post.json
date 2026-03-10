@@ -37,6 +37,14 @@
         "done": "Done",
         "processing": "Processing..."
       },
+      "step0": {
+        "selectProduct": "Select Product",
+        "placeholders": {
+          "duration": "Usage Duration",
+          "location": "Usage Location",
+          "purpose": "Usage Purpose"
+        }
+      },
       "step1": {
         "selectDuration": "Select duration",
         "selectLocation": "Select location",
@@ -153,6 +161,12 @@
         "productNotFound": {
           "title": "Product Not Found",
           "description": "The selected product could not be found. Please try selecting another product."
+        },
+        "productNotInInventory": {
+          "title": "Product Not in Inventory",
+          "description": "This product is not in your inventory. You must add it to your inventory first to ask questions.",
+          "warningTitle": "This product is not in your inventory",
+          "warningDescription": "To ask questions, you must first add the product to your inventory. You can add this product to your inventory by sharing an experience."
         }
       },
       "success": {

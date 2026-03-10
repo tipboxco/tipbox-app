@@ -199,6 +199,9 @@
       "75": "%75",
       "all": "Tümü"
     },
+    "placeholders": {
+      "amount": "0"
+    },
     "insufficientBalance": {
       "title": "Yetersiz {{token}}",
       "message": "Bu işlem için cüzdanınızda yeterli {{token}} bulunmuyor.",

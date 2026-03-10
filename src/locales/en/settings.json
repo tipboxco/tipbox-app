@@ -207,6 +207,46 @@
     "tabPaymentMethods": "Payment Methods",
     "tabPremiumPlans": "Premium Plans"
   },
+  "ota": {
+    "errorOccurred": "Error Occurred",
+    "checkingUpdates": "Checking for updates...",
+    "appUpToDate": "App is up to date",
+    "newUpdateAvailable": "New update available!",
+    "changelog": "Changes: {{changelog}}",
+    "installUpdate": "Install Update",
+    "downloading": "Downloading...",
+    "downloadUpdate": "Download Update",
+    "requiredUpdate": "This update is required",
+    "retry": "Try Again"
+  },
+  "paymentMethod": {
+    "addPaymentMethod": "Add Payment Method",
+    "applePay": "Apple Pay",
+    "creditCard": "Credit Card",
+    "nameOnCard": "Name on Card",
+    "cardNumber": "Card Number",
+    "expirationDate": "Expiration Date",
+    "securityCode": "Security Code",
+    "cardName": "Card Name",
+    "saveCard": "Save Card",
+    "saving": "Saving...",
+    "placeholders": {
+      "nameOnCard": "John Doe",
+      "cardNumber": "52093984***3945",
+      "expirationDate": "MM/YY",
+      "cvv": "CVV",
+      "cardName": "Work Card"
+    }
+  },
+  "keyboard": {
+    "title": "Comments and Messaging",
+    "description": "Click the button below to view comments and add new ones",
+    "openComments": "Open Comments",
+    "comments": "Comments ({{count}})",
+    "placeholders": {
+      "comment": "Write your comment..."
+    }
+  },
   "tabs": {
     "settingsTab": {
       "darkMode": "Dark Mode"

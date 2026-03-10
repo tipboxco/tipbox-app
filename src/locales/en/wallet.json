@@ -182,6 +182,9 @@
       "50": "50%",
       "75": "75%",
       "all": "All"
+    },
+    "placeholders": {
+      "amount": "0"
     }
   },
   "swapScreen": {
@@ -198,6 +201,9 @@
       "50": "50%",
       "75": "75%",
       "all": "All"
+    },
+    "placeholders": {
+      "amount": "0"
     },
     "insufficientBalance": {
       "title": "Not Enough {{token}}",

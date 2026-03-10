@@ -168,5 +168,17 @@
       "tip": "sent you a tip",
       "mention": "mentioned you"
     }
+  },
+  "support": {
+    "types": {
+      "general": "General",
+      "technical": "Technical",
+      "product": "Product"
+    },
+    "selectType": "Select Support Type",
+    "placeholders": {
+      "describeIssue": "Describe your problem or request in detail...",
+      "amount": "50"
+    }
   }
 }

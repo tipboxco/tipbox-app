@@ -37,6 +37,14 @@
         "done": "Tamam",
         "processing": "İşleniyor..."
       },
+      "step0": {
+        "selectProduct": "Ürün Seç",
+        "placeholders": {
+          "duration": "Kullanım Süresi",
+          "location": "Kullanım Konumu",
+          "purpose": "Kullanım Amacı"
+        }
+      },
       "step1": {
         "selectDuration": "Süre seçin",
         "selectLocation": "Konum seçin",
@@ -153,6 +161,12 @@
         "productNotFound": {
           "title": "Ürün Bulunamadı",
           "description": "Seçilen ürün bulunamadı. Lütfen başka bir ürün seçmeyi deneyin."
+        },
+        "productNotInInventory": {
+          "title": "Ürün Envanterde Değil",
+          "description": "Bu ürün envanterinizde bulunmuyor. Soru sorabilmek için önce ürünü envanterinize eklemelisiniz.",
+          "warningTitle": "Bu ürün envanterinizde bulunmuyor",
+          "warningDescription": "Soru sorabilmek için ürünü önce envanterinize eklemelisiniz. Deneyim paylaşarak bu ürünü envanterinize ekleyebilirsiniz."
         }
       },
       "success": {

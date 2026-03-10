@@ -207,6 +207,46 @@
     "tabPaymentMethods": "Ödeme Yöntemleri",
     "tabPremiumPlans": "Premium Planlar"
   },
+  "ota": {
+    "errorOccurred": "Hata Oluştu",
+    "checkingUpdates": "Güncellemeler kontrol ediliyor...",
+    "appUpToDate": "Uygulama güncel",
+    "newUpdateAvailable": "Yeni güncelleme mevcut!",
+    "changelog": "Değişiklikler: {{changelog}}",
+    "installUpdate": "Güncellemeyi Yükle",
+    "downloading": "İndiriliyor...",
+    "downloadUpdate": "Güncellemeyi İndir",
+    "requiredUpdate": "Bu güncelleme zorunludur",
+    "retry": "Tekrar Dene"
+  },
+  "paymentMethod": {
+    "addPaymentMethod": "Ödeme Yöntemi Ekle",
+    "applePay": "Apple Pay",
+    "creditCard": "Kredi Kartı",
+    "nameOnCard": "Kart Üzerindeki İsim",
+    "cardNumber": "Kart Numarası",
+    "expirationDate": "Son Kullanma Tarihi",
+    "securityCode": "Güvenlik Kodu",
+    "cardName": "Kart Adı",
+    "saveCard": "Kartı Kaydet",
+    "saving": "Kaydediliyor...",
+    "placeholders": {
+      "nameOnCard": "Ahmet Yılmaz",
+      "cardNumber": "52093984***3945",
+      "expirationDate": "AA/YY",
+      "cvv": "CVV",
+      "cardName": "İş Kartı"
+    }
+  },
+  "keyboard": {
+    "title": "Yorumlar ve Mesajlaşma",
+    "description": "Yorumları görmek ve yeni yorum eklemek için aşağıdaki butona tıklayın",
+    "openComments": "Yorumları Aç",
+    "comments": "Yorumlar ({{count}})",
+    "placeholders": {
+      "comment": "Yorumunuzu yazın..."
+    }
+  },
   "tabs": {
     "settingsTab": {
       "darkMode": "Karanlık Mod"

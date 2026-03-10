@@ -168,5 +168,17 @@
       "tip": "size bahşiş gönderdi",
       "mention": "sizden bahsetti"
     }
+  },
+  "support": {
+    "types": {
+      "general": "Genel",
+      "technical": "Teknik",
+      "product": "Ürün"
+    },
+    "selectType": "Destek Türü Seçin",
+    "placeholders": {
+      "describeIssue": "Sorununuzu veya talebinizi detaylı bir şekilde açıklayın...",
+      "amount": "50"
+    }
   }
 }
