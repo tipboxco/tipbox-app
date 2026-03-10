@@ -162,8 +162,8 @@ const FeedScreenInner = React.memo(() => {
     }
   }, [filters, feedListRef]);
 
-  // Bottom padding for FlatList content - sadece bottom insets kadar
-  const bottomPadding = insets.bottom;
+  // Bottom padding for FlatList content - tab bar kadar (içerik tab bar arkasında kalmasın)
+  const bottomPadding = tabBarHeight;
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet, state: bottomSheetState } = useGlobalBottomSheet();
@@ -1066,9 +1066,10 @@ const FeedScreenInner = React.memo(() => {
     () => ({
       paddingHorizontal: 16,
       paddingTop: 8,
-      paddingBottom: bottomPadding
+      paddingBottom: bottomPadding,
+      flexGrow: feedItems.length === 0 ? 1 : 0, // Boş listede center için flexGrow
     }),
-    [bottomPadding]
+    [bottomPadding, feedItems.length]
   );
 
   const getItemLayout = useCallback(
