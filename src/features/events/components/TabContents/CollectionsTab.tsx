@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   filterChipsContainer: {
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 12,
     gap: 2,
   },
   filterChip: {
@@ -294,7 +294,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
   },
   fullRow: {
     width: '100%',
