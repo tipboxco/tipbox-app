@@ -160,11 +160,12 @@ export const WalletScreen: React.FC = () => {
           transactionDetails={transactionDetails}
         />,
         {
+          enableDynamicSizing: false,
+          snapPoints: ['50%'], // Success message + transaction details
           enablePanDownToClose: true,
           enableOverDrag: false,
           enableHandlePanningGesture: true,
           enableContentPanningGesture: true,
-          enableDynamicSizing: true,
           animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
           paddingBottom: bottomInset,
           handleIndicatorStyle: {
@@ -210,11 +211,12 @@ export const WalletScreen: React.FC = () => {
       openBottomSheet(
         bottomSheetContent,
         {
+          enableDynamicSizing: false,
+          snapPoints: ['60%'], // Multi-view send flow (options/address/amount/confirmation)
           enablePanDownToClose: true,
           enableOverDrag: false,
           enableHandlePanningGesture: true,
           enableContentPanningGesture: true,
-          enableDynamicSizing: true,
           animateOnMount: true,
           paddingBottom: bottomInset,
           handleIndicatorStyle: {
@@ -233,11 +235,12 @@ export const WalletScreen: React.FC = () => {
     }
 
     const optionsForView = {
+      enableDynamicSizing: false,
+      snapPoints: ['60%'], // Multi-view send flow
       enablePanDownToClose: true,
       enableOverDrag: false,
       enableHandlePanningGesture: true,
       enableContentPanningGesture: true,
-      enableDynamicSizing: true,
       animateOnMount: true,
       paddingBottom: bottomInset,
       handleIndicatorStyle: {
@@ -273,11 +276,12 @@ export const WalletScreen: React.FC = () => {
     openBottomSheet(
       bottomSheetContent,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['60%'], // Multi-view send flow
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -295,11 +299,12 @@ export const WalletScreen: React.FC = () => {
         onClose={closeBottomSheet}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['70%'], // Token swap interface with selectors
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -317,11 +322,12 @@ export const WalletScreen: React.FC = () => {
         onClose={closeBottomSheet}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['55%'], // Claim form with options
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -341,11 +347,12 @@ export const WalletScreen: React.FC = () => {
         userName={user?.fullName || 'User'}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['65%'], // QR code + wallet address info
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -528,11 +535,12 @@ export const WalletScreen: React.FC = () => {
         onClose={closeBottomSheet}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['45%'], // 7 filter options (All, NFT, Claim, Airdrop, Sent, Received, Failed)
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -552,11 +560,12 @@ export const WalletScreen: React.FC = () => {
         onClose={closeBottomSheet}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['35%'], // 5 period options (All, Today, Yesterday, Last Week, Last Month)
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -704,11 +713,12 @@ export const WalletScreen: React.FC = () => {
         selectedTypes={selectedTypes}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['50%'], // NFT type filters with checkboxes
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -729,11 +739,12 @@ export const WalletScreen: React.FC = () => {
         sortOption={sortOption}
       />,
       {
+        enableDynamicSizing: false,
+        snapPoints: ['30%'], // 2 sort options (Rarity Desc/Asc)
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
