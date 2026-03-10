@@ -151,7 +151,7 @@ const BrandHistoryScreen: React.FC = () => {
             fontWeight={currentPage === index ? '$bold' : '$normal'}
             color={currentPage === index ? (isDark ? '#FFFFFF' : '#000000') : tabInactiveColor}
           >
-            {t(`catalog.brandHistory.tabs.${tab}`)}
+            {t(`brandHistory.tabs.${tab}`)}
           </Text>
         </Pressable>
       ))}
