@@ -134,7 +134,10 @@
     "shareTitle": "Share Wallet Address",
     "info": "💡 Use this address only to receive TIPS. Do not send other cryptocurrencies.",
     "copied": "Copied",
-    "addressCopied": "Wallet address copied to clipboard"
+    "addressCopied": "Wallet address copied to clipboard",
+    "error": "Error",
+    "walletNotReady": "Wallet information is still loading. Please try again.",
+    "noWalletAddress": "Wallet address not available"
   },
   "claimBottomSheet": {
     "title": "Rewards",

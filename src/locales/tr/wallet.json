@@ -132,9 +132,12 @@
     "copy": "Kopyala",
     "share": "Paylaş",
     "shareTitle": "Cüzdan Adresini Paylaş",
-    "info": "Bu adresi yalnızca TIPS almak için kullanın. Başka kripto paralar göndermeyin.",
+    "info": "💡 Bu adresi yalnızca TIPS almak için kullanın. Başka kripto paralar göndermeyin.",
     "copied": "Kopyalandı",
-    "addressCopied": "Cüzdan adresi panoya kopyalandı"
+    "addressCopied": "Cüzdan adresi panoya kopyalandı",
+    "error": "Hata",
+    "walletNotReady": "Cüzdan bilgileri yükleniyor. Lütfen tekrar deneyin.",
+    "noWalletAddress": "Cüzdan adresi mevcut değil"
   },
   "claimBottomSheet": {
     "title": "Ödüller",
