@@ -658,7 +658,13 @@ const TabContent: React.FC<TabContentProps> = ({
   // Render Badge Tab
   if (tabKey === 'badge') {
     return (
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: bottomPadding,
+          flexGrow: 0, // İçerik kadar büyüsün, boşluk eklemesin
+        }}
+      >
         <Box px={16} pt={8}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             <HStack space="sm" alignItems="center">
@@ -784,7 +790,10 @@ const TabContent: React.FC<TabContentProps> = ({
     <ScrollView
       showsVerticalScrollIndicator={false}
       bounces={true}
-      contentContainerStyle={{ paddingBottom: bottomPadding }}
+      contentContainerStyle={{
+        paddingBottom: bottomPadding,
+        flexGrow: 0, // İçerik kadar büyüsün, boşluk eklemesin
+      }}
     >
       <Box px={16} pt={8}>
         {mappedPosts.map((item) => (
