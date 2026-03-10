@@ -249,17 +249,15 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
       {FilterChips}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        style={styles.scrollContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: bottomInset + 24 }]}
       >
-        <View style={[styles.listContent, { paddingBottom: bottomInset + 24 }]}>
-          {rows.length === 0 ? EmptyComponent : null}
-          {rows.map((item, index) => (
-            <View key={`row-${index}-${item.items.map((c) => c.id).join('-')}`}>
-              {renderRow({ item })}
-            </View>
-          ))}
-          {ListFooter}
-        </View>
+        {rows.length === 0 ? EmptyComponent : null}
+        {rows.map((item, index) => (
+          <View key={`row-${index}-${item.items.map((c) => c.id).join('-')}`}>
+            {renderRow({ item })}
+          </View>
+        ))}
+        {ListFooter}
       </ScrollView>
     </View>
   );
@@ -267,9 +265,6 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  scrollContent: {
     flex: 1,
   },
   centered: {
