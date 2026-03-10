@@ -16,7 +16,6 @@ import { BrandNavigator } from '@/src/features/catalog/BrandNavigator';
 import MessageDetailScreen from '@/src/features/inbox/screens/MessageDetail';
 import SupportMessageDetailScreen from '@/src/features/inbox/screens/SupportMessageDetail';
 import { ProductSelectScreen } from '@/src/screens/ProductSelectScreen';
-import { SelectFriendScreen } from '@/src/features/wallet/screens/SelectFriendScreen';
 import type { RootStackParamList } from '../types/root.types';
 
 // NOTE: React Native lazy loading is handled by Metro bundler's code splitting
@@ -140,15 +139,6 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="ProductSelect"
               component={ProductSelectScreen}
-            />
-            <RootStack.Screen
-              name="SelectFriendScreen"
-              component={SelectFriendScreen}
-              options={{
-                presentation: 'card',
-                animation: 'slide_from_right',
-                gestureEnabled: true,
-              }}
             />
           </RootStack.Group>
           
