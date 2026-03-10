@@ -17,7 +17,7 @@ import { DevicePhoneMobileIcon, CreditCardIcon } from 'react-native-heroicons/ou
 import { useAddPaymentMethod } from '../../api/hooks';
 import type { PaymentApiErrorResponse } from '../../api/paymentApi';
 import type { AxiosError } from 'axios';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface AddPaymentMethodBottomSheetProps {
   onClose: () => void;
@@ -138,7 +138,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         textAlign="center"
                         flex={1}
                     >
-                        Add Payment Method
+                        {t('settings:paymentMethod.addPaymentMethod')}
                     </Text>
                     <Box w={24} h={24} />
                 </HStack>

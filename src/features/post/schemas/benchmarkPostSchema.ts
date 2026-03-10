@@ -7,6 +7,7 @@ const selectedProductSchema = z.object({
   subName: z.string().optional(),
   image: z.any(),
   isOwned: z.boolean().optional(),
+  productGroupId: z.string(), // Product group ID for benchmark filtering
 });
 
 export const benchmarkPostSchema = z.object({

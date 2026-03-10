@@ -331,14 +331,25 @@ const HeaderComponent = ({
   const headerBgColor = useMemo(() => backgroundColor || (isDark ? '#000000' : '#FFFFFF'), [backgroundColor, isDark]);
   const headerTextColor = useMemo(() => textColor || (isDark ? '#FFFFFF' : '#000000'), [textColor, isDark]);
 
-  // Truncate title to max characters for header display
-  const truncatedTitle = useMemo(() => {
-    if (!title) return '';
-    if (title.length > maxTitleLength) {
-      return title.substring(0, maxTitleLength).trim() + '...';
+  // Dynamic font size calculation based on title length
+  // Instead of truncating, we scale down the font size for long titles
+  const titleFontSize = useMemo(() => {
+    if (!title) return 16;
+
+    const baseFontSize = 16; // Base font size (equivalent to $md)
+    const baseLength = 20; // Ideal length for base font size
+    const minFontSize = 11; // Minimum readable font size
+
+    if (title.length <= baseLength) {
+      return baseFontSize;
     }
-    return title;
-  }, [title, maxTitleLength]);
+
+    // Linear interpolation: scale down font size as title gets longer
+    // Formula: fontSize = baseFontSize * (baseLength / title.length)
+    // But ensure it doesn't go below minFontSize
+    const scaledSize = baseFontSize * (baseLength / title.length);
+    return Math.max(minFontSize, scaledSize);
+  }, [title]);
 
   return (
     <VStack>

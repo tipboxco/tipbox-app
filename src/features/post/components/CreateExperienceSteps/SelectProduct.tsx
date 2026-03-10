@@ -1,10 +1,10 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { 
-    Box, 
-    ScrollView, 
-    VStack, 
-    HStack, 
-    Text, 
+import {
+    Box,
+    ScrollView,
+    VStack,
+    HStack,
+    Text,
     Pressable,
     Select,
     SelectTrigger,
@@ -28,6 +28,7 @@ import { Product } from '@/src/mock/catalog/productCatalog/types';
 import { InventoryItem } from '@/src/features/profile/types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomOffset } from '@/src/utils';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface SelectProductProps {
     onProductSelect: (product: { id: string; name: string; brand?: string; description?: string; image: any }) => void;
@@ -47,6 +48,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('post');
     const [showProductSelector, setShowProductSelector] = useState(false);
     const [selectedDuration, setSelectedDuration] = useState<string>('');
     const [selectedLocation, setSelectedLocation] = useState<string>('');
@@ -139,7 +141,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                         fontSize={10}
                         fontWeight="$bold"
                     >
-                        Select Product
+                        {t('post:create.experience.step0.selectProduct')}
                     </Text>
 
                     {/* Select Product Button or ProductInfoCard */}
@@ -166,7 +168,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                                         fontSize={10}
                                         fontWeight="$medium"
                                     >
-                                        Select Product
+                                        {t('post:create.experience.step0.selectProduct')}
                                     </Text>
                                 </HStack>
                             </Box>
@@ -200,7 +202,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder="Usage Duration"
+                                    placeholder={t('post:create.experience.step0.placeholders.duration')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={selectedDuration ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}
@@ -243,7 +245,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder="Usage Location"
+                                    placeholder={t('post:create.experience.step0.placeholders.location')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={selectedLocation ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}
@@ -286,7 +288,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder="Usage Purpose"
+                                    placeholder={t('post:create.experience.step0.placeholders.purpose')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={selectedPurpose ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}

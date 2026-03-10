@@ -37,6 +37,7 @@ export const ProductSelectScreen: React.FC = () => {
   const experienceOption = route.params?.experienceOption;
   const selectedProductField = route.params?.selectedProductField;
   const initialProduct = route.params?.initialProduct;
+  const productGroupFilter = route.params?.productGroupFilter; // Product group filter for benchmark
   
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
@@ -148,7 +149,7 @@ export const ProductSelectScreen: React.FC = () => {
   const currentProducts = useMemo(() => {
     if (!catalogProducts?.pages) return [];
     const allProducts = catalogProducts.pages.flatMap((page) => page.items || []);
-    return allProducts.map((product: CatalogProduct) => ({
+    let products = allProducts.map((product: CatalogProduct) => ({
       id: product.productId,
       name: product.name,
       image: product.image || undefined,
@@ -156,7 +157,14 @@ export const ProductSelectScreen: React.FC = () => {
       subCategoryId: product.subCategoryId,
       description: '',
     }));
-  }, [catalogProducts]);
+
+    // Product group filter for benchmark: only show products from the same product group
+    if (productGroupFilter) {
+      products = products.filter(p => p.productGroupId === productGroupFilter);
+    }
+
+    return products;
+  }, [catalogProducts, productGroupFilter]);
 
   // Format categories for UI
   const currentCategories = useMemo(() => {
@@ -196,25 +204,30 @@ export const ProductSelectScreen: React.FC = () => {
   const globalSearchResults = useMemo(() => {
     if (!globalSearchData?.pages) return [];
     const allGroups = globalSearchData.pages.flatMap((page) => page.items || []);
-    
+
     const cleanedGroups = allGroups
       .map(group => {
-        const uniqueProducts = group.products.reduce((acc, product) => {
+        let uniqueProducts = group.products.reduce((acc, product) => {
           if (!acc.find(p => p.productId === product.productId)) {
             acc.push(product);
           }
           return acc;
         }, [] as CatalogProduct[]);
-        
+
+        // Product group filter for benchmark: only show products from the same product group
+        if (productGroupFilter) {
+          uniqueProducts = uniqueProducts.filter(p => p.productGroupId === productGroupFilter);
+        }
+
         if (uniqueProducts.length === 0) return null;
-        
+
         return {
           ...group,
           products: uniqueProducts,
         };
       })
       .filter((group): group is NonNullable<typeof group> => group !== null);
-    
+
     const seenProductIds = new Set<string>();
     const finalGroups = cleanedGroups.map(group => {
       const filteredProducts = group.products.filter(product => {
@@ -224,17 +237,17 @@ export const ProductSelectScreen: React.FC = () => {
         seenProductIds.add(product.productId);
         return true;
       });
-      
+
       if (filteredProducts.length === 0) return null;
-      
+
       return {
         ...group,
         products: filteredProducts,
       };
     }).filter((group): group is NonNullable<typeof group> => group !== null);
-    
+
     return finalGroups;
-  }, [globalSearchData, debouncedSearchQuery]);
+  }, [globalSearchData, debouncedSearchQuery, productGroupFilter]);
 
   // Prefetch first 3 categories
   useEffect(() => {
@@ -390,6 +403,7 @@ export const ProductSelectScreen: React.FC = () => {
             brand,
             description: product.description || '',
             image: product.image,
+            productGroupId: product.productGroupId, // Include productGroupId for filtering
           },
           selectedProductField: selectedProductField || 'selectedProduct2',
         },

@@ -197,7 +197,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                         </HStack>
                     </VStack>
                 )}
-                
+
                 {/* Header without back button when showing directly */}
                 {showExperienceOptionsDirectly && (
                     <VStack space="sm" mb="$4" px="$4" pt="$4">

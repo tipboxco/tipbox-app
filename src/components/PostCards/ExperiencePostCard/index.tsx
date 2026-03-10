@@ -649,8 +649,10 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           pt={hideProduct ? 8 : 0}
           borderRightWidth={1}
           borderLeftWidth={1}
+          borderBottomWidth={data.tags && data.tags.length > 0 ? 0 : 1}
           borderColor="#E9E9E9"
           {...(!showHeader && !data.contextData && { borderTopWidth: 1, borderTopLeftRadius: 5, borderTopRightRadius: 5 })}
+          {...(!data.tags || data.tags.length === 0) && !data.images && { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 }}
         >
           {Array.isArray(data.content) && data.content.length > 0 ? (
             data.content.map((item, index) => (
@@ -685,14 +687,14 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                         key={idx}
                         width={16}
                         height={16}
-                        color={isDark ? '#fff' : '#829905'}
+                        color="#829905"
                       />
                     ) : (
                       <StarIcon
                         key={idx}
                         width={16}
                         height={16}
-                        color={isDark ? '#7E7E7E' : '#E8E8E8'}
+                        color={isDark ? '#7E7E7E' : '#D4D4D4'}
                       />
                     )
                   ))}
@@ -710,7 +712,9 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           py={5}
           borderRightWidth={1}
           borderLeftWidth={1}
+          borderBottomWidth={(!data.images || data.images.length === 0) && !showActions ? 1 : 0}
           borderColor="#E9E9E9"
+          {...((!data.images || data.images.length === 0) && !showActions && { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 })}
           flexDirection="row"
           flexWrap="wrap"
           justifyContent="flex-start"
@@ -755,7 +759,14 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               });
             }}
           >
-            <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <VStack
+              px={12}
+              borderRightWidth={1}
+              borderLeftWidth={1}
+              borderBottomWidth={!showActions ? 1 : 0}
+              borderColor="#E9E9E9"
+              {...(!showActions && { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 })}
+            >
               <CardImageCarousel images={validImages} />
             </VStack>
           </Pressable>

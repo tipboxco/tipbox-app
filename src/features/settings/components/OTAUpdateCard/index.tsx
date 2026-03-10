@@ -3,10 +3,12 @@ import { Box, VStack, HStack, Text, Button, Progress } from '@gluestack-ui/theme
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useSettingsStore } from '../../slice/settingsStore';
 import { ArrowDownCircle, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react-native';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 export const OTAUpdateCard = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('settings');
 
   const {
     isChecking,
@@ -45,7 +47,7 @@ export const OTAUpdateCard = () => {
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$md"
             >
-              Error Occurred
+              {t('settings:ota.errorOccurred')}
             </Text>
           </HStack>
           <Text
@@ -59,7 +61,7 @@ export const OTAUpdateCard = () => {
             onPress={checkForUpdate}
             isDisabled={isChecking}
           >
-            <Text>Tekrar Dene</Text>
+            <Text>{t('settings:ota.retry')}</Text>
           </Button>
         </VStack>
       );
@@ -76,7 +78,7 @@ export const OTAUpdateCard = () => {
             color={isDark ? '$textDark50' : '$textLight900'}
             fontSize="$md"
           >
-            Güncellemeler kontrol ediliyor...
+            {t('settings:ota.checkingUpdates')}
           </Text>
         </HStack>
       );
@@ -93,7 +95,7 @@ export const OTAUpdateCard = () => {
             color={isDark ? '$textDark50' : '$textLight900'}
             fontSize="$md"
           >
-            Uygulama güncel
+            {t('settings:ota.appUpToDate')}
           </Text>
         </HStack>
       );
@@ -111,7 +113,7 @@ export const OTAUpdateCard = () => {
             fontSize="$md"
             fontWeight="$semibold"
           >
-            Yeni güncelleme mevcut!
+            {t('settings:ota.newUpdateAvailable')}
           </Text>
         </HStack>
 
@@ -134,7 +136,7 @@ export const OTAUpdateCard = () => {
                 color={isDark ? '$textDark200' : '$textLight700'}
                 fontSize="$sm"
               >
-                Değişiklikler: {updateInfo.changelog}
+                {t('settings:ota.changelog', { changelog: updateInfo.changelog })}
               </Text>
             )}
           </VStack>
@@ -156,11 +158,11 @@ export const OTAUpdateCard = () => {
           isDisabled={isInstalling}
         >
           <Text color="$white">
-            {downloadProgress === 100 
-              ? 'Güncellemeyi Yükle'
-              : downloadProgress > 0 
-                ? 'İndiriliyor...' 
-                : 'Güncellemeyi İndir'}
+            {downloadProgress === 100
+              ? t('settings:ota.installUpdate')
+              : downloadProgress > 0
+                ? t('settings:ota.downloading')
+                : t('settings:ota.downloadUpdate')}
           </Text>
         </Button>
 
@@ -170,7 +172,7 @@ export const OTAUpdateCard = () => {
             fontSize="$xs"
             textAlign="center"
           >
-            Bu güncelleme zorunludur
+            {t('settings:ota.requiredUpdate')}
           </Text>
         )}
       </VStack>

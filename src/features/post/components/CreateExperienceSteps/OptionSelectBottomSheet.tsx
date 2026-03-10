@@ -29,6 +29,13 @@ export const OptionSelectBottomSheet: React.FC<OptionSelectBottomSheetProps> = (
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
+  // Debug log
+  console.log('[OptionSelectBottomSheet] Rendering:', {
+    title,
+    optionsCount: options?.length || 0,
+    selectedValue,
+  });
+
   const handleSelect = (value: string) => {
     onSelect(value);
     onClose();
@@ -54,7 +61,7 @@ export const OptionSelectBottomSheet: React.FC<OptionSelectBottomSheetProps> = (
               <Pressable
                 key={option.value}
                 onPress={() => handleSelect(option.value)}
-                py="$2"
+                py="$1.5"
               >
                 <HStack alignItems="center" space="md">
                   {isSelected ? (

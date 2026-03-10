@@ -90,6 +90,8 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                     onClose={closeBottomSheet}
                 />,
                 {
+                    enableDynamicSizing: false,
+                    snapPoints: ['40%'],
                     enablePanDownToClose: true,
                     enableOverDrag: false,
                     enableHandlePanningGesture: true,

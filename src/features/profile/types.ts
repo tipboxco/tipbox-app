@@ -30,6 +30,7 @@ export interface InventoryBrand {
 export interface InventoryItem {
   id: string;
   productId: string; // ✅ Product tablosundaki gerçek product ID'si
+  productGroupId: string; // Product group ID (benchmark filtreleme için)
   brand: InventoryBrand;
   image: string; // Ürün görseli (katalog product); post oluştururken yüklenen görseller değil
   reviews: InventoryReview[];

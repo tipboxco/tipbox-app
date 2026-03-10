@@ -91,16 +91,16 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   
   // PERFORMANCE FIX: Use shallow selector to prevent unnecessary re-renders
   // Catalog UI Store - Actions (stable references)
-  const { 
-    setSelectedProduct, 
-    setSelectedSubCategory, 
-    setSelectedProductGroup, 
-    setCurrentView 
+  const {
+    setSelectedProduct,
+    setSelectedSubCategoryId,
+    setSelectedProductGroupId,
+    setCurrentView
   } = useCatalogUIStore(
     useShallow((state) => ({
       setSelectedProduct: state.setSelectedProduct,
-      setSelectedSubCategory: state.setSelectedSubCategory,
-      setSelectedProductGroup: state.setSelectedProductGroup,
+      setSelectedSubCategoryId: state.setSelectedSubCategory,
+      setSelectedProductGroupId: state.setSelectedProductGroup,
       setCurrentView: state.setCurrentView,
     }))
   );
@@ -124,6 +124,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   // Seçili kategori ID'si (subcategories çekmek için) - Local state (API için)
   // Initial state'ten restore et
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(initialSelectedCategoryId);
+
+  // Local state for product object (for UI display only)
+  const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
   // CRITICAL FIX: Always reset to root on screen focus
   // This ensures the screen always starts at "Categories" (index 0), not at a deep navigation state
@@ -153,13 +156,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       // Flag will only be reset when component unmounts (tab change)
     }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView])
   );
-  
-  // Seçili alt kategori ID'si setter - Store'dan oku
-  const setSelectedSubCategoryId = useCatalogUIStore((state) => state.setSelectedSubCategory);
-  
-  // Seçili ürün grubu ID'si setter - Store'dan oku
-  const setSelectedProductGroupId = useCatalogUIStore((state) => state.setSelectedProductGroup);
-  
+
   // Global bottom sheet hook - PERFORMANCE FIX: Direct access, no callback chain
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
@@ -512,9 +509,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     
     return finalGroups;
   }, [globalSearchData, debouncedSearchQuery]);
-
-  // Local state for product object (for UI display only)
-  const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
   // PERFORMANCE FIX: Store onStateChange in ref to prevent infinite loops
   // onStateChange prop may have a new reference on every render from parent

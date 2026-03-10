@@ -81,7 +81,9 @@ export type RootStackParamList = {
     /** Benchmark: hangi form alanına yazılacak (selectedProduct1 | selectedProduct2) */
     selectedProductField?: 'selectedProduct1' | 'selectedProduct2';
     /** Benchmark: dönüşte korunacak ilk ürün */
-    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any };
+    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any; productGroupId?: string };
+    /** Benchmark: product group filtreleme (sadece aynı product group'taki ürünleri göster) */
+    productGroupFilter?: string;
   };
 
   // SelectFriendScreen - Global friend selection screen (for wallet send)

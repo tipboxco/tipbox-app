@@ -10,7 +10,7 @@ import ProductCard from '../../ProductCard';
 import type { ProductCardData } from '../../ProductCard';
 import { useExploreEvents, useNewBrands, useNewProducts } from '../../../api/hooks';
 import type { EventCardData } from '@/src/types/EventCard';
-import { toImageSource   } from '@/src/utils';
+import { toImageSource, useBottomOffset } from '@/src/utils';
 
 interface NewsTabProps {
   searchQuery?: string;
@@ -36,6 +36,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   const { colorMode } = useColorMode();
   const { t } = useTranslation('explore');
   const isDark = colorMode === 'dark';
+  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
   // Explore Events API hook with infinite scroll
   const {
@@ -130,11 +131,13 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
 
   // Map API brand data to BrandCard format
   const mapBrandToCardData = (brand: any) => {
-    const imageSource = toImageSource(brand.images);
+    // images is an array, take the first image
+    const imageUrl = Array.isArray(brand.images) && brand.images.length > 0 ? brand.images[0] : null;
+    const imageSource = imageUrl ? toImageSource(imageUrl) : null;
     return {
       id: brand.brandId,
-      name: brand.title,
-      description: brand.description,
+      name: brand.title || 'Unknown Brand',
+      description: brand.description || '',
       logo: imageSource || require('@/assets/avatar/default-useravatar.png'),
       followers: '',
       bannerImage: undefined,
@@ -144,10 +147,12 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
 
   // Map API product data to ProductCardData format
   const mapProductToCardData = (product: any, index: number): ProductCardData => {
-    const imageSource = product.images ? toImageSource(product.images) : null;
+    // images is an array, take the first image
+    const imageUrl = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+    const imageSource = imageUrl ? toImageSource(imageUrl) : null;
     return {
       id: product.productId,
-      name: product.title,
+      name: product.title || 'Unknown Product',
       description: product.description || '',
       image: imageSource || require('@/assets/inventory/product_01.png'),
     };
@@ -321,7 +326,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     <ScrollView
       showsVerticalScrollIndicator={true}
       nestedScrollEnabled={true}
-      contentContainerStyle={{ paddingBottom: 16 }}
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
     >
       {headerComponent}
       <VStack space="sm" mb="$2" pt={16} mt={0}>

@@ -25,11 +25,13 @@ const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - (CARD_GAP * (CARDS_PER_RO
 interface AddProductFromInventoryProps {
     onProductSelect: (product: InventoryItem) => void;
     onClose: () => void;
+    productGroupFilter?: string; // Product group ID sınırlaması (benchmark için - sadece aynı product group'taki ürünler)
 }
 
 export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = ({
     onProductSelect,
     onClose,
+    productGroupFilter,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -69,14 +71,23 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
     // Flatten all inventory items from pagination
     const allInventoryItems = data?.pages.flatMap(page => page.items) || [];
 
-    // Filter inventory items based on search query
+    // Filter inventory items based on search query AND product group
     const filteredInventory = allInventoryItems.filter(item => {
+        // Product Group Filter (Benchmark için - sadece aynı group'taki ürünler)
+        if (productGroupFilter) {
+            // Use productGroupId for filtering
+            if (item.productGroupId !== productGroupFilter) {
+                return false; // Farklı group'taki ürünleri filtrele
+            }
+        }
+
+        // Search Query Filter
         if (!searchQuery.trim()) return true;
-        
+
         const query = searchQuery.toLowerCase();
         const brandName = item.brand?.name?.toLowerCase() || '';
         const brandModel = item.brand?.model?.toLowerCase() || '';
-        
+
         return brandName.includes(query) || brandModel.includes(query);
     });
 
@@ -308,7 +319,11 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                                 fontSize={14}
                                 textAlign="center"
                             >
-                                {searchQuery.trim() ? 'No products found' : 'Your inventory is empty'}
+                                {productGroupFilter
+                                    ? 'No products in the same category'
+                                    : searchQuery.trim()
+                                        ? 'No products found'
+                                        : 'Your inventory is empty'}
                             </Text>
                             <Text
                                 mt="$2"
@@ -316,7 +331,11 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                                 fontSize={12}
                                 textAlign="center"
                             >
-                                {searchQuery.trim() ? 'Try different search terms' : 'Add products to your inventory first'}
+                                {productGroupFilter
+                                    ? 'Only products in the same category can be compared'
+                                    : searchQuery.trim()
+                                        ? 'Try different search terms'
+                                        : 'Add products to your inventory first'}
                             </Text>
                         </Box>
                     )}

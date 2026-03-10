@@ -116,11 +116,10 @@ export const LoginScreen = () => {
             duration: 3000,
           });
 
-          // Navigate to main screen
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Main' as never }],
-          });
+          // ARCHITECTURE FIX: RootNavigator otomatik olarak isAuthenticated=true olduğunda
+          // Auth'dan App'e geçiş yapacak, manuel navigation gerekmez
+          // useLogin hook'u zaten appStore'da login() fonksiyonunu çağırıyor
+          // ve isAuthenticated state'ini güncelliyor
 
           // Başarılı login'den sonra catch bloğuna düşmeyi önle
           return;

@@ -529,14 +529,17 @@ export const PostDetailScreen = () => {
 
     // Handle like comment - optimistic local tracking, backend confirms via query invalidation
     const handleLikeComment = useCallback((commentId: string, postId: string) => {
-        if (!commentId || !postId) return;
+        // Mutation devam ederken tekrar like yapılmasını engelle
+        if (!commentId || !postId || likeCommentMutation.isPending || unlikeCommentMutation.isPending) return;
 
+        // Optimistic update
         setLikedCommentIds(prev => new Set(prev).add(commentId));
 
         likeCommentMutation.mutate(
             { commentId, postId },
             {
                 onError: (error) => {
+                    // Hata durumunda optimistic update'i geri al
                     setLikedCommentIds(prev => {
                         const next = new Set(prev);
                         next.delete(commentId);
@@ -546,12 +549,14 @@ export const PostDetailScreen = () => {
                 },
             }
         );
-    }, [likeCommentMutation]);
+    }, [likeCommentMutation, unlikeCommentMutation]);
 
     // Handle unlike comment - optimistic local tracking, backend confirms via query invalidation
     const handleUnlikeComment = useCallback((commentId: string, postId: string) => {
-        if (!commentId || !postId) return;
+        // Mutation devam ederken tekrar unlike yapılmasını engelle
+        if (!commentId || !postId || likeCommentMutation.isPending || unlikeCommentMutation.isPending) return;
 
+        // Optimistic update
         setLikedCommentIds(prev => {
             const next = new Set(prev);
             next.delete(commentId);
@@ -562,12 +567,13 @@ export const PostDetailScreen = () => {
             { commentId, postId },
             {
                 onError: (error) => {
+                    // Hata durumunda optimistic update'i geri al
                     setLikedCommentIds(prev => new Set(prev).add(commentId));
                     console.error('[PostDetailScreen] Unlike comment error:', error);
                 },
             }
         );
-    }, [unlikeCommentMutation]);
+    }, [likeCommentMutation, unlikeCommentMutation]);
 
     // Handle edit comment
     const handleEditComment = useCallback((commentId: string, postId: string, newContent: string) => {

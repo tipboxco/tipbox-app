@@ -147,7 +147,7 @@ export const CreateBenchmarkPostScreen = () => {
   useEffect(() => {
     if (product) {
       console.log('[CreateBenchmarkPostScreen] 🔍 Initializing product1 from route params:', product);
-      
+
       const nameParts = product.name.split(' ');
       const brand = nameParts.length > 1 ? nameParts[0] : (product as any).brand;
       const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
@@ -160,8 +160,9 @@ export const CreateBenchmarkPostScreen = () => {
         subName: subName,
         image: product.image ?? (product as any).imageUrl ?? product.description, // Try multiple image fields
         isOwned: false,
+        productGroupId: product.productGroupId ?? (product as any).productGroupId ?? '', // Include productGroupId for filtering
       };
-      
+
       console.log('[CreateBenchmarkPostScreen] ✅ Formatted product1:', initialProduct);
       setValue('selectedProduct1', initialProduct, { shouldValidate: true });
     }
@@ -198,6 +199,7 @@ export const CreateBenchmarkPostScreen = () => {
           subName: selectedProduct.description || selectedProduct.subName || '',
           image: selectedProduct.image ?? (selectedProduct as any).imageUrl ?? selectedProduct.description,
           isOwned: selectedProductField === 'selectedProduct2' && selectedProduct.brand ? true : false,
+          productGroupId: (selectedProduct as any).productGroupId ?? '', // Include productGroupId for filtering
         };
         
         console.log('[CreateBenchmarkPostScreen] ✅ Formatted product for', selectedProductField, ':', formattedProduct);
@@ -230,13 +232,18 @@ export const CreateBenchmarkPostScreen = () => {
           brand: selectedProduct1.brand,
           subName: selectedProduct1.subName,
           image: selectedProduct1.image,
+          productGroupId: selectedProduct1.productGroupId,
         }
       : undefined;
+
+    // PRODUCT GROUP FILTER: Sadece aynı group'taki ürünleri göster
+    const productGroupFilter = selectedProduct1?.productGroupId;
 
     navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT, {
       returnScreen: 'CreateBenchmarkPostScreen',
       selectedProductField: 'selectedProduct2',
       initialProduct: initialProductForReturn,
+      productGroupFilter, // ← Aynı group'taki ürünleri filtrele
     });
   };
 
@@ -257,6 +264,7 @@ export const CreateBenchmarkPostScreen = () => {
       subName: item.brand?.model || '',
       image: item.image,
       isOwned: true,
+      productGroupId: item.productGroupId, // Include productGroupId for filtering
     };
 
     setValue('selectedProduct2', formattedProduct, { shouldValidate: true });
@@ -602,6 +610,7 @@ export const CreateBenchmarkPostScreen = () => {
               <AddProductFromInventory
                 onProductSelect={handleInventoryProductSelect}
                 onClose={() => setShowInventoryModal(false)}
+                productGroupFilter={selectedProduct1?.productGroupId}
               />
             </Box>
           </SafeAreaView>

@@ -49,9 +49,9 @@ export type PostStackParamList = {
   CreateTipsAndTrickPostScreen: undefined;
   CreateQuestionPostScreen: undefined;
   CreateExperiencePostScreen: { product?: { id: string; name: string; description?: string; image: any; brand?: string }; fromInventory?: boolean; experienceOption?: 'own' | 'tried' };
-  CreateBenchmarkPostScreen: { 
-    product?: { id: string; name: string; description?: string; image: any };
-    selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any };
+  CreateBenchmarkPostScreen: {
+    product?: { id: string; name: string; description?: string; image: any; productGroupId?: string };
+    selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any; productGroupId?: string };
     selectedProductField?: 'selectedProduct1' | 'selectedProduct2';
   };
   CreateUpdatePostScreen: { 
@@ -98,6 +98,7 @@ const AddProductFromInventoryScreen: React.FC = () => {
         brand: product.brand?.name,
         description: product.brand?.specs || '',
         image: product.image,
+        productGroupId: product.productGroupId, // Include productGroupId for filtering
       },
       selectedProductField,
     } as any);
@@ -125,7 +126,7 @@ const AddProductFromCatalogScreen: React.FC = () => {
     const nameParts = product.name.split(' ');
     const brand = nameParts.length > 1 ? nameParts[0] : undefined;
     const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
-    
+
     // Navigate back to CreateBenchmarkPostScreen with selected product and preserve initial product
     navigation.navigate(returnScreen as any, {
       product: initialProduct,
@@ -135,6 +136,7 @@ const AddProductFromCatalogScreen: React.FC = () => {
         brand: brand,
         description: product.description || '',
         image: product.image,
+        productGroupId: product.productGroupId, // Include productGroupId for filtering
       },
       selectedProductField,
     } as any);

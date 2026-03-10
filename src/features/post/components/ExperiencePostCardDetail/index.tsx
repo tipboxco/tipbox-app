@@ -32,6 +32,8 @@ import {
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { usePostTranslation } from '@/src/hooks/usePostTranslation';
+import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 
 interface ExperiencePostCardDetailProps {
     data: PostCardType;
@@ -42,9 +44,27 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
     const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const deviceLocale = useDeviceLocale();
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
+
+    // Combine all content texts for translation
+    const allContentText = data.content?.map(item => item.text).join(' ') || '';
+
+    // Translation hook
+    const {
+        translatedContent,
+        isTranslating,
+        showTranslation,
+        toggleTranslation,
+        shouldTranslate,
+    } = usePostTranslation({
+        postId: data.id,
+        originalContent: allContentText,
+        originalLocale: data.locale || 'en',
+        targetLocale: deviceLocale,
+    });
 
     // Interaction hooks
     const likePostMutation = useLikePost();
@@ -189,21 +209,21 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                                 {item.text}
                             </Text>
                             {item.rating && item.rating.length > 0 && (
-                                <HStack ml={26} mt={8}>
+                                <HStack ml={26} mt={8} space="xs">
                                     {item.rating.map((star, idx) => (
                                         star ? (
                                             <StarIconSolid
                                                 key={idx}
-                                                width={12}
-                                                height={12}
-                                                color={isDark ? '#fff' : '#829905'}
+                                                width={16}
+                                                height={16}
+                                                color="#829905"
                                             />
                                         ) : (
                                             <StarIcon
                                                 key={idx}
-                                                width={12}
-                                                height={12}
-                                                color={isDark ? '#7E7E7E' : '#E8E8E8'}
+                                                width={16}
+                                                height={16}
+                                                color={isDark ? '#7E7E7E' : '#D4D4D4'}
                                             />
                                         )
                                     ))}
@@ -211,6 +231,45 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                             )}
                         </VStack>
                     ))}
+
+                    {/* Translated Content */}
+                    {showTranslation && translatedContent && (
+                        <VStack space="xs" mt="$2" ml={26}>
+                            <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
+                            <Text
+                                color={isDark ? '$textDark200' : '#666'}
+                                fontSize="$sm"
+                                fontStyle="italic"
+                            >
+                                {translatedContent}
+                            </Text>
+                        </VStack>
+                    )}
+
+                    {/* Translate Button */}
+                    {shouldTranslate && (
+                        <Pressable onPress={toggleTranslation} mt="$2" ml={26}>
+                            <HStack alignItems="center" space="xs">
+                                <Image
+                                    source={require('@/assets/translate.png')}
+                                    alt={t('altTexts.translate')}
+                                    width={16}
+                                    height={16}
+                                />
+                                <Text
+                                    color={isDark ? '$textDark300' : '#787878'}
+                                    fontSize="$xs"
+                                    fontWeight="$medium"
+                                >
+                                    {isTranslating
+                                        ? t('post:translate.translating')
+                                        : showTranslation
+                                        ? t('post:translate.hideTranslation')
+                                        : t('post:translate.translate')}
+                                </Text>
+                            </HStack>
+                        </Pressable>
+                    )}
                 </VStack>
             )}
 
