@@ -28,7 +28,7 @@ import { useFeed, useFeedFiltered, feedKeys } from '../api/hooks';
 import { getFeed, getFilteredFeed } from '../api/feedApi';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
-import { toImageSource, useBottomOffset, isSameImageSource } from '@/src/utils';
+import { toImageSource, isSameImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
@@ -162,8 +162,8 @@ const FeedScreenInner = React.memo(() => {
     }
   }, [filters, feedListRef]);
 
-  // Bottom padding for FlatList content
-  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+  // Bottom padding for FlatList content - sadece bottom insets kadar
+  const bottomPadding = insets.bottom;
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet, state: bottomSheetState } = useGlobalBottomSheet();
