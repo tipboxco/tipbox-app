@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, Image } from '@gluestack-ui/themed';
+import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,6 +17,7 @@ import { toImageSource } from '@/src/utils';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { CachedImage } from '@/src/components/CachedImage';
 
 type BrandScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'CatalogScreen'>;
 
@@ -220,8 +221,8 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     return {
       id: category.categoryId,
       name: category.name,
-      // CategoryCard component'i toImageSource kullanıyor, bu yüzden direkt string geçiyoruz
-      image: category.image || require('@/assets/inventory/product_01.png'),
+      // CategoryCard + CachedImage otomatik olarak Lottie gösterecek (image yoksa)
+      image: category.image,
     };
   };
 
@@ -242,7 +243,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       name: brand.name,
       description: '', // Empty description for API catalog items (Explore shows descriptions from mock data)
       followers: '',
-      logo: toImageSource(brand.image) || require('@/assets/avatar/default-useravatar.png'),
+      logo: toImageSource(brand.image), // CachedImage otomatik olarak Lottie gösterecek (image yoksa)
       bannerImage: require('@/assets/events/banner.png'),
       isJoined: false,
     };
@@ -511,18 +512,23 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
                   {/* Category Header */}
                   <HStack alignItems="center" space="sm" mb="$2">
                     {category.categoryImage && (
-                      <Image
+                      <CachedImage
                         source={{ uri: category.categoryImage }}
                         alt={category.categoryName}
-                        width={32}
-                        height={32}
-                        borderRadius={8}
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 8,
+                        }}
+                        resizeMode="cover"
+                        priority="normal"
+                        cachePolicy="memory-disk"
                       />
                     )}
                     <VStack flex={1}>
-                      <Text 
-                        fontSize="$sm" 
-                        fontWeight="$semibold" 
+                      <Text
+                        fontSize="$sm"
+                        fontWeight="$semibold"
                         color={isDark ? '#FFF' : '#000'}
                       >
                         {category.categoryName}

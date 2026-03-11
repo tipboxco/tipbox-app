@@ -119,6 +119,11 @@
         "cancel": "Cancel",
         "selectFromInventoryTitle": "Select from Inventory"
       },
+      "selectCompareProduct": "Select Product to Compare",
+      "searchPlaceholder": "Search products...",
+      "noProductsFound": "No products found matching your search.",
+      "noProductsInGroup": "No products found in this group.",
+      "searchToCompare": "Please search for a product to compare",
       "validation": {
         "twoProductsRequired": "Two products must be selected.",
         "descriptionRequired": "Benchmark description is required.",

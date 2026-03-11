@@ -566,20 +566,47 @@ export const useUpdatePost = () => {
  */
 export const useDeletePost = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation<DeletePostResponse, Error, string>({
     mutationFn: (postId) => deletePost(postId),
     onSuccess: (data, postId) => {
       // Post detail'i invalidate et
-      queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
-      
+      queryClient.invalidateQueries({
+        queryKey: postKeys.detail(postId),
+        refetchType: 'all',
+      });
+
       // Tüm feed'leri invalidate et (post silindi)
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
+      // refetchType: 'all' hem aktif hem inactive query'leri refetch eder
+      queryClient.invalidateQueries({
+        queryKey: feedKeys.all,
+        refetchType: 'all',
+      });
+      queryClient.invalidateQueries({
+        queryKey: postKeys.all,
+        refetchType: 'all',
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['profile'],
+        refetchType: 'all',
+      });
+
+      // Event posts'larını da invalidate et (event içindeki post silindiğinde)
+      queryClient.invalidateQueries({
+        queryKey: ['events', 'posts'],
+        exact: false,
+        refetchType: 'all',
+      });
+      queryClient.invalidateQueries({
+        queryKey: eventsKeys.all,
+        refetchType: 'all',
+      });
+
       // Catalog posts'ları da invalidate et
-      queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: catalogKeys.all,
+        refetchType: 'all',
+      });
     },
   });
 };

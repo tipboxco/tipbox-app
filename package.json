@@ -92,6 +92,7 @@
     "firebase": "^12.7.0",
     "i18next": "^25.8.13",
     "jsonwebtoken": "^9.0.3",
+    "lottie-react-native": "^7.3.6",
     "lucide-react-native": "^0.525.0",
     "nativewind": "^4.1.23",
     "promise": "^8.3.0",

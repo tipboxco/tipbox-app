@@ -183,7 +183,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
     { value: 'SPAM', label: t('common:report.categories.spam') },
     { value: 'HARASSMENT', label: t('common:report.categories.harassment') },
     { value: 'SCAM', label: t('common:report.categories.scam') },
-    { value: 'INAPPROPRIATE_CONTENT', label: t('common:report.categories.inappropriateContent') },
+    { value: 'INAPPROPRIATE_CONTENT', label: t('common:report.categories.inappropriate') },
     { value: 'FAKE_ACCOUNT', label: t('common:report.categories.fakeAccount') },
     { value: 'OTHER', label: t('common:report.categories.other') },
   ], [t]);

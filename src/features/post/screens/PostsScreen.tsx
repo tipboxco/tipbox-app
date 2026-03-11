@@ -72,11 +72,20 @@ export const PostsScreen = () => {
   
   const selectedProductPayload = useMemo(() => {
     if (!selectedProduct) return undefined;
+
+    console.log('[PostsScreen] 📦 Creating product payload for benchmark:', {
+      id: selectedProduct.id,
+      name: selectedProduct.name,
+      productGroupId: selectedProduct.productGroupId,
+      hasProductGroupId: !!selectedProduct.productGroupId,
+    });
+
     return {
       id: selectedProduct.id,
       name: selectedProduct.name,
       description: selectedProduct.description,
       image: selectedProduct.image,
+      productGroupId: selectedProduct.productGroupId, // CRITICAL: Benchmark için gerekli
     };
   }, [selectedProduct]);
 

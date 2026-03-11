@@ -1,9 +1,10 @@
 import React from 'react';
-import { HStack, VStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
+import { HStack, VStack, Text, Box, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BellIcon } from 'react-native-heroicons/outline';
 import { useBrandCatalog } from '../../api/hooks';
 import { toImageSource } from '@/src/utils';
+import { CachedImage } from '@/src/components/CachedImage';
 
 const DEFAULT_CARD_ICON = require('@/assets/events/card-icon.png');
 
@@ -56,11 +57,13 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
             justifyContent="center"
             overflow="hidden"
           >
-            <Image
+            <CachedImage
               source={brandImageSource ?? DEFAULT_CARD_ICON}
               alt={brandName}
               style={{ width: 52, height: 52 }}
               resizeMode="cover"
+              priority="normal"
+              cachePolicy="memory-disk"
             />
           </Box>
 
@@ -117,11 +120,13 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
               justifyContent="center"
               overflow="hidden"
             >
-              <Image
+              <CachedImage
                 source={require('@/assets/avatar/default-useravatar.png')}
                 alt="User Avatar"
                 style={{ width: 26, height: 26 }}
                 resizeMode="cover"
+                priority="normal"
+                cachePolicy="memory-disk"
               />
             </Box>
 

@@ -20,9 +20,6 @@ export interface CategoryCardProps {
 const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority = 'normal', isLargeCard = false, style }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
-  // Placeholder görseli
-  const placeholder = require('@/assets/inventory/product_01.png');
 
   // Boyutlar - large card için daha büyük
   const cardHeight = isLargeCard ? 160 : 132;
@@ -68,7 +65,6 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority
             }}
             alt={category.name}
             resizeMode="contain"
-            placeholder={placeholder}
             priority={priority}
             // İlk yükleme için memory cache (daha hızlı), sonra disk cache
             cachePolicy={priority === 'high' ? 'memory' : 'memory-disk'}

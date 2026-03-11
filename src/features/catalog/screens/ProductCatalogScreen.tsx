@@ -1,11 +1,12 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, Image, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Search } from 'lucide-react-native';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import CategoryCard from '../components/CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
+import { CachedImage } from '@/src/components/CachedImage';
 import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
@@ -822,6 +823,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
           name: product.name,
           description: product.description || '',
           image: product.image,
+          productGroupId: product.productGroupId, // CRITICAL: Benchmark için gerekli
         },
       contextType: ProductInfoType.PRODUCT,
       // contextId artık route params'tan gönderilmiyor, store'dan okunacak
@@ -1394,6 +1396,13 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         },
       });
     } else if (type === 'benchmark') {
+      console.log('[ProductCatalogScreen] 🎯 Navigating to benchmark with product:', {
+        id: selectedProduct?.id,
+        name: selectedProduct?.name,
+        productGroupId: selectedProduct?.productGroupId,
+        hasProductGroupId: !!selectedProduct?.productGroupId,
+      });
+
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateBenchmarkPostScreen',
         params: {
@@ -1402,6 +1411,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             name: selectedProduct.name,
             description: selectedProduct.description,
             image: selectedProduct.image,
+            productGroupId: selectedProduct.productGroupId, // CRITICAL: Benchmark filter için gerekli
           } : undefined,
         },
       });
@@ -1619,24 +1629,29 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                     {/* Product Group Header */}
                     <HStack alignItems="center" space="sm" mb="$2">
                       {group.productGroupImage && (
-                        <Image
+                        <CachedImage
                           source={{ uri: group.productGroupImage }}
                           alt={group.productGroupName}
-                          width={32}
-                          height={32}
-                          borderRadius={8}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 8,
+                          }}
+                          resizeMode="cover"
+                          priority="normal"
+                          cachePolicy="memory-disk"
                         />
                       )}
                       <VStack flex={1}>
-                        <Text 
-                          fontSize="$sm" 
-                          fontWeight="$semibold" 
+                        <Text
+                          fontSize="$sm"
+                          fontWeight="$semibold"
                           color={isDark ? '#FFF' : '#000'}
                         >
                           {group.productGroupName}
                         </Text>
-                        <Text 
-                          fontSize="$xs" 
+                        <Text
+                          fontSize="$xs"
                           color={isDark ? '#999' : '#666'}
                         >
                           {group.categoryName} • {group.subCategoryName}

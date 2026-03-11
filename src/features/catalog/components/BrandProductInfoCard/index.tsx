@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, HStack, Text, Image, VStack } from '@gluestack-ui/themed';
+import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource } from '@/src/utils';
+import { CachedImage } from '@/src/components/CachedImage';
 
 interface BrandProductInfoCardProps {
   productName: string;
@@ -40,7 +41,7 @@ const BrandProductInfoCard: React.FC<BrandProductInfoCardProps> = ({
           alignItems="center"
           justifyContent="center"
         >
-          <Image
+          <CachedImage
             source={productImage}
             alt={productName}
             style={{
@@ -48,6 +49,8 @@ const BrandProductInfoCard: React.FC<BrandProductInfoCardProps> = ({
               height: 44,
             }}
             resizeMode="contain"
+            priority="normal"
+            cachePolicy="memory-disk"
           />
         </Box>
 
@@ -76,7 +79,7 @@ const BrandProductInfoCard: React.FC<BrandProductInfoCardProps> = ({
                 justifyContent="center"
                 overflow="hidden"
               >
-                <Image
+                <CachedImage
                   source={toImageSource(brandImage) || require('@/assets/events/card-icon.png')}
                   alt={brandName}
                   style={{
@@ -84,6 +87,8 @@ const BrandProductInfoCard: React.FC<BrandProductInfoCardProps> = ({
                     height: 24,
                   }}
                   resizeMode="cover"
+                  priority="normal"
+                  cachePolicy="memory-disk"
                 />
               </Box>
             )}

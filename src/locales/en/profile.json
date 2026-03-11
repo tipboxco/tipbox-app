@@ -201,5 +201,17 @@
     "networkError": "Network connection error. Please check your internet connection.",
     "operationFailed": "Operation failed. Please try again.",
     "error": "Error"
+  },
+  "sendTipsModal": {
+    "to": "To",
+    "balance": "Balance",
+    "infoMessage": "Enter the amount of TIPS you want to send.",
+    "minimumError": "Minimum amount is 0.01 TIPS",
+    "insufficientBalance": "Insufficient balance",
+    "sendButton": "Send TIPS",
+    "errorTitle": "Error",
+    "errorInvalidAmount": "Please enter a valid amount",
+    "errorMinimum": "Minimum amount is 0.01 TIPS",
+    "errorInsufficient": "Insufficient balance"
   }
 }

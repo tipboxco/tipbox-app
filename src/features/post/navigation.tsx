@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectExperienceForUpdateScreen } from './screens';
+import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectExperienceForUpdateScreen, SelectCompareProductScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
@@ -20,8 +20,8 @@ export type PostStackParamList = {
     relatedPostData?: any;
     commentId?: string; // Notification'dan gelen commentId (yorumu highlight etmek için)
   };
-  PostsScreen: { 
-    stage: 'SubCategories' | 'ProductGroup' | 'Product'; 
+  PostsScreen: {
+    stage: 'SubCategories' | 'ProductGroup' | 'Product';
     name: string;
     productInfo: {
       image: any;
@@ -33,6 +33,7 @@ export type PostStackParamList = {
       name: string;
       description?: string;
       image: any;
+      productGroupId?: string; // CRITICAL: Benchmark için gerekli
     };
     contextType?: ProductInfoType; // Sadece type gönderiliyor, ID store'dan okunacak
     contextId?: string; // Backward compatibility için optional (fallback)
@@ -73,10 +74,15 @@ export type PostStackParamList = {
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
     initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any };
   };
-  AddProductFromCatalog: { 
+  AddProductFromCatalog: {
     returnScreen: 'CreateBenchmarkPostScreen';
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
     initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any };
+  };
+  SelectCompareProductScreen: {
+    productGroupId?: string; // Optional - filter varsa kullanılır
+    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any; productGroupId?: string };
+    selectedProductField: 'selectedProduct1' | 'selectedProduct2';
   };
 };
 
@@ -210,6 +216,10 @@ export const PostNavigator = () => {
       <Stack.Screen
         name="AddProductFromCatalog"
         component={AddProductFromCatalogScreen}
+      />
+      <Stack.Screen
+        name="SelectCompareProductScreen"
+        component={SelectCompareProductScreen}
       />
     </Stack.Navigator>
   );

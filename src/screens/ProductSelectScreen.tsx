@@ -114,8 +114,10 @@ export const ProductSelectScreen: React.FC = () => {
   } = useGlobalProductSearch(hasGlobalSearch ? debouncedSearchQuery : undefined, 20);
 
   // Products API
+  // BENCHMARK: productGroupFilter varsa bunu kullan (selectedProductGroupId henüz set edilmemiş olabilir)
+  const effectiveProductGroupId = selectedProductGroupId || productGroupFilter;
   const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(
-    hasGlobalSearch ? undefined : selectedProductGroupId,
+    hasGlobalSearch ? undefined : effectiveProductGroupId,
     hasGlobalSearch ? undefined : (debouncedSearchQuery || undefined)
   );
   
@@ -127,14 +129,35 @@ export const ProductSelectScreen: React.FC = () => {
 
   // Reset store on mount - EventCreatePost'tan geldiğinde temiz başla
   useEffect(() => {
+    console.log('🔍 [ProductSelectScreen] Mount/Update Effect:', {
+      productGroupFilter,
+      returnScreen,
+      hasFilter: !!productGroupFilter,
+    });
+
     // Component mount olduğunda store'u temizle
     setSelectedCategoryId(undefined);
     setSelectedSubCategory(undefined);
-    setSelectedProductGroup(undefined);
     setSelectedProduct(undefined);
-    setCurrentView('categories');
-    setBreadcrumbItems([]);
-  }, []); // Empty dependency array - sadece mount'ta çalışır
+
+    // BENCHMARK: productGroupFilter varsa direkt o product group'taki ürünleri göster
+    // Boş string kontrolü: productGroupFilter boş string olabilir
+    const hasValidFilter = productGroupFilter && productGroupFilter.trim() !== '';
+
+    if (hasValidFilter) {
+      console.log('✅ [ProductSelectScreen] Setting view to PRODUCTS with filter:', productGroupFilter);
+      setSelectedProductGroup(productGroupFilter);
+      setCurrentView('products');
+      setBreadcrumbItems([
+        { id: 'filter', name: 'Filtered Products', type: 'productGroup' }
+      ]);
+    } else {
+      console.log('ℹ️ [ProductSelectScreen] No filter (empty or invalid), setting view to CATEGORIES');
+      setSelectedProductGroup(undefined);
+      setCurrentView('categories');
+      setBreadcrumbItems([]);
+    }
+  }, [productGroupFilter]); // productGroupFilter değiştiğinde de çalışmalı
 
   const catalogSubCategories = useMemo(() => {
     if (!catalogSubCategoriesData?.items) return [];
@@ -158,9 +181,30 @@ export const ProductSelectScreen: React.FC = () => {
       description: '',
     }));
 
+    console.log('📦 [ProductSelectScreen] Catalog Products Debug:', {
+      totalProducts: allProducts.length,
+      productGroupFilter,
+      effectiveProductGroupId,
+      beforeFilter: products.length,
+      allProducts: allProducts.map(p => ({
+        id: p.productId,
+        name: p.name,
+        productGroupId: p.productGroupId,
+        subCategoryId: p.subCategoryId,
+      })),
+    });
+
     // Product group filter for benchmark: only show products from the same product group
     if (productGroupFilter) {
       products = products.filter(p => p.productGroupId === productGroupFilter);
+      console.log('📦 [ProductSelectScreen] After productGroupFilter:', {
+        afterFilter: products.length,
+        filteredProducts: products.map(p => ({
+          id: p.id,
+          name: p.name,
+          productGroupId: p.productGroupId,
+        })),
+      });
     }
 
     return products;

@@ -24,8 +24,7 @@ import { useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { ProfileStackParamList } from '../navigation';
 import { toImageSource, useSafeAreaValues, useBottomOffset, isSameImageSource } from '@/src/utils';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import SendTipsBottomSheet from '@/src/features/inbox/components/SendTipsBottomSheet';
+import { SendTipsModal } from '../components/SendTipsModal';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem, ExperiencePostApiContentBlock } from '@/src/types/ExperienceCard';
@@ -700,7 +699,7 @@ const TabContent: React.FC<TabContentProps> = ({
               </Text>
             </Box>
           ) : (
-            <Box flexDirection="row" flexWrap="wrap" justifyContent="space-between">
+            <Box flexDirection="row" flexWrap="wrap" justifyContent="center" alignItems="center">
               {filteredBadges.map((badge) => (
                 <Pressable
                   key={badge.id}
@@ -826,12 +825,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
   
-  // Global bottom sheet hook
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-  
-  // Safe area insets for bottom sheet
-  const insets = useSafeAreaValues();
-  
   // Route params'tan userId al, yoksa store'daki user.id'yi kullan
   // CRITICAL FIX: userId validasyonu - boş string veya geçersiz değer kontrolü
   const routeUserId = route.params?.userId;
@@ -866,6 +859,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Badge modal state
   const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
+
+  // Send TIPS modal state
+  const [isSendTipsModalVisible, setIsSendTipsModalVisible] = useState(false);
   
   // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
   // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
@@ -1052,40 +1048,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [activeTab]);
   
-  // Handle Send TIPS - Bottom sheet aç
-  const handleSendTips = useCallback((amount: number, message?: string) => {
+  // Handle Send TIPS - API call
+  const handleSendTips = useCallback((amount: number) => {
     if (!user?.id || !targetUserId) {
       Alert.alert('Error', 'User information not found');
       return;
     }
-
-    // Amount validation (minimum 0.01)
-    if (amount <= 0 || amount < 0.01) {
-      Alert.alert('Error', 'TIPS amount must be at least 0.01');
-      return;
-    }
-
-    // Message validation (boş string olamaz)
-    const finalMessage = message?.trim() || '';
-    if (finalMessage.length === 0) {
-      Alert.alert('Error', 'Message cannot be empty');
-      return;
-    }
-
-    const requestData = {
-      senderUserId: user.id,
-      recipientUserId: targetUserId,
-      message: finalMessage,
-      amount: amount,
-      timestamp: new Date().toISOString(),
-    };
-
-    console.log('[ProfileScreen] 📤 Sending TIPS Request:', {
-      ...requestData,
-      messagePreview: finalMessage.substring(0, 50) + '...',
-      amountType: typeof amount,
-      amountValue: amount,
-    });
 
     // Send gift mutation
     sendGiftMutation.mutate(
@@ -1093,7 +1061,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         senderUserId: user.id,
         recipientUserId: targetUserId,
         amount: amount,
-        message: finalMessage,
+        message: 'TIPS sent from profile',
         timestamp: new Date().toISOString(),
       },
       {
@@ -1117,36 +1085,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Action button handlers
   const handleSendTIPS = useCallback(() => {
     if (!user?.id || !targetUserId || !userProfile) return;
-    
-    // Klavye açıksa kapat
-    Keyboard.dismiss();
-    
-    // SendTipsBottomSheet'i modal olarak aç
-    // requestAnimationFrame kullanarak bir sonraki frame'de aç - klavye kapanma işlemi tamamlansın
-    requestAnimationFrame(() => {
-      openBottomSheet(
-        <SendTipsBottomSheet
-          senderName={userProfile.name || 'Unknown'}
-          senderTitle={userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : ''}
-          senderAvatar={userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png')}
-          onClose={closeBottomSheet}
-          onSend={handleSendTips}
-        />,
-        {
-          enablePanDownToClose: true,
-          enableOverDrag: false,
-          enableHandlePanningGesture: true,
-          enableContentPanningGesture: true,
-          enableDynamicSizing: true,
-          animateOnMount: true,
-          paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 8,
-          keyboardBehavior: 'interactive',
-          keyboardBlurBehavior: 'restore',
-          android_keyboardInputMode: 'adjustResize',
-        }
-      );
-    });
-  }, [user?.id, targetUserId, userProfile, openBottomSheet, closeBottomSheet, handleSendTips, insets.bottom]);
+    setIsSendTipsModalVisible(true);
+  }, [user?.id, targetUserId, userProfile]);
 
   const handle1on1Request = useCallback(() => {
     if (!user?.id || !targetUserId) return;
@@ -2059,20 +1999,20 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   </Box>
                 </Box>
               )}
-              {profile.badges && profile.badges.length > 0 && (
+              {profile.badges && profile.badges.length > 0 && isOwnProfile && (
                 <Pressable
                   onPress={() => {
-                    navigation.navigate('Collections');
+                    navigation.navigate('EditHighlightBadges');
                   }}
                 >
                   <Text
                     color={isDark ? '$textDark400' : '$textLight600'}
-                    fontSize="$xs"
+                    fontSize={10}
                     textAlign="center"
                     mt="$4"
-                    fontWeight="$regular"
+                    fontWeight="$semibold"
                   >
-                    {t('emptyStates.seeMoreCollections')}
+                    {t('editHighlightBadges.title')}
                   </Text>
                 </Pressable>
               )}
@@ -2348,6 +2288,16 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           </RNPressable>
         </RNModal>
       )}
+
+      {/* Send TIPS Modal */}
+      <SendTipsModal
+        visible={isSendTipsModalVisible}
+        recipientName={userProfile?.name || 'Unknown'}
+        recipientAvatar={userProfile?.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png')}
+        currentBalance={user?.balance || 1000} // TODO: Get from wallet API
+        onClose={() => setIsSendTipsModalVisible(false)}
+        onSend={handleSendTips}
+      />
 
       {/* Badge Detail Modal */}
       <Modal

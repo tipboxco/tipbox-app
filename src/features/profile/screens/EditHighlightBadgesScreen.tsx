@@ -210,15 +210,15 @@ const EditHighlightBadgesScreen: React.FC = () => {
         <Pressable
           onPress={handleSave}
           disabled={isSaving}
-          bg="#3CA241"
-          borderRadius={8}
-          px="$4"
+          bg="#D8FF08"
+          borderRadius={20}
+          px="$5"
           py="$2"
         >
           {isSaving ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color="#111111" />
           ) : (
-            <Text color="#FFFFFF" fontSize="$sm" fontWeight="$bold">
+            <Text color="#111111" fontSize="$sm" fontWeight="$bold">
               {t('editHighlightBadges.save')}
             </Text>
           )}
@@ -232,42 +232,52 @@ const EditHighlightBadgesScreen: React.FC = () => {
           const badge = badgeId ? allBadges.find((b) => b.id === badgeId) : null;
           const isSelectedSlot = selectedSlotIndex === index;
           return (
-            <Box key={index} flex={1} alignItems="center">
+            <VStack key={index} flex={1} alignItems="center" space="xs">
               {badge ? (
-                <Pressable
-                  onPress={() => handleRemoveFromSlot(index)}
-                  position="relative"
-                  w={72}
-                  h={72}
-                  borderRadius={10}
-                  overflow="hidden"
-                  bg={isDark ? '#1A1A1A' : '#F5F5F5'}
-                  alignItems="center"
-                  justifyContent="center"
-                  borderWidth={isSelectedSlot ? 2 : 0}
-                  borderColor="#3CA241"
-                >
-                  <Image
-                    source={badge.icon}
-                    alt={badge.title}
-                    w={56}
-                    h={56}
-                    resizeMode="contain"
-                  />
-                  <Box
-                    position="absolute"
-                    top={4}
-                    right={4}
-                    w={20}
-                    h={20}
-                    borderRadius={10}
-                    bg="#E53935"
+                <>
+                  <Pressable
+                    onPress={() => handleRemoveFromSlot(index)}
+                    position="relative"
+                    w={72}
+                    h={72}
                     alignItems="center"
                     justifyContent="center"
+                    borderWidth={isSelectedSlot ? 2 : 0}
+                    borderColor="#3CA241"
+                    borderRadius={10}
                   >
-                    <XMarkIcon width={12} height={12} color="#FFFFFF" />
-                  </Box>
-                </Pressable>
+                    <Image
+                      source={badge.icon}
+                      alt={badge.title}
+                      w={72}
+                      h={72}
+                      resizeMode="contain"
+                    />
+                    <Box
+                      position="absolute"
+                      top={0}
+                      right={0}
+                      w={20}
+                      h={20}
+                      borderRadius={10}
+                      bg="#E53935"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <XMarkIcon width={12} height={12} color="#FFFFFF" />
+                    </Box>
+                  </Pressable>
+                  <Text
+                    fontSize={9}
+                    fontWeight="$medium"
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    textAlign="center"
+                    numberOfLines={2}
+                    w={72}
+                  >
+                    {badge.title}
+                  </Text>
+                </>
               ) : (
                 <Pressable
                   onPress={() => handleEmptySlotPress(index)}
@@ -284,7 +294,7 @@ const EditHighlightBadgesScreen: React.FC = () => {
                   <PlusIcon width={28} height={28} color={isDark ? '#666' : '#999'} />
                 </Pressable>
               )}
-            </Box>
+            </VStack>
           );
         })}
       </HStack>
@@ -338,14 +348,14 @@ const EditHighlightBadgesScreen: React.FC = () => {
             contentContainerStyle={styles.gridContent}
             showsVerticalScrollIndicator={false}
           >
-            <VStack p="$4" space="lg">
+            <VStack p="$4" space="lg" mx="auto" maxWidth={360}>
               {eventBadges.length === 0 ? (
                 <Text color={isDark ? '#9D9D9D' : '#8A8A8A'} fontSize="$sm" textAlign="center" mt="$4">
                   {t('editHighlightBadges.noEventBadges')}
                 </Text>
               ) : (
                 Array.from({ length: Math.ceil(eventBadges.length / 3) }, (_, rowIndex) => (
-                  <HStack key={rowIndex} space="md" justifyContent="flex-start">
+                  <HStack key={rowIndex} space="sm" justifyContent="flex-start">
                     {eventBadges.slice(rowIndex * 3, rowIndex * 3 + 3).map((badge) => {
                       const selected = isBadgeInSlots(badge.id);
                       return (
@@ -353,8 +363,12 @@ const EditHighlightBadgesScreen: React.FC = () => {
                           key={badge.id}
                           onPress={() => handleBadgePress(badge)}
                           flex={1}
+                          maxWidth={110}
                           alignItems="center"
                           py="$2"
+                          px="$2"
+                          borderRadius={10}
+                          bg={selected ? (isDark ? '#2A2A2A' : '#E5E5E5') : 'transparent'}
                         >
                           <Box position="relative" w={72} h={72} alignItems="center" justifyContent="center">
                             <Box
@@ -409,14 +423,14 @@ const EditHighlightBadgesScreen: React.FC = () => {
             contentContainerStyle={styles.gridContent}
             showsVerticalScrollIndicator={false}
           >
-            <VStack p="$4" space="lg">
+            <VStack p="$4" space="lg" mx="auto" maxWidth={360}>
               {collectionBadges.length === 0 ? (
                 <Text color={isDark ? '#9D9D9D' : '#8A8A8A'} fontSize="$sm" textAlign="center" mt="$4">
                   {t('editHighlightBadges.noCollectionBadges')}
                 </Text>
               ) : (
                 Array.from({ length: Math.ceil(collectionBadges.length / 3) }, (_, rowIndex) => (
-                  <HStack key={rowIndex} space="md" justifyContent="flex-start">
+                  <HStack key={rowIndex} space="sm" justifyContent="flex-start">
                     {collectionBadges.slice(rowIndex * 3, rowIndex * 3 + 3).map((badge) => {
                       const selected = isBadgeInSlots(badge.id);
                       return (
@@ -424,8 +438,12 @@ const EditHighlightBadgesScreen: React.FC = () => {
                           key={badge.id}
                           onPress={() => handleBadgePress(badge)}
                           flex={1}
+                          maxWidth={110}
                           alignItems="center"
                           py="$2"
+                          px="$2"
+                          borderRadius={10}
+                          bg={selected ? (isDark ? '#2A2A2A' : '#E5E5E5') : 'transparent'}
                         >
                           <Box position="relative" w={72} h={72} alignItems="center" justifyContent="center">
                             <Box

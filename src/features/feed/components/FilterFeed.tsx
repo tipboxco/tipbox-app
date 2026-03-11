@@ -264,8 +264,8 @@ export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
             </Box>
           </Pressable>
           <Pressable onPress={handleApply} flex={1}>
-            <Box py="$1.5" bg="#829905" borderRadius={6} alignItems="center" justifyContent="center" minHeight={32}>
-              <Text fontSize={12} fontWeight="$bold" color="#FFFFFF">
+            <Box py="$1.5" bg="#D0F205" borderRadius={6} alignItems="center" justifyContent="center" minHeight={32}>
+              <Text fontSize={12} fontWeight="$bold" color="#000000">
                 Apply
               </Text>
             </Box>

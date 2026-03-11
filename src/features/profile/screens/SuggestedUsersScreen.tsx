@@ -14,15 +14,15 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { Header } from '@/src/components/Header';
 import { SuggestedUserCard } from '../components/SuggestedUserCard';
 import { useSuggestedUsers, useAddToTrustList } from '../api/hooks';
 import { FlatList } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { ProfileStackParamList } from '../navigation';
 
-type SuggestedUsersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type SuggestedUsersScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
 export const SuggestedUsersScreen = () => {
     const { colorMode } = useColorMode();
@@ -90,7 +90,7 @@ export const SuggestedUsersScreen = () => {
     // ADDED: Navigate to user profile
     const handleUserPress = (userId: string) => {
         console.log('Navigate to user profile:', userId);
-        navigation.navigate('Profile', { userId });
+        navigation.navigate('ProfileMain', { userId });
     };
 
     const handleLoadMore = () => {

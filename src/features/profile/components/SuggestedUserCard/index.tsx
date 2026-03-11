@@ -1,11 +1,9 @@
 import React from 'react';
-import { 
-    VStack, 
-    HStack, 
-    Text, 
-    Pressable, 
-    Box, 
-    Image
+import { Pressable, StyleSheet, View, Text, Image } from 'react-native';
+import {
+    VStack,
+    HStack,
+    Box,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
@@ -51,8 +49,7 @@ export const SuggestedUserCard = ({
             {/* UPDATED: Wrap user info in Pressable for navigation */}
             <Pressable
                 onPress={() => onPress?.(id)}
-                flex={1}
-                maxWidth={240}
+                style={styles.userInfoPressable}
             >
                 <HStack alignItems="center" space="md">
                     {/* Avatar */}
@@ -112,23 +109,19 @@ export const SuggestedUserCard = ({
             </Pressable>
 
             {/* Add Trust Button */}
-            <Pressable 
+            <Pressable
                 onPress={() => !isTrusted && onAddTrust(id)}
-                bg={isTrusted ? '#00C853' : '#F1F1F1'}
-                borderRadius={5}
-                px="$4"
-                py="$2"
-                minWidth={102}
-                height={32}
-                alignItems="center"
-                justifyContent="center"
                 disabled={isTrusted}
-                opacity={isTrusted ? 1 : 1}
+                style={[
+                    styles.trustButton,
+                    { backgroundColor: isTrusted ? '#00C853' : '#F1F1F1' }
+                ]}
             >
                 <Text
-                    color={isTrusted ? '#FFF' : '#000'}
-                    fontSize="$sm"
-                    fontWeight="$bold"
+                    style={[
+                        styles.trustButtonText,
+                        { color: isTrusted ? '#FFF' : '#000' }
+                    ]}
                 >
                     {isTrusted ? 'Added' : 'Add Trust'}
                 </Text>
@@ -136,5 +129,25 @@ export const SuggestedUserCard = ({
         </HStack>
     );
 };
+
+const styles = StyleSheet.create({
+    userInfoPressable: {
+        flex: 1,
+        maxWidth: 240,
+    },
+    trustButton: {
+        borderRadius: 5,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        minWidth: 102,
+        height: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    trustButtonText: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+});
 
 export default SuggestedUserCard;

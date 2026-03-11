@@ -154,7 +154,7 @@ export const GlobalBottomSheet: React.FC = () => {
   // CRITICAL: Detached modals need high z-index to appear above other content
   const sheetContainerStyle = mergedOptions.detached
     ? {
-        marginHorizontal: 24,
+        marginHorizontal: 0,
         zIndex: 1000,
         elevation: 1000, // Android için
         ...mergedOptions.style,
@@ -162,7 +162,7 @@ export const GlobalBottomSheet: React.FC = () => {
     : mergedOptions.style;
 
   // Padding bottom
-  const paddingBottom = mergedOptions.paddingBottom ?? (Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8);
+  const paddingBottom = mergedOptions.paddingBottom ?? 0;
 
   // animateOnMount true ise açılış/kapanış için aynı timing config (kapanış da animasyonlu olsun)
   // PERFORMANCE FIX: Duration'ı 300ms'den 180ms'ye düşür (daha hızlı açılış/kapanış)

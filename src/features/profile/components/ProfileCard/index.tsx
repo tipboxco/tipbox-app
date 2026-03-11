@@ -490,17 +490,19 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                 </VStack>
               ))}
             </HStack>
-            <Pressable onPress={() => navigation.navigate('Collections')}>
-              <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={8}
-                textAlign="center"
-                mt="$4"
-                fontWeight="$regular"
-              >
-                See More Collections
-              </Text>
-            </Pressable>
+            {isOwnProfile && (
+              <Pressable onPress={() => navigation.navigate('EditHighlightBadges')}>
+                <Text
+                  color={isDark ? '$textDark400' : '$textLight600'}
+                  fontSize={10}
+                  textAlign="center"
+                  mt="$4"
+                  fontWeight="$semibold"
+                >
+                  Edit Highlight Badges
+                </Text>
+              </Pressable>
+            )}
           </Box>
         </Box>
       )}

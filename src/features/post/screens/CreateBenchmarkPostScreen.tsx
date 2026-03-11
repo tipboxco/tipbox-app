@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Keyboard, Modal, TouchableOpacity } from 'react-native';
+import { Keyboard, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
@@ -12,6 +12,7 @@ import { Header } from '@/src/components/Header';
 import { useCallback } from 'react';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBenchmarkPostForm } from '../hooks/useBenchmarkPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ProductBenchmarkCard } from '../components/ProductBenchmarkCard';
@@ -29,7 +30,143 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BenchmarkPostFormData } from '../schemas/benchmarkPostSchema';
 
 type CreateBenchmarkPostScreenRouteProp = RouteProp<PostStackParamList, 'CreateBenchmarkPostScreen'>;
-type CreateBenchmarkPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type CreateBenchmarkPostScreenNavigationProp = NativeStackNavigationProp<PostStackParamList & RootStackParamList>;
+
+// Product Source Selection Bottom Sheet Content
+interface ProductSourceSelectionProps {
+  onSelectFromInventory: () => void;
+  onSelectFromCatalog: () => void;
+  onClose: () => void;
+}
+
+const ProductSourceSelection: React.FC<ProductSourceSelectionProps> = ({
+  onSelectFromInventory,
+  onSelectFromCatalog,
+  onClose,
+}) => {
+  const { t } = useTranslation('post');
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
+  return (
+    <View style={{ padding: 20, backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }}>
+      <Text
+        fontSize={18}
+        fontWeight="$semibold"
+        color={isDark ? '$textDark50' : '#000'}
+        mb={16}
+        textAlign="center"
+      >
+        {t('create.benchmark.modal.title')}
+      </Text>
+
+      <VStack space="md">
+        <Pressable
+          onPress={onSelectFromInventory}
+          bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
+          borderRadius={8}
+          p={16}
+        >
+          <HStack space="sm" alignItems="center">
+            <Feather name="archive" size={20} color={isDark ? '#FFF' : '#000'} />
+            <Text
+              fontSize={15}
+              fontWeight="$medium"
+              color={isDark ? '$textDark50' : '#000'}
+            >
+              {t('create.benchmark.modal.fromInventory')}
+            </Text>
+          </HStack>
+        </Pressable>
+
+        <Pressable
+          onPress={onSelectFromCatalog}
+          bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
+          borderRadius={8}
+          p={16}
+        >
+          <HStack space="sm" alignItems="center">
+            <Feather name="grid" size={20} color={isDark ? '#FFF' : '#000'} />
+            <Text
+              fontSize={15}
+              fontWeight="$medium"
+              color={isDark ? '$textDark50' : '#000'}
+            >
+              {t('create.benchmark.modal.fromCatalog')}
+            </Text>
+          </HStack>
+        </Pressable>
+
+        <Pressable
+          onPress={onClose}
+          bg="transparent"
+          borderWidth={1}
+          borderColor={isDark ? '$borderDark700' : '#E0E0E0'}
+          borderRadius={8}
+          p={16}
+        >
+          <Text
+            fontSize={15}
+            fontWeight="$medium"
+            color={isDark ? '$textDark400' : '#666'}
+            textAlign="center"
+          >
+            {t('create.benchmark.modal.cancel')}
+          </Text>
+        </Pressable>
+      </VStack>
+    </View>
+  );
+};
+
+// Inventory Selection Bottom Sheet Content
+interface InventorySelectionProps {
+  onProductSelect: (item: InventoryItem) => void;
+  onClose: () => void;
+  productGroupFilter?: string;
+}
+
+const InventorySelection: React.FC<InventorySelectionProps> = ({
+  onProductSelect,
+  onClose,
+  productGroupFilter,
+}) => {
+  const { t } = useTranslation('post');
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
+  return (
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FAFAFA' }}>
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: isDark ? '#333333' : '#E0E0E0',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Text
+          fontSize={18}
+          fontWeight="$semibold"
+          color={isDark ? '$textDark50' : '#000'}
+        >
+          {t('create.benchmark.modal.selectFromInventoryTitle')}
+        </Text>
+        <Pressable onPress={onClose} p={8}>
+          <Feather name="x" size={24} color={isDark ? '#FFF' : '#000'} />
+        </Pressable>
+      </View>
+      <AddProductFromInventory
+        onProductSelect={onProductSelect}
+        onClose={onClose}
+        productGroupFilter={productGroupFilter}
+      />
+    </View>
+  );
+};
 
 // Product Benchmark Field Component
 const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ onShowSelectModal }) => {
@@ -134,9 +271,8 @@ export const CreateBenchmarkPostScreen = () => {
 
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
 
-  // Modal states for second product selection
-  const [showProductSourceModal, setShowProductSourceModal] = useState(false);
-  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
   const selectedProduct1 = watch('selectedProduct1');
   const postText = watch('postText');
@@ -146,24 +282,41 @@ export const CreateBenchmarkPostScreen = () => {
   // Initialize first product from route params (ekrandaki ürün veya dönüşte korunan initial product)
   useEffect(() => {
     if (product) {
-      console.log('[CreateBenchmarkPostScreen] 🔍 Initializing product1 from route params:', product);
+      console.log('[CreateBenchmarkPostScreen] 🔍 Initializing product1 from route params:', {
+        product,
+        hasProductGroupId: !!product.productGroupId,
+        productGroupIdValue: product.productGroupId,
+        productGroupIdType: typeof product.productGroupId,
+      });
 
       const nameParts = product.name.split(' ');
       const brand = nameParts.length > 1 ? nameParts[0] : (product as any).brand;
       const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
       const subName = (product as any).subName ?? product.description;
 
+      // CRITICAL: productGroupId boş string olmamalı, undefined olmalı
+      const productGroupId = product.productGroupId ?? (product as any).productGroupId;
+
       const initialProduct = {
         id: product.id,
         name: productName,
         brand: brand,
         subName: subName,
-        image: product.image ?? (product as any).imageUrl ?? product.description, // Try multiple image fields
+        image: product.image ?? (product as any).imageUrl ?? product.description,
         isOwned: false,
-        productGroupId: product.productGroupId ?? (product as any).productGroupId ?? '', // Include productGroupId for filtering
+        productGroupId: productGroupId || undefined, // Boş string yerine undefined
       };
 
-      console.log('[CreateBenchmarkPostScreen] ✅ Formatted product1:', initialProduct);
+      console.log('[CreateBenchmarkPostScreen] ✅ Formatted product1:', {
+        initialProduct,
+        productGroupId: initialProduct.productGroupId,
+        willFilterWork: !!initialProduct.productGroupId,
+      });
+
+      if (!initialProduct.productGroupId) {
+        console.warn('[CreateBenchmarkPostScreen] ⚠️ WARNING: product1 has no productGroupId! Filter will not work.');
+      }
+
       setValue('selectedProduct1', initialProduct, { shouldValidate: true });
     }
   }, [product, setValue]);
@@ -216,14 +369,37 @@ export const CreateBenchmarkPostScreen = () => {
     }, [route.params, setValue])
   );
 
-  // Handler for showing product source selection modal (second product)
+  // Handler for showing product source selection bottom sheet (second product)
   const handleShowProductSourceModal = () => {
-    setShowProductSourceModal(true);
+    openBottomSheet(
+      <ProductSourceSelection
+        onSelectFromInventory={handleSelectFromInventory}
+        onSelectFromCatalog={handleSelectFromCatalog}
+        onClose={closeBottomSheet}
+      />,
+      {
+        snapPoints: ['40%'],
+        enableDynamicSizing: false,
+        enablePanDownToClose: true,
+        backdropPressBehavior: 'close',
+        detached: true,
+        bottomInset: 50,
+        style: {
+          borderRadius: 20,
+          overflow: 'hidden',
+        },
+      }
+    );
   };
 
   // Handler for selecting from catalog (second product)
   const handleSelectFromCatalog = () => {
-    setShowProductSourceModal(false);
+    closeBottomSheet();
+
+    console.log('🔍 [CreateBenchmarkPostScreen] selectedProduct1 FULL OBJECT:', {
+      selectedProduct1,
+      stringified: JSON.stringify(selectedProduct1, null, 2),
+    });
 
     const initialProductForReturn = selectedProduct1
       ? {
@@ -239,21 +415,62 @@ export const CreateBenchmarkPostScreen = () => {
     // PRODUCT GROUP FILTER: Sadece aynı group'taki ürünleri göster
     const productGroupFilter = selectedProduct1?.productGroupId;
 
-    navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT, {
-      returnScreen: 'CreateBenchmarkPostScreen',
+    console.log('🛍️ [CreateBenchmarkPostScreen] Opening SelectCompareProductScreen with filter:', {
+      selectedProduct1: {
+        id: selectedProduct1?.id,
+        name: selectedProduct1?.name,
+        brand: selectedProduct1?.brand,
+        productGroupId: selectedProduct1?.productGroupId,
+      },
+      productGroupFilter,
+      hasProductGroupFilter: !!productGroupFilter,
       selectedProductField: 'selectedProduct2',
+    });
+
+    if (!productGroupFilter) {
+      console.warn('⚠️ [CreateBenchmarkPostScreen] No productGroupId found, products will not be filtered');
+    }
+
+    navigation.navigate('SelectCompareProductScreen', {
+      productGroupId: productGroupFilter || undefined,
       initialProduct: initialProductForReturn,
-      productGroupFilter, // ← Aynı group'taki ürünleri filtrele
+      selectedProductField: 'selectedProduct2',
     });
   };
 
   // Handler for selecting from inventory (second product)
   const handleSelectFromInventory = () => {
-    setShowProductSourceModal(false);
-    setShowInventoryModal(true);
+    closeBottomSheet();
+
+    console.log('📦 [CreateBenchmarkPostScreen] Opening inventory with filter:', {
+      selectedProduct1: selectedProduct1,
+      productGroupId: selectedProduct1?.productGroupId,
+      productGroupFilter: selectedProduct1?.productGroupId,
+    });
+
+    // Open inventory selection bottom sheet
+    openBottomSheet(
+      <InventorySelection
+        onProductSelect={handleInventoryProductSelect}
+        onClose={closeBottomSheet}
+        productGroupFilter={selectedProduct1?.productGroupId}
+      />,
+      {
+        snapPoints: ['90%'],
+        enableDynamicSizing: false,
+        enablePanDownToClose: true,
+        backdropPressBehavior: 'close',
+        detached: true,
+        bottomInset: 50,
+        style: {
+          borderRadius: 20,
+          overflow: 'hidden',
+        },
+      }
+    );
   };
 
-  // Handler for when product is selected from inventory modal
+  // Handler for when product is selected from inventory bottom sheet
   const handleInventoryProductSelect = (item: InventoryItem) => {
     console.log('[CreateBenchmarkPostScreen] 📦 Inventory product selected:', item);
 
@@ -268,7 +485,7 @@ export const CreateBenchmarkPostScreen = () => {
     };
 
     setValue('selectedProduct2', formattedProduct, { shouldValidate: true });
-    setShowInventoryModal(false);
+    closeBottomSheet();
   };
 
   const handleBackPress = () => {
@@ -496,125 +713,6 @@ export const CreateBenchmarkPostScreen = () => {
             </VStack>
           </ScrollView>
         </Box>
-
-        {/* Product Source Selection Modal (Catalog or Inventory) */}
-        <Modal
-          visible={showProductSourceModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowProductSourceModal(false)}
-        >
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-            activeOpacity={1}
-            onPress={() => setShowProductSourceModal(false)}
-          >
-            <TouchableOpacity
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
-              style={{ width: '80%', maxWidth: 320 }}
-            >
-              <Box
-                bg={isDark ? '$backgroundDark900' : '$white'}
-                borderRadius={12}
-                p={20}
-              >
-                <Text
-                  fontSize={18}
-                  fontWeight="$semibold"
-                  color={isDark ? '$textDark50' : '#000'}
-                  mb={16}
-                  textAlign="center"
-                >
-                  {t('create.benchmark.modal.title')}
-                </Text>
-
-                <VStack space="md">
-                  <Pressable
-                    onPress={handleSelectFromInventory}
-                    bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
-                    borderRadius={8}
-                    p={16}
-                  >
-                    <HStack space="sm" alignItems="center">
-                      <Feather name="archive" size={20} color={isDark ? '#FFF' : '#000'} />
-                      <Text
-                        fontSize={15}
-                        fontWeight="$medium"
-                        color={isDark ? '$textDark50' : '#000'}
-                      >
-                        {t('create.benchmark.modal.fromInventory')}
-                      </Text>
-                    </HStack>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={handleSelectFromCatalog}
-                    bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
-                    borderRadius={8}
-                    p={16}
-                  >
-                    <HStack space="sm" alignItems="center">
-                      <Feather name="grid" size={20} color={isDark ? '#FFF' : '#000'} />
-                      <Text
-                        fontSize={15}
-                        fontWeight="$medium"
-                        color={isDark ? '$textDark50' : '#000'}
-                      >
-                        {t('create.benchmark.modal.fromCatalog')}
-                      </Text>
-                    </HStack>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => setShowProductSourceModal(false)}
-                    bg="transparent"
-                    borderWidth={1}
-                    borderColor={isDark ? '$borderDark700' : '#E0E0E0'}
-                    borderRadius={8}
-                    p={16}
-                  >
-                    <Text
-                      fontSize={15}
-                      fontWeight="$medium"
-                      color={isDark ? '$textDark400' : '#666'}
-                      textAlign="center"
-                    >
-                      {t('create.benchmark.modal.cancel')}
-                    </Text>
-                  </Pressable>
-                </VStack>
-              </Box>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </Modal>
-
-        {/* Inventory Product Selection Modal */}
-        <Modal
-          visible={showInventoryModal}
-          animationType="slide"
-          onRequestClose={() => setShowInventoryModal(false)}
-        >
-          <SafeAreaView style={{ flex: 1 }}>
-            <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
-              <Header
-                title={t('create.benchmark.modal.selectFromInventoryTitle')}
-                leftAction="back"
-                onLeftActionPress={() => setShowInventoryModal(false)}
-              />
-              <AddProductFromInventory
-                onProductSelect={handleInventoryProductSelect}
-                onClose={() => setShowInventoryModal(false)}
-                productGroupFilter={selectedProduct1?.productGroupId}
-              />
-            </Box>
-          </SafeAreaView>
-        </Modal>
       </FormProvider>
     </SafeAreaView>
   );

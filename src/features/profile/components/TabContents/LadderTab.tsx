@@ -288,7 +288,11 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect, onQueryR
 
   return (
     <Box position="relative">
-      <VStack px={CARD_MARGIN} py={10}>
+      <VStack
+        py={10}
+        width={(CARD_WIDTH * NUM_COLUMNS) + (COLUMN_GAP * (NUM_COLUMNS - 1))}
+        alignSelf="center"
+      >
         <HStack space="sm" mb={15}>
           <Box
             bg={selectedFilter === 'all' ? (isDark ? '$backgroundDark800' : 'rgba(229, 229, 229, 0.8)') : 'transparent'}
@@ -359,7 +363,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect, onQueryR
                   <HStack
                     key={rowIndex}
                     space={COLUMN_GAP}
-                    justifyContent="space-between"
+                    justifyContent="flex-start"
                     px={0}
                   >
                     {rowItems.map((badge) => (
@@ -367,12 +371,6 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect, onQueryR
                         {renderBadgeCard(badge)}
                       </Box>
                     ))}
-                    {/* Eksik sütunları doldur (2 sütunlu grid için) */}
-                    {rowItems.length < NUM_COLUMNS && (
-                      Array.from({ length: NUM_COLUMNS - rowItems.length }).map((_, emptyIndex) => (
-                        <Box key={`empty-${emptyIndex}`} width={CARD_WIDTH} />
-                      ))
-                    )}
                   </HStack>
                 );
               })}

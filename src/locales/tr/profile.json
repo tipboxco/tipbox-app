@@ -201,5 +201,17 @@
     "networkError": "Ağ bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
     "operationFailed": "İşlem başarısız. Lütfen tekrar deneyin.",
     "error": "Hata"
+  },
+  "sendTipsModal": {
+    "to": "Kime",
+    "balance": "Bakiye",
+    "infoMessage": "Göndermek istediğiniz TIPS miktarını girin.",
+    "minimumError": "Minimum miktar 0.01 TIPS",
+    "insufficientBalance": "Yetersiz bakiye",
+    "sendButton": "TIPS Gönder",
+    "errorTitle": "Hata",
+    "errorInvalidAmount": "Lütfen geçerli bir miktar girin",
+    "errorMinimum": "Minimum miktar 0.01 TIPS",
+    "errorInsufficient": "Yetersiz bakiye"
   }
 }

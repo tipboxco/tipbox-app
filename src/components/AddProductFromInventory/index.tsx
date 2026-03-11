@@ -93,6 +93,30 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
         return brandName.includes(query) || brandModel.includes(query);
     });
 
+    // Debug log - Inventory listesini göster
+    useEffect(() => {
+        console.log('📋 [AddProductFromInventory] Inventory List Debug:', {
+            totalItems: allInventoryItems.length,
+            filteredItems: filteredInventory.length,
+            productGroupFilter,
+            searchQuery,
+            allItems: allInventoryItems.map(item => ({
+                id: item.id,
+                productId: item.productId,
+                productGroupId: item.productGroupId,
+                brand: item.brand?.name,
+                model: item.brand?.model,
+            })),
+            filteredItems_detail: filteredInventory.map(item => ({
+                id: item.id,
+                productId: item.productId,
+                productGroupId: item.productGroupId,
+                brand: item.brand?.name,
+                model: item.brand?.model,
+            })),
+        });
+    }, [allInventoryItems.length, filteredInventory.length, productGroupFilter, searchQuery]);
+
     const handleProductPress = (item: InventoryItem) => {
         console.log('📦 [AddProductFromInventory] Product selected:', {
             inventoryItemId: item.id,

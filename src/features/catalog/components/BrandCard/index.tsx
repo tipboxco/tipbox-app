@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, Text, Image, Pressable, VStack, HStack } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, VStack, HStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BrandCardModel } from '../../types';
+import { CachedImage } from '@/src/components/CachedImage';
 
 interface BrandCardProps {
   brand: BrandCardModel;
@@ -26,13 +27,17 @@ export const BrandCard: React.FC<BrandCardProps> = ({ brand, onPress }) => {
       <VStack space="sm" flex={1}>
         {/* Brand Logo */}
         <HStack justifyContent="center" alignItems="center" mb="$2">
-          <Image
+          <CachedImage
             source={brand.logo}
             alt={brand.name}
-            width={86}
-            height={86}
-            borderRadius={5}
+            style={{
+              width: 86,
+              height: 86,
+              borderRadius: 5,
+            }}
             resizeMode="contain"
+            priority="normal"
+            cachePolicy="memory-disk"
           />
         </HStack>
 

@@ -21,21 +21,17 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { EventStackParamList } from '../EventNavigator';
 import { Feather } from '@expo/vector-icons';
-import { CreateEventPostBottomSheet } from '../components/CreateEventPostBottomSheet';
 import { Category } from '../components/CategoryCard';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { EventType, toImageSource } from '@/src/utils';
-import { EventProduct } from '@/src/mock/events/communityEvents/types';
-import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
-import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
-import { Product } from '@/src/mock/catalog/productCatalog/types';
 import { InventoryItem } from '@/src/features/profile/types';
 import { Header } from '@/src/components/Header';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateEventPostWithContext, eventsKeys } from '../api/hooks';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventStackParamList, 'EventCreatePost'>;
@@ -49,27 +45,22 @@ const EventCreatePost: React.FC = () => {
 
     const [content, setContent] = useState(''); // Body field (max 2000 char)
     const [selectedProduct, setSelectedProduct] = useState<Category | null>(null);
-    const [showProductSelector, setShowProductSelector] = useState(false);
-    const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [productStatus, setProductStatus] = useState<'own' | 'tried' | ''>('');
     const [showProductStatusDropdown, setShowProductStatusDropdown] = useState(false);
-    
-    // Global bottom sheet hook
-    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+
     const toast = useToast();
     const queryClient = useQueryClient();
     
     // Safe area insets (tab bar yok, EventNavigator RootNavigator'ın DetailsGroup'unda)
     const insets = useSafeAreaInsets();
     
-    // Get eventId, eventType, product, productSource, and selectedProduct from route params
+    // Get eventId, eventType, product, and selectedProduct from route params
     const routeEventId = route.params?.eventId;
     const eventType = route.params?.eventType;
     const eventProduct = route.params?.product;
     const eventTypeRaw = route.params?.eventTypeRaw;
     const roastProduct = route.params?.roastProduct;
-    const routeProductSource = route.params?.productSource;
     const selectedProductFromCatalog = route.params?.selectedProduct;
     const selectedProductFromInventory = route.params?.selectedInventoryProduct; // ✅ YENİ
 
@@ -84,7 +75,6 @@ const EventCreatePost: React.FC = () => {
             eventTypeRaw: eventTypeRaw || 'undefined',
             eventProduct: eventProduct ? 'exists' : 'undefined',
             roastProduct: roastProduct ? 'exists' : 'undefined',
-            routeProductSource: routeProductSource || 'undefined',
             selectedProductFromCatalog: selectedProductFromCatalog ? 'exists' : 'undefined',
             selectedProductFromInventory: selectedProductFromInventory ? {
                 id: selectedProductFromInventory.id,
@@ -99,7 +89,6 @@ const EventCreatePost: React.FC = () => {
         eventTypeRaw,
         eventProduct,
         roastProduct,
-        routeProductSource,
         selectedProductFromCatalog,
         selectedProductFromInventory,
     ]);
@@ -212,20 +201,6 @@ const EventCreatePost: React.FC = () => {
         }
     }, [isRoastsEvent, roastProduct]);
 
-    // Show product selector if productSource is provided (only once)
-    useEffect(() => {
-        if (routeProductSource && !isRoastsEvent) {
-            setProductSource(routeProductSource);
-            setShowProductSelector(true);
-        }
-    }, [routeProductSource, isRoastsEvent]);
-
-    // handleProductSelect'i önce tanımla (handleSelectProduct'ta kullanılıyor)
-    const handleProductSelect = useCallback((product: Category) => {
-        setSelectedProduct(product);
-        closeBottomSheet();
-    }, [closeBottomSheet]);
-
     // Handle selected product from CatalogScreen or InventoryScreen
     // selectedProduct is stored in state and preserved when navigating back from Catalog/Inventory
     useEffect(() => {
@@ -237,8 +212,6 @@ const EventCreatePost: React.FC = () => {
                 category: undefined,
             };
             setSelectedProduct(productCategory);
-            setShowProductSelector(false);
-            setProductSource(null);
             // Clear route params to prevent re-triggering
             navigation.setParams({ selectedProduct: undefined });
         }
@@ -293,9 +266,6 @@ const EventCreatePost: React.FC = () => {
         }
         
         setSelectedProduct(productCategory);
-        setShowProductSelector(false);
-        setProductSource(null);
-        navigation.setParams({ productSource: undefined });
     }, [navigation]);
     
     // ✅ YENİ: Handle selected product from Inventory
@@ -339,17 +309,15 @@ const EventCreatePost: React.FC = () => {
                     category: undefined,
                 };
                 setSelectedProduct(productCategory);
-                setShowProductSelector(false);
-                setProductSource(null);
             }
-            
+
             // ✅ YENİ: Handle inventory product from focus
             if (selectedProductFromInventory) {
                 console.log('🔍 [EventCreatePost] Inventory product received on focus:', {
                     inventoryItemId: selectedProductFromInventory.id,
                     productId: selectedProductFromInventory.productId,
                 });
-                
+
                 // Convert route params to InventoryItem format
                 const inventoryItem: InventoryItem = {
                     id: selectedProductFromInventory.id,
@@ -359,68 +327,19 @@ const EventCreatePost: React.FC = () => {
                     reviews: [], // Not needed for post creation
                     tags: [], // Not needed for post creation
                 };
-                
+
                 handleInventoryProductSelect(inventoryItem);
             }
         }, [selectedProductFromCatalog, selectedProductFromInventory, handleInventoryProductSelect])
     );
 
     const handleSelectProduct = useCallback(() => {
-        // Open bottom sheet using global manager
-        // Navigation'ı prop olarak geç (GlobalBottomSheet içinde navigation context yok)
-        openBottomSheet(
-            <CreateEventPostBottomSheet
-                onClose={closeBottomSheet}
-                onProductSelect={handleProductSelect}
-                navigation={navigation}
-                eventId={eventId}
-            />,
-            {
-                enablePanDownToClose: true,
-                enableOverDrag: false,
-                enableHandlePanningGesture: true,
-                enableContentPanningGesture: true,
-                enableDynamicSizing: true,
-                animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
-                paddingBottom: insets.bottom + 8,
-            }
-        );
-    }, [openBottomSheet, closeBottomSheet, handleProductSelect, navigation, eventId]);
-
-    const handleCatalogProductSelect = (product: Product) => {
-        console.log('🔍 [EventCreatePost] Catalog product selected:', {
-            id: product.id,
-            name: product.name,
-            image: product.image,
-            fullProduct: product,
+        // Navigate directly to ProductSelectScreen
+        navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT as any, {
+            returnScreen: 'EventCreatePost',
+            eventId,
         });
-        
-        const productCategory: Category = {
-            id: product.id,
-            name: product.name,
-            image: product.image,
-            category: undefined,
-        };
-        
-        console.log('✅ [EventCreatePost] Product category created:', {
-            id: productCategory.id,
-            name: productCategory.name,
-            category: productCategory.category,
-        });
-        
-        setSelectedProduct(productCategory);
-        setShowProductSelector(false);
-        setProductSource(null);
-        // Clear route params to prevent re-triggering
-        navigation.setParams({ productSource: undefined });
-    };
-
-    const handleCloseProductSelector = () => {
-        setShowProductSelector(false);
-        setProductSource(null);
-        // Clear route params to prevent re-triggering
-        navigation.setParams({ productSource: undefined });
-    };
+    }, [eventId]);
 
     const handleAddPhoto = async () => {
         try {
@@ -816,25 +735,6 @@ const EventCreatePost: React.FC = () => {
         content,
         selectedProduct,
     ]);
-
-    // Show product selector if productSource is set
-    if (showProductSelector && productSource && !isRoastsEvent) {
-        if (productSource === 'Catalog') {
-            return (
-                <AddProductFromCatalog
-                    onProductSelect={handleCatalogProductSelect}
-                    onClose={handleCloseProductSelector}
-                />
-            );
-        } else if (productSource === 'Inventory') {
-            return (
-                <AddProductFromInventory
-                    onProductSelect={handleInventoryProductSelect}
-                    onClose={handleCloseProductSelector}
-                />
-            );
-        }
-    }
 
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>

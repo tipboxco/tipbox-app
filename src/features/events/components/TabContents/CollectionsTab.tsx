@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   filterChipsContainer: {
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 4,
     gap: 2,
   },
   filterChip: {

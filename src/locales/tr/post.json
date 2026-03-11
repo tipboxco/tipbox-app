@@ -119,6 +119,11 @@
         "cancel": "İptal",
         "selectFromInventoryTitle": "Envanterden Seç"
       },
+      "selectCompareProduct": "Karşılaştırılacak Ürünü Seçin",
+      "searchPlaceholder": "Ürün ara...",
+      "noProductsFound": "Aramanıza uygun ürün bulunamadı.",
+      "noProductsInGroup": "Bu grupta ürün bulunamadı.",
+      "searchToCompare": "Karşılaştırmak için lütfen bir ürün arayın",
       "validation": {
         "twoProductsRequired": "İki ürün seçilmelidir.",
         "descriptionRequired": "Karşılaştırma açıklaması gereklidir.",
