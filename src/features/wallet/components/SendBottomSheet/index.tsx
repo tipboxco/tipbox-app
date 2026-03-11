@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '@gluestack-ui/themed';
-import { Keyboard, TouchableWithoutFeedback, InputAccessoryView, Platform, ScrollView, ActivityIndicator, Clipboard } from 'react-native';
+import { Keyboard, TouchableWithoutFeedback, InputAccessoryView, Platform, ScrollView, ActivityIndicator, Clipboard, TextInput, StyleSheet } from 'react-native';
 import {
   ChevronLeftIcon,
   CreditCardIcon,
@@ -14,6 +14,7 @@ import {
   ClockIcon,
 } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useKeyboard } from '@/src/hooks/useKeyboard';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useWalletTransactions, useWalletBalance, useSendTips, useTransactionById, useCancelTransaction } from '../../api/hooks';
 import type { SendTipResponse } from '../../api/walletApi';
@@ -35,6 +36,7 @@ interface SendBottomSheetProps {
   }) => void;
   onNavigateToFriendSelect?: () => void;
   initialView?: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection';
+  currentView?: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection';
   selectedFriend?: {
     id: string;
     name: string;
@@ -52,12 +54,31 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   onSuccess,
   onNavigateToFriendSelect,
   initialView = 'options',
+  currentView,
   selectedFriend: initialSelectedFriend = null,
 }) => {
   const { t } = useTranslation('wallet');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const keyboardHeight = useKeyboard();
   const [view, setView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection'>(initialView);
+  const amountInputRef = useRef<any>(null);
+
+  // Sync internal view state with external currentView prop
+  useEffect(() => {
+    if (currentView !== undefined && currentView !== view) {
+      setView(currentView);
+    }
+  }, [currentView]);
+
+  // Auto focus on amount input when view changes to amount
+  useEffect(() => {
+    if (view === 'amount') {
+      setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 300);
+    }
+  }, [view]);
   const [walletAddress, setWalletAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [isSwapped, setIsSwapped] = useState(false); // false = TIPS mode, true = USD mode
@@ -284,7 +305,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   const handleWalletAddressSelect = () => {
     setPreviousView('options');
     setView('wallet-address');
-    onViewChange?.('wallet-address');
     onWalletAddressPress?.();
   };
 
@@ -294,11 +314,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       const backToView = previousView;
       setPreviousView(null);
       setView(backToView);
-      onViewChange?.(backToView);
     } else {
       // Default: go back to options
       setView('options');
-      onViewChange?.('options');
     }
   };
 
@@ -306,7 +324,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     setSelectedFriend(null);
     setPreviousView('wallet-address');
     setView('amount');
-    onViewChange?.('amount');
   };
 
   const handleConfirmFromAmount = () => {
@@ -315,7 +332,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     if (inputValue > 0) {
       setPreviousView('amount');
       setView('confirmation');
-      onViewChange?.('confirmation');
     }
   };
 
@@ -726,7 +742,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         onPress={() => {
           setPreviousView('friend-selection');
           setView('amount');
-          onViewChange?.('amount');
         }}
         bg="#D8FF08"
         $dark-bg="#D8FF08"
@@ -746,11 +761,15 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     // Amount View
     return (
     <>
-      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-        <ScrollView 
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingVertical: 16 }}
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: 16,
+            paddingVertical: 16,
+            paddingBottom: keyboardHeight > 0 ? keyboardHeight + 16 : 16,
+          }}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
         >
         <VStack space="md" flex={1}>
       {/* Header with back button */}
@@ -760,12 +779,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           // Back to previous view (wallet-address or options)
           if (previousView === 'wallet-address' || (walletAddress && !selectedFriend)) {
             setView('wallet-address');
-            onViewChange?.('wallet-address');
           } else {
             // Default: go back to options and clear friend selection
             setView('options');
-            onViewChange?.('options');
-            setSelectedFriend(null);
+                  setSelectedFriend(null);
           }
         }}>
           <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
@@ -910,47 +927,50 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   $
                 </Text>
               )}
-              <Input variant="outline" borderWidth={0} flex={1} minHeight={50} alignItems="center">
-                <InputField
-                  value={isSwapped ? amount.replace('$', '') : amount}
-                  onChangeText={(text) => {
-                    // Remove non-numeric characters except decimal point
-                    const numericValue = text.replace(/[^0-9.]/g, '');
-                    const inputValue = parseFloat(numericValue) || 0;
-                    
-                    // Get max balance
-                    const maxTips = walletBalance?.balance || 0;
-                    const maxUSD = maxTips * TIPS_TO_USD_RATE;
-                    
-                    // Check if input exceeds max balance
-                    if (isSwapped) {
-                      // USD mode: check against max USD
-                      if (inputValue > maxUSD) {
-                        setAmount(maxUSD.toFixed(2));
-                      } else {
-                        setAmount(numericValue);
-                      }
+              <TextInput
+                ref={amountInputRef}
+                value={isSwapped ? amount.replace('$', '') : amount}
+                onChangeText={(text) => {
+                  // Remove non-numeric characters except decimal point
+                  const numericValue = text.replace(/[^0-9.]/g, '');
+                  const inputValue = parseFloat(numericValue) || 0;
+
+                  // Get max balance
+                  const maxTips = walletBalance?.balance || 0;
+                  const maxUSD = maxTips * TIPS_TO_USD_RATE;
+
+                  // Check if input exceeds max balance
+                  if (isSwapped) {
+                    // USD mode: check against max USD
+                    if (inputValue > maxUSD) {
+                      setAmount(maxUSD.toFixed(2));
                     } else {
-                      // TIPS mode: check against max TIPS
-                      if (inputValue > maxTips) {
-                        setAmount(maxTips.toString());
-                      } else {
-                        setAmount(numericValue);
-                      }
+                      setAmount(numericValue);
                     }
-                  }}
-                  keyboardType="decimal-pad"
-                  inputAccessoryViewID={inputAccessoryViewID}
-                  blurOnSubmit={false}
-                  fontSize={44}
-                  fontWeight="$bold"
-                  color={amount ? "$textLight900" : "#DDDDDD"}
-                  $dark-color={amount ? "$textDark50" : "#666666"}
-                  textAlign="center"
-                  placeholder={isSwapped ? "200" : "20.000"}
-                  placeholderTextColor="#DDDDDD"
-                />
-              </Input>
+                  } else {
+                    // TIPS mode: check against max TIPS
+                    if (inputValue > maxTips) {
+                      setAmount(maxTips.toString());
+                    } else {
+                      setAmount(numericValue);
+                    }
+                  }
+                }}
+                editable={true}
+                keyboardType="decimal-pad"
+                inputAccessoryViewID={inputAccessoryViewID}
+                blurOnSubmit={false}
+                style={[
+                  amountInputStyles.input,
+                  {
+                    color: amount ? (isDark ? '#FFFFFF' : '#000000') : '#DDDDDD',
+                  }
+                ]}
+                textAlign="center"
+                placeholder={isSwapped ? "200" : "20.000"}
+                placeholderTextColor="#DDDDDD"
+                autoFocus={false}
+              />
             </HStack>
           </Box>
           {/* Swap Icon - Right side, absolute positioned */}
@@ -1039,7 +1059,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       })()}
         </VStack>
       </ScrollView>
-    </TouchableWithoutFeedback>
     {renderInputAccessoryView()}
     </>
     );
@@ -1073,8 +1092,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               onPress={() => {
                 setSendResult(null);
                 setView('amount');
-                onViewChange?.('amount');
-              }}
+                    }}
             >
               <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
             </Pressable>
@@ -1157,8 +1175,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               if (isFailed) onClose();
               else {
                 setView('amount');
-                onViewChange?.('amount');
-              }
+                    }
             }}
             bg={isFailed ? '#CE4A4A' : '#D8FF08'}
             $dark-bg={isFailed ? '#CE4A4A' : '#D8FF08'}
@@ -1180,7 +1197,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       <HStack alignItems="center" space="md" mb="$2">
         <Pressable onPress={() => {
           setView('amount');
-          onViewChange?.('amount');
         }}>
           <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
@@ -1422,3 +1438,17 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   return null;
 };
 
+const amountInputStyles = StyleSheet.create({
+  input: {
+    fontSize: 44,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    minHeight: 50,
+    flex: 1,
+    padding: 0,
+    margin: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    outlineStyle: 'none',
+  },
+});

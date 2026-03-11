@@ -176,32 +176,9 @@ export const InventoryCard = ({ item, width, isMenuOpen, onMenuToggle, onPress, 
           </VStack>
         </Box>
       </TouchableOpacity>
-      
-      {/* More Icon - Sağ Üst Köşe */}
-      {isOwnProfile && (
-        <Pressable
-          position="absolute"
-          top={8}
-          right={8}
-          w={28}
-          h={28}
-          bg={isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.9)'}
-          borderRadius={14}
-          justifyContent="center"
-          alignItems="center"
-          zIndex={10}
-          onPress={handleMenuOpen}
-        >
-          <EllipsisVerticalIcon 
-            width={18} 
-            height={18} 
-            color={isDark ? '#FFFFFF' : '#000000'} 
-          />
-        </Pressable>
-      )}
-      
+
       {/* Context Menu Overlay - Item'ın içinde */}
-      {isOwnProfile && isMenuOpen && (
+      {false && isOwnProfile && isMenuOpen && (
         <Box
           position="absolute"
           top={0}

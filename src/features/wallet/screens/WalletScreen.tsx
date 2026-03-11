@@ -213,13 +213,16 @@ export const WalletScreen: React.FC = () => {
         bottomSheetContent,
         {
           enableDynamicSizing: false,
-          snapPoints: ['60%'], // Multi-view send flow (options/address/amount/confirmation)
+          snapPoints: ['90%'], // Increased for keyboard visibility
           enablePanDownToClose: true,
           enableOverDrag: false,
           enableHandlePanningGesture: true,
-          enableContentPanningGesture: true,
+          enableContentPanningGesture: false, // Disable for amount view
           animateOnMount: true,
           paddingBottom: bottomInset,
+          keyboardBehavior: 'interactive',
+          keyboardBlurBehavior: 'restore',
+          android_keyboardInputMode: 'adjustResize',
           handleIndicatorStyle: {
             backgroundColor: isDark ? '#333333' : '#B8B8B7',
             width: 70,
@@ -231,28 +234,9 @@ export const WalletScreen: React.FC = () => {
   }, [pendingFriend, openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendSuccess, handleSendViewChange, handleNavigateToFriendSelect]);
 
   const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => {
-    if (!sendBottomSheetContentRef.current) {
-      return;
-    }
-
-    const optionsForView = {
-      enableDynamicSizing: false,
-      snapPoints: ['60%'], // Multi-view send flow
-      enablePanDownToClose: true,
-      enableOverDrag: false,
-      enableHandlePanningGesture: true,
-      enableContentPanningGesture: true,
-      animateOnMount: true,
-      paddingBottom: bottomInset,
-      handleIndicatorStyle: {
-        backgroundColor: isDark ? '#333333' : '#B8B8B7',
-        width: 70,
-        height: 5,
-      },
-    };
-
-    openBottomSheet(sendBottomSheetContentRef.current, optionsForView);
-  }, [openBottomSheet, bottomInset, isDark]);
+    // Just log for now - view changes are handled internally by SendBottomSheet
+    console.log('[WalletScreen] View changed to:', view);
+  }, []);
 
   const handleNavigateToFriendSelect = useCallback(() => {
     // Close current bottom sheet first
@@ -297,18 +281,21 @@ export const WalletScreen: React.FC = () => {
     );
 
     sendBottomSheetContentRef.current = bottomSheetContent;
-    
+
     openBottomSheet(
       bottomSheetContent,
       {
         enableDynamicSizing: false,
-        snapPoints: ['60%'], // Multi-view send flow
+        snapPoints: ['90%'], // Increased for keyboard visibility
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
+        keyboardBehavior: 'interactive',
+        keyboardBlurBehavior: 'restore',
+        android_keyboardInputMode: 'adjustResize',
         handleIndicatorStyle: {
           backgroundColor: isDark ? '#333333' : '#B8B8B7',
           width: 70,
