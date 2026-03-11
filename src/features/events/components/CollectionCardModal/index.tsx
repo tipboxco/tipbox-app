@@ -316,12 +316,12 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
                       }
                       style={styles.backBackgroundImage}
                       resizeMode="cover"
-                      blurRadius={50}
+                      blurRadius={30}
                     />
-                    
+
                     {/* BlurView Overlay */}
                     <BlurView
-                      intensity={80}
+                      intensity={60}
                       tint={isDark ? 'dark' : 'light'}
                       style={styles.blurOverlay}
                     />
@@ -357,7 +357,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
                 <Feather name="award" size={24} color="rgba(255, 255, 255, 0.15)" />
               </View>
               <View style={styles.backBottomRightDecor}>
-                <Text style={styles.badgeIdText}>#{badge.id}</Text>
+                <Text style={styles.badgeIdText}>#{badge.id.slice(-6)}</Text>
               </View>
             </Pressable>
           </Animated.View>
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
   },
   backBadgeContainer: {
     position: 'absolute',

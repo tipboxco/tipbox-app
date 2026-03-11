@@ -185,18 +185,12 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
               style={[
                 styles.filterChip,
                 {
-                  backgroundColor: isActive ? '#000' : isDark ? '#2A2A2A' : '#FFF',
-                  borderColor: isActive ? '#000' : '#E9E9E9',
+                  backgroundColor: isActive ? '#F1F1F1' : 'transparent',
                 },
               ]}
               onPress={() => handleCategoryPress(cat.handle)}
             >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  { color: isActive ? '#FFF' : isDark ? '#FFF' : '#000' },
-                ]}
-              >
+              <Text style={styles.filterChipText}>
                 {cat.name}
               </Text>
             </Pressable>
@@ -204,7 +198,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
         })}
       </ScrollView>
     ),
-    [chipCategories, selectedHandle, isDark, handleCategoryPress]
+    [chipCategories, selectedHandle, handleCategoryPress]
   );
 
   // Footer: infinite scroll yükleme göstergesi
@@ -248,6 +242,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     <View style={styles.container}>
       {FilterChips}
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.listContent, { paddingBottom: bottomInset + 24 }]}
       >
@@ -274,23 +269,28 @@ const styles = StyleSheet.create({
   filterChips: {
     backgroundColor: 'transparent',
   },
+  scrollView: {
+    marginTop: 0,
+  },
   filterChipsContainer: {
     paddingHorizontal: 16,
-    marginBottom: 4,
-    gap: 2,
+    marginBottom: 12,
+    gap: 8,
   },
   filterChip: {
-    paddingHorizontal: 16,
-    height: 32,
-    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+    borderRadius: 10,
     marginRight: 8,
     borderWidth: 1,
+    borderColor: '#EFEFEF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: '600',
+    color: '#000000',
   },
   listContent: {
     paddingHorizontal: 16,
