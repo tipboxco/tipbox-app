@@ -1964,9 +1964,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   ))}
                 </ScrollView>
               ) : (
-                <Box position="relative" flex={1} height={70}>
+                <Box flex={1} height={70}>
                   {/* 4 tane dashed badge placeholder - yatay sırada */}
-                  <HStack space="md">
+                  <HStack justifyContent="space-evenly">
                     {[1, 2, 3, 4].map((index) => (
                       <Box
                         key={index}
@@ -1982,26 +1982,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       />
                     ))}
                   </HStack>
-                  {/* "No badges yet" text - ortada (absolute position) */}
-                  <Box
-                    position="absolute"
-                    left={0}
-                    right={0}
-                    top={0}
-                    bottom={0}
-                    justifyContent="center"
-                    alignItems="center"
-                    pointerEvents="none"
-                  >
-                    <Text
-                      color={isDark ? '$textDark400' : '$textLight600'}
-                      fontSize="$xs"
-                      fontWeight="$regular"
-                      textAlign="center"
-                    >
-                      {t('emptyStates.noBadgesYet')}
-                    </Text>
-                  </Box>
                 </Box>
               )}
               {profile.badges && profile.badges.length > 0 && isOwnProfile && (
