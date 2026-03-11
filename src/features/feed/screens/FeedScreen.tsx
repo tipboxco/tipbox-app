@@ -959,7 +959,7 @@ const FeedScreenInner = React.memo(() => {
           onSearchPress={handleSearchPress}
         />
         <View>
-          <View style={{ paddingBottom: 0 }}>
+          <View style={{ paddingBottom: 5 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
         </View>
