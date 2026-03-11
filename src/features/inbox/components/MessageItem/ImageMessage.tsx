@@ -5,7 +5,7 @@ import { Image as ExpoImage, ImageErrorEventData } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import ReanimatedAnimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { WhatsAppContextMenu } from './WhatsAppContextMenu';
-import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR, toMediaUrl } from '@/src/utils';
 import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
 import { useTranslation } from 'react-i18next';
@@ -366,7 +366,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                 {/* Thumbnail göster (yüklenirken) */}
                 {item.thumbnailUrl && imageLoading && (
                   <Image
-                    source={{ uri: item.thumbnailUrl }}
+                    source={{ uri: toMediaUrl(item.thumbnailUrl) }}
                     alt="Message image thumbnail"
                     width={imageSize.width}
                     height={imageSize.height}
@@ -429,7 +429,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                     </Box>
                   ) : (
                     <ExpoImage
-                      source={{ uri: item.mediaUrl }}
+                      source={{ uri: toMediaUrl(item.mediaUrl) }}
                       // ✅ expo-image: Görseller invalid olana veya silinene kadar cache'te tutulur
                       // Default cache policy: 'memory-disk' (hem memory hem disk cache)
                       cachePolicy="memory-disk"
@@ -445,6 +445,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                       onLoadStart={() => {
                         console.log('[ImageMessage] 🖼️ Image load start:', {
                           mediaUrl: item.mediaUrl,
+                          fullUrl: toMediaUrl(item.mediaUrl),
                         });
                         setImageLoading(true);
                         setImageError(false);
@@ -452,6 +453,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                       onLoad={(e: { source: { width: number; height: number } }) => {
                         console.log('[ImageMessage] 🖼️ Image loaded successfully:', {
                           mediaUrl: item.mediaUrl,
+                          fullUrl: toMediaUrl(item.mediaUrl),
                           width: e.source.width,
                           height: e.source.height,
                         });
@@ -461,6 +463,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                       onError={(event: ImageErrorEventData) => {
                         console.error('[ImageMessage] ❌ Image load error:', {
                           mediaUrl: item.mediaUrl,
+                          fullUrl: toMediaUrl(item.mediaUrl),
                           error: event.error || 'Unknown error',
                         });
                         setImageLoading(false);

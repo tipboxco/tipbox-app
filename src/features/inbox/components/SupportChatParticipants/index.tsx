@@ -84,7 +84,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
           <VStack flex={1}>
             <Text
               color={isDark ? '$textDark50' : '$textLight950'}
-              fontSize={10}
+              fontSize={12}
               fontWeight="$semibold"
               numberOfLines={1}
             >
@@ -92,7 +92,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize={9}
+              fontSize={11}
               numberOfLines={1}
             >
               {user1Title}
@@ -119,7 +119,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
           <VStack alignItems="flex-end" flex={1}>
             <Text
               color={isDark ? '$textDark50' : '$textLight950'}
-              fontSize={10}
+              fontSize={12}
               fontWeight="$semibold"
               numberOfLines={1}
             >
@@ -127,7 +127,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize={9}
+              fontSize={11}
               numberOfLines={1}
             >
               {user2Title}
@@ -156,7 +156,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
           <HStack alignItems="center" justifyContent="space-between" mb="$1">
             <Text
               color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize={10}
+              fontSize={12}
               fontWeight="$normal"
             >
               Request Type
@@ -169,7 +169,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
             >
               <Text
                 color="#FFFFFF"
-                fontSize={10}
+                fontSize={12}
                 fontWeight="$semibold"
               >
                 {supportRequestType === 'GENERAL' ? 'Genel' : supportRequestType === 'TECHNICAL' ? 'Teknik' : 'Ürün'}
@@ -183,14 +183,14 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
           <HStack alignItems="center" justifyContent="space-between" mb="$1">
             <Text
               color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize={10}
+              fontSize={12}
               fontWeight="$normal"
             >
               Request Amount
             </Text>
             <Text
               color="#000000"
-              fontSize={14}
+              fontSize={16}
               fontWeight="$bold"
             >
               {supportRequestAmount} TIPS
@@ -203,14 +203,14 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
           <HStack alignItems="center" justifyContent="space-between" mb="$1">
             <Text
               color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize={10}
+              fontSize={12}
               fontWeight="$normal"
             >
               Total Tips
             </Text>
             <Text
               color="#000000"
-              fontSize={14}
+              fontSize={16}
               fontWeight="$bold"
             >
               {totalTipsAmount.toFixed(2)} TIPS
@@ -223,14 +223,14 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
           <HStack alignItems="center" justifyContent="space-between" mb="$1">
             <Text
               color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize={10}
+              fontSize={12}
               fontWeight="$normal"
             >
               Tips Amount
             </Text>
             <Text
               color="#000000"
-              fontSize={14}
+              fontSize={16}
               fontWeight="$bold"
             >
               {tipsAmount} TIPS
@@ -243,7 +243,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
           <VStack space="xs" mt="$1">
             <Text
               color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize={10}
+              fontSize={12}
               fontWeight="$normal"
             >
               Request Messages
@@ -251,10 +251,10 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
             {supportRequestMessages.map((msg, index) => (
               <Text
                 key={index}
-                fontSize={11}
+                fontSize={13}
                 fontWeight="$normal"
                 color={isDark ? '$textDark50' : '$textLight950'}
-                lineHeight={16}
+                lineHeight={18}
               >
                 {msg}
               </Text>
@@ -267,16 +267,16 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
           <VStack space="xs" mt="$1">
             <Text
               color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize={10}
+              fontSize={12}
               fontWeight="$normal"
             >
               Request Message
             </Text>
             <Text
-              fontSize={11}
+              fontSize={13}
               fontWeight="$normal"
               color={isDark ? '$textDark50' : '$textLight950'}
-              lineHeight={16}
+              lineHeight={18}
             >
               {requestDetails}
             </Text>

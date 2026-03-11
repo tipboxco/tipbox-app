@@ -28,6 +28,7 @@
   "supportMessageDetail": {
     "empty": "Henüz mesaj yok",
     "loading": "Yükleniyor...",
+    "placeholder": "Mesajınızı yazın...",
     "errors": {
       "failedToSendMessage": "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
       "errorFinalizingSupport": "Destek talebi sonlandırılırken bir hata oluştu",
@@ -60,6 +61,7 @@
     "placeholder": "Bir mesaj yazın...",
     "imageAlt": "Gönderilen görsel",
     "userImageAlt": "{{userName}} kullanıcı resmi",
+    "tipsSent": "Bahşiş Gönderildi",
     "months": {
       "january": "Ocak",
       "february": "Şubat",
@@ -180,5 +182,20 @@
       "describeIssue": "Sorununuzu veya talebinizi detaylı bir şekilde açıklayın...",
       "amount": "50"
     }
+  },
+  "sendTips": {
+    "title": "Bahşiş Gönder",
+    "description": "Bahşiş Açıklaması",
+    "optional": "opsiyonel",
+    "descriptionPlaceholder": "Bahşiş açıklaması yaz...",
+    "tipsAmount": "TIPS Miktarı",
+    "amountPlaceholder": "50",
+    "dollarValue": "${{value}}",
+    "currentBalance": "Mevcut Bakiye: {{balance}} TIPS",
+    "insufficientBalance": "Yetersiz bakiye",
+    "minimumAmount": "Minimum miktar 0.01 TIPS",
+    "cancel": "Vazgeç",
+    "send": "Gönder",
+    "max": "Max"
   }
 }

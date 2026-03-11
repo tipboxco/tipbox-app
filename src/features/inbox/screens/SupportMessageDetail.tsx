@@ -13,7 +13,7 @@ import {
   InputField,
   Pressable,
 } from '@gluestack-ui/themed';
-import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR, toMediaUrl } from '@/src/utils';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -1482,7 +1482,13 @@ const SupportMessageDetailScreen: React.FC = () => {
         });
       }
       
-      console.log('[SupportMessageDetail] ✅ Image uploaded successfully:', response.data);
+      // Debug: Backend'den gelen ve çözümlenmiş URL'leri kontrol et
+      console.log('[SupportMessageDetail] ✅ Image uploaded successfully:', {
+        originalMediaUrl: response.data.mediaUrl,
+        resolvedMediaUrl: toMediaUrl(response.data.mediaUrl),
+        thumbnailUrl: response.data.thumbnailUrl,
+        messageId: response.data.messageId,
+      });
     } catch (error: any) {
       console.error('[SupportMessageDetail] ❌ Image upload error:', error);
       
@@ -1546,7 +1552,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                     />
                   </Box>
                   <Text
-                    fontSize={12}
+                    fontSize={14}
                     fontWeight="$semibold"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
@@ -1574,14 +1580,14 @@ const SupportMessageDetailScreen: React.FC = () => {
                   {/* Support Type */}
                   <VStack space="xs">
                     <Text
-                      fontSize={9}
+                      fontSize={11}
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
                       Support Type
                     </Text>
                     <Text
-                      fontSize={11}
+                      fontSize={13}
                       fontWeight="$semibold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
@@ -1592,17 +1598,17 @@ const SupportMessageDetailScreen: React.FC = () => {
                   {/* Message */}
                   <VStack space="xs">
                     <Text
-                      fontSize={9}
+                      fontSize={11}
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
                       Request Details
                     </Text>
                     <Text
-                      fontSize={10}
+                      fontSize={12}
                       fontWeight="$normal"
                       color={isDark ? '#CCCCCC' : '#666666'}
-                      lineHeight={14}
+                      lineHeight={16}
                     >
                       {item.supportRequest.message}
                     </Text>
@@ -1612,11 +1618,11 @@ const SupportMessageDetailScreen: React.FC = () => {
                   <HStack space="xs" alignItems="center">
                     <Feather
                       name="award"
-                      size={14}
+                      size={16}
                       color="#E2FF46"
                     />
                     <Text
-                      fontSize={13}
+                      fontSize={15}
                       fontWeight="$bold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
@@ -1627,7 +1633,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                   {/* Status Badge */}
                   <VStack space="xs" mt="$2">
                     <Text
-                      fontSize={9}
+                      fontSize={11}
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
@@ -1649,7 +1655,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                       alignSelf="flex-start"
                     >
                       <Text
-                        fontSize={10}
+                        fontSize={12}
                         fontWeight="$semibold"
                         color={
                           requestStatus === 'pending' ? '#FFC107' :
@@ -1678,7 +1684,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                             borderRadius={8}
                             py="$2"
                           >
-                            <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                            <ButtonText color="#FFFFFF" fontSize={14} fontWeight="$semibold">
                               Cancel Request
                             </ButtonText>
                           </Button>
@@ -1693,7 +1699,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                             py="$2"
                             flex={1}
                           >
-                            <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                            <ButtonText color="#FFFFFF" fontSize={14} fontWeight="$semibold">
                               Accept
                             </ButtonText>
                           </Button>
@@ -1704,7 +1710,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                             py="$2"
                             flex={1}
                           >
-                            <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                            <ButtonText color="#FFFFFF" fontSize={14} fontWeight="$semibold">
                               Reject
                             </ButtonText>
                           </Button>
@@ -2041,7 +2047,7 @@ const SupportMessageDetailScreen: React.FC = () => {
           <HStack space="xs" alignItems="center">
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={10}
+              fontSize={12}
               fontStyle="italic"
             >
               {params.expertName || 'User'} is typing
@@ -2135,7 +2141,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               >
                 <Text
                   color="#000000"
-                  fontSize={12}
+                  fontSize={14}
                   fontWeight="$semibold"
                   textAlign="center"
                 >
@@ -2155,7 +2161,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               >
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={12}
+                  fontSize={14}
                   fontWeight="$semibold"
                   textAlign="center"
                 >
@@ -2174,7 +2180,7 @@ const SupportMessageDetailScreen: React.FC = () => {
           <VStack space="sm" alignItems="center">
             <Text
               color={isDark ? '#6366F1' : '#6366F1'}
-              fontSize={12}
+              fontSize={14}
               fontWeight="$semibold"
               textAlign="center"
             >
@@ -2190,7 +2196,7 @@ const SupportMessageDetailScreen: React.FC = () => {
           <VStack space="sm" alignItems="center">
             <Text
               color={isDark ? '#4CAF50' : '#4CAF50'}
-              fontSize={12}
+              fontSize={14}
               fontWeight="$semibold"
               textAlign="center"
             >
@@ -2214,7 +2220,7 @@ const SupportMessageDetailScreen: React.FC = () => {
             >
               <Text
                 color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={12}
+                fontSize={14}
                 fontWeight="$semibold"
                 textAlign="center"
               >

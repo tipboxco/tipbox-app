@@ -240,11 +240,22 @@ const SupportRequestsScreen: React.FC = () => {
   const handleAccept = (requestId: string) => {
     // Find the request data
     const request = supportRequests?.find(r => r.id === requestId);
-    
+
     if (!request) {
       Alert.alert('Error', 'Support request not found');
       return;
     }
+
+    // 🔍 DEBUG: Request ve user bilgilerini logla
+    console.log('[SupportRequestsScreen] 🔍 handleAccept DEBUG:', {
+      requestId,
+      requestStatus: request.status,
+      requestSenderId: request.sender?.senderId,
+      currentUserId: user?.id,
+      currentUserRole: user?.role,
+      isOwnRequest: request.sender?.senderId === user?.id,
+      requestData: request,
+    });
 
     // Accept support request mutation
     acceptMutation.mutate(requestId, {

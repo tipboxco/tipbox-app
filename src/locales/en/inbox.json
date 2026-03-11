@@ -28,6 +28,7 @@
   "supportMessageDetail": {
     "empty": "No messages yet",
     "loading": "Loading...",
+    "placeholder": "Type your message...",
     "errors": {
       "failedToSendMessage": "Failed to send message. Please try again.",
       "errorFinalizingSupport": "An error occurred while finalizing the support request",
@@ -60,6 +61,7 @@
     "placeholder": "Type a message...",
     "imageAlt": "Sent image",
     "userImageAlt": "{{userName}} user image",
+    "tipsSent": "Tip Sent",
     "months": {
       "january": "January",
       "february": "February",
@@ -180,5 +182,20 @@
       "describeIssue": "Describe your problem or request in detail...",
       "amount": "50"
     }
+  },
+  "sendTips": {
+    "title": "Send Tips",
+    "description": "Tip Description",
+    "optional": "optional",
+    "descriptionPlaceholder": "Write a tip description...",
+    "tipsAmount": "TIPS Amount",
+    "amountPlaceholder": "50",
+    "dollarValue": "${{value}}",
+    "currentBalance": "Current Balance: {{balance}} TIPS",
+    "insufficientBalance": "Insufficient balance",
+    "minimumAmount": "Minimum amount is 0.01 TIPS",
+    "cancel": "Cancel",
+    "send": "Send",
+    "max": "Max"
   }
 }
