@@ -1965,18 +1965,23 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 </ScrollView>
               ) : (
                 <Box position="relative" flex={1} height={70}>
-                  {/* 1 tane dashed badge placeholder - solda */}
-                  <Box
-                    w={70}
-                    h={70}
-                    borderRadius={5}
-                    borderWidth={2}
-                    borderColor={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
-                    borderStyle="dashed"
-                    justifyContent="center"
-                    alignItems="center"
-                    bg={isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'}
-                  />
+                  {/* 4 tane dashed badge placeholder - yatay sırada */}
+                  <HStack space="md">
+                    {[1, 2, 3, 4].map((index) => (
+                      <Box
+                        key={index}
+                        w={70}
+                        h={70}
+                        borderRadius={5}
+                        borderWidth={2}
+                        borderColor={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
+                        borderStyle="dashed"
+                        justifyContent="center"
+                        alignItems="center"
+                        bg={isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'}
+                      />
+                    ))}
+                  </HStack>
                   {/* "No badges yet" text - ortada (absolute position) */}
                   <Box
                     position="absolute"

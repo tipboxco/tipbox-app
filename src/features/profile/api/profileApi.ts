@@ -261,8 +261,8 @@ export const uploadAvatar = async (avatarUri: string): Promise<UploadAvatarRespo
     // React Native'de FormData gönderirken Content-Type header'ını kaldırmalıyız
     // Axios otomatik olarak multipart/form-data boundary'yi ekler
     console.log('[uploadAvatar] Sending request to /users/me/avatar');
-    
-    const response = await apiService.getClient().post<UploadAvatarResponse>(
+
+    const response = await apiService.getClient().post<any>(
       '/users/me/avatar',
       formData,
       {
@@ -271,9 +271,31 @@ export const uploadAvatar = async (avatarUri: string): Promise<UploadAvatarRespo
         // Request formatı: multipart/form-data, field name: 'avatar' (küçük harf)
       }
     );
-    
-    console.log('[uploadAvatar] ✅ Success:', response.data);
-    return response.data;
+
+    console.log('[uploadAvatar] ✅ Raw response:', response.data);
+
+    // CRITICAL FIX: Backend response formatını normalize et
+    // Backend direkt {avatarUrl: "..."} veya {success: true, data: {avatarUrl: "..."}} dönebilir
+    const responseData = response.data;
+    const avatarUrl = responseData?.data?.avatarUrl ?? responseData?.avatarUrl;
+
+    if (!avatarUrl || typeof avatarUrl !== 'string') {
+      console.error('[uploadAvatar] ❌ Invalid response format:', {
+        responseData,
+        avatarUrl,
+        avatarUrlType: typeof avatarUrl,
+      });
+      throw new Error('Invalid avatar upload response - avatarUrl not found');
+    }
+
+    console.log('[uploadAvatar] ✅ Normalized response:', { avatarUrl });
+
+    return {
+      success: true,
+      data: {
+        avatarUrl: avatarUrl,
+      },
+    };
   } catch (error: any) {
     // 400 Bad Request hatası için backend'den gelen detaylı hata mesajını logla
     const backendError = error.response?.data;
@@ -374,8 +396,8 @@ export const uploadBanner = async (bannerUri: string): Promise<UploadBannerRespo
     // React Native'de FormData gönderirken Content-Type header'ını kaldırmalıyız
     // Axios otomatik olarak multipart/form-data boundary'yi ekler
     console.log('[uploadBanner] Sending request to /users/me/banner');
-    
-    const response = await apiService.getClient().post<UploadBannerResponse>(
+
+    const response = await apiService.getClient().post<any>(
       '/users/me/banner',
       formData,
       {
@@ -383,9 +405,31 @@ export const uploadBanner = async (bannerUri: string): Promise<UploadBannerRespo
         // Content-Type header'ı interceptor'da otomatik olarak kaldırılacak (FormData için)
       }
     );
-    
-    console.log('[uploadBanner] ✅ Success:', response.data);
-    return response.data;
+
+    console.log('[uploadBanner] ✅ Raw response:', response.data);
+
+    // CRITICAL FIX: Backend response formatını normalize et
+    // Backend direkt {bannerUrl: "..."} veya {success: true, data: {bannerUrl: "..."}} dönebilir
+    const responseData = response.data;
+    const bannerUrl = responseData?.data?.bannerUrl ?? responseData?.bannerUrl;
+
+    if (!bannerUrl || typeof bannerUrl !== 'string') {
+      console.error('[uploadBanner] ❌ Invalid response format:', {
+        responseData,
+        bannerUrl,
+        bannerUrlType: typeof bannerUrl,
+      });
+      throw new Error('Invalid banner upload response - bannerUrl not found');
+    }
+
+    console.log('[uploadBanner] ✅ Normalized response:', { bannerUrl });
+
+    return {
+      success: true,
+      data: {
+        bannerUrl: bannerUrl,
+      },
+    };
   } catch (error: any) {
     // 400 Bad Request hatası için backend'den gelen detaylı hata mesajını logla
     const backendError = error.response?.data;
