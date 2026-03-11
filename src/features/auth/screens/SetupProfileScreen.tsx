@@ -15,6 +15,8 @@ import { Alert } from 'react-native';
 import * as yup from 'yup';
 import { useAppStore } from '@/src/store/appStore';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { useToast } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 type SetupProfileScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SetupProfile'>;
 type SetupProfileScreenRouteProp = RouteProp<AuthStackParamList, 'SetupProfile'>;
@@ -27,6 +29,7 @@ export const SetupProfileScreen = () => {
   const route = useRoute<SetupProfileScreenRouteProp>();
   const setupProfileMutation = useSetupProfile();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
 
   // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
   const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
@@ -191,15 +194,58 @@ export const SetupProfileScreen = () => {
       try {
         // API'ye profil bilgilerini gönder
         // Backend sadece selectedCategories array'ini bekliyor (userId gereksiz)
-        await setupProfileMutation.mutateAsync({
+        const result = await setupProfileMutation.mutateAsync({
           fullName: fullName.trim(),
           username: username.trim(),
           profileImage: profileImage || undefined,
           selectCategories: selectedCategories,
         });
 
-        // Başarılı olursa Onboarding ekranına yönlendir
-        navigation.navigate('Onboarding');
+        // Başarılı toast göster
+        showCustomToast(toast, {
+          title: t('toasts.setupSuccess'),
+          description: result.message || t('toasts.setupSuccessMessage'),
+          action: 'success',
+          duration: 3000,
+        });
+
+        // User store'unu güncelle - backend'den gelen user data
+        if (result.user) {
+          const { updateUser, completeRegistration } = useAppStore.getState();
+
+          // Avatar URL'i belirle
+          // 1. Backend'den gelen avatar URL'i kullan (varsa)
+          // 2. Yoksa, seçilen avatar'ı kullan
+          let avatarUrl: string | undefined = result.user.avatar;
+
+          if (!avatarUrl && profileImage) {
+            if (profileImage.startsWith('avatar://')) {
+              // API'den seçilen avatar - URL'i selectedAvatarUrl'den al
+              avatarUrl = selectedAvatarUrl || undefined;
+            } else {
+              // Upload edilen foto
+              avatarUrl = profileImage;
+            }
+          }
+
+          updateUser({
+            id: result.user.id,
+            fullName: result.user.name || fullName.trim(), // Backend 'name' döndürüyor
+            email: result.user.email,
+            avatar: avatarUrl, // Avatar'ı set et
+          });
+
+          console.log('[SetupProfileScreen] User updated with avatar:', {
+            userId: result.user.id,
+            fullName: result.user.name,
+            avatarUrl,
+            profileImageType: profileImage?.startsWith('avatar://') ? 'API avatar' : 'Upload',
+          });
+
+          // CRITICAL: Registration tamamlandı - isAuthenticated=true yap
+          // Bu sayede RootNavigator otomatik olarak Auth stack'ten App stack'e geçer
+          completeRegistration();
+        }
       } catch (error: any) {
         const errorMessage = error.response?.data?.message || error.message || t('setupProfileScreen.errorSavingProfile');
         Alert.alert(t('common:labels.error'), errorMessage, [{ text: 'OK' }]);

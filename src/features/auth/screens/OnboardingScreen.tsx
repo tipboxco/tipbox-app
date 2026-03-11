@@ -8,10 +8,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type OnboardingScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Onboarding'>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Storage key for onboarding completion status
+const ONBOARDING_COMPLETED_KEY = '@tipbox_onboarding_completed';
 
 interface OnboardingItem {
   id: number;
@@ -90,11 +94,16 @@ export const OnboardingScreen = () => {
     handleGetStarted();
   };
 
-  const handleGetStarted = () => {
-    // Onboarding tamamlandığında Login ekranına yönlendir
-    // Kullanıcı kayıt işlemini tamamladı, şimdi login yapması gerekiyor
-    // Success toast göstermek için parametre gönder
-    navigation.navigate('Login', { showSuccessToast: true });
+  const handleGetStarted = async () => {
+    try {
+      // Mark onboarding as completed - this will persist even after logout
+      await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+    } catch (error) {
+      console.error('[OnboardingScreen] Error saving onboarding status:', error);
+    }
+
+    // Navigate to Welcome screen
+    navigation.navigate('Welcome');
   };
 
   const renderItem = ({ item }: { item: OnboardingItem }) => {
@@ -180,6 +189,7 @@ export const OnboardingScreen = () => {
           right={insets.right}
           zIndex={2}
           px="$4"
+          pr="$8"
           alignItems="flex-end"
         >
           <Button variant="link" onPress={handleSkip} p="$2">

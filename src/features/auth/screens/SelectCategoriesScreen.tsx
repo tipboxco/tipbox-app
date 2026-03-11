@@ -166,7 +166,7 @@ export const SelectCategoriesScreen = () => {
   const isNextEnabled = selectedCount >= MIN_SELECTED;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor }} edges={['top']}>
       <Box
         flex={1}
         bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
@@ -259,8 +259,8 @@ export const SelectCategoriesScreen = () => {
           borderTopWidth={1}
           borderTopColor="#333333"
           px="$4"
-          py="$4"
-          pb="$0"
+          pt="$4"
+          pb={insets.bottom || 16}
         >
           <HStack alignItems="center" justifyContent="space-between">
             <VStack space="xs">

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OnboardingScreen, WelcomeScreen, LoginScreen, RegisterScreen, AuthVerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen, ForgotPasswordScreen, ResetPasswordScreen, SelectAvatarScreen } from './screens';
 
 export type AuthStackParamList = {
@@ -35,7 +36,33 @@ export type AuthStackParamList = {
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 
+// Storage key for onboarding completion status
+const ONBOARDING_COMPLETED_KEY = '@tipbox_onboarding_completed';
+
 export const AuthNavigator = () => {
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Check if user has completed onboarding
+    const checkOnboardingStatus = async () => {
+      try {
+        const value = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
+        setHasCompletedOnboarding(value === 'true');
+      } catch (error) {
+        console.error('[AuthNavigator] Error checking onboarding status:', error);
+        // Default to showing onboarding if there's an error
+        setHasCompletedOnboarding(false);
+      }
+    };
+
+    checkOnboardingStatus();
+  }, []);
+
+  // Show nothing while checking onboarding status
+  if (hasCompletedOnboarding === null) {
+    return null;
+  }
+
   return (
     <AuthStack.Navigator
       screenOptions={{
@@ -48,7 +75,7 @@ export const AuthNavigator = () => {
           fontWeight: '600',
         },
       }}
-      initialRouteName='Welcome'
+      initialRouteName={hasCompletedOnboarding ? 'Welcome' : 'Onboarding'}
     >
       <AuthStack.Screen
         name='Onboarding'

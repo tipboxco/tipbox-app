@@ -43,7 +43,10 @@ export const RegisterScreen = () => {
 
   const validatePassword = useCallback((text: string) => {
     setPassword(text);
-    setIsPasswordValid(text.length >= 8);
+    // Backend requirements: minimum 8 characters + at least one uppercase letter
+    const hasMinLength = text.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(text);
+    setIsPasswordValid(hasMinLength && hasUpperCase);
   }, []);
 
   const handleConfirm = useCallback(async () => {
@@ -83,11 +86,34 @@ export const RegisterScreen = () => {
         // Console'da tam error'u göster
         if (__DEV__) {
           console.error('=== REGISTER API ERROR ===');
+          console.error('Error Type:', typeof error);
+          console.error('Error Constructor:', error?.constructor?.name);
           console.error('Error Object:', error);
           console.error('Error Message:', error?.message);
+          console.error('Error Code:', error?.code);
           console.error('Error Response:', error?.response);
-          console.error('Error Response Data:', error?.response?.data);
           console.error('Error Response Status:', error?.response?.status);
+          console.error('Error Response Status Text:', error?.response?.statusText);
+          console.error('Error Response Headers:', error?.response?.headers);
+          console.error('Error Response Data:', error?.response?.data);
+          console.error('Error Response Data Type:', typeof error?.response?.data);
+
+          // Try to parse error.response.data if it's a string
+          if (typeof error?.response?.data === 'string') {
+            try {
+              const parsedData = JSON.parse(error.response.data);
+              console.error('Parsed Error Response Data:', parsedData);
+            } catch (parseError) {
+              console.error('Failed to parse error response data as JSON');
+            }
+          }
+
+          // Log all error object keys
+          console.error('Error Object Keys:', Object.keys(error || {}));
+          if (error?.response) {
+            console.error('Error Response Keys:', Object.keys(error.response || {}));
+          }
+
           console.error('Full Error JSON:', JSON.stringify(error, null, 2));
           console.error('========================');
         }
@@ -103,17 +129,37 @@ export const RegisterScreen = () => {
           return;
         }
 
-        // Hata toast göster
-        const errorMessage =
-          error?.response?.data?.message ||
-          error?.message ||
-          t('toasts.registrationError');
+        // Extract error message from various possible locations
+        let errorMessage = t('toasts.registrationError');
+
+        if (error?.response?.data) {
+          const responseData = error.response.data;
+
+          // Handle structured error response (backend format)
+          // { success: false, error: { code, message, details: [{ field, message }] } }
+          if (responseData.error?.details && Array.isArray(responseData.error.details) && responseData.error.details.length > 0) {
+            // Use the first validation error message
+            errorMessage = responseData.error.details[0].message;
+          } else if (responseData.error?.message) {
+            // Use error.message
+            errorMessage = responseData.error.message;
+          } else if (responseData.message) {
+            // Use top-level message
+            errorMessage = responseData.message;
+          } else if (responseData.error && typeof responseData.error === 'string') {
+            // Use error string
+            errorMessage = responseData.error;
+          }
+        } else if (error?.message) {
+          // Fallback to error.message
+          errorMessage = error.message;
+        }
 
         showCustomToast(toast, {
           title: t('toasts.registrationFailed'),
           description: errorMessage,
           action: 'error',
-          duration: 3000,
+          duration: 4000,
         });
       }
     }
@@ -204,15 +250,22 @@ export const RegisterScreen = () => {
                 onChangeText={validatePassword}
               />
               <Pressable onPress={() => setShowPassword(!showPassword)}>
-                <Icon 
-                  as={showPassword ? EyeOff : Eye} 
-                  color={isDark ? '$textDark300' : '$textLight600'} 
-                  size="md" 
+                <Icon
+                  as={showPassword ? EyeOff : Eye}
+                  color={isDark ? '$textDark300' : '$textLight600'}
+                  size="md"
                   mr="$2"
                   alignSelf="center"
                 />
               </Pressable>
             </Input>
+            <Text
+              fontSize="$xs"
+              color={isDark ? '$textDark400' : '$textLight500'}
+              mt="$1"
+            >
+              {t('registerScreen.passwordHint')}
+            </Text>
           </FormControl>
         </VStack>
 

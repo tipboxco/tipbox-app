@@ -184,21 +184,13 @@ export const useSetupProfile = () => {
   return useMutation<SetupProfileResponse, Error, SetupProfileRequest>({
     mutationFn: setupProfile,
     onSuccess: (data) => {
-      // Başarılı profil setup sonrası store'u güncelle
-      if (data.user) {
-        const { updateUser } = useAppStore.getState();
-        updateUser({
-          fullName: data.user.fullName,
-          avatar: data.user.avatar,
-        });
-      }
-
       // Current user query'sini invalidate et
       queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
-      
+
       console.log('[useSetupProfile] ✅ Profile setup successful:', {
-        fullName: data.user?.fullName,
-        username: data.user?.username,
+        userId: data.user?.id,
+        userName: data.user?.name,
+        message: data.message,
       });
     },
     onError: (error) => {

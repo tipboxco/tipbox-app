@@ -224,6 +224,29 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           },
         });
       }
+
+      // Log error response details for /auth/register endpoint
+      if (error.config?.url?.includes('/auth/register')) {
+        console.error('[ApiInterceptor] ❌ Response Error - /auth/register:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          dataType: typeof error.response?.data,
+          headers: error.response?.headers,
+          contentType: error.response?.headers?.['content-type'],
+          request: {
+            url: error.config.url,
+            method: error.config.method,
+            baseURL: error.config.baseURL,
+            fullURL: `${error.config.baseURL}${error.config.url}`,
+          },
+        });
+
+        // Try to log raw response text if available
+        if (error.response?.data && typeof error.response.data === 'string') {
+          console.error('[ApiInterceptor] Raw response text:', error.response.data);
+        }
+      }
       const originalRequest = error.config as InternalAxiosRequestConfig & {
         _retry?: boolean;
       };

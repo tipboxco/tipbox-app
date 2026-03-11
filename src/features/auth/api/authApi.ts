@@ -10,30 +10,73 @@ import type {
 /**
  * Register endpoint function
  * Kullanıcı kayıt işlemi için API çağrısı
- * 
+ *
  * @param credentials - Kayıt bilgileri (email, password, name)
  * @returns RegisterResponse - Kayıt sonucu
  */
 export const register = async (
   credentials: RegisterCredentials
 ): Promise<RegisterResponse> => {
-  const response = await apiService.getClient().post<ApiRegisterResponse>(
-    '/auth/register',
-    credentials
-  );
+  try {
+    const client = apiService.getClient();
+    const baseURL = client.defaults.baseURL;
+    const endpoint = '/auth/register';
 
-  // API response'unu beklenen formata transform et
-  const transformedResponse: RegisterResponse = {
-    user: {
-      id: response.data.id,
-      name: response.data.fullName,
+    console.log('[register] Request details:', {
+      baseURL,
+      endpoint,
+      fullURL: `${baseURL}${endpoint}`,
+      method: 'POST',
+      credentials: {
+        email: credentials.email,
+        password: '***', // Güvenlik için password'ü gizle
+        name: credentials.name,
+      },
+    });
+
+    const response = await client.post<ApiRegisterResponse>(endpoint, credentials);
+
+    console.log('[register] ✅ Success:', {
+      status: response.status,
+      userId: response.data.id,
       email: response.data.email,
-      isGuest: false,
-    },
-    message: response.data.message || 'Kayıt işlemi başarıyla tamamlandı',
-  };
+      fullName: response.data.fullName,
+    });
 
-  return transformedResponse;
+    // API response'unu beklenen formata transform et
+    const transformedResponse: RegisterResponse = {
+      user: {
+        id: response.data.id,
+        name: response.data.fullName,
+        email: response.data.email,
+        isGuest: false,
+      },
+      message: response.data.message || 'Kayıt işlemi başarıyla tamamlandı',
+    };
+
+    return transformedResponse;
+  } catch (error: any) {
+    console.error('[register] ❌ API Error:', {
+      url: '/auth/register',
+      baseURL: apiService.getClient().defaults.baseURL,
+      fullURL: `${apiService.getClient().defaults.baseURL}/auth/register`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code,
+    });
+
+    // Log raw response for debugging
+    if (error.response) {
+      console.error('[register] ❌ Raw Response:', {
+        headers: error.response.headers,
+        config: error.response.config,
+      });
+    }
+
+    throw error;
+  }
 };
 
 /**
@@ -144,6 +187,8 @@ export interface CurrentUser {
   kycStatus: string;
   createdAt: string;
   updatedAt: string;
+  avatar?: string; // Avatar URL (profil resmi)
+  username?: string; // Username
 }
 
 export const getCurrentUser = async (): Promise<CurrentUser> => {
@@ -440,6 +485,9 @@ export const setupProfile = async (
       success: response.data.success,
       message: response.data.message,
       user: response.data.user,
+      userKeys: response.data.user ? Object.keys(response.data.user) : [],
+      hasAvatar: !!response.data.user?.avatar,
+      avatarValue: response.data.user?.avatar,
     });
     
     return response.data;
