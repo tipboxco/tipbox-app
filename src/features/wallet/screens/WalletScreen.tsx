@@ -312,13 +312,16 @@ export const WalletScreen: React.FC = () => {
       />,
       {
         enableDynamicSizing: false,
-        snapPoints: ['70%'], // Token swap interface with selectors
+        snapPoints: ['85%'], // Token swap interface with selectors
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
+        keyboardBehavior: 'interactive',
+        keyboardBlurBehavior: 'restore',
+        android_keyboardInputMode: 'adjustResize',
         handleIndicatorStyle: {
           backgroundColor: isDark ? '#333333' : '#B8B8B7',
           width: 70,
@@ -418,12 +421,14 @@ export const WalletScreen: React.FC = () => {
       setActiveTab(position === 0 ? 'tips' : 'nft');
       setCurrentPage(position);
 
-      // Tab değiştiğinde scroll pozisyonunu sıfırla
-      if (position === 0) {
-        tipsScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
-      } else {
-        nftScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
-      }
+      // Tab değiştiğinde scroll pozisyonunu sıfırla (ref initialize olduktan sonra)
+      setTimeout(() => {
+        if (position === 0) {
+          tipsScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+        } else {
+          nftScrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+        }
+      }, 100);
     },
     [progress, tipsScrollViewRef, nftScrollViewRef]
   );
