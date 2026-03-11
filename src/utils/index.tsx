@@ -233,11 +233,11 @@ export const useCurrentUserIdOrLogout = (): string | undefined => {
 /**
  * String'lerdeki newline karakterlerini temizler
  * Backend'den gelen "Apple\nVisionMax\n55" gibi string'leri düzeltir
- * 
+ *
  * @param text - Temizlenecek text
  * @param replacement - Newline yerine konulacak karakter (default: ' ' - boşluk)
  * @returns Temizlenmiş text
- * 
+ *
  * @example
  * cleanNewlines("Apple\nVisionMax\n55") // "Apple VisionMax 55"
  * cleanNewlines("Apple\nVisionMax\n55", " - ") // "Apple - VisionMax - 55"
@@ -245,6 +245,33 @@ export const useCurrentUserIdOrLogout = (): string | undefined => {
 export const cleanNewlines = (text: string | null | undefined, replacement: string = ' '): string => {
   if (!text) return '';
   return text.replace(/\\n|\n/g, replacement).trim();
+};
+
+/**
+ * Media URL'ini tam URL'e çevirir.
+ * Backend'den gelen relative path'leri media base URL ile birleştirir.
+ *
+ * @param mediaUrl - Backend'den gelen media URL (relative veya absolute)
+ * @returns Full media URL
+ *
+ * @example
+ * toMediaUrl("messages/threads/.../image.jpg") // "https://api-test.tipbox.co/media/messages/threads/.../image.jpg"
+ * toMediaUrl("https://example.com/image.jpg") // "https://example.com/image.jpg"
+ */
+export const toMediaUrl = (mediaUrl: string | null | undefined): string | undefined => {
+  if (!mediaUrl) return undefined;
+
+  // Eğer zaten tam URL ise direkt döndür
+  if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
+    return mediaUrl;
+  }
+
+  // Relative path ise media base URL ile birleştir
+  const MEDIA_BASE_URL = 'https://api-test.tipbox.co/media';
+
+  // Leading slash'leri temizle
+  const cleanPath = mediaUrl.replace(/^\/+/, '');
+  return `${MEDIA_BASE_URL}/${cleanPath}`;
 };
 
 /**
