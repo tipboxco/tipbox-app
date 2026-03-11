@@ -873,9 +873,13 @@ const NotificationsScreenComponent: React.FC = () => {
         );
       }
 
-      // CRITICAL FIX: İlk loading durumunda skeleton göster
+      // CRITICAL FIX: İlk loading durumunda loading göster
       if (isInitialLoading) {
-        return <NotificationSkeleton count={5} />;
+        return (
+          <Box flex={1} justifyContent="center" alignItems="center">
+            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
+        );
       }
 
       // CRITICAL FIX: Feed/Profile pattern - Error önce kontrol edilir
