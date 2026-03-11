@@ -2042,15 +2042,16 @@ const MessageDetailScreen: React.FC = () => {
         onSend={handleSendTips}
       />,
       {
+        snapPoints: ['75%', '90%'],
         enablePanDownToClose: true,
         enableOverDrag: false,
-        
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
-        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+        animateOnMount: false,
+        bottomInset: 0,
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
-        keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar
+        keyboardBehavior: 'interactive',
         keyboardBlurBehavior: 'restore',
         android_keyboardInputMode: 'adjustResize',
       }
@@ -2160,22 +2161,18 @@ const MessageDetailScreen: React.FC = () => {
         onSend={handleSendSupport}
       />,
       {
+        snapPoints: ['75%', '90%'],
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true, // Content boyutuna göre dinamik height
-        detached: true, // Detached mod - bottom sheet daha yukarıda açılır
-        bottomInset: 0, // Alt boşluk yok - ekranın altına yapışık
-        animateOnMount: true, // PERFORMANCE FIX: Disabled for instant opening
-        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 8,
-        keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar (klavye üzerinde)
-        keyboardBlurBehavior: 'restore', // Klavye kapandığında eski haline döner
+        enableDynamicSizing: true,
+        animateOnMount: false,
+        bottomInset: 0, // Alt taraf sabit, bottom: 0'da kalır
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
+        keyboardBehavior: 'interactive',
+        keyboardBlurBehavior: 'restore',
         android_keyboardInputMode: 'adjustResize',
-        style: {
-          marginHorizontal: 0, // Full width - yan boşluk yok
-          width: '100%', // Tam genişlik
-        },
       }
     );
   };

@@ -15,7 +15,6 @@ import { Feather } from '@expo/vector-icons';
 import { ChatBubbleLeftIcon, Cog6ToothIcon, CubeIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Keyboard, Platform } from 'react-native';
 import OneOnOneSupportRequestModal from '../OneOnOneSupportRequestModal';
 
@@ -41,11 +40,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
     const [message, setMessage] = useState('');
     const [amount, setAmount] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [showSupportTypeDropdown, setShowSupportTypeDropdown] = useState(false);
-
-    // Scroll ref for keyboard handling
-    const scrollViewRef = useRef<any>(null);
 
     // Kullanıcının mevcut bakiyesi (normalde prop veya store'dan gelecek)
     const currentBalance = 500;
@@ -131,45 +126,21 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
         return supportType.length > 0 && message.trim().length > 0 && numericAmount > 0;
     };
 
-    // Klavye durumunu takip et
-    useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-            () => {
-                setIsKeyboardVisible(true);
-            }
-        );
-
-        const keyboardDidHideListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-            () => {
-                setIsKeyboardVisible(false);
-            }
-        );
-
-        return () => {
-            keyboardDidShowListener.remove();
-            keyboardDidHideListener.remove();
-        };
-    }, []);
 
     return (
-        <BottomSheetScrollView
-            ref={scrollViewRef}
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: isKeyboardVisible ? 120 : 20 }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            keyboardBehavior="interactive"
-
+        <VStack
+            bg={isDark ? '$backgroundDark950' : '#FDFDFB'}
+            pb={12}
+            pt={6}
+            px={16}
+            space="sm"
+            minHeight={100}
         >
-            <VStack flex={1}>
                 {/* Başlık */}
-                <HStack justifyContent="center" alignItems="center" py="$2">
+                <HStack justifyContent="center" alignItems="center" py="$1">
                     <Text
                         color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={18}
+                        fontSize={16}
                         fontWeight="$bold"
                         textAlign="center"
                     >
@@ -180,7 +151,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                 {/* Banner ve Profil Bölümü */}
                 <Box position="relative">
                     {/* Banner */}
-                    <Box height={160} overflow="hidden" position="relative" px="$4">
+                    <Box height={120} overflow="hidden" position="relative" px="$4">
                         <Image
                             source={require('@/assets/tips_banner.png')}
                             alt="Support Banner"
@@ -202,17 +173,17 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                         {/* Kullanıcı Bilgileri - Banner içerisinde ortalanmış */}
                         <Box
                             position="absolute"
-                            bottom={20}
+                            bottom={12}
                             left={0}
                             right={0}
                             alignItems="center"
                         >
-                            <VStack space="sm" alignItems="center">
+                            <VStack space="xs" alignItems="center">
                                 {/* Profil Fotoğrafı */}
                                 <Box
-                                    width={72}
-                                    height={72}
-                                    borderRadius={36}
+                                    width={56}
+                                    height={56}
+                                    borderRadius={28}
                                     borderColor={isDark ? '#1A1A1A' : '#FFFFFF'}
                                     overflow="hidden"
                                     bg={isDark ? '#1A1A1A' : '#FFFFFF'}
@@ -228,7 +199,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                 </Box>
                                 <Text
                                     color="#FFFFFF"
-                                    fontSize={12}
+                                    fontSize={11}
                                     fontWeight="$bold"
                                     textAlign="center"
                                 >
@@ -236,7 +207,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                 </Text>
                                 <Text
                                     color="rgba(255, 255, 255, 0.8)"
-                                    fontSize={9}
+                                    fontSize={8}
                                     fontWeight="$normal"
                                     numberOfLines={1}
                                     textAlign="center"
@@ -250,9 +221,9 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                 </Box>
 
                 {/* İçerik */}
-                <VStack space="lg" px="$4" pb="$4">
+                <VStack space="sm" px="$4" pb="$2">
                     {/* Support Type Seçimi */}
-                    <VStack space="sm" mt="$4">
+                    <VStack space="xs" mt="$2">
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                             fontSize={11}
@@ -337,7 +308,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                                         setShowSupportTypeDropdown(false);
                                                     }}
                                                 >
-                                                    <HStack px="$4" py="$3" alignItems="center" space="sm">
+                                                    <HStack px="$4" py="$2.5" alignItems="center" space="sm">
                                                         {(() => {
                                                             const IconComponent = getSupportTypeIcon(type);
                                                             return IconComponent ? (
@@ -366,10 +337,10 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                     </VStack>
 
                     {/* Mesaj Girişi */}
-                    <VStack space="sm">
+                    <VStack space="xs">
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                            fontSize={11}
+                            fontSize={10}
                             fontWeight="$semibold"
                         >
                             What do you need help?
@@ -377,7 +348,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
 
                         <Box
                             position="relative"
-                            borderRadius={12}
+                            borderRadius={10}
                             borderWidth={1}
                             borderColor={isDark ? '#333' : '#E9E9E9'}
                             bg="transparent"
@@ -385,19 +356,19 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                             <Textarea
                                 borderWidth={0}
                                 bg="transparent"
-                                minHeight={150}
+                                minHeight={100}
                             >
                                 <TextareaInput
                                     placeholder={t('support.placeholders.describeIssue')}
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize={13}
+                                    fontSize={12}
                                     fontWeight="$normal"
                                     value={message}
                                     onChangeText={setMessage}
-                                    numberOfLines={8}
+                                    numberOfLines={6}
                                     maxLength={500}
-                                    style={{ paddingBottom: 28 }}
+                                    style={{ paddingBottom: 24 }}
                                 />
                             </Textarea>
 
@@ -419,10 +390,10 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                     </VStack>
 
                     {/* TIPS Miktarı Girişi */}
-                    <VStack space="sm">
+                    <VStack space="xs">
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                            fontSize={11}
+                            fontSize={10}
                             fontWeight="$medium"
                         >
                             TIPS Amount
@@ -430,42 +401,35 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
 
                         {/* TIPS Miktarı ve Alt Bilgiler - Tek Bileşen */}
                         <Box
-                            borderRadius={12}
+                            borderRadius={10}
                             borderWidth={1}
                             borderColor={isDark ? '#333' : '#E9E9E9'}
                             bg="transparent"
                             overflow="hidden"
                         >
                             {/* Üst Kısım: Input Alanı ve Max Butonu */}
-                            <HStack 
-                                alignItems="center" 
+                            <HStack
+                                alignItems="center"
                                 justifyContent="space-between"
-                                px="$4"
-                                py="$3"
+                                px="$3"
+                                py="$2"
                             >
                                 {/* Input Alanı */}
                                 <Input
                                     flex={1}
                                     borderWidth={0}
                                     bg="transparent"
-                                    height={60}
+                                    height={40}
                                 >
                                     <InputField
                                         placeholder={t('support.placeholders.amount')}
                                         placeholderTextColor="#B8B8B8"
                                         color={isDark ? '#FFFFFF' : '#000000'}
-                                        fontSize={38}
+                                        fontSize={28}
                                         fontWeight="$bold"
                                         value={amount}
                                         onChangeText={handleAmountChange}
                                         keyboardType="numeric"
-                                        onFocus={() => {
-                                            // Klavye açıldığında input'u görünür yap
-                                            setTimeout(() => {
-                                                // BottomSheetScrollView doesn't have scrollToEnd, use scrollTo with large offset
-                                                scrollViewRef.current?.scrollTo({ y: 9999, animated: true });
-                                            }, 100);
-                                        }}
                                     />
                                 </Input>
 
@@ -495,11 +459,11 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                             />
 
                             {/* Alt Kısım: USD Eşdeğeri ve Bakiye */}
-                            <HStack 
-                                justifyContent="space-between" 
-                                alignItems="center" 
+                            <HStack
+                                justifyContent="space-between"
+                                alignItems="center"
                                 px="$4"
-                                py="$3"
+                                py="$2"
                             >
                                 {/* USD Eşdeğeri */}
                                 <Text
@@ -523,7 +487,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                     </VStack>
 
                     {/* Bilgilendirme Notu */}
-                    <Box borderRadius={12} px="$4">
+                    <Box borderRadius={12} px="$4" py="$1.5">
                         <HStack space="sm" alignItems="center">
                             <Feather 
                                 name="info" 
@@ -546,7 +510,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                         onPress={handleCreateRequest}
                         bg={'#E2FF46'}
                         borderRadius={12}
-                        py="$3"
+                        py="$2.5"
                         disabled={!isValidRequest()}
                         opacity={isValidRequest() ? 1 : 0.5}
                     >
@@ -560,7 +524,6 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                         </Text>
                     </Pressable>
                 </VStack>
-            </VStack>
 
             {/* Onay Modalı */}
             <OneOnOneSupportRequestModal
@@ -575,7 +538,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                 amount={parseFloat(amount) || 0}
                 currentBalance={currentBalance}
             />
-        </BottomSheetScrollView>
+        </VStack>
     );
 };
 
