@@ -431,8 +431,9 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
 
       // CRITICAL: Navigation stack'i sıfırla ve Auth screen'e yönlendir
       // Bu sayede authenticated screen'ler memory'den temizlenir
+      // NOTE: Onboarding durumu AsyncStorage'da saklandığı için Welcome veya Onboarding otomatik seçilecek
       navigationService.navigate('Auth', {
-        screen: 'Onboarding',
+        screen: 'Welcome',
       });
 
       // Alternative: CommonActions.reset ile navigation state'i sıfırla
@@ -446,7 +447,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       console.error('❌ Logout hatası:', error);
       // Hata olsa bile Auth screen'e yönlendir (security önlemi)
       navigationService.navigate('Auth', {
-        screen: 'Onboarding',
+        screen: 'Welcome',
       });
     }
   }, [handleCloseDrawer, logout]);

@@ -16,7 +16,7 @@ export const NotificationSkeleton: React.FC<NotificationSkeletonProps> = ({ coun
   const highlightColor = isDark ? '#2A2A2A' : '#F2F8FC';
 
   return (
-    <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 8 }}>
+    <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
       {Array.from({ length: count }).map((_, index) => (
         <SkeletonPlaceholder
           key={index}
