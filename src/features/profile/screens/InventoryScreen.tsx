@@ -89,14 +89,14 @@ const InventoryScreen = () => {
 
   // API'den envanter ürünlerini getir (pagination ile)
   const LIMIT = 20;
-  const { 
-    data, 
-    isLoading, 
-    isError, 
-    fetchNextPage, 
-    hasNextPage, 
-    isFetchingNextPage 
-  } = useInventory(LIMIT);
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInventory(userId, LIMIT);
 
   // Delete inventory item mutation
   const { mutate: deleteInventoryItem, isPending: isDeleting } = useDeleteInventoryItem();

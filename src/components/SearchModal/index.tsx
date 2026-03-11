@@ -234,10 +234,11 @@ BrandItem.displayName = 'BrandItem';
 // 🎯 OPTIMIZATION: Memoized Product Item Component
 interface ProductItemProps {
   product: any;
+  isDark: boolean;
   onPress: (product: any) => void;
 }
 
-const ProductItem = memo<ProductItemProps>(({ product, onPress }) => {
+const ProductItem = memo<ProductItemProps>(({ product, isDark, onPress }) => {
   const imageSource = useMemo(
     () => toImageSource(product.image) || require('@/assets/inventory/product_01.png'),
     [product.image]
@@ -251,6 +252,7 @@ const ProductItem = memo<ProductItemProps>(({ product, onPress }) => {
         image={imageSource}
         title={product.name}
         subName={product.model || product.specs || ''}
+        titleColor={isDark ? '#FFFFFF' : '#000000'}
         onPress={() => onPress(product)}
       />
     </Box>
@@ -846,7 +848,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
             <ScrollView showsVerticalScrollIndicator={false}>
               <VStack space="xs" pt="$2" pb="$0.5" px="$4">
                 {searchData.productData.map((product: any) => (
-                  <ProductItem key={product.id} product={product} onPress={handleProductPress} />
+                  <ProductItem key={product.id} product={product} isDark={isDark} onPress={handleProductPress} />
                 ))}
               </VStack>
             </ScrollView>
@@ -863,7 +865,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
           <ScrollView showsVerticalScrollIndicator={false}>
             <VStack space="xs" pt="$2" pb="$0.5" px="$4">
               {defaultDataByTab.products.map((product: any) => (
-                <ProductItem key={product.id} product={product} onPress={handleProductPress} />
+                <ProductItem key={product.id} product={product} isDark={isDark} onPress={handleProductPress} />
               ))}
             </VStack>
           </ScrollView>
@@ -871,7 +873,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       );
     }
     return EmptyView;
-  }, [debouncedQuery, isSearching, searchError, searchData?.productData, loadingByTab.products, defaultDataByTab.products, handleProductPress, LoadingView, ErrorView, EmptyView]);
+  }, [debouncedQuery, isSearching, searchError, searchData?.productData, loadingByTab.products, defaultDataByTab.products, isDark, handleProductPress, LoadingView, ErrorView, EmptyView]);
 
 
   // 🎯 PERFORMANCE FIX: shouldRender removed - component always renders

@@ -16,6 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { InventoryItem } from '@/src/features/profile/types';
 import { useInventory } from '@/src/features/profile/api/hooks';
 import { useBottomOffset } from '@/src/utils';
+import { useAppStore } from '@/src/store/appStore';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 8;
@@ -39,6 +40,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
     const isDark = colorMode === 'dark';
     const [searchQuery, setSearchQuery] = useState('');
     const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+    const { user } = useAppStore();
 
     // Gerçek API'den inventory verilerini çek
     const {
@@ -51,7 +53,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
         isFetchingNextPage,
         refetch,
         isRefetching,
-    } = useInventory();
+    } = useInventory(user?.id || '');
     
     // Debug: API'den gelen inventory data'yı logla
     useEffect(() => {

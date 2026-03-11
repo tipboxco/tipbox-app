@@ -112,6 +112,15 @@ const NotificationsScreenComponent: React.FC = () => {
   // API hooks - shouldFetchNotifications tanımı useFocusEffect'ten önce olmalı
   const shouldFetchNotifications = isAuthenticated && isAuthReady;
 
+  // DEBUG: Auth durumunu logla
+  useEffect(() => {
+    console.log('[NotificationsScreen] 🔐 Auth Status:', {
+      isAuthenticated,
+      isAuthReady,
+      shouldFetchNotifications,
+    });
+  }, [isAuthenticated, isAuthReady, shouldFetchNotifications]);
+
   // Debounce search query for API calls
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -214,13 +223,6 @@ const NotificationsScreenComponent: React.FC = () => {
   useEffect(() => {
     markAllAsReadMutationRef.current = markAllAsReadMutation;
   }, [markAllAsReadMutation]);
-
-  // PERFORMANCE FIX: Tab değiştiğinde aktif tab'ın query'sini refetch et (cache invalid ise)
-  // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi
-  const filterQueryResultsRef = useRef(filterQueryResults);
-  useEffect(() => {
-    filterQueryResultsRef.current = filterQueryResults;
-  }, [filterQueryResults]);
 
   useFocusEffect(
     useCallback(() => {
@@ -561,9 +563,8 @@ const NotificationsScreenComponent: React.FC = () => {
   }, [queryClient]);
 
   // Asset pre-caching - tüm tab'lardaki notifications yüklendiğinde images'ı cache'le
-  // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - her query'nin data'sını dependency olarak kullan
   useEffect(() => {
-    const allNotifications = filterQueryResultsRef.current.flatMap(
+    const allNotifications = filterQueryResults.flatMap(
       queryResult => {
         return extractNotificationsFromResponse(queryResult.data);
       }
@@ -577,6 +578,7 @@ const NotificationsScreenComponent: React.FC = () => {
     tipsQuery.data,
     trustQuery.data,
     repliesQuery.data,
+    filterQueryResults,
     extractNotificationsFromResponse,
   ]);
 
@@ -775,8 +777,8 @@ const NotificationsScreenComponent: React.FC = () => {
   const renderNotificationsList = useCallback(
     (filterIndex: number) => {
       const filter = filters[filterIndex];
-      // CRITICAL FIX: ref ile çağır - dependency array'den kaldırıldı (sonsuz döngü önleme)
-      const queryResult = filterQueryResultsRef.current[filterIndex];
+      // CRITICAL FIX: Direkt filterQueryResults kullan - ref değil (ilk render'da ref güncel olmayabilir)
+      const queryResult = filterQueryResults[filterIndex];
 
       if (!queryResult) {
         return (
@@ -869,6 +871,11 @@ const NotificationsScreenComponent: React.FC = () => {
             </Text>
           </Box>
         );
+      }
+
+      // CRITICAL FIX: İlk loading durumunda skeleton göster
+      if (isInitialLoading) {
+        return <NotificationSkeleton count={5} />;
       }
 
       // CRITICAL FIX: Feed/Profile pattern - Error önce kontrol edilir
@@ -1081,6 +1088,7 @@ const NotificationsScreenComponent: React.FC = () => {
     },
     [
       filters,
+      filterQueryResults,
       extractNotificationsFromResponse,
       groupNotificationsByDate,
       searchQuery,
@@ -1089,6 +1097,7 @@ const NotificationsScreenComponent: React.FC = () => {
       keyExtractor,
       refreshing,
       bottomOffset,
+      t,
     ]
   );
 

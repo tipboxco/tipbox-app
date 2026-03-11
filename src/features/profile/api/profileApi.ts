@@ -480,13 +480,14 @@ export const addInventoryItem = async (
 /**
  * Get Inventory endpoint function
  * Kullanıcının envanter ürünlerini getirir (pagination ile)
- * Token'dan user_id otomatik olarak alınır
- * 
+ *
+ * @param userId - Envanter görüntülenecek kullanıcının ID'si
  * @param cursor - Cursor pagination için son item ID'si (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @returns InventoryApiResponse - Envanter ürün listesi ve pagination bilgisi
  */
 export const getInventory = async (
+  userId: string,
   cursor?: string,
   limit: number = 20
 ): Promise<InventoryApiResponse> => {
@@ -498,9 +499,9 @@ export const getInventory = async (
     if (limit) {
       params.append('limit', limit.toString());
     }
-    
+
     const queryString = params.toString();
-    const url = queryString ? `/inventory?${queryString}` : '/inventory';
+    const url = queryString ? `/users/${userId}/inventory?${queryString}` : `/users/${userId}/inventory`;
     
     const response = await apiService.getClient().get<InventoryItem[] | InventoryApiResponse>(url);
     const responseData = response.data;

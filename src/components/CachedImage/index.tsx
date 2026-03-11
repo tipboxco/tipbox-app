@@ -95,11 +95,12 @@ export const CachedImage: React.FC<CachedImageProps> = ({
     resizeMode === 'center' ? 'center' :
     contentFit;
 
-  // Style'ı parse et (width ve height için)
+  // Style'ı parse et (width, height ve borderRadius için)
   const styleArray = Array.isArray(style) ? style : [style];
   const flattenedStyle = StyleSheet.flatten(styleArray);
   const containerWidth = flattenedStyle?.width || 100;
   const containerHeight = flattenedStyle?.height || 100;
+  const containerBorderRadius = flattenedStyle?.borderRadius || 5;
 
   // Eğer source yoksa veya geçersizse, statik kutu ikonu göster
   if (!imageSource) {
@@ -111,7 +112,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
             StyleSheet.absoluteFill,
             {
               backgroundColor: '#F5F5F5',
-              borderRadius: 5,
+              borderRadius: containerBorderRadius,
               justifyContent: 'center',
               alignItems: 'center',
             }
@@ -129,7 +130,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
       {!hasError && (
         <Image
           source={imageSource}
-          style={[StyleSheet.absoluteFill]}
+          style={[StyleSheet.absoluteFill, { borderRadius: containerBorderRadius }]}
           contentFit={finalContentFit}
           transition={transition || { duration: 200 }}
           cachePolicy={cachePolicy}
@@ -164,7 +165,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
             StyleSheet.absoluteFill,
             {
               backgroundColor: '#F5F5F5',
-              borderRadius: 5,
+              borderRadius: containerBorderRadius,
               justifyContent: 'center',
               alignItems: 'center',
             }
@@ -197,7 +198,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
             StyleSheet.absoluteFill,
             {
               backgroundColor: '#F5F5F5',
-              borderRadius: 5,
+              borderRadius: containerBorderRadius,
               justifyContent: 'center',
               alignItems: 'center',
             }

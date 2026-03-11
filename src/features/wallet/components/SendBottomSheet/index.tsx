@@ -688,7 +688,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                     overflow="hidden"
                   >
                     <Image
-                      source={toImageSource(selectedFriend.avatar) || DEFAULT_USER_AVATAR}
+                      source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR) || DEFAULT_USER_AVATAR}
                       alt={selectedFriend.name}
                       width={56}
                       height={56}
@@ -828,7 +828,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   overflow="hidden"
                 >
                   <Image
-                    source={toImageSource(selectedFriend.avatar) || DEFAULT_USER_AVATAR}
+                    source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR) || DEFAULT_USER_AVATAR}
                     alt={selectedFriend.name}
                     width={46}
                     height={46}
@@ -1251,7 +1251,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             <Box w={29} h={29} rounded="$full" bg="#D9D9D9" $dark-bg="$backgroundDark700" alignItems="center" justifyContent="center" position="relative">
               {user?.avatar ? (
                 <Image
-                  source={toImageSource(user.avatar) || DEFAULT_USER_AVATAR}
+                  source={toImageSource(user.avatar, DEFAULT_USER_AVATAR) || DEFAULT_USER_AVATAR}
                   alt={user.fullName || 'User'}
                   width={29}
                   height={29}
@@ -1311,7 +1311,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                       overflow="hidden"
                     >
                       <Image
-                        source={toImageSource(selectedFriend.avatar) || DEFAULT_USER_AVATAR}
+                        source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR) || DEFAULT_USER_AVATAR}
                         alt={selectedFriend.name}
                         width={25}
                         height={25}

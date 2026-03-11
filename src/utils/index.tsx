@@ -122,8 +122,17 @@ export const toImageSource = (
 
     // Backend'den gelen URL'yi direkt kullan
     const imageSource: ImageSourcePropType = { uri: value };
-    
+
     return imageSource;
+  }
+
+  // Eğer object ise, uri property'sini kontrol et
+  if (typeof value === 'object') {
+    const imageObj = value as { uri?: string };
+    // Eğer uri property'si yok veya boş ise, fallback döndür
+    if (!imageObj.uri || imageObj.uri.trim() === '') {
+      return fallback;
+    }
   }
 
   // String değilse (require() veya zaten ImageSourcePropType) direkt döndür

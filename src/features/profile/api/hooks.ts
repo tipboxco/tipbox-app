@@ -267,24 +267,24 @@ export const useUserProfile = (userId: string | undefined) => {
 /**
  * Get Inventory infinite query hook
  * Kullanıcının envanter ürünlerini infinite scroll ile getirir
- * 
+ *
  * List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
- * Token'dan user_id otomatik olarak alınır
- * 
+ *
+ * @param userId - Envanter görüntülenecek kullanıcının ID'si
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @returns React Query infinite query hook result
- * 
+ *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInventory(20);
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInventory(userId, 20);
  */
-export const useInventory = (limit: number = 20) => {
+export const useInventory = (userId: string, limit: number = 20) => {
   const { isAuthenticated } = useAppStore();
 
   return useInfiniteQuery<InventoryApiResponse, Error>({
-    queryKey: [...profileKeys.inventory(), limit],
+    queryKey: [...profileKeys.inventory(), userId, limit],
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getInventory(cursor, limit);
+      return getInventory(userId, cursor, limit);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {

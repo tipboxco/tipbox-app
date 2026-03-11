@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useInventory } from '@/src/features/profile/api/hooks';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
+import { useAppStore } from '@/src/store/appStore';
 
 /**
  * Hook to sync inventory product IDs from API to store
@@ -8,7 +9,8 @@ import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlow
  * Automatically caches IDs in store for fast lookups
  */
 export const useSyncInventoryToStore = () => {
-  const { data: inventoryData } = useInventory(100);
+  const { user } = useAppStore();
+  const { data: inventoryData } = useInventory(user?.id || '', 100);
   const setInventoryProductIds = useCreatePostFlowStore(
     (state) => state.setInventoryProductIds
   );

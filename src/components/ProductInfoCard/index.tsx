@@ -28,6 +28,9 @@ interface ProductInfoCardProps {
   showAverageRating?: boolean;
   // Show chevron icon (deprecated - use type prop instead)
   showChevron?: boolean;
+  // Color overrides for SearchModal
+  titleColor?: string;
+  subNameColor?: string;
 }
 
 const ProductInfoCardComponent = ({
@@ -41,6 +44,8 @@ const ProductInfoCardComponent = ({
   onPress,
   showAverageRating = false,
   showChevron = false,
+  titleColor,
+  subNameColor,
 }: ProductInfoCardProps) => {
   const showOwnership = ownershipLabel ?? (isOwned ? 'Owned' : undefined);
   const { colorMode } = useColorMode();
@@ -84,7 +89,7 @@ const ProductInfoCardComponent = ({
         {/* Product Info */}
         <VStack flex={1} space="xs">
           <Text
-            color={isDark ? '$textDark50' : '#A3A3A3'}
+            color={titleColor || (isDark ? '$textDark50' : '#A3A3A3')}
             fontSize={11}
             fontWeight="$bold"
             numberOfLines={1}
@@ -101,7 +106,7 @@ const ProductInfoCardComponent = ({
           </Text>
           {subName && (
             <Text
-              color={isDark ? '$textDark400' : '#A3A3A3'}
+              color={subNameColor || (isDark ? '$textDark400' : '#A3A3A3')}
               fontSize={11}
               fontWeight="$normal"
               numberOfLines={1}

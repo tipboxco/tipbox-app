@@ -405,7 +405,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             space="sm"
             alignItems="flex-end"
             maxWidth={bubbleRowMaxWidth}
-            flexDirection={isSent ? 'row-reverse' : 'row'}
+            flexDirection="row"
             alignSelf={isSent ? 'flex-end' : 'flex-start'}
           >
             {/* Avatar - Karşı tarafın mesajlarında balonun solunda */}
@@ -421,7 +421,46 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 borderRadius={16}
               />
             )}
-            
+
+            {/* Gönderilen mesajlarda: Tikler bubble'ın SOLUNDA */}
+            {isSent && (
+              <VStack space="xs" alignItems="flex-end">
+                {/* Tikler üstte (bubble'a daha yakın) */}
+                <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
+                  {item.isRead ? (
+                    <>
+                      <Feather
+                        name="check"
+                        size={14}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 0, top: 0 }}
+                      />
+                      <Feather
+                        name="check"
+                        size={14}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 4, top: 0 }}
+                      />
+                    </>
+                  ) : (
+                    <Feather
+                      name="check"
+                      size={12}
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    />
+                  )}
+                </Box>
+                {/* Timestamp altta */}
+                <Text
+                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  fontSize="$2xs"
+                  fontWeight="$normal"
+                >
+                  {formatMessageTime(item.timestamp)}
+                </Text>
+              </VStack>
+            )}
+
             <View
               ref={messageBubbleRef}
               collapsable={false}
@@ -457,45 +496,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 >
                   {isDeleted ? t('messageDetail.status.deleted') : (item.text || '(Mesaj içeriği yok)')}
                 </Text>
-                
+
               </VStack>
             </View>
 
-            <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
-              <Text
-                color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize="$2xs"
-                fontWeight="$normal"
-              >
-                {formatMessageTime(item.timestamp)}
-              </Text>
-              {isSent && (
-                <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
-                  {item.isRead ? (
-                    <>
-                      <Feather
-                        name="check"
-                        size={14}
-                        color="#4CAF50"
-                        style={{ position: 'absolute', left: 0, top: 0 }}
-                      />
-                      <Feather
-                        name="check"
-                        size={14}
-                        color="#4CAF50"
-                        style={{ position: 'absolute', left: 4, top: 0 }}
-                      />
-                    </>
-                  ) : (
-                    <Feather
-                      name="check"
-                      size={12}
-                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                    />
-                  )}
-                </Box>
-              )}
-            </VStack>
+            {/* Alınan mesajlarda: Timestamp bubble'ın SAĞINDA */}
+            {!isSent && (
+              <VStack space="xs" alignItems="flex-start">
+                <Text
+                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  fontSize="$2xs"
+                  fontWeight="$normal"
+                >
+                  {formatMessageTime(item.timestamp)}
+                </Text>
+              </VStack>
+            )}
           </HStack>
           </ReanimatedAnimated.View>
         </Pressable>

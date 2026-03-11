@@ -24,7 +24,7 @@ const InventoryDetailScreen = () => {
   const { t } = useTranslation('profile');
 
   // API'den inventory listesini al (pagination ile)
-  const { data, isLoading, error } = useInventory(20);
+  const { data, isLoading, error } = useInventory(userId, 20);
 
   // Tüm sayfalardaki item'ları birleştir ve itemId'ye göre item'ı bul
   const allInventoryItems = useMemo(() => {
