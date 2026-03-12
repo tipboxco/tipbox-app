@@ -811,6 +811,13 @@ const TabContent: React.FC<TabContentProps> = ({
 };
 
 const ProfileScreen = ({ route }: ProfileScreenProps) => {
+  // 🔍 RE-RENDER TRACKING
+  const renderCountRef = useRef(0);
+  const prevStateRef = useRef<Record<string, any>>({});
+  renderCountRef.current += 1;
+  // Guard: useFocusEffect çift tetiklenmeyi önle
+  const lastFocusRefetchRef = useRef<number>(0);
+
   const { t } = useTranslation('profile');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -854,9 +861,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
   
-  // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
-  const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
-  
   // Badge modal state
   const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
 
@@ -869,71 +873,50 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     useCallback(() => {
       // Sadece kendi profilimizdeysek (targetUserId === user?.id) refetch et
       if (targetUserId && user?.id && targetUserId === user.id) {
-        // Activity indicator göster
-        setIsRefreshingOnFocus(true);
-        
-        // Tüm profil verilerini invalidate et ve backend'den yeni veriyi çek
-        // CreatePostScreen'lerde zaten invalidate yapılıyor ama burada da yapıyoruz
-        // çünkü diğer yerlerden de ProfileScreen'e yönlendirilebilir
+        // GUARD: 3 saniye içinde tekrar tetiklenmeyi önle (double-fire prevention)
+        const now = Date.now();
+        if (now - lastFocusRefetchRef.current < 3000) {
+          console.log(`⚡ [ProfileScreen] useFocusEffect SKIPPED - already ran ${now - lastFocusRefetchRef.current}ms ago`);
+          return;
+        }
+        lastFocusRefetchRef.current = now;
+
+        console.log(`⚡ [ProfileScreen] useFocusEffect TRIGGERED (render #${renderCountRef.current})`);
+        console.time('⚡ [ProfileScreen] useFocusEffect duration');
+
+        // invalidateQueries refetchActive: true ile zaten otomatik refetch yapar
+        // Ayrı refetchQueries çağırmaya gerek yok - bu double-fetch'i önler
         Promise.all([
-          // Cache'i invalidate et - yeni gönderi için cache'i temizle
-          queryClient.invalidateQueries({ 
-            queryKey: profileKeys.userPosts(targetUserId),
-            exact: false 
-          }),
-          queryClient.invalidateQueries({ 
+          queryClient.invalidateQueries({
             queryKey: profileKeys.profile(targetUserId),
-            exact: false 
+            exact: false
           }),
-          queryClient.invalidateQueries({ 
+          queryClient.invalidateQueries({
+            queryKey: profileKeys.userPosts(targetUserId),
+            exact: false
+          }),
+          queryClient.invalidateQueries({
             queryKey: profileKeys.userReviews(targetUserId),
-            exact: false 
+            exact: false
           }),
-          queryClient.invalidateQueries({ 
+          queryClient.invalidateQueries({
             queryKey: profileKeys.userBenchmarks(targetUserId),
-            exact: false 
+            exact: false
           }),
-          queryClient.invalidateQueries({ 
+          queryClient.invalidateQueries({
             queryKey: profileKeys.userTipsAndTricks(targetUserId),
-            exact: false 
+            exact: false
           }),
-          queryClient.invalidateQueries({ 
+          queryClient.invalidateQueries({
             queryKey: profileKeys.userReplies(targetUserId),
-            exact: false 
+            exact: false
           }),
         ]).then(() => {
-          // Cache invalidate edildikten sonra backend'den yeni veriyi çek
-          return Promise.all([
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userPosts(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.profile(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userReviews(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userBenchmarks(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userTipsAndTricks(targetUserId),
-              exact: false 
-            }),
-            queryClient.refetchQueries({ 
-              queryKey: profileKeys.userReplies(targetUserId),
-              exact: false 
-            }),
-          ]);
-        }).then(() => {
-          // Refetch tamamlandıktan sonra activity indicator'ı kapat
-          setIsRefreshingOnFocus(false);
+          console.timeEnd('⚡ [ProfileScreen] useFocusEffect duration');
+          console.log('⚡ [ProfileScreen] useFocusEffect COMPLETED');
         }).catch((error) => {
-          setIsRefreshingOnFocus(false);
+          console.timeEnd('⚡ [ProfileScreen] useFocusEffect duration');
+          console.warn('⚡ [ProfileScreen] useFocusEffect ERROR:', error?.message);
         });
       }
     }, [targetUserId, user?.id, queryClient])
@@ -942,7 +925,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
     if (!targetUserId) return;
-    
+    console.log('🔃 [ProfileScreen] handleRefresh (pull-to-refresh) TRIGGERED');
     setRefreshing(true);
     try {
       // Tüm profil verilerini backend'den yeniden çek
@@ -1063,8 +1046,56 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [activeTab, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]);
 
+  // 🔍 RE-RENDER DETECTOR - Her render'da neyin değiştiğini logla
+  useEffect(() => {
+    const currentState: Record<string, any> = {
+      activeTab,
+      refreshing,
+      isProfileLoading,
+      isMenuOpen,
+      isSendTipsModalVisible,
+      selectedBadge: !!selectedBadge,
+      badgeFilter,
+      isDark,
+      // Query states
+      feedQuery_isLoading: feedQuery.isLoading,
+      feedQuery_isFetching: feedQuery.isFetching,
+      feedQuery_dataPages: feedQuery.data?.pages?.length ?? 0,
+      reviewsQuery_isLoading: reviewsQuery.isLoading,
+      reviewsQuery_isFetching: reviewsQuery.isFetching,
+      reviewsQuery_dataPages: reviewsQuery.data?.pages?.length ?? 0,
+      benchmarksQuery_isLoading: benchmarksQuery.isLoading,
+      benchmarksQuery_isFetching: benchmarksQuery.isFetching,
+      tipsQuery_isLoading: tipsQuery.isLoading,
+      tipsQuery_isFetching: tipsQuery.isFetching,
+      repliesQuery_isLoading: repliesQuery.isLoading,
+      repliesQuery_isFetching: repliesQuery.isFetching,
+      // Profile
+      profileData: userProfile?.id ?? 'none',
+      profileStats: JSON.stringify(userProfile?.stats),
+      isTrusted: userProfile?.isTrusted,
+      isMuted: userProfile?.isMuted,
+    };
+
+    const prev = prevStateRef.current;
+    const changes: string[] = [];
+
+    for (const key of Object.keys(currentState)) {
+      if (prev[key] !== currentState[key]) {
+        changes.push(`${key}: ${JSON.stringify(prev[key])} → ${JSON.stringify(currentState[key])}`);
+      }
+    }
+
+    if (changes.length > 0 || renderCountRef.current <= 2) {
+      console.log(`🔄 [ProfileScreen] Render #${renderCountRef.current} | Changes:`, changes.length > 0 ? changes : 'INITIAL');
+    }
+
+    prevStateRef.current = currentState;
+  });
+
   // Instagram Model: Mapped posts for FlatList
   const mappedPosts = useMemo(() => {
+    console.log(`📊 [ProfileScreen] mappedPosts useMemo RECALCULATING (activeTab: ${activeTab})`);
     if (activeTab === 'badge' || activeTab === 'collections') return [];
 
     let allItems: any[] = [];
@@ -1680,6 +1711,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // ListHeaderComponent: Banner + Profile Info
   const renderProfileHeader = useCallback((isLoading: boolean): React.ReactElement | null => {
+    console.log(`🎨 [ProfileScreen] renderProfileHeader CALLED (isLoading: ${isLoading})`);
     if (!userProfile && !isLoading) return null;
     if (!userProfile) return null;
     
@@ -1727,23 +1759,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             bottom={0}
             bg="rgba(0, 0, 0, 0.5)"
           />
-          
-          {/* Pull to Refresh Loading Overlay - Banner'ın üstünde */}
-          {refreshing && (
-            <Box
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              bg="rgba(0, 0, 0, 0.3)"
-              justifyContent="center"
-              alignItems="center"
-              zIndex={3000}
-            >
-              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#FFFFFF'} />
-            </Box>
-          )}
           
           {/* Banner Controls */}
           <Box
@@ -2247,13 +2262,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
   const profileHeader = useMemo(() => {
+    console.log(`🖼️ [ProfileScreen] profileHeader useMemo RECALCULATING (isProfileLoading: ${isProfileLoading})`);
     return renderProfileHeader(isProfileLoading);
-  }, [renderProfileHeader, isProfileLoading, refreshing]);
+  }, [renderProfileHeader, isProfileLoading]);
 
   // ListHeaderComponent (Profile + Tab Bar) - activeTab bağımlılığı yok, re-render tetiklemez
   const ListHeaderComponent = useCallback(() => (

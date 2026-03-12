@@ -603,23 +603,50 @@ export const getInventory = async (
       },
     };
   } catch (error: any) {
-    // CRITICAL FIX: 404 hatası için log gösterme (endpoint henüz implement edilmemiş)
-    if (error.response?.status !== 404) {
-      const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
-      console.error('[getInventory] API Error:', {
-        url: '/inventory',
-        fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/inventory` : undefined,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        code: error.code,
-        errno: error.errno,
-      });
-      if (__DEV__ && error) {
-        console.error('[getInventory] Full error:', error);
+    // Network Error kontrolü - Backend endpoint mevcut değil veya servis çalışmıyor olabilir
+    if (error.message === 'Network Error' || !error.response) {
+      if (__DEV__) {
+        console.warn('[getInventory] ⚠️ Network Error - Backend endpoint may not be available:', {
+          url: `/users/${userId}/inventory`,
+          message: 'Returning empty response.',
+        });
       }
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
     }
+
+    // 404 hatası: Endpoint backend'de mevcut değil
+    if (error.response?.status === 404) {
+      if (__DEV__) {
+        console.warn('[getInventory] ⚠️ Endpoint not found (404):', {
+          url: `/users/${userId}/inventory`,
+          userId,
+        });
+      }
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+
+    const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
+    console.error('[getInventory] API Error:', {
+      url: `/users/${userId}/inventory`,
+      fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/users/${userId}/inventory` : undefined,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code,
+    });
     throw error;
   }
 };

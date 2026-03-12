@@ -573,6 +573,8 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5, op
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
+    // PERFORMANCE FIX: isFetching değişikliklerini render tetikleyicisinden çıkar
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading'],
   });
 };
 
