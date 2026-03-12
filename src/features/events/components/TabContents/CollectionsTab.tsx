@@ -18,6 +18,7 @@ import type { Collection, CollectionCategory } from '../../types/collection.type
 import type { CollectionFilters } from '../../types/medusa.types';
 import { useSafeAreaValues } from '@/src/utils';
 import { useCollections, useCollectionCategories } from '../../api/hooks';
+import { useUserCollectionAchievements } from '@/src/features/profile/api/hooks';
 
 /** "All" chip'i her zaman başta sabit olur — backend'den gelmez */
 const ALL_CATEGORY: CollectionCategory = { id: 'all', name: 'All', handle: 'all' };
@@ -27,6 +28,7 @@ type CollectionsTabProps = {
   activeFilter?: string;
   onFilterChange?: (filter: string) => void;
   collectionFilters?: CollectionFilters | null;
+  userId?: string; // Profile ekranında kullanıcının tamamladığı collections'ları göstermek için
 };
 
 type CollectionsTabNavigationProp = NativeStackNavigationProp<
@@ -38,6 +40,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   searchQuery,
   onFilterChange,
   collectionFilters,
+  userId, // Profile'da userId ile tamamlanmış collections
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -63,6 +66,24 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   );
 
   // EP-01: Collections listesi (infinite scroll)
+  // Profile'da userId varsa user'ın tamamladığı collections'ları getir
+  const allCollectionsQuery = useCollections({
+    search: debouncedSearch,
+    category: selectedHandle !== 'all' ? selectedHandle : undefined,
+    mainCategoryId: collectionFilters?.mainCategoryId,
+    subCategoryId: collectionFilters?.subCategoryId,
+    productGroupId: collectionFilters?.productGroupId,
+  });
+
+  const userCollectionsQuery = useUserCollectionAchievements(
+    userId,
+    undefined, // limit
+    debouncedSearch
+  );
+
+  // Profile'da userId varsa user collections, yoksa all collections
+  const activeQuery = userId ? userCollectionsQuery : allCollectionsQuery;
+
   const {
     data,
     fetchNextPage,
@@ -71,18 +92,28 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     isLoading,
     isRefetching,
     refetch,
-  } = useCollections({
-    search: debouncedSearch,
-    category: selectedHandle !== 'all' ? selectedHandle : undefined,
-    mainCategoryId: collectionFilters?.mainCategoryId,
-    subCategoryId: collectionFilters?.subCategoryId,
-    productGroupId: collectionFilters?.productGroupId,
-  });
+  } = activeQuery;
 
-  const collections = useMemo<Collection[]>(
-    () => data?.pages.flatMap((page) => page.collections) ?? [],
-    [data]
-  );
+  const collections = useMemo<Collection[]>(() => {
+    if (!data) return [];
+
+    return data.pages.flatMap((page) => {
+      // User collections API returns 'items' with AchievementApiItem[]
+      if ('items' in page) {
+        return page.items.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          currentProgress: item.current,
+          totalProgress: item.total,
+          backgroundGradient: { colors: ['#E2FF46', '#8B5CF6'] }, // Default gradient
+          category: undefined,
+        }));
+      }
+      // All collections API returns 'collections' with Collection[]
+      return page.collections || [];
+    });
+  }, [data]);
 
   // Pull-to-refresh
   const handleRefresh = useCallback(() => {
@@ -186,6 +217,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
                 styles.filterChip,
                 {
                   backgroundColor: isActive ? '#F1F1F1' : 'transparent',
+                  borderColor: '#EFEFEF',
                 },
               ]}
               onPress={() => handleCategoryPress(cat.handle)}
@@ -268,29 +300,32 @@ const styles = StyleSheet.create({
   },
   filterChips: {
     backgroundColor: 'transparent',
+    maxHeight: 44,
   },
   scrollView: {
     marginTop: 0,
   },
   filterChipsContainer: {
     paddingHorizontal: 16,
-    marginBottom: 12,
-    gap: 8,
+    paddingTop: 8,
+    marginBottom: 4,
+    gap: 6,
   },
   filterChip: {
     paddingHorizontal: 12,
-    paddingVertical: 3,
+    paddingVertical: 0,
     borderRadius: 10,
-    marginRight: 8,
+    marginRight: 6,
     borderWidth: 1,
-    borderColor: '#EFEFEF',
-    justifyContent: 'center',
+    height: 28,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#000000',
+    lineHeight: 14,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -308,7 +343,8 @@ const styles = StyleSheet.create({
     width: '48.5%',
   },
   emptyContainer: {
-    paddingVertical: 32,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   emptyText: {

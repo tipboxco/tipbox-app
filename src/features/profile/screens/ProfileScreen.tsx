@@ -64,7 +64,7 @@ import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import type { Badge } from '../types';
 import { useTranslation } from 'react-i18next';
 import { AnimatedTabBar } from '../components/AnimatedTabBar';
-import PagerView from 'react-native-pager-view';
+// PagerView removed - using single FlatList with touch-based swipe for tab switching
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -1009,45 +1009,286 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const headerScrollViewRef = useRef<ScrollView>(null);
-  const pagerViewRef = useRef<PagerView>(null);
+  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
   const tabBarRef = useRef<any>(null);
+  const flatListRef = useRef<FlatList>(null);
+  const headerHeightRef = useRef(0);
 
-  // PagerView scroll position for realtime tab bar animation
-  const pagerScrollPosition = useSharedValue(0);
+  // Tab değişiminde FlatList'i content başlangıcına scroll et
+  const scrollToContent = useCallback(() => {
+    if (flatListRef.current && headerHeightRef.current > 0) {
+      flatListRef.current.scrollToOffset({
+        offset: headerHeightRef.current,
+        animated: false,
+      });
+    }
+  }, []);
 
-  // Tab değiştiğinde PagerView'ı ve tab bar'ı sync et
+  // Tab değişimi - tabBarRef üzerinden direkt güncelle, ListHeaderComponent re-render olmaz
   const handleTabChange = useCallback((tabKey: TabKey) => {
-    const tabIndex = TABS.findIndex(tab => tab.key === tabKey);
-    if (tabIndex !== -1) {
-      // PagerView'ı ilgili sayfaya kaydır
-      if (pagerViewRef.current) {
-        pagerViewRef.current.setPage(tabIndex);
+    setActiveTab(tabKey);
+    if (tabBarRef.current) {
+      tabBarRef.current.setActiveTab(tabKey);
+    }
+    scrollToContent();
+  }, [scrollToContent]);
+
+
+  // Instagram Model: Query hooks (aktif tab bazlı)
+  const feedQuery = useUserPosts(targetUserId, 10, {
+    enabled: activeTab === 'feed' && !!targetUserId
+  });
+  const reviewsQuery = useUserReviews(targetUserId, 10, {
+    enabled: (activeTab === 'feed' || activeTab === 'reviews') && !!targetUserId
+  });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 10, {
+    enabled: (activeTab === 'feed' || activeTab === 'benchmarks') && !!targetUserId
+  });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 10, {
+    enabled: (activeTab === 'feed' || activeTab === 'tips') && !!targetUserId
+  });
+  const repliesQuery = useUserReplies(targetUserId, 10, {
+    enabled: (activeTab === 'feed' || activeTab === 'replies') && !!targetUserId
+  });
+
+  // Instagram Model: Active tab query
+  const activeTabQuery = useMemo(() => {
+    switch (activeTab) {
+      case 'feed': return feedQuery;
+      case 'reviews': return reviewsQuery;
+      case 'benchmarks': return benchmarksQuery;
+      case 'tips': return tipsQuery;
+      case 'replies': return repliesQuery;
+      default: return feedQuery;
+    }
+  }, [activeTab, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]);
+
+  // Instagram Model: Mapped posts for FlatList
+  const mappedPosts = useMemo(() => {
+    if (activeTab === 'badge' || activeTab === 'collections') return [];
+
+    let allItems: any[] = [];
+
+    if (activeTab === 'feed') {
+      // Feed: Aggregate all queries
+      const feedItems = (feedQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
+      const reviewItems = (reviewsQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
+      const benchmarkItems = (benchmarksQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
+      const tipsItems = (tipsQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
+      const repliesItems = (repliesQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
+
+      allItems = [...feedItems, ...reviewItems, ...benchmarkItems, ...tipsItems, ...repliesItems];
+    } else {
+      // Other tabs: Only active tab query
+      const queryData = activeTabQuery.data as any;
+      allItems = queryData?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
+    }
+
+    // Filter valid items
+    const validItems = allItems.filter((item: any) => item?.id);
+    const uniqueItems = validItems.filter((item: any, index: number, self: any[]) =>
+      index === self.findIndex((t: any) => t?.id === item?.id)
+    );
+
+    const mapped: MappedPost[] = [];
+
+    for (const item of uniqueItems) {
+      let mappedItem: MappedPost | null = null;
+
+      switch (item.type) {
+        case CardType.UPDATE:
+          mappedItem = { type: 'update', id: item.id, data: mapUpdateToCardData(item) };
+          break;
+        case CardType.EXPERIENCE:
+          if (item?.contextData && Array.isArray(item?.content)) {
+            const data = mapExperienceToCardData(item as ProfileReview);
+            if (data) mappedItem = { type: 'experience', id: item.id, data };
+          }
+          break;
+        case CardType.BENCHMARK:
+          const benchData = mapBenchmarkToCardData(item as BenchmarkApiItem);
+          if (benchData) mappedItem = { type: 'benchmark', id: item.id, data: benchData };
+          break;
+        case CardType.TIPS_AND_TRICKS:
+          if (item?.contextData?.id) {
+            const tipsData = mapTipsToCardData(item as TipsApiItem);
+            if (tipsData) mappedItem = { type: 'tips', id: item.id, data: tipsData };
+          }
+          break;
+        case CardType.QUESTION:
+          if (item?.contextData?.id && 'isBoosted' in item) {
+            const qData = mapQuestionToCardData(item as QuestionApiItem);
+            if (qData) mappedItem = { type: 'question', id: item.id, data: qData };
+          }
+          break;
+        case CardType.POST:
+        default:
+          const postData = mapPostToCardData(item as ProfilePost);
+          if (postData) mappedItem = { type: 'post', id: item.id, data: postData };
+          break;
       }
-      setActiveTab(tabKey);
+
+      if (mappedItem) mapped.push(mappedItem);
+    }
+
+    return mapped;
+  }, [activeTab, feedQuery.data, reviewsQuery.data, benchmarksQuery.data, tipsQuery.data, repliesQuery.data, activeTabQuery.data]);
+
+  // Instagram Model: Render post card
+  const renderPostCard = useCallback((post: MappedPost) => {
+    switch (post.type) {
+      case 'update': return <UpdatePostCard data={post.data} />;
+      case 'experience': return <ExperiencePostCard data={post.data} />;
+      case 'benchmark': return <BenchmarkPostCard data={post.data} />;
+      case 'tips': return <TipsAndTricksPostCard data={post.data} />;
+      case 'question': return <QuestionPostCard data={post.data} />;
+      case 'post':
+      default: return <PostCard data={post.data} />;
     }
   }, []);
 
-  // PagerView scroll sırasında realtime progress tracking
-  const handlePageScroll = useCallback((e: any) => {
-    const { position, offset } = e.nativeEvent;
-    // position: mevcut sayfa index'i, offset: 0-1 arası progress (0 = tam sayfada, 1 = tam geçiş yapılmış)
-    pagerScrollPosition.value = position + offset;
-  }, []);
+  // Instagram Model: FlatList renderItem
+  const renderItem: ListRenderItem<MappedPost> = useCallback(({ item }) => (
+    <Box px={16} mb={16}>
+      {renderPostCard(item)}
+    </Box>
+  ), [renderPostCard]);
 
-  // PagerView sayfa değiştiğinde active tab'ı güncelle
-  const handlePageSelected = useCallback((e: any) => {
-    const position = e.nativeEvent.position;
-    const newTab = TABS[position];
-    if (newTab && newTab.key !== activeTab) {
-      setActiveTab(newTab.key);
-      // Tab bar'ı da ilgili tab'a scroll et - smooth animation ile
-      if (tabBarRef.current) {
-        tabBarRef.current.scrollToTab(newTab.key);
-      }
+  // Instagram Model: FlatList keyExtractor
+  const keyExtractor = useCallback((item: MappedPost) => item.id, []);
+
+  // Instagram Model: FlatList ListEmptyComponent
+  const ListEmptyComponent = useCallback(() => {
+    // Badge tab: Show badge grid
+    if (activeTab === 'badge') {
+      const filteredBadges = (() => {
+        if (badgeFilter === 'All Badges') return userProfile?.badges || [];
+        if (badgeFilter === 'Event Badges') return (userProfile?.badges || []).filter((b) => b.type === 'event');
+        if (badgeFilter === 'Collections') return (userProfile?.badges || []).filter((b) => b.type === 'collection');
+        return userProfile?.badges || [];
+      })();
+
+      return (
+        <Box px={16} pt={8}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 12 }}
+            nestedScrollEnabled={true}
+            directionalLockEnabled={true}
+          >
+            <HStack space="xs" alignItems="center">
+              {BADGE_FILTERS.map((filter) => {
+                const isActive = badgeFilter === filter;
+                return (
+                  <RNPressable
+                    key={filter}
+                    onPress={() => setBadgeFilter(filter)}
+                    style={{
+                      backgroundColor: isActive ? '#F1F1F1' : 'transparent',
+                      borderWidth: 1,
+                      borderColor: '#EFEFEF',
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 3,
+                      marginRight: 6,
+                      minHeight: 28,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <RNText style={{ fontSize: 12, fontWeight: '600', color: '#000000' }}>
+                      {filter}
+                    </RNText>
+                  </RNPressable>
+                );
+              })}
+            </HStack>
+          </ScrollView>
+          {filteredBadges.length === 0 ? (
+            <Box py={32} alignItems="center">
+              <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+                {badgeFilter === 'All Badges' ? 'No badges yet' : `No ${badgeFilter.toLowerCase()} yet`}
+              </Text>
+            </Box>
+          ) : (
+            <Box flexDirection="row" flexWrap="wrap" justifyContent="center" alignItems="center">
+              {filteredBadges.map((badge) => (
+                <Pressable
+                  key={badge.id}
+                  onPress={() => handleBadgePress?.(badge)}
+                  width={114}
+                  height={130}
+                  mb={12}
+                  alignItems="center"
+                  justifyContent="center"
+                  bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                  borderWidth={1}
+                  borderColor={isDark ? '#333' : '#E9E9E9'}
+                  borderRadius={5}
+                  p="$2"
+                >
+                  <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
+                    <Image
+                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                      alt={badge.title}
+                      style={{ width: 56, height: 56 }}
+                      resizeMode="contain"
+                    />
+                  </Box>
+                  <Text
+                    mt="$1"
+                    fontSize="$2xs"
+                    fontWeight="$semibold"
+                    color={isDark ? '$textDark50' : '$textLight900'}
+                    textAlign="center"
+                    numberOfLines={2}
+                  >
+                    {badge.title}
+                  </Text>
+                </Pressable>
+              ))}
+            </Box>
+          )}
+        </Box>
+      );
     }
-  }, [activeTab]);
-  
+
+    // Collections tab: Show CollectionsTab component
+    if (activeTab === 'collections') {
+      return <CollectionsTab />;
+    }
+
+    // Loading state
+    if (activeTabQuery.isLoading) {
+      return (
+        <Box py={20}>
+          <FeedSkeleton count={3} />
+        </Box>
+      );
+    }
+
+    // Empty posts
+    return (
+      <Box py={20} alignItems="center">
+        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+          No content found yet.
+        </Text>
+      </Box>
+    );
+  }, [activeTab, badgeFilter, userProfile?.badges, isDark, activeTabQuery.isLoading, handleBadgePress]);
+
+  // Instagram Model: FlatList ListFooterComponent
+  const ListFooterComponent = useCallback(() => {
+    if (activeTab === 'badge' || activeTab === 'collections') return null;
+    if (!activeTabQuery.isFetchingNextPage) return null;
+    return (
+      <Box py={20} alignItems="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }, [activeTab, activeTabQuery.isFetchingNextPage, isDark]);
+
   // Handle Send TIPS - API call
   const handleSendTips = useCallback((amount: number) => {
     if (!user?.id || !targetUserId) {
@@ -1438,7 +1679,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
   
   // ListHeaderComponent: Banner + Profile Info
-  const renderProfileHeader = useCallback((activeTab: TabKey, onChangeTab: (tab: TabKey) => void, isLoading: boolean): React.ReactElement | null => {
+  const renderProfileHeader = useCallback((isLoading: boolean): React.ReactElement | null => {
     if (!userProfile && !isLoading) return null;
     if (!userProfile) return null;
     
@@ -2011,32 +2252,26 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
   const profileHeader = useMemo(() => {
-    return renderProfileHeader(activeTab, handleTabChange, isProfileLoading);
-  }, [renderProfileHeader, activeTab, handleTabChange, isProfileLoading, refreshing]);
-  
-  // Tab query refs - load more için
-  const tabQueriesRef = useRef<{ [key: string]: any }>({});
-  
-  // Tab query'yi kaydet
-  const handleTabQueryRef = useCallback((tabKey: TabKey, query: any) => {
-    tabQueriesRef.current[tabKey] = query;
-  }, []);
-  
-  // Scroll handler - load more için
-  const handleScroll = useCallback((event: any) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const paddingToBottom = 200; // 200px kala load more yap
-    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-    
-    if (isCloseToBottom) {
-      // Aktif tab'ın query'sine load more yap
-      const activeQuery = tabQueriesRef.current[activeTab];
-      if (activeQuery && activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
-        activeQuery.fetchNextPage();
-      }
-    }
-  }, [activeTab]);
-  
+    return renderProfileHeader(isProfileLoading);
+  }, [renderProfileHeader, isProfileLoading, refreshing]);
+
+  // ListHeaderComponent (Profile + Tab Bar) - activeTab bağımlılığı yok, re-render tetiklemez
+  const ListHeaderComponent = useCallback(() => (
+    <View
+      onLayout={(e) => {
+        headerHeightRef.current = e.nativeEvent.layout.height;
+      }}
+    >
+      {profileHeader}
+      <AnimatedTabBar
+        ref={tabBarRef}
+        tabs={TABS}
+        onTabChange={handleTabChange}
+        isDark={isDark}
+      />
+    </View>
+  ), [profileHeader, handleTabChange, isDark]);
+
   // Loading state - profile yüklenirken loading indicator göster
   if (isProfileLoading && !userProfile) {
     return (
@@ -2058,61 +2293,42 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} width="100%">
       <StatusBar style="light" />
 
-      <ScrollView
-        showsVerticalScrollIndicator={true}
-        bounces={false}
-        stickyHeaderIndices={[1]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing || false}
-            onRefresh={handleRefresh}
-            tintColor={isDark ? '#FFFFFF' : '#000000'}
-            colors={isDark ? ['#FFFFFF'] : ['#000000']}
-          />
-        }
-      >
-        {/* Profile Header - Common for all tabs */}
-        {profileHeader}
-
-        {/* Tab Bar - Sticky */}
-        <AnimatedTabBar
-          ref={tabBarRef}
-          tabs={TABS}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          isDark={isDark}
-          scrollPosition={pagerScrollPosition}
+      {/* Single FlatList with touch-based swipe for tab switching */}
+      <View style={{ flex: 1 }}>
+        <FlatList
+          ref={flatListRef}
+          data={mappedPosts}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          ListHeaderComponent={ListHeaderComponent}
+          ListEmptyComponent={ListEmptyComponent}
+          ListFooterComponent={ListFooterComponent}
+          onEndReached={() => {
+            if (activeTab !== 'badge' && activeTab !== 'collections') {
+              if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
+                activeTabQuery.fetchNextPage();
+              }
+            }
+          }}
+          onEndReachedThreshold={0.3}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          bounces={false}
+          overScrollMode="never"
+          showsVerticalScrollIndicator={true}
+          scrollEventThrottle={16}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={5}
+          updateCellsBatchingPeriod={50}
+          windowSize={10}
+          contentContainerStyle={{
+            paddingBottom: bottomPadding,
+          }}
         />
-
-        {/* PagerView - Only tab contents */}
-        <Box height={800}>
-          <PagerView
-            ref={pagerViewRef}
-            style={{ flex: 1 }}
-            initialPage={0}
-            onPageScroll={handlePageScroll}
-            onPageSelected={handlePageSelected}
-          >
-            {TABS.map((tab) => (
-              <View key={tab.key}>
-                <TabContent
-                  tabKey={tab.key}
-                  targetUserId={targetUserId || ''}
-                  isDark={isDark}
-                  onQueryRef={handleTabQueryRef}
-                  isActive={tab.key === activeTab}
-                  profileBadges={userProfile?.badges || []}
-                  onBadgePress={handleBadgePress}
-                  bottomPadding={bottomPadding}
-                />
-              </View>
-            ))}
-          </PagerView>
-        </Box>
-      </ScrollView>
+      </View>
 
 
       {/* Profile Menu Modal - React Native Modal */}
