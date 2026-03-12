@@ -459,13 +459,17 @@ export const PostDetailScreen = () => {
         if (!commentsData?.comments) return flat;
 
         commentsData.comments.forEach((item: CommentWithReplies) => {
+            // Backend avatarUrl veya avatar dönebilir - her ikisini de kontrol et
+            const userAvatarRaw = item.user.avatarUrl ?? item.user.avatar;
+            const userAvatar = userAvatarRaw ? toImageSource(userAvatarRaw) : DEFAULT_USER_AVATAR;
+
             flat.push({
                 id: item.comment.id,
                 commentId: item.comment.id,
                 userId: item.comment.userId,
                 userName: item.user.name || 'Anonymous',
-                userTitle: item.user.avatar ? '' : '',
-                avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
+                userTitle: '',
+                avatar: userAvatar,
                 timeAgo: formatRelativeTime(item.comment.createdAt),
                 content: item.comment.comment,
                 likesCount: item.comment.likesCount || 0,
@@ -481,7 +485,7 @@ export const PostDetailScreen = () => {
                         userId: reply.userId,
                         userName: item.user.name || 'Anonymous',
                         userTitle: '',
-                        avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
+                        avatar: userAvatar,
                         timeAgo: formatRelativeTime(reply.createdAt),
                         content: reply.comment,
                         likesCount: reply.likesCount || 0,

@@ -38,8 +38,8 @@ export const SMSVerifyCodeScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>{t('settings.smsVerifyCode.success')}</ToastTitle>
-                <ToastDescription>{t('settings.smsVerifyCode.successMessage')}</ToastDescription>
+                <ToastTitle>{t('smsVerifyCode.success')}</ToastTitle>
+                <ToastDescription>{t('smsVerifyCode.successMessage')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -55,9 +55,9 @@ export const SMSVerifyCodeScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>{t('settings.smsVerifyCode.error')}</ToastTitle>
+                <ToastTitle>{t('smsVerifyCode.error')}</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || t('settings.smsVerifyCode.errorMessage')}
+                  {error?.response?.data?.message || t('smsVerifyCode.errorMessage')}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -76,8 +76,8 @@ export const SMSVerifyCodeScreen = () => {
         return (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="info" variant="solid">
-              <ToastTitle>{t('settings.smsVerifyCode.codeSent')}</ToastTitle>
-              <ToastDescription>{t('settings.smsVerifyCode.codeSentMessage')}</ToastDescription>
+              <ToastTitle>{t('smsVerifyCode.codeSent')}</ToastTitle>
+              <ToastDescription>{t('smsVerifyCode.codeSentMessage')}</ToastDescription>
             </Toast>
           </Box>
         );
@@ -88,9 +88,9 @@ export const SMSVerifyCodeScreen = () => {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
       <VerifyCodeScreen
-        headerTitle={t('settings.smsVerifyCode.headerTitle')}
-        title={t('settings.smsVerifyCode.title')}
-        description={t('settings.smsVerifyCode.description')}
+        headerTitle={t('smsVerifyCode.headerTitle')}
+        title={t('smsVerifyCode.title')}
+        description={t('smsVerifyCode.description')}
         maskedEmail={maskedPhone}
         onVerify={handleVerify}
         onBackPress={() => navigation.goBack()}
@@ -104,7 +104,7 @@ export const SMSVerifyCodeScreen = () => {
             textAlign="center"
             underline
           >
-            {t('settings.smsVerifyCode.resendCode')}
+            {t('smsVerifyCode.resendCode')}
           </Text>
         </Pressable>
       </Box>

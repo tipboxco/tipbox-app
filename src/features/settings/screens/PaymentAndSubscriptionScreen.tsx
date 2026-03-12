@@ -138,7 +138,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
           <Header
-            title={t('settings.payment.headerTitle')}
+            title={t('payment.headerTitle')}
             showBackButton={true}
             onBackPress={() => navigation.goBack()}
           />
@@ -170,7 +170,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
                         tab1Style,
                       ]}
                     >
-                      {t('settings.payment.tabPaymentMethods')}
+                      {t('payment.tabPaymentMethods')}
                     </Animated.Text>
                   </VStack>
                 </Pressable>
@@ -187,7 +187,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
                         tab2Style,
                       ]}
                     >
-                      {t('settings.payment.tabPremiumPlans')}
+                      {t('payment.tabPremiumPlans')}
                     </Animated.Text>
                   </VStack>
                 </Pressable>

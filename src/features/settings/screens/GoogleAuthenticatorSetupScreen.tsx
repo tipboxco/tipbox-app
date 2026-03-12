@@ -37,8 +37,8 @@ export const GoogleAuthenticatorSetupScreen = () => {
         return (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle>{t('settings.googleAuthSetup.copied')}</ToastTitle>
-              <ToastDescription>{t('settings.googleAuthSetup.copiedMessage')}</ToastDescription>
+              <ToastTitle>{t('googleAuthSetup.copied')}</ToastTitle>
+              <ToastDescription>{t('googleAuthSetup.copiedMessage')}</ToastDescription>
             </Toast>
           </Box>
         );
@@ -57,7 +57,7 @@ export const GoogleAuthenticatorSetupScreen = () => {
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
-          title={t('settings.googleAuthSetup.headerTitle')}
+          title={t('googleAuthSetup.headerTitle')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -95,13 +95,13 @@ export const GoogleAuthenticatorSetupScreen = () => {
                       color={isDark ? '#FFFFFF' : '#000000'}
                       mb="$1"
                     >
-                      {t('settings.googleAuthSetup.step1Title')}
+                      {t('googleAuthSetup.step1Title')}
                     </Text>
                     <Text
                       fontSize={11}
                       color={isDark ? '#CCCCCC' : '#666666'}
                     >
-                      {t('settings.googleAuthSetup.step1Description')}
+                      {t('googleAuthSetup.step1Description')}
                     </Text>
                   </VStack>
                 </HStack>
@@ -143,13 +143,13 @@ export const GoogleAuthenticatorSetupScreen = () => {
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mb="$1"
                   >
-                    {t('settings.googleAuthSetup.step2Title')}
+                    {t('googleAuthSetup.step2Title')}
                   </Text>
                   <Text
                     fontSize={11}
                     color={isDark ? '#CCCCCC' : '#666666'}
                   >
-                    {t('settings.googleAuthSetup.step2Description')}
+                    {t('googleAuthSetup.step2Description')}
                   </Text>
                 </VStack>
               </HStack>
@@ -200,7 +200,7 @@ export const GoogleAuthenticatorSetupScreen = () => {
                     fontSize={12}
                     fontWeight="$semibold"
                   >
-                    {t('settings.googleAuthSetup.showQRCode')}
+                    {t('googleAuthSetup.showQRCode')}
                   </ButtonText>
                 </HStack>
               </Button>
@@ -221,7 +221,7 @@ export const GoogleAuthenticatorSetupScreen = () => {
                     color={isDark ? '#CCCCCC' : '#666666'}
                     textAlign="center"
                   >
-                    {t('settings.googleAuthSetup.qrCodePlaceholder')}
+                    {t('googleAuthSetup.qrCodePlaceholder')}
                   </Text>
                 </Box>
               )}
@@ -257,13 +257,13 @@ export const GoogleAuthenticatorSetupScreen = () => {
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mb="$1"
                   >
-                    {t('settings.googleAuthSetup.step3Title')}
+                    {t('googleAuthSetup.step3Title')}
                   </Text>
                   <Text
                     fontSize={11}
                     color={isDark ? '#CCCCCC' : '#666666'}
                   >
-                    {t('settings.googleAuthSetup.step3Description')}
+                    {t('googleAuthSetup.step3Description')}
                   </Text>
                 </VStack>
               </HStack>
@@ -284,7 +284,7 @@ export const GoogleAuthenticatorSetupScreen = () => {
               fontWeight="$bold"
               textAlign="center"
             >
-              {t('settings.googleAuthSetup.nextButton')}
+              {t('googleAuthSetup.nextButton')}
             </ButtonText>
           </Button>
         </Box>

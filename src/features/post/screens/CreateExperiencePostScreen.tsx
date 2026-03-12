@@ -219,9 +219,10 @@ export const CreateExperiencePostScreen = () => {
                     return;
                 }
 
-                // Gemini AI split isteği
+                // Gemini AI split isteği - klavyeyi kapat ve loading başlat
+                Keyboard.dismiss();
                 setIsSplitLoading(true);
-                
+
                 try {
                     console.log('[CreateExperiencePostScreen] 📤 Calling split-experience API...');
                     const response = await splitExperienceMutation.mutateAsync({
@@ -240,10 +241,10 @@ export const CreateExperiencePostScreen = () => {
                     // Cümle sonundaki ekstra "(" kaldır (AI bazen ekliyor)
                     const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
                     // AI response'u form'a set et
+                    // CRITICAL: AI sadece metni getirir, yıldız sayısını kullanıcı eliyle belirler (0 olarak başlar)
                     if (response.priceAndShopping) {
                         setValue('priceExperienceText', trimTrailingParen(response.priceAndShopping.content));
-                        setValue('priceRating', response.priceAndShopping.rating);
-                        console.log('[CreateExperiencePostScreen] 💰 Set priceRating to:', response.priceAndShopping.rating);
+                        setValue('priceRating', 0); // Kullanıcı eliyle belirlenmeli
                     } else {
                         setValue('priceExperienceText', '');
                         setValue('priceRating', 0);
@@ -251,8 +252,7 @@ export const CreateExperiencePostScreen = () => {
 
                     if (response.productAndUsage) {
                         setValue('productExperienceText', trimTrailingParen(response.productAndUsage.content));
-                        setValue('productRating', response.productAndUsage.rating);
-                        console.log('[CreateExperiencePostScreen] 📦 Set productRating to:', response.productAndUsage.rating);
+                        setValue('productRating', 0); // Kullanıcı eliyle belirlenmeli
                     } else {
                         setValue('productExperienceText', '');
                         setValue('productRating', 0);
@@ -818,8 +818,12 @@ export const CreateExperiencePostScreen = () => {
     // Check if Next button should be enabled for Step 2
     const isStep2NextEnabled = experienceText && experienceText.trim().length > 0;
 
-    // Check if Share button should be enabled (Both ratings selected and not editing)
-    const isShareEnabled = priceRating > 0 && productRating > 0 && editingField === null;
+    // Check if Share button should be enabled (Both ratings selected, both texts non-empty, and not editing)
+    const priceExperienceText = watch('priceExperienceText');
+    const productExperienceText = watch('productExperienceText');
+    const isShareEnabled = priceRating > 0 && productRating > 0
+        && !!priceExperienceText?.trim() && !!productExperienceText?.trim()
+        && editingField === null;
     
     // Submit sırasında butonu devre dışı bırak (çift tıklama engeli)
     const isSubmitPending = createExperiencePostMutation.isPending || addInventoryItemMutation.isPending;
@@ -991,7 +995,7 @@ export const CreateExperiencePostScreen = () => {
                         />
 
                         {/* Step 2 Content */}
-                        <Box flex={1} position="relative">
+                        <Box flex={1}>
                             <StepTwoScreen
                                 experienceText={experienceText || ''}
                                 onExperienceTextChange={(text) => setValue('experienceText', text)}
@@ -1003,33 +1007,19 @@ export const CreateExperiencePostScreen = () => {
                                 onRemoveImage={handleRemoveImage}
                                 selectedProduct={selectedProduct}
                             />
-                            
-                            {/* Loading Overlay - Sadece spinner (ekran kararmadan) */}
-                            {isStep2Loading && (
-                                <Box
-                                    position="absolute"
-                                    top={0}
-                                    left={0}
-                                    right={0}
-                                    bottom={0}
-                                    bg="transparent"
-                                    justifyContent="center"
-                                    alignItems="center"
-                                    pointerEvents="box-none"
-                                >
-                                    <VStack space="md" alignItems="center" bg="transparent">
-                                        <ActivityIndicator size="large" color={isDark ? '#E2FF46' : '#8B5CF6'} />
-                                        <Text
-                                            color={isDark ? '#FFFFFF' : '#000000'}
-                                            fontSize={14}
-                                            fontWeight="$medium"
-                                        >
-                                            {t('create.experience.ai.processingContent')}
-                                        </Text>
-                                    </VStack>
-                                </Box>
-                            )}
                         </Box>
+
+                        {/* Loading Overlay - Modal ile tüm ekranı kaplar, hiçbir yere tıklanamaz */}
+                        <Modal visible={isStep2Loading} transparent animationType="fade">
+                            <View style={styles.loadingOverlay}>
+                                <View style={[styles.loadingBox, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }]}>
+                                    <ActivityIndicator size="large" color={isDark ? '#E2FF46' : '#8B5CF6'} />
+                                    <Text color={isDark ? '$textDark50' : '#000000'} fontSize={14} mt={12} fontWeight="$medium">
+                                        {t('create.experience.ai.processingContent')}
+                                    </Text>
+                                </View>
+                            </View>
+                        </Modal>
                     </Box>
                 </FormProvider>
             </SafeAreaView>

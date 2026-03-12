@@ -34,8 +34,8 @@ export const SMSVerificationScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>{t('settings.smsVerification.errors.missingInfoTitle')}</ToastTitle>
-                <ToastDescription>{t('settings.smsVerification.errors.missingInfoDescription')}</ToastDescription>
+                <ToastTitle>{t('smsVerification.errors.missingInfoTitle')}</ToastTitle>
+                <ToastDescription>{t('smsVerification.errors.missingInfoDescription')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -60,9 +60,9 @@ export const SMSVerificationScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>{t('settings.smsVerification.errors.errorTitle')}</ToastTitle>
+                <ToastTitle>{t('smsVerification.errors.errorTitle')}</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || t('settings.smsVerification.errors.fallbackMessage')}
+                  {error?.response?.data?.message || t('smsVerification.errors.fallbackMessage')}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -79,7 +79,7 @@ export const SMSVerificationScreen = () => {
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
-          title={t('settings.smsVerification.title')}
+          title={t('smsVerification.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -91,7 +91,7 @@ export const SMSVerificationScreen = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             mb="$2"
           >
-            {t('settings.smsVerification.heading')}
+            {t('smsVerification.heading')}
           </Text>
 
           <Text
@@ -99,7 +99,7 @@ export const SMSVerificationScreen = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             mb="$6"
           >
-            {t('settings.smsVerification.description')}
+            {t('smsVerification.description')}
           </Text>
 
           {/* Phone Number Input */}
@@ -138,7 +138,7 @@ export const SMSVerificationScreen = () => {
             >
               <Input borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder={t('settings.smsVerification.phonePlaceholder')}
+                  placeholder={t('smsVerification.phonePlaceholder')}
                   placeholderTextColor="#B9B9B9"
                   value={phoneNumber}
                   onChangeText={(text) => {
@@ -180,7 +180,7 @@ export const SMSVerificationScreen = () => {
               fontWeight="$bold"
               textAlign="center"
             >
-              {t('settings.smsVerification.sendCodeButton')}
+              {t('smsVerification.sendCodeButton')}
             </ButtonText>
           </Button>
         </Box>

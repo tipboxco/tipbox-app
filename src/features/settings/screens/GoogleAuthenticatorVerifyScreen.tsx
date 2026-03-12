@@ -32,8 +32,8 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>{t('settings.googleAuthVerify.invalidCode')}</ToastTitle>
-                <ToastDescription>{t('settings.googleAuthVerify.invalidCodeMessage')}</ToastDescription>
+                <ToastTitle>{t('googleAuthVerify.invalidCode')}</ToastTitle>
+                <ToastDescription>{t('googleAuthVerify.invalidCodeMessage')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -53,8 +53,8 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>{t('settings.googleAuthVerify.success')}</ToastTitle>
-                <ToastDescription>{t('settings.googleAuthVerify.successMessage')}</ToastDescription>
+                <ToastTitle>{t('googleAuthVerify.success')}</ToastTitle>
+                <ToastDescription>{t('googleAuthVerify.successMessage')}</ToastDescription>
               </Toast>
             </Box>
           );
@@ -70,9 +70,9 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>{t('settings.googleAuthVerify.error')}</ToastTitle>
+                <ToastTitle>{t('googleAuthVerify.error')}</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || t('settings.googleAuthVerify.errorMessage')}
+                  {error?.response?.data?.message || t('googleAuthVerify.errorMessage')}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -89,7 +89,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
-          title={t('settings.googleAuthVerify.headerTitle')}
+          title={t('googleAuthVerify.headerTitle')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -101,7 +101,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             mb="$2"
           >
-            {t('settings.googleAuthVerify.title')}
+            {t('googleAuthVerify.title')}
           </Text>
 
           <Text
@@ -109,7 +109,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
             color={isDark ? '#FFFFFF' : '#000000'}
             mb="$6"
           >
-            {t('settings.googleAuthVerify.description')}
+            {t('googleAuthVerify.description')}
           </Text>
 
           {/* Code Input */}
@@ -123,7 +123,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           >
             <Input borderWidth={0} bg="transparent">
               <InputField
-                placeholder={t('settings.googleAuthVerify.placeholder')}
+                placeholder={t('googleAuthVerify.placeholder')}
                 placeholderTextColor="#B9B9B9"
                 value={code}
                 onChangeText={(text) => {
@@ -156,7 +156,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
               fontWeight="$bold"
               textAlign="center"
             >
-              {t('settings.googleAuthVerify.completeButton')}
+              {t('googleAuthVerify.completeButton')}
             </ButtonText>
           </Button>
         </Box>

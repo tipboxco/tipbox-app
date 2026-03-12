@@ -75,9 +75,9 @@ export const ForgotPasswordScreen = () => {
     return (
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VerifyCodeScreen
-          headerTitle={t('settings.forgotPassword.title')}
-          title={t('settings.forgotPassword.verifyStep.title')}
-          description={t('settings.forgotPassword.verifyStep.description')}
+          headerTitle={t('forgotPassword.title')}
+          title={t('forgotPassword.verifyStep.title')}
+          description={t('forgotPassword.verifyStep.description')}
           maskedEmail={maskedEmail}
           onVerify={handleVerifyCode}
           onBackPress={handleBackPress}
@@ -91,7 +91,7 @@ export const ForgotPasswordScreen = () => {
     return (
       <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <SetPasswordScreen
-          headerTitle={t('settings.forgotPassword.title')}
+          headerTitle={t('forgotPassword.title')}
           onSetPassword={handleSetPassword}
           onBackPress={handleBackPress}
         />
@@ -106,7 +106,7 @@ export const ForgotPasswordScreen = () => {
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
-          title={t('settings.forgotPassword.title')}
+          title={t('forgotPassword.title')}
           showBackButton
           onBackPress={() => navigation.goBack()}
         />
@@ -119,7 +119,7 @@ export const ForgotPasswordScreen = () => {
               fontWeight="$semibold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              {t('settings.forgotPassword.description')}
+              {t('forgotPassword.description')}
             </Text>
           </HStack>
 
@@ -131,7 +131,7 @@ export const ForgotPasswordScreen = () => {
                 fontWeight="$bold"
                 color={isDark ? '#FFFFFF' : '#000000'}
               >
-                {t('settings.forgotPassword.email')}
+                {t('forgotPassword.email')}
               </Text>
               <Box
                 borderWidth={1}
@@ -143,7 +143,7 @@ export const ForgotPasswordScreen = () => {
               >
                 <Input borderWidth={0} bg="transparent">
                   <InputField
-                    placeholder={t('settings.forgotPassword.emailPlaceholder')}
+                    placeholder={t('forgotPassword.emailPlaceholder')}
                     placeholderTextColor="#B9B9B9"
                     value={email}
                     onChangeText={setEmail}
@@ -170,7 +170,7 @@ export const ForgotPasswordScreen = () => {
               fontWeight="$bold"
               textAlign="center"
             >
-              {t('settings.forgotPassword.sendEmailButton')}
+              {t('forgotPassword.sendEmailButton')}
             </ButtonText>
           </Button>
         </VStack>

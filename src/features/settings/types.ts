@@ -167,11 +167,14 @@ export interface DeleteDeviceResponse {
 }
 
 // Notification Codes Enum
+// Her bildirim türü için benzersiz kod (backend ile uyumlu)
 export enum NotificationCode {
-  EMAIL = 0,
-  PUSH = 1,
-  IN_APP = 2,
-  DEPOSIT = 3,
+  EMAIL = 0,       // Message Notifications
+  PUSH = 1,        // Trust/Truster Notifications
+  IN_APP = 2,      // 1-on-1 Support Notifications
+  DEPOSIT = 3,     // Deposit Notifications
+  COLLECTION = 4,  // Collection Notifications
+  POST = 5,        // Post Notifications
 }
 
 // Privacy Codes Enum

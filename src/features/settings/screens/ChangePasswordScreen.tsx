@@ -49,15 +49,15 @@ export const ChangePasswordScreen = () => {
   const validationSchema = yup.object().shape({
     currentPassword: yup
       .string()
-      .required(t('settings.changePassword.errors.currentPasswordRequired')),
+      .required(t('changePassword.errors.currentPasswordRequired')),
     newPassword: yup
       .string()
-      .required(t('settings.changePassword.errors.newPasswordRequired'))
-      .min(6, t('settings.changePassword.errors.passwordMinLength')),
+      .required(t('changePassword.errors.newPasswordRequired'))
+      .min(6, t('changePassword.errors.passwordMinLength')),
     confirmPassword: yup
       .string()
-      .required(t('settings.changePassword.errors.confirmPasswordRequired'))
-      .oneOf([yup.ref('newPassword')], t('settings.changePassword.errors.passwordsMustMatch')),
+      .required(t('changePassword.errors.confirmPasswordRequired'))
+      .oneOf([yup.ref('newPassword')], t('changePassword.errors.passwordsMustMatch')),
   });
 
   const validateField = async (field: 'currentPassword' | 'newPassword' | 'confirmPassword', value: string) => {
@@ -95,8 +95,8 @@ export const ChangePasswordScreen = () => {
 
         // Show success toast
         showCustomToast(toast, {
-          title: t('settings.changePassword.success.title'),
-          description: result.message || t('settings.changePassword.success.description'),
+          title: t('changePassword.success.title'),
+          description: result.message || t('changePassword.success.description'),
           action: 'success',
           duration: 3000,
         });
@@ -114,10 +114,10 @@ export const ChangePasswordScreen = () => {
           error?.response?.data?.error?.message ||
           error?.response?.data?.message ||
           error?.message ||
-          t('settings.changePassword.error.fallbackMessage');
+          t('changePassword.error.fallbackMessage');
 
         showCustomToast(toast, {
-          title: t('settings.changePassword.error.title'),
+          title: t('changePassword.error.title'),
           description: errorMessage,
           action: 'error',
           duration: 3000,
@@ -139,7 +139,7 @@ export const ChangePasswordScreen = () => {
       const firstError = validationErrors.inner?.[0];
       if (firstError) {
         showCustomToast(toast, {
-          title: t('settings.changePassword.validation.title'),
+          title: t('changePassword.validation.title'),
           description: firstError.message,
           action: 'error',
           duration: 3000,
@@ -176,7 +176,7 @@ export const ChangePasswordScreen = () => {
           bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
         >
         <Header
-          title={t('settings.changePassword.title')}
+          title={t('changePassword.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -189,7 +189,7 @@ export const ChangePasswordScreen = () => {
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              {t('settings.changePassword.currentPassword')}
+              {t('changePassword.currentPassword')}
             </Text>
             <Box
               borderWidth={1}
@@ -201,7 +201,7 @@ export const ChangePasswordScreen = () => {
             >
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
-                  placeholder={t('settings.changePassword.placeholder')}
+                  placeholder={t('changePassword.placeholder')}
                   placeholderTextColor="#B9B9B9"
                   value={currentPassword}
                   onChangeText={(text) => {
@@ -242,7 +242,7 @@ export const ChangePasswordScreen = () => {
               fontWeight="$semibold"
               color="#B9B9B9"
             >
-              Last updated: 26.03.2025
+              {t('changePassword.lastUpdated')}
             </Text>
             <Pressable
               onPress={() => navigation.navigate('ForgotPassword')}
@@ -253,7 +253,7 @@ export const ChangePasswordScreen = () => {
                 color={isDark ? '#FFFFFF' : '#000000'}
                 underline
               >
-                Forgot Password
+                {t('changePassword.forgotPassword')}
               </Text>
             </Pressable>
           </HStack>
@@ -272,7 +272,7 @@ export const ChangePasswordScreen = () => {
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              New Password
+              {t('changePassword.newPassword')}
             </Text>
             <Box
               borderWidth={1}
@@ -284,7 +284,7 @@ export const ChangePasswordScreen = () => {
             >
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
-                  placeholder={t('settings.changePassword.placeholder')}
+                  placeholder={t('changePassword.placeholder')}
                   placeholderTextColor="#B9B9B9"
                   value={newPassword}
                   onChangeText={(text) => {
@@ -330,7 +330,7 @@ export const ChangePasswordScreen = () => {
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              Confirm New Password
+              {t('changePassword.confirmNewPassword')}
             </Text>
             <Box
               borderWidth={1}
@@ -342,7 +342,7 @@ export const ChangePasswordScreen = () => {
             >
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
-                  placeholder={t('settings.changePassword.placeholder')}
+                  placeholder={t('changePassword.placeholder')}
                   placeholderTextColor="#B9B9B9"
                   value={confirmPassword}
                   onChangeText={(text) => {
@@ -391,7 +391,7 @@ export const ChangePasswordScreen = () => {
               fontWeight="$bold"
               textAlign="center"
             >
-              {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
+              {changePasswordMutation.isPending ? t('changePassword.changing') : t('changePassword.changePasswordButton')}
             </ButtonText>
           </Button>
         </VStack>

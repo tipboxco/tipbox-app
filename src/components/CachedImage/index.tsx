@@ -74,6 +74,14 @@ export const CachedImage: React.FC<CachedImageProps> = ({
   // toImageSource ile URL'i düzelt
   const imageSource = toImageSource(source);
 
+  // Source değiştiğinde error/loading state'lerini sıfırla
+  // (örn: avatar yüklenemeyip default avatar'a geçildiğinde hasError true kalıyordu)
+  useEffect(() => {
+    setHasError(false);
+    setIsLoading(true);
+    setLoadingTimeout(false);
+  }, [source]);
+
   // 2 saniye timeout - yükleme 2 saniyede tamamlanmazsa kutu ikonu göster
   useEffect(() => {
     if (!isLoading || !imageSource) return;

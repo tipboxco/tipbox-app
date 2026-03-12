@@ -84,23 +84,23 @@ export interface NotificationSettingsCheckOptions {
 }
 
 /**
+ * Bildirim kategorisinden notification code'a mapping
+ * Her kategori kendi benzersiz koduna sahiptir
+ */
+const categoryToNotificationCode: Record<NotificationCategory, NotificationCode> = {
+  trust: NotificationCode.PUSH,        // code 1
+  support: NotificationCode.IN_APP,    // code 2
+  message: NotificationCode.EMAIL,     // code 0
+  collection: NotificationCode.COLLECTION, // code 4
+  post: NotificationCode.POST,         // code 5
+  system: NotificationCode.PUSH,       // system her zaman gösterilir, bu değer kullanılmaz
+};
+
+/**
  * Bildirim gönderilip gönderilmeyeceğini kontrol eder
- * 
+ *
  * @param options - Kontrol seçenekleri
  * @returns true: Bildirim gönderilebilir, false: Bildirim gönderilmemeli
- * 
- * @example
- * ```typescript
- * const shouldSend = shouldSendNotification({
- *   notificationType: 'NEW_MESSAGE',
- *   channel: 'push',
- *   settings: notificationSettings
- * });
- * 
- * if (shouldSend) {
- *   await sendNotification(...);
- * }
- * ```
  */
 export function shouldSendNotification(
   options: NotificationSettingsCheckOptions
@@ -119,44 +119,28 @@ export function shouldSendNotification(
     return true;
   }
 
-  // Kanal kodunu belirle
-  let channelCode: NotificationCode;
-  switch (channel) {
-    case 'push':
-      channelCode = NotificationCode.PUSH;
-      break;
-    case 'email':
-      channelCode = NotificationCode.EMAIL;
-      break;
-    case 'in_app':
-      channelCode = NotificationCode.IN_APP;
-      break;
-    default:
-      console.warn('[shouldSendNotification] ⚠️ Unknown channel, allowing notification:', channel);
-      return true;
-  }
+  // Kategori bazlı kontrol: her bildirim kategorisinin kendi benzersiz kodu var
+  const categoryCode = categoryToNotificationCode[category];
+  const categorySetting = settings.find((s) => s.notificationCode === categoryCode);
 
-  // İlgili kanal ayarını bul
-  const channelSetting = settings.find((s) => s.notificationCode === channelCode);
-  
   // Ayar bulunamadıysa, bildirim gönder (fallback)
-  if (!channelSetting) {
-    console.warn('[shouldSendNotification] ⚠️ Setting not found for channel, allowing notification:', {
-      channel,
-      channelCode,
+  if (!categorySetting) {
+    console.warn('[shouldSendNotification] ⚠️ Setting not found for category, allowing notification:', {
+      category,
+      categoryCode,
     });
     return true;
   }
 
   // Ayar kapalıysa, bildirim gönderme
-  if (!channelSetting.value) {
+  if (!categorySetting.value) {
     if (__DEV__) {
       console.log('[shouldSendNotification] ⏭️ Notification blocked by user settings:', {
         notificationType,
         category,
         channel,
-        channelCode,
-        settingValue: channelSetting.value,
+        categoryCode,
+        settingValue: categorySetting.value,
       });
     }
     return false;

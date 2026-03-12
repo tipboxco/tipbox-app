@@ -22,6 +22,7 @@ export interface CommentUser {
   id: string;
   name: string | null;
   avatar: string | null;
+  avatarUrl?: string | null; // Backend bazen avatarUrl döner
 }
 
 /**

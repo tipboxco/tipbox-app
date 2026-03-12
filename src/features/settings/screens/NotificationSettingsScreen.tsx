@@ -60,12 +60,14 @@ export const NotificationSettingsScreen = () => {
         // Optimistic update
         setLocalSettings((prev) => ({ ...prev, [code]: value }));
 
-        // Prepare all settings for API
+        // Prepare all settings for API - tüm bildirim kodlarını gönder
         const allSettings = [
             { notificationCode: NotificationCode.EMAIL, value: localSettings[NotificationCode.EMAIL] ?? false },
             { notificationCode: NotificationCode.PUSH, value: localSettings[NotificationCode.PUSH] ?? false },
             { notificationCode: NotificationCode.IN_APP, value: localSettings[NotificationCode.IN_APP] ?? false },
             { notificationCode: NotificationCode.DEPOSIT, value: localSettings[NotificationCode.DEPOSIT] ?? false },
+            { notificationCode: NotificationCode.COLLECTION, value: localSettings[NotificationCode.COLLECTION] ?? false },
+            { notificationCode: NotificationCode.POST, value: localSettings[NotificationCode.POST] ?? false },
         ];
         
         // Update the changed setting
@@ -94,8 +96,7 @@ export const NotificationSettingsScreen = () => {
         }
     };
 
-    // Notification items based on the design
-    // FIX: Move notificationItems before useMemo to prevent "Cannot read property 'every' of undefined" error
+    // Notification items - her biri benzersiz notification code ile izole çalışır
     const notificationItems: NotificationItem[] = [
         {
             id: 'trust',
@@ -114,12 +115,12 @@ export const NotificationSettingsScreen = () => {
         },
         {
             id: 'collection',
-            code: NotificationCode.PUSH,
+            code: NotificationCode.COLLECTION,
             title: t('notificationSettings.collectionNotifications'),
         },
         {
             id: 'post',
-            code: NotificationCode.IN_APP,
+            code: NotificationCode.POST,
             title: t('notificationSettings.postNotifications'),
         },
         {

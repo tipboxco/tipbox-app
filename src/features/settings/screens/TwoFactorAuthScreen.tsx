@@ -42,7 +42,7 @@ export const TwoFactorAuthScreen = () => {
           bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
         >
         <Header
-          title={t('settings.twoFactorAuth.title')}
+          title={t('twoFactorAuth.title')}
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -104,13 +104,13 @@ export const TwoFactorAuthScreen = () => {
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mb="$1"
                   >
-                    {t('settings.twoFactorAuth.googleAuthenticator.title')}
+                    {t('twoFactorAuth.googleAuthenticator.title')}
                   </Text>
                   <Text
                     fontSize="$sm"
                     color={isDark ? '#CCCCCC' : '#666666'}
                   >
-                    {t('settings.twoFactorAuth.googleAuthenticator.description')}
+                    {t('twoFactorAuth.googleAuthenticator.description')}
                   </Text>
                 </VStack>
               </HStack>
@@ -154,13 +154,13 @@ export const TwoFactorAuthScreen = () => {
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mb="$1"
                   >
-                    {t('settings.twoFactorAuth.smsOption.title')}
+                    {t('twoFactorAuth.smsOption.title')}
                   </Text>
                   <Text
                     fontSize="$sm"
                     color={isDark ? '#CCCCCC' : '#666666'}
                   >
-                    {t('settings.twoFactorAuth.smsOption.description')}
+                    {t('twoFactorAuth.smsOption.description')}
                   </Text>
                 </VStack>
               </HStack>
@@ -188,7 +188,7 @@ export const TwoFactorAuthScreen = () => {
               textAlign="center"
               underline
             >
-              {t('settings.twoFactorAuth.whyNeeded')}
+              {t('twoFactorAuth.whyNeeded')}
             </Text>
           </Pressable>
         </VStack>
