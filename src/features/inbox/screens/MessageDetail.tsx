@@ -1977,8 +1977,8 @@ const MessageDetailScreen: React.FC = () => {
       isRead: false,
     };
 
-    // ✅ WhatsApp Engine: Inverted FlatList - Yeni mesajı başa ekle (en yeni mesaj index 0'da)
-    setMessages((prev) => [optimisticTipsMessage, ...prev]);
+    // ✅ WhatsApp Engine: Normal FlashList - Yeni mesajı doğru pozisyona ekle (ascending order)
+    setMessages((prev) => insertMessageInOrder(prev, optimisticTipsMessage));
 
     // REMOVED: Auto scroll - inverted mode handles this
 
