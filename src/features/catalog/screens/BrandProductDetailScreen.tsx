@@ -349,6 +349,8 @@ const mapQuestionToCardData = (item: FeedApiItem | BrandFeedPost): QuestionCardD
     category,
     content: typeof postData.content === 'string' ? postData.content : (postData.content || ''),
     isBoosted: postData.isBoosted || false,
+    boostedUntil: postData.boostedUntil,
+    boostPrice: postData.boostPrice,
     images,
     stats: postData.stats || { likes: 0, comments: 0, shares: 0, bookmarks: 0 },
     createdAt: postData.createdAt,

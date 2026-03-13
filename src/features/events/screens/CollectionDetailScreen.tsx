@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   TextInput,
   Image,
+  ImageBackground,
   type ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,6 +25,8 @@ import type { Collection, CollectionBadge as CollectionBadgeType } from '../type
 import { useCollectionDetail } from '../api/hooks';
 import CollectionCardModal from '../components/CollectionCardModal';
 import { useTranslation } from '@/src/hooks/useTranslation';
+
+const DEFAULT_COLLECTION_IMAGE = require('@/assets/defaultImages/default-collection.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -319,11 +321,11 @@ const CollectionDetailScreen: React.FC = () => {
           <>
             {/* Collection Hero Card */}
             <View style={styles.heroCardContainer}>
-              <LinearGradient
-                colors={collection.backgroundGradient.colors}
-                start={collection.backgroundGradient.start}
-                end={collection.backgroundGradient.end}
+              <ImageBackground
+                source={toImageSource(collection.backgroundImage) || DEFAULT_COLLECTION_IMAGE}
                 style={styles.heroCard}
+                imageStyle={styles.heroCardImage}
+                resizeMode="cover"
               >
                 {/* Progress Badge */}
                 <View style={styles.progressBadge}>
@@ -336,7 +338,7 @@ const CollectionDetailScreen: React.FC = () => {
                 <View style={styles.heroContent}>
                   {/* Title */}
                   <Text style={styles.heroTitle}>{collection.title}</Text>
-                  
+
                   {/* Description */}
                   <Text style={styles.heroDescription}>
                     {collection.description}
@@ -354,7 +356,7 @@ const CollectionDetailScreen: React.FC = () => {
                     />
                   </View>
                 </View>
-              </LinearGradient>
+              </ImageBackground>
             </View>
 
             {/* Filter Pills */}
@@ -457,6 +459,10 @@ const styles = StyleSheet.create({
     padding: 20,
     minHeight: 200,
     position: 'relative',
+    overflow: 'hidden',
+  },
+  heroCardImage: {
+    borderRadius: 16,
   },
   progressBadge: {
     position: 'absolute',

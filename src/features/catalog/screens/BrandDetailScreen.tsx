@@ -348,6 +348,8 @@ const BrandDetailScreen: React.FC = () => {
             category,
             content: typeof postData.content === 'string' ? postData.content : '',
             isBoosted: postData.isBoosted,
+            boostedUntil: postData.boostedUntil,
+            boostPrice: postData.boostPrice,
             images,
             stats: postData.stats,
             createdAt: postData.createdAt,

@@ -462,6 +462,8 @@ const EventDetailScreen: React.FC = () => {
             category,
             content: item.content,
             isBoosted: item.isBoosted,
+            boostedUntil: item.boostedUntil,
+            boostPrice: item.boostPrice,
             images,
             stats: item.stats,
             createdAt: item.createdAt,

@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Dimensions, ImageBackground } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { Collection } from '../../types/collection.types';
 import { toImageSource } from '@/src/utils';
 
@@ -8,6 +7,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_PADDING = 16;
 const CARD_GAP = 8;
 const CARD_WIDTH = (SCREEN_WIDTH - CARD_PADDING * 2 - CARD_GAP) / 2;
+
+const DEFAULT_COLLECTION_IMAGE = require('@/assets/defaultImages/default-collection.png');
 
 interface CollectionCardProps {
   collection: Collection;
@@ -21,9 +22,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
   onPress,
 }) => {
   const cardHeight = isFullWidth ? 200 : 160;
-  const bgImageSource = collection.backgroundImage
-    ? toImageSource(collection.backgroundImage)
-    : null;
+  const bgImageSource = toImageSource(collection.backgroundImage) || DEFAULT_COLLECTION_IMAGE;
 
   const renderContent = () => (
     <View style={styles.innerContainer}>
@@ -68,25 +67,14 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
       ]}
       onPress={() => onPress?.(collection.id)}
     >
-      {bgImageSource ? (
-        <ImageBackground
-          source={bgImageSource}
-          style={styles.background}
-          imageStyle={styles.backgroundImage}
-          resizeMode="cover"
-        >
-          {renderContent()}
-        </ImageBackground>
-      ) : (
-        <LinearGradient
-          colors={collection.backgroundGradient?.colors || ['#8B5CF6', '#EC4899']}
-          start={collection.backgroundGradient?.start || { x: 0, y: 0 }}
-          end={collection.backgroundGradient?.end || { x: 1, y: 1 }}
-          style={styles.background}
-        >
-          {renderContent()}
-        </LinearGradient>
-      )}
+      <ImageBackground
+        source={bgImageSource}
+        style={styles.background}
+        imageStyle={styles.backgroundImage}
+        resizeMode="cover"
+      >
+        {renderContent()}
+      </ImageBackground>
     </Pressable>
   );
 };
