@@ -57,6 +57,7 @@ import {
   BellSlashIcon,
   UserMinusIcon,
   UserPlusIcon,
+  PlusIcon,
 } from 'react-native-heroicons/outline';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
@@ -64,6 +65,8 @@ import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import type { Badge } from '../types';
 import { useTranslation } from 'react-i18next';
 import { AnimatedTabBar } from '../components/AnimatedTabBar';
+import { useFullScreenImage } from '@/src/hooks/useFullScreenImage';
+import { FullScreenImageViewer } from '@/src/components/FullScreenImageViewer';
 // PagerView removed - using single FlatList with touch-based swipe for tab switching
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -821,6 +824,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const { t } = useTranslation('profile');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { visible: fullScreenVisible, imageSource: fullScreenSource, openImage, closeImage } = useFullScreenImage();
   // PERFORMANCE FIX: Sadece user.id'yi select et - tüm user objesi yerine
   const userId = useAppStore(state => state.user?.id);
   const user = useAppStore(state => state.user);
@@ -1192,11 +1196,28 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const ListEmptyComponent = useCallback(() => {
     // Badge tab: Show badge grid
     if (activeTab === 'badge') {
+      const allBadges = userProfile?.badges || [];
+
+      // No badges at all - show clean empty state
+      if (allBadges.length === 0) {
+        return (
+          <Box py={40} alignItems="center" px={20}>
+            <RNText style={{ fontSize: 16, fontWeight: '700', color: isDark ? '#FFFFFF' : '#000000', textAlign: 'center' }}>
+              No Badges Earned Yet
+            </RNText>
+            <RNText style={{ fontSize: 14, color: '#999999', textAlign: 'center', marginTop: 8 }}>
+              This user hasn't earned any badges yet.
+            </RNText>
+          </Box>
+        );
+      }
+
+      // Has badges - show filters + grid
       const filteredBadges = (() => {
-        if (badgeFilter === 'All Badges') return userProfile?.badges || [];
-        if (badgeFilter === 'Event Badges') return (userProfile?.badges || []).filter((b) => b.type === 'event');
-        if (badgeFilter === 'Collections') return (userProfile?.badges || []).filter((b) => b.type === 'collection');
-        return userProfile?.badges || [];
+        if (badgeFilter === 'All Badges') return allBadges;
+        if (badgeFilter === 'Event Badges') return allBadges.filter((b) => b.type === 'event');
+        if (badgeFilter === 'Collections') return allBadges.filter((b) => b.type === 'collection');
+        return allBadges;
       })();
 
       return (
@@ -1239,7 +1260,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           {filteredBadges.length === 0 ? (
             <Box py={32} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                {badgeFilter === 'All Badges' ? 'No badges yet' : `No ${badgeFilter.toLowerCase()} yet`}
+                {`No ${badgeFilter.toLowerCase()} yet`}
               </Text>
             </Box>
           ) : (
@@ -1287,7 +1308,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
     // Collections tab: Show CollectionsTab component
     if (activeTab === 'collections') {
-      return <CollectionsTab />;
+      return <CollectionsTab userId={targetUserId} />;
     }
 
     // Loading state
@@ -1299,15 +1320,43 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       );
     }
 
-    // Empty posts
+    // Empty posts - tab'a göre özel mesaj
+    const emptyStateMap: Record<string, { title: string; subtitle: string }> = {
+      feed: {
+        title: 'No Posts Yet',
+        subtitle: "This user hasn't shared any posts yet.",
+      },
+      reviews: {
+        title: 'No Experiences Yet',
+        subtitle: "This user hasn't shared any experiences yet.",
+      },
+      benchmarks: {
+        title: 'No Benchmarks Yet',
+        subtitle: "This user hasn't created any benchmarks yet.",
+      },
+      tips: {
+        title: 'No Tips & Tricks Yet',
+        subtitle: "This user hasn't shared any tips & tricks yet.",
+      },
+      replies: {
+        title: 'No Questions Yet',
+        subtitle: "This user hasn't asked any questions yet.",
+      },
+    };
+
+    const emptyState = emptyStateMap[activeTab] || { title: 'No Content Yet', subtitle: "This user hasn't shared any content yet." };
+
     return (
-      <Box py={20} alignItems="center">
-        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-          No content found yet.
-        </Text>
+      <Box py={40} alignItems="center" px={20}>
+        <RNText style={{ fontSize: 16, fontWeight: '700', color: isDark ? '#FFFFFF' : '#000000', textAlign: 'center' }}>
+          {emptyState.title}
+        </RNText>
+        <RNText style={{ fontSize: 14, color: '#999999', textAlign: 'center', marginTop: 8 }}>
+          {emptyState.subtitle}
+        </RNText>
       </Box>
     );
-  }, [activeTab, badgeFilter, userProfile?.badges, isDark, activeTabQuery.isLoading, handleBadgePress]);
+  }, [activeTab, badgeFilter, userProfile?.badges, isDark, activeTabQuery.isLoading, handleBadgePress, targetUserId]);
 
   // Instagram Model: FlatList ListFooterComponent
   const ListFooterComponent = useCallback(() => {
@@ -1739,17 +1788,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     return (
       <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Banner */}
-        <Box 
-          h={180} 
-          overflow="hidden" 
+        <Box
+          h={180}
+          overflow="hidden"
           position="relative"
         >
-          <Image
-            source={toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png')}
-            alt="Profile Banner"
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
-          />
+          <RNPressable onLongPress={() => {
+            const bannerSource = toImageSource(profile.bannerUrl);
+            if (bannerSource) openImage(bannerSource);
+          }}>
+            <Image
+              source={toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png')}
+              alt="Profile Banner"
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
+          </RNPressable>
           {/* Overlay */}
           <Box
             position="absolute"
@@ -1812,39 +1866,43 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         <Box px={15} mt={-45}>
           <HStack alignItems="flex-start" justifyContent="space-between" space="md">
             {/* Profile Image */}
-            <Box 
-              borderRadius={100}
-              overflow="hidden"
-              w={100}
-              h={100}
-              borderWidth={4}
-              borderColor="$white"
-              flexShrink={0}
-              position="relative"
-              bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
-            >
-              {/* Default avatar - her zaman arka planda */}
-              <Image
-                source={require('@/assets/avatar/default-useravatar.png')}
-                alt="Default Avatar"
-                position="absolute"
-                w="100%"
-                h="100%"
-                resizeMode="cover"
-              />
-              {/* Kullanıcı avatar'ı - varsa üstte göster */}
-              {/* CRITICAL FIX: DrawerContent ile aynı mantık - önce userProfile, sonra user store */}
-              {avatarSource && (
+            <RNPressable onLongPress={() => {
+              if (avatarSource) openImage(avatarSource);
+            }}>
+              <Box
+                borderRadius={100}
+                overflow="hidden"
+                w={100}
+                h={100}
+                borderWidth={4}
+                borderColor="$white"
+                flexShrink={0}
+                position="relative"
+                bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
+              >
+                {/* Default avatar - her zaman arka planda */}
                 <Image
-                  source={avatarSource}
-                  alt={profile.name}
+                  source={require('@/assets/avatar/default-useravatar.png')}
+                  alt="Default Avatar"
                   position="absolute"
                   w="100%"
                   h="100%"
                   resizeMode="cover"
                 />
-              )}
-            </Box>
+                {/* Kullanıcı avatar'ı - varsa üstte göster */}
+                {/* CRITICAL FIX: DrawerContent ile aynı mantık - önce userProfile, sonra user store */}
+                {avatarSource && (
+                  <Image
+                    source={avatarSource}
+                    alt={profile.name}
+                    position="absolute"
+                    w="100%"
+                    h="100%"
+                    resizeMode="cover"
+                  />
+                )}
+              </Box>
+            </RNPressable>
 
             {/* Action Buttons */}
             <HStack space="sm" alignItems="center" flexShrink={0} mt={60}>
@@ -2179,21 +2237,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               p={profile.badges && profile.badges.length > 0 ? 14 : 8}
             >
               {profile.badges && profile.badges.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 16 }}
-                >
-                  {profile.badges.map((badge) => (
+                <HStack justifyContent="space-between">
+                  {profile.badges.slice(0, 4).map((badge) => (
                     <Pressable
                       key={badge.id}
                       onPress={() => handleBadgePress(badge)}
+                      flex={1}
+                      alignItems="center"
                     >
                       <VStack space="xs" alignItems="center">
                         <Box
-                          w={70}
-                          h={70}
-                          borderRadius={5}
+                          w={64}
+                          h={64}
+                          borderRadius={12}
                           borderWidth={0}
                           overflow="hidden"
                           justifyContent="center"
@@ -2202,45 +2258,92 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                           <Image
                             source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
                             alt={badge.title}
-                            w={60}
-                            h={60}
+                            w={56}
+                            h={56}
                             resizeMode="contain"
                           />
                         </Box>
                         <Text
                           color={isDark ? '$textDark400' : '#000000'}
-                          fontSize="$2xs"
+                          fontSize={10}
                           fontWeight="$bold"
                           textAlign="center"
+                          numberOfLines={2}
+                          lineHeight={13}
+                          px={2}
                         >
                           {badge.title}
                         </Text>
                       </VStack>
                     </Pressable>
                   ))}
-                </ScrollView>
-              ) : (
-                <Box flex={1} height={70}>
-                  {/* 4 tane dashed badge placeholder - yatay sırada */}
-                  <HStack justifyContent="space-evenly">
-                    {[1, 2, 3, 4].map((index) => (
-                      <Box
-                        key={index}
-                        w={70}
-                        h={70}
-                        borderRadius={5}
-                        borderWidth={2}
-                        borderColor={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
-                        borderStyle="dashed"
-                        justifyContent="center"
+                  {/* Own profile: fill remaining slots with dashed placeholders */}
+                  {isOwnProfile && profile.badges.length < 4 &&
+                    Array.from({ length: 4 - Math.min(profile.badges.length, 4) }).map((_, index) => (
+                      <Pressable
+                        key={`empty-${index}`}
+                        onPress={() => navigation.navigate('EditHighlightBadges')}
+                        flex={1}
                         alignItems="center"
-                        bg={isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'}
-                      />
+                      >
+                        <VStack space="xs" alignItems="center">
+                          <Box
+                            w={64}
+                            h={64}
+                            borderRadius={12}
+                            borderWidth={2}
+                            borderColor={isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'}
+                            borderStyle="dashed"
+                            justifyContent="center"
+                            alignItems="center"
+                            bg={isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'}
+                          >
+                            <PlusIcon
+                              size={24}
+                              color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)'}
+                              strokeWidth={1.5}
+                            />
+                          </Box>
+                          <Text fontSize={10} lineHeight={13}>{' '}</Text>
+                        </VStack>
+                      </Pressable>
+                    ))
+                  }
+                </HStack>
+              ) : (
+                <Box flex={1} height={64}>
+                  {/* 4 dashed badge placeholders */}
+                  <HStack justifyContent="space-between">
+                    {[1, 2, 3, 4].map((index) => (
+                      <Pressable
+                        key={index}
+                        onPress={isOwnProfile ? () => navigation.navigate('EditHighlightBadges') : undefined}
+                        flex={1}
+                        alignItems="center"
+                      >
+                        <Box
+                          w={64}
+                          h={64}
+                          borderRadius={12}
+                          borderWidth={2}
+                          borderColor={isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'}
+                          borderStyle="dashed"
+                          justifyContent="center"
+                          alignItems="center"
+                          bg={isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'}
+                        >
+                          <PlusIcon
+                            size={24}
+                            color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)'}
+                            strokeWidth={1.5}
+                          />
+                        </Box>
+                      </Pressable>
                     ))}
                   </HStack>
                 </Box>
               )}
-              {profile.badges && profile.badges.length > 0 && isOwnProfile && (
+              {isOwnProfile && (
                 <Pressable
                   onPress={() => {
                     navigation.navigate('EditHighlightBadges');
@@ -2262,7 +2365,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, openImage]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
@@ -2541,6 +2644,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           </ModalContent>
         ) : null}
       </Modal>
+
+      <FullScreenImageViewer visible={fullScreenVisible} imageSource={fullScreenSource} onClose={closeImage} />
     </Box>
   );
 };

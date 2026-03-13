@@ -278,8 +278,6 @@ export const useUserProfile = (userId: string | undefined) => {
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInventory(userId, 20);
  */
 export const useInventory = (userId: string, limit: number = 20) => {
-  const { isAuthenticated } = useAppStore();
-
   return useInfiniteQuery<InventoryApiResponse, Error>({
     queryKey: [...profileKeys.inventory(), userId, limit],
     queryFn: ({ pageParam }) => {
@@ -296,9 +294,7 @@ export const useInventory = (userId: string, limit: number = 20) => {
       // Son item'ın id'sini cursor olarak kullan
       return lastPage.pagination.cursor;
     },
-    // CRITICAL: Sadece authenticated kullanıcılar için API çağrısı yap
-    // Login olmamış kullanıcılar için "No refresh token available" hatasını önler
-    enabled: isAuthenticated,
+    enabled: !!userId,
     // CACHE DİSABLED: Her zaman fresh data çek (inventory güncel olmalı)
     staleTime: 0,  // Cache yok - her zaman fresh data
     gcTime: 0,     // Cache'de tutma - hemen temizle
