@@ -228,7 +228,6 @@ export const NotificationSettingsScreen = () => {
                                     <Switch
                                         value={allNotifications}
                                         onValueChange={handleAllNotificationsToggle}
-                                        disabled={updateMutation.isPending}
                                         trackColor={{
                                             false: isDark ? '#333333' : '#E5E5E5',
                                             true: '#34C759',
@@ -259,7 +258,6 @@ export const NotificationSettingsScreen = () => {
                                         <Switch
                                             value={getSettingValue(item.code)}
                                             onValueChange={(value) => updateSetting(item.code, value)}
-                                            disabled={updateMutation.isPending}
                                             trackColor={{
                                                 false: isDark ? '#333333' : '#E5E5E5',
                                                 true: '#34C759',
