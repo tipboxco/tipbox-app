@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -6,10 +6,9 @@ import {
   Text,
   Pressable,
 } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { formatRelativeTime, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { CachedImage } from '@/src/components/CachedImage';
+import { formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
 import type { InboxMessage } from '../../types';
 
 const AVATAR_BG_COLORS = [
@@ -49,6 +48,7 @@ function messageCardPropsAreEqual(prev: MessageCardProps, next: MessageCardProps
 const MessageCardInner: React.FC<MessageCardProps> = ({ data, onPress, isTyping = false, typingUserName }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const [avatarError, setAvatarError] = useState(false);
 
   const handlePress = () => {
     if (onPress) {
@@ -56,7 +56,11 @@ const MessageCardInner: React.FC<MessageCardProps> = ({ data, onPress, isTyping 
     }
   };
 
-  const avatarSource = data.senderAvatar ? toImageSource(data.senderAvatar) : null;
+  const handleAvatarError = useCallback(() => {
+    setAvatarError(true);
+  }, []);
+
+  const hasAvatar = !!data.senderAvatar && !avatarError;
   const senderInitial = (data.senderName || '?').charAt(0).toUpperCase();
   const avatarBg = getAvatarBgColor(data.senderName || '?');
 
@@ -70,16 +74,23 @@ const MessageCardInner: React.FC<MessageCardProps> = ({ data, onPress, isTyping 
       borderColor={isDark ? '#333' : '#E9E9E9'}
     >
       <HStack space="md" alignItems="center">
-        {/* Avatar – image if available, else sender initial */}
-        {avatarSource ? (
-          <CachedImage
-            source={avatarSource}
+        {/* Avatar – expo-image with memory-disk cache */}
+        {hasAvatar ? (
+          <Image
+            source={{ uri: data.senderAvatar! }}
             placeholder={DEFAULT_USER_AVATAR}
             style={{ width: 48, height: 48, borderRadius: 24 }}
             contentFit="cover"
-            cachePolicy="disk"
-            recyclingKey={data.id}
-            priority="high"
+            cachePolicy="memory-disk"
+            transition={{ duration: 200 }}
+            recyclingKey={`avatar-${data.id}`}
+            onError={handleAvatarError}
+          />
+        ) : data.senderAvatar && avatarError ? (
+          <Image
+            source={DEFAULT_USER_AVATAR}
+            style={{ width: 48, height: 48, borderRadius: 24 }}
+            contentFit="cover"
           />
         ) : (
           <Box

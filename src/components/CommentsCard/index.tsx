@@ -73,80 +73,9 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
   const ACTION_WIDTH = 70; // Her buton için genişlik
   const SWIPE_THRESHOLD = -50; // Swipe'ın geçerli olması için minimum mesafe
   
-  // Avatar source state - görsel yüklenemezse default avatar'a geçiş için
-  const [avatarSource, setAvatarSource] = useState(avatar || DEFAULT_USER_AVATAR);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const avatarLoadTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  // Avatar değiştiğinde state'i güncelle
-  React.useEffect(() => {
-    // Önceki timeout'u temizle
-    if (avatarLoadTimeoutRef.current) {
-      clearTimeout(avatarLoadTimeoutRef.current);
-      avatarLoadTimeoutRef.current = null;
-    }
-    
-    const newSource = avatar || DEFAULT_USER_AVATAR;
-    
-    // Eğer yeni source default avatar değilse, load kontrolü yap
-    if (newSource !== DEFAULT_USER_AVATAR) {
-      setAvatarSource(newSource);
-      setIsImageLoaded(false);
-      
-      // 5 saniye içinde görsel yüklenmezse default avatar'a geç
-      avatarLoadTimeoutRef.current = setTimeout(() => {
-        setAvatarSource((currentSource: any) => {
-          // Eğer hala yüklenmediyse ve source değişmediyse default avatar'a geç
-          if (currentSource === newSource) {
-            console.log('[CommentsCard] Avatar load timeout, using default avatar:', {
-              userName,
-              attemptedSource: newSource,
-            });
-            return DEFAULT_USER_AVATAR;
-          }
-          return currentSource;
-        });
-        setIsImageLoaded(true);
-      }, 5000); // 5 saniye timeout
-    } else {
-      // Zaten default avatar ise direkt set et
-      setAvatarSource(DEFAULT_USER_AVATAR);
-      setIsImageLoaded(true);
-    }
-    
-    return () => {
-      if (avatarLoadTimeoutRef.current) {
-        clearTimeout(avatarLoadTimeoutRef.current);
-        avatarLoadTimeoutRef.current = null;
-      }
-    };
-  }, [avatar, userName]);
-  
-  // Avatar başarıyla yüklendiğinde
-  const handleAvatarLoad = useCallback(() => {
-    setIsImageLoaded(true);
-    // Timeout'u temizle
-    if (avatarLoadTimeoutRef.current) {
-      clearTimeout(avatarLoadTimeoutRef.current);
-      avatarLoadTimeoutRef.current = null;
-    }
-  }, []);
-  
-  // Avatar yüklenme hatası durumunda default avatar'a geçiş
-  const handleAvatarError = useCallback((error: Error) => {
-    console.log('[CommentsCard] Avatar load error, using default avatar:', {
-      userName,
-      attemptedSource: avatarSource,
-      error: error.message,
-    });
-    setAvatarSource(DEFAULT_USER_AVATAR);
-    setIsImageLoaded(true); // Default avatar zaten yüklü sayılır
-    // Timeout'u temizle
-    if (avatarLoadTimeoutRef.current) {
-      clearTimeout(avatarLoadTimeoutRef.current);
-      avatarLoadTimeoutRef.current = null;
-    }
-  }, [userName, avatarSource]);
+  // Avatar source - CachedImage'ın kendi error/placeholder mekanizmasına güven
+  // Timeout mekanizması kaldırıldı - CachedImage zaten hata durumunda placeholder gösteriyor
+  const avatarSource = avatar || DEFAULT_USER_AVATAR;
 
   // Metin uzunluğuna göre basit truncation kontrolü
   const shouldTruncate = useMemo(() => content.length > 160, [content]);
@@ -322,8 +251,6 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
           contentFit="cover"
           cachePolicy="memory-disk"
           priority="high"
-          onLoadEnd={handleAvatarLoad}
-          onError={handleAvatarError}
         />
 
         {/* Comment Content */}

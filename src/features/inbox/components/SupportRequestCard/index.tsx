@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -6,13 +6,10 @@ import {
   Text,
   Pressable,
 } from '@gluestack-ui/themed';
+import { Image } from 'expo-image';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { toImageSource } from '@/src/utils';
-import { CachedImage } from '@/src/components/CachedImage';
+import { DEFAULT_USER_AVATAR } from '@/src/utils';
 import type { SupportRequest } from '@/src/features/inbox/api/messagesApi';
-
-// Default user avatar
-const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
 
 interface SupportRequestCardProps {
   data: SupportRequest;
@@ -61,28 +58,13 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
   const isDark = colorMode === 'dark';
   const statusInfo = getStatusInfo(data.status);
   const buttonText = getButtonText(data.status);
-
-  // Avatar source state - görsel yüklenemezse default avatar'a geçiş için
-  const initialAvatarSource = data.userAvatar 
-    ? (toImageSource(data.userAvatar) || DEFAULT_USER_AVATAR)
-    : DEFAULT_USER_AVATAR;
-  const [avatarSource, setAvatarSource] = React.useState(initialAvatarSource);
-
-  // Avatar değiştiğinde state'i güncelle
-  React.useEffect(() => {
-    const newSource = data.userAvatar 
-      ? (toImageSource(data.userAvatar) || DEFAULT_USER_AVATAR)
-      : DEFAULT_USER_AVATAR;
-    setAvatarSource(newSource);
-  }, [data.userAvatar]);
+  const [avatarError, setAvatarError] = useState(false);
 
   const handlePress = () => {
-    // Pending durumunda card'a tıklandığında hiçbir şey yapma
-    // Sadece "Kabul Et" butonuna tıklandığında işlem yapılacak
     if (data.status === 'pending') {
       return;
     }
-    
+
     if (onPress) {
       onPress(data.id);
     }
@@ -90,8 +72,6 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
 
   const handleButtonPress = (e: any) => {
     e.stopPropagation();
-    // Eğer status 'pending' ise ve onAccept varsa, onAccept çağrılır
-    // Aksi halde onPress çağrılır
     if (data.status === 'pending' && onAccept) {
       onAccept(data.id);
     } else if (onPress) {
@@ -99,11 +79,11 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
     }
   };
 
-  // Avatar yüklenme hatası durumunda default avatar'a geçiş
-  const handleAvatarError = (error: Error) => {
-    setAvatarSource(DEFAULT_USER_AVATAR);
-  };
+  const handleAvatarError = useCallback(() => {
+    setAvatarError(true);
+  }, []);
 
+  const hasAvatar = !!data.userAvatar && !avatarError;
 
   return (
     <Pressable
@@ -118,29 +98,17 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
       <VStack space="md">
         {/* Header with Avatar and User Info */}
         <HStack space="md" alignItems="center">
-          {/* Avatar */}
-          <Box
-            width={48}
-            height={48}
-            borderRadius={24}
-            justifyContent="center"
-            alignItems="center"
-            overflow="hidden"
-          >
-            <CachedImage
-              source={avatarSource}
-              placeholder={DEFAULT_USER_AVATAR}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-              }}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              priority="high"
-              onError={handleAvatarError}
-            />
-          </Box>
+          {/* Avatar – expo-image with memory-disk cache */}
+          <Image
+            source={hasAvatar ? { uri: data.userAvatar! } : DEFAULT_USER_AVATAR}
+            placeholder={DEFAULT_USER_AVATAR}
+            style={{ width: 48, height: 48, borderRadius: 24 }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={{ duration: 200 }}
+            recyclingKey={`support-avatar-${data.id}`}
+            onError={hasAvatar ? handleAvatarError : undefined}
+          />
 
           {/* User Info */}
           <VStack flex={1} space="xs">
