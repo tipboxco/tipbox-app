@@ -458,10 +458,18 @@ export const PostDetailScreen = () => {
         const flat: FlattenedCommentItem[] = [];
         if (!commentsData?.comments) return flat;
 
-        commentsData.comments.forEach((item: CommentWithReplies) => {
+        commentsData.comments.forEach((item: CommentWithReplies, index: number) => {
             // Backend avatarUrl veya avatar dönebilir - her ikisini de kontrol et
-            const userAvatarRaw = item.user.avatarUrl ?? item.user.avatar;
+            // Ayrıca profileImage, image, picture gibi alternatif alan adlarını da kontrol et
+            const userObj = item.user as any;
+            const userAvatarRaw = userObj?.avatarUrl ?? userObj?.avatar ?? userObj?.profileImage ?? userObj?.image ?? userObj?.picture;
             const userAvatar = userAvatarRaw ? toImageSource(userAvatarRaw) : DEFAULT_USER_AVATAR;
+
+            // Debug: İlk yorumun user objesini logla (sadece development'ta)
+            if (__DEV__ && index === 0) {
+                console.log('[PostDetailScreen] Comment user object:', JSON.stringify(item.user, null, 2));
+                console.log('[PostDetailScreen] Avatar raw value:', userAvatarRaw);
+            }
 
             flat.push({
                 id: item.comment.id,
