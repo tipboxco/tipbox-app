@@ -28,7 +28,6 @@ import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 // Heroicons imports
 import {
   HomeIcon as HomeIconSolid,
-  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
   Squares2X2Icon as Squares2X2IconSolid,
   CalendarIcon as CalendarIconSolid,
   BellIcon as BellIconSolid,
@@ -36,12 +35,13 @@ import {
 } from 'react-native-heroicons/solid';
 import {
   HomeIcon as HomeIconOutline,
-  MagnifyingGlassIcon as MagnifyingGlassIconOutline,
   Squares2X2Icon as Squares2X2IconOutline,
   CalendarIcon as CalendarIconOutline,
   BellIcon as BellIconOutline,
   InboxIcon as InboxIconOutline,
 } from 'react-native-heroicons/outline';
+// Ionicons for Explore tab (Heroicons doesn't have binoculars)
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
@@ -398,8 +398,8 @@ export const TabNavigator = () => {
         IconComponent = focused ? HomeIconSolid : HomeIconOutline;
         break;
       case 'ExploreStack':
-        IconComponent = focused ? MagnifyingGlassIconSolid : MagnifyingGlassIconOutline;
-        break;
+        return <Ionicons name={focused ? 'binoculars' : 'binoculars-outline'} size={iconSize} color={color} />;
+
       case 'CatalogStack':
         IconComponent = focused ? Squares2X2IconSolid : Squares2X2IconOutline;
         break;
