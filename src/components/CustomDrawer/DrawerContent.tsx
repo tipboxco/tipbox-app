@@ -522,7 +522,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
         elevation: 10000, // Android için elevation
       }}
     >
-      {/* No scroll - tek parça drawer */}
+      {/* No scroll - tek parça drawer, flex-based responsive layout */}
       <Box
         flex={1}
         bg={isDark ? '#000000' : '#FFFFFF'}
@@ -531,9 +531,9 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
         p={0}
       >
           {/* Banner Section – FULL BLEED */}
-          <Box h={280} w="100%" position="relative" bg={isDark ? '#000000' : '#FFFFFF'}>
+          <Box w="100%" position="relative" bg={isDark ? '#000000' : '#FFFFFF'}>
           {/* Banner */}
-          <Box h={120} w="100%" overflow="hidden" position="relative">
+          <Box h={110} w="100%" overflow="hidden" position="relative">
             <Image
               source={bannerSource}
               alt="Profile Banner"
@@ -550,16 +550,13 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               bg="rgba(0, 0, 0, 0.3)"
             />
           </Box>
-          
+
           {/* Profile Section */}
           <TouchableOpacity
             activeOpacity={1}
-            style={{ 
+            style={{
               opacity: 1,
-              position: 'absolute',
-              top: 70,
-              left: 0,
-              right: 0,
+              marginTop: -50,
               zIndex: 0,
             }}
             onPress={() => {
@@ -573,8 +570,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                   borderColor={isDark ? '#000000' : '#FFFFFF'}
                   rounded="$full"
                   overflow="hidden"
-                  w={100}
-                  h={100}
+                  w={90}
+                  h={90}
                   bg="$white"
                 >
                   <Image
@@ -611,8 +608,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           </TouchableOpacity>
         </Box>
 
-          {/* Stats Section – FULL BLEED, içte hizalama */}
-          <Box mt={-60} mb="$2">
+          {/* Stats Section */}
+          <Box mb="$1" mt="$1">
             <HStack justifyContent="center" alignItems="center" px="$6">
               <Pressable
                 onPress={() => {
@@ -682,8 +679,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             </HStack>
           </Box>
 
-          {/* Premium Banner – FULL BLEED, içte padding */}
-          <Box w="100%" mb="$2">
+          {/* Premium Banner */}
+          <Box w="100%">
           <Box
             w="100%"
             h={0.5}
@@ -691,7 +688,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           />
           <Box
             w="100%"
-            h={76}
+            h={70}
             overflow="hidden"
             position="relative"
           >
@@ -705,15 +702,15 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           </Box>
         </Box>
 
-          {/* Menu Items – DIŞTA px yok, SATIRDA px var */}
-          <VStack px="$0">
+          {/* All menu items in single flex container - equal spacing */}
+          <VStack flex={1} pb={bottomPadding}>
             {MENU_ITEMS.map((item: MenuItem) => (
               <Pressable
                 key={item.id}
                 onPress={() => {
                   item.onPress();
                 }}
-                h={44}
+                flex={1}
                 justifyContent="center"
                 bg="transparent"
                 px="$6"
@@ -723,151 +720,144 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                 <Box w={24} h={24} justifyContent="center" alignItems="center">
                   <item.icon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>
-                <Text 
+                <Text
                   color={isDark ? '$textDark50' : '$textLight900'}
                   fontSize="$sm"
                   fontWeight="$bold"
-                  w={110}
                 >
                   {item.label}
                 </Text>
               </HStack>
             </Pressable>
             ))}
-          </VStack>
 
-          {/* Divider between Settings and Bottom Items */}
-          <Box h={1} w="100%" bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} my="$3" />
+            {/* Divider */}
+            <Box h={1} w="100%" bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
 
-          {/* Bottom Items – DIŞTA px yok, SATIRDA px var */}
-          <VStack px="$0" pb={bottomPadding}>
+            <Pressable
+              onPress={handleNavigateToFeedback}
+              flex={1}
+              justifyContent="center"
+              bg="transparent"
+              px="$6"
+              $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
+            >
+            <HStack space="md" alignItems="center">
+              <Box w={24} h={24} justifyContent="center" alignItems="center">
+                <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$xs"
+                fontWeight="$medium"
+                flex={1}
+                numberOfLines={1}
+              >
+                {t('drawer.bottomItems.feedback')}
+              </Text>
+            </HStack>
+          </Pressable>
           <Pressable
-            onPress={handleNavigateToFeedback}
-            h={44}
+            onPress={handleNavigateToVoteNewFeatures}
+            flex={1}
             justifyContent="center"
             bg="transparent"
             px="$6"
             $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
           >
-          <HStack space="md" alignItems="center">
-            <Box w={20} h={20} justifyContent="center" alignItems="center">
-              <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Box>
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$xs"
-              fontWeight="$medium"
-              flex={1}
-              numberOfLines={1}
-            >
-              {t('drawer.bottomItems.feedback')}
-            </Text>
-          </HStack>
-        </Pressable>
-        <Pressable
-          onPress={handleNavigateToVoteNewFeatures}
-          h={44}
-          justifyContent="center"
-          bg="transparent"
-          px="$6"
-          $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
-        >
-          <HStack space="md" alignItems="center">
-            <Box w={20} h={20} justifyContent="center" alignItems="center">
-              <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Box>
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$xs"
-              fontWeight="$medium"
-              flex={1}
-              numberOfLines={1}
-            >
-              {t('drawer.bottomItems.voteNewFeatures')}
-            </Text>
-          </HStack>
-        </Pressable>
-        <Pressable
-          onPress={handleHelpCenterPress}
-          h={44}
-          justifyContent="center"
-          bg="transparent"
-          px="$6"
-          $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
-        >
-          <HStack space="md" alignItems="center">
-            <Box w={20} h={20} justifyContent="center" alignItems="center">
-              <QuestionMarkCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Box>
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$xs"
-              fontWeight="$medium"
-              w={110}
-            >
-              {t('drawer.bottomItems.helpCenter')}
-            </Text>
-            <Box
-              bg={isDark ? '$backgroundDark600' : '$backgroundLight300'}
-              px="$2"
-              py="$0.5"
-              borderRadius="$sm"
-            >
+            <HStack space="md" alignItems="center">
+              <Box w={24} h={24} justifyContent="center" alignItems="center">
+                <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
               <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize="$2xs"
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$xs"
+                fontWeight="$medium"
+                flex={1}
+                numberOfLines={1}
+              >
+                {t('drawer.bottomItems.voteNewFeatures')}
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable
+            onPress={handleHelpCenterPress}
+            flex={1}
+            justifyContent="center"
+            bg="transparent"
+            px="$6"
+            $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
+          >
+            <HStack space="md" alignItems="center">
+              <Box w={24} h={24} justifyContent="center" alignItems="center">
+                <QuestionMarkCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$xs"
                 fontWeight="$medium"
               >
-                {t('drawer.bottomItems.comingSoon')}
+                {t('drawer.bottomItems.helpCenter')}
               </Text>
-            </Box>
-          </HStack>
-        </Pressable>
-        <Pressable
-          onPress={handleNavigateToPurchaseHistory}
-          h={44}
-          justifyContent="center"
-          bg="transparent"
-          px="$6"
-          $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
-        >
-          <HStack space="md" alignItems="center">
-            <Box w={20} h={20} justifyContent="center" alignItems="center">
-              <ClockIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Box>
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$xs"
-              fontWeight="$medium"
-              w={110}
-            >
-              {t('drawer.bottomItems.purchaseHistory')}
-            </Text>
-          </HStack>
-        </Pressable>
-        <Pressable
-          onPress={handleLogout}
-          h={44}
-          justifyContent="center"
-          bg="transparent"
-          px="$6"
-          $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
-        >
-          <HStack space="md" alignItems="center">
-            <Box w={20} h={20} justifyContent="center" alignItems="center">
-              <ArrowRightStartOnRectangleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Box>
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$xs"
-              fontWeight="$medium"
-              w={110}
-            >
-              {t('drawer.bottomItems.logOut')}
-            </Text>
-          </HStack>
-        </Pressable>
-      </VStack>
+              <Box
+                bg={isDark ? '$backgroundDark600' : '$backgroundLight300'}
+                px="$2"
+                py="$0.5"
+                borderRadius="$sm"
+              >
+                <Text
+                  color={isDark ? '$textDark400' : '$textLight600'}
+                  fontSize="$2xs"
+                  fontWeight="$medium"
+                >
+                  {t('drawer.bottomItems.comingSoon')}
+                </Text>
+              </Box>
+            </HStack>
+          </Pressable>
+          <Pressable
+            onPress={handleNavigateToPurchaseHistory}
+            flex={1}
+            justifyContent="center"
+            bg="transparent"
+            px="$6"
+            $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
+          >
+            <HStack space="md" alignItems="center">
+              <Box w={24} h={24} justifyContent="center" alignItems="center">
+                <ClockIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$xs"
+                fontWeight="$medium"
+              >
+                {t('drawer.bottomItems.purchaseHistory')}
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable
+            onPress={handleLogout}
+            flex={1}
+            justifyContent="center"
+            bg="transparent"
+            px="$6"
+            $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
+          >
+            <HStack space="md" alignItems="center">
+              <Box w={24} h={24} justifyContent="center" alignItems="center">
+                <ArrowRightStartOnRectangleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$xs"
+                fontWeight="$medium"
+              >
+                {t('drawer.bottomItems.logOut')}
+              </Text>
+            </HStack>
+          </Pressable>
+        </VStack>
     </Box>
 
       {/* Prime Pass Video Modal */}
