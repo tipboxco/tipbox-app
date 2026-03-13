@@ -110,8 +110,23 @@ export const CachedImage: React.FC<CachedImageProps> = ({
   const containerHeight = flattenedStyle?.height || 100;
   const containerBorderRadius = flattenedStyle?.borderRadius || 5;
 
-  // Eğer source yoksa veya geçersizse, statik kutu ikonu göster
+  // Eğer source yoksa veya geçersizse, placeholder varsa onu göster, yoksa kutu ikonu
   if (!imageSource) {
+    if (placeholder) {
+      const placeholderSource = toImageSource(placeholder);
+      if (placeholderSource) {
+        return (
+          <View style={[style, { position: 'relative' }]}>
+            <Image
+              source={placeholderSource}
+              style={[StyleSheet.absoluteFill, { borderRadius: containerBorderRadius }]}
+              contentFit={finalContentFit}
+              cachePolicy={cachePolicy}
+            />
+          </View>
+        );
+      }
+    }
     const iconSize = typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32;
     return (
       <View style={[style, { position: 'relative' }]}>
@@ -189,6 +204,24 @@ export const CachedImage: React.FC<CachedImageProps> = ({
                 height: typeof containerHeight === 'number' ? containerHeight * 0.7 : 60,
               }}
             />
+          ) : placeholder ? (
+            (() => {
+              const placeholderSource = toImageSource(placeholder);
+              return placeholderSource ? (
+                <Image
+                  source={placeholderSource}
+                  style={[StyleSheet.absoluteFill, { borderRadius: containerBorderRadius }]}
+                  contentFit={finalContentFit}
+                  cachePolicy={cachePolicy}
+                />
+              ) : (
+                <CubeIcon
+                  size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
+                  color="#CCCCCC"
+                  strokeWidth={1.5}
+                />
+              );
+            })()
           ) : (
             <CubeIcon
               size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
@@ -199,25 +232,57 @@ export const CachedImage: React.FC<CachedImageProps> = ({
         </View>
       )}
 
-      {/* Error state: #F5F5F5 arkaplan + Statik kutu ikonu */}
+      {/* Error state: placeholder varsa onu göster, yoksa kutu ikonu */}
       {hasError && (
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor: '#F5F5F5',
-              borderRadius: containerBorderRadius,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }
-          ]}
-        >
-          <CubeIcon
-            size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
-            color="#CCCCCC"
-            strokeWidth={1.5}
-          />
-        </View>
+        placeholder ? (
+          (() => {
+            const placeholderSource = toImageSource(placeholder);
+            return placeholderSource ? (
+              <Image
+                source={placeholderSource}
+                style={[StyleSheet.absoluteFill, { borderRadius: containerBorderRadius }]}
+                contentFit={finalContentFit}
+                cachePolicy={cachePolicy}
+              />
+            ) : (
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundColor: '#F5F5F5',
+                    borderRadius: containerBorderRadius,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }
+                ]}
+              >
+                <CubeIcon
+                  size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
+                  color="#CCCCCC"
+                  strokeWidth={1.5}
+                />
+              </View>
+            );
+          })()
+        ) : (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: '#F5F5F5',
+                borderRadius: containerBorderRadius,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }
+            ]}
+          >
+            <CubeIcon
+              size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
+              color="#CCCCCC"
+              strokeWidth={1.5}
+            />
+          </View>
+        )
       )}
     </View>
   );
