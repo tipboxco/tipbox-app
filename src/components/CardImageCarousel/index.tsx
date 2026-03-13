@@ -1,12 +1,14 @@
 import React, { useRef, useMemo, useCallback } from 'react';
 import { Box, Image, Pressable } from '@gluestack-ui/themed';
-import { Dimensions, View } from 'react-native';
+import { Dimensions, View, Pressable as RNPressable } from 'react-native';
 import Carousel, { ICarouselInstance } from 'react-native-reanimated-carousel';
 import { useSharedValue, useAnimatedStyle, interpolate, SharedValue, interpolateColor, runOnJS } from 'react-native-reanimated';
 import Animated from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { FlatList } from 'react-native';
 import { useFeedListContext } from '@/src/features/feed/context/FeedListContext';
+import { useFullScreenImage } from '@/src/hooks/useFullScreenImage';
+import { FullScreenImageViewer } from '@/src/components/FullScreenImageViewer';
 
 interface CardImageCarouselProps {
   images: any[];
@@ -111,6 +113,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
 export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarouselProps) => {
   const carouselRef = useRef<ICarouselInstance>(null);
   const progress = useSharedValue<number>(0);
+  const { visible: fullScreenVisible, imageSource: fullScreenSource, openImage, closeImage } = useFullScreenImage();
 
   // FeedListContext'ten feedListRef'i al (optional - sadece feed ekranında mevcut)
   // Feed ekranı dışında kullanılıyorsa context yok, bu durumda gesture arbitration devre dışı
@@ -291,16 +294,19 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
         position="relative"
         alignSelf="center"
       >
-        <Image
-          source={images[0] || defaultPostImage}
-          alt="Post image"
-          resizeMode="cover"
-          style={{
-            width: carouselWidth - (carouselPadding * 2),
-            height: carouselHeight,
-            borderRadius: 8,
-          }}
-        />
+        <RNPressable onLongPress={() => openImage(images[0] || defaultPostImage)}>
+          <Image
+            source={images[0] || defaultPostImage}
+            alt="Post image"
+            resizeMode="cover"
+            style={{
+              width: carouselWidth - (carouselPadding * 2),
+              height: carouselHeight,
+              borderRadius: 8,
+            }}
+          />
+        </RNPressable>
+        <FullScreenImageViewer visible={fullScreenVisible} imageSource={fullScreenSource} onClose={closeImage} />
       </Box>
     );
   }
@@ -325,16 +331,18 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
           renderItem={({ index }) => {
             const defaultPostImage = require('@/assets/defaultImages/default-post.png');
             return (
-              <Image
-                source={images[index] || defaultPostImage}
-                alt="Post image"
-                resizeMode="cover"
-                style={{
-                  width: carouselWidth - (carouselPadding * 2),
-                  height: carouselHeight,
-                  borderRadius: 8,
-                }}
-              />
+              <RNPressable onLongPress={() => openImage(images[index] || defaultPostImage)}>
+                <Image
+                  source={images[index] || defaultPostImage}
+                  alt="Post image"
+                  resizeMode="cover"
+                  style={{
+                    width: carouselWidth - (carouselPadding * 2),
+                    height: carouselHeight,
+                    borderRadius: 8,
+                  }}
+                />
+              </RNPressable>
             );
           }}
         />
@@ -354,6 +362,7 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
             backgroundColor: '#829905'
           }}
         />
+        <FullScreenImageViewer visible={fullScreenVisible} imageSource={fullScreenSource} onClose={closeImage} />
       </Box>
     );
   }
@@ -389,16 +398,18 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
             renderItem={({ index }) => {
               const defaultPostImage = require('@/assets/defaultImages/default-post.png');
               return (
-                <Image
-                  source={images[index] || defaultPostImage}
-                  alt="Post image"
-                  resizeMode="cover"
-                  style={{
-                    width: carouselWidth - (carouselPadding * 2),
-                    height: carouselHeight,
-                    borderRadius: 8,
-                  }}
-                />
+                <RNPressable onLongPress={() => openImage(images[index] || defaultPostImage)}>
+                  <Image
+                    source={images[index] || defaultPostImage}
+                    alt="Post image"
+                    resizeMode="cover"
+                    style={{
+                      width: carouselWidth - (carouselPadding * 2),
+                      height: carouselHeight,
+                      borderRadius: 8,
+                    }}
+                  />
+                </RNPressable>
               );
             }}
           />
@@ -420,6 +431,7 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
           backgroundColor: '#829905'
         }}
       />
+      <FullScreenImageViewer visible={fullScreenVisible} imageSource={fullScreenSource} onClose={closeImage} />
     </Box>
   );
 };

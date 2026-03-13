@@ -9,6 +9,8 @@ import { toImageSource, DEFAULT_USER_AVATAR, toMediaUrl } from '@/src/utils';
 import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
 import { useTranslation } from 'react-i18next';
+import { useFullScreenImage } from '@/src/hooks/useFullScreenImage';
+import { FullScreenImageViewer } from '@/src/components/FullScreenImageViewer';
 
 // Haptic feedback - opsiyonel
 let Haptics: any = null;
@@ -38,6 +40,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
   currentUserId,
 }) => {
   const { t } = useTranslation('inbox');
+  const { visible: fullScreenVisible, imageSource: fullScreenSource, openImage, closeImage } = useFullScreenImage();
   // ✅ FIX: isSent değerini yeniden hesapla - item.isSent yanlış olabilir
   const isSent = currentUserId && item.senderId
     ? String(item.senderId) === String(currentUserId)
@@ -399,8 +402,8 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                 {/* Ana görsel */}
                 <Pressable
                   onPress={() => {
-                    // TODO: Fullscreen image view
-                    console.log('[MessageDetail] Image pressed:', item.mediaUrl);
+                    const fullUrl = toMediaUrl(item.mediaUrl);
+                    if (fullUrl) openImage({ uri: fullUrl });
                   }}
                   disabled={imageLoading || imageError}
                 >
@@ -560,6 +563,8 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
           isSent={isSent}
         />
       )}
+
+      <FullScreenImageViewer visible={fullScreenVisible} imageSource={fullScreenSource} onClose={closeImage} />
     </VStack>
   );
 };
