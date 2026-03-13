@@ -72,6 +72,11 @@ export type RootStackParamList = {
     status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
   };
   
+  // CollectionDetail - Collection detail screen (accessible from Profile, Events, etc.)
+  CollectionDetail: {
+    collectionId: string;
+  };
+
   // ProductSelect - Global product selection screen
   ProductSelect: {
     returnScreen?: string;

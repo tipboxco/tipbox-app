@@ -18,10 +18,20 @@ import type { Collection, CollectionCategory } from '../../types/collection.type
 import type { CollectionFilters } from '../../types/medusa.types';
 import { useSafeAreaValues } from '@/src/utils';
 import { useCollections, useCollectionCategories } from '../../api/hooks';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useUserCollectionAchievements } from '@/src/features/profile/api/hooks';
 
 /** "All" chip'i her zaman başta sabit olur — backend'den gelmez */
 const ALL_CATEGORY: CollectionCategory = { id: 'all', name: 'All', handle: 'all' };
+
+/** Status filter options */
+const STATUS_FILTERS = [
+  { key: 'all' as const, label: 'All' },
+  { key: 'completed' as const, label: 'Completed' },
+  { key: 'in_progress' as const, label: 'In Progress' },
+  { key: 'not_started' as const, label: 'Not Started' },
+];
 
 type CollectionsTabProps = {
   searchQuery?: string;
@@ -46,6 +56,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
   const [selectedHandle, setSelectedHandle] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'completed' | 'in_progress' | 'not_started'>('all');
   const [debouncedSearch, setDebouncedSearch] = useState<string | undefined>(undefined);
   const navigation = useNavigation<CollectionsTabNavigationProp>();
 
@@ -70,6 +81,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const allCollectionsQuery = useCollections({
     search: debouncedSearch,
     category: selectedHandle !== 'all' ? selectedHandle : undefined,
+    status: selectedStatus !== 'all' ? selectedStatus : undefined,
     mainCategoryId: collectionFilters?.mainCategoryId,
     subCategoryId: collectionFilters?.subCategoryId,
     productGroupId: collectionFilters?.productGroupId,
@@ -106,8 +118,9 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
           description: item.description,
           currentProgress: item.current,
           totalProgress: item.total,
-          backgroundGradient: { colors: ['#E2FF46', '#8B5CF6'] }, // Default gradient
-          category: undefined,
+          backgroundGradient: item.backgroundGradient || { colors: ['#8B5CF6', '#EC4899'] },
+          category: item.category,
+          backgroundImage: item.backgroundImage,
         }));
       }
       // All collections API returns 'collections' with Collection[]
@@ -123,9 +136,23 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   // Collection kart tıklama
   const handleCollectionPress = useCallback(
     (id: string) => {
-      navigation.navigate('CollectionDetailScreen', { collectionId: id });
+      if (userId) {
+        // Profile context: Root-level navigation kullan
+        navigationService.navigate(ROOT_ROUTES.COLLECTION_DETAIL as any, { collectionId: id });
+      } else {
+        // Events context: Local stack navigation kullan
+        navigation.navigate('CollectionDetailScreen', { collectionId: id });
+      }
     },
-    [navigation]
+    [navigation, userId]
+  );
+
+  // Status chip seçimi
+  const handleStatusPress = useCallback(
+    (status: 'all' | 'completed' | 'in_progress' | 'not_started') => {
+      setSelectedStatus(status);
+    },
+    []
   );
 
   // Chip seçimi
@@ -199,7 +226,41 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     [handleCollectionPress]
   );
 
-  // Filter chips
+  // Status filter chips
+  const StatusChips = useMemo(
+    () => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterChipsContainer}
+        style={styles.filterChips}
+      >
+        {STATUS_FILTERS.map((sf) => {
+          const isActive = sf.key === selectedStatus;
+          return (
+            <Pressable
+              key={sf.key}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: isActive ? '#F1F1F1' : 'transparent',
+                  borderColor: '#EFEFEF',
+                },
+              ]}
+              onPress={() => handleStatusPress(sf.key)}
+            >
+              <Text style={styles.filterChipText}>
+                {sf.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    ),
+    [selectedStatus, handleStatusPress]
+  );
+
+  // Category filter chips
   const FilterChips = useMemo(
     () => (
       <ScrollView
@@ -250,16 +311,29 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     () =>
       !isLoading ? (
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: isDark ? '#FFFFFF' : '#B9B9B9' }]}>
-            {debouncedSearch
-              ? 'No collections found'
-              : selectedHandle !== 'all'
-              ? 'No collections in this category'
-              : 'No collections yet'}
-          </Text>
+          {userId ? (
+            <>
+              <Text style={[styles.emptyTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+                No Completed Collections Yet
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: '#999999' }]}>
+                This user doesn't have any completed collections yet.
+              </Text>
+            </>
+          ) : (
+            <Text style={[styles.emptyText, { color: isDark ? '#FFFFFF' : '#B9B9B9' }]}>
+              {debouncedSearch
+                ? 'No collections found'
+                : selectedStatus !== 'all'
+                ? 'No collections with this status'
+                : selectedHandle !== 'all'
+                ? 'No collections in this category'
+                : 'No collections yet'}
+            </Text>
+          )}
         </View>
       ) : null,
-    [isLoading, debouncedSearch, selectedHandle, isDark]
+    [isLoading, debouncedSearch, selectedStatus, selectedHandle, isDark, userId]
   );
 
   if (isLoading) {
@@ -272,7 +346,8 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
 
   return (
     <View style={styles.container}>
-      {FilterChips}
+      {!userId && StatusChips}
+      {!userId && FilterChips}
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -346,6 +421,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
   },
   emptyText: {
     fontSize: 16,

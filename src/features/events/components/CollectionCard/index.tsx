@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Collection } from '../../types/collection.types';
+import { toImageSource } from '@/src/utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_PADDING = 16;
@@ -19,7 +20,42 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
   isFullWidth = false,
   onPress,
 }) => {
-  const isCompleted = collection.currentProgress >= collection.totalProgress;
+  const cardHeight = isFullWidth ? 200 : 160;
+  const bgImageSource = collection.backgroundImage
+    ? toImageSource(collection.backgroundImage)
+    : null;
+
+  const renderContent = () => (
+    <View style={styles.innerContainer}>
+      {/* Top row: Category (left) + Progress (right) */}
+      <View style={styles.topRow}>
+        {collection.category ? (
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{collection.category}</Text>
+          </View>
+        ) : (
+          <View />
+        )}
+        <View style={styles.progressBadge}>
+          <Text style={styles.progressText}>
+            {collection.currentProgress}/{collection.totalProgress}
+          </Text>
+        </View>
+      </View>
+
+      {/* Bottom: Title + Description on transparent dark bg */}
+      <View style={styles.bottomSection}>
+        <Text style={styles.title} numberOfLines={1}>
+          {collection.title}
+        </Text>
+        {collection.description ? (
+          <Text style={styles.description} numberOfLines={1}>
+            {collection.description}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
 
   return (
     <Pressable
@@ -27,45 +63,30 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
         styles.cardContainer,
         {
           width: isFullWidth ? '100%' : CARD_WIDTH,
-          height: isFullWidth ? 200 : 160,
+          height: cardHeight,
         },
       ]}
       onPress={() => onPress?.(collection.id)}
     >
-      <LinearGradient
-        colors={collection.backgroundGradient.colors}
-        start={collection.backgroundGradient.start}
-        end={collection.backgroundGradient.end}
-        style={styles.gradient}
-      >
-        {/* Progress Badge */}
-        <View style={styles.progressBadge}>
-          <Text style={styles.progressText}>
-            {collection.currentProgress}/{collection.totalProgress}
-          </Text>
-        </View>
-
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.title} numberOfLines={2}>
-            {collection.title}
-          </Text>
-          {collection.description && (
-            <Text style={styles.description} numberOfLines={2}>
-              {collection.description}
-            </Text>
-          )}
-        </View>
-
-        {/* Completed Overlay (if completed) */}
-        {isCompleted && (
-          <View style={styles.completedOverlay}>
-            <View style={styles.completedBadge}>
-              <Text style={styles.completedText}>✓ Completed</Text>
-            </View>
-          </View>
-        )}
-      </LinearGradient>
+      {bgImageSource ? (
+        <ImageBackground
+          source={bgImageSource}
+          style={styles.background}
+          imageStyle={styles.backgroundImage}
+          resizeMode="cover"
+        >
+          {renderContent()}
+        </ImageBackground>
+      ) : (
+        <LinearGradient
+          colors={collection.backgroundGradient?.colors || ['#8B5CF6', '#EC4899']}
+          start={collection.backgroundGradient?.start || { x: 0, y: 0 }}
+          end={collection.backgroundGradient?.end || { x: 1, y: 1 }}
+          style={styles.background}
+        >
+          {renderContent()}
+        </LinearGradient>
+      )}
     </Pressable>
   );
 };
@@ -76,57 +97,61 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: CARD_GAP,
   },
-  gradient: {
+  background: {
     flex: 1,
-    padding: 16,
+  },
+  backgroundImage: {
+    borderRadius: 16,
+  },
+  innerContainer: {
+    flex: 1,
     justifyContent: 'space-between',
   },
-  progressBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 12,
   },
-  progressText: {
-    color: '#FFF',
-    fontSize: 11,
+  categoryBadge: {
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  categoryText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '600',
   },
-  content: {
-    marginTop: 'auto',
-    gap: 4,
+  progressBadge: {
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  progressText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  bottomSection: {
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 2,
   },
   title: {
-    color: '#FFF',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   description: {
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 12,
     fontWeight: '400',
     lineHeight: 16,
-  },
-  completedOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  completedBadge: {
-    backgroundColor: '#D8FF08',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  completedText: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
 });
 

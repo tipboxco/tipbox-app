@@ -158,6 +158,7 @@ export const getCollections = async (
   const query = new URLSearchParams();
   if (params.search)                                       query.append('search', params.search);
   if (params.category && params.category !== 'all')        query.append('category', params.category);
+  if (params.status && params.status !== 'all')            query.append('status', params.status);
   if (params.mainCategoryId)                               query.append('mainCategoryId', params.mainCategoryId);
   if (params.subCategoryId)                                query.append('subCategoryId', params.subCategoryId);
   if (params.productGroupId)                               query.append('productGroupId', params.productGroupId);

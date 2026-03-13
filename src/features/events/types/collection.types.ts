@@ -14,6 +14,7 @@ export interface Collection {
   totalProgress: number;
   backgroundGradient: CollectionBackgroundGradient;
   category?: string;
+  backgroundImage?: string;
 }
 
 /** Badge durumu - backend'den status alanı ile eşleşmeli */
@@ -40,6 +41,8 @@ export interface CollectionsListParams {
   search?: string;
   /** Chip filter handle değeri (ör: 'electronics'). 'all' veya undefined = tümü. */
   category?: string;
+  /** Status filter: completed, in_progress, not_started veya all (default). */
+  status?: 'all' | 'completed' | 'in_progress' | 'not_started';
   mainCategoryId?: string;
   subCategoryId?: string;
   productGroupId?: string;

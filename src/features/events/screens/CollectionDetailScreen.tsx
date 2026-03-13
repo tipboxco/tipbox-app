@@ -20,6 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import type { EventsStackParamList } from '../navigation';
+import type { RootStackParamList } from '@/src/navigation/types/root.types';
 import type { Collection, CollectionBadge as CollectionBadgeType } from '../types/collection.types';
 import { useCollectionDetail } from '../api/hooks';
 import CollectionCardModal from '../components/CollectionCardModal';
@@ -27,7 +28,10 @@ import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type CollectionDetailScreenRouteProp = RouteProp<EventsStackParamList, 'CollectionDetailScreen'>;
+// Support both EventsStack and Root navigation contexts
+type CollectionDetailScreenRouteProp =
+  | RouteProp<EventsStackParamList, 'CollectionDetailScreen'>
+  | RouteProp<RootStackParamList, 'CollectionDetail'>;
 type CollectionDetailScreenNavigationProp = NativeStackNavigationProp<
   EventsStackParamList,
   'CollectionDetailScreen'

@@ -28,6 +28,7 @@ export const SHARED_SCREENS = [
   'Bookmarks',
   'Marketplace',
   'Event',
+  'CollectionDetail',
 ] as const;
 
 export type SharedScreen = typeof SHARED_SCREENS[number];
