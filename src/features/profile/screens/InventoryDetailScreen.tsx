@@ -114,7 +114,7 @@ const InventoryDetailScreen = () => {
         >
           <Image
             source={toImageSource(item.image) || require('@/assets/inventory/product_01.png')}
-            alt={`${item.brand.name} ${item.brand.model}`}
+            alt={[item.brand.name, item.brand.model].filter((v) => v && v.toLowerCase() !== 'unknown').join(' ')}
             w="80%"
             h={200}
             resizeMode="contain"
@@ -126,7 +126,7 @@ const InventoryDetailScreen = () => {
               color={isDark ? '$textDark50' : '#A3A3A3'}
               textAlign="center"
             >
-              {cleanNewlines(item.brand.name)} {cleanNewlines(item.brand.model)}
+              {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model)].filter((v) => v && v.toLowerCase() !== 'unknown').join(' ')}
             </Text>
             <Text
               fontSize={10}

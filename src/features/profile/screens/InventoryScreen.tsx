@@ -192,7 +192,7 @@ const InventoryScreen = () => {
       params: {
         product: {
           id: item.id,
-          name: `${item.brand.name} ${item.brand.model}`,
+          name: [item.brand.name, item.brand.model].filter((v) => v && v.toLowerCase() !== 'unknown').join(' '),
           image: item.image,
         },
         fromInventory: true,
@@ -395,12 +395,14 @@ const InventoryScreen = () => {
           ListEmptyComponent={
             <Box flex={1} justifyContent="center" alignItems="center" py={40} px="$4">
               <VStack alignItems="center" space="md">
-                <PlusIcon 
-                  width={48} 
-                  height={48} 
-                  color={isDark ? '#666666' : '#B9B9B9'} 
-                  strokeWidth={1.5}
-                />
+                {showCreateButton && (
+                  <PlusIcon
+                    width={48}
+                    height={48}
+                    color={isDark ? '#666666' : '#B9B9B9'}
+                    strokeWidth={1.5}
+                  />
+                )}
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
                   fontSize="$md"

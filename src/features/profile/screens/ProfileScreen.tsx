@@ -58,6 +58,7 @@ import {
   UserMinusIcon,
   UserPlusIcon,
   PlusIcon,
+  CheckBadgeIcon,
 } from 'react-native-heroicons/outline';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
@@ -172,7 +173,7 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
       name: review.user.name || 'Unknown',
       title: review.user.title || '',
       avatar: avatarSource,
-      action: 'wrote a review',
+      action: 'Added new product and experiences to inventory!',
     },
     contextData: {
       id: productData?.id || '',
@@ -2148,6 +2149,20 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               </HStack>
             </Pressable>
           </HStack>
+
+          {/* User Titles */}
+          {profile.titles && profile.titles.length > 0 && (
+            <HStack alignItems="center" space="xs" mt={8}>
+              <CheckBadgeIcon size={14} color={isDark ? '#9CA3AF' : '#6B7280'} />
+              <Text
+                color={isDark ? '$textDark400' : '$textLight500'}
+                fontSize="$xs"
+                numberOfLines={1}
+              >
+                {profile.titles.join(' - ')}
+              </Text>
+            </HStack>
+          )}
         </Box>
 
         {/* Inventory Header - Her zaman göster (kendi ve başkasının profili için) */}

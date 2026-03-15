@@ -170,7 +170,7 @@ export const InventoryCard = ({ item, width, isMenuOpen, onMenuToggle, onPress, 
               numberOfLines={3}
             >
               {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
-                .filter(Boolean)
+                .filter((v) => v && v.toLowerCase() !== 'unknown')
                 .join(' ')}
             </Text>
           </VStack>
