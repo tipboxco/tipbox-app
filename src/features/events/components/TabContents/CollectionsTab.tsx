@@ -21,17 +21,10 @@ import { useCollections, useCollectionCategories } from '../../api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useUserCollectionAchievements } from '@/src/features/profile/api/hooks';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
-/** "All" chip'i her zaman başta sabit olur — backend'den gelmez */
-const ALL_CATEGORY: CollectionCategory = { id: 'all', name: 'All', handle: 'all' };
-
-/** Status filter options */
-const STATUS_FILTERS = [
-  { key: 'all' as const, label: 'All' },
-  { key: 'completed' as const, label: 'Completed' },
-  { key: 'in_progress' as const, label: 'In Progress' },
-  { key: 'not_started' as const, label: 'Not Started' },
-];
+/** Status filter keys */
+const STATUS_KEYS = ['all', 'completed', 'in_progress', 'not_started'] as const;
 
 type CollectionsTabProps = {
   searchQuery?: string;
@@ -52,6 +45,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   collectionFilters,
   userId, // Profile'da userId ile tamamlanmış collections
 }) => {
+  const { t } = useTranslation('events');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
@@ -59,6 +53,22 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'completed' | 'in_progress' | 'not_started'>('all');
   const [debouncedSearch, setDebouncedSearch] = useState<string | undefined>(undefined);
   const navigation = useNavigation<CollectionsTabNavigationProp>();
+
+  // Translated status filter labels
+  const STATUS_LABEL_KEYS: Record<typeof STATUS_KEYS[number], string> = {
+    all: 'collection.all',
+    completed: 'collection.completed',
+    in_progress: 'collection.inProgress',
+    not_started: 'collection.notStarted',
+  };
+
+  const STATUS_FILTERS = STATUS_KEYS.map((key) => ({
+    key,
+    label: t(STATUS_LABEL_KEYS[key]),
+  }));
+
+  /** "All" chip'i her zaman başta sabit olur — backend'den gelmez */
+  const ALL_CATEGORY: CollectionCategory = { id: 'all', name: t('collection.all'), handle: 'all' };
 
   // Arama debounce (500ms)
   useEffect(() => {
@@ -73,7 +83,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const { data: categoriesData } = useCollectionCategories();
   const chipCategories = useMemo<CollectionCategory[]>(
     () => [ALL_CATEGORY, ...(categoriesData?.categories ?? [])],
-    [categoriesData]
+    [categoriesData, ALL_CATEGORY]
   );
 
   // EP-01: Collections listesi (infinite scroll)
@@ -314,21 +324,21 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
           {userId ? (
             <>
               <Text style={[styles.emptyTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
-                No Completed Collections Yet
+                {t('collection.emptyStates.noCompletedTitle')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: '#999999' }]}>
-                This user doesn't have any completed collections yet.
+                {t('collection.emptyStates.noCompletedSubtitle')}
               </Text>
             </>
           ) : (
             <Text style={[styles.emptyText, { color: isDark ? '#FFFFFF' : '#B9B9B9' }]}>
               {debouncedSearch
-                ? 'No collections found'
+                ? t('collection.emptyStates.noResults')
                 : selectedStatus !== 'all'
-                ? 'No collections with this status'
+                ? t('collection.emptyStates.noStatus')
                 : selectedHandle !== 'all'
-                ? 'No collections in this category'
-                : 'No collections yet'}
+                ? t('collection.emptyStates.noCategory')
+                : t('collection.emptyStates.noCollections')}
             </Text>
           )}
         </View>
@@ -347,7 +357,6 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   return (
     <View style={styles.container}>
       {!userId && StatusChips}
-      {!userId && FilterChips}
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}

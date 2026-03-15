@@ -285,32 +285,8 @@ const EventsScreen: React.FC = () => {
                 <FunnelIcon
                   width={20}
                   height={20}
-                  color={
-                    activeTab === 'collections' &&
-                    (collectionFilters?.mainCategoryId ||
-                     collectionFilters?.subCategoryId ||
-                     collectionFilters?.productGroupId)
-                      ? '#E8FF6B' // Active filter color
-                      : isDark ? '#FFF' : '#000'
-                  }
+                  color={isDark ? '#FFF' : '#000'}
                 />
-                {/* Active Filter Badge */}
-                {activeTab === 'collections' &&
-                 (collectionFilters?.mainCategoryId ||
-                  collectionFilters?.subCategoryId ||
-                  collectionFilters?.productGroupId) && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: -2,
-                      right: -2,
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: '#E8FF6B',
-                    }}
-                  />
-                )}
               </Pressable>
             </View>
           </View>

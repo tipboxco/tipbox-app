@@ -53,6 +53,7 @@ import type {
 import type { SurveyQuestionsApiResponse, SurveyCompleteApiResponse } from '../types/survey.types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
+import { invalidateCatalogPosts } from '@/src/features/post/api/hooks';
 
 /**
  * Query Keys - Events feature için cache key pattern'leri
@@ -621,36 +622,39 @@ export const useEventRequirements = (eventId: string | undefined) => {
  */
 export const useCreateEventPostNew = (eventId: string) => {
   const queryClient = useQueryClient();
-  
+
   return useMutation<CreateEventPostResponseNew, Error, CreateEventPostRequestNew>({
     mutationFn: (data) => createEventPostNew(eventId, data),
-    onSuccess: () => {
-      // 1. Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
-      // CRITICAL: refetchType: 'all' kullanıyoruz ki hem aktif hem inactive query'ler refetch edilsin
-      queryClient.invalidateQueries({ 
+    onSuccess: (_, variables) => {
+      // 1. Event posts'u invalidate et
+      queryClient.invalidateQueries({
         queryKey: ['events', 'posts', eventId],
         refetchType: 'all',
       });
-      // 2. Event detail'i invalidate et (post sayısı değişebilir)
-      queryClient.invalidateQueries({ 
+      // 2. Event detail'i invalidate et
+      queryClient.invalidateQueries({
         queryKey: eventsKeys.detail(eventId),
         refetchType: 'all',
       });
-      // 3. Ana feed'i invalidate et ki yeni post görünsün
-      queryClient.invalidateQueries({ 
+      // 3. Ana feed'i invalidate et
+      queryClient.invalidateQueries({
         queryKey: feedKeys.all,
         refetchType: 'all',
       });
-      // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ 
+      // 4. Profil feed'lerini invalidate et
+      queryClient.invalidateQueries({
         queryKey: ['profile'],
         refetchType: 'all',
       });
-      // 5. Active events listesini invalidate et (event post sayısı değişebilir)
-      queryClient.invalidateQueries({ 
+      // 5. Active events listesini invalidate et
+      queryClient.invalidateQueries({
         queryKey: eventsKeys.active(),
         refetchType: 'all',
       });
+      // 6. Catalog context posts'u invalidate et
+      if ((variables as any).contextType && (variables as any).contextId) {
+        invalidateCatalogPosts(queryClient, (variables as any).contextType, (variables as any).contextId);
+      }
     },
   });
 };
@@ -913,44 +917,47 @@ export const useDeleteEventPostComment = () => {
  */
 export const useCreateEventPostWithContext = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation<
-    CreateEventPostWithContextResponse, 
-    Error, 
+    CreateEventPostWithContextResponse,
+    Error,
     { eventId: string } & CreateEventPostWithContextRequest
   >({
     mutationFn: ({ eventId, ...data }) => createEventPostWithContext(eventId, data),
-    onSuccess: (_, { eventId }) => {
+    onSuccess: (_, variables) => {
+      const { eventId, contextType, contextId } = variables;
+
       // 1. Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
-      // NOTE: eventsKeys.posts(eventId) -> ['events','posts',eventId, undefined, undefined] olduğu için
-      // useEventPosts'in key'i (limit içerdiğinden) ile eşleşmeyip invalidate kaçabiliyor.
-      // Bu yüzden prefix ile invalidate/refetch yapıyoruz.
-      // CRITICAL: refetchType: 'all' kullanıyoruz ki hem aktif hem inactive query'ler refetch edilsin
-      // EventDetailScreen unmount edilmiş olsa bile, bir sonraki mount'ta fresh data çekilsin
       queryClient.invalidateQueries({
         queryKey: ['events', 'posts', eventId],
         refetchType: 'all',
       });
       // 2. Event detail'i invalidate et (post sayısı değişebilir)
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: eventsKeys.detail(eventId),
         refetchType: 'all',
       });
       // 3. Ana feed'i invalidate et ki yeni post görünsün
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: feedKeys.all,
         refetchType: 'all',
       });
       // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ['profile'],
         refetchType: 'all',
       });
       // 5. Active events listesini invalidate et (event post sayısı değişebilir)
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: eventsKeys.active(),
         refetchType: 'all',
       });
+      // 6. Catalog context posts'u invalidate et
+      // PostsScreen bu query'leri kullanır (subCategoryPosts, productGroupPosts, catalogProductPosts)
+      // Event post context ile oluşturulduğunda bu cache'ler de güncellenmeli
+      if (contextType && contextId) {
+        invalidateCatalogPosts(queryClient, contextType as any, contextId);
+      }
     },
   });
 };

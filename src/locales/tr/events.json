@@ -60,7 +60,15 @@
     "all": "Tümü",
     "notStarted": "Başlanmadı",
     "inProgress": "Devam Ediyor",
-    "completed": "Tamamlandı"
+    "completed": "Tamamlandı",
+    "emptyStates": {
+      "noCompletedTitle": "Henüz Tamamlanmış Koleksiyon Yok",
+      "noCompletedSubtitle": "Bu kullanıcının henüz tamamlanmış koleksiyonu yok.",
+      "noResults": "Koleksiyon bulunamadı",
+      "noStatus": "Bu durumda koleksiyon yok",
+      "noCategory": "Bu kategoride koleksiyon yok",
+      "noCollections": "Henüz koleksiyon yok"
+    }
   },
   "communityFilter": {
     "title": "Filtre",

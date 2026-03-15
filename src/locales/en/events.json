@@ -60,7 +60,15 @@
     "all": "All",
     "notStarted": "Not Started",
     "inProgress": "In Progress",
-    "completed": "Completed"
+    "completed": "Completed",
+    "emptyStates": {
+      "noCompletedTitle": "No Completed Collections Yet",
+      "noCompletedSubtitle": "This user doesn't have any completed collections yet.",
+      "noResults": "No collections found",
+      "noStatus": "No collections with this status",
+      "noCategory": "No collections in this category",
+      "noCollections": "No collections yet"
+    }
   },
   "communityFilter": {
     "title": "Filter",
