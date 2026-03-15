@@ -9,6 +9,7 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useUserPosts } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import i18n from 'i18next';
 import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
@@ -101,7 +102,7 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
       name: review.user?.name || 'Unknown',
       title: review.user?.title || '',
       avatar: avatarSource,
-      action: 'Added new product and experiences to inventory!',
+      action: i18n.t('post:card.addedToInventory'),
     },
     contextData: {
       id: productData?.id || '',

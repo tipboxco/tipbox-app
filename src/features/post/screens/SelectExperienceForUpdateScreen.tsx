@@ -49,7 +49,7 @@ const mapReviewToCardData = (item: ProfileReview): ExperiencePostCardData => {
       name: item.user?.name || 'Unknown',
       title: item.user?.title || '',
       avatar: avatarSource,
-      action: 'Added new product and experiences to inventory!',
+      action: t('card.addedToInventory'),
     },
     contextData: {
       id: item.contextData?.id || '',

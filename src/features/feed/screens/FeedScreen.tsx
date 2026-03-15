@@ -425,7 +425,7 @@ const FeedScreenInner = React.memo(() => {
         name: item.user?.name || '',
         title: item.user?.title || '',
         avatar: avatarSource,
-        action: 'Added new product and experiences to inventory!',
+        action: t('post:card.addedToInventory'),
       },
       contextData: {
         id: rawProduct?.id || '',

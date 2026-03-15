@@ -5,6 +5,7 @@ import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCar
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import { useUserReviews } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import i18n from 'i18next';
 import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { ProductInfoType } from '@/src/types/common';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
@@ -113,7 +114,7 @@ const mapExperienceToCardData = (item: ProfileReview): ExperiencePostCardData =>
       name: item.user?.name || 'Unknown',
       title: item.user?.title || '',
       avatar: avatarSource,
-      action: 'Added new product and experiences to inventory!',
+      action: i18n.t('post:card.addedToInventory'),
     },
     contextData: {
       id: productData?.id || '',
