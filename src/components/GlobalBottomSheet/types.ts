@@ -124,5 +124,6 @@ export interface GlobalBottomSheetContextType {
   // Actions
   openBottomSheet: (content: ReactNode, options?: BottomSheetOptions) => void;
   closeBottomSheet: () => void;
+  snapToIndex: (index: number) => void;
 }
 

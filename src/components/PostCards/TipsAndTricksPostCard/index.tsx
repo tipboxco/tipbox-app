@@ -147,7 +147,10 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 onClose={closeBottomSheet}
             />,
             {
-                snapPoints: ['65%'],
+                snapPoints: ['65%', '90%'],
+                keyboardBehavior: 'interactive',
+                keyboardBlurBehavior: 'restore',
+                android_keyboardInputMode: 'adjustResize',
             }
         );
     };

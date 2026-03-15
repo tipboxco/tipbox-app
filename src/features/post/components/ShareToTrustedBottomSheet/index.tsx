@@ -9,12 +9,13 @@ import {
   InputField,
   Image,
 } from '@gluestack-ui/themed';
-import { ActivityIndicator, Keyboard, StyleSheet, useWindowDimensions, View, ScrollView } from 'react-native';
+import { ActivityIndicator, Keyboard, StyleSheet, useWindowDimensions, View, ScrollView, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '@gluestack-ui/themed';
 import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useTrustList } from '@/src/features/profile/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
@@ -23,7 +24,7 @@ import { showCustomToast } from '@/src/components/CustomToast';
 import type { TrustUser } from '@/src/features/profile/types';
 
 const GRID_COLUMNS = 3;
-const AVATAR_SIZE = 72;
+const AVATAR_SIZE = 60;
 const SEARCH_DEBOUNCE_MS = 300;
 
 interface TrustUserGridItemProps {
@@ -95,6 +96,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
   const toast = useToast();
   const user = useAppStore((state) => state.user);
   const insets = useSafeAreaInsets();
+  const { snapToIndex } = useGlobalBottomSheet();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -102,22 +104,28 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  // Track keyboard visibility - keyboardWill* events are faster than keyboardDid*
+  // Track keyboard visibility and auto-snap bottom sheet
   React.useEffect(() => {
     const showSubscription = Keyboard.addListener(
       'keyboardWillShow',
-      () => setIsKeyboardVisible(true)
+      () => {
+        setIsKeyboardVisible(true);
+        snapToIndex(1); // Snap to 90%
+      }
     );
     const hideSubscription = Keyboard.addListener(
       'keyboardWillHide',
-      () => setIsKeyboardVisible(false)
+      () => {
+        setIsKeyboardVisible(false);
+        snapToIndex(0); // Snap back to 65%
+      }
     );
 
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
-  }, []);
+  }, [snapToIndex]);
 
   // Component unmount olduğunda keyboard'u anında kapat
   React.useEffect(() => {
@@ -233,9 +241,9 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
   const gridTotalWidth = GRID_COLUMNS * itemWidth + gap * (GRID_COLUMNS - 1);
 
   return (
-    <VStack bg={isDark ? '$backgroundDark900' : '#FFFFFF'} space="md">
+    <VStack bg={isDark ? '$backgroundDark900' : '#FFFFFF'} space="sm">
       {/* Search - ExploreScreen ile aynı yapı: HStack + icon + Input */}
-      <Box px={paddingH} pb="$3" pt="$2">
+      <Box px={paddingH} pb="$2" pt="$1">
         <HStack
           alignItems="center"
           bg={searchBarBg}
@@ -261,7 +269,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
 
       {/* Trust list */}
       <ScrollView
-        style={{ maxHeight: 300 }}
+        style={{ maxHeight: 250 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
         keyboardShouldPersistTaps="handled"
@@ -303,32 +311,26 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
         bg={isDark ? '$backgroundDark900' : '#FFFFFF'}
         px={paddingH}
         pt="$3"
+        pb="$3"
         borderTopWidth={1}
         borderColor={isDark ? '$borderDark600' : '#E5E7EB'}
       >
-        <Input
-          size="md"
-          variant="outline"
-          bg="transparent"
-          borderWidth={0}
-          borderRadius={8}
-          alignItems="flex-start"
-          py="$2"
-          px="$4"
-          width="100%"
-          minHeight={32}
-          maxHeight={120}
-        >
-          <InputField
-            placeholder={t('share.placeholders.writeMessage')}
-            placeholderTextColor={messagePlaceholderColor}
-            color={isDark ? '$textDark50' : '#111827'}
-            value={message}
-            onChangeText={setMessage}
-            multiline
-            textAlignVertical="top"
-          />
-        </Input>
+        <TextInput
+          placeholder={t('share.placeholders.writeMessage')}
+          placeholderTextColor={messagePlaceholderColor}
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          scrollEnabled={true}
+          textAlignVertical="top"
+          style={{
+            color: isDark ? '#F5F5F5' : '#111827',
+            fontSize: 14,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            maxHeight: 80,
+          }}
+        />
         <Pressable
           onPress={handleSend}
           disabled={isSending || !canSend}
@@ -367,11 +369,11 @@ const styles = StyleSheet.create({
     borderRadius: AVATAR_SIZE / 2,
   },
   scrollContent: {
-    paddingBottom: 16,
-    paddingTop: 8,
+    paddingBottom: 10,
+    paddingTop: 4,
   },
   gridItem: {
-    marginBottom: 10,
+    marginBottom: 6,
     alignItems: 'center',
   },
 });

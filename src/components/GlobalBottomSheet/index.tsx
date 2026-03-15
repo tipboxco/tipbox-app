@@ -97,10 +97,10 @@ export const GlobalBottomSheet: React.FC = () => {
       // CRITICAL FIX: Sadece gerçek kapanma durumunda closeBottomSheet çağır
       // Koşullar:
       // 1. newIndex === -1 (sheet kapandı)
-      // 2. lastIndexRef.current === 0 (sheet açıktı)
+      // 2. lastIndexRef.current >= 0 (sheet açıktı - herhangi bir snap point'te)
       // 3. content var (sheet gerçekten render edilmiş)
       // Bu sayede mount/unmount sırasındaki yanlış tetiklemeleri önleriz
-      if (newIndex === -1 && lastIndexRef.current === 0 && content) {
+      if (newIndex === -1 && lastIndexRef.current >= 0 && content) {
         // RACE CONDITION FIX: gorhom mount sırasında spurious onChange(-1) tetikleyebilir
         // Açılıştan 500ms içindeki close event'lerini yoksay
         const timeSinceOpen = Date.now() - openTimestampRef.current;

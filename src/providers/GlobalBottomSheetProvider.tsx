@@ -60,6 +60,16 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
   }, []);
 
   /**
+   * Bottom sheet'i belirli bir snap point'e snap et
+   */
+  const snapToIndex = useCallback((snapIndex: number) => {
+    setState(prev => {
+      if (prev.index === -1 || !prev.content) return prev;
+      return { ...prev, index: snapIndex };
+    });
+  }, []);
+
+  /**
    * Bottom sheet kapat
    * STABİL FIX: Double close guard - index zaten -1 ise tekrar set etme
    */
@@ -109,8 +119,9 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
       state,
       openBottomSheet,
       closeBottomSheet,
+      snapToIndex,
     }),
-    [state, openBottomSheet, closeBottomSheet]
+    [state, openBottomSheet, closeBottomSheet, snapToIndex]
   );
 
   return (

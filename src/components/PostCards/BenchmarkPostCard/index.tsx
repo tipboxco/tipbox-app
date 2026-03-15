@@ -239,7 +239,10 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                 onClose={closeBottomSheet}
             />,
             {
-                snapPoints: ['65%'],
+                snapPoints: ['65%', '90%'],
+                keyboardBehavior: 'interactive',
+                keyboardBlurBehavior: 'restore',
+                android_keyboardInputMode: 'adjustResize',
             }
         );
     }, [data.id, data.content, data.user?.name, openBottomSheet, closeBottomSheet]);
