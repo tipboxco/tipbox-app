@@ -381,5 +381,56 @@
   },
   "placeholders": {
     "productTitle": "Dyson V15s\nDetect Submarine™ Wet & Dry Cordl..."
+  },
+  "card": {
+    "unknownUser": "Bilinmeyen Kullanıcı",
+    "addedToInventory": "Envantere yeni ürün ve deneyimler eklendi!",
+    "owned": "Sahibim",
+    "tried": "Denedim",
+    "seeRelatedPost": "İlgili Gönderiyi Gör >",
+    "badges": {
+      "question": "Soru",
+      "boosted": "Öne Çıkan",
+      "tipsAndTricks": "İpuçları ve Püf Noktaları",
+      "update": "Güncelleme"
+    },
+    "translate": {
+      "translating": "Çeviriliyor...",
+      "hideTranslation": "Çeviriyi Gizle",
+      "translate": "Çevir"
+    },
+    "boost": {
+      "success": "Başarılı",
+      "activated": "Öne çıkarma aktif edildi",
+      "activatedWithCost": "Öne çıkarma aktif edildi. Maliyet: {{price}} TIPS",
+      "deactivated": "Öne çıkarma devre dışı bırakıldı.",
+      "errorTitle": "Hata",
+      "errorMessage": "Öne çıkarma değiştirilirken bir hata oluştu",
+      "boostPost": "Gönderiyi Öne Çıkar",
+      "disableBoost": "Öne Çıkarmayı Kapat"
+    }
+  },
+  "report": {
+    "title": "Kullanıcıyı Şikayet Et",
+    "message": "{{username}} kullanıcısını neden şikayet ediyorsunuz?",
+    "successTitle": "Başarılı",
+    "successMessage": "Kullanıcı başarıyla şikayet edildi. İncelemeniz için teşekkürler.",
+    "errorTitle": "Hata",
+    "errorDefault": "Kullanıcı şikayet edilemedi",
+    "cancel": "İptal",
+    "categories": {
+      "spam": "Spam",
+      "harassment": "Taciz",
+      "scam": "Dolandırıcılık",
+      "inappropriateContent": "Uygunsuz İçerik",
+      "fakeAccount": "Sahte Hesap",
+      "other": "Diğer"
+    }
+  },
+  "block": {
+    "title": "Kullanıcıyı Engelle",
+    "message": "Bu kullanıcıyı engellemek istediğinizden emin misiniz? Engellenen kullanıcılar sizinle etkileşime geçemez.",
+    "cancel": "İptal",
+    "block": "Engelle"
   }
 }

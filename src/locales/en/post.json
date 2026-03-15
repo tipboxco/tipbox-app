@@ -381,5 +381,56 @@
   },
   "placeholders": {
     "productTitle": "Dyson V15s\nDetect Submarine™ Wet & Dry Cordl..."
+  },
+  "card": {
+    "unknownUser": "Unknown User",
+    "addedToInventory": "Added new product and experiences to inventory!",
+    "owned": "Owned",
+    "tried": "Tried",
+    "seeRelatedPost": "See Related Post >",
+    "badges": {
+      "question": "Question",
+      "boosted": "Boosted",
+      "tipsAndTricks": "Tips & Tricks",
+      "update": "Update"
+    },
+    "translate": {
+      "translating": "Translating...",
+      "hideTranslation": "Hide Translation",
+      "translate": "Translate"
+    },
+    "boost": {
+      "success": "Success",
+      "activated": "Boost activated",
+      "activatedWithCost": "Boost activated. Cost: {{price}} TIPS",
+      "deactivated": "Boost deactivated.",
+      "errorTitle": "Error",
+      "errorMessage": "An error occurred while changing boost",
+      "boostPost": "Boost Post",
+      "disableBoost": "Disable Boost"
+    }
+  },
+  "report": {
+    "title": "Report User",
+    "message": "Why are you reporting {{username}}?",
+    "successTitle": "Success",
+    "successMessage": "User reported successfully. Thank you for your review.",
+    "errorTitle": "Error",
+    "errorDefault": "Failed to report user",
+    "cancel": "Cancel",
+    "categories": {
+      "spam": "Spam",
+      "harassment": "Harassment",
+      "scam": "Scam",
+      "inappropriateContent": "Inappropriate Content",
+      "fakeAccount": "Fake Account",
+      "other": "Other"
+    }
+  },
+  "block": {
+    "title": "Block User",
+    "message": "Are you sure you want to block this user? Blocked users cannot interact with you.",
+    "cancel": "Cancel",
+    "block": "Block"
   }
 }

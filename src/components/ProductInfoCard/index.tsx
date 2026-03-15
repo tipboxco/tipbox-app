@@ -6,6 +6,7 @@ import { ProductInfoType } from '@/src/types/common';
 import { toImageSource, cleanNewlines } from '@/src/utils';
 import { CheckIcon } from 'react-native-heroicons/solid';
 import { CachedImage } from '@/src/components/CachedImage';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface ProductInfoCardProps {
   // Product information
@@ -48,7 +49,8 @@ const ProductInfoCardComponent = ({
   titleColor,
   subNameColor,
 }: ProductInfoCardProps) => {
-  const showOwnership = ownershipLabel ?? (isOwned ? 'Owned' : undefined);
+  const { t } = useTranslation('post');
+  const showOwnership = ownershipLabel ?? (isOwned ? t('card.owned') : undefined);
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -151,7 +153,7 @@ const ProductInfoCardComponent = ({
                 fontSize={10}
                 fontWeight="$normal"
               >
-                {showOwnership}
+                {showOwnership === 'Owned' ? t('card.owned') : t('card.tried')}
               </Text>
             </HStack>
           )}

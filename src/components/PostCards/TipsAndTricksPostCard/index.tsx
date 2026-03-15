@@ -28,7 +28,7 @@ import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, formatRelativeTime } from '@/src/utils';
 import type { TipsCardData } from '@/src/types/TipsAndTricksCard';
 import { BENEFIT_CATEGORY_MAP } from '@/src/features/post/constants/benefitCategories';
 import { Feather } from '@expo/vector-icons';
@@ -49,6 +49,7 @@ import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface TipsAndTricksPostCardProps {
     data: TipsCardData;
@@ -60,7 +61,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<any>();
-  const { user } = useAppStore();
+    const { user } = useAppStore();
+    const { t, i18n } = useTranslation('post');
   const targetUserId = data.user.id;
   const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -169,28 +171,26 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
 
     // Report categories with labels
     const reportCategories = React.useMemo<Array<{ value: UserReportCategory; label: string }>>(() => [
-        { value: 'SPAM', label: 'Spam' },
-        { value: 'HARASSMENT', label: 'Harassment' },
-        { value: 'SCAM', label: 'Scam' },
-        { value: 'INAPPROPRIATE_CONTENT', label: 'Inappropriate Content' },
-        { value: 'FAKE_ACCOUNT', label: 'Fake Account' },
-        { value: 'OTHER', label: 'Other' },
-    ], []);
+        { value: 'SPAM', label: t('report.categories.spam') },
+        { value: 'HARASSMENT', label: t('report.categories.harassment') },
+        { value: 'SCAM', label: t('report.categories.scam') },
+        { value: 'INAPPROPRIATE_CONTENT', label: t('report.categories.inappropriateContent') },
+        { value: 'FAKE_ACCOUNT', label: t('report.categories.fakeAccount') },
+        { value: 'OTHER', label: t('report.categories.other') },
+    ], [t]);
 
     const handleReport = React.useCallback(() => {
         if (!user?.id || !targetUserId) return;
         
-        const username = data.user?.name || 'User';
-        
-        // Report category seçimi için alert
+        const username = data.user?.name || t('card.unknownUser');
+
         Alert.alert(
-            'Report User',
-            `Why are you reporting ${username}?`,
+            t('report.title'),
+            t('report.message', { username }),
             [
                 ...reportCategories.map((category) => ({
                     text: category.label,
                     onPress: () => {
-                        // Seçilen kategori ile raporla
                         reportUser(
                             {
                                 userId: user.id,
@@ -202,24 +202,24 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             },
                             {
                                 onSuccess: () => {
-                                    Alert.alert('Success', 'User reported successfully. Thank you for your review.');
+                                    Alert.alert(t('report.successTitle'), t('report.successMessage'));
                                 },
                                 onError: (error: any) => {
-                                    const errorMessage = error?.response?.data?.message || error?.message || 'Failed to report user';
-                                    Alert.alert('Error', errorMessage);
+                                    const errorMessage = error?.response?.data?.message || error?.message || t('report.errorDefault');
+                                    Alert.alert(t('report.errorTitle'), errorMessage);
                                 },
                             }
                         );
                     },
                 })),
                 {
-                    text: 'Cancel',
+                    text: t('report.cancel'),
                     style: 'cancel',
                 },
             ],
             { cancelable: true }
         );
-    }, [user?.id, targetUserId, reportUser, reportCategories, data.user?.name]);
+    }, [user?.id, targetUserId, reportUser, reportCategories, data.user?.name, t]);
 
     // Post owner actions
     const handleUpdate = React.useCallback(() => {
@@ -243,31 +243,31 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
 
     const handleDelete = React.useCallback(() => {
         Alert.alert(
-            'Delete Post',
-            'Are you sure you want to delete this post? This action cannot be undone.',
+            t('delete.confirmTitle'),
+            t('delete.confirmMessage'),
             [
                 {
-                    text: 'Cancel',
+                    text: t('report.cancel'),
                     style: 'cancel',
                 },
                 {
-                    text: 'Delete',
+                    text: t('menu.delete'),
                     style: 'destructive',
                     onPress: async () => {
                         try {
                             await deletePostMutation.mutateAsync(data.id);
-                            Alert.alert('Success', 'Post deleted successfully.');
+                            Alert.alert(t('delete.successTitle'), t('delete.successMessage'));
                         } catch (error: any) {
                             Alert.alert(
-                                'Hata',
-                                error.response?.data?.message || 'Post silinirken bir hata oluştu.'
+                                t('delete.errorTitle'),
+                                error.response?.data?.message || t('delete.errorMessage')
                             );
                         }
                     },
                 },
             ]
         );
-    }, [data.id, deletePostMutation]);
+    }, [data.id, deletePostMutation, t]);
 
     // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
     const handleTriggerLayout = React.useCallback(() => {
@@ -382,13 +382,23 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             flex={1}
                             justifyContent="center"
                         >
-                            <Text
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$sm"
-                                fontWeight="$bold"
-                            >
-                                {data.user?.name || 'Unknown User'}
-                            </Text>
+                            <HStack alignItems="center">
+                                <Text
+                                    color={isDark ? '$textDark50' : '#000'}
+                                    fontSize="$sm"
+                                    fontWeight="$bold"
+                                >
+                                    {data.user?.name || t('card.unknownUser')}
+                                </Text>
+                                {data.createdAt ? (
+                                    <Text
+                                        color={isDark ? '$textDark400' : '#A3A3A3'}
+                                        fontSize="$sm"
+                                    >
+                                        {`  •  ${formatRelativeTime(data.createdAt, i18n.language)}`}
+                                    </Text>
+                                ) : null}
+                            </HStack>
                             {data.user?.title ? (
                                 <Text
                                     color={isDark ? '$textDark400' : '#787878'}
@@ -460,7 +470,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                                                         fontSize="$sm"
                                                         fontWeight="$medium"
                                                     >
-                                                        Delete
+                                                        {t('menu.delete')}
                                                     </Text>
                                                 </HStack>
                                             </Pressable>
@@ -481,7 +491,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                                                         fontSize="$sm"
                                                         fontWeight="$medium"
                                                     >
-                                                        View Profile
+                                                        {t('menu.viewProfile')}
                                                     </Text>
                                                 </HStack>
                                             </Pressable>
@@ -503,7 +513,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                                                         fontSize="$sm"
                                                         fontWeight="$medium"
                                                     >
-                                                        Report
+                                                        {t('menu.report')}
                                                     </Text>
                                                 </HStack>
                                             </Pressable>
@@ -593,12 +603,10 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     borderColor="#BAC4FF"
                     bgColor='#3E57FFCC'
                     borderRadius={20}
-                    width={100}
                     px={10}
                     py={6}
                     flexDirection="row"
                     alignItems="center"
-                    justifyContent="space-evenly"
                 >
                     <InformationCircleIcon width={12} height={12} color={'#fff'} />
                     <Text
@@ -606,8 +614,9 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                         fontWeight="$semibold"
                         ml={5}
                         color={'#fff'}
+                        numberOfLines={1}
                     >
-                        Tips & Tricks
+                        {t('card.badges.tipsAndTricks')}
                     </Text>
                 </Box>
 

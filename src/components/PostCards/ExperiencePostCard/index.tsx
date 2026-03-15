@@ -217,7 +217,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                   Alert.alert(t('common:report.successTitle'), t('common:report.successMessage'));
                 },
                 onError: (error: any) => {
-                  const errorMessage = error?.response?.data?.message || error?.message || 'Failed to report user';
+                  const errorMessage = error?.response?.data?.message || error?.message || t('post:report.errorDefault');
                   Alert.alert(t('common:report.errorTitle'), errorMessage);
                 },
               }
@@ -397,25 +397,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
       {/* Header - hidden when embedded as Related Post in update detail */}
       {showHeader && (
         <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
-          {/* Action text above avatar row */}
-          {data.user?.action ? (
-            <Pressable onPress={handleViewProfile}>
-              <HStack alignItems="center" space="xs" ml={56} mb={2}>
-                <ArrowUpCircleIcon width={14} height={14} color={isDark ? '$textDark400' : '#C7C7C7'} />
-                <Text
-                  color={isDark ? '$textDark400' : '#C7C7C7'}
-                  fontSize={9}
-                  fontWeight="$semibold"
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.75}
-                  flex={1}
-                >
-                  {data.user.action}
-                </Text>
-              </HStack>
-            </Pressable>
-          ) : null}
           <HStack alignItems="center" space="xs">
             {data.user && toImageSource(data.user.avatar) && (
               <Pressable onPress={handleViewProfile}>
@@ -434,13 +415,29 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                 flex={1}
                 justifyContent="center"
               >
+                {data.user?.action ? (
+                  <HStack alignItems="center" space="xs" mb={1}>
+                    <ArrowUpCircleIcon width={14} height={14} color={isDark ? '$textDark400' : '#C7C7C7'} />
+                    <Text
+                      color={isDark ? '$textDark400' : '#C7C7C7'}
+                      fontSize={9}
+                      fontWeight="$semibold"
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.75}
+                      flex={1}
+                    >
+                      {data.user.action}
+                    </Text>
+                  </HStack>
+                ) : null}
                 <HStack alignItems="center">
                   <Text
                     color={isDark ? '$textDark50' : '#000'}
                     fontSize='$sm'
                     fontWeight="$bold"
                   >
-                    {data.user?.name || 'Unknown User'}
+                    {data.user?.name || t('post:card.unknownUser')}
                   </Text>
                   {data.createdAt ? (
                     <Text
