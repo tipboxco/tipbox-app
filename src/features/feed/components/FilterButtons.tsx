@@ -70,13 +70,14 @@ export const FilterButtons: React.FC<FilterButtonsProps> = ({ filters, onFilterP
       <Pressable
         onPress={() => handlePress(filterId)}
         disabled={isPressed}
+        style={{ flex: 1 }}
       >
         <Box
           flexDirection="row"
           alignItems="center"
-          justifyContent="space-between"
+          justifyContent="center"
           gap={5}
-          px="$3"
+          px="$2"
           bg={isActive ? '#E2FF46' : '#FDFDFD'}
           borderWidth={1}
           borderColor={isActive ? '#E2FF46' : '#E9E9E9'}
@@ -113,14 +114,12 @@ export const FilterButtons: React.FC<FilterButtonsProps> = ({ filters, onFilterP
   };
 
   return (
-    <Box px="$4" pb="$2" mt="$2">
-      <HStack justifyContent="space-between" alignItems="center">
-        <HStack space="sm" alignItems="center">
-          {renderFilterButton('interest', t('filterButtons.interests'))}
-          {renderFilterButton('tag', t('filterButtons.tags'))}
-          {renderFilterButton('category', t('filterButtons.category'))}
-        </HStack>
-        <Box>{renderFilterButton('sort', t('filterButtons.sort'))}</Box>
+    <Box px="$3" pb="$2" mt="$2">
+      <HStack gap={8} alignItems="center">
+        {renderFilterButton('interest', t('filterButtons.interests'))}
+        {renderFilterButton('tag', t('filterButtons.tags'))}
+        {renderFilterButton('category', t('filterButtons.category'))}
+        {renderFilterButton('sort', t('filterButtons.sort'))}
       </HStack>
     </Box>
   );
