@@ -6,11 +6,9 @@ import {
     HStack,
     Text,
     Pressable,
-    Textarea,
-    TextareaInput,
     Image
 } from '@gluestack-ui/themed';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, TextInput } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import {
   TagIcon,
@@ -76,9 +74,6 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
-    const [priceTextAreaHeight, setPriceTextAreaHeight] = useState<number>(56);
-    const [productTextAreaHeight, setProductTextAreaHeight] = useState<number>(56);
-
     // Check if any field is being edited
     const isEditing = editingField !== null;
 
@@ -92,31 +87,22 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
     // Render Star Rating Component
     const renderStarRating = (rating: number, onRatingChange: (rating: number) => void, disabled: boolean = false) => {
         return (
-            <VStack space="xs">
-                <Text
-                    fontSize={14}
-                    fontWeight="$semibold"
-                    color={isDark ? '$textDark50' : '#3B3B3B'}
-                >
-                    {t('create.experience.step3.rateExperience')}
-                </Text>
-                <HStack space="xs">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <Pressable
-                            key={star}
-                            onPress={() => onRatingChange(star)}
-                            disabled={disabled}
-                        >
-                            <Feather
-                                name="star"
-                                size={24}
-                                color={star <= rating ? '#829905' : '#E9E9E9'}
-                                fill={star <= rating ? '#829905' : 'transparent'}
-                            />
-                        </Pressable>
-                    ))}
-                </HStack>
-            </VStack>
+            <HStack space="xs">
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <Pressable
+                        key={star}
+                        onPress={() => onRatingChange(star)}
+                        disabled={disabled}
+                    >
+                        <Feather
+                            name="star"
+                            size={24}
+                            color={star <= rating ? '#829905' : '#E9E9E9'}
+                            fill={star <= rating ? '#829905' : 'transparent'}
+                        />
+                    </Pressable>
+                ))}
+            </HStack>
         );
     };
 
@@ -185,36 +171,33 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     />
                                 </Pressable>
                             </HStack>
-                            <Textarea
-                                bg="transparent"
-                                borderWidth={0}
-                                height={priceTextAreaHeight}
-                            >
-                                <TextareaInput
+                            {editingField === 'price' ? (
+                                <TextInput
                                     placeholder={t('create.experience.step3.priceExperiencePlaceholder')}
-                                    placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                    color={isDark ? '$textDark50' : '#000000'}
-                                    fontSize={14}
-                                    lineHeight={20}
+                                    placeholderTextColor="#8C8C8C"
                                     value={priceExperienceText}
-                                    onChangeText={editingField === 'price' ? onPriceExperienceTextChange : undefined}
-                                    editable={editingField === 'price'}
-                                    pointerEvents={editingField === 'price' ? 'auto' : 'none'}
-                                    onContentSizeChange={(event) => {
-                                        if (editingField === 'price') {
-                                            const { height } = event.nativeEvent.contentSize;
-                                            setPriceTextAreaHeight(Math.max(56, height + 16));
-                                        }
-                                    }}
+                                    onChangeText={onPriceExperienceTextChange}
+                                    multiline
+                                    scrollEnabled={false}
                                     style={{
+                                        fontSize: 14,
+                                        lineHeight: 20,
+                                        color: isDark ? '#F5F5F5' : '#000000',
                                         textAlignVertical: 'top',
-                                        paddingTop: 0,
-                                        paddingBottom: 0,
-                                        paddingLeft: 0,
-                                        paddingRight: 0,
+                                        minHeight: 56,
+                                        padding: 0,
                                     }}
                                 />
-                            </Textarea>
+                            ) : (
+                                <Text
+                                    fontSize={14}
+                                    lineHeight={20}
+                                    color={priceExperienceText ? (isDark ? '$textDark50' : '#000000') : '#8C8C8C'}
+                                    style={{ minHeight: 56 }}
+                                >
+                                    {priceExperienceText || t('create.experience.step3.priceExperiencePlaceholder')}
+                                </Text>
+                            )}
                         </VStack>
 
                         {/* Rating Section */}
@@ -261,36 +244,33 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     />
                                 </Pressable>
                             </HStack>
-                            <Textarea
-                                bg="transparent"
-                                borderWidth={0}
-                                height={productTextAreaHeight}
-                            >
-                                <TextareaInput
+                            {editingField === 'product' ? (
+                                <TextInput
                                     placeholder={t('create.experience.step3.productExperiencePlaceholder')}
-                                    placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                    color={isDark ? '$textDark50' : '#000000'}
-                                    fontSize={14}
-                                    lineHeight={20}
+                                    placeholderTextColor="#8C8C8C"
                                     value={productExperienceText}
-                                    onChangeText={editingField === 'product' ? onProductExperienceTextChange : undefined}
-                                    editable={editingField === 'product'}
-                                    pointerEvents={editingField === 'product' ? 'auto' : 'none'}
-                                    onContentSizeChange={(event) => {
-                                        if (editingField === 'product') {
-                                            const { height } = event.nativeEvent.contentSize;
-                                            setProductTextAreaHeight(Math.max(56, height + 16));
-                                        }
-                                    }}
+                                    onChangeText={onProductExperienceTextChange}
+                                    multiline
+                                    scrollEnabled={false}
                                     style={{
+                                        fontSize: 14,
+                                        lineHeight: 20,
+                                        color: isDark ? '#F5F5F5' : '#000000',
                                         textAlignVertical: 'top',
-                                        paddingTop: 0,
-                                        paddingBottom: 0,
-                                        paddingLeft: 0,
-                                        paddingRight: 0,
+                                        minHeight: 56,
+                                        padding: 0,
                                     }}
                                 />
-                            </Textarea>
+                            ) : (
+                                <Text
+                                    fontSize={14}
+                                    lineHeight={20}
+                                    color={productExperienceText ? (isDark ? '$textDark50' : '#000000') : '#8C8C8C'}
+                                    style={{ minHeight: 56 }}
+                                >
+                                    {productExperienceText || t('create.experience.step3.productExperiencePlaceholder')}
+                                </Text>
+                            )}
                         </VStack>
 
                         {/* Rating Section */}

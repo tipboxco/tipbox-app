@@ -115,12 +115,17 @@ export const CreateExperiencePostScreen = () => {
     const priceRating = watch('priceRating');
     const productRating = watch('productRating');
 
-    // Resolve option IDs to display names for Step2/Step3 tags
-    const resolveName = (options: { id: string; name: string }[], id: string) =>
-        options.find((o) => o.id === id)?.name ?? '';
-    const durationName = useMemo(() => resolveName(durations, step1Duration || ''), [durations, step1Duration]);
-    const locationName = useMemo(() => resolveName(locations, selectedCondition || ''), [locations, selectedCondition]);
-    const purposeName = useMemo(() => resolveName(purposes, selectedFrequency || ''), [purposes, selectedFrequency]);
+    // Resolve option IDs to translated display names for Step2/Step3 tags
+    const resolveName = (options: { id: string; name: string }[], id: string) => {
+        const name = options.find((o) => o.id === id)?.name ?? '';
+        if (!name) return '';
+        const key = `create.experience.step1.optionNames.${name}`;
+        const translated = t(key);
+        return translated === key ? name : translated;
+    };
+    const durationName = useMemo(() => resolveName(durations, step1Duration || ''), [durations, step1Duration, t]);
+    const locationName = useMemo(() => resolveName(locations, selectedCondition || ''), [locations, selectedCondition, t]);
+    const purposeName = useMemo(() => resolveName(purposes, selectedFrequency || ''), [purposes, selectedFrequency, t]);
 
     const handleBackPress = () => {
         if (currentStep === 3) {

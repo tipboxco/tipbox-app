@@ -43,14 +43,6 @@ interface StepOneScreenProps {
 const TRIGGER_HEIGHT = 44;
 const TRIGGER_FONT_SIZE = 14;
 
-/** ExperienceOption[] -> OptionSelectBottomSheetOption[] */
-const toSheetOptions = (options: ExperienceOption[]): OptionSelectBottomSheetOption[] =>
-    options.map((opt) => ({ label: opt.name, value: opt.id }));
-
-/** ID'den display name lookup */
-const findName = (options: ExperienceOption[], id: string): string =>
-    options.find((opt) => opt.id === id)?.name ?? '';
-
 export const StepOneScreen: React.FC<StepOneScreenProps> = ({
     selectedDuration,
     selectedCondition,
@@ -69,15 +61,34 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
     const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
+    /** API option name -> localized name */
+    const translateName = useCallback((name: string): string => {
+        const key = `create.experience.step1.optionNames.${name}`;
+        const translated = t(key);
+        // If translation key not found, t() returns the key itself - fall back to original name
+        return translated === key ? name : translated;
+    }, [t]);
+
+    /** ExperienceOption[] -> OptionSelectBottomSheetOption[] (translated) */
+    const toSheetOptions = useCallback((options: ExperienceOption[]): OptionSelectBottomSheetOption[] =>
+        options.map((opt) => ({ label: translateName(opt.name), value: opt.id })),
+    [translateName]);
+
+    /** ID -> translated display name */
+    const findName = useCallback((options: ExperienceOption[], id: string): string => {
+        const name = options.find((opt) => opt.id === id)?.name ?? '';
+        return name ? translateName(name) : '';
+    }, [translateName]);
+
     // API options -> bottom sheet options
-    const durationSheetOptions = useMemo(() => toSheetOptions(durationOptions), [durationOptions]);
-    const locationSheetOptions = useMemo(() => toSheetOptions(locationOptions), [locationOptions]);
-    const purposeSheetOptions = useMemo(() => toSheetOptions(purposeOptions), [purposeOptions]);
+    const durationSheetOptions = useMemo(() => toSheetOptions(durationOptions), [toSheetOptions, durationOptions]);
+    const locationSheetOptions = useMemo(() => toSheetOptions(locationOptions), [toSheetOptions, locationOptions]);
+    const purposeSheetOptions = useMemo(() => toSheetOptions(purposeOptions), [toSheetOptions, purposeOptions]);
 
     // Resolve ID -> display name
-    const durationDisplayName = useMemo(() => findName(durationOptions, selectedDuration), [durationOptions, selectedDuration]);
-    const locationDisplayName = useMemo(() => findName(locationOptions, selectedCondition), [locationOptions, selectedCondition]);
-    const purposeDisplayName = useMemo(() => findName(purposeOptions, selectedFrequency), [purposeOptions, selectedFrequency]);
+    const durationDisplayName = useMemo(() => findName(durationOptions, selectedDuration), [findName, durationOptions, selectedDuration]);
+    const locationDisplayName = useMemo(() => findName(locationOptions, selectedCondition), [findName, locationOptions, selectedCondition]);
+    const purposeDisplayName = useMemo(() => findName(purposeOptions, selectedFrequency), [findName, purposeOptions, selectedFrequency]);
 
     const openSelectSheet = useCallback(
         (title: string, options: OptionSelectBottomSheetOption[], value: string, onChange: (v: string) => void) => {
