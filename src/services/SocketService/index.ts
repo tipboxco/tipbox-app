@@ -39,8 +39,9 @@ class SocketService {
         return;
       }
 
-      // Socket BASE_URL üzerinden çalışır (tüm servisler aynı URL'i kullanır)
-      const socketUrl = API_CONFIG.BASE_URL;
+      // Socket.IO root domain'de çalışır (/api prefix'i namespace olarak yorumlanır, bu yüzden kaldırılmalı)
+      // REST API: https://api-test.tipbox.co/api  |  Socket.IO: https://api-test.tipbox.co
+      const socketUrl = API_CONFIG.BASE_URL.replace(/\/api\/?$/, '');
       const isHttps = socketUrl.startsWith('https://');
       const isWss = socketUrl.startsWith('wss://');
       
@@ -60,11 +61,10 @@ class SocketService {
         this.socket = null;
       }
 
-      // Transport ayarları: Sunucuya bağlanırken polling fallback ekle
-      // HTTPS/WSS üzerinden bağlanırken bazen WebSocket başarısız olabilir
-      const transports = isHttps || isWss 
-        ? ['websocket', 'polling'] // HTTPS/WSS için polling fallback ekle
-        : ['websocket']; // HTTP için sadece websocket
+      // Transport ayarları: Önce polling ile bağlan, sonra WebSocket'e upgrade et
+      // WSS direkt bağlantı proxy/load balancer tarafından engellenebilir
+      // Polling-first yaklaşım Socket.IO'nun standart ve güvenilir yöntemidir
+      const transports: ('polling' | 'websocket')[] = ['polling', 'websocket'];
 
       // Socket.IO bağlantısı - Docker + Sunucu için optimize edilmiş
       // Reference: https://socket.io/how-to/use-with-react-native
@@ -74,12 +74,11 @@ class SocketService {
         },
         extraHeaders,
         path: '/socket.io/',
-        transports, // WebSocket öncelikli, polling fallback (HTTPS için)
+        transports, // Polling önce, sonra WebSocket upgrade
         forceNew: true, // Yeni bağlantı zorla (Docker için önemli)
         reconnection: false, // Manuel reconnection yönetimi
         timeout: 20000,
-        // HTTPS/WSS için upgrade'i açık bırak (polling'den websocket'e upgrade olabilir)
-        upgrade: isHttps || isWss ? true : false,
+        upgrade: true, // Polling'den WebSocket'e upgrade et
         // Sunucuya bağlanırken CORS ve SSL ayarları
         withCredentials: false,
         // React Native için ek ayarlar
@@ -89,17 +88,25 @@ class SocketService {
 
       // Event handlers - sadece bir kez ekle
       this.socket.once('connect', () => {
-        // Connection successful
+        console.log('[SocketService] ✅ Socket connected:', {
+          id: this.socket?.id,
+          transport: this.socket?.io?.engine?.transport?.name,
+        });
       });
 
-      this.socket.on('disconnect', () => {
-        // Connection lost – SocketProvider (and other consumers) listen to this socket instance
-        // and set isConnected = false / show reconnection UI via their own 'disconnect' listener.
+      this.socket.on('disconnect', (reason) => {
+        console.log('[SocketService] 🔌 Socket disconnected:', reason);
       });
 
-      this.socket.once('connect_error', () => {
-        // Login ekranında hata göstermemek için sessizce return et
-        // Hata logları SocketProvider'da authenticated kontrolü ile gösterilir
+      this.socket.on('connect_error', (error) => {
+        console.error('[SocketService] ❌ Socket connect_error:', {
+          message: error.message,
+          type: (error as any).type,
+          description: (error as any).description,
+          context: (error as any).context,
+          socketUrl,
+          transports,
+        });
       });
 
     } catch (error) {

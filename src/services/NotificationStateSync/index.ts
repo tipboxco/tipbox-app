@@ -170,10 +170,10 @@ class NotificationStateSync {
       
       // Unread count query'sini güncelle (optimistic)
       // ÖNEMLİ: Store'dan gelen count'u kullan (daha güvenilir - realtime update için)
-      const unreadCountData = this.queryClient.getQueryData<{ success: boolean; data: { count: number } }>(
+      const unreadCountData = this.queryClient.getQueryData<any>(
         notificationKeys.unreadCount()
       );
-      
+
       // Store count varsa onu kullan (realtime update için öncelikli)
       // Yoksa cache'den al ve +1 yap (sadece okunmamış bildirimler için)
       let newCount: number;
@@ -182,21 +182,21 @@ class NotificationStateSync {
         newCount = storeCount;
       } else {
         // Store count yoksa cache'den al ve +1 yap (sadece okunmamış bildirimler için)
-        const currentCacheCount = unreadCountData?.data?.count || 0;
+        // Interceptor unwrap edebilir: { count: N } veya { data: { count: N } }
+        const currentCacheCount = unreadCountData?.data?.count ?? unreadCountData?.count ?? 0;
         newCount = notification.read ? currentCacheCount : currentCacheCount + 1;
       }
-      
-      // Cache'i güncelle (store count'u kullan - realtime update için)
+
+      // Cache'i güncelle - interceptor unwrap formatına uygun ({ count: N })
       this.queryClient.setQueryData(notificationKeys.unreadCount(), {
-        success: true,
-        data: { count: newCount },
+        count: newCount,
       });
       
       // Debug log (sadece development'ta)
       if (__DEV__) {
         console.log('[NotificationStateSync] 📊 Unread count updated:', {
           storeCount,
-          cacheCount: unreadCountData?.data?.count,
+          cacheCount: unreadCountData?.data?.count ?? unreadCountData?.count,
           newCount,
           notificationId: notification.id,
         });

@@ -15,6 +15,7 @@ import { useAuth } from './AuthProvider';
 import { useAppState } from './AppStateProvider';
 import { notificationKeys, useUnreadCount } from '@/src/features/notifications/api/hooks';
 import { useNotificationSettingsCheck } from '@/src/features/settings/hooks/useNotificationSettingsCheck';
+import * as Notifications from 'expo-notifications';
 import type { Notification, NotificationMetadata } from '@/src/features/notifications/api/types';
 import type { NotificationPayload } from '@/src/types/notification';
 // Toast kaldırıldı - Expo bildirimleri kullanılıyor
@@ -95,7 +96,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Unread count için query - badge sync için
   // Sadece authenticated olduğunda çalışır (logout durumunda API isteği yapılmaz)
   const { data: unreadCountData, error: unreadCountError } = useUnreadCount(isAuthenticated && isAuthReady);
-  const unreadCount = unreadCountData?.data?.count || 0;
+  const unreadCount = unreadCountData?.data?.count ?? unreadCountData?.count ?? 0;
   
   // Bildirim ayarları kontrolü için hook
   const { canSendNotification } = useNotificationSettingsCheck();
@@ -103,10 +104,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Store'daki unread count cache'ini API'den gelen değerle sync et
   // ÖNEMLİ: Sadece store null ise veya çok büyük fark varsa güncelle (optimistic update'i override etme)
   useEffect(() => {
-    if (unreadCountData?.data?.count !== undefined && isAuthenticated && isAuthReady) {
+    const resolvedCount = unreadCountData?.data?.count ?? unreadCountData?.count;
+    if (resolvedCount !== undefined && isAuthenticated && isAuthReady) {
       const notificationStore = useNotificationStore.getState();
       const storeCount = notificationStore.unreadCountCache;
-      const apiCount = unreadCountData.data.count;
+      const apiCount = resolvedCount;
       
       // Store count null ise API count'u kullan (ilk yükleme)
       if (storeCount === null) {
@@ -132,7 +134,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         // Örnek: Store 94, API 93 → Store'u koru (yeni bildirim geldi, henüz API sync olmadı)
       }
     }
-  }, [unreadCountData?.data?.count, isAuthenticated, isAuthReady]);
+  }, [unreadCountData?.data?.count, unreadCountData?.count, isAuthenticated, isAuthReady]);
   
   // Hata durumunda log (ama uygulamayı durdurma)
   // ÖNEMLİ: Sadece authenticated olduğunda hata logla (login ekranında hata göstermemek için)
@@ -554,11 +556,26 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
 
-    const handleNotificationReceived = async (notification: NotificationPayload) => {
-      
-      // Mesaj bildirimleri için özel kontrol: Eğer kullanıcı MessageDetail ekranındaysa tüm mesaj bildirimleri gösterilmemeli
-      const notificationType = notification.data?.type as string;
+    const handleNotificationReceived = async (expoNotification: Notifications.Notification) => {
+      // CRITICAL FIX: Expo listener Notifications.Notification tipinde gönderir
+      // Data notification.request.content.data altındadır, notification.data değil!
+      const notificationData = expoNotification.request.content.data as Record<string, any> | undefined;
+      const notificationType = notificationData?.type as string;
       const isMessageNotification = ['NEW_MESSAGE', 'DM_REQUEST_RECEIVED', 'DM_REQUEST_ACCEPTED'].includes(notificationType);
+
+      // Socket.IO handler tarafından gönderilmiş local notification ise, count zaten artırıldı
+      // notificationId alanı varsa bu bizim local notification'ımızdır (double increment önleme)
+      const isFromSocketHandler = !!notificationData?.notificationId;
+
+      if (__DEV__) {
+        console.log('[NotificationProvider] 🔔 Push notification received:', {
+          type: notificationType,
+          isMessageNotification,
+          isFromSocketHandler,
+          title: expoNotification.request.content.title,
+          dataKeys: notificationData ? Object.keys(notificationData) : [],
+        });
+      }
       
       if (isMessageNotification && isForeground) {
         try {
@@ -601,15 +618,24 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
       }
       
-      // Foreground'da notification geldiğinde query'leri refresh et
+      // Foreground'da notification geldiğinde unread count'u artır ve query'leri refresh et
+      // CRITICAL FIX: Socket handler zaten count artırdıysa tekrar artırma (double increment önleme)
+      if (!isMessageNotification && !isFromSocketHandler) {
+        useNotificationStore.getState().incrementUnreadCount();
+        if (__DEV__) {
+          console.log('[NotificationProvider] 📊 Unread count incremented (push notification)');
+        }
+      }
       queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
       queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
     };
 
-    const handleNotificationResponse = async (notification: NotificationPayload) => {
-      
-      const notificationId = notification.data?.notificationId as string;
-      const notificationType = notification.data?.type as string;
+    const handleNotificationResponse = async (response: Notifications.NotificationResponse) => {
+      // CRITICAL FIX: Expo listener NotificationResponse tipinde gönderir
+      // Data response.notification.request.content.data altındadır
+      const responseData = response.notification.request.content.data as Record<string, any> | undefined;
+      const notificationId = responseData?.notificationId as string;
+      const notificationType = responseData?.type as string;
 
       // Analytics: Notification opened tracking
       if (notificationId && notificationType) {
@@ -623,16 +649,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // Domain Service'e yönlendir (NotificationService)
       // Push notification → Domain Service → Navigation kararı
       // Push payload'ını domain modeline map et
+      const content = response.notification.request.content;
       const domainNotification: Notification = {
         id: notificationId || `push-${Date.now()}`,
         type: (notificationType as Notification['type']) || 'SYSTEM_ANNOUNCEMENT',
-        title: (notification.data?.title as string) || (notification.title as string) || '',
-        message: (notification.data?.body as string) || (notification.body as string) || '',
+        title: (responseData?.title as string) || content.title || '',
+        message: (responseData?.body as string) || content.body || '',
         read: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        metadata: notification.data?.metadata || notification.data || {},
-        navigation: notification.data?.navigation as any,
+        metadata: responseData?.metadata || responseData || {},
+        navigation: responseData?.navigation as any,
       };
 
       // NotificationService handle et (State + Navigation kararı)
