@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, HStack, Text, Pressable, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface CollectionTabsProps {
   activeTab: 'achievements' | 'bridges';
@@ -13,10 +14,11 @@ export const CollectionTabs: React.FC<CollectionTabsProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('profile');
 
   const tabs = [
-    { id: 'achievements' as const, label: 'Achievements Badges' },
-    { id: 'bridges' as const, label: 'Bridge Badges' },
+    { id: 'achievements' as const, label: t('collections.achievementBadges') },
+    { id: 'bridges' as const, label: t('collections.bridgeBadges') },
   ];
 
   return (

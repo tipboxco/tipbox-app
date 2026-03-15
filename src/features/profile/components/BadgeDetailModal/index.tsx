@@ -16,6 +16,7 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import type { ProfileLadderBadge } from '../../types';
 import { toImageSource } from '@/src/utils';
 
@@ -34,6 +35,7 @@ export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('profile');
 
   if (!data) return null;
 
@@ -107,7 +109,7 @@ export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({
               fontSize={9}
               textAlign="center"
             >
-              {isCompleted ? 'Completed' : `${data.current}/${data.total}`}
+              {isCompleted ? t('badgeDetail.completed') : `${data.current}/${data.total}`}
             </Text>
           </VStack>
         </ModalBody>
@@ -125,7 +127,7 @@ export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({
                 fontSize={12}
                 fontWeight="$bold"
               >
-                View Achievement
+                {t('badgeDetail.viewAchievement')}
               </ButtonText>
             </Button>
           </VStack>

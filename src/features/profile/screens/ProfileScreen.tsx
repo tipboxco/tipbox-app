@@ -17,7 +17,7 @@ import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/sr
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
-import { Share, Keyboard, Platform } from 'react-native';
+import { Keyboard, Platform } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@gluestack-ui/themed';
@@ -44,7 +44,6 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import CollectionsTab from '@/src/features/events/components/TabContents/CollectionsTab';
 import {
-  ArrowUpTrayIcon,
   FlagIcon,
   NoSymbolIcon,
   ChevronLeftIcon,
@@ -65,6 +64,7 @@ import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet'
 import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import type { Badge } from '../types';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { AnimatedTabBar } from '../components/AnimatedTabBar';
 import { useFullScreenImage } from '@/src/hooks/useFullScreenImage';
 import { FullScreenImageViewer } from '@/src/components/FullScreenImageViewer';
@@ -72,17 +72,20 @@ import { FullScreenImageViewer } from '@/src/components/FullScreenImageViewer';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TABS = [
-  { key: 'feed',        title: 'Feed' },
-  { key: 'reviews',     title: 'Experience' },
-  { key: 'benchmarks',  title: 'Benchmarks' },
-  { key: 'tips',        title: 'Tips & Tricks' },
-  { key: 'replies',     title: 'Questions' },
-  { key: 'badge',       title: 'Badges' },
-  { key: 'collections', title: 'Collections' },
-] as const;
+const TAB_KEYS = ['feed', 'reviews', 'benchmarks', 'tips', 'replies', 'badge', 'collections'] as const;
 
-type TabKey = typeof TABS[number]['key'];
+// Tab title translation key mapping
+const TAB_TITLE_KEYS: Record<string, string> = {
+  feed: 'tabs.feed',
+  reviews: 'tabs.reviews',
+  benchmarks: 'tabs.benchmarks',
+  tips: 'tabs.tipsAndTricks',
+  replies: 'tabs.replies',
+  badge: 'tabs.badge',
+  collections: 'tabs.collections',
+};
+
+type TabKey = typeof TAB_KEYS[number];
 
 type ProfileScreenProps = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
 
@@ -173,7 +176,7 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
       name: review.user.name || 'Unknown',
       title: review.user.title || '',
       avatar: avatarSource,
-      action: 'Added new product and experiences to inventory!',
+      action: i18n.t('post:card.addedToInventory'),
     },
     contextData: {
       id: productData?.id || '',
@@ -393,9 +396,9 @@ type MappedPost =
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };
 
-// Badge filters
-const BADGE_FILTERS = ['All Badges', 'Event Badges', 'Collections'] as const;
-type BadgeFilterKey = typeof BADGE_FILTERS[number];
+// Badge filter keys
+const BADGE_FILTER_KEYS = ['allBadges', 'eventBadges', 'collections'] as const;
+type BadgeFilterKey = typeof BADGE_FILTER_KEYS[number];
 
 // Tab content props
 interface TabContentProps {
@@ -501,7 +504,8 @@ const TabContent: React.FC<TabContentProps> = ({
   onBadgePress,
   bottomPadding = 0
 }) => {
-  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
+  const { t } = useTranslation('profile');
+  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('allBadges');
   // API hooks for each tab
   // FEED TAB FIX: Feed tab için TÜM query'leri enable et (posts, reviews, benchmarks, tips, replies)
   // Diğer tab'lar için sadece kendi query'lerini enable et
@@ -533,9 +537,9 @@ const TabContent: React.FC<TabContentProps> = ({
   // Filter badges based on selected filter
   const filteredBadges = useMemo(() => {
     if (tabKey !== 'badge') return [];
-    if (badgeFilter === 'All Badges') return profileBadges;
-    if (badgeFilter === 'Event Badges') return profileBadges.filter((b) => b.type === 'event');
-    if (badgeFilter === 'Collections') return profileBadges.filter((b) => b.type === 'collection');
+    if (badgeFilter === 'allBadges') return profileBadges;
+    if (badgeFilter === 'eventBadges') return profileBadges.filter((b) => b.type === 'event');
+    if (badgeFilter === 'collections') return profileBadges.filter((b) => b.type === 'collection');
     return profileBadges;
   }, [tabKey, profileBadges, badgeFilter]);
 
@@ -673,12 +677,12 @@ const TabContent: React.FC<TabContentProps> = ({
         <Box px={16} pt={8}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             <HStack space="sm" alignItems="center">
-              {BADGE_FILTERS.map((filter) => {
-                const isActive = badgeFilter === filter;
+              {BADGE_FILTER_KEYS.map((filterKey) => {
+                const isActive = badgeFilter === filterKey;
                 return (
                   <Pressable
-                    key={filter}
-                    onPress={() => setBadgeFilter(filter)}
+                    key={filterKey}
+                    onPress={() => setBadgeFilter(filterKey)}
                     bg={isActive ? (isDark ? '#333' : '#E9E9E9') : (isDark ? '#1A1A1A' : '#FFF')}
                     borderWidth={1}
                     borderColor={isDark ? '#444' : '#E9E9E9'}
@@ -691,7 +695,7 @@ const TabContent: React.FC<TabContentProps> = ({
                       fontWeight="$semibold"
                       color={isActive ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666')}
                     >
-                      {filter}
+                      {t(`badges.${filterKey}`)}
                     </Text>
                   </Pressable>
                 );
@@ -701,7 +705,7 @@ const TabContent: React.FC<TabContentProps> = ({
           {filteredBadges.length === 0 ? (
             <Box py={32} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                {badgeFilter === 'All Badges' ? 'No badges yet' : `No ${badgeFilter.toLowerCase()} yet`}
+                {t('emptyStates.noBadgesYet')}
               </Text>
             </Box>
           ) : (
@@ -825,6 +829,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const lastFocusRefetchRef = useRef<number>(0);
 
   const { t } = useTranslation('profile');
+
+  // Translated tabs
+  const TABS = useMemo(() => TAB_KEYS.map(key => ({
+    key,
+    title: t(TAB_TITLE_KEYS[key]),
+  })), [t]);
+
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { visible: fullScreenVisible, imageSource: fullScreenSource, openImage, closeImage } = useFullScreenImage();
@@ -999,7 +1010,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('All Badges');
+  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('allBadges');
   const tabBarRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
   const headerHeightRef = useRef(0);
@@ -1217,9 +1228,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
       // Has badges - show filters + grid
       const filteredBadges = (() => {
-        if (badgeFilter === 'All Badges') return allBadges;
-        if (badgeFilter === 'Event Badges') return allBadges.filter((b) => b.type === 'event');
-        if (badgeFilter === 'Collections') return allBadges.filter((b) => b.type === 'collection');
+        if (badgeFilter === 'allBadges') return allBadges;
+        if (badgeFilter === 'eventBadges') return allBadges.filter((b) => b.type === 'event');
+        if (badgeFilter === 'collections') return allBadges.filter((b) => b.type === 'collection');
         return allBadges;
       })();
 
@@ -1233,12 +1244,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             directionalLockEnabled={true}
           >
             <HStack space="xs" alignItems="center">
-              {BADGE_FILTERS.map((filter) => {
-                const isActive = badgeFilter === filter;
+              {BADGE_FILTER_KEYS.map((filterKey) => {
+                const isActive = badgeFilter === filterKey;
                 return (
                   <RNPressable
-                    key={filter}
-                    onPress={() => setBadgeFilter(filter)}
+                    key={filterKey}
+                    onPress={() => setBadgeFilter(filterKey)}
                     style={{
                       backgroundColor: isActive ? '#F1F1F1' : 'transparent',
                       borderWidth: 1,
@@ -1253,7 +1264,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     }}
                   >
                     <RNText style={{ fontSize: 12, fontWeight: '600', color: '#000000' }}>
-                      {filter}
+                      {t(`badges.${filterKey}`)}
                     </RNText>
                   </RNPressable>
                 );
@@ -1263,7 +1274,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           {filteredBadges.length === 0 ? (
             <Box py={32} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                {`No ${badgeFilter.toLowerCase()} yet`}
+                {t('emptyStates.noBadgesYet')}
               </Text>
             </Box>
           ) : (
@@ -1324,30 +1335,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
 
     // Empty posts - tab'a göre özel mesaj
-    const emptyStateMap: Record<string, { title: string; subtitle: string }> = {
-      feed: {
-        title: 'No Posts Yet',
-        subtitle: "This user hasn't shared any posts yet.",
-      },
-      reviews: {
-        title: 'No Experiences Yet',
-        subtitle: "This user hasn't shared any experiences yet.",
-      },
-      benchmarks: {
-        title: 'No Benchmarks Yet',
-        subtitle: "This user hasn't created any benchmarks yet.",
-      },
-      tips: {
-        title: 'No Tips & Tricks Yet',
-        subtitle: "This user hasn't shared any tips & tricks yet.",
-      },
-      replies: {
-        title: 'No Questions Yet',
-        subtitle: "This user hasn't asked any questions yet.",
-      },
+    const emptyStateKey = ['feed', 'reviews', 'benchmarks', 'tips', 'replies'].includes(activeTab) ? activeTab : 'default';
+    const emptyState = {
+      title: t(`emptyStates.${emptyStateKey}.title`),
+      subtitle: t(`emptyStates.${emptyStateKey}.subtitle`),
     };
-
-    const emptyState = emptyStateMap[activeTab] || { title: 'No Content Yet', subtitle: "This user hasn't shared any content yet." };
 
     return (
       <Box py={40} alignItems="center" px={20}>
@@ -1375,7 +1367,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Handle Send TIPS - API call
   const handleSendTips = useCallback((amount: number) => {
     if (!user?.id || !targetUserId) {
-      Alert.alert('Error', 'User information not found');
+      Alert.alert(t('alerts.errorTitle'), t('alerts.errorUserInfo'));
       return;
     }
 
@@ -1392,15 +1384,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         onSuccess: (response) => {
           console.log('[ProfileScreen] ✅ TIPS sent successfully:', response);
           showCustomToast(toast, {
-            title: 'TIPS Sent',
-            description: `${amount} TIPS has been sent successfully`,
+            title: t('toast.tipsSent'),
+            description: t('toast.tipsSentDescription', { amount }),
             action: 'success',
           });
         },
         onError: (error: any) => {
           console.error('[ProfileScreen] ❌ TIPS send failed:', error);
-          const errorMessage = error.response?.data?.message || error.message || 'An error occurred while sending TIPS';
-          Alert.alert('Error', errorMessage);
+          const errorMessage = error.response?.data?.message || error.message || t('errors.errorSendingTips');
+          Alert.alert(t('alerts.errorTitle'), errorMessage);
         },
       }
     );
@@ -1435,31 +1427,20 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     });
   }, [user?.id, targetUserId, userProfile]);
 
-  const handleShare = useCallback(async () => {
-    if (!userProfile) return;
-    try {
-      await Share.share({
-        message: `Check out ${userProfile.name}'s profile on Tipbox!`,
-        url: `tipboxapp://profile/user/${targetUserId}`,
-      });
-    } catch (error) {
-      console.error('[ProfileScreen] Share error:', error);
-    }
-  }, [userProfile, targetUserId]);
 
   const handleReport = useCallback(() => {
     if (!user?.id || !targetUserId) return;
     
     Alert.alert(
-      'Report User',
-      'Are you sure you want to report this user?',
+      t('menu.reportTitle'),
+      t('menu.reportMessage'),
       [
         {
-          text: 'Cancel',
+          text: t('actions.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Report',
+          text: t('actions.report'),
           style: 'destructive',
           onPress: () => {
             reportUser({
@@ -1478,15 +1459,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
   const handleBlock = useCallback(() => {
     Alert.alert(
-      'Block User',
-      'Are you sure you want to block this user? Blocked users cannot interact with you.',
+      t('menu.blockTitle'),
+      t('menu.blockMessage'),
       [
         {
-          text: 'Cancel',
+          text: t('actions.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Block',
+          text: t('actions.block'),
           style: 'destructive',
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
@@ -1684,8 +1665,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.log('[ProfileScreen] ✅ User unmuted successfully');
             }
             showCustomToast(toast, {
-              title: 'Unmuted',
-              description: `${currentProfile.name} can now send notifications`,
+              title: t('toast.unmuted'),
+              description: t('toast.unmutedDescription', { name: currentProfile.name }),
               action: 'success',
             });
           },
@@ -1694,8 +1675,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.error('[ProfileScreen] ❌ Unmute error:', error);
             }
             showCustomToast(toast, {
-              title: 'Error',
-              description: 'An error occurred while unmuting',
+              title: t('toast.error'),
+              description: t('toast.errorUnmuting'),
               action: 'error',
             });
           },
@@ -1713,8 +1694,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.log('[ProfileScreen] ✅ User muted successfully');
             }
             showCustomToast(toast, {
-              title: 'User Muted',
-              description: `${currentProfile.name} will no longer send notifications`,
+              title: t('toast.muted'),
+              description: t('toast.mutedDescription', { name: currentProfile.name }),
               action: 'info',
             });
           },
@@ -1723,8 +1704,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.error('[ProfileScreen] ❌ Mute error:', error);
             }
             showCustomToast(toast, {
-              title: 'Error',
-              description: 'An error occurred while muting user',
+              title: t('toast.error'),
+              description: t('toast.errorMuting'),
               action: 'error',
             });
           },
@@ -1930,7 +1911,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     fontSize={10}
                     fontWeight="$semibold"
                   >
-                    Edit Profile
+                    {t('actions.edit')}
                   </Text>
                 </Pressable>
               ) : (
@@ -2039,7 +2020,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       fontSize={10}
                       fontWeight="$semibold"
                     >
-                      {isTrusting ? "Adding..." : isUntrusting ? "Removing..." : (profile.isTrusted ? "Un Trust" : "Trust")}
+                      {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : (profile.isTrusted ? t('actions.unTrust') : t('actions.trust'))}
                     </Text>
                   </Pressable>
                 </>
@@ -2082,7 +2063,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               color={isDark ? '$textDark400' : '$textLight600'}
               fontSize="$xs"
             >
-              Posts
+              {t('stats.posts')}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
@@ -2112,7 +2093,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   color={isDark ? '$textDark400' : '$textLight600'}
                   fontSize="$xs"
                 >
-                  Trust
+                  {t('stats.trust')}
                 </Text>
               </HStack>
             </Pressable>
@@ -2144,7 +2125,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   color={isDark ? '$textDark400' : '$textLight600'}
                   fontSize="$xs"
                 >
-                  Truster
+                  {t('stats.truster')}
                 </Text>
               </HStack>
             </Pressable>
@@ -2201,109 +2182,144 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 fontWeight="$semibold"
                 textAlign="center"
               >
-                {profile.name}'s Inventory
+                {t('profileScreen.inventory', { name: profile.name })}
               </Text>
             </Pressable>
           </Box>
         </Box>
 
-        {/* Badge Items */}
-        {isProfileLoading ? (
-          <Box mt={6} px={15} pb={16}>
-            <Box
-              borderRadius={5}
-              p={14}
-              h={130}
-            >
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 16 }}
-              >
-                {[0, 1, 2, 3].map((index) => (
-                  <VStack key={index} space="xs" alignItems="center">
-                    <Box
-                      w={70}
-                      h={70}
-                      borderRadius={5}
-                      bg={isDark ? '#404040' : '#E9E9E9'}
-                    />
-                    <Box
-                      w={50}
-                      h={10}
-                      borderRadius={3}
-                      bg={isDark ? '#404040' : '#E9E9E9'}
-                    />
-                  </VStack>
-                ))}
-              </ScrollView>
+        {/* Badge Items - hide for other users with no badges */}
+        {isOwnProfile || (profile.badges && profile.badges.length > 0) ? (
+          isProfileLoading ? (
+            <Box mt={6} px={15} pb={16}>
               <Box
-                w={120}
-                h={12}
-                borderRadius={3}
-                bg={isDark ? '#404040' : '#E9E9E9'}
-                alignSelf="center"
-                mt="$4"
-              />
-            </Box>
-          </Box>
-        ) : (
-          <Box mt={6} px={15} pb={8}>
-            <Box
-              borderRadius={5}
-              p={profile.badges && profile.badges.length > 0 ? 14 : 8}
-            >
-              {profile.badges && profile.badges.length > 0 ? (
-                <HStack justifyContent="space-between">
-                  {profile.badges.slice(0, 4).map((badge) => (
-                    <Pressable
-                      key={badge.id}
-                      onPress={() => handleBadgePress(badge)}
-                      flex={1}
-                      alignItems="center"
-                    >
-                      <VStack space="xs" alignItems="center">
-                        <Box
-                          w={64}
-                          h={64}
-                          borderRadius={12}
-                          borderWidth={0}
-                          overflow="hidden"
-                          justifyContent="center"
-                          alignItems="center"
-                        >
-                          <Image
-                            source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                            alt={badge.title}
-                            w={56}
-                            h={56}
-                            resizeMode="contain"
-                          />
-                        </Box>
-                        <Text
-                          color={isDark ? '$textDark400' : '#000000'}
-                          fontSize={10}
-                          fontWeight="$bold"
-                          textAlign="center"
-                          numberOfLines={2}
-                          lineHeight={13}
-                          px={2}
-                        >
-                          {badge.title}
-                        </Text>
-                      </VStack>
-                    </Pressable>
+                borderRadius={5}
+                p={14}
+                h={130}
+              >
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 16 }}
+                >
+                  {[0, 1, 2, 3].map((index) => (
+                    <VStack key={index} space="xs" alignItems="center">
+                      <Box
+                        w={70}
+                        h={70}
+                        borderRadius={5}
+                        bg={isDark ? '#404040' : '#E9E9E9'}
+                      />
+                      <Box
+                        w={50}
+                        h={10}
+                        borderRadius={3}
+                        bg={isDark ? '#404040' : '#E9E9E9'}
+                      />
+                    </VStack>
                   ))}
-                  {/* Own profile: fill remaining slots with dashed placeholders */}
-                  {isOwnProfile && profile.badges.length < 4 &&
-                    Array.from({ length: 4 - Math.min(profile.badges.length, 4) }).map((_, index) => (
+                </ScrollView>
+                <Box
+                  w={120}
+                  h={12}
+                  borderRadius={3}
+                  bg={isDark ? '#404040' : '#E9E9E9'}
+                  alignSelf="center"
+                  mt="$4"
+                />
+              </Box>
+            </Box>
+          ) : (
+            <Box mt={6} px={15} pb={8}>
+              <Box
+                borderRadius={5}
+                p={profile.badges && profile.badges.length > 0 ? 14 : 8}
+              >
+                {profile.badges && profile.badges.length > 0 ? (
+                  <HStack justifyContent="space-between">
+                    {profile.badges.slice(0, 4).map((badge) => (
                       <Pressable
-                        key={`empty-${index}`}
-                        onPress={() => navigation.navigate('EditHighlightBadges')}
+                        key={badge.id}
+                        onPress={() => handleBadgePress(badge)}
                         flex={1}
                         alignItems="center"
                       >
                         <VStack space="xs" alignItems="center">
+                          <Box
+                            w={64}
+                            h={64}
+                            borderRadius={12}
+                            borderWidth={0}
+                            overflow="hidden"
+                            justifyContent="center"
+                            alignItems="center"
+                          >
+                            <Image
+                              source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                              alt={badge.title}
+                              w={56}
+                              h={56}
+                              resizeMode="contain"
+                            />
+                          </Box>
+                          <Text
+                            color={isDark ? '$textDark400' : '#000000'}
+                            fontSize={10}
+                            fontWeight="$bold"
+                            textAlign="center"
+                            numberOfLines={2}
+                            lineHeight={13}
+                            px={2}
+                          >
+                            {badge.title}
+                          </Text>
+                        </VStack>
+                      </Pressable>
+                    ))}
+                    {/* Own profile: fill remaining slots with dashed placeholders */}
+                    {isOwnProfile && profile.badges.length < 4 &&
+                      Array.from({ length: 4 - Math.min(profile.badges.length, 4) }).map((_, index) => (
+                        <Pressable
+                          key={`empty-${index}`}
+                          onPress={() => navigation.navigate('EditHighlightBadges')}
+                          flex={1}
+                          alignItems="center"
+                        >
+                          <VStack space="xs" alignItems="center">
+                            <Box
+                              w={64}
+                              h={64}
+                              borderRadius={12}
+                              borderWidth={2}
+                              borderColor={isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'}
+                              borderStyle="dashed"
+                              justifyContent="center"
+                              alignItems="center"
+                              bg={isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'}
+                            >
+                              <PlusIcon
+                                size={24}
+                                color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)'}
+                                strokeWidth={1.5}
+                              />
+                            </Box>
+                            <Text fontSize={10} lineHeight={13}>{' '}</Text>
+                          </VStack>
+                        </Pressable>
+                      ))
+                    }
+                  </HStack>
+                ) : (
+                  <Box flex={1} height={64}>
+                    {/* 4 dashed badge placeholders */}
+                    <HStack justifyContent="space-between">
+                      {[1, 2, 3, 4].map((index) => (
+                        <Pressable
+                          key={index}
+                          onPress={isOwnProfile ? () => navigation.navigate('EditHighlightBadges') : undefined}
+                          flex={1}
+                          alignItems="center"
+                        >
                           <Box
                             w={64}
                             h={64}
@@ -2321,68 +2337,35 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                               strokeWidth={1.5}
                             />
                           </Box>
-                          <Text fontSize={10} lineHeight={13}>{' '}</Text>
-                        </VStack>
-                      </Pressable>
-                    ))
-                  }
-                </HStack>
-              ) : (
-                <Box flex={1} height={64}>
-                  {/* 4 dashed badge placeholders */}
-                  <HStack justifyContent="space-between">
-                    {[1, 2, 3, 4].map((index) => (
-                      <Pressable
-                        key={index}
-                        onPress={isOwnProfile ? () => navigation.navigate('EditHighlightBadges') : undefined}
-                        flex={1}
-                        alignItems="center"
-                      >
-                        <Box
-                          w={64}
-                          h={64}
-                          borderRadius={12}
-                          borderWidth={2}
-                          borderColor={isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'}
-                          borderStyle="dashed"
-                          justifyContent="center"
-                          alignItems="center"
-                          bg={isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'}
-                        >
-                          <PlusIcon
-                            size={24}
-                            color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)'}
-                            strokeWidth={1.5}
-                          />
-                        </Box>
-                      </Pressable>
-                    ))}
-                  </HStack>
-                </Box>
-              )}
-              {isOwnProfile && (
-                <Pressable
-                  onPress={() => {
-                    navigation.navigate('EditHighlightBadges');
-                  }}
-                >
-                  <Text
-                    color={isDark ? '$textDark400' : '$textLight600'}
-                    fontSize={10}
-                    textAlign="center"
-                    mt="$4"
-                    fontWeight="$semibold"
+                        </Pressable>
+                      ))}
+                    </HStack>
+                  </Box>
+                )}
+                {isOwnProfile && (
+                  <Pressable
+                    onPress={() => {
+                      navigation.navigate('EditHighlightBadges');
+                    }}
                   >
-                    {t('editHighlightBadges.title')}
-                  </Text>
-                </Pressable>
-              )}
+                    <Text
+                      color={isDark ? '$textDark400' : '$textLight600'}
+                      fontSize={10}
+                      textAlign="center"
+                      mt="$4"
+                      fontWeight="$semibold"
+                    >
+                      {t('editHighlightBadges.title')}
+                    </Text>
+                  </Pressable>
+                )}
+              </Box>
             </Box>
-          </Box>
-        )}
+          )
+        ) : null}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, openImage]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleReport, handleBlock, handleBadgePress, openImage]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
@@ -2510,29 +2493,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 style={{ flex: 1 }}
               >
                 <VStack px={8} pl={12} py={2} width="100%">
-                  {/* Share */}
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleShare();
-                    }}
-                    py={8}
-                  >
-                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                      <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize="$sm"
-                        fontWeight="$medium"
-                      >
-                        Share
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                  <Divider 
-                    bg={isDark ? '#333333' : '#E9E9E9'} 
-                    mx={0}
-                  />
                   {/* Mute / Unmute */}
                   <Pressable
                     onPress={() => {
@@ -2567,9 +2527,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        {(isMuting || isUnmuting) 
-                          ? (userProfile?.isMuted ? 'Unmuting...' : 'Muting...')
-                          : (userProfile?.isMuted ? 'Unmute' : 'Mute')}
+                        {(isMuting || isUnmuting)
+                          ? (userProfile?.isMuted ? t('actions.unmuting') : t('actions.muting'))
+                          : (userProfile?.isMuted ? t('actions.unmute') : t('actions.mute'))}
                       </Text>
                     </HStack>
                   </Pressable>
@@ -2592,12 +2552,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Report
+                        {t('actions.report')}
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Divider 
-                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                  <Divider
+                    bg={isDark ? '#333333' : '#E9E9E9'}
                     mx={0}
                   />
                   {/* Block */}
@@ -2615,7 +2575,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Block
+                        {t('actions.block')}
                       </Text>
                     </HStack>
                   </Pressable>

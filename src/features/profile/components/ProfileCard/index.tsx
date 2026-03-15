@@ -22,6 +22,7 @@ import {
 } from '@gluestack-ui/themed';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { ProfileStackParamList } from '../../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
@@ -47,6 +48,7 @@ const styles = StyleSheet.create({
 export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('profile');
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
@@ -179,7 +181,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   fontSize={10}
                   fontWeight="$semibold"
                 >
-                  Edit Profile
+                  {t('actions.edit')}
                 </Text>
               </Pressable>
             ) : (
@@ -292,7 +294,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     fontSize={10}
                     fontWeight="$semibold"
                   >
-                    {isTrusting ? "Ekleniyor..." : isUntrusting ? "Kaldırılıyor..." : (userData.isTrusted ? "Un Trust" : "Trust")}
+                    {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : (userData.isTrusted ? t('actions.unTrust') : t('actions.trust'))}
                   </Text>
                 </Pressable>
               </>
@@ -335,7 +337,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
             color={isDark ? '$textDark400' : '$textLight600'}
             fontSize={10}
           >
-            Posts
+            {t('stats.posts')}
           </Text>
           <Text
             color={isDark ? '$textDark400' : '$textLight600'}
@@ -345,9 +347,9 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
           </Text>
           <Pressable onPress={() => {
             if (user?.id) {
-              navigation.navigate('TrustList', { 
+              navigation.navigate('TrustList', {
                 userId: user.id,
-                initialTab: 'trust' 
+                initialTab: 'trust'
               });
             }
           }}>
@@ -363,7 +365,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                 color={isDark ? '$textDark400' : '$textLight600'}
                 fontSize={10}
               >
-                Trust
+                {t('stats.trust')}
               </Text>
             </HStack>
           </Pressable>
@@ -375,9 +377,9 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
           </Text>
           <Pressable onPress={() => {
             if (user?.id) {
-              navigation.navigate('TrustList', { 
+              navigation.navigate('TrustList', {
                 userId: user.id,
-                initialTab: 'truster' 
+                initialTab: 'truster'
               });
             }
           }}>
@@ -393,7 +395,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                 color={isDark ? '$textDark400' : '$textLight600'}
                 fontSize={10}
               >
-                Truster
+                {t('stats.truster')}
               </Text>
             </HStack>
           </Pressable>
@@ -445,7 +447,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
               fontWeight="$semibold"
               textAlign="center"
             >
-              {userData.name}'s Inventory
+              {t('profileScreen.inventory', { name: userData.name })}
             </Text>
           </Pressable>
         </Box>
@@ -499,7 +501,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   mt="$4"
                   fontWeight="$semibold"
                 >
-                  Edit Highlight Badges
+                  {t('profileScreen.editHighlightBadges')}
                 </Text>
               </Pressable>
             )}
@@ -552,7 +554,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                       fontSize={14}
                       fontWeight="$medium"
                     >
-                      Edit Profile
+                      {t('actions.edit')}
                     </Text>
                   </HStack>
                 </Pressable>

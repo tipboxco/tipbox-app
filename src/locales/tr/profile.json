@@ -51,7 +51,31 @@
     "noBadgesYet": "Henüz rozet yok",
     "noEventBadges": "Henüz {{type}} yok",
     "noCollectionBadges": "Henüz {{type}} yok",
-    "seeMoreCollections": "Daha Fazla Koleksiyon Gör"
+    "seeMoreCollections": "Daha Fazla Koleksiyon Gör",
+    "feed": {
+      "title": "Henüz Gönderi Yok",
+      "subtitle": "Bu kullanıcı henüz gönderi paylaşmadı."
+    },
+    "reviews": {
+      "title": "Henüz Deneyim Yok",
+      "subtitle": "Bu kullanıcı henüz deneyim paylaşmadı."
+    },
+    "benchmarks": {
+      "title": "Henüz Karşılaştırma Yok",
+      "subtitle": "Bu kullanıcı henüz karşılaştırma oluşturmadı."
+    },
+    "tips": {
+      "title": "Henüz İpucu Yok",
+      "subtitle": "Bu kullanıcı henüz ipucu ve püf noktası paylaşmadı."
+    },
+    "replies": {
+      "title": "Henüz Soru Yok",
+      "subtitle": "Bu kullanıcı henüz soru sormadı."
+    },
+    "default": {
+      "title": "Henüz İçerik Yok",
+      "subtitle": "Bu kullanıcı henüz içerik paylaşmadı."
+    }
   },
   "profileScreen": {
     "inventory": "{{name}} Envanteri",
@@ -200,7 +224,40 @@
     "profileLoadError": "Profil yüklenirken bir hata oluştu",
     "networkError": "Ağ bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
     "operationFailed": "İşlem başarısız. Lütfen tekrar deneyin.",
-    "error": "Hata"
+    "error": "Hata",
+    "errorSendingTips": "TIPS gönderilirken bir hata oluştu",
+    "removingFromTrust": "Kullanıcı güvenilen listesinden çıkarılırken bir hata oluştu.",
+    "blocking": "Kullanıcı engellenirken bir hata oluştu.",
+    "muting": "Kullanıcı sessize alınırken bir hata oluştu."
+  },
+  "trustUserCard": {
+    "removeTitle": "Güvenilen Listesinden Çıkar",
+    "removeMessage": "{{name}} kullanıcısını güvenilen listenizden çıkarmak istediğinizden emin misiniz?",
+    "blockTitle": "Kullanıcıyı Engelle",
+    "blockMessage": "{{name}} kullanıcısını engellemek istediğinizden emin misiniz? Engellenen kullanıcılar sizinle etkileşime geçemez.",
+    "unblockTitle": "Engeli Kaldır",
+    "unblockMessage": "{{name}} kullanıcısının engelini kaldırmak istediğinizden emin misiniz?",
+    "cancel": "İptal",
+    "remove": "Çıkar",
+    "block": "Engelle",
+    "unblock": "Engeli Kaldır",
+    "removeFromTrust": "Güvenilen Listesinden Çıkar",
+    "blocking": "Engelleniyor...",
+    "unblocking": "Engel kaldırılıyor...",
+    "muting": "Sessize alınıyor...",
+    "unmuting": "Sessizden çıkarılıyor..."
+  },
+  "suggestedUserCard": {
+    "mutualFriends": "{{count}} ortak arkadaş",
+    "addTrust": "Güven Ekle",
+    "added": "Eklendi"
+  },
+  "badgeDetail": {
+    "completed": "Tamamlandı",
+    "viewAchievement": "Başarıyı Görüntüle"
+  },
+  "share": {
+    "profileMessage": "Tipbox'ta {{name}} profilini incele!"
   },
   "sendTipsModal": {
     "to": "Kime",

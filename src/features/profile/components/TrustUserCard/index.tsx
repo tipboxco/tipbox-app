@@ -11,6 +11,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { XCircleIcon, BellIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useRemoveFromTrustList, useBlockUser, useUnblockUser, useMuteUser, useUnmuteUser, useUserProfile } from '../../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { DEFAULT_USER_AVATAR } from '@/src/utils';
@@ -56,6 +57,7 @@ export const TrustUserCard = ({
 }: TrustUserCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('profile');
   const { user: currentUser } = useAppStore();
   const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
   const { mutate: blockUser, isPending: isBlocking } = useBlockUser();
@@ -73,26 +75,26 @@ export const TrustUserCard = ({
   // Error handling için mutation options
   const handleUntrustError = (error: any) => {
     console.error('[TrustUserCard] Untrust error:', error);
-    const errorMessage = error?.response?.data?.message 
-      || error?.message 
-      || (error?.message === 'Network Error' ? 'Network connection error. Please check your internet connection.' : 'An error occurred while removing user from trust list.');
-    Alert.alert('Error', errorMessage);
+    const errorMessage = error?.response?.data?.message
+      || error?.message
+      || (error?.message === 'Network Error' ? t('errors.networkError') : t('errors.removingFromTrust'));
+    Alert.alert(t('errors.error'), errorMessage);
   };
-  
+
   const handleBlockError = (error: any) => {
     console.error('[TrustUserCard] Block error:', error);
-    const errorMessage = error?.response?.data?.message 
-      || error?.message 
-      || (error?.message === 'Network Error' ? 'Network connection error. Please check your internet connection.' : 'An error occurred while blocking user.');
-    Alert.alert('Error', errorMessage);
+    const errorMessage = error?.response?.data?.message
+      || error?.message
+      || (error?.message === 'Network Error' ? t('errors.networkError') : t('errors.blocking'));
+    Alert.alert(t('errors.error'), errorMessage);
   };
-  
+
   const handleMuteError = (error: any) => {
     console.error('[TrustUserCard] Mute error:', error);
-    const errorMessage = error?.response?.data?.message 
-      || error?.message 
-      || (error?.message === 'Network Error' ? 'Network connection error. Please check your internet connection.' : 'An error occurred while muting user.');
-    Alert.alert('Error', errorMessage);
+    const errorMessage = error?.response?.data?.message
+      || error?.message
+      || (error?.message === 'Network Error' ? t('errors.networkError') : t('errors.muting'));
+    Alert.alert(t('errors.error'), errorMessage);
   };
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = useRef<View>(null);
@@ -110,15 +112,15 @@ export const TrustUserCard = ({
     if (isBlocked) {
       // Unblock
       Alert.alert(
-        'Unblock User',
-        `Are you sure you want to unblock ${user.name}?`,
+        t('trustUserCard.unblockTitle'),
+        t('trustUserCard.unblockMessage', { name: user.name }),
         [
           {
-            text: 'Cancel',
+            text: t('trustUserCard.cancel'),
             style: 'cancel',
           },
           {
-            text: 'Unblock',
+            text: t('trustUserCard.unblock'),
             style: 'default',
             onPress: () => {
               unblockUser(
@@ -134,15 +136,15 @@ export const TrustUserCard = ({
     } else {
       // Block
       Alert.alert(
-        'Block User',
-        `Are you sure you want to block ${user.name}? Blocked users cannot interact with you.`,
+        t('trustUserCard.blockTitle'),
+        t('trustUserCard.blockMessage', { name: user.name }),
         [
           {
-            text: 'Cancel',
+            text: t('trustUserCard.cancel'),
             style: 'cancel',
           },
           {
-            text: 'Block',
+            text: t('trustUserCard.block'),
             style: 'destructive',
             onPress: () => {
               blockUser(
@@ -160,15 +162,15 @@ export const TrustUserCard = ({
 
   const handleRemoveFromTrustList = () => {
     Alert.alert(
-      'Remove from Trust List',
-      `Are you sure you want to remove ${user.name} from your trust list?`,
+      t('trustUserCard.removeTitle'),
+      t('trustUserCard.removeMessage', { name: user.name }),
       [
         {
-          text: 'Cancel',
+          text: t('trustUserCard.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Remove',
+          text: t('trustUserCard.remove'),
           style: 'destructive',
           onPress: () => {
             untrustUser(user.id, {
@@ -422,7 +424,7 @@ export const TrustUserCard = ({
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        Remove from Trust List
+                        {t('trustUserCard.removeFromTrust')}
                       </Text>
                     </HStack>
                   </RNPressable>
@@ -446,7 +448,7 @@ export const TrustUserCard = ({
                     fontSize="$sm"
                     fontWeight="$medium"
                   >
-                    {isMuting || isUnmuting ? (isMuted ? 'Unmuting...' : 'Muting...') : (isMuted ? 'Unmute' : 'Mute')}
+                    {isMuting || isUnmuting ? (isMuted ? t('trustUserCard.unmuting') : t('trustUserCard.muting')) : (isMuted ? t('actions.unmute') : t('actions.mute'))}
                   </Text>
                 </HStack>
               </RNPressable>
@@ -468,7 +470,7 @@ export const TrustUserCard = ({
                     fontSize="$sm"
                     fontWeight="$medium"
                   >
-                    {isBlocking || isUnblocking ? (isBlocked ? 'Unblocking...' : 'Blocking...') : (isBlocked ? 'Unblock' : 'Block')}
+                    {isBlocking || isUnblocking ? (isBlocked ? t('trustUserCard.unblocking') : t('trustUserCard.blocking')) : (isBlocked ? t('trustUserCard.unblock') : t('trustUserCard.block'))}
                   </Text>
                 </HStack>
               </RNPressable>

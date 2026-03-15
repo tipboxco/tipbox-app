@@ -6,6 +6,7 @@ import {
     Box,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 
 interface SuggestedUserCardProps {
@@ -33,6 +34,7 @@ export const SuggestedUserCard = ({
 }: SuggestedUserCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('profile');
 
     // Titles array'ini string'e çevir
     const titleText = titles.join(' - ');
@@ -101,7 +103,7 @@ export const SuggestedUserCard = ({
                                 fontSize="$xs"
                                 numberOfLines={1}
                             >
-                                {mutualTrustCount} mutual friends
+                                {t('suggestedUserCard.mutualFriends', { count: mutualTrustCount })}
                             </Text>
                         ) : null}
                     </VStack>
@@ -123,7 +125,7 @@ export const SuggestedUserCard = ({
                         { color: isTrusted ? '#FFF' : '#000' }
                     ]}
                 >
-                    {isTrusted ? 'Added' : 'Add Trust'}
+                    {isTrusted ? t('suggestedUserCard.added') : t('suggestedUserCard.addTrust')}
                 </Text>
             </Pressable>
         </HStack>

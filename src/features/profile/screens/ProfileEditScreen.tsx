@@ -240,7 +240,8 @@ const ProfileEditScreen: React.FC = () => {
     
     openBottomSheet(badgeContent, {
       enablePanDownToClose: true,
-      enableDynamicSizing: true,
+      enableDynamicSizing: false,
+      snapPoints: ['40%'],
       backdropPressBehavior: 'close',
       animateOnMount: true,
     });
