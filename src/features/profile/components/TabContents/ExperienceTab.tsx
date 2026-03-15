@@ -113,7 +113,7 @@ const mapExperienceToCardData = (item: ProfileReview): ExperiencePostCardData =>
       name: item.user?.name || 'Unknown',
       title: item.user?.title || '',
       avatar: avatarSource,
-      action: item.status === 'own' ? 'Added new product and experiences to inventory!' : undefined,
+      action: 'Added new product and experiences to inventory!',
     },
     contextData: {
       id: productData?.id || '',

@@ -169,7 +169,7 @@ const mapExperienceToCardData = (item: BrandFeedPost): ExperiencePostCardData | 
       name: postData.user.name,
       title: postData.user.title,
       avatar: avatarSource,
-      action: (postData.status === 'own' || rawProduct?.isOwned) ? 'Added new product and experiences to inventory!' : undefined,
+      action: 'Added new product and experiences to inventory!',
     },
     contextData: {
       id: rawProduct?.id || '',

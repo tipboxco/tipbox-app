@@ -101,7 +101,7 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
       name: review.user?.name || 'Unknown',
       title: review.user?.title || '',
       avatar: avatarSource,
-      action: 'wrote a review',
+      action: 'Added new product and experiences to inventory!',
     },
     contextData: {
       id: productData?.id || '',

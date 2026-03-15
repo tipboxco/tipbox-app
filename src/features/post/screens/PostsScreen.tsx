@@ -732,7 +732,7 @@ export const PostsScreen = () => {
         name: item.user?.name || '',
         title: item.user?.title || '',
         avatar: avatarSource,
-        action: isOwned ? 'Added new product and experiences to inventory!' : undefined,
+        action: 'Added new product and experiences to inventory!',
       },
       contextData: {
         id: rawProduct?.id || '',
