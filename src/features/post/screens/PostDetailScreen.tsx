@@ -158,20 +158,36 @@ export const PostDetailScreen = () => {
     const finalType = type || (fetchedPostData as any)?.type || 'post';
 
     // Experience post: API'den gelen veriyi kart formatına çevir (experienceContent -> content array, product/contextData, tags)
+    // Feed'den gelen veri zaten kart formatında olabilir (tag objesi, boolean[] rating) - bu durumda dönüşüm yapma
     const finalExperienceData = useMemo(() => {
       if (finalType !== 'experience' || !finalPostData) return finalPostData;
       const raw = finalPostData as any;
       const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
       const contentBlocks = raw.experienceContent ?? (Array.isArray(raw.content) ? raw.content : []);
+      // Kart formatı kontrolü: content item'ında tag objesi varsa zaten dönüştürülmüş demektir
+      const isAlreadyCardFormat = Array.isArray(contentBlocks) && contentBlocks.length > 0 && contentBlocks[0]?.tag !== undefined;
       const content = Array.isArray(contentBlocks)
-        ? contentBlocks.map((item: any) => ({
-            tag: {
-              icon: (item?.title?.toLowerCase?.().includes('product') || item?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
-              title: item?.title ?? '',
-            },
-            text: trimTrailingParen(item?.content ?? item?.text ?? ''),
-            rating: Array(5).fill(false).map((_, i) => i < (Math.min(5, Math.max(0, Number(item?.rating) || 0)))),
-          }))
+        ? contentBlocks.map((item: any) => {
+            if (isAlreadyCardFormat) {
+              // Zaten kart formatında - olduğu gibi koru
+              return {
+                tag: item.tag ?? { icon: 'tag' as const, title: '' },
+                text: trimTrailingParen(item?.text ?? ''),
+                rating: Array.isArray(item?.rating)
+                  ? item.rating.map((r: any) => r === true || r === 1)
+                  : Array(5).fill(false),
+              };
+            }
+            // API formatı - kart formatına dönüştür
+            return {
+              tag: {
+                icon: (item?.title?.toLowerCase?.().includes('product') || item?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
+                title: item?.title ?? '',
+              },
+              text: trimTrailingParen(item?.content ?? item?.text ?? ''),
+              rating: Array(5).fill(false).map((_, i) => i < (Math.min(5, Math.max(0, Number(item?.rating) || 0)))),
+            };
+          })
         : [];
       const tags = Array.isArray(raw.tags) ? raw.tags : [];
       const defaultPostImage = require('@/assets/defaultImages/default-post.png');
