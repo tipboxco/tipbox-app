@@ -62,6 +62,38 @@
     "inProgress": "In Progress",
     "completed": "Completed"
   },
+  "communityFilter": {
+    "title": "Filter",
+    "mainCategory": "Main Category",
+    "subCategory": "Sub Category",
+    "productGroup": "Product Group",
+    "comingSoon": "Coming Soon",
+    "done": "Done",
+    "categories": {
+      "all": "All",
+      "starterPacks": "Starter Packs",
+      "electronics": "Electronics",
+      "cosmetics": "Cosmetics",
+      "homeGarden": "Home & Garden"
+    },
+    "subCategories": {
+      "all": "All",
+      "smartphones": "Smartphones",
+      "laptops": "Laptops",
+      "tablets": "Tablets"
+    }
+  },
+  "collectionsFilter": {
+    "title": "Filter",
+    "mainCategory": "Main Category",
+    "subCategory": "Sub Category",
+    "productGroup": "Product Group",
+    "loading": "Loading...",
+    "noCategories": "No categories available",
+    "noSubCategories": "No sub categories available",
+    "noProductGroups": "No product groups available",
+    "apply": "Apply"
+  },
   "createPost": {
     "title": "Write a Post",
     "share": "Share",

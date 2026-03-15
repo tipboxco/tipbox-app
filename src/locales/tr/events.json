@@ -62,6 +62,38 @@
     "inProgress": "Devam Ediyor",
     "completed": "Tamamlandı"
   },
+  "communityFilter": {
+    "title": "Filtre",
+    "mainCategory": "Ana Kategori",
+    "subCategory": "Alt Kategori",
+    "productGroup": "Ürün Grubu",
+    "comingSoon": "Yakında",
+    "done": "Tamam",
+    "categories": {
+      "all": "Tümü",
+      "starterPacks": "Başlangıç Paketleri",
+      "electronics": "Elektronik",
+      "cosmetics": "Kozmetik",
+      "homeGarden": "Ev & Bahçe"
+    },
+    "subCategories": {
+      "all": "Tümü",
+      "smartphones": "Akıllı Telefonlar",
+      "laptops": "Dizüstü Bilgisayarlar",
+      "tablets": "Tabletler"
+    }
+  },
+  "collectionsFilter": {
+    "title": "Filtre",
+    "mainCategory": "Ana Kategori",
+    "subCategory": "Alt Kategori",
+    "productGroup": "Ürün Grubu",
+    "loading": "Yükleniyor...",
+    "noCategories": "Kategori bulunamadı",
+    "noSubCategories": "Alt kategori bulunamadı",
+    "noProductGroups": "Ürün grubu bulunamadı",
+    "apply": "Uygula"
+  },
   "createPost": {
     "title": "Gönderi Yaz",
     "share": "Paylaş",

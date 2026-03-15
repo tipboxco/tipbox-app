@@ -179,5 +179,42 @@
       "november": "Kas",
       "december": "Ara"
     }
+  },
+  "searchModal": {
+    "placeholder": "Ara...",
+    "searching": "Aranıyor...",
+    "loading": "Yükleniyor...",
+    "errorOccurred": "Arama sırasında bir hata oluştu",
+    "pleaseRetry": "Lütfen tekrar deneyin",
+    "noResults": "Sonuç bulunamadı",
+    "noSearchResults": "\"{{query}}\" için sonuç bulunamadı",
+    "tabs": {
+      "users": "Kullanıcılar",
+      "brands": "Markalar",
+      "products": "Ürünler"
+    }
+  },
+  "createPost": {
+    "title": "Gönderi Oluştur",
+    "types": {
+      "experience": "Deneyim Gönderisi",
+      "experienceDesc": "Bu ürün hakkındaki deneyimini paylaş",
+      "tips": "İpuçları ve Püf Noktaları",
+      "tipsDesc": "Bu ürün hakkında bir ipucu paylaş",
+      "benchmark": "Karşılaştırma Gönderisi",
+      "benchmarkDesc": "Bu ürünü benzer ürünlerle karşılaştır",
+      "update": "Güncelleme Gönderisi",
+      "updateDesc": "Deneyim gönderine güncelleme paylaş",
+      "question": "Soru Gönderisi",
+      "questionDesc": "Bu ürün hakkında bir soru sor",
+      "free": "Serbest Gönderi",
+      "freeDesc": "Herhangi bir konuda serbest gönderi oluştur"
+    },
+    "experienceOptions": {
+      "own": "Ürüne Sahibim",
+      "ownDesc": "Envantere eklenir; deneyim parçaları gönderi olarak paylaşılır.",
+      "tried": "Denedim / Test Ettim",
+      "triedDesc": "Deneyim parçaları gönderi olarak paylaşılır; envantere eklenmez"
+    }
   }
 }

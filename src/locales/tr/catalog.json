@@ -239,5 +239,9 @@
     "comments": "Yorumlar",
     "noCommentsYet": "Henüz yorum yok. İlk yorumu siz yapın",
     "writeComment": "Bir yorum yazın..."
+  },
+  "actionButtons": {
+    "showPosts": "Gönderileri Göster",
+    "createPost": "Gönderi Oluştur"
   }
 }

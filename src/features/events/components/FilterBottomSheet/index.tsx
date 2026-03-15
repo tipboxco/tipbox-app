@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -30,28 +31,29 @@ export interface FilterSelection {
   productGroup?: string;
 }
 
-// Mock data - Backend'den gelecek
-const MAIN_CATEGORIES: FilterOption[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Starter Packs', value: 'starter_packs' },
-  { label: 'Electronics', value: 'electronics' },
-  { label: 'Cosmetics', value: 'cosmetics' },
-  { label: 'Home & Garden', value: 'home_garden' },
-];
-
-const SUB_CATEGORIES: FilterOption[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Smartphones', value: 'smartphones' },
-  { label: 'Laptops', value: 'laptops' },
-  { label: 'Tablets', value: 'tablets' },
-];
-
 const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   visible,
   onClose,
   onApply,
   isDark = false,
 }) => {
+  const { t } = useTranslation('events');
+
+  // Mock data - Backend'den gelecek
+  const MAIN_CATEGORIES: FilterOption[] = useMemo(() => [
+    { label: t('communityFilter.categories.all'), value: 'all' },
+    { label: t('communityFilter.categories.starterPacks'), value: 'starter_packs' },
+    { label: t('communityFilter.categories.electronics'), value: 'electronics' },
+    { label: t('communityFilter.categories.cosmetics'), value: 'cosmetics' },
+    { label: t('communityFilter.categories.homeGarden'), value: 'home_garden' },
+  ], [t]);
+
+  const SUB_CATEGORIES: FilterOption[] = useMemo(() => [
+    { label: t('communityFilter.subCategories.all'), value: 'all' },
+    { label: t('communityFilter.subCategories.smartphones'), value: 'smartphones' },
+    { label: t('communityFilter.subCategories.laptops'), value: 'laptops' },
+    { label: t('communityFilter.subCategories.tablets'), value: 'tablets' },
+  ], [t]);
   const [mainCategory, setMainCategory] = useState<string | undefined>();
   const [subCategory, setSubCategory] = useState<string | undefined>();
   const [showMainDropdown, setShowMainDropdown] = useState(false);
@@ -129,7 +131,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.title, { color: isDark ? '#FFF' : '#000' }]}>
-              Filter
+              {t('communityFilter.title')}
             </Text>
           </View>
 
@@ -158,7 +160,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 >
                   {mainCategory
                     ? MAIN_CATEGORIES.find((c) => c.value === mainCategory)?.label
-                    : 'Main Category'}
+                    : t('communityFilter.mainCategory')}
                 </Text>
                 <Feather
                   name={showMainDropdown ? 'chevron-up' : 'chevron-down'}
@@ -221,7 +223,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 >
                   {subCategory
                     ? SUB_CATEGORIES.find((c) => c.value === subCategory)?.label
-                    : 'Sub Category'}
+                    : t('communityFilter.subCategory')}
                 </Text>
                 <Feather
                   name={showSubDropdown ? 'chevron-up' : 'chevron-down'}
@@ -274,10 +276,10 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 ]}
               >
                 <Text style={[styles.dropdownText, { color: '#C1BEBF' }]}>
-                  Product Group
+                  {t('communityFilter.productGroup')}
                 </Text>
                 <View style={styles.comingSoonBadge}>
-                  <Text style={styles.comingSoonText}>Coming Soon</Text>
+                  <Text style={styles.comingSoonText}>{t('communityFilter.comingSoon')}</Text>
                 </View>
               </View>
             </View>
@@ -292,7 +294,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
               ]}
               onPress={handleDone}
             >
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.doneButtonText}>{t('communityFilter.done')}</Text>
             </Pressable>
           </View>
       </BottomSheetView>

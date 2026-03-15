@@ -30,5 +30,52 @@
     "serverError": "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.",
     "unknownError": "Bilinmeyen bir hata oluştu",
     "httpStatus": "HTTP Durumu: {{status}}"
+  },
+  "assetAccess": {
+    "wallet": "Cüzdan",
+    "inventory": "Envanter"
+  },
+  "expertNow": "Şimdi Uzman Ol",
+  "filterButtons": {
+    "interests": "İlgi Alanları",
+    "tags": "Etiketler",
+    "category": "Kategori",
+    "sort": "Sırala"
+  },
+  "filterFeed": {
+    "title": {
+      "interests": "İlgi Alanları",
+      "tags": "Etiketler",
+      "category": "Kategori",
+      "sort": "Sırala"
+    },
+    "loading": "Yükleniyor...",
+    "clear": "Temizle",
+    "apply": "Uygula",
+    "tagOptions": {
+      "free": "Serbest",
+      "benchmark": "Karşılaştırma",
+      "experience": "Deneyim",
+      "update": "Güncelleme",
+      "question": "Soru",
+      "tipsAndTricks": "İpuçları ve Püf Noktaları"
+    },
+    "interestOptions": {
+      "truster": "Güvenilen",
+      "categoryMatch": "Kategori Eşleşmesi",
+      "trending": "Trend",
+      "newUser": "Yeni Kullanıcı",
+      "boosted": "Öne Çıkan",
+      "inventoryMatch": "Envanter Eşleşmesi",
+      "productGroupMatch": "Ürün Grubu Eşleşmesi"
+    },
+    "sortOptions": {
+      "recent": "En Yeni",
+      "top": "En İyi"
+    },
+    "categoryOptions": {
+      "beauty": "Güzellik",
+      "electronics": "Elektronik"
+    }
   }
 }

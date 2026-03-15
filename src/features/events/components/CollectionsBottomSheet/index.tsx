@@ -11,6 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import { useMainCategories, useSubCategories } from '../../api/hooks';
 import type { CollectionFilters } from '../../types/medusa.types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface CollectionsBottomSheetProps {
   onApply: (filters: CollectionFilters) => void;
@@ -24,6 +25,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   initialFilters,
 }) => {
   const { closeBottomSheet } = useGlobalBottomSheet();
+  const { t } = useTranslation('events');
   const [mainCategoryId, setMainCategoryId] = useState<string | undefined>(initialFilters?.mainCategoryId);
   const [subCategoryId, setSubCategoryId] = useState<string | undefined>(initialFilters?.subCategoryId);
   const [productGroupId, setProductGroupId] = useState<string | undefined>(initialFilters?.productGroupId);
@@ -53,10 +55,10 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   );
 
   const subCategories = useMemo(() => {
-    console.log('[CollectionsBottomSheet] 🔍 subCategoriesData:', subCategoriesData);
-    console.log('[CollectionsBottomSheet] 🔍 mainCategoryId:', mainCategoryId);
+    console.log('[CollectionsBottomSheet] subCategoriesData:', subCategoriesData);
+    console.log('[CollectionsBottomSheet] mainCategoryId:', mainCategoryId);
     const mapped = (subCategoriesData ?? []).map((c) => ({ id: c.id, name: c.name }));
-    console.log('[CollectionsBottomSheet] 🔍 Mapped subCategories:', mapped);
+    console.log('[CollectionsBottomSheet] Mapped subCategories:', mapped);
     return mapped;
   }, [subCategoriesData, mainCategoryId]);
 
@@ -130,28 +132,28 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   }, [mainCategoryId, subCategoryId, productGroupId, onApply, closeBottomSheet]);
 
   const getSelectedMainCategoryName = () => {
-    if (!mainCategoryId) return 'Main Category';
+    if (!mainCategoryId) return t('collectionsFilter.mainCategory');
     const category = mainCategories.find((c) => c.id === mainCategoryId);
-    return category?.name || 'Main Category';
+    return category?.name || t('collectionsFilter.mainCategory');
   };
 
   const getSelectedSubCategoryName = () => {
-    if (!subCategoryId) return 'Sub Category';
+    if (!subCategoryId) return t('collectionsFilter.subCategory');
     const category = subCategories.find((c) => c.id === subCategoryId);
-    return category?.name || 'Sub Category';
+    return category?.name || t('collectionsFilter.subCategory');
   };
 
   const getSelectedProductGroupName = () => {
-    if (!productGroupId) return 'Product Group';
+    if (!productGroupId) return t('collectionsFilter.productGroup');
     const group = productGroups.find((g) => g.id === productGroupId);
-    return group?.name || 'Product Group';
+    return group?.name || t('collectionsFilter.productGroup');
   };
 
   return (
     <View style={{ paddingBottom: 20, paddingTop: 8, minHeight: 200 }}>
       {/* Header */}
       <Text style={[styles.title, { color: isDark ? '#FFF' : '#000', textAlign: 'center', marginBottom: 16 }]}>
-        Filter
+        {t('collectionsFilter.title')}
       </Text>
 
       {/* Scrollable Content */}
@@ -186,7 +188,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 ]}
                 numberOfLines={1}
               >
-                {isLoadingMain ? 'Loading...' : getSelectedMainCategoryName()}
+                {isLoadingMain ? t('collectionsFilter.loading') : getSelectedMainCategoryName()}
               </Text>
               {isLoadingMain ? (
                 <ActivityIndicator size="small" color="#C7C7CC" />
@@ -212,7 +214,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 {mainCategories.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                      No categories available
+                      {t('collectionsFilter.noCategories')}
                     </Text>
                   </View>
                 ) : (
@@ -222,7 +224,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                         key={option.id}
                         style={styles.simpleOptionItem}
                         onPress={() => {
-                          console.log('[CollectionsBottomSheet] 🎯 Main category selected:', option.id, option.name);
+                          console.log('[CollectionsBottomSheet] Main category selected:', option.id, option.name);
                           setMainCategoryId(option.id);
                           setShowMainDropdown(false);
                         }}
@@ -268,7 +270,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 ]}
                 numberOfLines={1}
               >
-                {isLoadingSub ? 'Loading...' : getSelectedSubCategoryName()}
+                {isLoadingSub ? t('collectionsFilter.loading') : getSelectedSubCategoryName()}
               </Text>
               {isLoadingSub ? (
                 <ActivityIndicator size="small" color="#C7C7CC" />
@@ -294,7 +296,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 {subCategories.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                      No sub categories available
+                      {t('collectionsFilter.noSubCategories')}
                     </Text>
                   </View>
                 ) : (
@@ -349,7 +351,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 ]}
                 numberOfLines={1}
               >
-                {isLoadingProductGroup ? 'Loading...' : getSelectedProductGroupName()}
+                {isLoadingProductGroup ? t('collectionsFilter.loading') : getSelectedProductGroupName()}
               </Text>
               {isLoadingProductGroup ? (
                 <ActivityIndicator size="small" color="#C7C7CC" />
@@ -375,7 +377,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                 {productGroups.length === 0 ? (
                   <View style={styles.errorContainer}>
                     <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                      No product groups available
+                      {t('collectionsFilter.noProductGroups')}
                     </Text>
                   </View>
                 ) : (
@@ -418,7 +420,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
         onPress={handleDone}
       >
         <Text style={{ color: isDark ? '#000000' : '#FFFFFF', fontSize: 16, fontWeight: 'bold' }}>
-          Apply
+          {t('collectionsFilter.apply')}
         </Text>
       </Pressable>
     </View>
@@ -460,7 +462,7 @@ const styles = StyleSheet.create({
   inlineOptionsList: {
     marginTop: 8,
     paddingVertical: 8,
-    maxHeight: 200, // Maksimum yükseklik - scroll için
+    maxHeight: 200,
   },
   simpleOptionItem: {
     paddingHorizontal: 12,

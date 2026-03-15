@@ -239,5 +239,9 @@
     "comments": "Comments",
     "noCommentsYet": "No comments yet. Be the first to comment",
     "writeComment": "Write a comment..."
+  },
+  "actionButtons": {
+    "showPosts": "Show Posts",
+    "createPost": "Create a Post"
   }
 }

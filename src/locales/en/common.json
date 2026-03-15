@@ -179,5 +179,42 @@
       "november": "Nov",
       "december": "Dec"
     }
+  },
+  "searchModal": {
+    "placeholder": "Search...",
+    "searching": "Searching...",
+    "loading": "Loading...",
+    "errorOccurred": "An error occurred during search",
+    "pleaseRetry": "Please try again",
+    "noResults": "No results found",
+    "noSearchResults": "No search results for \"{{query}}\"",
+    "tabs": {
+      "users": "Users",
+      "brands": "Brands",
+      "products": "Products"
+    }
+  },
+  "createPost": {
+    "title": "Create Post",
+    "types": {
+      "experience": "Experience Post",
+      "experienceDesc": "Share your experience about this product",
+      "tips": "Tips & Tricks",
+      "tipsDesc": "Share a tip about this product",
+      "benchmark": "Benchmark Post",
+      "benchmarkDesc": "Compare this product with similar ones",
+      "update": "Update Post",
+      "updateDesc": "Share an update to your experience post",
+      "question": "Question Post",
+      "questionDesc": "Ask a question about this product",
+      "free": "Free Post",
+      "freeDesc": "Create a free post on any topic"
+    },
+    "experienceOptions": {
+      "own": "I Own the Product",
+      "ownDesc": "Added to inventory; experience snippets shared as a post.",
+      "tried": "Tried / Tested",
+      "triedDesc": "Experience snippets shared as a post; not added to inventory"
+    }
   }
 }

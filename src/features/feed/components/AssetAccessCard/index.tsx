@@ -3,6 +3,7 @@ import { Box, HStack, Text, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface AssetAccessCardProps {
   onTabChange: (tab: 'wallet' | 'inventory') => void;
@@ -11,6 +12,7 @@ interface AssetAccessCardProps {
 export const AssetAccessCard = ({ onTabChange }: AssetAccessCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('feed');
   
   const handleTabPress = (tab: 'wallet' | 'inventory') => {
     onTabChange(tab);
@@ -63,7 +65,7 @@ export const AssetAccessCard = ({ onTabChange }: AssetAccessCardProps) => {
                 fontSize={12}
                 fontWeight="$bold"
               >
-                Wallet
+                {t('assetAccess.wallet')}
               </Text>
             </HStack>
           </Box>
@@ -111,7 +113,7 @@ export const AssetAccessCard = ({ onTabChange }: AssetAccessCardProps) => {
                 fontSize={12}
                 fontWeight="$bold"
               >
-                Inventory
+                {t('assetAccess.inventory')}
               </Text>
             </HStack>
           </Box>

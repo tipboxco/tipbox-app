@@ -1193,7 +1193,7 @@ const NotificationsScreenComponent: React.FC = () => {
                     ]}
                     numberOfLines={1}
                   >
-                    {filter.label}
+                    {t(`notifications.filters.${filter.id}`)}
                   </Animated.Text>
                 </Animated.View>
               </Pressable>

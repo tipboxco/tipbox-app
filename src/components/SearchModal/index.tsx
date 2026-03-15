@@ -34,6 +34,7 @@ import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { navigationService } from '@/src/services/NavigationService';
@@ -283,6 +284,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation('common');
 
   // 🎯 PERFORMANCE: Internal visible state - for animation control
   // Synchronized with visible prop from parent, but controls close animation
@@ -704,7 +706,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
         color={isDark ? '#8E8E93' : '#8E8E93'}
         textAlign="center"
       >
-        {debouncedQuery.length > 0 ? 'Searching...' : 'Loading...'}
+        {debouncedQuery.length > 0 ? t('searchModal.searching') : t('searchModal.loading')}
       </Text>
     </Box>
   ), [isDark, debouncedQuery.length]);
@@ -720,7 +722,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
         textAlign="center"
         fontWeight="$semibold"
       >
-        An error occurred during search
+        {t('searchModal.errorOccurred')}
       </Text>
       <Text
         mt="$2"
@@ -728,7 +730,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
         color={isDark ? '#8E8E93' : '#8E8E93'}
         textAlign="center"
       >
-        Please try again
+        {t('searchModal.pleaseRetry')}
       </Text>
     </Box>
   ), [isDark]);
@@ -744,7 +746,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
         textAlign="center"
         fontWeight="$medium"
       >
-        No results found
+        {t('searchModal.noResults')}
       </Text>
       {debouncedQuery.length > 0 && (
         <Text
@@ -753,7 +755,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
           color={isDark ? '#8E8E93' : '#8E8E93'}
           textAlign="center"
         >
-          No search results for "{debouncedQuery}"
+          {t('searchModal.noSearchResults', { query: debouncedQuery })}
         </Text>
       )}
     </Box>
@@ -955,7 +957,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
                     <Input flex={1} borderWidth={0} bg="transparent">
                       <InputField
                         ref={inputRef}
-                        placeholder="Search..."
+                        placeholder={t('searchModal.placeholder')}
                         placeholderTextColor={isDark ? '#8E8E93' : '#8E8E93'}
                         color={isDark ? '#FFFFFF' : '#000000'}
                         fontSize="$xs"
@@ -1005,7 +1007,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
                             tab1Style,
                           ]}
                         >
-                          Users
+                          {t('searchModal.tabs.users')}
                         </Animated.Text>
                       </VStack>
                     </Pressable>
@@ -1027,7 +1029,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
                             tab2Style,
                           ]}
                         >
-                          Brands
+                          {t('searchModal.tabs.brands')}
                         </Animated.Text>
                       </VStack>
                     </Pressable>
@@ -1049,7 +1051,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
                             tab3Style,
                           ]}
                         >
-                          Products
+                          {t('searchModal.tabs.products')}
                         </Animated.Text>
                       </VStack>
                     </Pressable>

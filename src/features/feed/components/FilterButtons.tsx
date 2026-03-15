@@ -10,6 +10,7 @@ import { Pressable } from 'react-native';
 import { HStack, Box, Text } from '@/src/components/ui';
 import { ChevronDownIcon } from 'react-native-heroicons/outline';
 import type { FeedFilterParams } from '../api/feedApi';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface FilterButtonsProps {
   filters: FeedFilterParams;
@@ -17,6 +18,7 @@ interface FilterButtonsProps {
 }
 
 export const FilterButtons: React.FC<FilterButtonsProps> = ({ filters, onFilterPress }) => {
+  const { t } = useTranslation('feed');
   // PERFORMANCE FIX: Track pressed button to prevent double-click race condition
   const [pressedButton, setPressedButton] = useState<string | null>(null);
 
@@ -114,11 +116,11 @@ export const FilterButtons: React.FC<FilterButtonsProps> = ({ filters, onFilterP
     <Box px="$4" pb="$2" mt="$2">
       <HStack justifyContent="space-between" alignItems="center">
         <HStack space="sm" alignItems="center">
-          {renderFilterButton('interest', 'Interests')}
-          {renderFilterButton('tag', 'Tags')}
-          {renderFilterButton('category', 'Category')}
+          {renderFilterButton('interest', t('filterButtons.interests'))}
+          {renderFilterButton('tag', t('filterButtons.tags'))}
+          {renderFilterButton('category', t('filterButtons.category'))}
         </HStack>
-        <Box>{renderFilterButton('sort', 'Sort')}</Box>
+        <Box>{renderFilterButton('sort', t('filterButtons.sort'))}</Box>
       </HStack>
     </Box>
   );

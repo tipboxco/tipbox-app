@@ -11,36 +11,37 @@ import { HStack, Box, Text, VStack } from '@/src/components/ui';
 import { CheckIcon as CheckIconSolid } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import type { FeedFilterParams } from '../api/feedApi';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
-// Filter options - Tags dropdown
+// Filter options - Tags dropdown (values are API keys, labels come from i18n)
 export const TAG_OPTIONS = [
-  { value: 'Free', label: 'Free' },
-  { value: 'Benchmark', label: 'Benchmark' },
-  { value: 'Experience', label: 'Experience' },
-  { value: 'Update', label: 'Update' },
-  { value: 'Question', label: 'Question' },
-  { value: 'Tips and Tricks', label: 'Tips and Tricks' },
+  { value: 'Free', labelKey: 'filterFeed.tagOptions.free' },
+  { value: 'Benchmark', labelKey: 'filterFeed.tagOptions.benchmark' },
+  { value: 'Experience', labelKey: 'filterFeed.tagOptions.experience' },
+  { value: 'Update', labelKey: 'filterFeed.tagOptions.update' },
+  { value: 'Question', labelKey: 'filterFeed.tagOptions.question' },
+  { value: 'Tips and Tricks', labelKey: 'filterFeed.tagOptions.tipsAndTricks' },
 ] as const;
 
 export const INTEREST_OPTIONS = [
-  { value: 'TRUSTER', label: 'Truster' },
-  { value: 'CATEGORY_MATCH', label: 'Category Match' },
-  { value: 'TRENDING', label: 'Trending' },
-  { value: 'NEW_USER', label: 'New User' },
-  { value: 'BOOSTED', label: 'Boosted' },
-  { value: 'INVENTORY_MATCH', label: 'Inventory Match' },
-  { value: 'PRODUCT_GROUP_MATCH', label: 'Product Group Match' },
+  { value: 'TRUSTER', labelKey: 'filterFeed.interestOptions.truster' },
+  { value: 'CATEGORY_MATCH', labelKey: 'filterFeed.interestOptions.categoryMatch' },
+  { value: 'TRENDING', labelKey: 'filterFeed.interestOptions.trending' },
+  { value: 'NEW_USER', labelKey: 'filterFeed.interestOptions.newUser' },
+  { value: 'BOOSTED', labelKey: 'filterFeed.interestOptions.boosted' },
+  { value: 'INVENTORY_MATCH', labelKey: 'filterFeed.interestOptions.inventoryMatch' },
+  { value: 'PRODUCT_GROUP_MATCH', labelKey: 'filterFeed.interestOptions.productGroupMatch' },
 ] as const;
 
 export const SORT_OPTIONS = [
-  { value: 'recent', label: 'Recent' },
-  { value: 'top', label: 'Top' },
+  { value: 'recent', labelKey: 'filterFeed.sortOptions.recent' },
+  { value: 'top', labelKey: 'filterFeed.sortOptions.top' },
 ] as const;
 
 // Fixed categories - Beauty and Electronics
 export const CATEGORY_OPTIONS = [
-  { value: 'beauty', label: 'Beauty' },
-  { value: 'electronics', label: 'Electronics' },
+  { value: 'beauty', labelKey: 'filterFeed.categoryOptions.beauty' },
+  { value: 'electronics', labelKey: 'filterFeed.categoryOptions.electronics' },
 ] as const;
 
 interface FilterFeedProps {
@@ -58,6 +59,7 @@ export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('feed');
 
   // Local state for filters - only apply when "Apply" is clicked
   const [localFilters, setLocalFilters] = React.useState<FeedFilterParams>(filters);
@@ -71,7 +73,7 @@ export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
   const options = useMemo(() => {
     switch (filterId) {
       case 'interest':
-        return INTEREST_OPTIONS; // Return constant directly (no spread)
+        return INTEREST_OPTIONS;
       case 'tag':
         return TAG_OPTIONS;
       case 'category':
@@ -159,17 +161,17 @@ export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
   const title = useMemo(() => {
     switch (filterId) {
       case 'interest':
-        return 'Interests';
+        return t('filterFeed.title.interests');
       case 'tag':
-        return 'Tags';
+        return t('filterFeed.title.tags');
       case 'category':
-        return 'Category';
+        return t('filterFeed.title.category');
       case 'sort':
-        return 'Sort';
+        return t('filterFeed.title.sort');
       default:
         return '';
     }
-  }, [filterId]);
+  }, [filterId, t]);
 
   // PERFORMANCE FIX: Memoize rows to prevent re-calculation on every render
   const rows = useMemo(() => {
@@ -195,7 +197,7 @@ export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
               fontWeight: '500',
             }}
           >
-            Loading...
+            {t('filterFeed.loading')}
           </RNText>
         </VStack>
       ) : (
@@ -231,7 +233,7 @@ export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
                         </Box>
                         <Box flex={1} flexShrink={1}>
                           <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12} fontWeight={selected ? '$semibold' : '$normal'}>
-                            {option.label}
+                            {t(option.labelKey)}
                           </Text>
                         </Box>
                       </HStack>
@@ -259,14 +261,14 @@ export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
               minHeight={32}
             >
               <Text fontSize={12} fontWeight="$semibold" color={isDark ? '#FFFFFF' : '#666666'}>
-                Clear
+                {t('filterFeed.clear')}
               </Text>
             </Box>
           </Pressable>
           <Pressable onPress={handleApply} flex={1}>
             <Box py="$1.5" bg="#D0F205" borderRadius={6} alignItems="center" justifyContent="center" minHeight={32}>
               <Text fontSize={12} fontWeight="$bold" color="#000000">
-                Apply
+                {t('filterFeed.apply')}
               </Text>
             </Box>
           </Pressable>

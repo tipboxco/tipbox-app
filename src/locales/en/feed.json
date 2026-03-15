@@ -30,5 +30,52 @@
     "serverError": "Server error occurred. Please try again later.",
     "unknownError": "An unknown error occurred",
     "httpStatus": "HTTP Status: {{status}}"
+  },
+  "assetAccess": {
+    "wallet": "Wallet",
+    "inventory": "Inventory"
+  },
+  "expertNow": "Expert Now",
+  "filterButtons": {
+    "interests": "Interests",
+    "tags": "Tags",
+    "category": "Category",
+    "sort": "Sort"
+  },
+  "filterFeed": {
+    "title": {
+      "interests": "Interests",
+      "tags": "Tags",
+      "category": "Category",
+      "sort": "Sort"
+    },
+    "loading": "Loading...",
+    "clear": "Clear",
+    "apply": "Apply",
+    "tagOptions": {
+      "free": "Free",
+      "benchmark": "Benchmark",
+      "experience": "Experience",
+      "update": "Update",
+      "question": "Question",
+      "tipsAndTricks": "Tips and Tricks"
+    },
+    "interestOptions": {
+      "truster": "Truster",
+      "categoryMatch": "Category Match",
+      "trending": "Trending",
+      "newUser": "New User",
+      "boosted": "Boosted",
+      "inventoryMatch": "Inventory Match",
+      "productGroupMatch": "Product Group Match"
+    },
+    "sortOptions": {
+      "recent": "Recent",
+      "top": "Top"
+    },
+    "categoryOptions": {
+      "beauty": "Beauty",
+      "electronics": "Electronics"
+    }
   }
 }

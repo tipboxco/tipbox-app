@@ -28,6 +28,7 @@ import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
 import { toImageSource, isSameImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
 import { useQueryClient } from '@tanstack/react-query';
@@ -43,6 +44,8 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
+import { FilterButtons } from '../components/FilterButtons';
+import { FilterFeed } from '../components/FilterFeed';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
@@ -58,6 +61,7 @@ const FeedScreenInner = React.memo(() => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<FeedScreenNavigationProp>();
   const { user } = useAppStore();
+  const { t } = useTranslation('feed');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const queryClient = useQueryClient();
   
@@ -139,7 +143,19 @@ const FeedScreenInner = React.memo(() => {
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
 
-  // FEATURE: Log lastSeenPostId changes - REMOVED for performance
+  // Filter değişikliğini takip et - ilk render hariç
+  const isInitialMount = useRef(true);
+
+  // Filter değiştiğinde scroll pozisyonunu sıfırla
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (feedListRef.current) {
+      feedListRef.current.scrollToOffset({ offset: 0, animated: false });
+    }
+  }, [filters, feedListRef]);
 
   // Filtre aktif mi kontrolü
   // Herhangi bir filtre seçilmişse filtered feed API'sini kullan
@@ -270,7 +286,7 @@ const FeedScreenInner = React.memo(() => {
               color={isDark ? '#FFFFFF' : '#000000'}
               textAlign="center"
             >
-              Expert Now
+              {t('expertNow')}
             </Text>
           </HStack>
         </VStack>
@@ -287,6 +303,25 @@ const FeedScreenInner = React.memo(() => {
       }
     );
   };
+
+  // Handle filter button press - open bottom sheet with FilterFeed
+  const handleFilterButtonPress = useCallback((filterId: 'interest' | 'tag' | 'category' | 'sort') => {
+    openBottomSheet(
+      <FilterFeed
+        filterId={filterId}
+        filters={filters}
+        onFiltersChange={setFilters}
+        onClose={closeBottomSheet}
+      />,
+      {
+        snapPoints: ['40%'],
+        enableDynamicSizing: false,
+        enablePanDownToClose: true,
+        animateOnMount: false,
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
+      }
+    );
+  }, [filters, openBottomSheet, closeBottomSheet, insets.bottom, tabBarHeight]);
 
   // Map Feed to PostCardData
   const mapFeedToCardData = (item: ProfilePost): PostCardData => {
@@ -390,7 +425,7 @@ const FeedScreenInner = React.memo(() => {
         name: item.user?.name || '',
         title: item.user?.title || '',
         avatar: avatarSource,
-        action: isOwned ? 'Added new product and experiences to inventory!' : undefined,
+        action: 'Added new product and experiences to inventory!',
       },
       contextData: {
         id: rawProduct?.id || '',
@@ -960,24 +995,29 @@ const FeedScreenInner = React.memo(() => {
           leftAction="menu"
           onSearchPress={handleSearchPress}
         />
-        <View>
-          <View style={{ paddingBottom: 5 }}>
+        <View style={{ flexShrink: 0 }}>
+          <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
+          {/* Filter Buttons */}
+          <FilterButtons
+            filters={filters}
+            onFilterPress={handleFilterButtonPress}
+          />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minHeight: 0 }}>
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
           ) : error ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
               <View style={{ gap: 16, alignItems: 'center' }}>
                 <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
-                  Feed Yüklenemedi
+                  {t('errors.failedToLoad')}
                 </Text>
                 {(error as any)?.response?.status === 500 ? (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.
+                      {t('errors.serverError')}
                     </Text>
                     {(error as any)?.response?.data?.error?.message && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center" mt="$2">
@@ -988,11 +1028,11 @@ const FeedScreenInner = React.memo(() => {
                 ) : (
                   <>
                     <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
-                      {error.message || 'Bilinmeyen bir hata oluştu'}
+                      {error.message || t('errors.unknownError')}
                     </Text>
                     {(error as any)?.response?.status && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
-                        HTTP Status: {(error as any).response.status}
+                        {t('errors.httpStatus', { status: (error as any).response.status })}
                       </Text>
                     )}
                     {(error as any)?.response?.data?.message && (
@@ -1007,7 +1047,7 @@ const FeedScreenInner = React.memo(() => {
           ) : feedItems.length === 0 ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                No feed content found yet.
+                {t('emptyStates.noFeedContent')}
               </Text>
             </View>
           ) : (

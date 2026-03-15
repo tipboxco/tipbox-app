@@ -8,6 +8,7 @@ import {
     Image,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface ActionButtonsProps {
     onShowPosts: () => void;
@@ -18,6 +19,7 @@ interface ActionButtonsProps {
 const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost, categoryName = 'Category' }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('catalog');
 
     return (
         <HStack space="sm" px="$4" pt="$4" pb="$2">
@@ -54,7 +56,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                             resizeMode="contain"
                         />
                     </Box>
-                    
+
                     {/* Text Content */}
                     <VStack flex={1} alignItems="flex-start" justifyContent="center" px="$3">
                         <Text
@@ -63,7 +65,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                             fontWeight="$bold"
                             textAlign="left"
                         >
-                            Show Posts
+                            {t('actionButtons.showPosts')}
                         </Text>
                         <Text
                             color={isDark ? '#ACACAC' : '#ACACAC'}
@@ -111,7 +113,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                             resizeMode="contain"
                         />
                     </Box>
-                    
+
                     {/* Text Content */}
                     <VStack flex={1} alignItems="flex-start" justifyContent="center" px="$3">
                         <Text
@@ -120,7 +122,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                             fontWeight="$bold"
                             textAlign="left"
                         >
-                            Create a Post
+                            {t('actionButtons.createPost')}
                         </Text>
                         <Text
                             color={isDark ? '#ACACAC' : '#ACACAC'}

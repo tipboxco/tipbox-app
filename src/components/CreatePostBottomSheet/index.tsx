@@ -9,6 +9,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface SelectedProduct {
     id: string;
@@ -33,8 +34,8 @@ type ViewType = 'options' | 'experience';
 
 interface ExperienceOption {
     id: 'own' | 'tried';
-    title: string;
-    description: string;
+    titleKey: string;
+    descriptionKey: string;
 }
 
 export type PostType =
@@ -47,54 +48,54 @@ export type PostType =
 
 interface PostOption {
     id: PostType;
-    title: string;
-    description: string;
+    titleKey: string;
+    descriptionKey: string;
 }
 
 // Sıra: Experience -> Tips & Tricks -> Benchmark -> Update -> Question -> Free
 const postOptions: PostOption[] = [
     {
         id: 'experience',
-        title: 'Experience Post',
-        description: 'Share your experience about this product',
+        titleKey: 'createPost.types.experience',
+        descriptionKey: 'createPost.types.experienceDesc',
     },
     {
         id: 'tips',
-        title: 'Tips & Tricks',
-        description: 'Share a tip about this product',
+        titleKey: 'createPost.types.tips',
+        descriptionKey: 'createPost.types.tipsDesc',
     },
     {
         id: 'benchmark',
-        title: 'Benchmark Post',
-        description: 'Compare this product with similar ones',
+        titleKey: 'createPost.types.benchmark',
+        descriptionKey: 'createPost.types.benchmarkDesc',
     },
     {
         id: 'update',
-        title: 'Update Post',
-        description: 'Share an update to your experience post',
+        titleKey: 'createPost.types.update',
+        descriptionKey: 'createPost.types.updateDesc',
     },
     {
         id: 'question',
-        title: 'Question Post',
-        description: 'Ask a question about this product',
+        titleKey: 'createPost.types.question',
+        descriptionKey: 'createPost.types.questionDesc',
     },
     {
         id: 'free',
-        title: 'Free Post',
-        description: 'Create a free post on any topic',
+        titleKey: 'createPost.types.free',
+        descriptionKey: 'createPost.types.freeDesc',
     },
 ];
 
 const experienceOptions: ExperienceOption[] = [
     {
         id: 'own',
-        title: 'I Own the Product',
-        description: 'Added to inventory; experience snippets shared as a post.',
+        titleKey: 'createPost.experienceOptions.own',
+        descriptionKey: 'createPost.experienceOptions.ownDesc',
     },
     {
         id: 'tried',
-        title: 'Tried / Tested',
-        description: 'Experience snippets shared as a post; not added to inventory',
+        titleKey: 'createPost.experienceOptions.tried',
+        descriptionKey: 'createPost.experienceOptions.triedDesc',
     },
 ];
 
@@ -108,6 +109,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('common');
     const [currentView, setCurrentView] = useState<ViewType>(showExperienceOptionsDirectly ? 'experience' : 'options');
 
     // PERFORMANCE FIX: Cache filter operation with useMemo
@@ -191,7 +193,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                 textAlign="center"
                                 flex={1}
                             >
-                                Experience Post
+                                {t('createPost.types.experience')}
                             </Text>
                             <Box w={24} />
                         </HStack>
@@ -209,7 +211,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                 $dark-color="$textDark50"
                                 textAlign="center"
                             >
-                                Experience Post
+                                {t('createPost.types.experience')}
                             </Text>
                         </HStack>
                     </VStack>
@@ -256,7 +258,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                     >
                                         <Image
                                             source={require('@/assets/add_post.png')}
-                                            alt={option.title}
+                                            alt={t(option.titleKey)}
                                             w={24}
                                             h={24}
                                             resizeMode="contain"
@@ -272,7 +274,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                         color="#000000"
                                         $dark-color="$textDark50"
                                     >
-                                        {option.title}
+                                        {t(option.titleKey)}
                                     </Text>
                                     <Text
                                         fontSize={10}
@@ -281,7 +283,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                         $dark-color="$textDark400"
                                         lineHeight={14}
                                     >
-                                        {option.description}
+                                        {t(option.descriptionKey)}
                                     </Text>
                                 </VStack>
                             </HStack>
@@ -305,7 +307,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                         $dark-color="$textDark50"
                         textAlign="center"
                     >
-                        Create Post
+                        {t('createPost.title')}
                     </Text>
                 </HStack>
             </VStack>
@@ -369,7 +371,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                     color="#000000"
                                     $dark-color="$textDark50"
                                 >
-                                    {option.title}
+                                    {t(option.titleKey)}
                                 </Text>
                                 <Text
                                     fontSize={9}
@@ -377,7 +379,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                     color="#B9B9B9"
                                     $dark-color="$textDark400"
                                 >
-                                    {option.description}
+                                    {t(option.descriptionKey)}
                                 </Text>
                             </VStack>
                         </HStack>
@@ -387,4 +389,3 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
         </Box>
     );
 };
-

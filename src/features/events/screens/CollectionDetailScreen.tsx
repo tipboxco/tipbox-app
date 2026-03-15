@@ -393,7 +393,7 @@ const CollectionDetailScreen: React.FC = () => {
                           },
                         ]}
                       >
-                        {tab}
+                        {filterTabLabels[tab]}
                       </Text>
                     </Pressable>
                   );
