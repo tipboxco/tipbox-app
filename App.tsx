@@ -1,5 +1,13 @@
 // PERFORMANCE FIX: Removed Promise polyfill - Hermes engine already supports Promise natively
 // This reduces bundle size and startup time
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+
+// Reanimated strict mode kapatma - gorhom/bottom-sheet render sırasında shared value yazıyor
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
+
 import React, { useEffect, useMemo } from 'react';
 import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
