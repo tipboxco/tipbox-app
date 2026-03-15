@@ -99,7 +99,8 @@ export const SettingsScreen = () => {
               {
                 enablePanDownToClose: true,
                 enableOverDrag: false,
-                enableDynamicSizing: true,
+                enableDynamicSizing: false,
+                snapPoints: ['40%'],
                 backgroundStyle: {
                   backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
                   borderTopLeftRadius: 30,
@@ -130,7 +131,8 @@ export const SettingsScreen = () => {
               {
                 enablePanDownToClose: true,
                 enableOverDrag: false,
-                enableDynamicSizing: true,
+                enableDynamicSizing: false,
+                snapPoints: ['70%'],
                 backgroundStyle: {
                   backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
                   borderTopLeftRadius: 30,
