@@ -51,7 +51,31 @@
     "noBadgesYet": "No badges yet",
     "noEventBadges": "No {{type}} yet",
     "noCollectionBadges": "No {{type}} yet",
-    "seeMoreCollections": "See More Collections"
+    "seeMoreCollections": "See More Collections",
+    "feed": {
+      "title": "No Posts Yet",
+      "subtitle": "This user hasn't shared any posts yet."
+    },
+    "reviews": {
+      "title": "No Experiences Yet",
+      "subtitle": "This user hasn't shared any experiences yet."
+    },
+    "benchmarks": {
+      "title": "No Benchmarks Yet",
+      "subtitle": "This user hasn't created any benchmarks yet."
+    },
+    "tips": {
+      "title": "No Tips & Tricks Yet",
+      "subtitle": "This user hasn't shared any tips & tricks yet."
+    },
+    "replies": {
+      "title": "No Questions Yet",
+      "subtitle": "This user hasn't asked any questions yet."
+    },
+    "default": {
+      "title": "No Content Yet",
+      "subtitle": "This user hasn't shared any content yet."
+    }
   },
   "profileScreen": {
     "inventory": "{{name}}'s Inventory",
@@ -200,7 +224,40 @@
     "profileLoadError": "An error occurred while loading the profile",
     "networkError": "Network connection error. Please check your internet connection.",
     "operationFailed": "Operation failed. Please try again.",
-    "error": "Error"
+    "error": "Error",
+    "errorSendingTips": "An error occurred while sending TIPS",
+    "removingFromTrust": "An error occurred while removing user from trust list.",
+    "blocking": "An error occurred while blocking user.",
+    "muting": "An error occurred while muting user."
+  },
+  "trustUserCard": {
+    "removeTitle": "Remove from Trust List",
+    "removeMessage": "Are you sure you want to remove {{name}} from your trust list?",
+    "blockTitle": "Block User",
+    "blockMessage": "Are you sure you want to block {{name}}? Blocked users cannot interact with you.",
+    "unblockTitle": "Unblock User",
+    "unblockMessage": "Are you sure you want to unblock {{name}}?",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "block": "Block",
+    "unblock": "Unblock",
+    "removeFromTrust": "Remove from Trust List",
+    "blocking": "Blocking...",
+    "unblocking": "Unblocking...",
+    "muting": "Muting...",
+    "unmuting": "Unmuting..."
+  },
+  "suggestedUserCard": {
+    "mutualFriends": "{{count}} mutual friends",
+    "addTrust": "Add Trust",
+    "added": "Added"
+  },
+  "badgeDetail": {
+    "completed": "Completed",
+    "viewAchievement": "View Achievement"
+  },
+  "share": {
+    "profileMessage": "Check out {{name}}'s profile on Tipbox!"
   },
   "sendTipsModal": {
     "to": "To",
