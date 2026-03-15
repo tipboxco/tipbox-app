@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Image, ImageContentFit, ImageTransition } from 'expo-image';
 import { ImageSourcePropType, StyleProp, ImageStyle } from 'react-native';
@@ -24,40 +24,13 @@ export interface CachedImageProps {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center' | 'repeat';
 }
 
-/**
- * CachedImage Component
- *
- * expo-image kullanarak disk cache desteği ile görüntü gösterimi sağlar.
- *
- * Özellikler:
- * - Otomatik disk cache (default: 'memory-disk')
- * - Progressive loading
- * - Lottie loading animation
- * - Fallback placeholder support
- * - URL düzeltmesi (localhost için)
- *
- * Loading States:
- * 1. Loading: Lottie animasyonu gösterilir (#F5F5F5 arkaplan)
- * 2. Success: Asıl görsel gösterilir
- * 3. Error: Default placeholder gösterilir
- *
- * @example
- * ```tsx
- * <CachedImage
- *   source="https://example.com/image.jpg"
- *   style={{ width: 200, height: 200 }}
- *   contentFit="cover"
- *   placeholder={require('@/assets/default.png')}
- * />
- * ```
- */
 export const CachedImage: React.FC<CachedImageProps> = ({
   source,
   style,
   contentFit = 'cover',
   placeholder,
   transition,
-  cachePolicy = 'memory-disk', // Default: hem memory hem disk cache
+  cachePolicy = 'memory-disk',
   priority = 'normal',
   recyclingKey,
   onLoadStart,
@@ -66,51 +39,83 @@ export const CachedImage: React.FC<CachedImageProps> = ({
   resizeMode,
   ...props
 }) => {
-  // Loading ve error state tracking
-  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  // Loading overlay sadece gecikme sonrası gösterilir - cache'den yüklenen görseller skeleton görmez
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const isLoadedRef = useRef(false);
+  const overlayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // toImageSource ile URL'i düzelt
   const imageSource = toImageSource(source);
 
-  // Source değiştiğinde error/loading state'lerini sıfırla
-  // (örn: avatar yüklenemeyip default avatar'a geçildiğinde hasError true kalıyordu)
+  // Source'dan stabil bir string key türet - obje referansı değişse bile aynı URL ise effect tetiklenmez
+  const sourceKey = typeof source === 'string'
+    ? source
+    : (source && typeof source === 'object' && 'uri' in source)
+      ? (source as { uri?: string }).uri || ''
+      : typeof source === 'number'
+        ? String(source)
+        : '';
+
+  const clearTimers = useCallback(() => {
+    if (overlayTimerRef.current) {
+      clearTimeout(overlayTimerRef.current);
+      overlayTimerRef.current = null;
+    }
+    if (timeoutTimerRef.current) {
+      clearTimeout(timeoutTimerRef.current);
+      timeoutTimerRef.current = null;
+    }
+  }, []);
+
+  // Source değiştiğinde state'leri sıfırla
+  // PERFORMANCE FIX: sourceKey (string) kullanarak obje referans değişikliklerinde gereksiz reset'i önle
   useEffect(() => {
+    clearTimers();
+    isLoadedRef.current = false;
     setHasError(false);
-    setIsLoading(true);
+    setShowLoadingOverlay(false);
     setLoadingTimeout(false);
-  }, [source]);
 
-  // 2 saniye timeout - yükleme 2 saniyede tamamlanmazsa kutu ikonu göster
-  useEffect(() => {
-    if (!isLoading || !imageSource) return;
+    const resolvedSource = toImageSource(source);
+    if (!resolvedSource) return;
 
-    const timer = setTimeout(() => {
-      if (isLoading) {
+    // 200ms gecikme: cache'den yüklenen görseller bu sürede onLoad tetikler,
+    // skeleton hiç gösterilmez. Sadece network'ten yüklenen görseller skeleton görür.
+    overlayTimerRef.current = setTimeout(() => {
+      if (!isLoadedRef.current) {
+        setShowLoadingOverlay(true);
+      }
+    }, 200);
+
+    // 2s timeout: Lottie yerine CubeIcon göster
+    timeoutTimerRef.current = setTimeout(() => {
+      if (!isLoadedRef.current) {
         setLoadingTimeout(true);
       }
     }, 2000);
 
-    return () => clearTimeout(timer);
-  }, [isLoading, imageSource]);
+    return clearTimers;
+  }, [sourceKey, clearTimers]);
 
-  // resizeMode'u contentFit'e çevir (Gluestack UI uyumluluğu için)
-  const finalContentFit: ImageContentFit =
+  const resizeToContentFit: ImageContentFit =
     resizeMode === 'contain' ? 'contain' :
     resizeMode === 'cover' ? 'cover' :
     resizeMode === 'stretch' ? 'fill' :
     resizeMode === 'center' ? 'center' :
     contentFit;
 
-  // Style'ı parse et (width, height ve borderRadius için)
   const styleArray = Array.isArray(style) ? style : [style];
   const flattenedStyle = StyleSheet.flatten(styleArray);
   const containerWidth = flattenedStyle?.width || 100;
   const containerHeight = flattenedStyle?.height || 100;
   const containerBorderRadius = flattenedStyle?.borderRadius || 5;
+  const iconSize = typeof containerWidth === 'number'
+    ? Math.min(Number(containerWidth) * 0.35, Number(containerHeight) * 0.35)
+    : 32;
 
-  // Eğer source yoksa veya geçersizse, placeholder varsa onu göster, yoksa kutu ikonu
+  // Source yoksa: placeholder veya CubeIcon
   if (!imageSource) {
     if (placeholder) {
       const placeholderSource = toImageSource(placeholder);
@@ -120,14 +125,13 @@ export const CachedImage: React.FC<CachedImageProps> = ({
             <Image
               source={placeholderSource}
               style={[StyleSheet.absoluteFill, { borderRadius: containerBorderRadius }]}
-              contentFit={finalContentFit}
+              contentFit={resizeToContentFit}
               cachePolicy={cachePolicy}
             />
           </View>
         );
       }
     }
-    const iconSize = typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32;
     return (
       <View style={[style, { position: 'relative' }]}>
         <View
@@ -149,30 +153,31 @@ export const CachedImage: React.FC<CachedImageProps> = ({
 
   return (
     <View style={[style, { position: 'relative' }]}>
-      {/* Asıl görsel - sadece error olmadığında göster */}
+      {/* Asıl görsel */}
       {!hasError && (
         <Image
           source={imageSource}
           style={[StyleSheet.absoluteFill, { borderRadius: containerBorderRadius }]}
-          contentFit={finalContentFit}
+          contentFit={resizeToContentFit}
           transition={transition || { duration: 200 }}
           cachePolicy={cachePolicy}
           priority={priority}
           recyclingKey={recyclingKey}
           onLoadStart={() => {
-            setIsLoading(true);
-            setHasError(false);
-            setLoadingTimeout(false);
             onLoadStart?.();
           }}
           onLoad={() => {
-            setIsLoading(false);
+            isLoadedRef.current = true;
+            clearTimers();
+            setShowLoadingOverlay(false);
             setHasError(false);
             setLoadingTimeout(false);
             onLoadEnd?.();
           }}
           onError={(error) => {
-            setIsLoading(false);
+            isLoadedRef.current = true;
+            clearTimers();
+            setShowLoadingOverlay(false);
             setHasError(true);
             setLoadingTimeout(false);
             onError?.(error as any);
@@ -181,8 +186,8 @@ export const CachedImage: React.FC<CachedImageProps> = ({
         />
       )}
 
-      {/* Loading state: #F5F5F5 arkaplan + Lottie animasyon (2 saniye) veya kutu ikonu (timeout sonrası) */}
-      {isLoading && !hasError && (
+      {/* Loading overlay - sadece 200ms gecikmeden sonra gösterilir */}
+      {showLoadingOverlay && !hasError && (
         <View
           style={[
             StyleSheet.absoluteFill,
@@ -200,8 +205,8 @@ export const CachedImage: React.FC<CachedImageProps> = ({
               autoPlay
               loop
               style={{
-                width: typeof containerWidth === 'number' ? containerWidth * 0.7 : 60,
-                height: typeof containerHeight === 'number' ? containerHeight * 0.7 : 60,
+                width: typeof containerWidth === 'number' ? Number(containerWidth) * 0.7 : 60,
+                height: typeof containerHeight === 'number' ? Number(containerHeight) * 0.7 : 60,
               }}
             />
           ) : placeholder ? (
@@ -211,28 +216,20 @@ export const CachedImage: React.FC<CachedImageProps> = ({
                 <Image
                   source={placeholderSource}
                   style={[StyleSheet.absoluteFill, { borderRadius: containerBorderRadius }]}
-                  contentFit={finalContentFit}
+                  contentFit={resizeToContentFit}
                   cachePolicy={cachePolicy}
                 />
               ) : (
-                <CubeIcon
-                  size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
-                  color="#CCCCCC"
-                  strokeWidth={1.5}
-                />
+                <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
               );
             })()
           ) : (
-            <CubeIcon
-              size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
-              color="#CCCCCC"
-              strokeWidth={1.5}
-            />
+            <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
           )}
         </View>
       )}
 
-      {/* Error state: placeholder varsa onu göster, yoksa kutu ikonu */}
+      {/* Error state */}
       {hasError && (
         placeholder ? (
           (() => {
@@ -241,7 +238,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
               <Image
                 source={placeholderSource}
                 style={[StyleSheet.absoluteFill, { borderRadius: containerBorderRadius }]}
-                contentFit={finalContentFit}
+                contentFit={resizeToContentFit}
                 cachePolicy={cachePolicy}
               />
             ) : (
@@ -256,11 +253,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
                   }
                 ]}
               >
-                <CubeIcon
-                  size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
-                  color="#CCCCCC"
-                  strokeWidth={1.5}
-                />
+                <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
               </View>
             );
           })()
@@ -276,11 +269,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
               }
             ]}
           >
-            <CubeIcon
-              size={typeof containerWidth === 'number' ? Math.min(containerWidth * 0.35, containerHeight * 0.35) : 32}
-              color="#CCCCCC"
-              strokeWidth={1.5}
-            />
+            <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
           </View>
         )
       )}
@@ -289,4 +278,3 @@ export const CachedImage: React.FC<CachedImageProps> = ({
 };
 
 export default CachedImage;
-
