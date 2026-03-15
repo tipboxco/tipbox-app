@@ -709,10 +709,10 @@ const NotificationsScreenComponent: React.FC = () => {
       // Skeleton loading state için dummy render
       if (!item || !item.type) {
         return (
-          <Box px={16} py={12}>
+          <Box px={12} py={8}>
             <Box
               width="100%"
-              height={80}
+              height={60}
               borderRadius={8}
             />
           </Box>
@@ -721,10 +721,10 @@ const NotificationsScreenComponent: React.FC = () => {
 
       if (item.type === 'header') {
         return (
-          <Box px={16} py={12} bg={backgroundColor}>
+          <Box px={12} py={8} bg={backgroundColor}>
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={13}
+              fontSize={12}
               fontWeight='$semibold'
             >
               {item.data}

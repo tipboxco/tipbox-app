@@ -358,17 +358,17 @@ const PostCard: React.FC<{
     return (
         <Box
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-            borderRadius={12}
-            px={12}
-            py={12}
+            borderRadius={10}
+            px={10}
+            py={8}
             alignSelf="stretch"
         >
             <Text
                 color={isDark ? '#666666' : '#666666'}
-                fontSize={13}
+                fontSize={12}
                 fontWeight="$normal"
                 numberOfLines={3}
-                lineHeight={18}
+                lineHeight={16}
             >
                 {postContent}
             </Text>
@@ -392,15 +392,15 @@ const TipsCard: React.FC<{
     return (
         <Pressable
             bg="#E8FF6B"
-            borderRadius={20}
-            px={16}
-            py={8}
+            borderRadius={16}
+            px={12}
+            py={5}
             alignSelf="flex-start"
             onPress={onPress}
         >
             <Text
                 color="#000000"
-                fontSize={13}
+                fontSize={11}
                 fontWeight="$semibold"
             >
                 +{tipsAmount} TIPS
@@ -421,15 +421,15 @@ const TrustCard: React.FC<{
     return (
         <Pressable
             bg="#E8FF6B"
-            borderRadius={20}
-            px={16}
-            py={8}
+            borderRadius={16}
+            px={12}
+            py={5}
             alignSelf="flex-start"
             onPress={onPress}
         >
             <Text
                 color="#000000"
-                fontSize={13}
+                fontSize={11}
                 fontWeight="$semibold"
             >
                 {t('buttons.viewProfile')}
@@ -450,15 +450,15 @@ const ChatButton: React.FC<{
     return (
         <Pressable
             bg="#E8FF6B"
-            borderRadius={20}
-            px={16}
-            py={8}
+            borderRadius={16}
+            px={12}
+            py={5}
             alignSelf="flex-start"
             onPress={onPress}
         >
             <Text
                 color="#000000"
-                fontSize={13}
+                fontSize={11}
                 fontWeight="$semibold"
             >
                 {t('buttons.view')}
@@ -486,16 +486,16 @@ const CommentCard: React.FC<{
         <Box
             alignSelf="stretch"
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-            borderRadius={12}
-            px={12}
-            py={12}
+            borderRadius={10}
+            px={10}
+            py={8}
         >
             <Text
                 color={isDark ? '#666666' : '#666666'}
-                fontSize={13}
+                fontSize={12}
                 fontWeight="$normal"
                 numberOfLines={3}
-                lineHeight={18}
+                lineHeight={16}
             >
                 {commentContent}
             </Text>
@@ -519,17 +519,17 @@ const RequestCard: React.FC<{
     return (
         <Box
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-            borderRadius={12}
-            px={12}
-            py={12}
+            borderRadius={10}
+            px={10}
+            py={8}
             alignSelf="stretch"
         >
             <Text
                 color={isDark ? '#666666' : '#666666'}
-                fontSize={13}
+                fontSize={12}
                 fontWeight="$normal"
                 numberOfLines={3}
-                lineHeight={18}
+                lineHeight={16}
             >
                 {requestMessage}
             </Text>
@@ -553,17 +553,17 @@ const EventCard: React.FC<{
     return (
         <Box
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-            borderRadius={12}
-            px={12}
-            py={12}
+            borderRadius={10}
+            px={10}
+            py={8}
             alignSelf="stretch"
         >
             <Text
                 color={isDark ? '#666666' : '#666666'}
-                fontSize={13}
+                fontSize={12}
                 fontWeight="$normal"
                 numberOfLines={3}
-                lineHeight={18}
+                lineHeight={16}
             >
                 {eventDescription}
             </Text>
@@ -593,23 +593,24 @@ const GamificationCard: React.FC<{
         <Box
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
             borderRadius={8}
-            p="$3"
-            mt={12}
+            px={10}
+            py={6}
+            mt={4}
         >
             <HStack space="sm" alignItems="center">
-                <TrophyIcon width={24} height={24} color="#E8FF6B" />
+                <TrophyIcon width={18} height={18} color="#E8FF6B" />
                 <VStack flex={1}>
                     {/* Mesaj getNotificationMessage ile oluşturuluyor, burada gösterilmez */}
                 </VStack>
                 <Box
                     bg="#E8FF6B"
-                    borderRadius={12}
-                    px="$2"
-                    py="$1"
+                    borderRadius={10}
+                    px={6}
+                    py={2}
                 >
                     <Text
                         color="#000000"
-                        fontSize="$xs"
+                        fontSize={11}
                         fontWeight="$bold"
                     >
                         +{rewardAmount}
@@ -645,36 +646,36 @@ const DepositCard: React.FC<{
     return (
         <Box
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-            borderRadius={12}
-            px={12}
-            py={12}
+            borderRadius={10}
+            px={10}
+            py={8}
             alignSelf="stretch"
         >
             <VStack space="xs">
                 {message && (
                     <Text
                         color={isDark ? '#666666' : '#666666'}
-                        fontSize={13}
+                        fontSize={12}
                         fontWeight="$normal"
                         numberOfLines={2}
-                        lineHeight={18}
+                        lineHeight={16}
                     >
                         {message}
                     </Text>
                 )}
                 {amount != null && (
-                    <HStack alignItems="center" justifyContent="space-between" mt={4}>
+                    <HStack alignItems="center" justifyContent="space-between" mt={2}>
                         {senderUsername && (
                             <Text
                                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                fontSize={12}
+                                fontSize={11}
                                 fontWeight="$medium"
                             >
                                 {senderUsername}
                             </Text>
                         )}
-                        <Box bg="#E8FF6B" borderRadius={8} px={8} py={4}>
-                            <Text color="#000000" fontSize={12} fontWeight="$bold">
+                        <Box bg="#E8FF6B" borderRadius={8} px={6} py={2}>
+                            <Text color="#000000" fontSize={11} fontWeight="$bold">
                                 +{amount} TIPS
                             </Text>
                         </Box>
@@ -1665,8 +1666,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
             onLongPress={targetUserId && user?.id && targetUserId !== user.id ? (e) => handleMenuOpen(e) : undefined}
             delayLongPress={400}
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-            px="$4"
-            py="$3"
+            p="$3"
             position="relative"
             borderBottomWidth={1}
             borderBottomColor={isDark ? '#333' : '#E9E9E9'}
@@ -1677,11 +1677,11 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                     {shouldShowAvatar ? (
                         <Pressable onPress={handleAvatarPress}>
                             <Box
-                                width={48}
-                                height={48}
-                                borderRadius={24}
-                                borderWidth={2.5}
-                                borderColor={notification.read ? (isDark ? '#444' : '#E0E0E0') : '#8B5CF6'}
+                                width={40}
+                                height={40}
+                                borderRadius={20}
+                                borderWidth={notification.read ? 0 : 1.5}
+                                borderColor={notification.read ? 'transparent' : '#8B5CF6'}
                                 bg={isDark ? '#2A2A2A' : '#F5F5F5'}
                                 overflow="hidden"
                                 justifyContent="center"
@@ -1691,28 +1691,28 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                                 <Image
                                     source={primaryAvatar}
                                     alt="User avatar"
-                                    width={43}
-                                    height={43}
-                                    borderRadius={21.5}
+                                    width={40}
+                                    height={40}
+                                    borderRadius={20}
                                 />
                             </Box>
                         </Pressable>
                     ) : eventImage ? (
                         <Pressable onPress={handlePress}>
                             <Box
-                                width={48}
-                                height={48}
-                                borderRadius={10}
+                                width={40}
+                                height={40}
+                                borderRadius={8}
                                 overflow="hidden"
-                                borderWidth={2}
+                                borderWidth={1}
                                 borderColor={isDark ? '#333' : '#E9E9E9'}
                                 flexShrink={0}
                             >
                                 <Image
                                     source={eventImage}
                                     alt="Event preview"
-                                    width={48}
-                                    height={48}
+                                    width={40}
+                                    height={40}
                                     style={{ resizeMode: 'cover' }}
                                 />
                             </Box>
@@ -1720,19 +1720,19 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                     ) : badgeImage ? (
                         <Pressable onPress={handlePress}>
                             <Box
-                                width={48}
-                                height={48}
-                                borderRadius={24}
+                                width={40}
+                                height={40}
+                                borderRadius={20}
                                 overflow="hidden"
-                                borderWidth={2}
+                                borderWidth={1}
                                 borderColor={isDark ? '#333' : '#E9E9E9'}
                                 flexShrink={0}
                             >
                                 <Image
                                     source={badgeImage}
                                     alt="Badge preview"
-                                    width={48}
-                                    height={48}
+                                    width={40}
+                                    height={40}
                                     style={{ resizeMode: 'cover' }}
                                 />
                             </Box>
@@ -1740,13 +1740,13 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                     ) : null}
 
                     {/* Content - Ortada */}
-                    <VStack flex={1} space="xs" justifyContent="flex-start" pr="$12">
+                    <VStack flex={1} space="xs" justifyContent="flex-start" pr="$10">
                         {/* Başlık ve açıklama */}
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={14}
+                            fontSize={13}
                             fontWeight="$normal"
-                            lineHeight={20}
+                            lineHeight={18}
                         >
                             {(() => {
                                 // Username'i belirle
@@ -1795,19 +1795,19 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                                         const usernamePart = beforeOther.trim();
 
                                         return (
-                                            <Text fontSize={14}>
-                                                <Text fontSize={14} fontWeight="$semibold" color={isDark ? '#FFFFFF' : '#000000'}>{usernamePart}</Text>
+                                            <Text fontSize={13}>
+                                                <Text fontSize={13} fontWeight="$semibold" color={isDark ? '#FFFFFF' : '#000000'}>{usernamePart}</Text>
                                                 {' '}
                                                 <Text
                                                     fontWeight="$semibold"
-                                                    fontSize={14}
+                                                    fontSize={13}
                                                     color={isDark ? '#FFFFFF' : '#000000'}
                                                     onPress={handleLikedUsersPress}
                                                     suppressHighlighting={true}
                                                 >
                                                     {otherText}
                                                 </Text>
-                                                <Text fontSize={14} color={isDark ? '#FFFFFF' : '#000000'}>{afterOther}</Text>
+                                                <Text fontSize={13} color={isDark ? '#FFFFFF' : '#000000'}>{afterOther}</Text>
                                             </Text>
                                         );
                                     }
@@ -1851,26 +1851,26 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                                     };
 
                                     return (
-                                        <Text fontSize={14}>
-                                            <Text fontSize={14} fontWeight="$semibold" color={isDark ? '#FFFFFF' : '#000000'} onPress={handleUsernamePress} suppressHighlighting={true}>{username}</Text>
-                                            <Text fontSize={14} color={isDark ? '#FFFFFF' : '#000000'}>{parts[1]}</Text>
+                                        <Text fontSize={13}>
+                                            <Text fontSize={13} fontWeight="$semibold" color={isDark ? '#FFFFFF' : '#000000'} onPress={handleUsernamePress} suppressHighlighting={true}>{username}</Text>
+                                            <Text fontSize={13} color={isDark ? '#FFFFFF' : '#000000'}>{parts[1]}</Text>
                                         </Text>
                                     );
                                 }
-                                return <Text fontSize={14} color={isDark ? '#FFFFFF' : '#000000'}>{message}</Text>;
+                                return <Text fontSize={13} color={isDark ? '#FFFFFF' : '#000000'}>{message}</Text>;
                             })()}
                         </Text>
 
                         {/* Yorum metni (POST_COMMENTED için) */}
                         {showCommentText && notification.type === 'POST_COMMENTED' && (
-                            <Box mt={8} alignSelf="stretch">
+                            <Box mt={4} alignSelf="stretch">
                                 <CommentCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 
                         {/* Request Card */}
                         {showRequestCard && (
-                            <Box mt={8} alignSelf="stretch">
+                            <Box mt={4} alignSelf="stretch">
                                 <RequestCard
                                     notification={notification}
                                     isDark={isDark}
@@ -1880,7 +1880,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
 
                         {/* Event Card */}
                         {showEventCard && (
-                            <Box mt={8} alignSelf="stretch">
+                            <Box mt={4} alignSelf="stretch">
                                 <EventCard
                                     notification={notification}
                                     isDark={isDark}
@@ -1890,14 +1890,14 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
 
                         {/* Deposit Card */}
                         {showDepositCard && (
-                            <Box mt={8} alignSelf="stretch">
+                            <Box mt={4} alignSelf="stretch">
                                 <DepositCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 
                         {/* Post Card - Post içeriği */}
                         {showPostCard && (
-                            <Box mt={8} alignSelf="stretch">
+                            <Box mt={4} alignSelf="stretch">
                                 <PostCard
                                     notification={notification}
                                     isDark={isDark}
@@ -1908,7 +1908,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
 
                         {/* Action Butonları */}
                         {(showTipsButton || showChatButton || showTrustButton) && (
-                            <HStack space="xs" mt={8} flexWrap="wrap">
+                            <HStack space="xs" mt={4} flexWrap="wrap">
                                 {showTipsButton && (
                                     <TipsCard
                                         notification={notification}
@@ -1934,18 +1934,18 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                 <HStack
                     position="absolute"
                     top="$3"
-                    right="$4"
+                    right="$3"
                     space="xs"
                     alignItems="center"
                 >
                     <Text
                         color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                        fontSize={12}
+                        fontSize={11}
                         fontWeight="$medium"
                     >
                         {formatRelativeTime(notification.createdAt)}
                     </Text>
-                    <TypeIcon width={16} height={16} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
+                    <TypeIcon width={14} height={14} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
                 </HStack>
 
                 {/* Context Menu - long-press ile açılır, Modal aynı kalır */}
@@ -2070,14 +2070,13 @@ export const NotificationCard: React.FC<NotificationCardProps> = (props) => {
         return (
             <Box
                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-                px="$4"
-                py="$3"
+                p="$3"
                 borderBottomWidth={1}
                 borderBottomColor={isDark ? '#333' : '#E9E9E9'}
             >
                 <Text
                     color={isDark ? '#666666' : '#999999'}
-                    fontSize={13}
+                    fontSize={12}
                     fontStyle="italic"
                 >
                     Unable to display notification

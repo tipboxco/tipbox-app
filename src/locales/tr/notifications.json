@@ -53,8 +53,8 @@
       "newTrustedBy": "{{username}} ve {{count}} {{people}} daha seni takip ediyor"
     },
     "single": {
-      "postLiked": "{{username}}, bir gönderini beğendi!",
-      "postCommented": "{{username}}, bir gönderine yorum yaptı!",
+      "postLiked": "{{username}} bir gönderini beğendi!",
+      "postCommented": "{{username}} bir gönderine yorum yaptı!",
       "postShared": "{{username}} paylaştı",
       "postFavorited": "{{username}} favoriledi",
       "commentLiked": "{{username}} yorumunu beğendi",
@@ -68,7 +68,7 @@
       "newMessage": "{{username}} yeni mesaj gönderdi",
       "tipsReceived": "{{username}} sana {{amount}} TIPS gönderdi",
       "tipsSent": "{{username}}'e bahşiş gönderildi",
-      "newBadge": "Tebrikler!, Wishmaker rozetini kazandın!",
+      "newBadge": "Tebrikler! Wishmaker rozetini kazandın!",
       "achievementUnlocked": "Tebrikler! Rozet kazandın!",
       "rewardEarned": "{{amount}} TIPS kazandın!",
       "expertRequestAvailable": "Yeni uzman sorusu mevcut",
