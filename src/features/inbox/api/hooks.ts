@@ -79,10 +79,7 @@ export const useMessages = (enabled: boolean = true, params?: GetMessagesParams)
     // Cache ayarları: Veri bir kez gelince invalid olana kadar cache'den kullan
     staleTime: 5 * 60 * 1000,  // 5 dakika - cache invalid olana kadar backend'e istek atma
     gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
-    // PERFORMANCE FIX: refetchOnMount kaldırıldı - tab'a geçildiğinde otomatik refetch yapılmıyor
-    // Mesajlar socket event'leri ile otomatik güncelleniyor
-    // Kullanıcı manuel olarak pull to refresh yapabilir
-    refetchOnMount: false,
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
     retry: 1,
     // ✅ Backend iyileştirmesi: Backend artık doğru veriyi döndürüyor (unreadCount, isUnread)
