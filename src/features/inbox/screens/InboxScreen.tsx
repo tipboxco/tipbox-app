@@ -279,7 +279,6 @@ const InboxScreen: React.FC = () => {
             {/* Messages Tab */}
             <Box key="0" flex={1}>
               <MessagesScreen
-                key={`messages-${currentPage === 0 ? 'active' : 'inactive'}`}
                 onDrawerOpen={openDrawer}
                 isActiveTab={currentPage === 0}
                 searchQuery={searchQuery}
@@ -288,7 +287,7 @@ const InboxScreen: React.FC = () => {
 
             {/* Support Requests Tab */}
             <Box key="1" flex={1}>
-              <SupportRequestsScreen key={`support-${currentPage === 1 ? 'active' : 'inactive'}`} />
+              <SupportRequestsScreen />
             </Box>
           </AnimatedPagerView>
         </VStack>

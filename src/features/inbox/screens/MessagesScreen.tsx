@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { FlatList, RefreshControl } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import {
@@ -29,7 +29,6 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { MessageSkeleton } from '@/src/components/Skeletons';
 import { inboxTypingStore } from '../store/typingStore';
 import { useTranslation } from '@/src/hooks/useTranslation';
-// AutoSkeletonView removed - using simple loading instead
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -555,8 +554,11 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 <Box py={20} alignItems="center">
                     <Text color="#CE4A4A">{t('messages.error', { message: error.message })}</Text>
                 </Box>
+            ) : isLoading ? (
+                <MessageSkeleton />
             ) : (
                 <FlatList
+                    style={{ flex: 1 }}
                     data={getFilteredMessages()}
                     showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => (
@@ -570,11 +572,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                         flexGrow: getFilteredMessages().length === 0 ? 1 : 0,
                     }}
                     ListEmptyComponent={
-                        !isLoading ? (
-                            <Box py={40} alignItems="center" justifyContent="center" flex={1}>
-                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('messages.empty')}</Text>
-                            </Box>
-                        ) : null
+                        <Box py={40} alignItems="center" justifyContent="center" flex={1}>
+                            <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>{t('messages.empty')}</Text>
+                        </Box>
                     }
                     refreshControl={
                         <RefreshControl
