@@ -392,7 +392,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             {data.user?.title ? (
                                 <Text
                                     color={isDark ? '$textDark400' : '#787878'}
-                                    fontSize={11}
+                                    fontSize="$xs"
                                     numberOfLines={1}
                                     maxWidth={250}
                                 >

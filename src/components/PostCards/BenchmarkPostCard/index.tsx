@@ -484,7 +484,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             {data.user?.title ? (
                                 <Text
                                     color={isDark ? '$textDark400' : '#787878'}
-                                    fontSize={isDetailMode ? "$sm" : 11}
+                                    fontSize={isDetailMode ? "$sm" : "$xs"}
                                     numberOfLines={1}
                                     maxWidth={250}
                                 >

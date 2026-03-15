@@ -27,8 +27,9 @@ import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, formatRelativeTime } from '@/src/utils';
 import type { LegacyPostUser, PostCardData } from '@/src/types/PostCard';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import {
   useLikePost,
   useUnlikePost,
@@ -61,6 +62,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
   const { user } = useAppStore();
+  const { i18n } = useTranslation();
   
   const [isLiked, setIsLiked] = useState(data.isLiked ?? false);
   const [isBookmarked, setIsBookmarked] = useState(data.isBookmarked ?? false);
@@ -463,23 +465,34 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               {data.user?.action ? (
                 <Text
                   color={isDark ? '$textDark400' : '#C7C7C7'}
-                  fontSize={8}
+                  fontSize={11}
                   fontWeight="$semibold"
+                  mb={1}
                 >
                   {data.user.action}
                 </Text>
               ) : null}
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$sm"
-                fontWeight="$bold"
-              >
-                {data.user?.name || 'Unknown User'}
-              </Text>
+              <HStack alignItems="center">
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize="$sm"
+                  fontWeight="$bold"
+                >
+                  {data.user?.name || 'Unknown User'}
+                </Text>
+                {data.createdAt ? (
+                  <Text
+                    color={isDark ? '$textDark400' : '#A3A3A3'}
+                    fontSize="$sm"
+                  >
+                    {`  •  ${formatRelativeTime(data.createdAt, i18n.language)}`}
+                  </Text>
+                ) : null}
+              </HStack>
               {data.user?.title ? (
                 <Text
                   color={isDark ? '$textDark400' : '#787878'}
-                  fontSize={11}
+                  fontSize="$xs"
                   numberOfLines={1}
                   maxWidth={250}
                 >
@@ -488,8 +501,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               ) : null}
             </VStack>
           </Pressable>
-          <View 
-            ref={menuTriggerRef} 
+          <View
+            ref={menuTriggerRef}
             collapsable={false}
             onLayout={handleTriggerLayout}
           >
@@ -617,6 +630,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 image={imageSource}
                 title={context.name}
                 subName={context.subName}
+                ownershipLabel={context.isOwned !== undefined ? (context.isOwned ? 'Owned' : 'Tried') : undefined}
                 onPress={() => {
                   // Product için PostsScreen'e navigate et
                   // FIX: Use data.contextId instead of context.id for correct ID
@@ -667,6 +681,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 image={imageSource}
                 title={context.name}
                 subName={context.subName}
+                ownershipLabel={context.isOwned !== undefined ? (context.isOwned ? 'Owned' : 'Tried') : undefined}
                 onPress={() => {
                   // ProductGroup veya SubCategory için PostsScreen'e navigate et
                   // FIX: Use data.contextId instead of context.id for correct ID

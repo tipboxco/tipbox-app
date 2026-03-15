@@ -161,10 +161,10 @@ export const isSameImageSource = (
  * Verilen ISO timestamp'in şu anki zamana göre ne kadar önce olduğunu
  * kısaltılmış formatta döndürür.
  *
- * Saat: h, Gün: d, Hafta: w, Yıl: y
- * Örnek: 3h, 2d, 1w, 4y
+ * EN: s (seconds), m (minutes), h (hours), d (days), w (weeks), y (years)
+ * TR: sn (saniye), dk (dakika), sa (saat), g (gün), h (hafta), y (yıl)
  */
-export const formatRelativeTime = (timestamp: string): string => {
+export const formatRelativeTime = (timestamp: string, locale?: string): string => {
   const date = new Date(timestamp);
   if (isNaN(date.getTime())) {
     return '';
@@ -172,28 +172,40 @@ export const formatRelativeTime = (timestamp: string): string => {
 
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
+  const isTr = locale === 'tr';
 
   if (diffMs <= 0) {
-    return '0h';
+    return isTr ? '0sn' : '0s';
   }
 
-  const diffHours = diffMs / (1000 * 60 * 60);
+  const diffSeconds = diffMs / 1000;
+  if (diffSeconds < 60) {
+    const s = Math.max(1, Math.floor(diffSeconds));
+    return `${s}${isTr ? 'sn' : 's'}`;
+  }
 
+  const diffMinutes = diffSeconds / 60;
+  if (diffMinutes < 60) {
+    const m = Math.floor(diffMinutes);
+    return `${m}${isTr ? 'dk' : 'm'}`;
+  }
+
+  const diffHours = diffMinutes / 60;
   if (diffHours < 24) {
     const h = Math.max(1, Math.floor(diffHours));
-    return `${h}h`;
+    return `${h}${isTr ? 'sa' : 'h'}`;
   }
 
   const diffDays = diffHours / 24;
   if (diffDays < 7) {
     const d = Math.floor(diffDays);
-    return `${d}d`;
+    return `${d}${isTr ? 'g' : 'd'}`;
   }
 
   const diffWeeks = diffDays / 7;
   if (diffWeeks < 52) {
     const w = Math.floor(diffWeeks);
-    return `${w}w`;
+    return `${w}${isTr ? 'h' : 'w'}`;
   }
 
   const diffYears = diffWeeks / 52;
