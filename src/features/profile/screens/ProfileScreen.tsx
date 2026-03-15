@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -152,7 +152,8 @@ const mapExperienceToCardData = (review: ProfileReview): ExperiencePostCardData 
       : require('@/assets/avatar/default-useravatar.png');
   
   // API bazen product bazen contextData döner - ikisini de kontrol et
-  const productData = review.product || review.contextData;
+  // Reviews endpoint bazen contextData.product nested yapısı döner
+  const productData = review.product || (review.contextData as any)?.product || review.contextData;
   const productImage = productData?.image
     ? toImageSource(productData.image)
     : undefined;
@@ -272,22 +273,26 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData | null => {
 };
 
 const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null => {
-  if (!item?.contextData?.id) {
+  if (!item?.id || !item?.user?.id) {
     return null;
   }
-  
+
   const avatarSource = toImageSource(item?.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
+  // contextData boş obje ({}) olabilir veya id içermeyebilir - handle et
+  const contextId = item.contextData?.id || '';
+  const contextName = item.contextData?.name || '';
+  const contextSubName = item.contextData?.subName || '';
   const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: QuestionCardProduct = {
-    id: item.contextData.id,
-    name: item.contextData.name || '',
-    subName: item.contextData.subName || '',
+    id: contextId,
+    name: contextName,
+    subName: contextSubName,
     image: contextImage,
   };
   const category: QuestionCardCategory = {
-    id: item.contextData.id,
-    name: item.contextData.name || '',
-    subCategory: item.contextData.subName || '',
+    id: contextId,
+    name: contextName,
+    subCategory: contextSubName,
     image: contextImage,
     product,
   };
@@ -398,6 +403,177 @@ type MappedPost =
 
 // Badge filter keys
 const BADGE_FILTER_KEYS = ['allBadges', 'eventBadges', 'collections'] as const;
+
+// ─── Memoized Action Buttons (isolates trust/mute mutation state from parent) ───
+interface ProfileActionButtonsHandle {
+  handleMuteToggle: () => void;
+}
+
+interface ProfileActionButtonsProps {
+  targetUserId: string;
+  isOwnProfile: boolean;
+  isTrusted: boolean;
+  isMuted: boolean;
+  userName: string;
+  onEdit: () => void;
+  onSendTips: () => void;
+  on1on1: () => void;
+  onDM: () => void;
+}
+
+const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, ProfileActionButtonsProps>(({
+  targetUserId,
+  isOwnProfile,
+  isTrusted,
+  isMuted,
+  userName,
+  onEdit,
+  onSendTips,
+  on1on1,
+  onDM,
+}, ref) => {
+  const { t } = useTranslation('profile');
+  const toast = useToast();
+  const userId = useAppStore(state => state.user?.id);
+
+  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
+  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
+  const { mutate: muteUser, isPending: isMuting } = useMuteUser();
+  const { mutate: unmuteUser, isPending: isUnmuting } = useUnmuteUser();
+
+  const handleTrust = useCallback(() => {
+    if (!targetUserId) return;
+    if (isTrusted) {
+      untrustUser(targetUserId);
+    } else {
+      trustUser(targetUserId);
+    }
+  }, [targetUserId, isTrusted, trustUser, untrustUser]);
+
+  const handleMuteToggle = useCallback(() => {
+    if (!userId || !targetUserId) return;
+    if (isMuting || isUnmuting) return;
+
+    if (isMuted) {
+      unmuteUser(
+        { userId, targetUserId },
+        {
+          onSuccess: () => {
+            showCustomToast(toast, {
+              title: t('toast.unmuted'),
+              description: t('toast.unmutedDescription', { name: userName }),
+              action: 'success',
+            });
+          },
+          onError: () => {
+            showCustomToast(toast, {
+              title: t('toast.error'),
+              description: t('toast.errorUnmuting'),
+              action: 'error',
+            });
+          },
+        }
+      );
+    } else {
+      muteUser(
+        { userId, targetUserId },
+        {
+          onSuccess: () => {
+            showCustomToast(toast, {
+              title: t('toast.muted'),
+              description: t('toast.mutedDescription', { name: userName }),
+              action: 'info',
+            });
+          },
+          onError: () => {
+            showCustomToast(toast, {
+              title: t('toast.error'),
+              description: t('toast.errorMuting'),
+              action: 'error',
+            });
+          },
+        }
+      );
+    }
+  }, [userId, targetUserId, isMuted, muteUser, unmuteUser, isMuting, isUnmuting, toast, userName, t]);
+
+  useImperativeHandle(ref, () => ({ handleMuteToggle }), [handleMuteToggle]);
+
+  if (isOwnProfile) {
+    return (
+      <HStack space="sm" alignItems="center" flexShrink={0} mt={60}>
+        <Pressable
+          bg="#F7F7F7"
+          borderRadius={200}
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          px={12}
+          py={8}
+          flexDirection="row"
+          alignItems="center"
+          gap={6}
+          onPress={onEdit}
+        >
+          <PencilIcon size={14} color="#000" />
+          <Text color="#000" fontSize={10} fontWeight="$semibold">
+            {t('actions.edit')}
+          </Text>
+        </Pressable>
+      </HStack>
+    );
+  }
+
+  return (
+    <HStack space="sm" alignItems="center" flexShrink={0} mt={60}>
+      <Pressable
+        w={34} h={34} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        justifyContent="center" alignItems="center" onPress={onSendTips}
+      >
+        <GiftIcon size={16} color="#000" />
+      </Pressable>
+      <Pressable
+        w={34} h={34} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        justifyContent="center" alignItems="center" onPress={on1on1}
+      >
+        <PhoneIcon size={16} color="#000" />
+      </Pressable>
+      <Pressable
+        w={34} h={34} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        justifyContent="center" alignItems="center" onPress={onDM}
+      >
+        <ChatBubbleLeftIcon size={16} color="#000" />
+      </Pressable>
+      <Pressable
+        w={34} h={34} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        justifyContent="center" alignItems="center"
+        onPress={handleMuteToggle}
+        disabled={isMuting || isUnmuting}
+        opacity={(isMuting || isUnmuting) ? 0.6 : 1}
+      >
+        {isMuted ? (
+          <Box position="relative" justifyContent="center" alignItems="center">
+            <BellIcon size={16} color="#000" />
+            <Box position="absolute" width={20} height={1} bg="#000" style={{ transform: [{ rotate: '-45deg' }] }} />
+          </Box>
+        ) : (
+          <BellIcon size={16} color="#000" />
+        )}
+      </Pressable>
+      <Pressable
+        bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        px={14} py={10} flexDirection="row" alignItems="center" gap={2}
+        onPress={handleTrust}
+        disabled={isTrusting || isUntrusting}
+        opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
+      >
+        {isTrusted ? <UserMinusIcon size={16} color="#000" /> : <UserPlusIcon size={16} color="#000" />}
+        <Text color="#000" fontSize={10} fontWeight="$semibold">
+          {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : (isTrusted ? t('actions.unTrust') : t('actions.trust'))}
+        </Text>
+      </Pressable>
+    </HStack>
+  );
+}));
 type BadgeFilterKey = typeof BADGE_FILTER_KEYS[number];
 
 // Tab content props
@@ -598,14 +774,19 @@ const TabContent: React.FC<TabContentProps> = ({
           const updateData = mapUpdateToCardData(item);
           mappedItem = { type: 'update', id: item.id, data: updateData };
           break;
-        case CardType.EXPERIENCE:
-          if (item?.contextData && Array.isArray(item?.content)) {
+        case CardType.EXPERIENCE: {
+          // Feed endpoint: product + experienceContent + string content
+          // Reviews endpoint: contextData + array content
+          // Her iki formatı da kabul et
+          const hasExperienceData = item?.experienceContent || item?.product || item?.contextData || Array.isArray(item?.content);
+          if (hasExperienceData) {
             const experienceData = mapExperienceToCardData(item as ProfileReview);
             if (experienceData) {
               mappedItem = { type: 'experience', id: item.id, data: experienceData };
             }
           }
           break;
+        }
         case CardType.BENCHMARK:
           const benchmarkData = mapBenchmarkToCardData(item as BenchmarkApiItem);
           if (benchmarkData) {
@@ -620,14 +801,14 @@ const TabContent: React.FC<TabContentProps> = ({
             }
           }
           break;
-        case CardType.QUESTION:
-          if (item?.contextData?.id && 'isBoosted' in item) {
-            const questionData = mapQuestionToCardData(item as QuestionApiItem);
-            if (questionData) {
-              mappedItem = { type: 'question', id: item.id, data: questionData };
-            }
+        case CardType.QUESTION: {
+          // contextData boş obje ({}) olabilir, isBoosted opsiyonel
+          const questionData = mapQuestionToCardData(item as QuestionApiItem);
+          if (questionData) {
+            mappedItem = { type: 'question', id: item.id, data: questionData };
           }
           break;
+        }
         case CardType.POST:
         default:
           const postData = mapPostToCardData(item as ProfilePost);
@@ -755,7 +936,7 @@ const TabContent: React.FC<TabContentProps> = ({
   // Render Collections Tab
   if (tabKey === 'collections') {
     return (
-      <CollectionsTab />
+      <CollectionsTab userId={targetUserId} />
     );
   }
 
@@ -821,10 +1002,6 @@ const TabContent: React.FC<TabContentProps> = ({
 };
 
 const ProfileScreen = ({ route }: ProfileScreenProps) => {
-  // 🔍 RE-RENDER TRACKING
-  const renderCountRef = useRef(0);
-  const prevStateRef = useRef<Record<string, any>>({});
-  renderCountRef.current += 1;
   // Guard: useFocusEffect çift tetiklenmeyi önle
   const lastFocusRefetchRef = useRef<number>(0);
 
@@ -894,13 +1071,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         // GUARD: 3 saniye içinde tekrar tetiklenmeyi önle (double-fire prevention)
         const now = Date.now();
         if (now - lastFocusRefetchRef.current < 3000) {
-          console.log(`⚡ [ProfileScreen] useFocusEffect SKIPPED - already ran ${now - lastFocusRefetchRef.current}ms ago`);
           return;
         }
         lastFocusRefetchRef.current = now;
-
-        console.log(`⚡ [ProfileScreen] useFocusEffect TRIGGERED (render #${renderCountRef.current})`);
-        console.time('⚡ [ProfileScreen] useFocusEffect duration');
 
         // invalidateQueries refetchActive: true ile zaten otomatik refetch yapar
         // Ayrı refetchQueries çağırmaya gerek yok - bu double-fetch'i önler
@@ -929,12 +1102,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             queryKey: profileKeys.userReplies(targetUserId),
             exact: false
           }),
-        ]).then(() => {
-          console.timeEnd('⚡ [ProfileScreen] useFocusEffect duration');
-          console.log('⚡ [ProfileScreen] useFocusEffect COMPLETED');
-        }).catch((error) => {
-          console.timeEnd('⚡ [ProfileScreen] useFocusEffect duration');
-          console.warn('⚡ [ProfileScreen] useFocusEffect ERROR:', error?.message);
+        ]).catch(() => {
+          // Silently handle refetch errors
         });
       }
     }, [targetUserId, user?.id, queryClient])
@@ -943,7 +1112,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
     if (!targetUserId) return;
-    console.log('🔃 [ProfileScreen] handleRefresh (pull-to-refresh) TRIGGERED');
     setRefreshing(true);
     try {
       // Tüm profil verilerini backend'den yeniden çek
@@ -980,10 +1148,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }, [targetUserId, refetchProfile, queryClient]);
   
   
-  // Trust mutations
-  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
-  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
-  
   // Inbox mutations
   const sendGiftMutation = useSendGift();
   const createSupportRequestMutation = useCreateSupportRequest();
@@ -992,9 +1156,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Report mutation
   const { mutate: reportUser, isPending: isReporting } = useReportUser();
   
-  // Mute/Unmute mutations
-  const { mutate: muteUser, isPending: isMuting } = useMuteUser();
-  const { mutate: unmuteUser, isPending: isUnmuting } = useUnmuteUser();
+  // Mute/Unmute: Hooks moved to ProfileActionButtons to prevent parent re-renders
+  // Menu modal uses actionButtonsRef.current?.handleMuteToggle()
   
   // Toast hook
   const toast = useToast();
@@ -1013,6 +1176,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('allBadges');
   const tabBarRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
+  const actionButtonsRef = useRef<ProfileActionButtonsHandle>(null);
   const headerHeightRef = useRef(0);
 
   // Tab değişiminde FlatList'i content başlangıcına scroll et
@@ -1064,56 +1228,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, [activeTab, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]);
 
-  // 🔍 RE-RENDER DETECTOR - Her render'da neyin değiştiğini logla
-  useEffect(() => {
-    const currentState: Record<string, any> = {
-      activeTab,
-      refreshing,
-      isProfileLoading,
-      isMenuOpen,
-      isSendTipsModalVisible,
-      selectedBadge: !!selectedBadge,
-      badgeFilter,
-      isDark,
-      // Query states
-      feedQuery_isLoading: feedQuery.isLoading,
-      feedQuery_isFetching: feedQuery.isFetching,
-      feedQuery_dataPages: feedQuery.data?.pages?.length ?? 0,
-      reviewsQuery_isLoading: reviewsQuery.isLoading,
-      reviewsQuery_isFetching: reviewsQuery.isFetching,
-      reviewsQuery_dataPages: reviewsQuery.data?.pages?.length ?? 0,
-      benchmarksQuery_isLoading: benchmarksQuery.isLoading,
-      benchmarksQuery_isFetching: benchmarksQuery.isFetching,
-      tipsQuery_isLoading: tipsQuery.isLoading,
-      tipsQuery_isFetching: tipsQuery.isFetching,
-      repliesQuery_isLoading: repliesQuery.isLoading,
-      repliesQuery_isFetching: repliesQuery.isFetching,
-      // Profile
-      profileData: userProfile?.id ?? 'none',
-      profileStats: JSON.stringify(userProfile?.stats),
-      isTrusted: userProfile?.isTrusted,
-      isMuted: userProfile?.isMuted,
-    };
-
-    const prev = prevStateRef.current;
-    const changes: string[] = [];
-
-    for (const key of Object.keys(currentState)) {
-      if (prev[key] !== currentState[key]) {
-        changes.push(`${key}: ${JSON.stringify(prev[key])} → ${JSON.stringify(currentState[key])}`);
-      }
-    }
-
-    if (changes.length > 0 || renderCountRef.current <= 2) {
-      console.log(`🔄 [ProfileScreen] Render #${renderCountRef.current} | Changes:`, changes.length > 0 ? changes : 'INITIAL');
-    }
-
-    prevStateRef.current = currentState;
-  });
 
   // Instagram Model: Mapped posts for FlatList
   const mappedPosts = useMemo(() => {
-    console.log(`📊 [ProfileScreen] mappedPosts useMemo RECALCULATING (activeTab: ${activeTab})`);
     if (activeTab === 'badge' || activeTab === 'collections') return [];
 
     let allItems: any[] = [];
@@ -1148,28 +1265,33 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         case CardType.UPDATE:
           mappedItem = { type: 'update', id: item.id, data: mapUpdateToCardData(item) };
           break;
-        case CardType.EXPERIENCE:
-          if (item?.contextData && Array.isArray(item?.content)) {
+        case CardType.EXPERIENCE: {
+          // Feed endpoint: product + experienceContent + string content
+          // Reviews endpoint: contextData + array content
+          const hasExperienceData = item?.experienceContent || item?.product || item?.contextData || Array.isArray(item?.content);
+          if (hasExperienceData) {
             const data = mapExperienceToCardData(item as ProfileReview);
             if (data) mappedItem = { type: 'experience', id: item.id, data };
           }
           break;
-        case CardType.BENCHMARK:
+        }
+        case CardType.BENCHMARK: {
           const benchData = mapBenchmarkToCardData(item as BenchmarkApiItem);
           if (benchData) mappedItem = { type: 'benchmark', id: item.id, data: benchData };
           break;
+        }
         case CardType.TIPS_AND_TRICKS:
           if (item?.contextData?.id) {
             const tipsData = mapTipsToCardData(item as TipsApiItem);
             if (tipsData) mappedItem = { type: 'tips', id: item.id, data: tipsData };
           }
           break;
-        case CardType.QUESTION:
-          if (item?.contextData?.id && 'isBoosted' in item) {
-            const qData = mapQuestionToCardData(item as QuestionApiItem);
-            if (qData) mappedItem = { type: 'question', id: item.id, data: qData };
-          }
+        case CardType.QUESTION: {
+          // contextData boş obje ({}) olabilir, isBoosted opsiyonel
+          const qData = mapQuestionToCardData(item as QuestionApiItem);
+          if (qData) mappedItem = { type: 'question', id: item.id, data: qData };
           break;
+        }
         case CardType.POST:
         default:
           const postData = mapPostToCardData(item as ProfilePost);
@@ -1400,9 +1522,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
   // Action button handlers
   const handleSendTIPS = useCallback(() => {
-    if (!user?.id || !targetUserId || !userProfile) return;
+    if (!user?.id || !targetUserId) return;
     setIsSendTipsModalVisible(true);
-  }, [user?.id, targetUserId, userProfile]);
+  }, [user?.id, targetUserId]);
 
   const handle1on1Request = useCallback(() => {
     if (!user?.id || !targetUserId) return;
@@ -1608,111 +1730,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     });
   }, []);
 
-  const handleMute = useCallback(() => {
-    if (!user?.id || !targetUserId) {
-      if (__DEV__) {
-        console.warn('[ProfileScreen] handleMute: Missing required data', {
-          hasUserId: !!user?.id,
-          hasTargetUserId: !!targetUserId,
-        });
-      }
-      return;
-    }
-    
-    // Mutation zaten devam ediyorsa işlem yapma
-    if (isMuting || isUnmuting) {
-      if (__DEV__) {
-        console.log('[ProfileScreen] handleMute: Mutation already in progress, skipping');
-      }
-      return;
-    }
-    
-    // Cache'den güncel profile'ı al (optimistic update sonrası güncel değeri görmek için)
-    const queryKey = profileKeys.profile(targetUserId);
-    const cachedProfile = queryClient.getQueryData<UserProfile>(queryKey);
-    const currentProfile = cachedProfile || userProfile;
-    
-    if (!currentProfile) {
-      if (__DEV__) {
-        console.warn('[ProfileScreen] handleMute: No profile data available');
-      }
-      return;
-    }
-    
-    // isMuted değerini güvenilir şekilde kontrol et (undefined/null ise false kabul et)
-    const isMuted = currentProfile.isMuted === true;
-    
-    if (__DEV__) {
-      console.log('[ProfileScreen] handleMute called:', {
-        userId: user.id,
-        targetUserId,
-        isMuted,
-        isMutedRaw: currentProfile.isMuted,
-        userName: currentProfile.name,
-        fromCache: !!cachedProfile,
-      });
-    }
-    
-    if (isMuted) {
-      if (__DEV__) {
-        console.log('[ProfileScreen] Unmuting user...');
-      }
-      unmuteUser(
-        { userId: user.id, targetUserId },
-        {
-          onSuccess: () => {
-            if (__DEV__) {
-              console.log('[ProfileScreen] ✅ User unmuted successfully');
-            }
-            showCustomToast(toast, {
-              title: t('toast.unmuted'),
-              description: t('toast.unmutedDescription', { name: currentProfile.name }),
-              action: 'success',
-            });
-          },
-          onError: (error) => {
-            if (__DEV__) {
-              console.error('[ProfileScreen] ❌ Unmute error:', error);
-            }
-            showCustomToast(toast, {
-              title: t('toast.error'),
-              description: t('toast.errorUnmuting'),
-              action: 'error',
-            });
-          },
-        }
-      );
-    } else {
-      if (__DEV__) {
-        console.log('[ProfileScreen] Muting user...');
-      }
-      muteUser(
-        { userId: user.id, targetUserId },
-        {
-          onSuccess: () => {
-            if (__DEV__) {
-              console.log('[ProfileScreen] ✅ User muted successfully');
-            }
-            showCustomToast(toast, {
-              title: t('toast.muted'),
-              description: t('toast.mutedDescription', { name: currentProfile.name }),
-              action: 'info',
-            });
-          },
-          onError: (error) => {
-            if (__DEV__) {
-              console.error('[ProfileScreen] ❌ Mute error:', error);
-            }
-            showCustomToast(toast, {
-              title: t('toast.error'),
-              description: t('toast.errorMuting'),
-              action: 'error',
-            });
-          },
-        }
-      );
-    }
-  }, [targetUserId, user?.id, userProfile, muteUser, unmuteUser, toast, isMuting, isUnmuting, queryClient]);
 
   // Map Badge to SeeAllReward format for BadgeBottomSheet
   const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
@@ -1744,7 +1761,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // ListHeaderComponent: Banner + Profile Info
   const renderProfileHeader = useCallback((isLoading: boolean): React.ReactElement | null => {
-    console.log(`🎨 [ProfileScreen] renderProfileHeader CALLED (isLoading: ${isLoading})`);
     if (!userProfile && !isLoading) return null;
     if (!userProfile) return null;
     
@@ -1888,144 +1904,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               </Box>
             </RNPressable>
 
-            {/* Action Buttons */}
-            <HStack space="sm" alignItems="center" flexShrink={0} mt={60}>
-              {isOwnProfile ? (
-                <Pressable
-                  bg="#F7F7F7"
-                  borderRadius={200}
-                  borderWidth={1}
-                  borderColor="#E9E9E9"
-                  px={12}
-                  py={8}
-                  flexDirection="row"
-                  alignItems="center"
-                  gap={6}
-                  onPress={() => {
-                    navigation.navigate('ProfileEdit');
-                  }}
-                >
-                  <PencilIcon size={14} color="#000" />
-                  <Text
-                    color="#000"
-                    fontSize={10}
-                    fontWeight="$semibold"
-                  >
-                    {t('actions.edit')}
-                  </Text>
-                </Pressable>
-              ) : (
-                <>
-                  <Pressable
-                    w={34}
-                    h={34}
-                    bg="#F7F7F7"
-                    borderRadius={200}
-                    borderWidth={1}
-                    borderColor="#E9E9E9"
-                    justifyContent="center"
-                    alignItems="center"
-                    onPress={handleSendTIPS}
-                  >
-                    <GiftIcon size={16} color="#000" />
-                  </Pressable>
-                  
-                  <Pressable
-                    w={34}
-                    h={34}
-                    bg="#F7F7F7"
-                    borderRadius={200}
-                    borderWidth={1}
-                    borderColor="#E9E9E9"
-                    justifyContent="center"
-                    alignItems="center"
-                    onPress={handle1on1Request}
-                  >
-                    <PhoneIcon size={16} color="#000" />
-                  </Pressable>
-                  
-                  <Pressable
-                    w={34}
-                    h={34}
-                    bg="#F7F7F7"
-                    borderRadius={200}
-                    borderWidth={1}
-                    borderColor="#E9E9E9"
-                    justifyContent="center"
-                    alignItems="center"
-                    onPress={handleDM}
-                  >
-                    <ChatBubbleLeftIcon size={16} color="#000" />
-                  </Pressable>
-                  
-                  <Pressable
-                    w={34}
-                    h={34}
-                    bg="#F7F7F7"
-                    borderRadius={200}
-                    borderWidth={1}
-                    borderColor="#E9E9E9"
-                    justifyContent="center"
-                    alignItems="center"
-                    onPress={handleMute}
-                    disabled={isMuting || isUnmuting}
-                    opacity={(isMuting || isUnmuting) ? 0.6 : 1}
-                  >
-                    {userProfile?.isMuted ? (
-                      <Box position="relative" justifyContent="center" alignItems="center">
-                        <BellIcon size={16} color="#000" />
-                        <Box
-                          position="absolute"
-                          width={20}
-                          height={1}
-                          bg="#000"
-                          style={{
-                            transform: [{ rotate: '-45deg' }],
-                          }}
-                        />
-                      </Box>
-                    ) : (
-                      <BellIcon size={16} color="#000" />
-                    )}
-                  </Pressable>
-                  
-                  <Pressable
-                    bg="#F7F7F7"
-                    borderRadius={200}
-                    borderWidth={1}
-                    borderColor="#E9E9E9"
-                    px={14}
-                    py={10}
-                    flexDirection="row"
-                    alignItems="center"
-                    gap={2}
-                    onPress={() => {
-                      if (!targetUserId) return;
-                      if (profile.isTrusted) {
-                        untrustUser(targetUserId);
-                      } else {
-                        trustUser(targetUserId);
-                      }
-                    }}
-                    disabled={isTrusting || isUntrusting}
-                    opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
-                  >
-                    {profile.isTrusted ? (
-                      <UserMinusIcon size={16} color="#000" />
-                    ) : (
-                      <UserPlusIcon size={16} color="#000" />
-                    )}
-                    <Text
-                      color="#000"
-                      fontSize={10}
-                      fontWeight="$semibold"
-                    >
-                      {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : (profile.isTrusted ? t('actions.unTrust') : t('actions.trust'))}
-                    </Text>
-                  </Pressable>
-                </>
-              )}
-            </HStack>
+            {/* Action Buttons - isolated in React.memo to prevent parent re-renders */}
+            <ProfileActionButtons
+              ref={actionButtonsRef}
+              targetUserId={targetUserId!}
+              isOwnProfile={isOwnProfile}
+              isTrusted={!!profile.isTrusted}
+              isMuted={!!profile.isMuted}
+              userName={profile.name || ''}
+              onEdit={() => navigation.navigate('ProfileEdit')}
+              onSendTips={handleSendTIPS}
+              on1on1={handle1on1Request}
+              onDM={handleDM}
+            />
           </HStack>
         </Box>
 
@@ -2365,12 +2256,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         ) : null}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleReport, handleBlock, handleBadgePress, openImage]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, rootNavigation, user, navigation, handleReport, handleBlock, handleBadgePress, openImage, handleSendTIPS, handle1on1Request, handleDM]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
   const profileHeader = useMemo(() => {
-    console.log(`🖼️ [ProfileScreen] profileHeader useMemo RECALCULATING (isProfileLoading: ${isProfileLoading})`);
     return renderProfileHeader(isProfileLoading);
   }, [renderProfileHeader, isProfileLoading]);
 
@@ -2496,14 +2386,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   {/* Mute / Unmute */}
                   <Pressable
                     onPress={() => {
-                      if (!isMuting && !isUnmuting) {
-                        setIsMenuOpen(false);
-                        handleMute();
-                      }
+                      setIsMenuOpen(false);
+                      actionButtonsRef.current?.handleMuteToggle();
                     }}
                     py={8}
-                    disabled={isMuting || isUnmuting}
-                    opacity={(isMuting || isUnmuting) ? 0.6 : 1}
                   >
                     <HStack alignItems="center" justifyContent="flex-start" space="xs">
                       {userProfile?.isMuted ? (
@@ -2527,9 +2413,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         fontSize="$sm"
                         fontWeight="$medium"
                       >
-                        {(isMuting || isUnmuting)
-                          ? (userProfile?.isMuted ? t('actions.unmuting') : t('actions.muting'))
-                          : (userProfile?.isMuted ? t('actions.unmute') : t('actions.mute'))}
+                        {userProfile?.isMuted ? t('actions.unmute') : t('actions.mute')}
                       </Text>
                     </HStack>
                   </Pressable>

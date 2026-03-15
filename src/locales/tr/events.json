@@ -3,7 +3,23 @@
     "title": "Etkinlikler",
     "upcoming": "Yaklaşan",
     "past": "Geçmiş",
-    "empty": "Etkinlik bulunamadı"
+    "empty": "Etkinlik bulunamadı",
+    "activeEvents": "Aktif Etkinlikler",
+    "upcomingEvents": "Yaklaşan Etkinlikler",
+    "noActiveEvents": "Henüz aktif etkinlik yok",
+    "noUpcomingEvents": "Henüz yaklaşan etkinlik yok",
+    "noResults": "\"{{query}}\" için sonuç bulunamadı",
+    "interaction": "Etkileşim"
+  },
+  "eventTypes": {
+    "default": "Etkinlik",
+    "roast_picks": "Roast Picks",
+    "challenge": "Challenge",
+    "poll": "Anket",
+    "community": "Topluluk",
+    "review": "İnceleme",
+    "giveaway": "Çekiliş",
+    "discussion": "Tartışma"
   },
   "search": {
     "events": "Etkinlik ara",
@@ -64,6 +80,8 @@
     "emptyStates": {
       "noCompletedTitle": "Henüz Tamamlanmış Koleksiyon Yok",
       "noCompletedSubtitle": "Bu kullanıcının henüz tamamlanmış koleksiyonu yok.",
+      "noProgressTitle": "Henüz Başlanmış Koleksiyon Yok",
+      "noProgressSubtitle": "Bu kullanıcının henüz başlanmış koleksiyonu yok.",
       "noResults": "Koleksiyon bulunamadı",
       "noStatus": "Bu durumda koleksiyon yok",
       "noCategory": "Bu kategoride koleksiyon yok",
@@ -72,6 +90,8 @@
   },
   "communityFilter": {
     "title": "Filtre",
+    "eventType": "Etkinlik Türü",
+    "allTypes": "Tümü",
     "mainCategory": "Ana Kategori",
     "subCategory": "Alt Kategori",
     "productGroup": "Ürün Grubu",

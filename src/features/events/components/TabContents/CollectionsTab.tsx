@@ -17,10 +17,9 @@ import CollectionCard from '../CollectionCard';
 import type { Collection, CollectionCategory } from '../../types/collection.types';
 import type { CollectionFilters } from '../../types/medusa.types';
 import { useSafeAreaValues } from '@/src/utils';
-import { useCollections, useCollectionCategories } from '../../api/hooks';
+import { useCollections, useCollectionCategories, useUserProgressCollections } from '../../api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
-import { useUserCollectionAchievements } from '@/src/features/profile/api/hooks';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
 /** Status filter keys */
@@ -97,11 +96,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     productGroupId: collectionFilters?.productGroupId,
   });
 
-  const userCollectionsQuery = useUserCollectionAchievements(
-    userId,
-    undefined, // limit
-    debouncedSearch
-  );
+  const userCollectionsQuery = useUserProgressCollections(userId);
 
   // Profile'da userId varsa user collections, yoksa all collections
   const activeQuery = userId ? userCollectionsQuery : allCollectionsQuery;
@@ -119,22 +114,17 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const collections = useMemo<Collection[]>(() => {
     if (!data) return [];
 
-    return data.pages.flatMap((page) => {
-      // User collections API returns 'items' with AchievementApiItem[]
-      if ('items' in page) {
-        return page.items.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          currentProgress: item.current,
-          totalProgress: item.total,
-          backgroundGradient: item.backgroundGradient || { colors: ['#8B5CF6', '#EC4899'] },
-          category: item.category,
-          backgroundImage: item.backgroundImage,
-        }));
-      }
-      // All collections API returns 'collections' with Collection[]
-      return page.collections || [];
+    return data.pages.flatMap((page: any) => {
+      // Both EP-01 and EP-05 return 'collections' array
+      return (page.collections || []).map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        currentProgress: c.currentProgress ?? 0,
+        totalProgress: c.totalProgress ?? 0,
+        coverImage: c.coverImage ?? null,
+        category: c.category ?? undefined,
+      }));
     });
   }, [data]);
 
@@ -324,10 +314,10 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
           {userId ? (
             <>
               <Text style={[styles.emptyTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
-                {t('collection.emptyStates.noCompletedTitle')}
+                {t('collection.emptyStates.noProgressTitle')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: '#999999' }]}>
-                {t('collection.emptyStates.noCompletedSubtitle')}
+                {t('collection.emptyStates.noProgressSubtitle')}
               </Text>
             </>
           ) : (
@@ -356,7 +346,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
 
   return (
     <View style={styles.container}>
-      {!userId && StatusChips}
+      {!userId && FilterChips}
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}

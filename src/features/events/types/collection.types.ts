@@ -1,10 +1,3 @@
-/** Gradient for collection card hero */
-export interface CollectionBackgroundGradient {
-  colors: string[];
-  start: { x: number; y: number };
-  end: { x: number; y: number };
-}
-
 /** Collection (list + detail) - backend ile uyumlu */
 export interface Collection {
   id: string;
@@ -12,9 +5,8 @@ export interface Collection {
   description: string;
   currentProgress: number;
   totalProgress: number;
-  backgroundGradient: CollectionBackgroundGradient;
+  coverImage: string | null;
   category?: string;
-  backgroundImage?: string;
 }
 
 /** Badge durumu - backend'den status alanı ile eşleşmeli */
@@ -83,4 +75,62 @@ export interface CollectionCategoriesResponse {
 export interface CollectionDetailResponse {
   collection: Collection;
   badges: CollectionBadge[];
+}
+
+// ─── EP-04: Tamamlanan Collection'lar ─────────────────────────────
+export interface CompletedCollection {
+  id: string;
+  title: string;
+  description: string;
+  coverImage: string | null;
+  category: string | null;
+  completedAt: string | null;
+  totalBadges: number;
+  earnedBadges: number;
+}
+
+export interface CompletedCollectionsParams {
+  userId?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface CompletedCollectionsResponse {
+  collections: CompletedCollection[];
+  pagination: {
+    cursor: string | null;
+    hasMore: boolean;
+    limit: number;
+    total: number;
+  };
+}
+
+// ─── EP-05: İlerleme Kaydedilen Collection'lar ────────────────────
+export interface UserProgressCollection {
+  id: string;
+  title: string;
+  description: string;
+  currentProgress: number;
+  totalProgress: number;
+  coverImage: string | null;
+  category: string | null;
+  status: 'in_progress' | 'completed';
+  totalBadges: number;
+  earnedBadges: number;
+}
+
+export interface UserProgressCollectionsParams {
+  userId?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface UserProgressCollectionsResponse {
+  collections: UserProgressCollection[];
+  pagination: {
+    cursor: string | null;
+    hasMore: boolean;
+    limit: number;
+    total: number;
+  };
 }

@@ -3,7 +3,23 @@
     "title": "Events",
     "upcoming": "Upcoming",
     "past": "Past",
-    "empty": "No events available"
+    "empty": "No events available",
+    "activeEvents": "Active Events",
+    "upcomingEvents": "Upcoming Events",
+    "noActiveEvents": "No active events yet",
+    "noUpcomingEvents": "No upcoming events yet",
+    "noResults": "No results for \"{{query}}\"",
+    "interaction": "Interaction"
+  },
+  "eventTypes": {
+    "default": "Event",
+    "roast_picks": "Roast Picks",
+    "challenge": "Challenge",
+    "poll": "Poll",
+    "community": "Community",
+    "review": "Review",
+    "giveaway": "Giveaway",
+    "discussion": "Discussion"
   },
   "search": {
     "events": "Search events",
@@ -64,6 +80,8 @@
     "emptyStates": {
       "noCompletedTitle": "No Completed Collections Yet",
       "noCompletedSubtitle": "This user doesn't have any completed collections yet.",
+      "noProgressTitle": "No Collections Started Yet",
+      "noProgressSubtitle": "This user hasn't started any collections yet.",
       "noResults": "No collections found",
       "noStatus": "No collections with this status",
       "noCategory": "No collections in this category",
@@ -72,6 +90,8 @@
   },
   "communityFilter": {
     "title": "Filter",
+    "eventType": "Event Type",
+    "allTypes": "All",
     "mainCategory": "Main Category",
     "subCategory": "Sub Category",
     "productGroup": "Product Group",

@@ -10,6 +10,8 @@ import {
   getCollections,
   getCollectionCategories,
   getCollectionDetail,
+  getCompletedCollections,
+  getUserProgressCollections,
   getAchievements,
   createEventPost,
   joinEvent,
@@ -49,6 +51,8 @@ import type {
   CollectionsListParams,
   CollectionsListResponse,
   CollectionCategoriesResponse,
+  CompletedCollectionsResponse,
+  UserProgressCollectionsResponse,
 } from '../types/collection.types';
 import type { SurveyQuestionsApiResponse, SurveyCompleteApiResponse } from '../types/survey.types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
@@ -84,6 +88,10 @@ export const eventsKeys = {
   collectionCategories: () => [...eventsKeys.all, 'collections', 'categories'] as const,
   collectionDetail: (collectionId: string, badgeSearch?: string) =>
     [...eventsKeys.all, 'collections', 'detail', collectionId, badgeSearch ?? ''] as const,
+  completedCollections: (userId?: string) =>
+    [...eventsKeys.all, 'collections', 'completed', userId ?? 'me'] as const,
+  userProgressCollections: (userId?: string) =>
+    [...eventsKeys.all, 'collections', 'user-progress', userId ?? 'me'] as const,
   surveyQuestions: (surveyId: string) =>
     [...eventsKeys.all, 'surveys', 'questions', surveyId] as const,
   achievements: (cursor?: string, limit?: number, search?: string) =>
@@ -381,6 +389,54 @@ export const useCollectionDetail = (collectionId: string, badgeSearch?: string) 
     enabled: !!collectionId,
     staleTime: 5 * 60 * 1000,  // 5 dakika
     gcTime: 10 * 60 * 1000,    // 10 dakika
+    retry: 1,
+  });
+};
+
+/**
+ * EP-04: Get Completed Collections infinite scroll hook
+ * Kullanıcının tamamladığı collection'ları infinite scroll ile getirir.
+ *
+ * @param userId - Başka kullanıcının profili için (opsiyonel, default: auth user)
+ */
+export const useCompletedCollections = (userId?: string) => {
+  return useInfiniteQuery<CompletedCollectionsResponse, Error>({
+    queryKey: eventsKeys.completedCollections(userId),
+    queryFn: ({ pageParam }) =>
+      getCompletedCollections({
+        userId,
+        cursor: pageParam as string | undefined,
+        limit: 20,
+      }),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore ? (lastPage.pagination.cursor ?? undefined) : undefined,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+};
+
+/**
+ * EP-05: Get User Progress Collections infinite scroll hook
+ * Kullanıcının ilerleme kaydettiği collection'ları infinite scroll ile getirir.
+ *
+ * @param userId - Başka kullanıcının profili için (opsiyonel, default: auth user)
+ */
+export const useUserProgressCollections = (userId?: string) => {
+  return useInfiniteQuery<UserProgressCollectionsResponse, Error>({
+    queryKey: eventsKeys.userProgressCollections(userId),
+    queryFn: ({ pageParam }) =>
+      getUserProgressCollections({
+        userId,
+        cursor: pageParam as string | undefined,
+        limit: 20,
+      }),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore ? (lastPage.pagination.cursor ?? undefined) : undefined,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: 1,
   });
 };

@@ -7,6 +7,10 @@ import type {
   CollectionsListParams,
   CollectionsListResponse,
   CollectionCategoriesResponse,
+  CompletedCollectionsParams,
+  CompletedCollectionsResponse,
+  UserProgressCollectionsParams,
+  UserProgressCollectionsResponse,
 } from '../types/collection.types';
 
 /** Community events filter - FilterBottomSheet ile uyumlu */
@@ -234,6 +238,68 @@ export const getCollectionDetail = async (
     return response.data;
   } catch (error: any) {
     console.error('Collection Detail API Error:', {
+      url,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * EP-04: Get Completed Collections endpoint function
+ * Kullanıcının tamamladığı collection'ları döner.
+ *
+ * @param params - userId (opsiyonel), cursor, limit
+ * @returns CompletedCollectionsResponse
+ */
+export const getCompletedCollections = async (
+  params: CompletedCollectionsParams
+): Promise<CompletedCollectionsResponse> => {
+  const query = new URLSearchParams();
+  if (params.userId)  query.append('userId', params.userId);
+  if (params.cursor)  query.append('cursor', params.cursor);
+  query.append('limit', (params.limit ?? 20).toString());
+
+  const url = `/collections/completed?${query.toString()}`;
+  try {
+    const response = await apiService.getClient().get<CompletedCollectionsResponse>(url);
+    return response.data;
+  } catch (error: any) {
+    console.error('Completed Collections API Error:', {
+      url,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * EP-05: Get User Progress Collections endpoint function
+ * Kullanıcının ilerleme kaydettiği collection'ları döner.
+ *
+ * @param params - userId (opsiyonel), cursor, limit
+ * @returns UserProgressCollectionsResponse
+ */
+export const getUserProgressCollections = async (
+  params: UserProgressCollectionsParams
+): Promise<UserProgressCollectionsResponse> => {
+  const query = new URLSearchParams();
+  if (params.userId)  query.append('userId', params.userId);
+  if (params.cursor)  query.append('cursor', params.cursor);
+  query.append('limit', (params.limit ?? 20).toString());
+
+  const url = `/collections/user-progress?${query.toString()}`;
+  try {
+    const response = await apiService.getClient().get<UserProgressCollectionsResponse>(url);
+    return response.data;
+  } catch (error: any) {
+    console.error('User Progress Collections API Error:', {
       url,
       status: error.response?.status,
       statusText: error.response?.statusText,
