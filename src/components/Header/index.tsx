@@ -359,36 +359,44 @@ const HeaderComponent = ({
         justifyContent="center"
         minHeight={HEADER_MIN_HEIGHT}
       >
-        <HStack space="md" alignItems="center">
-            {/* Sol kısım - Minimum genişlik (sadece icon kadar), flex-start */}
-            <Box width={28} alignItems="flex-start" justifyContent="center">
-              {renderLeftAction}
-            </Box>
+        {/* Title - absolute pozisyon ile her zaman tam ortada */}
+        <Box
+          position="absolute"
+          left={0}
+          right={0}
+          top={0}
+          bottom={0}
+          alignItems="center"
+          justifyContent="center"
+          pointerEvents="none"
+        >
+          {logo ? (
+            <Image
+              source={logo}
+              alt="Logo"
+              width={120}
+              height={40}
+              resizeMode="contain"
+            />
+          ) : title ? (
+            <Text
+              color={headerTextColor}
+              fontSize={titleFontSize}
+              fontWeight="$bold"
+              textAlign="center"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              maxWidth="60%"
+            >
+              {title}
+            </Text>
+          ) : null}
+        </Box>
 
-            {/* Orta kısım - Maksimum alan (flex=1), center */}
-            {/* PERFORMANCE FIX: Static configuration - logo/title render memoized */}
-            <Box flex={1} alignItems="center" justifyContent="center">
-              {logo ? (
-                <Image
-                  source={logo}
-                  alt="Logo"
-                  width={120}
-                  height={40}
-                  resizeMode="contain"
-                />
-              ) : title ? (
-                <Text
-                  color={headerTextColor}
-                  fontSize={titleFontSize}
-                  fontWeight="$bold"
-                  textAlign="center"
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                  maxWidth="100%"
-                >
-                  {title}
-                </Text>
-              ) : null}
+        <HStack alignItems="center" justifyContent="space-between">
+            {/* Sol kısım - Minimum genişlik (sadece icon kadar), flex-start */}
+            <Box minWidth={28} alignItems="flex-start" justifyContent="center">
+              {renderLeftAction}
             </Box>
 
             {/* Sağ kısım - Minimum genişlik (sadece icon/button kadar), flex-end */}
