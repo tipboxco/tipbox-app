@@ -37,11 +37,19 @@ export const GlobalBottomSheet: React.FC = () => {
 
   // CRITICAL FIX: Son index değerini track et (onChange race condition'ını önlemek için)
   const lastIndexRef = useRef<number>(index);
-  
+
+  // RACE CONDITION FIX: gorhom mount sırasında onChange(-1) tetikleyebilir
+  // Açılış zamanını kaydet, 500ms içindeki onChange(-1)'leri yoksay
+  const openTimestampRef = useRef<number>(0);
+
   // Index değiştiğinde ref'i güncelle
   React.useEffect(() => {
     lastIndexRef.current = index;
-  }, [index]);
+    // Sheet açıldığında timestamp kaydet
+    if (index === 0 && content) {
+      openTimestampRef.current = Date.now();
+    }
+  }, [index, content]);
 
   // Options'ı merge et
   const mergedOptions = useMemo(() => {
@@ -93,6 +101,14 @@ export const GlobalBottomSheet: React.FC = () => {
       // 3. content var (sheet gerçekten render edilmiş)
       // Bu sayede mount/unmount sırasındaki yanlış tetiklemeleri önleriz
       if (newIndex === -1 && lastIndexRef.current === 0 && content) {
+        // RACE CONDITION FIX: gorhom mount sırasında spurious onChange(-1) tetikleyebilir
+        // Açılıştan 500ms içindeki close event'lerini yoksay
+        const timeSinceOpen = Date.now() - openTimestampRef.current;
+        if (timeSinceOpen < 500) {
+          // Mount sırasında tetiklenen spurious event - yoksay
+          // lastIndexRef güncellenmez, böylece gerçek kapanışta koşul hâlâ çalışır
+          return;
+        }
         // Gerçek kapanma: Sheet açıktı, şimdi kapandı
         closeBottomSheet();
       }
@@ -218,10 +234,11 @@ export const GlobalBottomSheet: React.FC = () => {
       >
         {mergedOptions.wrapWithScrollView !== false ? (
           // Default: content'i BottomSheetView ile wrap et
+          // snapPoints modunda flex:1 ile alanı doldur, dynamic sizing modunda minHeight kullan
           <BottomSheetView
             style={{
               paddingBottom,
-              minHeight: 200,
+              ...(mergedOptions.enableDynamicSizing ? { minHeight: 200 } : { flex: 1 }),
             }}
           >
             {content}
