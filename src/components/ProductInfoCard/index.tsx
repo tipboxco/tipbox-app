@@ -1,10 +1,11 @@
 import React, { memo } from 'react';
-import { Box, HStack, VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
+import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { ChevronRightIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource, cleanNewlines } from '@/src/utils';
 import { CheckIcon } from 'react-native-heroicons/solid';
+import { CachedImage } from '@/src/components/CachedImage';
 
 interface ProductInfoCardProps {
   // Product information
@@ -54,9 +55,8 @@ const ProductInfoCardComponent = ({
   // Determine image size based on size prop
   const imageSize = size === 'big' ? 58 : 42;
 
-  // Map image source
-  const rawImageSource = toImageSource(image);
-  const imageSource = rawImageSource || require('@/assets/product/product_01.png');
+  // Map image source - null ise CachedImage kendi fallback'ini (CubeIcon) gösterecek
+  const imageSource = toImageSource(image);
 
   // Determine what to show based on type prop
   const shouldShowAverageRating = type === ProductInfoType.PRODUCT || (type === undefined && showAverageRating);
@@ -77,12 +77,12 @@ const ProductInfoCardComponent = ({
           overflow="hidden"
           bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
         >
-          <Image
+          <CachedImage
             source={imageSource}
             alt={title || "Product"}
-            width={imageSize}
-            height={imageSize}
+            style={{ width: imageSize, height: imageSize }}
             resizeMode="cover"
+            cachePolicy="memory-disk"
           />
         </Box>
 
@@ -158,20 +158,12 @@ const ProductInfoCardComponent = ({
         </VStack>
       </HStack>
       
-      {/* Average Rating Badge or Chevron */}
-      <Box alignItems="center" justifyContent="center">
-        {shouldShowAverageRating && (
-          <Image
-            source={require('@/assets/common/percentage_01.png')}
-            alt={'average-rating'}
-            width={30}
-            height={30}
-          />
-        )}
-        {shouldShowChevron && (
+      {/* Chevron Icon */}
+      {(shouldShowAverageRating || shouldShowChevron) && (
+        <Box alignItems="center" justifyContent="center">
           <ChevronRightIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
-        )}
-      </Box>
+        </Box>
+      )}
     </HStack>
   );
 
