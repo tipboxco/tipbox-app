@@ -262,31 +262,8 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
     <VStack
       space="xs"
       alignItems={isSent ? 'flex-end' : 'flex-start'}
-      px={isSent ? "$2" : "$4"} // ✅ FIX: Gönderilen görsel mesajlar için daha az padding (sağ kenara daha yakın)
-      py="$2"
+      py="$1"
     >
-      {!isSent && isFirstInGroup && (
-        <HStack space="sm" alignItems="center" mb="$1">
-          <Image
-            source={
-              toImageSource(item.senderAvatar || params.senderAvatar) ||
-              DEFAULT_USER_AVATAR
-            }
-            alt={String(item.senderName || params.senderName || 'User')}
-            width={24}
-            height={24}
-            borderRadius={12}
-          />
-          <Text
-            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-            fontSize="$xs"
-            fontWeight="$medium"
-          >
-            {String(item.senderName || params.senderName || 'Unknown User')}
-          </Text>
-        </HStack>
-      )}
-      
       <View
         ref={messageRef}
         collapsable={false}
@@ -294,261 +271,281 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
         <Pressable
           onLongPress={handleLongPress}
           delayLongPress={300}
-          disabled={isDeleted || isDeleting} // ✅ FIX: Silinen veya silme işlemi devam eden mesajlar için pressable disable
+          disabled={isDeleted || isDeleting}
         >
           <ReanimatedAnimated.View
             style={isContextMenuOpen ? messageBubbleAnimatedStyle : undefined}
           >
-        <VStack space="xs" maxWidth={isSent ? "90%" : "80%"} alignItems={isSent ? 'flex-end' : 'flex-start'}> 
-          <Box
-            ref={imageContainerRef as any}
-            collapsable={false}
-            bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-            borderRadius={16}
-            borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
-            borderTopRightRadius={isSent ? (isFirstInGroup ? 16 : 4) : 16}
-            overflow="hidden"
-            position="relative"
-          >
-            {isUploading ? (
-              <Box
-                width={imageSize.width}
-                height={imageSize.height}
-                bg={isDark ? '#2A2A2A' : '#E5E5E5'}
-                alignItems="center"
-                justifyContent="center"
+        <VStack
+          maxWidth={MAX_IMAGE_WIDTH}
+          alignSelf={isSent ? 'flex-end' : 'flex-start'}
+        >
+          <HStack space="sm" alignItems="flex-end">
+            {/* Avatar - received messages */}
+            {!isSent && isFirstInGroup && (
+              <Image
+                source={
+                  toImageSource(item.senderAvatar || params.senderAvatar) ||
+                  DEFAULT_USER_AVATAR
+                }
+                alt={String(item.senderName || params.senderName || 'User')}
+                width={32}
+                height={32}
                 borderRadius={16}
-              >
-                <VStack space="sm" alignItems="center">
-                  <Feather
-                    name="upload"
-                    size={32}
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  />
-                  <Text
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                    fontSize="$xs"
-                  >
-                    {t('messageDetail.status.loading')}
-                  </Text>
-                  {item.uploadProgress !== undefined && (
+              />
+            )}
+            {!isSent && !isFirstInGroup && (
+              <View style={{ width: 32 }} />
+            )}
+
+            <Box
+              ref={imageContainerRef as any}
+              collapsable={false}
+              bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+              borderRadius={16}
+              borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
+              borderTopRightRadius={isSent ? (isFirstInGroup ? 16 : 4) : 16}
+              overflow="hidden"
+              position="relative"
+            >
+              {isUploading ? (
+                <Box
+                  width={imageSize.width}
+                  height={imageSize.height}
+                  bg={isDark ? '#2A2A2A' : '#E5E5E5'}
+                  alignItems="center"
+                  justifyContent="center"
+                  borderRadius={16}
+                >
+                  <VStack space="sm" alignItems="center">
+                    <Feather
+                      name="upload"
+                      size={32}
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    />
                     <Text
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                       fontSize="$xs"
                     >
-                      {`${typeof item.uploadProgress === 'number' ? item.uploadProgress : Number(item.uploadProgress) || 0}%`}
+                      {t('messageDetail.status.loading')}
                     </Text>
-                  )}
-                </VStack>
-              </Box>
-            ) : isFailed ? (
-              <Box
-                width={imageSize.width}
-                height={imageSize.height}
-                bg={isDark ? '#2A2A2A' : '#E5E5E5'}
-                alignItems="center"
-                justifyContent="center"
-                borderRadius={16}
-              >
-                <VStack space="sm" alignItems="center">
-                  <Feather
-                    name="alert-circle"
-                    size={32}
-                    color="#F44336"
-                  />
-                  <Text
-                    color="#F44336"
-                    fontSize="$xs"
-                  >
-                    {t('messageDetail.status.uploadFailed')}
-                  </Text>
-                </VStack>
-              </Box>
-            ) : (
-              <Box position="relative" width={imageSize.width} height={imageSize.height}>
-                {/* Thumbnail göster (yüklenirken) */}
-                {item.thumbnailUrl && imageLoading && (
-                  <Image
-                    source={{ uri: toMediaUrl(item.thumbnailUrl) }}
-                    alt="Message image thumbnail"
-                    width={imageSize.width}
-                    height={imageSize.height}
-                    resizeMode="cover"
-                    borderRadius={16}
-                    position="absolute"
-                    opacity={0.5}
-                  />
-                )}
-                
-                {/* Loading indicator (görsel yüklenirken) */}
-                {imageLoading && (
-                  <Box
-                    position="absolute"
-                    width={imageSize.width}
-                    height={imageSize.height}
-                    alignItems="center"
-                    justifyContent="center"
-                    bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-                    borderRadius={16}
-                    zIndex={1}
-                  >
-                    <ActivityIndicator
-                      size="small"
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </Box>
-                )}
-                
-                {/* Ana görsel */}
-                <Pressable
-                  onPress={() => {
-                    const fullUrl = toMediaUrl(item.mediaUrl);
-                    if (fullUrl) openImage({ uri: fullUrl });
-                  }}
-                  disabled={imageLoading || imageError}
+                    {item.uploadProgress !== undefined && (
+                      <Text
+                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        fontSize="$xs"
+                      >
+                        {`${typeof item.uploadProgress === 'number' ? item.uploadProgress : Number(item.uploadProgress) || 0}%`}
+                      </Text>
+                    )}
+                  </VStack>
+                </Box>
+              ) : isFailed ? (
+                <Box
+                  width={imageSize.width}
+                  height={imageSize.height}
+                  bg={isDark ? '#2A2A2A' : '#E5E5E5'}
+                  alignItems="center"
+                  justifyContent="center"
+                  borderRadius={16}
                 >
-                  {imageError ? (
-                    <Box
+                  <VStack space="sm" alignItems="center">
+                    <Feather
+                      name="alert-circle"
+                      size={32}
+                      color="#F44336"
+                    />
+                    <Text
+                      color="#F44336"
+                      fontSize="$xs"
+                    >
+                      {t('messageDetail.status.uploadFailed')}
+                    </Text>
+                  </VStack>
+                </Box>
+              ) : (
+                <Box position="relative" width={imageSize.width} height={imageSize.height}>
+                  {/* Thumbnail göster (yüklenirken) */}
+                  {item.thumbnailUrl && imageLoading && (
+                    <Image
+                      source={{ uri: toMediaUrl(item.thumbnailUrl) }}
+                      alt="Message image thumbnail"
                       width={imageSize.width}
                       height={imageSize.height}
-                      bg={isDark ? '#2A2A2A' : '#E5E5E5'}
-                      alignItems="center"
-                      justifyContent="center"
+                      resizeMode="cover"
                       borderRadius={16}
-                    >
-                      <VStack space="sm" alignItems="center">
-                        <Feather
-                          name="image"
-                          size={32}
-                          color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                        />
-                        <Text
-                          color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                          fontSize="$xs"
-                        >
-                          {t('messageDetail.status.imageLoadFailed')}
-                        </Text>
-                      </VStack>
-                    </Box>
-                  ) : (
-                    <ExpoImage
-                      source={{ uri: toMediaUrl(item.mediaUrl) }}
-                      // ✅ expo-image: Görseller invalid olana veya silinene kadar cache'te tutulur
-                      // Default cache policy: 'memory-disk' (hem memory hem disk cache)
-                      cachePolicy="memory-disk"
-                      priority="normal"
-                      style={{
-                        width: imageSize.width,
-                        height: imageSize.height,
-                        borderRadius: 16,
-                        opacity: imageLoading ? 0 : 1,
-                      }}
-                      contentFit="cover"
-                      transition={{ duration: 200 }}
-                      onLoadStart={() => {
-                        console.log('[ImageMessage] 🖼️ Image load start:', {
-                          mediaUrl: item.mediaUrl,
-                          fullUrl: toMediaUrl(item.mediaUrl),
-                        });
-                        setImageLoading(true);
-                        setImageError(false);
-                      }}
-                      onLoad={(e: { source: { width: number; height: number } }) => {
-                        console.log('[ImageMessage] 🖼️ Image loaded successfully:', {
-                          mediaUrl: item.mediaUrl,
-                          fullUrl: toMediaUrl(item.mediaUrl),
-                          width: e.source.width,
-                          height: e.source.height,
-                        });
-                        setImageLoading(false);
-                        setImageError(false);
-                      }}
-                      onError={(event: ImageErrorEventData) => {
-                        console.error('[ImageMessage] ❌ Image load error:', {
-                          mediaUrl: item.mediaUrl,
-                          fullUrl: toMediaUrl(item.mediaUrl),
-                          error: event.error || 'Unknown error',
-                        });
-                        setImageLoading(false);
-                        setImageError(true);
-                      }}
+                      position="absolute"
+                      opacity={0.5}
                     />
                   )}
-                </Pressable>
-                
-              
-                {isSent && (
-                  <Box
-                    position="absolute"
-                    left={6}
-                    bottom={8}
-                    zIndex={10}
-                    bg="#ececec" // Beyaz badge
 
-                    borderRadius={16}
-                    px="$0.5"
-                    py="$0.5"
-                    minWidth={24}
-                    minHeight={16}
-                    alignItems="center"
-                    justifyContent="center"
-                    
+                  {/* Loading indicator (görsel yüklenirken) */}
+                  {imageLoading && (
+                    <Box
+                      position="absolute"
+                      width={imageSize.width}
+                      height={imageSize.height}
+                      alignItems="center"
+                      justifyContent="center"
+                      bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+                      borderRadius={16}
+                      zIndex={1}
+                    >
+                      <ActivityIndicator
+                        size="small"
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                      />
+                    </Box>
+                  )}
+
+                  {/* Ana görsel */}
+                  <Pressable
+                    onPress={() => {
+                      const fullUrl = toMediaUrl(item.mediaUrl);
+                      if (fullUrl) openImage({ uri: fullUrl });
+                    }}
+                    disabled={imageLoading || imageError}
                   >
-                    {item.isRead ? (
-                      <Box position="relative" width={18} height={14} alignItems="center" justifyContent="center">
-                        <Feather
-                          name="check"
-                          size={12}
-                          color="#4CAF50"
-                          style={{ position: 'absolute', left: 0, top: 1 }}
-                        />
-                        <Feather
-                          name="check"
-                          size={12}
-                          color="#4CAF50"
-                          style={{ position: 'absolute', left: 6, top: 1 }}
-                        />
+                    {imageError ? (
+                      <Box
+                        width={imageSize.width}
+                        height={imageSize.height}
+                        bg={isDark ? '#2A2A2A' : '#E5E5E5'}
+                        alignItems="center"
+                        justifyContent="center"
+                        borderRadius={16}
+                      >
+                        <VStack space="sm" alignItems="center">
+                          <Feather
+                            name="image"
+                            size={32}
+                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                          />
+                          <Text
+                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                            fontSize="$xs"
+                          >
+                            {t('messageDetail.status.imageLoadFailed')}
+                          </Text>
+                        </VStack>
                       </Box>
                     ) : (
-                      <Feather
-                        name="check"
-                        size={14}
-                        color="#8C8C8C"
+                      <ExpoImage
+                        source={{ uri: toMediaUrl(item.mediaUrl) }}
+                        cachePolicy="memory-disk"
+                        priority="normal"
+                        style={{
+                          width: imageSize.width,
+                          height: imageSize.height,
+                          borderRadius: 16,
+                          opacity: imageLoading ? 0 : 1,
+                        }}
+                        contentFit="cover"
+                        transition={{ duration: 200 }}
+                        onLoadStart={() => {
+                          console.log('[ImageMessage] 🖼️ Image load start:', {
+                            mediaUrl: item.mediaUrl,
+                            fullUrl: toMediaUrl(item.mediaUrl),
+                          });
+                          setImageLoading(true);
+                          setImageError(false);
+                        }}
+                        onLoad={(e: { source: { width: number; height: number } }) => {
+                          console.log('[ImageMessage] 🖼️ Image loaded successfully:', {
+                            mediaUrl: item.mediaUrl,
+                            fullUrl: toMediaUrl(item.mediaUrl),
+                            width: e.source.width,
+                            height: e.source.height,
+                          });
+                          setImageLoading(false);
+                          setImageError(false);
+                        }}
+                        onError={(event: ImageErrorEventData) => {
+                          console.error('[ImageMessage] ❌ Image load error:', {
+                            mediaUrl: item.mediaUrl,
+                            fullUrl: toMediaUrl(item.mediaUrl),
+                            error: event.error || 'Unknown error',
+                          });
+                          setImageLoading(false);
+                          setImageError(true);
+                        }}
                       />
                     )}
-                  </Box>
-                )}
-              </Box>
-            )}
-            
-            {item.text && String(item.text).trim() && (
-              <Box px="$3" py="$2">
+                  </Pressable>
+                </Box>
+              )}
+
+              {item.text && String(item.text).trim() && (
+                <Box px="$3" py="$2">
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize="$xs"
+                    fontWeight="$normal"
+                  >
+                    {String(item.text)}
+                  </Text>
+                </Box>
+              )}
+            </Box>
+          </HStack>
+
+          {/* Timestamp + Ticks BELOW the bubble */}
+          <HStack
+            space="xs"
+            alignItems="center"
+            mt={2}
+            alignSelf={isSent ? 'flex-end' : 'flex-start'}
+            ml={!isSent ? 44 : 0}
+          >
+            {isSent && (
+              <>
                 <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize="$xs"
+                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  fontSize={10}
                   fontWeight="$normal"
                 >
-                  {String(item.text)}
+                  {String(formatMessageTime(item.timestamp) || '')}
                 </Text>
-              </Box>
+                <View style={{ width: 16, height: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  {item.isRead ? (
+                    <>
+                      <Feather
+                        name="check"
+                        size={12}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 0, top: 0 }}
+                      />
+                      <Feather
+                        name="check"
+                        size={12}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 4, top: 0 }}
+                      />
+                    </>
+                  ) : (
+                    <Feather
+                      name="check"
+                      size={11}
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    />
+                  )}
+                </View>
+              </>
             )}
-          </Box>
-          
-          {/* ✅ Timestamp - Okundu bilgisi artık görselin sol altında */}
-          <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
-            <Text
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize="$2xs"
-              fontWeight="$normal"
-            >
-              {String(formatMessageTime(item.timestamp) || '')}
-            </Text>
-          </VStack>
+            {!isSent && (
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize={10}
+                fontWeight="$normal"
+              >
+                {String(formatMessageTime(item.timestamp) || '')}
+              </Text>
+            )}
+          </HStack>
         </VStack>
           </ReanimatedAnimated.View>
         </Pressable>
       </View>
-      
+
       {/* WhatsApp-style Context Menu */}
       {isContextMenuOpen && messagePosition && (
         <WhatsAppContextMenu

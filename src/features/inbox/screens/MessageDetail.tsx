@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions, ActivityIndicator, Share, Animated, RefreshControl } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions, ActivityIndicator, Share, Animated, RefreshControl, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboard } from '@/src/hooks/useKeyboard';
@@ -3204,10 +3204,9 @@ const MessageDetailScreen: React.FC = () => {
           <VStack
             space="xs"
             alignItems={isSent ? 'flex-end' : 'flex-start'}
-            px="$4"
-            py="$2"
+            py="$1"
           >
-          <Box minWidth={250}>
+          <Box minWidth={250} maxWidth="85%">
             <Pressable onPress={() => toggleSupportRequest(item.id)}>
               <Box
                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
@@ -3432,7 +3431,7 @@ const MessageDetailScreen: React.FC = () => {
                 color={isDark ? '#8C8C8C' : '#999999'}
                 flex={1}
               >
-                {requestStatus === 'pending' 
+                {requestStatus === 'pending'
                   ? 'Support request will close automatically in 24 hours if unanswered.'
                   : requestStatus === 'accepted'
                   ? 'Click "Go to Support Chat" to start.'
@@ -3443,6 +3442,47 @@ const MessageDetailScreen: React.FC = () => {
                   : 'Support request status: ' + requestStatus
                 }
               </Text>
+            </HStack>
+
+            {/* Timestamp below */}
+            <HStack
+              space="xs"
+              alignItems="center"
+              mt={2}
+              alignSelf={isSent ? 'flex-end' : 'flex-start'}
+            >
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize={10}
+              >
+                {formatMessageTime(item.timestamp)}
+              </Text>
+              {isSent && (
+                <View style={{ width: 16, height: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  {item.isRead ? (
+                    <>
+                      <Feather
+                        name="check"
+                        size={12}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 0, top: 0 }}
+                      />
+                      <Feather
+                        name="check"
+                        size={12}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 4, top: 0 }}
+                      />
+                    </>
+                  ) : (
+                    <Feather
+                      name="check"
+                      size={11}
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    />
+                  )}
+                </View>
+              )}
             </HStack>
           </Box>
           </VStack>
@@ -3497,6 +3537,12 @@ const MessageDetailScreen: React.FC = () => {
         senderTitle={params.senderTitle}
         senderAvatar={params.senderAvatar}
         onBackPress={() => navigation.goBack()}
+        onAvatarPress={effectiveRecipientUserId ? () => {
+          navigationService.navigate(ROOT_ROUTES.PROFILE as any, {
+            screen: 'ProfileMain',
+            params: { userId: effectiveRecipientUserId },
+          });
+        } : undefined}
         onMenuPress={() => {}}
         onShare={handleShare}
         onReport={handleReport}
@@ -3657,7 +3703,7 @@ const MessageDetailScreen: React.FC = () => {
             }
             // KEYBOARD FIX: Bottom padding klavye ve input yüksekliğine göre dinamik
             contentContainerStyle={{
-              paddingHorizontal: 8,
+              paddingHorizontal: 16,
               // Header'dan sonra minimal padding (en eski mesajlar üstte)
               paddingTop: 16,
               // Input + action buttons + klavye için padding (en yeni mesajlar altta)

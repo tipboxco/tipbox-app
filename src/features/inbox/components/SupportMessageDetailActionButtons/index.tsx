@@ -12,6 +12,8 @@ interface SupportMessageDetailActionButtonsProps {
     onReportPress?: () => void;
     keyboardHeight?: number; // Klavye yüksekliği (kullanılmıyor, KeyboardAvoidingView ile otomatik)
     isKeyboardVisible?: boolean; // Klavye görünür mü?
+    isFinalize?: boolean; // Finalize mode (awaiting_completion - other party closed)
+    onFinalizePress?: () => void; // Finalize button callback
 }
 
 export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailActionButtonsProps> = ({
@@ -19,6 +21,8 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
     onReportPress,
     keyboardHeight = 0,
     isKeyboardVisible = false,
+    isFinalize = false,
+    onFinalizePress,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -33,12 +37,12 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
                 space="sm"
                 alignItems="flex-end"
             >
-            {/* Close Support Request Button */}
+            {/* Close or Finalize Support Request Button */}
             <Pressable
-                onPress={onCloseRequestPress}
-                bg="#E8FF6B"
+                onPress={isFinalize ? onFinalizePress : onCloseRequestPress}
+                bg={isFinalize ? '#6366F1' : '#E8FF6B'}
                 borderWidth={1}
-                borderColor="#D8FF08"
+                borderColor={isFinalize ? '#4F46E5' : '#D8FF08'}
                 borderRadius={12}
                 px="$3"
                 py="$2"
@@ -49,11 +53,11 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
                 elevation={4}
             >
                 <Text
-                    color="#000000"
+                    color={isFinalize ? '#FFFFFF' : '#000000'}
                     fontSize={11}
                     fontWeight="$semibold"
                 >
-                    Close Support Request
+                    {isFinalize ? 'Finalize Support Request' : 'Close Support Request'}
                 </Text>
             </Pressable>
 

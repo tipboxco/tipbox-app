@@ -23,6 +23,7 @@ interface MessageDetailHeaderProps {
   senderAvatar: any;
   onBackPress?: () => void;
   onMenuPress?: () => void;
+  onAvatarPress?: () => void;
   onShare?: () => void;
   onBlock?: () => void;
   onReport?: () => void;
@@ -38,6 +39,7 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
   senderAvatar,
   onBackPress,
   onMenuPress,
+  onAvatarPress,
   onShare,
   onBlock,
   onReport,
@@ -79,57 +81,62 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
           </Pressable>
 
           {/* Kullanıcı Bilgisi - Orta */}
-          <HStack
+          <Pressable
             flex={1}
-            space="sm"
-            alignItems="center"
-            justifyContent="center"
-            px="$2"
+            onPress={onAvatarPress}
+            disabled={!onAvatarPress}
           >
-            {senderAvatar ? (
-              <>
-                <Image
-                  source={
-                    toImageSource(senderAvatar) ||
-                    require('@/assets/avatar/default-useravatar.png')
-                  }
-                  alt={senderName}
-                  width={48}
-                  height={48}
-                  borderRadius={16}
-                />
-                <VStack flex={1} space="xs">
-                  <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize={12}
-                    fontWeight="$semibold"
-                    numberOfLines={1}
-                  >
-                    {senderName}
-                  </Text>
-                  {senderTitle ? (
+            <HStack
+              space="sm"
+              alignItems="center"
+              justifyContent="center"
+              px="$2"
+            >
+              {senderAvatar ? (
+                <>
+                  <Image
+                    source={
+                      toImageSource(senderAvatar) ||
+                      require('@/assets/avatar/default-useravatar.png')
+                    }
+                    alt={senderName}
+                    width={48}
+                    height={48}
+                    borderRadius={16}
+                  />
+                  <VStack flex={1} space="xs">
                     <Text
-                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                      fontSize={9}
-                      fontWeight="$normal"
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize={12}
+                      fontWeight="$semibold"
                       numberOfLines={1}
                     >
-                      {senderTitle}
+                      {senderName}
                     </Text>
-                  ) : null}
-                </VStack>
-              </>
-            ) : (
-              <Text
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={14}
-                fontWeight="$semibold"
-                numberOfLines={1}
-              >
-                {senderName}
-              </Text>
-            )}
-          </HStack>
+                    {senderTitle ? (
+                      <Text
+                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        fontSize={9}
+                        fontWeight="$normal"
+                        numberOfLines={1}
+                      >
+                        {senderTitle}
+                      </Text>
+                    ) : null}
+                  </VStack>
+                </>
+              ) : (
+                <Text
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  fontSize={14}
+                  fontWeight="$semibold"
+                  numberOfLines={1}
+                >
+                  {senderName}
+                </Text>
+              )}
+            </HStack>
+          </Pressable>
 
           {/* Menü Butonu */}
           <Box position="relative">

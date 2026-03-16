@@ -1,11 +1,13 @@
 import React from 'react';
+import { View } from 'react-native';
 import { Box, VStack, HStack, Text, Button, ButtonText, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
 
-interface SupportRequestMessageProps extends Pick<MessageItemProps, 
-  'item' | 'isDark' | 'expandedSupportRequests' | 'onToggleSupportRequest' | 
-  'onAcceptSupportRequest' | 'onRejectSupportRequest' | 'onCancelSupportRequest' | 
+interface SupportRequestMessageProps extends Pick<MessageItemProps,
+  'item' | 'isDark' | 'expandedSupportRequests' | 'onToggleSupportRequest' |
+  'onAcceptSupportRequest' | 'onRejectSupportRequest' | 'onCancelSupportRequest' |
   'onGoToSupportChat' | 'currentUserId'> {
 }
 
@@ -29,7 +31,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
   const supportThreadId = item.supportRequest.threadId;
   const fromUserId = item.supportRequest.fromUserId;
   const toUserId = item.supportRequest.toUserId;
-  
+
   const isSender = fromUserId === currentUserId;
   const isRecipient = toUserId === currentUserId;
 
@@ -37,10 +39,9 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
     <VStack
       space="xs"
       alignItems={isSent ? 'flex-end' : 'flex-start'}
-      px="$4"
-      py="$2"
+      py="$1"
     >
-      <Box minWidth={250}>
+      <Box minWidth={250} maxWidth="85%">
         <Pressable onPress={() => onToggleSupportRequest?.(item.id)}>
           <Box
             bg={isDark ? '#FFFFFF' : '#FFFFFF'}
@@ -351,6 +352,48 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
           </HStack>
         )}
       </Box>
+
+      {/* Timestamp + Ticks BELOW */}
+      <HStack
+        space="xs"
+        alignItems="center"
+        mt={2}
+        alignSelf={isSent ? 'flex-end' : 'flex-start'}
+      >
+        <Text
+          color={isDark ? '#8C8C8C' : '#8C8C8C'}
+          fontSize={10}
+          fontWeight="$normal"
+        >
+          {formatMessageTime(item.timestamp)}
+        </Text>
+        {isSent && (
+          <View style={{ width: 16, height: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            {item.isRead ? (
+              <>
+                <Feather
+                  name="check"
+                  size={12}
+                  color="#4CAF50"
+                  style={{ position: 'absolute', left: 0, top: 0 }}
+                />
+                <Feather
+                  name="check"
+                  size={12}
+                  color="#4CAF50"
+                  style={{ position: 'absolute', left: 4, top: 0 }}
+                />
+              </>
+            ) : (
+              <Feather
+                name="check"
+                size={11}
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              />
+            )}
+          </View>
+        )}
+      </HStack>
     </VStack>
   );
 };

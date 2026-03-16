@@ -379,15 +379,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     };
   });
 
-  const bubbleRowMaxWidth = screenWidth * 0.7;
-  // Avatar (32) + time stack (~52) + space (12) = ~96
-  const bubbleMaxWidth = bubbleRowMaxWidth - 96;
+  const bubbleRowMaxWidth = screenWidth * 0.75;
+  const bubbleMaxWidth = bubbleRowMaxWidth - 44; // Avatar (32) + gap (12)
 
   return (
     <VStack
       space="xs"
       alignItems={isSent ? 'flex-end' : 'flex-start'}
-      py="$2"
+      py="$1"
     >
       <View
         ref={messageRef}
@@ -396,123 +395,136 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         <Pressable
           onLongPress={handleLongPress}
           delayLongPress={300}
-          disabled={isDeleted || isDeleting} // ✅ FIX: Silinen veya silme işlemi devam eden mesajlar için pressable disable
+          disabled={isDeleted || isDeleting}
         >
           <ReanimatedAnimated.View
             style={isContextMenuOpen ? messageBubbleAnimatedStyle : undefined}
           >
-          <HStack
-            space="sm"
-            alignItems="flex-end"
+          <VStack
             maxWidth={bubbleRowMaxWidth}
-            flexDirection="row"
             alignSelf={isSent ? 'flex-end' : 'flex-start'}
           >
-            {/* Avatar - Karşı tarafın mesajlarında balonun solunda */}
-            {!isSent && isFirstInGroup && (
-              <Image
-                source={
-                  toImageSource(item.senderAvatar || params.senderAvatar) ||
-                  DEFAULT_USER_AVATAR
-                }
-                alt={item.senderName || params.senderName || 'User'}
-                width={32}
-                height={32}
-                borderRadius={16}
-              />
-            )}
-
-            {/* Gönderilen mesajlarda: Tikler bubble'ın SOLUNDA */}
-            {isSent && (
-              <VStack space="xs" alignItems="flex-end">
-                {/* Tikler üstte (bubble'a daha yakın) */}
-                <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
-                  {item.isRead ? (
-                    <>
-                      <Feather
-                        name="check"
-                        size={14}
-                        color="#4CAF50"
-                        style={{ position: 'absolute', left: 0, top: 0 }}
-                      />
-                      <Feather
-                        name="check"
-                        size={14}
-                        color="#4CAF50"
-                        style={{ position: 'absolute', left: 4, top: 0 }}
-                      />
-                    </>
-                  ) : (
-                    <Feather
-                      name="check"
-                      size={12}
-                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                    />
-                  )}
-                </Box>
-                {/* Timestamp altta */}
-                <Text
-                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  fontSize="$2xs"
-                  fontWeight="$normal"
-                >
-                  {formatMessageTime(item.timestamp)}
-                </Text>
-              </VStack>
-            )}
-
-            <View
-              ref={messageBubbleRef}
-              collapsable={false}
-              style={{
-                maxWidth: bubbleMaxWidth,
-                alignSelf: isSent ? 'flex-end' : 'flex-start',
-                backgroundColor: isDeleted
-                  ? (isDark ? '#2A2A2A' : '#E5E5E5')
-                  : isSent
-                  ? (isDark ? '#6366F1' : '#6366F1')
-                  : (isDark ? '#1A1A1A' : '#F2F2F2'),
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 16,
-                borderTopLeftRadius: isSent ? 16 : (isFirstInGroup ? 16 : 4),
-                borderTopRightRadius: isSent ? (isFirstInGroup ? 16 : 4) : 16,
-                opacity: isDeleted ? 0.6 : 1,
-              }}
+            <HStack
+              space="sm"
+              alignItems="flex-end"
+              flexDirection="row"
             >
-              <VStack space="xs">
-                {/* Ana mesaj */}
-                <Text
-                  color={
-                    isDeleted
-                      ? (isDark ? '#8C8C8C' : '#8C8C8C')
-                      : isSent
-                      ? '#FFFFFF'
-                      : (isDark ? '#FFFFFF' : '#000000')
+              {/* Avatar - Karşı tarafın mesajlarında balonun solunda */}
+              {!isSent && isFirstInGroup && (
+                <Image
+                  source={
+                    toImageSource(item.senderAvatar || params.senderAvatar) ||
+                    DEFAULT_USER_AVATAR
                   }
-                  fontSize="$sm"
-                  fontWeight="$normal"
-                  fontStyle={isDeleted ? 'italic' : 'normal'}
-                >
-                  {isDeleted ? t('messageDetail.status.deleted') : (item.text || '(Mesaj içeriği yok)')}
-                </Text>
+                  alt={item.senderName || params.senderName || 'User'}
+                  width={32}
+                  height={32}
+                  borderRadius={16}
+                />
+              )}
 
-              </VStack>
-            </View>
+              {/* Avatar placeholder for non-first messages to maintain alignment */}
+              {!isSent && !isFirstInGroup && (
+                <View style={{ width: 32 }} />
+              )}
 
-            {/* Alınan mesajlarda: Timestamp bubble'ın SAĞINDA */}
-            {!isSent && (
-              <VStack space="xs" alignItems="flex-start">
+              <View
+                ref={messageBubbleRef}
+                collapsable={false}
+                style={{
+                  maxWidth: bubbleMaxWidth,
+                  alignSelf: isSent ? 'flex-end' : 'flex-start',
+                  backgroundColor: isDeleted
+                    ? (isDark ? '#2A2A2A' : '#E5E5E5')
+                    : isSent
+                    ? (isDark ? '#6366F1' : '#6366F1')
+                    : (isDark ? '#1A1A1A' : '#F2F2F2'),
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 16,
+                  borderTopLeftRadius: isSent ? 16 : (isFirstInGroup ? 16 : 4),
+                  borderTopRightRadius: isSent ? (isFirstInGroup ? 16 : 4) : 16,
+                  opacity: isDeleted ? 0.6 : 1,
+                }}
+              >
+                <VStack space="xs">
+                  {/* Ana mesaj */}
+                  <Text
+                    color={
+                      isDeleted
+                        ? (isDark ? '#8C8C8C' : '#8C8C8C')
+                        : isSent
+                        ? '#FFFFFF'
+                        : (isDark ? '#FFFFFF' : '#000000')
+                    }
+                    fontSize="$sm"
+                    fontWeight="$normal"
+                    fontStyle={isDeleted ? 'italic' : 'normal'}
+                  >
+                    {isDeleted ? t('messageDetail.status.deleted') : (item.text || '(Mesaj içeriği yok)')}
+                  </Text>
+
+                </VStack>
+              </View>
+            </HStack>
+
+            {/* Timestamp + Ticks BELOW the bubble */}
+            <HStack
+              space="xs"
+              alignItems="center"
+              mt="$0.5"
+              alignSelf={isSent ? 'flex-end' : 'flex-start'}
+              ml={!isSent ? 44 : 0}
+            >
+              {/* Sent messages: time + ticks on the right */}
+              {isSent && (
+                <>
+                  <Text
+                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    fontSize={10}
+                    fontWeight="$normal"
+                  >
+                    {formatMessageTime(item.timestamp)}
+                  </Text>
+                  <View style={{ width: 16, height: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {item.isRead ? (
+                      <>
+                        <Feather
+                          name="check"
+                          size={12}
+                          color="#4CAF50"
+                          style={{ position: 'absolute', left: 0, top: 0 }}
+                        />
+                        <Feather
+                          name="check"
+                          size={12}
+                          color="#4CAF50"
+                          style={{ position: 'absolute', left: 4, top: 0 }}
+                        />
+                      </>
+                    ) : (
+                      <Feather
+                        name="check"
+                        size={11}
+                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                      />
+                    )}
+                  </View>
+                </>
+              )}
+
+              {/* Received messages: time on the left */}
+              {!isSent && (
                 <Text
                   color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  fontSize="$2xs"
+                  fontSize={10}
                   fontWeight="$normal"
                 >
                   {formatMessageTime(item.timestamp)}
                 </Text>
-              </VStack>
-            )}
-          </HStack>
+              )}
+            </HStack>
+          </VStack>
           </ReanimatedAnimated.View>
         </Pressable>
       </View>

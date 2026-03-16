@@ -1,5 +1,7 @@
 import React from 'react';
+import { View } from 'react-native';
 import { Box, VStack, HStack, Text } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
@@ -23,8 +25,7 @@ export const TipsMessage: React.FC<TipsMessageProps> = ({
     <VStack
       space="xs"
       alignItems="center"
-      px="$4"
-      py="$2"
+      py="$1"
     >
       {/* Tips Button */}
       <Box
@@ -61,7 +62,7 @@ export const TipsMessage: React.FC<TipsMessageProps> = ({
       {/* Optional description message below */}
       {item.text && (
         <Box
-          bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+          bg={isSent ? '#6366F1' : (isDark ? '#1A1A1A' : '#F2F2F2')}
           px="$3"
           py="$2"
           borderRadius={12}
@@ -69,7 +70,7 @@ export const TipsMessage: React.FC<TipsMessageProps> = ({
           mt="$1"
         >
           <Text
-            color={isDark ? '#FFFFFF' : '#000000'}
+            color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
             fontSize={13}
             fontWeight="$normal"
           >
@@ -78,15 +79,47 @@ export const TipsMessage: React.FC<TipsMessageProps> = ({
         </Box>
       )}
 
-      {/* Timestamp */}
-      <Text
-        color={isDark ? '#8C8C8C' : '#8C8C8C'}
-        fontSize={11}
-        fontWeight="$normal"
-        mt="$1"
+      {/* Timestamp + Ticks BELOW */}
+      <HStack
+        space="xs"
+        alignItems="center"
+        mt={2}
+        alignSelf="center"
       >
-        {formatMessageTime(item.timestamp)}
-      </Text>
+        <Text
+          color={isDark ? '#8C8C8C' : '#8C8C8C'}
+          fontSize={10}
+          fontWeight="$normal"
+        >
+          {formatMessageTime(item.timestamp)}
+        </Text>
+        {isSent && (
+          <View style={{ width: 16, height: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            {item.isRead ? (
+              <>
+                <Feather
+                  name="check"
+                  size={12}
+                  color="#4CAF50"
+                  style={{ position: 'absolute', left: 0, top: 0 }}
+                />
+                <Feather
+                  name="check"
+                  size={12}
+                  color="#4CAF50"
+                  style={{ position: 'absolute', left: 4, top: 0 }}
+                />
+              </>
+            ) : (
+              <Feather
+                name="check"
+                size={11}
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              />
+            )}
+          </View>
+        )}
+      </HStack>
     </VStack>
   );
 };

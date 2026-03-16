@@ -67,78 +67,15 @@ export const inboxKeys = {
  * const { data, isLoading, error } = useMessages(true, { threadType: 'DM', search: 'ahmet' });
  */
 export const useMessages = (enabled: boolean = true, params?: GetMessagesParams) => {
-  const queryClient = useQueryClient();
-  
   return useQuery<InboxMessage[], Error>({
     queryKey: [...inboxKeys.messages(), params],
-    queryFn: async () => {
-      const result = await getMessages(params);
-      return result;
-    },
-    enabled, // ✅ PERFORMANCE FIX: Lazy loading - inbox'a girilmeden veri çekilmez
-    // Cache ayarları: Veri bir kez gelince invalid olana kadar cache'den kullan
-    staleTime: 5 * 60 * 1000,  // 5 dakika - cache invalid olana kadar backend'e istek atma
-    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
+    queryFn: () => getMessages(params),
+    enabled,
+    staleTime: 5 * 60 * 1000,  // 5 dakika
+    gcTime: 10 * 60 * 1000,    // 10 dakika
     refetchOnMount: true,
     refetchOnWindowFocus: false,
     retry: 1,
-    // ✅ Backend iyileştirmesi: Backend artık doğru veriyi döndürüyor (unreadCount, isUnread)
-    // Cache ile merge et - Eğer cache'de optimistic update varsa (okundu olarak işaretlenmişse), backend verisini override et
-    select: (data) => {
-      const queryKey = [...inboxKeys.messages(), params];
-      const cachedData = queryClient.getQueryData<InboxMessage[]>(queryKey);
-      
-      // Eğer cache'de optimistic update varsa, backend verisini merge et
-      if (cachedData && cachedData.length > 0) {
-        const mergedData = data.map((backendMsg) => {
-          const cachedMsg = cachedData.find((c) => c.id === backendMsg.id);
-          
-          if (!cachedMsg) {
-            return backendMsg;
-          }
-          
-          const isCachedRead = !cachedMsg.isUnread && (cachedMsg.unreadCount || 0) === 0;
-          const isBackendRead = !backendMsg.isUnread && (backendMsg.unreadCount || 0) === 0;
-          const isBackendUnread = backendMsg.isUnread || (backendMsg.unreadCount || 0) > 0;
-          
-          // Cache'de okunmamış mesaj varsa (optimistic update), cache'i koru
-          const isCachedUnread = cachedMsg.isUnread || (cachedMsg.unreadCount || 0) > 0;
-          if (isCachedUnread) {
-            return cachedMsg;
-          }
-          
-          // Backend'den unreadCount === 0 geldiyse (thread okundu), backend verisini kullan
-          if (isBackendRead) {
-            return backendMsg;
-          }
-          
-          // Cache'de okundu ama backend'de okunmamış görünüyorsa, backend verisini kullan
-          if (isCachedRead && isBackendUnread) {
-            return backendMsg;
-          }
-          
-          // Her iki tarafta da okundu, backend verisini kullan (daha güncel olabilir)
-          if (isCachedRead && !isBackendUnread) {
-            return backendMsg;
-          }
-          
-          return backendMsg;
-        });
-        
-        // Cache'de olup backend'de olmayan thread'leri ekle (optimistic update'ler için)
-        const cacheOnlyThreads = cachedData.filter(
-          (cachedMsg) => !data.find((backendMsg) => backendMsg.id === cachedMsg.id)
-        );
-        
-        if (cacheOnlyThreads.length > 0) {
-          return [...mergedData, ...cacheOnlyThreads];
-        }
-        
-        return mergedData;
-      }
-      
-      return data || [];
-    },
   });
 };
 
