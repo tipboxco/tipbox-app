@@ -488,7 +488,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                 {data.createdAt ? (
                                     <Text
                                         color={isDark ? '$textDark400' : '#A3A3A3'}
-                                        fontSize="$sm"
+                                        fontSize={11}
                                     >
                                         {`  •  ${formatRelativeTime(data.createdAt, i18n.language)}`}
                                     </Text>

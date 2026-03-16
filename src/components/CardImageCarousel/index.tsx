@@ -15,6 +15,7 @@ interface CardImageCarouselProps {
   width?: number;
   height?: number;
   paddingHorizontal?: number;
+  isDetailMode?: boolean;
 }
 
 // Custom Pagination Component - useAnimatedStyle kullanarak Reanimated uyarısını önler
@@ -110,7 +111,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
   );
 };
 
-export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarouselProps) => {
+export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = false }: CardImageCarouselProps) => {
   const carouselRef = useRef<ICarouselInstance>(null);
   const progress = useSharedValue<number>(0);
   const { visible: fullScreenVisible, imageSource: fullScreenSource, openImage, closeImage } = useFullScreenImage();
@@ -268,9 +269,9 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
     return Gesture.Race(horizontalGesture, verticalGesture);
   }, [feedListContext, horizontalGesture, verticalGesture]);
 
-  const carouselPadding = paddingHorizontal ? paddingHorizontal : 28;
+  const carouselPadding = paddingHorizontal ?? 12;
   const carouselWidth = Dimensions.get('window').width;
-  const carouselHeight = Dimensions.get('window').width - carouselPadding;
+  const carouselHeight = carouselWidth - (carouselPadding * 2);
 
   const onPressPagination = (index: number) => {
     // progress.value okuması callback içinde olduğu için sorun değil
@@ -287,25 +288,36 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
     const defaultPostImage = require('@/assets/defaultImages/default-post.png');
     return (
       <Box
-        w={carouselWidth}
+        w="100%"
         h={carouselHeight}
-        paddingHorizontal={carouselPadding}
         overflow="hidden"
         position="relative"
-        alignSelf="center"
       >
-        <RNPressable onLongPress={() => openImage(images[0] || defaultPostImage)}>
+        {isDetailMode ? (
+          <RNPressable onPress={() => openImage(images[0] || defaultPostImage)}>
+            <Image
+              source={images[0] || defaultPostImage}
+              alt="Post image"
+              resizeMode="cover"
+              style={{
+                width: '100%',
+                height: carouselHeight,
+                borderRadius: 8,
+              }}
+            />
+          </RNPressable>
+        ) : (
           <Image
             source={images[0] || defaultPostImage}
             alt="Post image"
             resizeMode="cover"
             style={{
-              width: carouselWidth - (carouselPadding * 2),
+              width: '100%',
               height: carouselHeight,
               borderRadius: 8,
             }}
           />
-        </RNPressable>
+        )}
         <FullScreenImageViewer visible={fullScreenVisible} imageSource={fullScreenSource} onClose={closeImage} />
       </Box>
     );
@@ -313,36 +325,46 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
 
   // Feed ekranı dışında kullanılıyorsa gesture arbitration yok, normal carousel
   if (!composedGesture) {
+    const imageWidth = carouselWidth - (carouselPadding * 2);
     return (
       <Box
-        w={carouselWidth}
+        w="100%"
         h={carouselHeight}
-        paddingHorizontal={carouselPadding}
         overflow="hidden"
         position="relative"
-        alignSelf="center"
       >
         <Carousel
           ref={carouselRef}
-          width={carouselWidth}
+          width={imageWidth}
           height={carouselHeight}
           data={images}
           onProgressChange={progress}
           renderItem={({ index }) => {
             const defaultPostImage = require('@/assets/defaultImages/default-post.png');
-            return (
-              <RNPressable onLongPress={() => openImage(images[index] || defaultPostImage)}>
+            return isDetailMode ? (
+              <RNPressable onPress={() => openImage(images[index] || defaultPostImage)}>
                 <Image
                   source={images[index] || defaultPostImage}
                   alt="Post image"
                   resizeMode="cover"
                   style={{
-                    width: carouselWidth - (carouselPadding * 2),
+                    width: imageWidth,
                     height: carouselHeight,
                     borderRadius: 8,
                   }}
                 />
               </RNPressable>
+            ) : (
+              <Image
+                source={images[index] || defaultPostImage}
+                alt="Post image"
+                resizeMode="cover"
+                style={{
+                  width: imageWidth,
+                  height: carouselHeight,
+                  borderRadius: 8,
+                }}
+              />
             );
           }}
         />
@@ -370,46 +392,54 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
   // Feed ekranında: Gesture.Race ile crash-safe gesture arbitration
   // CRITICAL FIX: Carousel'ı bir View ile sarmalayıp gesture'ı View'a koyuyoruz
   // Bu sayede carousel'ın internal gesture'ından önce bizim gesture'ımız devreye girer
+  const feedImageWidth = carouselWidth - (carouselPadding * 2);
   return (
     <Box
-      w={carouselWidth}
+      w="100%"
       h={carouselHeight}
-      paddingHorizontal={carouselPadding}
       overflow="hidden"
       position="relative"
-      alignSelf="center"
     >
       <GestureDetector gesture={composedGesture}>
         <View
           style={{
-            width: carouselWidth - (carouselPadding * 2),
+            width: feedImageWidth,
             height: carouselHeight,
           }}
           pointerEvents="box-none"
         >
           <Carousel
             ref={carouselRef}
-            width={carouselWidth}
+            width={feedImageWidth}
             height={carouselHeight}
             data={images}
             onProgressChange={progress}
-            // NOTE: panGestureHandlerProps bu carousel versiyonunda mevcut değil
-            // Gesture kontrolü wrapper View seviyesinde yapılıyor (GestureDetector ile)
             renderItem={({ index }) => {
               const defaultPostImage = require('@/assets/defaultImages/default-post.png');
-              return (
-                <RNPressable onLongPress={() => openImage(images[index] || defaultPostImage)}>
+              return isDetailMode ? (
+                <RNPressable onPress={() => openImage(images[index] || defaultPostImage)}>
                   <Image
                     source={images[index] || defaultPostImage}
                     alt="Post image"
                     resizeMode="cover"
                     style={{
-                      width: carouselWidth - (carouselPadding * 2),
+                      width: feedImageWidth,
                       height: carouselHeight,
                       borderRadius: 8,
                     }}
                   />
                 </RNPressable>
+              ) : (
+                <Image
+                  source={images[index] || defaultPostImage}
+                  alt="Post image"
+                  resizeMode="cover"
+                  style={{
+                    width: feedImageWidth,
+                    height: carouselHeight,
+                    borderRadius: 8,
+                  }}
+                />
               );
             }}
           />

@@ -331,45 +331,19 @@ const HeaderComponent = ({
   const headerBgColor = useMemo(() => backgroundColor || (isDark ? '#000000' : '#FFFFFF'), [backgroundColor, isDark]);
   const headerTextColor = useMemo(() => textColor || (isDark ? '#FFFFFF' : '#000000'), [textColor, isDark]);
 
-  // Dynamic font size calculation based on title length
-  // Instead of truncating, we scale down the font size for long titles
-  const titleFontSize = useMemo(() => {
-    if (!title) return 16;
-
-    const baseFontSize = 16; // Base font size (equivalent to $md)
-    const baseLength = 20; // Ideal length for base font size
-    const minFontSize = 11; // Minimum readable font size
-
-    if (title.length <= baseLength) {
-      return baseFontSize;
-    }
-
-    // Linear interpolation: scale down font size as title gets longer
-    // Formula: fontSize = baseFontSize * (baseLength / title.length)
-    // But ensure it doesn't go below minFontSize
-    const scaledSize = baseFontSize * (baseLength / title.length);
-    return Math.max(minFontSize, scaledSize);
-  }, [title]);
-
   return (
     <VStack>
       <Box
         bg={headerBgColor}
-        px="$4"
-        justifyContent="center"
         minHeight={HEADER_MIN_HEIGHT}
       >
-        {/* Title - absolute pozisyon ile her zaman tam ortada */}
-        <Box
-          position="absolute"
-          left={0}
-          right={0}
-          top={0}
-          bottom={0}
-          alignItems="center"
-          justifyContent="center"
-          pointerEvents="none"
-        >
+        <HStack alignItems="center" px="$4" minHeight={HEADER_MIN_HEIGHT}>
+          {/* Sol kısım - flex:1 ile sağ kısımla eşit genişlik, title her zaman tam ortada */}
+          <Box flex={1} alignItems="flex-start" justifyContent="center">
+            {renderLeftAction}
+          </Box>
+
+          {/* Title / Logo - flex:2 ile orta alan kısıtlanır, uzun title'lar "..." ile kesilir */}
           {logo ? (
             <Image
               source={logo}
@@ -379,36 +353,25 @@ const HeaderComponent = ({
               resizeMode="contain"
             />
           ) : title ? (
-            <Text
-              color={headerTextColor}
-              fontSize={titleFontSize}
-              fontWeight="$bold"
-              textAlign="center"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              maxWidth="60%"
-            >
-              {title}
-            </Text>
+            <Box flex={2} alignItems="center" justifyContent="center">
+              <Text
+                color={headerTextColor}
+                fontSize={16}
+                fontWeight="$bold"
+                textAlign="center"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {title}
+              </Text>
+            </Box>
           ) : null}
-        </Box>
 
-        <HStack alignItems="center" justifyContent="space-between">
-            {/* Sol kısım - Minimum genişlik (sadece icon kadar), flex-start */}
-            <Box minWidth={28} alignItems="flex-start" justifyContent="center">
-              {renderLeftAction}
-            </Box>
-
-            {/* Sağ kısım - Minimum genişlik (sadece icon/button kadar), flex-end */}
-            <Box
-              minWidth={28}
-              flexShrink={0}
-              alignItems="flex-end"
-              justifyContent="center"
-            >
-              {renderRightActions}
-            </Box>
-          </HStack>
+          {/* Sağ kısım - flex:1 ile sol kısımla eşit genişlik */}
+          <Box flex={1} alignItems="flex-end" justifyContent="center">
+            {renderRightActions}
+          </Box>
+        </HStack>
       </Box>
     </VStack>
   );

@@ -28,12 +28,14 @@ interface AddProductFromInventoryProps {
     onProductSelect: (product: InventoryItem) => void;
     onClose: () => void;
     productGroupFilter?: string; // Product group ID sınırlaması (benchmark için - sadece aynı product group'taki ürünler)
+    hideHeader?: boolean; // Bottom sheet içinde kullanıldığında header'ı gizle (çift title önleme)
 }
 
 export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = ({
     onProductSelect,
     onClose,
     productGroupFilter,
+    hideHeader = false,
 }) => {
     const { colorMode } = useColorMode();
     const { t } = useTranslation('common');
@@ -233,22 +235,17 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
         <Box bg={isDark ? '$backgroundDark950' : '#FDFDFB'} width="100%">
             <VStack px="$4" py="$3" pb={bottomOffset} space="md" maxHeight="90%">
                 {/* Header */}
-                <HStack alignItems="center" justifyContent="space-between" mb="$1">
-                    <Text
-                        fontSize={16}
-                        fontWeight="$bold"
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                    >
-                        {t('inventory.selectFromInventory')}
-                    </Text>
-                    <Pressable onPress={() => refetch()} disabled={isLoading || isRefetching}>
-                        <Feather
-                            name="refresh-cw"
-                            size={20}
-                            color={isDark ? (isLoading || isRefetching ? '#666666' : '#FFFFFF') : (isLoading || isRefetching ? '#999999' : '#000000')}
-                        />
-                    </Pressable>
-                </HStack>
+                {!hideHeader && (
+                    <HStack alignItems="center" justifyContent="space-between" mb="$1">
+                        <Text
+                            fontSize={16}
+                            fontWeight="$bold"
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                        >
+                            {t('inventory.selectFromInventory')}
+                        </Text>
+                    </HStack>
+                )}
 
                 {/* Search Bar */}
                 <Box>

@@ -67,10 +67,33 @@ interface PostCardProps {
   showActions?: boolean;
 }
 
+// Map known content tag titles to translation keys
+const CONTENT_TAG_TITLE_KEYS: Record<string, string> = {
+  'Price and Shopping Experience': 'post:create.experience.step3.priceAndShopping',
+  'Product and Usage Experience': 'post:create.experience.step3.productAndUsage',
+};
+
 export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress, showHeader = true, showActions = true }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const { t, i18n } = useTranslation();
   const isDark = colorMode === 'dark';
+
+  // Translate content tag title (e.g. "Price and Shopping Experience" → TR)
+  const translateTagTitle = useCallback((title: string) => {
+    const key = CONTENT_TAG_TITLE_KEYS[title];
+    if (key) return t(key);
+    return title;
+  }, [t]);
+
+  // Translate usage context tags (e.g. "3-6 months", "Other", "Personal use" → TR)
+  const translateTag = useCallback((tag: string) => {
+    const key = `post:create.experience.step1.optionNames.${tag}`;
+    const keyWithoutNs = `create.experience.step1.optionNames.${tag}`;
+    const translated = t(key);
+    // If translation key not found, t() may return key with or without namespace prefix
+    if (translated === key || translated === keyWithoutNs) return tag;
+    return translated;
+  }, [t]);
   const navigation = useNavigation<any>();
   const { user } = useAppStore();
   const targetUserId = data.user.id;
@@ -691,7 +714,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                     fontSize="$sm"
                     fontWeight="$bold"
                   >
-                    {item.tag.title}
+                    {translateTagTitle(item.tag.title)}
                   </Text>
                 </HStack>
                 <Text
@@ -761,7 +784,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                   fontSize={11}
                   fontWeight="$semibold"
                 >
-                  {value}
+                  {translateTag(value)}
                 </Text>
               </Box>
             );
@@ -790,7 +813,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               borderColor="#E9E9E9"
               {...(!showActions && { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 })}
             >
-              <CardImageCarousel images={validImages} />
+              <CardImageCarousel images={validImages} isDetailMode={isDetailMode} />
             </VStack>
           </Pressable>
         );

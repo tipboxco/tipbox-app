@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { ImageSourcePropType, TextInput, Alert, View, StyleSheet, Platform } from 'react-native';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { useTranslation } from 'react-i18next';
@@ -34,12 +34,9 @@ export interface CommentsCardProps {
   onLike?: (commentId: string, postId: string) => void;
   onUnlike?: (commentId: string, postId: string) => void;
   onEdit?: (commentId: string, postId: string, newContent: string) => void;
-  isDeleting?: boolean;
-  isLiking?: boolean;
-  isEditing?: boolean;
 }
 
-const CommentsCard: React.FC<CommentsCardProps> = ({
+const CommentsCardInner: React.FC<CommentsCardProps> = ({
   userName,
   userTitle,
   avatar,
@@ -50,44 +47,32 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
   currentUserId,
   postId,
   likesCount = 0,
-  isLiked: initialIsLiked = false,
+  isLiked = false,
   onDelete,
   onLike,
   onUnlike,
   onEdit,
-  isDeleting = false,
-  isLiking = false,
-  isEditing = false,
 }) => {
   const { t } = useTranslation('common');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLiked, setIsLiked] = useState(initialIsLiked);
-  const [localLikesCount, setLocalLikesCount] = useState(likesCount);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editText, setEditText] = useState(content);
+
+  // Cooldown ref - çift tıklamayı önle (state değil, re-render tetiklemesin)
+  const likeCooldownRef = useRef(false);
 
   // Swipe gesture için shared value
   const translateX = useSharedValue(0);
   const ACTION_WIDTH = 70; // Her buton için genişlik
   const SWIPE_THRESHOLD = -50; // Swipe'ın geçerli olması için minimum mesafe
-  
+
   // Avatar source - CachedImage'ın kendi error/placeholder mekanizmasına güven
-  // Timeout mekanizması kaldırıldı - CachedImage zaten hata durumunda placeholder gösteriyor
   const avatarSource = avatar || DEFAULT_USER_AVATAR;
 
   // Metin uzunluğuna göre basit truncation kontrolü
   const shouldTruncate = useMemo(() => content.length > 160, [content]);
-
-  // Sync with props
-  React.useEffect(() => {
-    setIsLiked(initialIsLiked);
-  }, [initialIsLiked]);
-
-  React.useEffect(() => {
-    setLocalLikesCount(likesCount);
-  }, [likesCount]);
 
   // Kullanıcının kendi yorumu mu kontrolü
   const isOwnComment = useMemo(() => {
@@ -172,7 +157,7 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
 
   // Delete handler
   const handleDelete = useCallback(() => {
-    if (!commentId || !postId || !onDelete || isDeleting) return;
+    if (!commentId || !postId || !onDelete) return;
     closeSwipe(); // Swipe'ı kapat
     Alert.alert(
       t('dialogs.deleteComment.title'),
@@ -189,11 +174,15 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
         },
       ]
     );
-  }, [commentId, postId, onDelete, isDeleting, t, closeSwipe]);
+  }, [commentId, postId, onDelete, t, closeSwipe]);
 
-  // Like handler - no optimistic update, wait for backend response
+  // Like handler - NO optimistic update, just call API
   const handleLike = useCallback(() => {
-    if (!commentId || !postId || isLiking) return;
+    if (!commentId || !postId) return;
+    // Cooldown ile çift tıklama engeli (re-render tetiklemez)
+    if (likeCooldownRef.current) return;
+    likeCooldownRef.current = true;
+    setTimeout(() => { likeCooldownRef.current = false; }, 1000);
 
     // Swipe açıksa kapat
     if (translateX.value !== 0) {
@@ -205,7 +194,7 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
     } else {
       onLike?.(commentId, postId);
     }
-  }, [commentId, postId, isLiked, isLiking, onLike, onUnlike, translateX, closeSwipe]);
+  }, [commentId, postId, isLiked, onLike, onUnlike, translateX, closeSwipe]);
 
   // Edit handlers
   const handleEditStart = useCallback(() => {
@@ -325,19 +314,19 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
                 <HStack space="sm" alignItems="center">
                   <Pressable
                     onPress={handleEditSave}
-                    disabled={!editText.trim() || editText.trim() === content || isEditing}
+                    disabled={!editText.trim() || editText.trim() === content}
                     style={{
                       paddingHorizontal: 12,
                       paddingVertical: 6,
                       borderRadius: 6,
-                      backgroundColor: editText.trim() && editText.trim() !== content && !isEditing
+                      backgroundColor: editText.trim() && editText.trim() !== content
                         ? '#6366F1'
                         : isDark ? '#2A2A2A' : '#E5E5E5',
-                      opacity: editText.trim() && editText.trim() !== content && !isEditing ? 1 : 0.5,
+                      opacity: editText.trim() && editText.trim() !== content ? 1 : 0.5,
                     }}
                   >
                     <Text
-                      color={editText.trim() && editText.trim() !== content && !isEditing ? '#FFFFFF' : (isDark ? '#666666' : '#999999')}
+                      color={editText.trim() && editText.trim() !== content ? '#FFFFFF' : (isDark ? '#666666' : '#999999')}
                       fontSize={11}
                       fontWeight="$medium"
                     >
@@ -346,7 +335,6 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
                   </Pressable>
                   <Pressable
                     onPress={handleEditCancel}
-                    disabled={isEditing}
                     style={{
                       paddingHorizontal: 12,
                       paddingVertical: 6,
@@ -398,12 +386,12 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
             <HStack alignItems="center" space="xs" mt="$1">
               <Pressable
                 onPress={handleLike}
-                disabled={isLiking || !onLike || !onUnlike}
+                disabled={!onLike || !onUnlike}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 4,
-                  opacity: (isLiking || !onLike || !onUnlike) ? 0.5 : 1,
+                  opacity: (!onLike || !onUnlike) ? 0.5 : 1,
                   paddingVertical: 4,
                   paddingHorizontal: 4,
                 }}
@@ -418,7 +406,7 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
                   fontSize={11}
                   fontWeight="$medium"
                 >
-                  {localLikesCount > 0 ? localLikesCount : t('buttons.like')}
+                  {likesCount > 0 ? likesCount : t('buttons.like')}
                 </Text>
               </Pressable>
             </HStack>
@@ -437,7 +425,6 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
           {onEdit && (
             <Pressable
               onPress={handleEditStart}
-              disabled={isEditing}
               style={[
                 styles.actionButton,
                 { backgroundColor: isDark ? '#3A3A3A' : '#E5E5E5', width: ACTION_WIDTH },
@@ -457,7 +444,6 @@ const CommentsCard: React.FC<CommentsCardProps> = ({
           {onDelete && (
             <Pressable
               onPress={handleDelete}
-              disabled={isDeleting}
               style={[
                 styles.actionButton,
                 { backgroundColor: '#FF3040', width: ACTION_WIDTH },
@@ -518,6 +504,5 @@ const styles = StyleSheet.create({
   },
 });
 
+const CommentsCard = React.memo(CommentsCardInner);
 export default CommentsCard;
-
-

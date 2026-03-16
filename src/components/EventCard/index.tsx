@@ -12,6 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard';
 import { toImageSource } from '@/src/utils';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 // Horizontal card: Ekranın %55'i (kompakt ve peek effect güçlü)
@@ -26,6 +27,7 @@ interface EventCardProps {
 }
 
 export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => {
+  const { t } = useTranslation('events');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   
@@ -83,7 +85,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
               fontSize={10}
               fontWeight="$bold"
             >
-              {data.eventType}
+              {t(`eventTypes.${data.eventType}`, { defaultValue: data.eventType })}
             </Text>
           </Box>
         </Box>
@@ -190,7 +192,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
               fontSize="$xs"
               fontWeight="$normal"
             >
-              {activeEventData.interaction || 0}+ Etkileşim
+              {activeEventData.interaction || 0}{t('details.peopleJoined')}
             </Text>
           </HStack>
         )}

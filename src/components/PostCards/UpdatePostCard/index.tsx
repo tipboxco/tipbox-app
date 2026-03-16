@@ -428,7 +428,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
                 {data.createdAt ? (
                   <Text
                     color={isDark ? '$textDark400' : '#A3A3A3'}
-                    fontSize="$sm"
+                    fontSize={11}
                   >
                     {`  •  ${formatRelativeTime(data.createdAt, i18n.language)}`}
                   </Text>
@@ -603,7 +603,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
             }}
           >
             <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-              <CardImageCarousel images={validImages} />
+              <CardImageCarousel images={validImages} isDetailMode={isDetailMode} />
             </VStack>
           </Pressable>
         );
