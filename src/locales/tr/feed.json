@@ -40,7 +40,8 @@
     "interests": "İlgi Alanları",
     "tags": "Etiketler",
     "category": "Kategori",
-    "sort": "Sırala"
+    "sort": "Sırala",
+    "clearAll": "Tümünü Temizle"
   },
   "filterFeed": {
     "title": {

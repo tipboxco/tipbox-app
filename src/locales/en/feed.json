@@ -40,7 +40,8 @@
     "interests": "Interests",
     "tags": "Tags",
     "category": "Category",
-    "sort": "Sort"
+    "sort": "Sort",
+    "clearAll": "Clear All"
   },
   "filterFeed": {
     "title": {

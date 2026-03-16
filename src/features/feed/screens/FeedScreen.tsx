@@ -44,8 +44,8 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
-import { FilterButtons } from '../components/FilterButtons';
-import { FilterFeed } from '../components/FilterFeed';
+import { FeedFilterChips } from '../components/FeedFilterChips';
+import { FeedFilterSheet } from '../components/FeedFilterSheet';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
@@ -304,17 +304,17 @@ const FeedScreenInner = React.memo(() => {
     );
   };
 
-  // Handle filter button press - open bottom sheet with FilterFeed
+  // Handle filter button press - open bottom sheet with FeedFilterSheet
   const handleFilterButtonPress = useCallback((filterId: 'interest' | 'tag' | 'category' | 'sort') => {
     openBottomSheet(
-      <FilterFeed
+      <FeedFilterSheet
         filterId={filterId}
         filters={filters}
         onFiltersChange={setFilters}
         onClose={closeBottomSheet}
       />,
       {
-        snapPoints: ['40%'],
+        snapPoints: ['45%'],
         enableDynamicSizing: false,
         enablePanDownToClose: true,
         animateOnMount: false,
@@ -999,10 +999,10 @@ const FeedScreenInner = React.memo(() => {
           <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
           </View>
-          {/* Filter Buttons */}
-          <FilterButtons
+          <FeedFilterChips
             filters={filters}
             onFilterPress={handleFilterButtonPress}
+            onClearAll={() => setFilters({})}
           />
         </View>
         <View style={{ flex: 1, minHeight: 0 }}>
