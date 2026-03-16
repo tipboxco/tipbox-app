@@ -327,6 +327,9 @@ const CollectionDetailScreen: React.FC = () => {
                 imageStyle={styles.heroCardImage}
                 resizeMode="cover"
               >
+                {/* Dark overlay */}
+                <View style={styles.heroOverlay} />
+
                 {/* Progress Badge */}
                 <View style={styles.progressBadge}>
                   <Text style={styles.progressBadgeText}>
@@ -334,27 +337,24 @@ const CollectionDetailScreen: React.FC = () => {
                   </Text>
                 </View>
 
-                {/* Content Container */}
-                <View style={styles.heroContent}>
-                  {/* Title */}
+                {/* Title & Description Card */}
+                <View style={styles.heroTextCard}>
                   <Text style={styles.heroTitle}>{collection.title}</Text>
-
-                  {/* Description */}
                   <Text style={styles.heroDescription}>
                     {collection.description}
                   </Text>
+                </View>
 
-                  {/* Search Bar */}
-                  <View style={styles.searchBar}>
-                    <Feather name="search" size={18} color="rgba(255, 255, 255, 0.6)" />
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder={t('search.badge')}
-                      placeholderTextColor="rgba(255, 255, 255, 0.6)"
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                    />
-                  </View>
+                {/* Search Bar */}
+                <View style={styles.searchBar}>
+                  <Feather name="search" size={18} color="rgba(255, 255, 255, 0.6)" />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder={t('search.badge')}
+                    placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
                 </View>
               </ImageBackground>
             </View>
@@ -456,19 +456,25 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     minHeight: 200,
-    position: 'relative',
+    justifyContent: 'center',
+    gap: 12,
     overflow: 'hidden',
   },
   heroCardImage: {
+    borderRadius: 16,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 16,
   },
   progressBadge: {
     position: 'absolute',
     top: 16,
     right: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -478,11 +484,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-  heroContent: {
-    gap: 8,
+  heroTextCard: {
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 12,
+    gap: 8,
   },
   heroTitle: {
     fontSize: 20,
@@ -493,20 +501,18 @@ const styles = StyleSheet.create({
   heroDescription: {
     fontSize: 11,
     lineHeight: 16,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    paddingHorizontal: 8,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
     gap: 8,
     marginTop: 12,
-    width: '100%',
   },
   searchInput: {
     flex: 1,
