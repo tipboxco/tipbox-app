@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Modal, TouchableWithoutFeedback, View } from 'react-native';
+import { StyleSheet, Modal, TouchableWithoutFeedback, View, Dimensions, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
@@ -52,6 +52,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isAvatarFullScreen, setIsAvatarFullScreen] = useState(false);
   const { user } = useAppStore();
   const safeAreaTop = useSafeAreaValues('top');
   const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
@@ -142,22 +143,24 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
       <Box px={15} mt={-20} style={{ marginLeft: 0, marginRight: 0, paddingLeft: 15, paddingRight: 15 }}>
         <HStack alignItems="flex-start" justifyContent="space-between" space="md">
           {/* Profile Image */}
-          <Box 
-            borderRadius={100}
-            overflow="hidden"
-            w={68}
-            h={68}
-            borderWidth={2}
-            borderColor="$white"
-            flexShrink={0}
-          >
-            <Image
-              source={toImageSource(userData.avatar) || DEFAULT_USER_AVATAR }
-              alt={userData.name}
-              w="100%"
-              h="100%"
-            />
-          </Box>
+          <Pressable onPress={() => setIsAvatarFullScreen(true)}>
+            <Box
+              borderRadius={100}
+              overflow="hidden"
+              w={68}
+              h={68}
+              borderWidth={2}
+              borderColor="$white"
+              flexShrink={0}
+            >
+              <Image
+                source={toImageSource(userData.avatar) || DEFAULT_USER_AVATAR }
+                alt={userData.name}
+                w="100%"
+                h="100%"
+              />
+            </Box>
+          </Pressable>
 
           {/* Action Buttons */}
           <HStack space="sm" alignItems="center" flexShrink={0} mt={32}>
@@ -508,6 +511,36 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
           </Box>
         </Box>
       )}
+
+      {/* Full Screen Avatar Modal */}
+      <Modal
+        visible={isAvatarFullScreen}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setIsAvatarFullScreen(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={() => setIsAvatarFullScreen(false)}
+        >
+          <Image
+            source={toImageSource(userData.avatar) || DEFAULT_USER_AVATAR}
+            alt={userData.name}
+            style={{
+              width: Dimensions.get('window').width - 40,
+              height: Dimensions.get('window').width - 40,
+              borderRadius: 12,
+            }}
+            resizeMode="cover"
+          />
+        </Pressable>
+      </Modal>
 
       {/* Menu Modal */}
       <Modal

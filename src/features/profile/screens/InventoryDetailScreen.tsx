@@ -13,6 +13,8 @@ import { toImageSource, cleanNewlines } from '@/src/utils';
 import { ProfileStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
 const InventoryDetailScreen = () => {
   const { colorMode } = useColorMode();
@@ -93,6 +95,28 @@ const InventoryDetailScreen = () => {
         title={t('inventoryDetail.title')}
         showBackButton
         onBackPress={() => navigation.goBack()}
+        showShare
+        onSharePress={() => {
+          const productName = [cleanNewlines(item.brand.name), cleanNewlines(item.brand.model)]
+            .filter((v) => v && v.toLowerCase() !== 'unknown')
+            .join(' ');
+          navigationService.navigate(ROOT_ROUTES.POST, {
+            screen: 'PostsScreen',
+            params: {
+              stage: 'Product',
+              name: productName,
+              productInfo: { image: toImageSource(item.image), title: productName },
+              selectedProduct: {
+                id: item.productId,
+                name: productName,
+                image: toImageSource(item.image),
+                productGroupId: item.productGroupId,
+              },
+              contextType: 'product',
+              contextId: item.productId,
+            },
+          });
+        }}
       />
 
       <ScrollView 

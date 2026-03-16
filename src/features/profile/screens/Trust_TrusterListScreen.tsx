@@ -74,6 +74,8 @@ export const Trust_TrusterListScreen = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [selectedSort, setSelectedSort] = useState<'default' | 'newest' | 'oldest'>('default');
+    const [isManualRefreshingTrust, setIsManualRefreshingTrust] = useState(false);
+    const [isManualRefreshingTruster, setIsManualRefreshingTruster] = useState(false);
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -245,13 +247,23 @@ export const Trust_TrusterListScreen = () => {
         closeBottomSheet();
     };
 
-    // Pull to refresh handler - cache invalid yap ve fresh data fetch et
+    // Pull to refresh handler - only manual pull sets refreshing state
     const handleRefreshTrust = useCallback(async () => {
-        await refetchTrustList();
+        setIsManualRefreshingTrust(true);
+        try {
+            await refetchTrustList();
+        } finally {
+            setIsManualRefreshingTrust(false);
+        }
     }, [refetchTrustList]);
 
     const handleRefreshTruster = useCallback(async () => {
-        await refetchTrusterList();
+        setIsManualRefreshingTruster(true);
+        try {
+            await refetchTrusterList();
+        } finally {
+            setIsManualRefreshingTruster(false);
+        }
     }, [refetchTrusterList]);
 
     const handleFilterPress = () => {
@@ -553,7 +565,7 @@ export const Trust_TrusterListScreen = () => {
                             contentContainerStyle={{ paddingBottom: bottomInset }}
                             refreshControl={
                                 <RefreshControl
-                                    refreshing={isRefetchingTrustList}
+                                    refreshing={isManualRefreshingTrust}
                                     onRefresh={handleRefreshTrust}
                                     tintColor={isDark ? '#FFFFFF' : '#000000'}
                                     colors={isDark ? ['#FFFFFF'] : ['#000000']}
@@ -631,7 +643,7 @@ export const Trust_TrusterListScreen = () => {
                             contentContainerStyle={{ paddingBottom: bottomInset }}
                             refreshControl={
                                 <RefreshControl
-                                    refreshing={isRefetchingTrusterList}
+                                    refreshing={isManualRefreshingTruster}
                                     onRefresh={handleRefreshTruster}
                                     tintColor={isDark ? '#FFFFFF' : '#000000'}
                                     colors={isDark ? ['#FFFFFF'] : ['#000000']}

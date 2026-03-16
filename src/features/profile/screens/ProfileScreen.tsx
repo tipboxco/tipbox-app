@@ -1703,7 +1703,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         {/* Badge Items - hide for other users with no badges */}
         {isOwnProfile || (profile.badges && profile.badges.length > 0) ? (
           isProfileLoading ? (
-            <Box mt={6} px={15} pb={16}>
+            <Box mt={6} px={15} pb={6}>
               <Box
                 borderRadius={5}
                 p={14}
@@ -1742,13 +1742,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               </Box>
             </Box>
           ) : (
-            <Box mt={6} px={15} pb={8}>
+            <Box mt={6} px={15} pb={0}>
               <Box
                 borderRadius={5}
                 p={profile.badges && profile.badges.length > 0 ? 14 : 8}
               >
                 {profile.badges && profile.badges.length > 0 ? (
-                  <HStack justifyContent="space-between">
+                  <HStack justifyContent="flex-start" space="md">
                     {profile.badges.slice(0, 4).map((badge) => (
                       <Pressable
                         key={badge.id}

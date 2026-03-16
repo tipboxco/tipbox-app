@@ -241,13 +241,16 @@ export const useTrusterList = (
  * @example
  * const { data, isLoading, error } = useUserProfile('user-123');
  */
-export const useUserProfile = (userId: string | undefined) => {
+export const useUserProfile = <TData = UserProfile>(
+  userId: string | undefined,
+  options?: { select?: (data: UserProfile) => TData }
+) => {
   // CRITICAL FIX: userId validasyonu - boş string veya geçersiz değer kontrolü
-  const isValidUserId = userId && 
-    typeof userId === 'string' && 
+  const isValidUserId = userId &&
+    typeof userId === 'string' &&
     userId.trim().length > 0;
-  
-  return useQuery<UserProfile, Error>({
+
+  return useQuery<UserProfile, Error, TData>({
     queryKey: isValidUserId ? profileKeys.profile(userId.trim()) : ['profile', 'profile', 'disabled'],
     queryFn: () => {
       if (!isValidUserId) {
@@ -261,6 +264,7 @@ export const useUserProfile = (userId: string | undefined) => {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
+    select: options?.select,
   });
 };
 
