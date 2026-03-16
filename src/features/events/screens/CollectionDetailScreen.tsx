@@ -499,8 +499,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   heroDescription: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 20,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
   },
