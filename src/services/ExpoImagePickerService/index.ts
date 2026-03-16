@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Platform } from 'react-native';
+import { Alert, AppState, Linking } from 'react-native';
 import { imagePickerConfig } from '../../config/imagePicker.config';
 import type { IImagePickerService, ImagePickerResult, ImagePickerMultipleResult, ImageValidationResult } from './types';
 
@@ -16,14 +16,106 @@ class ExpoImagePickerService implements IImagePickerService {
     return ExpoImagePickerService.instance;
   }
 
+  private waitForPermissionAfterSettings(
+    checkPermission: () => Promise<boolean>,
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      const subscription = AppState.addEventListener('change', async (nextState) => {
+        if (nextState === 'active') {
+          subscription.remove();
+          const granted = await checkPermission();
+          resolve(granted);
+        }
+      });
+    });
+  }
+
+  private showPermissionAlertAndWait(
+    title: string,
+    message: string,
+    checkPermission: () => Promise<boolean>,
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      Alert.alert(
+        title,
+        message,
+        [
+          { text: 'İptal', style: 'cancel', onPress: () => resolve(false) },
+          {
+            text: 'Ayarlara Git',
+            onPress: async () => {
+              Linking.openSettings();
+              const granted = await this.waitForPermissionAfterSettings(checkPermission);
+              resolve(granted);
+            },
+          },
+        ],
+      );
+    });
+  }
+
   private async requestCameraPermission(): Promise<boolean> {
+    const { status: currentStatus } = await ImagePicker.getCameraPermissionsAsync();
+
+    if (currentStatus === 'granted') return true;
+
+    // Daha önce reddedildiyse direkt Ayarlara Git alertı göster
+    if (currentStatus === 'denied') {
+      return this.showPermissionAlertAndWait(
+        'Kamera Erişimi Gerekli',
+        'Kamera kullanabilmek için ayarlardan izin vermeniz gerekmektedir.',
+        async () => {
+          const { status } = await ImagePicker.getCameraPermissionsAsync();
+          return status === 'granted';
+        },
+      );
+    }
+
+    // İlk kez isteniyor (undetermined) - sistem dialogunu göster
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    return status === 'granted';
+    if (status === 'granted') return true;
+
+    // Kullanıcı sistem dialogunda reddetti - hemen Ayarlara Git alertı göster
+    return this.showPermissionAlertAndWait(
+      'Kamera Erişimi Gerekli',
+      'Kamera kullanabilmek için ayarlardan izin vermeniz gerekmektedir.',
+      async () => {
+        const { status: recheckStatus } = await ImagePicker.getCameraPermissionsAsync();
+        return recheckStatus === 'granted';
+      },
+    );
   }
 
   private async requestMediaLibraryPermission(): Promise<boolean> {
+    const { status: currentStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+    if (currentStatus === 'granted') return true;
+
+    // Daha önce reddedildiyse direkt Ayarlara Git alertı göster
+    if (currentStatus === 'denied') {
+      return this.showPermissionAlertAndWait(
+        'Galeri Erişimi Gerekli',
+        'Galeriye erişebilmek için ayarlardan izin vermeniz gerekmektedir.',
+        async () => {
+          const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+          return status === 'granted';
+        },
+      );
+    }
+
+    // İlk kez isteniyor (undetermined) - sistem dialogunu göster
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    return status === 'granted';
+    if (status === 'granted') return true;
+
+    // Kullanıcı sistem dialogunda reddetti - hemen Ayarlara Git alertı göster
+    return this.showPermissionAlertAndWait(
+      'Galeri Erişimi Gerekli',
+      'Galeriye erişebilmek için ayarlardan izin vermeniz gerekmektedir.',
+      async () => {
+        const { status: recheckStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
+        return recheckStatus === 'granted';
+      },
+    );
   }
 
   public validateImage(asset: ImagePicker.ImagePickerAsset): ImageValidationResult {
@@ -210,8 +302,6 @@ class ExpoImagePickerService implements IImagePickerService {
       const pickerOptions = {
         ...imagePickerConfig.galleryMultiple,
         selectionLimit: maxSelection,
-        // iOS'ta HEIC/HEIF formatlarını desteklemek için
-        quality: 1, // Maximum quality - format dönüşümü sorunlarını önler
       };
 
       const result = await ImagePicker.launchImageLibraryAsync(pickerOptions);
@@ -230,10 +320,11 @@ class ExpoImagePickerService implements IImagePickerService {
         };
       }
 
-      // Tüm asset'leri işle - iOS'ta format sorunlarını önlemek için manipulator'ı sadece gerektiğinde kullan
+      // Tüm asset'leri JPEG'e dönüştür (native picker quality:1 ile ham dosya veriyor,
+      // sıkıştırma ve format dönüşümü burada yapılıyor)
       const validAssets: ImagePicker.ImagePickerAsset[] = [];
       const invalidAssets: string[] = [];
-      
+
       for (const asset of result.assets) {
         // URI kontrolü - URI yoksa atla
         if (!asset.uri) {
@@ -243,65 +334,26 @@ class ExpoImagePickerService implements IImagePickerService {
         }
 
         try {
-          // iOS'ta format sorunlarını önlemek için manipulator'ı sadece gerektiğinde kullan
-          // Eğer görsel zaten JPEG/PNG formatındaysa manipulator kullanma
-          const uriLower = asset.uri.toLowerCase();
-          const mimeTypeLower = (asset.mimeType || '').toLowerCase();
-          
-          const isAlreadyStandardFormat = 
-            uriLower.endsWith('.jpg') || 
-            uriLower.endsWith('.jpeg') || 
-            uriLower.endsWith('.png') ||
-            mimeTypeLower === 'image/jpeg' ||
-            mimeTypeLower === 'image/png';
-
-          // HEIC/HEIF formatını tespit et
-          const isHeicFormat = 
-            uriLower.endsWith('.heic') || 
-            uriLower.endsWith('.heif') ||
-            mimeTypeLower === 'image/heic' ||
-            mimeTypeLower === 'image/heif' ||
-            mimeTypeLower.includes('heic') ||
-            mimeTypeLower.includes('heif');
-
-          let finalAsset: ImagePicker.ImagePickerAsset = asset;
-
-          // HEIC/HEIF formatındaki görüntüleri her platformda JPEG'e dönüştür
-          // iOS'ta HEIC formatı Expo Image Picker tarafından doğrudan okunamaz
-          if (isHeicFormat || (!isAlreadyStandardFormat && Platform.OS !== 'ios')) {
-            try {
-              const manipulatedImage = await ImageManipulator.manipulateAsync(
-                asset.uri,
-                [], // No transformations - sadece format dönüşümü
-                {
-                  compress: 0.9, // Yüksek kalite
-                  format: ImageManipulator.SaveFormat.JPEG, // JPEG formatına dönüştür
-                }
-              );
-
-              finalAsset = {
-                ...asset,
-                uri: manipulatedImage.uri,
-                mimeType: 'image/jpeg',
-                fileSize: manipulatedImage.width && manipulatedImage.height 
-                  ? Math.round((manipulatedImage.width * manipulatedImage.height * 3) / 1024)
-                  : asset.fileSize,
-              };
-            } catch (manipulatorError: any) {
-              // Manipulator başarısız olursa orijinal asset'i kullanmayı dene
-              console.warn('Image manipulator failed:', manipulatorError?.message);
-              
-              // HEIC formatındaysa ve manipulator başarısız olduysa hata döndür
-              if (isHeicFormat) {
-                console.error('HEIC format conversion failed:', manipulatorError);
-                invalidAssets.push('HEIC formatındaki görsel işlenemedi. Lütfen görseli JPEG/PNG formatına dönüştürün.');
-                continue;
-              }
-              
-              // HEIC değilse orijinal asset'i kullan
-              finalAsset = asset;
+          // Tüm görselleri ImageManipulator ile JPEG'e dönüştür ve sıkıştır.
+          // Native picker fast path ile ham dosyayı kopyalar (HEIC/PNG/JPEG vb.),
+          // format dönüşümü ve kalite sıkıştırması burada yapılır.
+          const manipulatedImage = await ImageManipulator.manipulateAsync(
+            asset.uri,
+            [], // No transformations - sadece format dönüşümü
+            {
+              compress: 0.9,
+              format: ImageManipulator.SaveFormat.JPEG,
             }
-          }
+          );
+
+          const finalAsset: ImagePicker.ImagePickerAsset = {
+            ...asset,
+            uri: manipulatedImage.uri,
+            mimeType: 'image/jpeg',
+            fileSize: manipulatedImage.width && manipulatedImage.height
+              ? Math.round((manipulatedImage.width * manipulatedImage.height * 3) / 1024)
+              : asset.fileSize,
+          };
 
           const validation = this.validateImage(finalAsset);
           if (validation.isValid) {
@@ -309,19 +361,10 @@ class ExpoImagePickerService implements IImagePickerService {
           } else {
             invalidAssets.push(validation.error || 'Geçersiz dosya');
           }
-        } catch (error: any) {
-          console.error('Image processing error:', error, 'Original URI:', asset.uri);
-          
-          // HEIC format hatası kontrolü
-          const errorMsg = (error?.message || '').toLowerCase();
-          if (errorMsg.includes('cannot load representation') || 
-              errorMsg.includes('public.heic') || 
-              errorMsg.includes('heic')) {
-            invalidAssets.push('HEIC formatındaki görsel işlenemedi. Lütfen görseli JPEG/PNG formatına dönüştürün.');
-            continue;
-          }
-          
-          // Hata durumunda da orijinal asset'i kullanmayı dene (HEIC değilse)
+        } catch (manipulatorError: any) {
+          console.warn('Image manipulator failed, trying original asset:', manipulatorError?.message);
+
+          // Manipulator başarısız olursa orijinal asset'i kullanmayı dene
           try {
             const validation = this.validateImage(asset);
             if (validation.isValid) {
@@ -364,13 +407,14 @@ class ExpoImagePickerService implements IImagePickerService {
       if (error?.message) {
         const errorMsg = error.message.toLowerCase();
         
-        // iOS'ta format hatası (HEIC/HEIF)
-        if (errorMsg.includes('cannot load representation') || 
-            errorMsg.includes('public.heic') || 
+        // iOS'ta format hatası (HEIC/HEIF/PNG representation)
+        if (errorMsg.includes('cannot load representation') ||
+            errorMsg.includes('public.heic') ||
             errorMsg.includes('public.heif') ||
+            errorMsg.includes('public.png') ||
             errorMsg.includes('heic') ||
             errorMsg.includes('heif')) {
-          errorMessage = 'HEIC formatındaki görsel işlenemedi. Görsel otomatik olarak JPEG formatına dönüştürülmeye çalışıldı ancak başarısız oldu. Lütfen farklı bir görsel seçin veya görseli önceden JPEG/PNG formatına dönüştürün.';
+          errorMessage = 'Görsel formatı okunamadı. Lütfen farklı bir görsel seçin veya görseli önceden JPEG formatına dönüştürün.';
         } else if (errorMsg.includes('permission') || errorMsg.includes('authorization')) {
           errorMessage = 'Galeri erişim izni gerekli. Lütfen ayarlardan izin verin.';
         } else if (errorMsg.includes('canceled') || errorMsg.includes('cancelled')) {

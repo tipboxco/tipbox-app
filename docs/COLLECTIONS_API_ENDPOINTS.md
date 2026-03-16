@@ -53,11 +53,7 @@ GET /events/collections
       "description": "Master the hardware landscape.",
       "currentProgress": 12,
       "totalProgress": 120,
-      "backgroundGradient": {
-        "colors": ["#FF6B9D", "#C084FC", "#7C3AED"],
-        "start": { "x": 0, "y": 0 },
-        "end": { "x": 1, "y": 1 }
-      },
+      "coverImage": "https://cdn.tipbox.co/collections/col_01_cover.jpg",
       "category": "electronics"
     },
     {
@@ -66,11 +62,7 @@ GET /events/collections
       "description": "Feel every beat.",
       "currentProgress": 40,
       "totalProgress": 74,
-      "backgroundGradient": {
-        "colors": ["#0EA5E9", "#6366F1", "#8B5CF6"],
-        "start": { "x": 0, "y": 0 },
-        "end": { "x": 1, "y": 1 }
-      },
+      "coverImage": "https://cdn.tipbox.co/collections/col_02_cover.jpg",
       "category": "electronics"
     }
   ],
@@ -86,19 +78,13 @@ GET /events/collections
 ### Response Tipleri (TypeScript)
 
 ```typescript
-interface CollectionBackgroundGradient {
-  colors: string[];          // Min 2 renk, hex formatında (ör: "#FF6B9D")
-  start: { x: number; y: number }; // 0-1 arası, gradient başlangıç noktası
-  end: { x: number; y: number };   // 0-1 arası, gradient bitiş noktası
-}
-
 interface Collection {
   id: string;
   title: string;
   description: string;
   currentProgress: number;   // Kullanıcının bu collection'daki mevcut ilerlemesi
   totalProgress: number;     // Collection'ın toplam ilerleme hedefi
-  backgroundGradient: CollectionBackgroundGradient;
+  coverImage: string | null; // Collection kapak görseli URL'i (null ise placeholder gösterilir)
   category?: string;         // Chip filter kategorisi (ör: "electronics", "cosmetics")
 }
 
@@ -115,7 +101,7 @@ interface CollectionsListResponse {
 
 ### Notlar
 - `currentProgress` / `totalProgress`: Kullanıcıya özeldir (authenticated user). Giriş yapmamış kullanıcı için `currentProgress: 0` dönebilir.
-- `backgroundGradient`: Her collection'ın kendine özel gradient renkleri olmalıdır. Frontend `expo-linear-gradient` ile render ediyor.
+- `coverImage`: Her collection'ın kendine özel kapak görseli URL'i olmalıdır. `null` ise frontend placeholder görsel gösterir.
 - `category` alanı chip filter ile eşleşmeli (EP-02'deki kategori handle'ları ile tutarlı olmalı).
 - Frontend layout pattern: İlk item full-width, sonraki 2'li half-width, sonraki 2'li half-width, sonra tekrar full-width... (Her 5 item'de bir full). Bu layout frontend tarafında hesaplanıyor, backend'in bununla ilgilenmesine gerek yok.
 
@@ -215,11 +201,7 @@ GET /events/collections/{collectionId}
     "description": "Completing this collection proves your deep understanding of the digital backbone. You've demonstrated that you know exactly what drives modern productivity. You are now a certified authority in high-performance computing.",
     "currentProgress": 12,
     "totalProgress": 120,
-    "backgroundGradient": {
-      "colors": ["#3B2F63", "#5C4A7D", "#8B6F47"],
-      "start": { "x": 0, "y": 0 },
-      "end": { "x": 1, "y": 1 }
-    },
+    "coverImage": "https://cdn.tipbox.co/collections/col_01_cover.jpg",
     "category": "electronics"
   },
   "badges": [

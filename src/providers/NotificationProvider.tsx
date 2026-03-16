@@ -488,11 +488,27 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         console.warn('[NotificationProvider] ⚠️ Error checking current route:', error);
       }
 
+      // Gönderen adını belirle - farklı field'ları dene
+      const senderDisplayName =
+        eventData.senderName ||
+        eventData.senderFullName ||
+        (eventData.sender?.name) ||
+        (eventData.sender?.fullName) ||
+        (eventData.senderFirstName && eventData.senderLastName
+          ? `${eventData.senderFirstName} ${eventData.senderLastName}`
+          : null) ||
+        (eventData.sender?.firstName && eventData.sender?.lastName
+          ? `${eventData.sender.firstName} ${eventData.sender.lastName}`
+          : null) ||
+        eventData.senderFirstName ||
+        eventData.sender?.firstName ||
+        'Yeni Mesaj';
+
       // Notification oluştur
       const notification: Notification = {
         id: `new_message_${eventData.messageId}_${Date.now()}`,
         type: 'NEW_MESSAGE',
-        title: eventData.senderName || 'Yeni Mesaj',
+        title: senderDisplayName,
         message: eventData.messageType === 'image' 
           ? '📷 Bir görsel gönderdi' 
           : (eventData.message || eventData.text || 'Yeni mesaj'),
@@ -511,7 +527,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
             threadId: eventData.threadId,
             messageId: eventData.threadId,
             recipientUserId: eventData.senderId,
-            senderName: eventData.senderName || 'Unknown',
+            senderName: senderDisplayName !== 'Yeni Mesaj' ? senderDisplayName : 'Unknown',
             senderTitle: eventData.senderTitle || '',
             senderAvatar: eventData.senderAvatar,
           },

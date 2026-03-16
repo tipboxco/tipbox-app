@@ -18,15 +18,23 @@ export const imagePickerConfig = {
     allowsMultipleSelection: false,
     base64: false,
     exif: false,
+    // allowsEditing: true → legacy UIImagePickerController kullanır,
+    // preferredAssetRepresentationMode bu picker'da etkisiz.
   } satisfies ImagePickerOptions,
 
   galleryMultiple: {
     mediaTypes: 'images' as const,
     allowsEditing: false, // Multiple selection'da editing kapalı
-    quality: 1, // iOS'ta format sorunlarını önlemek için quality 1 yapıldı
+    // quality: 1 + preferredAssetRepresentationMode: 'current' (default) →
+    // Native kodda fast path'i tetikler. Fast path loadFileRepresentation
+    // kullanır (güvenilir). Slow path ise loadDataRepresentation kullanır
+    // ve "Cannot load representation of type public.png/heic" hatasına yol açar.
+    // Kalite sıkıştırması JS tarafında ImageManipulator ile yapılır.
+    quality: 1,
     allowsMultipleSelection: true,
     base64: false,
     exif: false,
+    // preferredAssetRepresentationMode: default 'current' (fast path için gerekli)
   } satisfies ImagePickerOptions,
 
   // Yükleme limitleri

@@ -623,8 +623,10 @@ export const useLikeComment = () => {
       // Invalidate comments query to get updated like status from backend
       queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
     },
-    onError: (err) => {
+    onError: (err, variables) => {
       console.error('[useLikeComment] Error:', err);
+      // Hata durumunda da refetch et - doğru isLiked state'ini al
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
     },
   });
 };
@@ -644,8 +646,10 @@ export const useUnlikeComment = () => {
       // Invalidate comments query to get updated like status from backend
       queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
     },
-    onError: (err) => {
+    onError: (err, variables) => {
       console.error('[useUnlikeComment] Error:', err);
+      // Hata durumunda da refetch et - doğru isLiked state'ini al
+      queryClient.invalidateQueries({ queryKey: interactionKeys.commentsPrefix(variables.postId) });
     },
   });
 };

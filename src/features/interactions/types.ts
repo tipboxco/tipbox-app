@@ -37,6 +37,7 @@ export interface Comment {
   comment: string;
   isAnswer: boolean;
   likesCount: number;
+  isLiked?: boolean;
   createdAt: string;
   updatedAt: string;
 }

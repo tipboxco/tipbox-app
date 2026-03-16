@@ -50,31 +50,28 @@ export const NotificationSettingsScreen = () => {
         }
     }, [notificationSettings]);
 
-    // Get setting value by code
+    // Get setting value by code - API'den veri gelmeden önce default açık
     const getSettingValue = (code: NotificationCode): boolean => {
-        return localSettings[code] ?? false;
+        return localSettings[code] ?? true;
     };
 
     // Update setting value
     const updateSetting = async (code: NotificationCode, value: boolean) => {
-        // Optimistic update
-        setLocalSettings((prev) => ({ ...prev, [code]: value }));
+        // Yeni settings map'ini ÖNCE oluştur (stale closure sorununu önler)
+        const newLocalSettings = { ...localSettings, [code]: value };
 
-        // Prepare all settings for API - tüm bildirim kodlarını gönder
+        // Optimistic update
+        setLocalSettings(newLocalSettings);
+
+        // Prepare all settings for API - güncel değerlerden oluştur
         const allSettings = [
-            { notificationCode: NotificationCode.EMAIL, value: localSettings[NotificationCode.EMAIL] ?? false },
-            { notificationCode: NotificationCode.PUSH, value: localSettings[NotificationCode.PUSH] ?? false },
-            { notificationCode: NotificationCode.IN_APP, value: localSettings[NotificationCode.IN_APP] ?? false },
-            { notificationCode: NotificationCode.DEPOSIT, value: localSettings[NotificationCode.DEPOSIT] ?? false },
-            { notificationCode: NotificationCode.COLLECTION, value: localSettings[NotificationCode.COLLECTION] ?? false },
-            { notificationCode: NotificationCode.POST, value: localSettings[NotificationCode.POST] ?? false },
+            { notificationCode: NotificationCode.EMAIL, value: newLocalSettings[NotificationCode.EMAIL] ?? true },
+            { notificationCode: NotificationCode.PUSH, value: newLocalSettings[NotificationCode.PUSH] ?? true },
+            { notificationCode: NotificationCode.IN_APP, value: newLocalSettings[NotificationCode.IN_APP] ?? true },
+            { notificationCode: NotificationCode.DEPOSIT, value: newLocalSettings[NotificationCode.DEPOSIT] ?? true },
+            { notificationCode: NotificationCode.COLLECTION, value: newLocalSettings[NotificationCode.COLLECTION] ?? true },
+            { notificationCode: NotificationCode.POST, value: newLocalSettings[NotificationCode.POST] ?? true },
         ];
-        
-        // Update the changed setting
-        const settingIndex = allSettings.findIndex((s) => s.notificationCode === code);
-        if (settingIndex !== -1) {
-            allSettings[settingIndex].value = value;
-        }
 
         try {
             await updateMutation.mutateAsync({ settings: allSettings });

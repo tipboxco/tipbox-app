@@ -147,13 +147,13 @@ export const RootNavigator = () => {
             />
           </RootStack.Group>
           
-          {/* Wallet - Special animation (fullScreenModal for better performance) */}
+          {/* Wallet - Card presentation (sağdan sola açılır) */}
           <RootStack.Screen
             name="Wallet"
             component={WalletNavigator}
             options={{
-              presentation: 'fullScreenModal', // PERFORMANCE FIX: fullScreenModal reduces Bottom Sheet conflicts on Android
-              animation: 'slide_from_bottom',
+              presentation: 'card',
+              animation: 'slide_from_right',
               gestureEnabled: true,
               headerShown: false,
             }}
