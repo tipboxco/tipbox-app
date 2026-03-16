@@ -1029,7 +1029,7 @@ const NotificationsScreenComponent: React.FC = () => {
           renderItem={renderNotificationItem}
           keyExtractor={keyExtractor}
           contentContainerStyle={{
-            paddingHorizontal: 0,
+            paddingHorizontal: 16,
             paddingTop: 8,
             // paddingBottom kaldırıldı - sadece ListFooterComponent'te padding var
           }}

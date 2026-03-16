@@ -154,8 +154,8 @@ const getNotificationMessage = (
 
         // TIPS NOTIFICATIONS
         case 'TIPS_RECEIVED': {
-            const senderUsername = data?.senderUsername || displayUsername;
-            const amount = data?.amount;
+            const senderUsername = data?.senderUsername || data?.senderName || displayUsername;
+            const amount = data?.amount ?? data?.tipsAmount ?? data?.tips;
             if (amount != null) return translate('messages.single.tipsReceived', { username: senderUsername, amount });
             return translate('messages.single.tipsReceived', { username: senderUsername, amount: '' });
         }
@@ -385,9 +385,9 @@ const TipsCard: React.FC<{
     onPress?: () => void;
 }> = ({ notification, onPress }) => {
     const data = notification.data || notification.metadata || {};
-    const tipsAmount = data.amount;
+    const tipsAmount = data.amount ?? data.tipsAmount ?? data.tips;
 
-    if (!tipsAmount) return null;
+    if (tipsAmount == null) return null;
 
     return (
         <Pressable
@@ -1609,7 +1609,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
     // Data extraction - dokümana göre güncellendi
     const data = notification.data || notification.metadata || {};
     // Dokümana göre: TIPS_RECEIVED ve TIPS_SENT için data.amount kullanılır
-    const tipsAmount = data.amount;
+    const tipsAmount = data.amount ?? data.tipsAmount ?? data.tips;
     const commentContent = data.description || data.message; // POST_COMMENTED için description, DM_REQUEST için message
     const postId = data.postId; // CRITICAL FIX: postId sadece data içinden alınmalı
     const eventId = data.eventId;
@@ -1632,7 +1632,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
     const shouldShowAvatar = !eventImage && !badgeImage && (category === 'post' || category === 'comment' || category === 'trust' || category === 'message' || category === 'tips' || category === 'expert');
 
     // Category-based content rendering - Instagram benzeri tasarım
-    const showTipsButton = category === 'tips' && tipsAmount; // Tips bildirimlerinde buton gösterilecek
+    const showTipsButton = category === 'tips' && tipsAmount != null; // Tips bildirimlerinde buton gösterilecek
     const showTrustButton = category === 'trust';
     const showCommentText = ((category === 'post' && notification.type === 'POST_COMMENTED') || category === 'message') && commentContent; // POST_COMMENTED ve DM_REQUEST için
     const showChatButton = notification.type === 'DM_REQUEST_ACCEPTED' || notification.type === 'DM_REQUEST_RECEIVED'; // Mesaj isteği kabul edildi ve alındı bildirimleri için
@@ -1749,28 +1749,27 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                             lineHeight={18}
                         >
                             {(() => {
-                                // Username'i belirle
+                                // Username'i belirle - data-level alanlar notification.username'den öncelikli
                                 let username = 'User';
+                                const notificationData = notification.data || notification.metadata || {};
 
                                 if (isGrouped && primaryUser?.username) {
                                     username = primaryUser.username;
+                                } else if (notification.type === 'TIPS_RECEIVED' || notification.type === 'TIPS_SENT' || notification.type === 'TRANSACTION_CONFIRMED') {
+                                    // Tips bildirimleri: data'daki sender bilgisi öncelikli
+                                    username = notificationData.senderUsername || notificationData.senderName || notification.username || 'User';
+                                } else if (notification.type === 'POST_LIKED' && notificationData.likerName) {
+                                    username = notificationData.likerName;
+                                } else if ((notification.type === 'COMMENT_LIKED' || notification.type === 'POST_COMMENTED') && notificationData.commenterName) {
+                                    username = notificationData.commenterName;
+                                } else if (notificationData.userName) {
+                                    username = notificationData.userName;
+                                } else if (notificationData.senderName) {
+                                    username = notificationData.senderName;
+                                } else if (notificationData.senderUsername) {
+                                    username = notificationData.senderUsername;
                                 } else if (notification.username) {
                                     username = notification.username;
-                                } else {
-                                    const notificationData = notification.data || notification.metadata || {};
-                                    if (notification.type === 'POST_LIKED' && notificationData.likerName) {
-                                        username = notificationData.likerName;
-                                    } else if (notification.type === 'COMMENT_LIKED' && notificationData.commenterName) {
-                                        username = notificationData.commenterName;
-                                    } else if (notification.type === 'POST_COMMENTED' && notificationData.commenterName) {
-                                        username = notificationData.commenterName;
-                                    } else if (notificationData.userName) {
-                                        username = notificationData.userName;
-                                    } else if (notificationData.senderName) {
-                                        username = notificationData.senderName;
-                                    } else if ((notification.type === 'TIPS_RECEIVED' || notification.type === 'TRANSACTION_CONFIRMED') && notificationData.senderUsername) {
-                                        username = notificationData.senderUsername;
-                                    }
                                 }
 
                                 // Mesajı oluştur
