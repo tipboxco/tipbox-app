@@ -118,7 +118,34 @@
       "news": "News"
     },
     "noContent": "No content found yet.",
-    "noNews": "No news found yet."
+    "noNews": "No news found yet.",
+    "filterButtons": {
+      "tags": "Tags",
+      "sort": "Sort",
+      "clearAll": "Clear All"
+    },
+    "filters": {
+      "title": {
+        "tags": "Tags",
+        "sort": "Sort"
+      },
+      "clear": "Clear",
+      "apply": "Apply",
+      "tagOptions": {
+        "all": "All",
+        "reviews": "Reviews",
+        "benchmarks": "Benchmarks",
+        "tipsAndTricks": "Tips & Tricks",
+        "questions": "Questions",
+        "updates": "Updates",
+        "news": "News"
+      },
+      "sortOptions": {
+        "newest": "Newest",
+        "oldest": "Oldest",
+        "mostPopular": "Most Popular"
+      }
+    }
   },
   "brandProductBook": {
     "title": "Brand Products Book",

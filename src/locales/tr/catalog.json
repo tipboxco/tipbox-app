@@ -118,7 +118,34 @@
       "news": "Haberler"
     },
     "noContent": "Henüz içerik bulunamadı.",
-    "noNews": "Henüz haber bulunamadı."
+    "noNews": "Henüz haber bulunamadı.",
+    "filterButtons": {
+      "tags": "Etiketler",
+      "sort": "Sırala",
+      "clearAll": "Tümünü Temizle"
+    },
+    "filters": {
+      "title": {
+        "tags": "Etiketler",
+        "sort": "Sırala"
+      },
+      "clear": "Temizle",
+      "apply": "Uygula",
+      "tagOptions": {
+        "all": "Tümü",
+        "reviews": "Değerlendirmeler",
+        "benchmarks": "Karşılaştırmalar",
+        "tipsAndTricks": "İpuçları ve Püf Noktaları",
+        "questions": "Sorular",
+        "updates": "Güncellemeler",
+        "news": "Haberler"
+      },
+      "sortOptions": {
+        "newest": "En Yeni",
+        "oldest": "En Eski",
+        "mostPopular": "En Popüler"
+      }
+    }
   },
   "brandProductBook": {
     "title": "Marka Ürün Kataloğu",

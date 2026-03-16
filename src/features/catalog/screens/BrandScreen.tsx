@@ -617,8 +617,8 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
               showsVerticalScrollIndicator={false}
             >
               <VStack space="md" pt="$4">
-                {Array.from({ length: Math.ceil(currentData.length / 3) }).map((_, rowIndex) => {
-                  const itemsPerRow = 3;
+                {Array.from({ length: Math.ceil(currentData.length / (currentStep === 'categories' ? 2 : 3)) }).map((_, rowIndex) => {
+                  const itemsPerRow = currentStep === 'categories' ? 2 : 3;
                   const startIndex = rowIndex * itemsPerRow;
                   const rowItems = currentData.slice(startIndex, startIndex + itemsPerRow);
 
@@ -637,6 +637,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
                               key={`category-${currentItem.id}-${rowIndex}-${colIndex}`}
                               category={currentItem as CategoryCardCategory}
                               onPress={() => handleCategoryPress(currentItem as CategoryCardCategory)}
+                              isLargeCard={true}
                             />
                           );
                         } else {

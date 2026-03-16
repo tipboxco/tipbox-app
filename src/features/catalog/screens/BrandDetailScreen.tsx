@@ -603,13 +603,15 @@ const BrandDetailScreen: React.FC = () => {
                     justifyContent="space-between"
                     alignItems="center"
                     height="100%"
+                    space="sm"
                 >
-                    <VStack flex={1}>
+                    <VStack flex={0.8}>
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$lg"
+                            fontSize={16}
                             fontWeight="$bold"
                             numberOfLines={1}
+                            mr="$2"
                         >
                             {brandCatalog?.name}
                         </Text>
@@ -625,20 +627,21 @@ const BrandDetailScreen: React.FC = () => {
                         </HStack>
                     </VStack>
                     <Button
-                        bg={brandCatalog?.isJoined ? "rgba(215, 215, 215, 0.8)" : "#C2E607"}
-                        borderRadius={10}
-                        minWidth={65}
-                        height={24}
+                        bg={brandCatalog?.isJoined ? '#D9D9D9' : '#C2E607'}
+                        borderRadius={5}
+                        h={36}
+                        px="$3"
                         onPress={handleJoinLeavePress}
                         disabled={isJoinLeavePending}
                         opacity={isJoinLeavePending ? 0.7 : 1}
+                        flex={0.2}
                     >
                         {isJoinLeavePending ? (
                             <ActivityIndicator size="small" color="#000000" />
                         ) : (
                             <ButtonText
                                 color="#000000"
-                                fontSize="$xs"
+                                fontSize={14}
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
@@ -746,12 +749,14 @@ const BrandDetailScreen: React.FC = () => {
                     py={16}
                 >
                     {/* Brand Header */}
-                    <HStack justifyContent="space-between" alignItems="center" mb="$2">
-                        <VStack flex={1}>
+                    <HStack justifyContent="space-between" alignItems="center" mb="$2" space="sm">
+                        <VStack flex={0.8}>
                             <Text
                                 color={isDark ? '#FFFFFF' : '#000000'}
-                                fontSize="$xl"
+                                fontSize={16}
                                 fontWeight="$bold"
+                                numberOfLines={2}
+                                mr="$2"
                                 mb="$1"
                             >
                                 {brandCatalog.name}
@@ -768,20 +773,21 @@ const BrandDetailScreen: React.FC = () => {
                             </HStack>
                         </VStack>
                         <Button
-                            bg={brandCatalog.isJoined ? "rgba(215, 215, 215, 0.8)" : "#C2E607"}
-                            borderRadius={10}
-                            minWidth={65}
-                            height={24}
+                            bg={brandCatalog.isJoined ? '#D9D9D9' : '#C2E607'}
+                            borderRadius={5}
+                            h={36}
+                            px="$3"
                             onPress={handleJoinLeavePress}
                             disabled={isJoinLeavePending}
                             opacity={isJoinLeavePending ? 0.7 : 1}
+                            flex={0.2}
                         >
                             {isJoinLeavePending ? (
                                 <ActivityIndicator size="small" color="#000000" />
                             ) : (
                                 <ButtonText
                                     color="#000000"
-                                    fontSize="$xs"
+                                    fontSize={14}
                                     fontWeight="$bold"
                                     textAlign="center"
                                 >
@@ -814,7 +820,7 @@ const BrandDetailScreen: React.FC = () => {
                         </HStack>
 
                         {/* Brand Sections - Horizontal Layout */}
-                        <HStack space="md" justifyContent="space-between">
+                        <HStack space="md" justifyContent="space-between" alignItems="stretch">
                             {/* Anketler & Oyunlaştırmalar Card */}
                             <Box
                                 flex={1}
@@ -824,7 +830,7 @@ const BrandDetailScreen: React.FC = () => {
                                 borderRadius={10}
                                 p="$3"
                             >
-                                <VStack space="sm" justifyContent="center">
+                                <VStack space="sm" flex={1}>
                                     {/* Icon */}
                                     <Image
                                         source={require('@/assets/catalog/lego.png')}
@@ -849,18 +855,19 @@ const BrandDetailScreen: React.FC = () => {
                                         fontSize="$2xs"
                                         lineHeight="$xs"
                                         textAlign="left"
+                                        flex={1}
                                     >
                                         {t('brandDetail.surveysDescription')}
                                     </Text>
 
                                     {/* Button */}
                                     <Button
-                                        mt='$2'
                                         bg="rgba(215, 215, 215, 0.8)"
                                         borderWidth={1}
                                         borderColor="#ADADAD"
                                         borderRadius={10}
-                                        width={75}
+                                        alignSelf="flex-start"
+                                        px="$3"
                                         height={24}
                                         onPress={() => {
                                             if (brandId) {
@@ -891,7 +898,7 @@ const BrandDetailScreen: React.FC = () => {
                                 borderRadius={10}
                                 p="$3"
                             >
-                                <VStack space="sm" justifyContent="center">
+                                <VStack space="sm" flex={1}>
                                     {/* Icon */}
                                     <Image
                                         source={require('@/assets/catalog/book.png')}
@@ -916,18 +923,19 @@ const BrandDetailScreen: React.FC = () => {
                                         fontSize="$2xs"
                                         lineHeight="$xs"
                                         textAlign="left"
+                                        flex={1}
                                     >
                                         {t('brandDetail.brandProductsBookDescription')}
                                     </Text>
 
                                     {/* Button */}
                                     <Button
-                                        mt='$2'
                                         bg="rgba(215, 215, 215, 0.8)"
                                         borderWidth={1}
                                         borderColor="#ADADAD"
                                         borderRadius={10}
-                                        width={65}
+                                        alignSelf="flex-start"
+                                        px="$3"
                                         height={24}
                                         onPress={() => {
                                             if (brandId) {

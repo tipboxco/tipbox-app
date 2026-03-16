@@ -788,15 +788,20 @@ export const getCatalogContextPosts = async (
     
     return safeResponse;
   } catch (error: any) {
-    if (error.response?.status === 404) {
+    // Handle "Context not found" - backend may return 404 or 500 for invalid context IDs
+    const isNotFound = error.response?.status === 404 ||
+      (error.response?.status === 500 && error.response?.data?.error?.message?.includes('Context not found'));
+
+    if (isNotFound) {
       if (__DEV__) {
-        console.warn('[getCatalogContextPosts] ⚠️ Context not found (404):', {
+        console.warn('[getCatalogContextPosts] ⚠️ Context not found:', {
           url: `/catalog/context/${contextId}/posts`,
           contextId,
+          status: error.response?.status,
           message: 'Context not found or no posts available.',
         });
       }
-      
+
       return {
         items: [],
         pagination: {
@@ -805,7 +810,7 @@ export const getCatalogContextPosts = async (
         },
       };
     }
-    
+
     console.error('[getCatalogContextPosts] API Error:', {
       url: `/catalog/context/${contextId}/posts?${params.toString()}`,
       status: error.response?.status,
