@@ -29,6 +29,53 @@
     "empty": "No messages yet",
     "loading": "Loading...",
     "placeholder": "Type your message...",
+    "alerts": {
+      "cannotSendMessage": "Cannot Send Message",
+      "pendingNotAccepted": "This support request has not been accepted yet. Please wait for the expert to accept your request before sending messages.",
+      "closedCannotSend": "This support request has been closed. You can view messages but cannot send new ones.",
+      "threadIdNotFoundMessage": "Thread ID not found. Please wait for the request to be accepted.",
+      "socketNotAvailable": "Socket connection not available. Please check your internet connection and try again.",
+      "socketNotReady": "Socket is not ready. Please wait a moment and try again.",
+      "rejectTitle": "Reject Support Request",
+      "rejectMessage": "Are you sure you want to reject this support request?",
+      "cancelTitle": "Cancel Support Request",
+      "cancelMessage": "Are you sure you want to cancel this support request?",
+      "reportUserTitle": "Report User",
+      "reportUserMessage": "Are you sure you want to report this user?",
+      "blockUserTitle": "Block User",
+      "blockUserMessage": "Are you sure you want to block {{userName}}? You will no longer receive messages from this user.",
+      "shareMessage": "Check out {{userName}}'s profile on Tipbox!"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "reject": "Reject",
+      "report": "Report",
+      "block": "Block",
+      "finalizeSupportRequest": "Finalize Support Request",
+      "closeSupportRequest": "Close Support Request"
+    },
+    "status": {
+      "pendingAutoClose": "Support request will close automatically in 24 hours if unanswered.",
+      "accepted": "Support request has been accepted. Support chat is now active.",
+      "rejected": "This support request has been rejected.",
+      "canceled": "This support request has been canceled.",
+      "statusPrefix": "Support request status: {{status}}"
+    },
+    "typing": "{{name}} is typing",
+    "supportChat": "Support Chat",
+    "reportModal": {
+      "title": "Report",
+      "reasonTitle": "Reason for report",
+      "reasonPlaceholder": "Select a report reason...",
+      "descriptionTitle": "Description",
+      "reasons": {
+        "spam": "Spam",
+        "inappropriate": "Inappropriate Content",
+        "harassment": "Harassment",
+        "scam": "Scam",
+        "other": "Other"
+      }
+    },
     "errors": {
       "failedToSendMessage": "Failed to send message. Please try again.",
       "errorFinalizingSupport": "An error occurred while finalizing the support request",
@@ -169,6 +216,17 @@
       "follow": "started following you",
       "tip": "sent you a tip",
       "mention": "mentioned you"
+    }
+  },
+  "supportChat": {
+    "requestType": "Request Type",
+    "requestAmount": "Request Amount",
+    "totalTips": "Total Tips",
+    "tipsAmount": "Tips Amount",
+    "types": {
+      "general": "General",
+      "technical": "Technical",
+      "product": "Product"
     }
   },
   "support": {

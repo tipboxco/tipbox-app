@@ -29,6 +29,53 @@
     "empty": "Henüz mesaj yok",
     "loading": "Yükleniyor...",
     "placeholder": "Mesajınızı yazın...",
+    "alerts": {
+      "cannotSendMessage": "Mesaj Gönderilemiyor",
+      "pendingNotAccepted": "Bu destek talebi henüz kabul edilmedi. Mesaj göndermeden önce uzmanın talebinizi kabul etmesini bekleyin.",
+      "closedCannotSend": "Bu destek talebi kapatıldı. Mesajları görüntüleyebilirsiniz ancak yeni mesaj gönderemezsiniz.",
+      "threadIdNotFoundMessage": "Thread ID bulunamadı. Talebin kabul edilmesini bekleyin.",
+      "socketNotAvailable": "Bağlantı kurulamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.",
+      "socketNotReady": "Bağlantı hazır değil. Lütfen bir an bekleyin ve tekrar deneyin.",
+      "rejectTitle": "Destek Talebini Reddet",
+      "rejectMessage": "Bu destek talebini reddetmek istediğinizden emin misiniz?",
+      "cancelTitle": "Destek Talebini İptal Et",
+      "cancelMessage": "Bu destek talebini iptal etmek istediğinizden emin misiniz?",
+      "reportUserTitle": "Kullanıcıyı Şikayet Et",
+      "reportUserMessage": "Bu kullanıcıyı şikayet etmek istediğinizden emin misiniz?",
+      "blockUserTitle": "Kullanıcıyı Engelle",
+      "blockUserMessage": "{{userName}} adlı kullanıcıyı engellemek istediğinizden emin misiniz? Bu kullanıcıdan artık mesaj almayacaksınız.",
+      "shareMessage": "Tipbox'ta {{userName}} profiline göz atın!"
+    },
+    "buttons": {
+      "cancel": "Vazgeç",
+      "reject": "Reddet",
+      "report": "Şikayet Et",
+      "block": "Engelle",
+      "finalizeSupportRequest": "Destek Talebini Sonlandır",
+      "closeSupportRequest": "Destek Talebini Kapat"
+    },
+    "status": {
+      "pendingAutoClose": "Destek talebi 24 saat içinde yanıtlanmazsa otomatik olarak kapanacaktır.",
+      "accepted": "Destek talebi kabul edildi. Destek sohbeti artık aktif.",
+      "rejected": "Bu destek talebi reddedildi.",
+      "canceled": "Bu destek talebi iptal edildi.",
+      "statusPrefix": "Destek talebi durumu: {{status}}"
+    },
+    "typing": "{{name}} yazıyor",
+    "supportChat": "Destek Sohbeti",
+    "reportModal": {
+      "title": "Şikayet Et",
+      "reasonTitle": "Şikayet nedeni",
+      "reasonPlaceholder": "Şikayet nedeni seçiniz...",
+      "descriptionTitle": "Açıklama",
+      "reasons": {
+        "spam": "Spam",
+        "inappropriate": "Uygunsuz İçerik",
+        "harassment": "Taciz",
+        "scam": "Dolandırıcılık",
+        "other": "Diğer"
+      }
+    },
     "errors": {
       "failedToSendMessage": "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
       "errorFinalizingSupport": "Destek talebi sonlandırılırken bir hata oluştu",
@@ -169,6 +216,17 @@
       "follow": "sizi takip etmeye başladı",
       "tip": "size bahşiş gönderdi",
       "mention": "sizden bahsetti"
+    }
+  },
+  "supportChat": {
+    "requestType": "Talep Türü",
+    "requestAmount": "Talep Tutarı",
+    "totalTips": "Toplam Tips",
+    "tipsAmount": "Tips Miktarı",
+    "types": {
+      "general": "Genel",
+      "technical": "Teknik",
+      "product": "Ürün"
     }
   },
   "support": {

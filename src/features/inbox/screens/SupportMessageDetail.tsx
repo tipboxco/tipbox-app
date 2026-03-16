@@ -37,6 +37,8 @@ import type { ThreadMessage } from '../api/messagesApi';
 import { MessageItem } from '../components/MessageItem';
 import { formatMessageTime } from '../utils/messageHelpers';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
 interface MessageDetailItem {
   id: string;
@@ -134,6 +136,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const [closedByCurrentUser, setClosedByCurrentUser] = useState(false);
   const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
   const [isReportModalVisible, setIsReportModalVisible] = useState(false);
   const [reportReason, setReportReason] = useState(''); // Dropdown seçimi
@@ -725,6 +728,59 @@ const SupportMessageDetailScreen: React.FC = () => {
     });
   }, [queryClient, navigation]);
 
+  // Support request finalized handler (completed durumuna geçer - diğer taraf finalize ettiğinde)
+  const handleSupportRequestFinalized = useCallback((data: { requestId: string; timestamp?: string }) => {
+    console.log('[SupportMessageDetail] ✅ Support request finalized event (completed):', data);
+
+    // Navigation params'ı güncelle (completed status'e çek)
+    navigation.setParams({ status: 'completed' });
+
+    // Local state'te support request status'ünü güncelle
+    setSupportRequestInfo((prev) => {
+      if (prev) {
+        return {
+          ...prev,
+          status: 'completed',
+        };
+      }
+      return prev;
+    });
+
+    // Mesajlar state'inde support request mesajının status'ünü güncelle
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.type === 'support_request' && msg.supportRequest?.requestId === data.requestId) {
+          return {
+            ...msg,
+            supportRequest: {
+              ...msg.supportRequest,
+              status: 'completed',
+            },
+          };
+        }
+        return msg;
+      })
+    );
+
+    // Sadece supportRequests'i invalidate et
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+
+    // Optimistic update - SupportRequestsScreen'deki listeyi anında güncelle
+    queryClient.setQueryData(inboxKeys.supportRequests(), (oldData: any) => {
+      if (!oldData || !Array.isArray(oldData)) return oldData;
+
+      return oldData.map((request: any) => {
+        if (request.id === data.requestId) {
+          return {
+            ...request,
+            status: 'completed',
+          };
+        }
+        return request;
+      });
+    });
+  }, [queryClient, navigation]);
+
   // ✅ WhatsApp Engine: Güvenli scroll helper - Inverted FlatList için scrollToEnd kullan
   const safeScrollToEnd = useCallback((animated: boolean = true) => {
     // Component unmount olduysa scroll yapma
@@ -791,6 +847,7 @@ const SupportMessageDetailScreen: React.FC = () => {
     on('support_request_rejected', handleSupportRequestRejected);
     on('support_request_cancelled', handleSupportRequestCancelled);
     on('support_request_closed', handleSupportRequestClosed); // ✅ FIX: Close request event'ini dinle (awaiting_completion)
+    on('support_request_finalized', handleSupportRequestFinalized); // ✅ Finalize event'ini dinle (completed)
 
     return () => {
       off('thread_joined', handleThreadJoined);
@@ -801,6 +858,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       off('support_request_rejected', handleSupportRequestRejected);
       off('support_request_cancelled', handleSupportRequestCancelled);
       off('support_request_closed', handleSupportRequestClosed); // ✅ FIX: Close request event listener'ını temizle
+      off('support_request_finalized', handleSupportRequestFinalized); // ✅ Finalize event listener'ını temizle
 
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -813,7 +871,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       // Component unmount olduğunu işaretle
       isMountedRef.current = false;
     };
-  }, [isConnected, threadId, on, off, handleThreadJoined, handleNewMessage, handleUserTyping, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled, socketStopTyping]);
+  }, [isConnected, threadId, on, off, handleThreadJoined, handleNewMessage, handleUserTyping, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled, handleSupportRequestFinalized, socketStopTyping]);
 
   // Yeni mesaj gönderme
   const handleSendMessage = (messageText: string) => {
@@ -822,17 +880,8 @@ const SupportMessageDetailScreen: React.FC = () => {
     // Pending request'lerde threadId yok, mesaj gönderilemez
     if (!threadId) {
       Alert.alert(
-        'Cannot Send Message',
-        'This support request has not been accepted yet. Please wait for the expert to accept your request before sending messages.'
-      );
-      return;
-    }
-
-    // ✅ FIX: awaiting_completion durumunda mesaj gönderilemez
-    if (params.status === 'awaiting_completion') {
-      Alert.alert(
-        'Cannot Send Message',
-        'This support request has been closed. You can view messages but cannot send new ones.'
+        t('supportMessageDetail.alerts.cannotSendMessage'),
+        t('supportMessageDetail.alerts.pendingNotAccepted')
       );
       return;
     }
@@ -868,13 +917,13 @@ const SupportMessageDetailScreen: React.FC = () => {
       }
     } else {
       // Socket bağlantısı yoksa veya threadId yoksa
-      const errorMessage = !threadId 
-        ? 'Thread ID not found. Please wait for the request to be accepted.'
+      const errorMessage = !threadId
+        ? t('supportMessageDetail.alerts.threadIdNotFoundMessage')
         : !isConnected
-        ? 'Socket connection not available. Please check your internet connection and try again.'
-        : 'Socket is not ready. Please wait a moment and try again.';
-      
-      Alert.alert('Cannot Send Message', errorMessage);
+        ? t('supportMessageDetail.alerts.socketNotAvailable')
+        : t('supportMessageDetail.alerts.socketNotReady');
+
+      Alert.alert(t('supportMessageDetail.alerts.cannotSendMessage'), errorMessage);
       // Optimistic mesajı geri al
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
     }
@@ -938,12 +987,12 @@ const SupportMessageDetailScreen: React.FC = () => {
     }
 
     Alert.alert(
-      'Reject Support Request',
-      'Are you sure you want to reject this support request?',
+      t('supportMessageDetail.alerts.rejectTitle'),
+      t('supportMessageDetail.alerts.rejectMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('supportMessageDetail.buttons.cancel'), style: 'cancel' },
         {
-          text: 'Reject',
+          text: t('supportMessageDetail.buttons.reject'),
           style: 'destructive',
           onPress: () => {
             if (isConnected && isSocketReady) {
@@ -987,12 +1036,12 @@ const SupportMessageDetailScreen: React.FC = () => {
     }
 
     Alert.alert(
-      'Cancel Support Request',
-      'Are you sure you want to cancel this support request?',
+      t('supportMessageDetail.alerts.cancelTitle'),
+      t('supportMessageDetail.alerts.cancelMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('supportMessageDetail.buttons.cancel'), style: 'cancel' },
         {
-          text: 'Cancel',
+          text: t('supportMessageDetail.buttons.cancel'),
           style: 'destructive',
           onPress: () => {
             if (isConnected && isSocketReady) {
@@ -1163,12 +1212,13 @@ const SupportMessageDetailScreen: React.FC = () => {
           setCloseModalRating(0); // Reset rating
           setIsCloseModalVisible(false);
           setIsFinalizeModal(false);
-          
+          setClosedByCurrentUser(true); // ✅ Track that current user initiated the close
+
           // ✅ FIX: Sadece supportRequests'i invalidate et (messages invalidate etme - threadMessages kaybolmasın)
           // Bu sayede SupportRequestsScreen otomatik olarak güncellenecek
           queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
           // ❌ messages invalidate etme - threadMessages query'si etkilenmesin, mesajlar görünmeye devam etsin
-          
+
           // ✅ FIX: Optimistic update - SupportRequestsScreen'deki listeyi anında güncelle
           // Request'i awaiting_completion status'e çek (close yapıldığında awaiting_completion olur)
           queryClient.setQueryData(inboxKeys.supportRequests(), (oldData: any) => {
@@ -1261,17 +1311,17 @@ const SupportMessageDetailScreen: React.FC = () => {
   const getReportReasonLabel = (reason: 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'SCAM' | 'OTHER' | '') => {
     switch (reason) {
       case 'SPAM':
-        return 'Spam';
+        return t('supportMessageDetail.reportModal.reasons.spam');
       case 'INAPPROPRIATE':
-        return 'Inappropriate Content';
+        return t('supportMessageDetail.reportModal.reasons.inappropriate');
       case 'HARASSMENT':
-        return 'Harassment';
+        return t('supportMessageDetail.reportModal.reasons.harassment');
       case 'SCAM':
-        return 'Scam';
+        return t('supportMessageDetail.reportModal.reasons.scam');
       case 'OTHER':
-        return 'Other';
+        return t('supportMessageDetail.reportModal.reasons.other');
       default:
-        return 'Rapor sebebi seçiniz...';
+        return t('supportMessageDetail.reportModal.reasonPlaceholder');
     }
   };
 
@@ -1525,10 +1575,9 @@ const SupportMessageDetailScreen: React.FC = () => {
         <VStack
           space="xs"
           alignItems={isSent ? 'flex-end' : 'flex-start'}
-          px="$4"
-          py="$2"
+          py="$1"
         >
-          <Box minWidth={250}>
+          <Box minWidth={250} maxWidth="85%">
             <Pressable onPress={() => toggleSupportRequest(item.id)}>
               <Box
                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
@@ -1793,17 +1842,59 @@ const SupportMessageDetailScreen: React.FC = () => {
                 color={isDark ? '#8C8C8C' : '#999999'}
                 flex={1}
               >
-                {requestStatus === 'pending' 
-                  ? 'Support request will close automatically in 24 hours if unanswered.'
+                {requestStatus === 'pending'
+                  ? t('supportMessageDetail.status.pendingAutoClose')
                   : requestStatus === 'accepted'
-                  ? 'Support request has been accepted. Support chat is now active.'
+                  ? t('supportMessageDetail.status.accepted')
                   : requestStatus === 'rejected'
-                  ? 'This support request has been rejected.'
+                  ? t('supportMessageDetail.status.rejected')
                   : requestStatus === 'canceled'
-                  ? 'This support request has been canceled.'
-                  : 'Support request status: ' + requestStatus
+                  ? t('supportMessageDetail.status.canceled')
+                  : t('supportMessageDetail.status.statusPrefix', { status: requestStatus })
                 }
               </Text>
+            </HStack>
+
+            {/* Timestamp below */}
+            <HStack
+              space="xs"
+              alignItems="center"
+              mt={2}
+              alignSelf={isSent ? 'flex-end' : 'flex-start'}
+            >
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize={10}
+                fontWeight="$normal"
+              >
+                {formatMessageTime(item.timestamp)}
+              </Text>
+              {isSent && (
+                <View style={{ width: 16, height: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  {item.isRead ? (
+                    <>
+                      <Feather
+                        name="check"
+                        size={12}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 0, top: 0 }}
+                      />
+                      <Feather
+                        name="check"
+                        size={12}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 4, top: 0 }}
+                      />
+                    </>
+                  ) : (
+                    <Feather
+                      name="check"
+                      size={11}
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    />
+                  )}
+                </View>
+              )}
             </HStack>
           </Box>
         </VStack>
@@ -1840,16 +1931,22 @@ const SupportMessageDetailScreen: React.FC = () => {
       
       {/* Header */}
       <MessageDetailHeader
-        senderName="Support Request"
-        senderTitle=""
-        senderAvatar={undefined}
+        senderName={params.expertName || 'Support Request'}
+        senderTitle={params.expertTitle || ''}
+        senderAvatar={params.expertAvatar}
         onBackPress={() => navigation.goBack()}
+        onAvatarPress={params.recipientUserId ? () => {
+          navigationService.navigate(ROOT_ROUTES.PROFILE as any, {
+            screen: 'ProfileMain',
+            params: { userId: params.recipientUserId },
+          });
+        } : undefined}
         onMenuPress={() => {}}
         onShare={async () => {
           if (!params.userName) return;
           try {
             await Share.share({
-              message: `Check out ${params.userName}'s profile on Tipbox!`,
+              message: t('supportMessageDetail.alerts.shareMessage', { userName: params.userName || '' }),
               url: `tipboxapp://profile/user/${params.recipientUserId || ''}`,
             });
           } catch (error) {
@@ -1859,12 +1956,12 @@ const SupportMessageDetailScreen: React.FC = () => {
         onReport={() => {
           if (!user?.id || !params.recipientUserId) return;
           RNAlert.alert(
-            'Report User',
-            'Are you sure you want to report this user?',
+            t('supportMessageDetail.alerts.reportUserTitle'),
+            t('supportMessageDetail.alerts.reportUserMessage'),
             [
-              { text: 'Cancel', style: 'cancel' },
+              { text: t('supportMessageDetail.buttons.cancel'), style: 'cancel' },
               {
-                text: 'Report',
+                text: t('supportMessageDetail.buttons.report'),
                 style: 'destructive',
                 onPress: () => {
                   reportUserMutation.mutate({
@@ -1883,12 +1980,12 @@ const SupportMessageDetailScreen: React.FC = () => {
         onBlock={() => {
           if (!user?.id || !params.recipientUserId) return;
           RNAlert.alert(
-            'Block User',
-            `Are you sure you want to block ${params.userName || 'this user'}? You will no longer receive messages from this user.`,
+            t('supportMessageDetail.alerts.blockUserTitle'),
+            t('supportMessageDetail.alerts.blockUserMessage', { userName: params.userName || 'User' }),
             [
-              { text: 'Cancel', style: 'cancel' },
+              { text: t('supportMessageDetail.buttons.cancel'), style: 'cancel' },
               {
-                text: 'Block',
+                text: t('supportMessageDetail.buttons.block'),
                 style: 'destructive',
                 onPress: () => {
                   blockUserMutation.mutate({
@@ -1959,7 +2056,7 @@ const SupportMessageDetailScreen: React.FC = () => {
             }
             return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
           })()}
-          supportTitle={supportRequestInfo?.supportType || 'Support Chat'}
+          supportTitle={supportRequestInfo?.supportType || t('supportMessageDetail.supportChat')}
           tipsAmount={supportRequestInfo?.amount || 0}
           requestDetails={supportRequestInfo?.message || ''}
           // ✅ YENİ: Response formatından gelen bilgiler
@@ -2012,11 +2109,12 @@ const SupportMessageDetailScreen: React.FC = () => {
                 </Box>
               )
             }
-            contentContainerStyle={{ 
+            contentContainerStyle={{
+              paddingHorizontal: 16,
               // ✅ Inverted FlatList: paddingTop = en yeni mesajların (ekranın altındaki) altına padding ekler
               paddingTop: isKeyboardVisible ? 80 : 120,
               // CRITICAL FIX: Butonların üstüne padding ekle
-              paddingBottom: isKeyboardVisible 
+              paddingBottom: isKeyboardVisible
                 ? keyboardHeight + 0  // Klavye + Input (~60px) + Butonlar (~100px)
                 : 0, // Input (~60px) + Bottom inset + Butonlar (~100px)
               // Empty state için: Mesaj yoksa ekranın tamamını kapla ve ortala
@@ -2050,7 +2148,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               fontSize={12}
               fontStyle="italic"
             >
-              {params.expertName || 'User'} is typing
+              {t('supportMessageDetail.typing', { name: params.expertName || 'User' })}
             </Text>
             <HStack space="xs" alignItems="center">
               <Box
@@ -2080,11 +2178,11 @@ const SupportMessageDetailScreen: React.FC = () => {
       )}
 
       {/* Action Buttons - Klavye ve input üstünde görünmeli */}
-      {/* CRITICAL FIX: Bottom inset artık ayrı view olarak eklendi, burada sadece input height + bottom inset ekle */}
-      {params.status === 'active' && threadId && (
+      {/* Active: Close + Report buttons | Awaiting (other party closed): Finalize + Report buttons */}
+      {(params.status === 'active' || (params.status === 'awaiting_completion' && !closedByCurrentUser)) && threadId && (
         <Box
           position="absolute"
-          bottom={isKeyboardVisible 
+          bottom={isKeyboardVisible
             ? keyboardHeight + 60
             : 60 + insets.bottom}
           right={16}
@@ -2096,12 +2194,14 @@ const SupportMessageDetailScreen: React.FC = () => {
             onReportPress={handleReport}
             keyboardHeight={keyboardHeight}
             isKeyboardVisible={isKeyboardVisible}
+            isFinalize={params.status === 'awaiting_completion'}
+            onFinalizePress={handleFinalizeRequest}
           />
         </Box>
       )}
 
-      {/* Mesaj Gönderme Alanı - Sadece active status'ta göster (awaiting_completion ve completed'da kapalı) */}
-      {params.status === 'active' && threadId && (
+      {/* Mesaj Gönderme Alanı - active ve awaiting_completion'da göster (completed'da kapalı) */}
+      {(params.status === 'active' || params.status === 'awaiting_completion') && threadId && (
         <Box 
           pb={isKeyboardVisible 
             ? (Platform.OS === 'ios' ? 4 : 0) 
@@ -2174,19 +2274,21 @@ const SupportMessageDetailScreen: React.FC = () => {
       )}
 
 
-      {/* Awaiting Completion Status - Mesajlar görünür ama mesaj gönderilemez */}
-      {params.status === 'awaiting_completion' && (
-        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
-          <VStack space="sm" alignItems="center">
+      {/* Awaiting Completion Status - Current user closed: show waiting banner */}
+      {params.status === 'awaiting_completion' && closedByCurrentUser && (
+        <Box px="$4" py="$2" bg={isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.08)'}>
+          <HStack space="sm" alignItems="center" justifyContent="center">
+            <Feather name="clock" size={14} color="#6366F1" />
             <Text
-              color={isDark ? '#6366F1' : '#6366F1'}
-              fontSize={14}
-              fontWeight="$semibold"
+              color="#6366F1"
+              fontSize={13}
+              fontWeight="$medium"
               textAlign="center"
+              flex={1}
             >
-              This support request has been closed. You can view messages but cannot send new ones.
+              You have requested to close this support request. Waiting for the other party to confirm closure.
             </Text>
-          </VStack>
+          </HStack>
         </Box>
       )}
 
@@ -2430,7 +2532,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                               fontWeight="$semibold"
                               color="#000000"
                             >
-                              {isFinalizeModal ? 'Finalize Support Request' : 'Close Support Request'}
+                              {isFinalizeModal ? t('supportMessageDetail.buttons.finalizeSupportRequest') : t('supportMessageDetail.buttons.closeSupportRequest')}
                             </Text>
                           </Box>
                         </Pressable>
@@ -2473,7 +2575,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                           fontWeight="$semibold"
                           color="#000000"
                         >
-                          Cancel
+                          {t('supportMessageDetail.buttons.cancel')}
                         </Text>
                       </Box>
                     </Pressable>
@@ -2518,7 +2620,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                       textAlign="center"
                       flex={1}
                     >
-                      Report
+                      {t('supportMessageDetail.reportModal.title')}
                     </Text>
                     <Pressable onPress={handleCancelReport}>
                       <Feather
@@ -2601,7 +2703,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                       fontWeight="$bold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
-                      Reason for report
+                      {t('supportMessageDetail.reportModal.reasonTitle')}
                     </Text>
                     
                     {/* Custom Dropdown */}
@@ -2694,7 +2796,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                       fontWeight="$bold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
-                      Description
+                      {t('supportMessageDetail.reportModal.descriptionTitle')}
                     </Text>
                     
                     <Input
@@ -2736,7 +2838,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         fontWeight="$semibold"
                         color="#000000"
                       >
-                        Report
+                        {t('supportMessageDetail.buttons.report')}
                       </Text>
                     </Box>
                   </Pressable>

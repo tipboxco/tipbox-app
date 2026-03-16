@@ -8,6 +8,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface SupportChatParticipantsProps {
   user1Name: string;
@@ -48,6 +49,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('inbox');
 
   return (
     <VStack
@@ -159,7 +161,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               fontSize={12}
               fontWeight="$normal"
             >
-              Request Type
+              {t('supportChat.requestType')}
             </Text>
             <Box
               bg="#3B82F6"
@@ -172,7 +174,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
                 fontSize={12}
                 fontWeight="$semibold"
               >
-                {supportRequestType === 'GENERAL' ? 'Genel' : supportRequestType === 'TECHNICAL' ? 'Teknik' : 'Ürün'}
+                {supportRequestType === 'GENERAL' ? t('supportChat.types.general') : supportRequestType === 'TECHNICAL' ? t('supportChat.types.technical') : t('supportChat.types.product')}
               </Text>
             </Box>
           </HStack>
@@ -186,7 +188,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               fontSize={12}
               fontWeight="$normal"
             >
-              Request Amount
+              {t('supportChat.requestAmount')}
             </Text>
             <Text
               color="#000000"
@@ -206,7 +208,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               fontSize={12}
               fontWeight="$normal"
             >
-              Total Tips
+              {t('supportChat.totalTips')}
             </Text>
             <Text
               color="#000000"
@@ -226,7 +228,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               fontSize={12}
               fontWeight="$normal"
             >
-              Tips Amount
+              {t('supportChat.tipsAmount')}
             </Text>
             <Text
               color="#000000"
