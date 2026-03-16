@@ -80,7 +80,11 @@
           "Education": "Education",
           "Work": "Work",
           "Sports": "Sports",
-          "Hobby": "Hobby"
+          "Hobby": "Hobby",
+          "1 Year": "1 Year",
+          "2 Years": "2 Years",
+          "3 Years": "3 Years",
+          "More than 3 years": "More than 3 years"
         }
       },
       "step2": {
@@ -140,7 +144,8 @@
       },
       "labels": {
         "productBenchmark": "Product Benchmark",
-        "description": "Benchmark Description"
+        "description": "Benchmark Description",
+        "loading": "Loading product..."
       },
       "placeholders": {
         "description": "Type your Benchmark Description here..."
@@ -148,15 +153,25 @@
       "modal": {
         "title": "Select Second Product",
         "fromInventory": "From Inventory",
+        "fromInventoryDesc": "Select a product from your inventory to compare.",
         "fromCatalog": "From Catalog",
+        "fromCatalogDesc": "Browse the catalog to find a product to compare.",
         "cancel": "Cancel",
         "selectFromInventoryTitle": "Select from Inventory"
+      },
+      "dashedCard": {
+        "addProduct": "Add Product",
+        "inventoryOrCatalog": "Inventory or Catalog"
       },
       "selectCompareProduct": "Select Product to Compare",
       "searchPlaceholder": "Search products...",
       "noProductsFound": "No products found matching your search.",
       "noProductsInGroup": "No products found in this group.",
       "searchToCompare": "Please search for a product to compare",
+      "catalogSearch": "Search products...",
+      "catalogError": "Failed to load products. Please try again.",
+      "catalogSearchPrompt": "Search for a product to compare",
+      "catalogEmpty": "No products found.",
       "validation": {
         "twoProductsRequired": "Two products must be selected.",
         "descriptionRequired": "Benchmark description is required.",
@@ -225,6 +240,12 @@
       "placeholders": {
         "description": "Type your Tips & Tricks here...",
         "categorySelect": "Select the category of your Tips & Tricks"
+      },
+      "categories": {
+        "time_saving": "Time Saving",
+        "energy_efficiency": "Energy Efficiency",
+        "durability": "Durability",
+        "better_result": "Better Result"
       },
       "validation": {
         "contextMissing": "Context information not found. Please try again.",

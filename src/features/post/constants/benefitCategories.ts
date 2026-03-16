@@ -7,7 +7,8 @@
 export type BenefitCategoryValue = 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result';
 
 export interface BenefitCategory {
-  label: string;
+  /** i18n key: create.tipsAndTricks.categories.<value> */
+  labelKey: string;
   value: BenefitCategoryValue;
   icon: 'clock' | 'zap' | 'shield' | 'target';
   color: string; // Hex color for UI
@@ -20,28 +21,28 @@ export interface BenefitCategory {
  */
 export const BENEFIT_CATEGORIES: BenefitCategory[] = [
   {
-    label: 'Time Saving',
+    labelKey: 'create.tipsAndTricks.categories.time_saving',
     value: 'time_saving',
     icon: 'clock',
     color: '#4CAF50',
     bgColor: '#E8F5E9',
   },
   {
-    label: 'Energy Efficiency',
+    labelKey: 'create.tipsAndTricks.categories.energy_efficiency',
     value: 'energy_efficiency',
     icon: 'zap',
     color: '#FF9800',
     bgColor: '#FFF3E0',
   },
   {
-    label: 'Durability',
+    labelKey: 'create.tipsAndTricks.categories.durability',
     value: 'durability',
     icon: 'shield',
     color: '#2196F3',
     bgColor: '#E3F2FD',
   },
   {
-    label: 'Better Result',
+    labelKey: 'create.tipsAndTricks.categories.better_result',
     value: 'better_result',
     icon: 'target',
     color: '#9C27B0',

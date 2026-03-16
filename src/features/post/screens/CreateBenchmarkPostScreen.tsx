@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Keyboard, View } from 'react-native';
+import { Keyboard, View, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, useToast } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, Input, InputField, useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -23,6 +23,8 @@ import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys } from '@/src/features/profile/api/hooks';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
+import { useCatalogProducts, useGlobalProductSearch } from '@/src/features/catalog/api/hooks';
+import type { CatalogProduct } from '@/src/features/catalog/types';
 import type { InventoryItem } from '@/src/features/profile/types';
 import type { PostStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -49,70 +51,97 @@ const ProductSourceSelection: React.FC<ProductSourceSelectionProps> = ({
   const isDark = colorMode === 'dark';
 
   return (
-    <View style={{ padding: 20, backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }}>
-      <Text
-        fontSize={18}
-        fontWeight="$semibold"
-        color={isDark ? '$textDark50' : '#000'}
-        mb={16}
-        textAlign="center"
-      >
-        {t('create.benchmark.modal.title')}
-      </Text>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }}>
+      {/* Header: Back arrow + centered title */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 }}>
+        <Pressable onPress={onClose} p={4}>
+          <Feather name="chevron-left" size={24} color={isDark ? '#FFF' : '#000'} />
+        </Pressable>
+        <View style={{ flex: 1, alignItems: 'center', marginRight: 32 }}>
+          <Text
+            fontSize={17}
+            fontWeight="$bold"
+            color={isDark ? '$textDark50' : '#000'}
+          >
+            {t('create.benchmark.modal.title')}
+          </Text>
+        </View>
+      </View>
 
-      <VStack space="md">
+      {/* Option Cards */}
+      <VStack space="md" px={16}>
+        {/* From Inventory */}
         <Pressable
           onPress={onSelectFromInventory}
           bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
-          borderRadius={8}
+          borderRadius={12}
           p={16}
         >
-          <HStack space="sm" alignItems="center">
-            <Feather name="archive" size={20} color={isDark ? '#FFF' : '#000'} />
-            <Text
-              fontSize={15}
-              fontWeight="$medium"
-              color={isDark ? '$textDark50' : '#000'}
+          <HStack space="md" alignItems="center">
+            <Box
+              width={40}
+              height={40}
+              borderRadius={8}
+              borderWidth={1.5}
+              borderColor={isDark ? '$borderDark600' : '#000'}
+              alignItems="center"
+              justifyContent="center"
             >
-              {t('create.benchmark.modal.fromInventory')}
-            </Text>
+              <Feather name="archive" size={18} color={isDark ? '#FFF' : '#000'} />
+            </Box>
+            <VStack flex={1} space="xs">
+              <Text
+                fontSize={15}
+                fontWeight="$bold"
+                color={isDark ? '$textDark50' : '#000'}
+              >
+                {t('create.benchmark.modal.fromInventory')}
+              </Text>
+              <Text
+                fontSize={13}
+                color={isDark ? '$textDark400' : '#999'}
+              >
+                {t('create.benchmark.modal.fromInventoryDesc')}
+              </Text>
+            </VStack>
           </HStack>
         </Pressable>
 
+        {/* From Catalog */}
         <Pressable
           onPress={onSelectFromCatalog}
           bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
-          borderRadius={8}
+          borderRadius={12}
           p={16}
         >
-          <HStack space="sm" alignItems="center">
-            <Feather name="grid" size={20} color={isDark ? '#FFF' : '#000'} />
-            <Text
-              fontSize={15}
-              fontWeight="$medium"
-              color={isDark ? '$textDark50' : '#000'}
+          <HStack space="md" alignItems="center">
+            <Box
+              width={40}
+              height={40}
+              borderRadius={8}
+              borderWidth={1.5}
+              borderColor={isDark ? '$borderDark600' : '#000'}
+              alignItems="center"
+              justifyContent="center"
             >
-              {t('create.benchmark.modal.fromCatalog')}
-            </Text>
+              <Feather name="grid" size={18} color={isDark ? '#FFF' : '#000'} />
+            </Box>
+            <VStack flex={1} space="xs">
+              <Text
+                fontSize={15}
+                fontWeight="$bold"
+                color={isDark ? '$textDark50' : '#000'}
+              >
+                {t('create.benchmark.modal.fromCatalog')}
+              </Text>
+              <Text
+                fontSize={13}
+                color={isDark ? '$textDark400' : '#999'}
+              >
+                {t('create.benchmark.modal.fromCatalogDesc')}
+              </Text>
+            </VStack>
           </HStack>
-        </Pressable>
-
-        <Pressable
-          onPress={onClose}
-          bg="transparent"
-          borderWidth={1}
-          borderColor={isDark ? '$borderDark700' : '#E0E0E0'}
-          borderRadius={8}
-          p={16}
-        >
-          <Text
-            fontSize={15}
-            fontWeight="$medium"
-            color={isDark ? '$textDark400' : '#666'}
-            textAlign="center"
-          >
-            {t('create.benchmark.modal.cancel')}
-          </Text>
         </Pressable>
       </VStack>
     </View>
@@ -131,40 +160,296 @@ const InventorySelection: React.FC<InventorySelectionProps> = ({
   onClose,
   productGroupFilter,
 }) => {
-  const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FAFAFA' }}>
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: isDark ? '#333333' : '#E0E0E0',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Text
-          fontSize={18}
-          fontWeight="$semibold"
-          color={isDark ? '$textDark50' : '#000'}
-        >
-          {t('create.benchmark.modal.selectFromInventoryTitle')}
-        </Text>
-        <Pressable onPress={onClose} p={8}>
-          <Feather name="x" size={24} color={isDark ? '#FFF' : '#000'} />
-        </Pressable>
-      </View>
       <AddProductFromInventory
         onProductSelect={onProductSelect}
         onClose={onClose}
         productGroupFilter={productGroupFilter}
       />
     </View>
+  );
+};
+
+// Catalog Selection Bottom Sheet Content
+const CATALOG_CARD_GAP = 8;
+const CATALOG_CARDS_PER_ROW = 3;
+const CATALOG_HORIZONTAL_PADDING = 16;
+const CATALOG_CARD_WIDTH =
+  (Dimensions.get('window').width - CATALOG_HORIZONTAL_PADDING * 2 - CATALOG_CARD_GAP * (CATALOG_CARDS_PER_ROW - 1)) /
+  CATALOG_CARDS_PER_ROW;
+
+interface CatalogSelectionProps {
+  onProductSelect: (product: CatalogProduct) => void;
+  onClose: () => void;
+  productGroupId?: string;
+}
+
+const CatalogSelection: React.FC<CatalogSelectionProps> = ({
+  onProductSelect,
+  onClose,
+  productGroupId,
+}) => {
+  const { colorMode } = useColorMode();
+  const { t } = useTranslation('post');
+  const isDark = colorMode === 'dark';
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // If productGroupId exists, use useCatalogProducts; otherwise use useGlobalProductSearch
+  const catalogProductsQuery = useCatalogProducts(
+    productGroupId,
+    debouncedSearch || undefined,
+    16
+  );
+
+  const globalSearchQuery = useGlobalProductSearch(
+    !productGroupId ? (debouncedSearch || undefined) : undefined,
+    20
+  );
+
+  const usesCatalog = !!productGroupId;
+  const activeQuery = usesCatalog ? catalogProductsQuery : globalSearchQuery;
+
+  // Flatten products from pages
+  const products: CatalogProduct[] = React.useMemo(() => {
+    if (!activeQuery.data?.pages) return [];
+
+    if (usesCatalog) {
+      // useCatalogProducts returns CatalogPaginationResponse<CatalogProduct>
+      return catalogProductsQuery.data?.pages.flatMap((page) => page.items) || [];
+    } else {
+      // useGlobalProductSearch returns GlobalProductSearchResponse with nested products
+      return (
+        globalSearchQuery.data?.pages.flatMap((page) =>
+          page.items.flatMap((group) => group.products)
+        ) || []
+      );
+    }
+  }, [activeQuery.data?.pages, usesCatalog]);
+
+  const handleLoadMore = () => {
+    if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
+      activeQuery.fetchNextPage();
+    }
+  };
+
+  const renderProductCard = ({ item }: { item: CatalogProduct }) => {
+    // Parse name: first word is brand, rest is product name
+    const nameParts = item.name.split(' ');
+    const brandName = nameParts.length > 1 ? nameParts[0] : '';
+    const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : item.name;
+
+    return (
+      <Pressable onPress={() => onProductSelect(item)} mb={CATALOG_CARD_GAP}>
+        <Box
+          bg={isDark ? '$backgroundDark800' : '$white'}
+          borderWidth={1}
+          borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
+          borderRadius={5}
+          w={CATALOG_CARD_WIDTH}
+          h={200}
+          overflow="hidden"
+        >
+          {/* Product Image */}
+          <Box flex={1} p={18} alignItems="center" justifyContent="center">
+            {item.image ? (
+              <Image
+                source={{ uri: item.image }}
+                alt={item.name}
+                width={110}
+                height={110}
+                resizeMode="contain"
+              />
+            ) : (
+              <Box
+                width={110}
+                height={110}
+                bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
+                borderRadius={8}
+                justifyContent="center"
+                alignItems="center"
+              >
+                <Feather name="image" size={36} color={isDark ? '#666' : '#CCC'} />
+              </Box>
+            )}
+          </Box>
+
+          {/* Product Info */}
+          <Box
+            px={8}
+            pb={10}
+            pt={5}
+            borderTopWidth={1}
+            borderTopColor={isDark ? '$borderDark700' : '#E9E9E9'}
+          >
+            {brandName ? (
+              <Text
+                fontSize={11}
+                fontWeight="$semibold"
+                color={isDark ? '$textDark50' : '$textLight900'}
+                numberOfLines={1}
+              >
+                {brandName}
+              </Text>
+            ) : null}
+            <Text
+              fontSize={10}
+              color={isDark ? '$textDark400' : '$textLight500'}
+              numberOfLines={1}
+              mt={brandName ? 2 : 0}
+            >
+              {productName}
+            </Text>
+          </Box>
+        </Box>
+      </Pressable>
+    );
+  };
+
+  const renderFooter = () => {
+    if (!activeQuery.isFetchingNextPage) return null;
+    return (
+      <Box py="$4" justifyContent="center" alignItems="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFF' : '#000'} />
+      </Box>
+    );
+  };
+
+  const isLoading = activeQuery.isLoading;
+  const isError = activeQuery.isError;
+  // For global search without productGroupId, require a search query
+  const needsSearch = !usesCatalog && !debouncedSearch;
+
+  return (
+    <Box bg={isDark ? '$backgroundDark950' : '#FDFDFB'} width="100%" flex={1}>
+      <VStack px="$4" py="$3" space="md" flex={1}>
+        {/* Header */}
+        <HStack alignItems="center" justifyContent="space-between" mb="$1">
+          <Text fontSize={16} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
+            {t('create.benchmark.modal.fromCatalog')}
+          </Text>
+        </HStack>
+
+        {/* Search Bar */}
+        <Box>
+          <Input
+            bg={isDark ? '$backgroundDark900' : '$white'}
+            borderWidth={1}
+            borderColor={isDark ? '$borderDark700' : '#E0E0E0'}
+            borderRadius={8}
+            h={44}
+          >
+            <Box pl="$3" pr="$2" justifyContent="center">
+              <Feather name="search" size={18} color={isDark ? '#999' : '#666'} />
+            </Box>
+            <InputField
+              placeholder={t('create.benchmark.catalogSearch')}
+              placeholderTextColor={isDark ? '#999' : '#999'}
+              color={isDark ? '$textDark50' : '$textLight900'}
+              fontSize={15}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery('')} pr="$3" justifyContent="center">
+                <Feather name="x" size={18} color={isDark ? '#999' : '#666'} />
+              </Pressable>
+            )}
+          </Input>
+        </Box>
+
+        {/* Content */}
+        <Box flex={1} minHeight={200}>
+          {/* Loading State */}
+          {isLoading && (
+            <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+              <ActivityIndicator size="large" color={isDark ? '#FFF' : '#000'} />
+            </Box>
+          )}
+
+          {/* Error State */}
+          {isError && (
+            <Box flex={1} justifyContent="center" alignItems="center" px="$6" py="$8">
+              <Feather name="alert-circle" size={48} color={isDark ? '#999' : '#CCC'} />
+              <Text
+                mt="$3"
+                color={isDark ? '$textDark400' : '$textLight500'}
+                fontSize={14}
+                textAlign="center"
+              >
+                {t('create.benchmark.catalogError')}
+              </Text>
+            </Box>
+          )}
+
+          {/* Needs Search Prompt (global search mode without query) */}
+          {!isLoading && !isError && needsSearch && (
+            <Box flex={1} justifyContent="center" alignItems="center" px="$6" py="$8">
+              <Feather name="search" size={48} color={isDark ? '#999' : '#CCC'} />
+              <Text
+                mt="$3"
+                color={isDark ? '$textDark400' : '$textLight500'}
+                fontSize={14}
+                textAlign="center"
+              >
+                {t('create.benchmark.catalogSearchPrompt')}
+              </Text>
+            </Box>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !isError && !needsSearch && products.length === 0 && (
+            <Box flex={1} justifyContent="center" alignItems="center" px="$6" py="$8">
+              <Feather name="inbox" size={48} color={isDark ? '#999' : '#CCC'} />
+              <Text
+                mt="$3"
+                color={isDark ? '$textDark400' : '$textLight500'}
+                fontSize={14}
+                textAlign="center"
+              >
+                {t('create.benchmark.catalogEmpty')}
+              </Text>
+            </Box>
+          )}
+
+          {/* Product List */}
+          {!isLoading && !isError && !needsSearch && products.length > 0 && (
+            <FlatList
+              data={products}
+              renderItem={renderProductCard}
+              keyExtractor={(item) => item.productId}
+              numColumns={CATALOG_CARDS_PER_ROW}
+              columnWrapperStyle={{
+                paddingHorizontal: 0,
+                justifyContent: 'space-between',
+                marginBottom: CATALOG_CARD_GAP,
+              }}
+              contentContainerStyle={{
+                paddingTop: 8,
+                paddingBottom: 20,
+              }}
+              showsVerticalScrollIndicator={false}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={renderFooter}
+              scrollEnabled={true}
+            />
+          )}
+        </Box>
+      </VStack>
+    </Box>
   );
 };
 
@@ -183,7 +468,7 @@ const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ on
     <VStack px={16} space="xs">
       <Text
         color={isDark ? '$textDark400' : '#B9B9B9'}
-        fontSize={10}
+        fontSize="$sm"
         fontWeight="$bold"
       >
         {t('create.benchmark.labels.productBenchmark')}
@@ -204,7 +489,22 @@ const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ on
                   />
                 )}
               />
-            ) : null}
+            ) : (
+              <Box
+                flex={1}
+                borderWidth={1}
+                borderColor="#E9E9E9"
+                borderRadius={10}
+                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                alignItems="center"
+                justifyContent="center"
+                minHeight={180}
+              >
+                <Text color="#B9B9B9" fontSize={11}>
+                  {t('create.benchmark.labels.loading')}
+                </Text>
+              </Box>
+            )}
           </Box>
 
           {/* Sağ: Artı ile seçilen ikinci ürün veya artı kartı */}
@@ -270,6 +570,8 @@ export const CreateBenchmarkPostScreen = () => {
   const queryClient = useQueryClient();
 
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+  const flowContextId = useCreatePostFlowStore((state) => state.contextId);
+  const flowProductSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -279,7 +581,7 @@ export const CreateBenchmarkPostScreen = () => {
   const selectedProduct2 = watch('selectedProduct2');
   const selectedChoice = watch('selectedChoice');
 
-  // Initialize first product from route params (ekrandaki ürün veya dönüşte korunan initial product)
+  // Initialize first product from route params or flow store fallback
   useEffect(() => {
     if (product) {
       console.log('[CreateBenchmarkPostScreen] 🔍 Initializing product1 from route params:', {
@@ -318,8 +620,31 @@ export const CreateBenchmarkPostScreen = () => {
       }
 
       setValue('selectedProduct1', initialProduct, { shouldValidate: true });
+    } else if (flowContextId && flowProductSnapshot) {
+      // Fallback: route params'ta product yoksa, flow store'dan al
+      console.log('[CreateBenchmarkPostScreen] 🔄 Fallback: Initializing product1 from flow store:', {
+        flowContextId,
+        flowProductSnapshot,
+      });
+
+      const nameParts = flowProductSnapshot.title.split(' ');
+      const brand = nameParts.length > 1 ? nameParts[0] : '';
+      const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : flowProductSnapshot.title;
+
+      const initialProduct = {
+        id: flowContextId,
+        name: productName,
+        brand: brand,
+        subName: flowProductSnapshot.subName || '',
+        image: flowProductSnapshot.image,
+        isOwned: false,
+        productGroupId: undefined,
+      };
+
+      console.log('[CreateBenchmarkPostScreen] ✅ Formatted product1 from flow store:', initialProduct);
+      setValue('selectedProduct1', initialProduct, { shouldValidate: true });
     }
-  }, [product, setValue]);
+  }, [product, setValue, flowContextId, flowProductSnapshot]);
 
   // Track if we've processed the selected product to prevent re-applying
   const processedSelectedProductRef = useRef<string | null>(null);
@@ -378,77 +703,66 @@ export const CreateBenchmarkPostScreen = () => {
         onClose={closeBottomSheet}
       />,
       {
-        snapPoints: ['40%'],
+        snapPoints: ['35%'],
         enableDynamicSizing: false,
         enablePanDownToClose: true,
         backdropPressBehavior: 'close',
-        detached: true,
-        bottomInset: 50,
-        style: {
-          borderRadius: 20,
-          overflow: 'hidden',
-        },
       }
     );
   };
 
+  // Handler for when product is selected from catalog bottom sheet
+  const handleCatalogProductSelect = (item: CatalogProduct) => {
+    console.log('[CreateBenchmarkPostScreen] 🛍️ Catalog product selected:', item);
+
+    const nameParts = item.name.split(' ');
+    const brand = nameParts.length > 1 ? nameParts[0] : '';
+    const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : item.name;
+
+    const formattedProduct = {
+      id: item.productId,
+      name: productName,
+      brand: brand,
+      subName: '',
+      image: item.image,
+      isOwned: false,
+      productGroupId: item.productGroupId,
+    };
+
+    setValue('selectedProduct2', formattedProduct, { shouldValidate: true });
+    closeBottomSheet();
+  };
+
   // Handler for selecting from catalog (second product)
   const handleSelectFromCatalog = () => {
-    closeBottomSheet();
-
-    console.log('🔍 [CreateBenchmarkPostScreen] selectedProduct1 FULL OBJECT:', {
-      selectedProduct1,
-      stringified: JSON.stringify(selectedProduct1, null, 2),
-    });
-
-    const initialProductForReturn = selectedProduct1
-      ? {
-          id: selectedProduct1.id,
-          name: selectedProduct1.name,
-          brand: selectedProduct1.brand,
-          subName: selectedProduct1.subName,
-          image: selectedProduct1.image,
-          productGroupId: selectedProduct1.productGroupId,
-        }
-      : undefined;
-
-    // PRODUCT GROUP FILTER: Sadece aynı group'taki ürünleri göster
     const productGroupFilter = selectedProduct1?.productGroupId;
 
-    console.log('🛍️ [CreateBenchmarkPostScreen] Opening SelectCompareProductScreen with filter:', {
-      selectedProduct1: {
-        id: selectedProduct1?.id,
-        name: selectedProduct1?.name,
-        brand: selectedProduct1?.brand,
-        productGroupId: selectedProduct1?.productGroupId,
-      },
-      productGroupFilter,
-      hasProductGroupFilter: !!productGroupFilter,
-      selectedProductField: 'selectedProduct2',
-    });
-
-    if (!productGroupFilter) {
-      console.warn('⚠️ [CreateBenchmarkPostScreen] No productGroupId found, products will not be filtered');
-    }
-
-    navigation.navigate('SelectCompareProductScreen', {
-      productGroupId: productGroupFilter || undefined,
-      initialProduct: initialProductForReturn,
-      selectedProductField: 'selectedProduct2',
-    });
+    // Open catalog selection bottom sheet (replaces current sheet directly)
+    openBottomSheet(
+      <CatalogSelection
+        onProductSelect={handleCatalogProductSelect}
+        onClose={closeBottomSheet}
+        productGroupId={productGroupFilter}
+      />,
+      {
+        snapPoints: ['85%'],
+        enableDynamicSizing: false,
+        enablePanDownToClose: true,
+        backdropPressBehavior: 'close',
+        wrapWithScrollView: false,
+      }
+    );
   };
 
   // Handler for selecting from inventory (second product)
   const handleSelectFromInventory = () => {
-    closeBottomSheet();
-
     console.log('📦 [CreateBenchmarkPostScreen] Opening inventory with filter:', {
       selectedProduct1: selectedProduct1,
       productGroupId: selectedProduct1?.productGroupId,
       productGroupFilter: selectedProduct1?.productGroupId,
     });
 
-    // Open inventory selection bottom sheet
+    // Open inventory selection bottom sheet (replaces current sheet directly)
     openBottomSheet(
       <InventorySelection
         onProductSelect={handleInventoryProductSelect}
@@ -456,16 +770,11 @@ export const CreateBenchmarkPostScreen = () => {
         productGroupFilter={selectedProduct1?.productGroupId}
       />,
       {
-        snapPoints: ['90%'],
+        snapPoints: ['85%'],
         enableDynamicSizing: false,
         enablePanDownToClose: true,
         backdropPressBehavior: 'close',
-        detached: true,
-        bottomInset: 50,
-        style: {
-          borderRadius: 20,
-          overflow: 'hidden',
-        },
+        wrapWithScrollView: false,
       }
     );
   };

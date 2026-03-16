@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface DashedProductCardProps {
   onPress?: () => void;
@@ -12,6 +13,7 @@ export const DashedProductCard: React.FC<DashedProductCardProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('post');
 
   return (
     <Pressable
@@ -41,7 +43,7 @@ export const DashedProductCard: React.FC<DashedProductCardProps> = ({
                 fontSize={12}
                 fontWeight="$semibold"
               >
-                Add Product
+                {t('create.benchmark.dashedCard.addProduct')}
               </Text>
             </VStack>
           </Box>
@@ -59,7 +61,7 @@ export const DashedProductCard: React.FC<DashedProductCardProps> = ({
                 fontSize={9}
                 fontWeight="$semibold"
               >
-                Inventory or Catalog
+                {t('create.benchmark.dashedCard.inventoryOrCatalog')}
               </Text>
             </HStack>
           </Box>

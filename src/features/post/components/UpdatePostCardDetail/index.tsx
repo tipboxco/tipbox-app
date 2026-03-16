@@ -23,7 +23,7 @@ import CardImageCarousel from '@/src/components/CardImageCarousel';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, formatRelativeTime } from '@/src/utils';
 import { UpdatePost } from '@/src/mock/feed/types';
 import {
   useLikePost,
@@ -47,7 +47,7 @@ interface UpdatePostCardDetailProps {
 }
 
 export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, onCommentPress, disableBottomSheet = false }: UpdatePostCardDetailProps) => {
-  const { t } = useTranslation('post');
+  const { t, i18n } = useTranslation('post');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -230,21 +230,33 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             borderRadius={100}
           />
           <VStack flex={1}>
-            <Text
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize="$xs"
-              fontWeight="$bold"
-            >
-              {data.user.name}
-            </Text>
-            <Text
-              color={isDark ? '$textDark400' : '#787878'}
-              fontSize="$xs"
-              numberOfLines={1}
-              maxWidth={250}
-            >
-              {data.user.title}
-            </Text>
+            <HStack alignItems="center">
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize="$sm"
+                fontWeight="$bold"
+              >
+                {data.user.name}
+              </Text>
+              {(data as any).createdAt ? (
+                <Text
+                  color={isDark ? '$textDark400' : '#A3A3A3'}
+                  fontSize={11}
+                >
+                  {`  •  ${formatRelativeTime((data as any).createdAt, i18n.language)}`}
+                </Text>
+              ) : null}
+            </HStack>
+            {data.user.title ? (
+              <Text
+                color={isDark ? '$textDark400' : '#787878'}
+                fontSize="$xs"
+                numberOfLines={1}
+                maxWidth={250}
+              >
+                {data.user.title}
+              </Text>
+            ) : null}
           </VStack>
           <View ref={menuTriggerRef} collapsable={false} onLayout={handleTriggerLayout}>
             <Pressable onPress={(e) => handleMenuOpen(e)}>
@@ -311,7 +323,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             ml={5}
             color={'#fff'}
           >
-            Update
+            {t('card.badges.update')}
           </Text>
         </Box>
       </HStack>
@@ -369,6 +381,13 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         </Box>
       )}
 
+      {/* Images - Update post'un kendi görselleri (related post'tan bağımsız her zaman göster) */}
+      {data.images && data.images.length > 0 && (
+        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} isDetailMode={true} />
+        </VStack>
+      )}
+
       {/* Related Post Section - Render using ExperiencePostCard for consistent display */}
       {transformedRelatedPost && (
         <ExperiencePostCard
@@ -377,13 +396,6 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
           showActions={false}
           hideProduct={false}
         />
-      )}
-
-      {/* Images - Sadece related post yoksa göster (update post'un kendi görselleri) */}
-      {!transformedRelatedPost && data.images && data.images.length > 0 && (
-        <VStack borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} paddingHorizontal={0} />
-        </VStack>
       )}
 
       {/* Stats - Actions */}

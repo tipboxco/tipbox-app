@@ -42,7 +42,6 @@ export const PostDetailScreen = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
     const [isSortBottomSheetOpen, setIsSortBottomSheetOpen] = useState(false);
-    const [likedCommentIds, setLikedCommentIds] = useState<Set<string>>(new Set());
     
     // FIX: route.params undefined kontrolü - güvenli erişim
     // Deep link veya notification'dan gelen durumlarda params undefined olabilir
@@ -164,14 +163,26 @@ export const PostDetailScreen = () => {
       const raw = finalPostData as any;
       const trimTrailingParen = (s: string) => (s || '').replace(/\s*\(\s*$/, '').trim();
       const contentBlocks = raw.experienceContent ?? (Array.isArray(raw.content) ? raw.content : []);
+      // Section title çevirisi: API İngilizce döner, kullanıcı diline çevir
+      const titleTranslations: Record<string, string> = {
+        'Price and Shopping Experience': t('create.experience.step3.priceAndShopping'),
+        'Product and Usage Experience': t('create.experience.step3.productAndUsage'),
+      };
+      // Tag çevirisi
+      const translateTag = (tag: string) => {
+        const key = `create.experience.step1.optionNames.${tag}`;
+        const translated = t(key);
+        return (translated === key || translated.includes('optionNames.')) ? tag : translated;
+      };
       // Kart formatı kontrolü: content item'ında tag objesi varsa zaten dönüştürülmüş demektir
       const isAlreadyCardFormat = Array.isArray(contentBlocks) && contentBlocks.length > 0 && contentBlocks[0]?.tag !== undefined;
       const content = Array.isArray(contentBlocks)
         ? contentBlocks.map((item: any) => {
             if (isAlreadyCardFormat) {
-              // Zaten kart formatında - olduğu gibi koru
+              // Zaten kart formatında - title'ı çevir
+              const rawTitle = item.tag?.title ?? '';
               return {
-                tag: item.tag ?? { icon: 'tag' as const, title: '' },
+                tag: { ...(item.tag ?? { icon: 'tag' as const, title: '' }), title: titleTranslations[rawTitle] || rawTitle },
                 text: trimTrailingParen(item?.text ?? ''),
                 rating: Array.isArray(item?.rating)
                   ? item.rating.map((r: any) => r === true || r === 1)
@@ -179,17 +190,19 @@ export const PostDetailScreen = () => {
               };
             }
             // API formatı - kart formatına dönüştür
+            const rawTitle = item?.title ?? '';
             return {
               tag: {
-                icon: (item?.title?.toLowerCase?.().includes('product') || item?.title?.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
-                title: item?.title ?? '',
+                icon: (rawTitle.toLowerCase?.().includes('product') || rawTitle.toLowerCase?.().includes('usage')) ? 'package' as const : 'tag' as const,
+                title: titleTranslations[rawTitle] || rawTitle,
               },
               text: trimTrailingParen(item?.content ?? item?.text ?? ''),
               rating: Array(5).fill(false).map((_, i) => i < (Math.min(5, Math.max(0, Number(item?.rating) || 0)))),
             };
           })
         : [];
-      const tags = Array.isArray(raw.tags) ? raw.tags : [];
+      const rawTags = Array.isArray(raw.tags) ? raw.tags : [];
+      const tags = rawTags.map(translateTag);
       const defaultPostImage = require('@/assets/defaultImages/default-post.png');
       const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
       const rawProduct = raw.contextData?.product ?? raw.contextData ?? raw.product;
@@ -217,7 +230,7 @@ export const PostDetailScreen = () => {
           return productImg ? mapped.filter((img: any) => !isSameImageSource(img, productImg)) : mapped;
         })(),
       };
-    }, [finalType, finalPostData]);
+    }, [finalType, finalPostData, t]);
 
     // Update post: relatedPost (experience) tam yapısını kart formatına çevir ve detayda tam gösterilsin
     const finalUpdateRelatedPostData = useMemo(() => {
@@ -326,7 +339,7 @@ export const PostDetailScreen = () => {
     const likeCommentMutation = useLikeComment();
     const unlikeCommentMutation = useUnlikeComment();
     const updateCommentMutation = useUpdateComment();
-    
+
     // Current user ID
     const currentUserId = useAppStore((state) => state.user?.id);
 
@@ -442,7 +455,8 @@ export const PostDetailScreen = () => {
                 enableOverDrag: false,
                 enableHandlePanningGesture: true,
                 enableContentPanningGesture: true,
-                enableDynamicSizing: true,
+                enableDynamicSizing: false,
+                snapPoints: ['30%'],
                 animateOnMount: false,
                 paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
             }
@@ -481,10 +495,13 @@ export const PostDetailScreen = () => {
             const userAvatarRaw = userObj?.avatarUrl ?? userObj?.avatar ?? userObj?.profileImage ?? userObj?.image ?? userObj?.picture;
             const userAvatar = userAvatarRaw ? toImageSource(userAvatarRaw) : DEFAULT_USER_AVATAR;
 
-            // Debug: İlk yorumun user objesini logla (sadece development'ta)
+            // Debug: İlk yorumun verilerini logla (sadece development'ta)
             if (__DEV__ && index === 0) {
-                console.log('[PostDetailScreen] Comment user object:', JSON.stringify(item.user, null, 2));
-                console.log('[PostDetailScreen] Avatar raw value:', userAvatarRaw);
+                console.log('[PostDetailScreen] Comment data:', JSON.stringify({
+                    commentId: item.comment.id,
+                    isLiked: item.comment.isLiked,
+                    likesCount: item.comment.likesCount,
+                }, null, 2));
             }
 
             flat.push({
@@ -497,7 +514,7 @@ export const PostDetailScreen = () => {
                 timeAgo: formatRelativeTime(item.comment.createdAt),
                 content: item.comment.comment,
                 likesCount: item.comment.likesCount || 0,
-                isLiked: likedCommentIds.has(item.comment.id),
+                isLiked: item.comment.isLiked ?? false,
                 createdAt: item.comment.createdAt,
             });
 
@@ -513,7 +530,7 @@ export const PostDetailScreen = () => {
                         timeAgo: formatRelativeTime(reply.createdAt),
                         content: reply.comment,
                         likesCount: reply.likesCount || 0,
-                        isLiked: likedCommentIds.has(reply.id),
+                        isLiked: reply.isLiked ?? false,
                         createdAt: reply.createdAt,
                     });
                 });
@@ -536,7 +553,7 @@ export const PostDetailScreen = () => {
                 break;
         }
         return sorted;
-    }, [commentsData?.comments, selectedOption, likedCommentIds]);
+    }, [commentsData?.comments, selectedOption]);
 
     // Handle delete comment
     const handleDeleteComment = useCallback((commentId: string, postId: string) => {
@@ -555,53 +572,31 @@ export const PostDetailScreen = () => {
         );
     }, [deleteCommentMutation]);
 
-    // Handle like comment - optimistic local tracking, backend confirms via query invalidation
+    // Handle like comment - CommentsCard kendi optimistic update'ini yapar
     const handleLikeComment = useCallback((commentId: string, postId: string) => {
-        // Mutation devam ederken tekrar like yapılmasını engelle
-        if (!commentId || !postId || likeCommentMutation.isPending || unlikeCommentMutation.isPending) return;
-
-        // Optimistic update
-        setLikedCommentIds(prev => new Set(prev).add(commentId));
-
+        if (!commentId || !postId) return;
         likeCommentMutation.mutate(
             { commentId, postId },
             {
                 onError: (error) => {
-                    // Hata durumunda optimistic update'i geri al
-                    setLikedCommentIds(prev => {
-                        const next = new Set(prev);
-                        next.delete(commentId);
-                        return next;
-                    });
                     console.error('[PostDetailScreen] Like comment error:', error);
                 },
             }
         );
-    }, [likeCommentMutation, unlikeCommentMutation]);
+    }, [likeCommentMutation]);
 
-    // Handle unlike comment - optimistic local tracking, backend confirms via query invalidation
+    // Handle unlike comment - CommentsCard kendi optimistic update'ini yapar
     const handleUnlikeComment = useCallback((commentId: string, postId: string) => {
-        // Mutation devam ederken tekrar unlike yapılmasını engelle
-        if (!commentId || !postId || likeCommentMutation.isPending || unlikeCommentMutation.isPending) return;
-
-        // Optimistic update
-        setLikedCommentIds(prev => {
-            const next = new Set(prev);
-            next.delete(commentId);
-            return next;
-        });
-
+        if (!commentId || !postId) return;
         unlikeCommentMutation.mutate(
             { commentId, postId },
             {
                 onError: (error) => {
-                    // Hata durumunda optimistic update'i geri al
-                    setLikedCommentIds(prev => new Set(prev).add(commentId));
                     console.error('[PostDetailScreen] Unlike comment error:', error);
                 },
             }
         );
-    }, [likeCommentMutation, unlikeCommentMutation]);
+    }, [unlikeCommentMutation]);
 
     // Handle edit comment
     const handleEditComment = useCallback((commentId: string, postId: string, newContent: string) => {
@@ -704,6 +699,7 @@ export const PostDetailScreen = () => {
     ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, isDark, selectedOption, handleSortPress]);
 
     // FlatList render item - useCallback ile memoize edildi
+    // NOT: isLiking/isDeleting/isEditing global prop'ları kaldırıldı - tüm comment'lerin re-render olmasını engeller
     const renderCommentItem = useCallback(({ item }: { item: typeof flattenedComments[0] }) => (
         <CommentsCard
             userName={item.userName}
@@ -721,11 +717,8 @@ export const PostDetailScreen = () => {
             onLike={handleLikeComment}
             onUnlike={handleUnlikeComment}
             onEdit={handleEditComment}
-            isDeleting={deleteCommentMutation.isPending}
-            isLiking={likeCommentMutation.isPending || unlikeCommentMutation.isPending}
-            isEditing={updateCommentMutation.isPending}
         />
-    ), [currentUserId, postId, handleDeleteComment, handleLikeComment, handleUnlikeComment, handleEditComment, deleteCommentMutation.isPending, likeCommentMutation.isPending, unlikeCommentMutation.isPending, updateCommentMutation.isPending]);
+    ), [currentUserId, postId, handleDeleteComment, handleLikeComment, handleUnlikeComment, handleEditComment]);
 
     // FlatList empty component - useMemo ile memoize edildi
     const renderEmpty = useMemo(() => (

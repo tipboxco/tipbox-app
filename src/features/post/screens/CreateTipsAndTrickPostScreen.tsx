@@ -85,7 +85,7 @@ const CategorySelectorField: React.FC<CategorySelectorFieldProps> = ({
                   flex={1}
                 >
                   {selectedCategory
-                    ? BENEFIT_CATEGORIES.find((cat) => cat.value === selectedCategory)?.label
+                    ? t(BENEFIT_CATEGORIES.find((cat) => cat.value === selectedCategory)?.labelKey ?? '')
                     : t('create.tipsAndTricks.placeholders.categorySelect')}
                 </Text>
                 <Feather
@@ -147,7 +147,7 @@ const CategorySelectorField: React.FC<CategorySelectorFieldProps> = ({
                           fontSize="$sm"
                           fontWeight="$medium"
                         >
-                          {category.label}
+                          {t(category.labelKey)}
                         </Text>
                       </HStack>
                     </Pressable>
@@ -636,18 +636,8 @@ export const CreateTipsAndTrickPostScreen = () => {
             </VStack>
           </ScrollView>
 
-          {/* Click outside overlay to close dropdown */}
-          {showCategoryModal && (
-            <Pressable
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              zIndex={999}
-              onPress={() => setShowCategoryModal(false)}
-            />
-          )}
+          {/* Overlay kaldırıldı: zIndex sibling-only çalıştığı için dropdown item'ları engelliyor.
+              Dropdown zaten scroll (onScrollBeginDrag), item seçimi ve toggle ile kapanıyor. */}
         </Box>
         </KeyboardAvoidingView>
       </FormProvider>

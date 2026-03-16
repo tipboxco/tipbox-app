@@ -80,7 +80,11 @@
           "Education": "Eğitim",
           "Work": "İş",
           "Sports": "Spor",
-          "Hobby": "Hobi"
+          "Hobby": "Hobi",
+          "1 Year": "1 Yıl",
+          "2 Years": "2 Yıl",
+          "3 Years": "3 Yıl",
+          "More than 3 years": "3 yıldan fazla"
         }
       },
       "step2": {
@@ -140,7 +144,8 @@
       },
       "labels": {
         "productBenchmark": "Ürün Karşılaştırması",
-        "description": "Karşılaştırma Açıklaması"
+        "description": "Karşılaştırma Açıklaması",
+        "loading": "Ürün yükleniyor..."
       },
       "placeholders": {
         "description": "Karşılaştırma açıklamanızı buraya yazın..."
@@ -148,15 +153,25 @@
       "modal": {
         "title": "İkinci Ürünü Seç",
         "fromInventory": "Envanterden",
+        "fromInventoryDesc": "Karşılaştırmak için envanterinizdeki ürünlerden seçin.",
         "fromCatalog": "Katalogdan",
+        "fromCatalogDesc": "Karşılaştırmak için katalogdan bir ürün bulun.",
         "cancel": "İptal",
         "selectFromInventoryTitle": "Envanterden Seç"
+      },
+      "dashedCard": {
+        "addProduct": "Ürün Ekle",
+        "inventoryOrCatalog": "Envanter veya Katalog"
       },
       "selectCompareProduct": "Karşılaştırılacak Ürünü Seçin",
       "searchPlaceholder": "Ürün ara...",
       "noProductsFound": "Aramanıza uygun ürün bulunamadı.",
       "noProductsInGroup": "Bu grupta ürün bulunamadı.",
       "searchToCompare": "Karşılaştırmak için lütfen bir ürün arayın",
+      "catalogSearch": "Ürün ara...",
+      "catalogError": "Ürünler yüklenemedi. Lütfen tekrar deneyin.",
+      "catalogSearchPrompt": "Karşılaştırmak için bir ürün arayın",
+      "catalogEmpty": "Ürün bulunamadı.",
       "validation": {
         "twoProductsRequired": "İki ürün seçilmelidir.",
         "descriptionRequired": "Karşılaştırma açıklaması gereklidir.",
@@ -225,6 +240,12 @@
       "placeholders": {
         "description": "İpuçları ve Püf Noktalarınızı buraya yazın...",
         "categorySelect": "İpuçları ve Püf Noktaları kategorisini seçin"
+      },
+      "categories": {
+        "time_saving": "Zaman Tasarrufu",
+        "energy_efficiency": "Enerji Verimliliği",
+        "durability": "Dayanıklılık",
+        "better_result": "Daha İyi Sonuç"
       },
       "validation": {
         "contextMissing": "Bağlam bilgisi bulunamadı. Lütfen tekrar deneyin.",
