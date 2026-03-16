@@ -293,7 +293,8 @@ const MarketPlaceScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
+        enableDynamicSizing: false,
+        snapPoints: ['40%'],
         animateOnMount: true,
         paddingBottom: bottomOffset,
       }

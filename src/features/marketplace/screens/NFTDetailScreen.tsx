@@ -13,7 +13,7 @@ import { useBottomOffset, toImageSource } from '@/src/utils';
 import { useWalletBalance } from '@/src/features/wallet/api/hooks';
 import { NFTPurchaseSuccessBottomSheet } from '../components/NFTPurchaseSuccessBottomSheet';
 import { SimpleLineChart } from '../components/SimpleLineChart';
-import { EllipsisVerticalIcon, PencilSquareIcon, TrashIcon } from 'react-native-heroicons/outline';
+import { EllipsisVerticalIcon, EyeIcon, PencilSquareIcon, TrashIcon } from 'react-native-heroicons/outline';
 import { useDeleteListing, useUpdateListingPrice } from '../api/hooks';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -21,7 +21,7 @@ const { width: screenWidth } = Dimensions.get('window');
 const NFTDetailScreen = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const { t } = useTranslation('marketplace');
+    const { t, i18n } = useTranslation('marketplace');
     const navigation = useNavigation<NativeStackNavigationProp<MarketplaceStackParamList>>();
     const route = useRoute();
     const { nftId, mode = 'buy' } = route.params as { nftId: string; mode?: 'view' | 'buy' };
@@ -38,9 +38,18 @@ const NFTDetailScreen = () => {
 
     // Fetch NFT detail data
     const { data: nftDetail, isLoading, error, refetch } = useNFTSellDetail(nftId);
+
+    // Get current user ID from app store
+    const { user } = require('@/src/store/appStore').useAppStore();
+    const currentUserId = user?.id;
+
+    // Check if NFT belongs to current user
+    const isMyNFT = currentUserId && nftDetail?.ownerUser?.id === currentUserId;
+
     // NOTE: sell-info endpoint includes active listing object (id/price/status)
     // We need listing.id (not nft.id) for update/delist calls.
-    const { data: nftSellInfo } = useNFTSellInfo(nftId);
+    // Only call for own NFTs to avoid 400 errors on other users' NFTs
+    const { data: nftSellInfo } = useNFTSellInfo(isMyNFT ? nftId : undefined);
 
     // Refetch when screen comes back into focus
     useFocusEffect(
@@ -58,13 +67,6 @@ const NFTDetailScreen = () => {
     // Delete and update listing mutations
     const deleteListingMutation = useDeleteListing();
     const updatePriceMutation = useUpdateListingPrice();
-
-    // Get current user ID from app store
-    const { user } = require('@/src/store/appStore').useAppStore();
-    const currentUserId = user?.id;
-
-    // Check if NFT belongs to current user
-    const isMyNFT = currentUserId && nftDetail?.ownerUser?.id === currentUserId;
 
     // Check if user has sufficient balance
     const userBalance = walletBalance?.balance || 0;
@@ -454,17 +456,15 @@ const NFTDetailScreen = () => {
                                 top="$4"
                                 right="$4"
                                 bg="rgba(0, 0, 0, 0.7)"
-                                borderRadius="$md"
-                                px="$4"
-                                py="$2"
+                                borderRadius={999}
+                                px="$3"
+                                py="$1.5"
                             >
                                 <HStack space="xs" alignItems="center">
                                     <Text color="$white" fontSize="$xs" fontWeight="$bold">
                                         {nftDetail.viewer}
                                     </Text>
-                                    <Box width={16} height={16}>
-                                        <Text color="$white" fontSize="$xs">👁</Text>
-                                    </Box>
+                                    <EyeIcon width={16} height={16} color="#FFFFFF" />
                                 </HStack>
                             </Box>
                         </Box>
@@ -721,10 +721,10 @@ const NFTDetailScreen = () => {
                                     fontWeight="$bold"
                                     color={isDark ? '$textDark50' : '$textLight900'}
                                 >
-                                    {new Date(nftDetail.earnDate).toLocaleDateString('en-US', { 
-                                        day: 'numeric', 
-                                        month: 'long', 
-                                        year: 'numeric' 
+                                    {new Date(nftDetail.earnDate).toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', {
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric'
                                     })}
                                 </Text>
                             </HStack>
@@ -848,7 +848,7 @@ const NFTDetailScreen = () => {
                     <Box
                         onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
                         position="absolute"
-                        bottom={bottomOffset}
+                        bottom={0}
                         left={0}
                         right={0}
                         bg={isDark ? '$backgroundDark900' : '$backgroundLight50'}

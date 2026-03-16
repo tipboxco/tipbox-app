@@ -13,6 +13,42 @@
       "empty": {
         "noNFTs": "Henüz satışta NFT yok.",
         "noListings": "Henüz aktif ilanınız yok."
+      },
+      "nftCard": {
+        "view": "Görüntüle",
+        "quickBuy": "Hızlı Satın Al"
+      },
+      "filter": {
+        "title": "Filtre",
+        "reset": "Sıfırla",
+        "done": "Tamam",
+        "types": {
+          "all": "Tümü",
+          "badge": "Rozet",
+          "cosmetic": "Kozmetik"
+        }
+      },
+      "listingSuccess": {
+        "title": "Başarıyla Listelendi!",
+        "message": "\"{{title}}\" artık markette yayında",
+        "listingId": "İlan ID",
+        "listedPrice": "Listeleme Fiyatı",
+        "seller": "Satıcı",
+        "listedAt": "Listeleme Tarihi",
+        "infoMessage": "NFT'niz artık tüm market kullanıcılarına görünür durumda. İlanlarınızı market bölümünden yönetebilirsiniz.",
+        "close": "Kapat",
+        "viewListing": "İlanı Görüntüle"
+      },
+      "purchaseSuccess": {
+        "title": "Satın Alma Başarılı!",
+        "message": "\"{{title}}\" başarıyla satın alındı",
+        "messageGeneric": "NFT satın alımınız başarılı",
+        "transactionId": "İşlem ID",
+        "amountPaid": "Ödenen Tutar",
+        "status": "Durum",
+        "newOwner": "Yeni Sahip",
+        "infoMessage": "NFT cüzdanınıza aktarıldı. NFT koleksiyonunuzda görüntüleyebilirsiniz.",
+        "done": "Tamam"
       }
     },
     "nftDetail": {

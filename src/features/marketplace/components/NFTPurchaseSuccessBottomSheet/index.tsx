@@ -3,6 +3,7 @@ import { VStack, HStack, Text, Box, Pressable } from '@gluestack-ui/themed';
 import { Dimensions, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useBottomOffset } from '@/src/utils';
 
@@ -41,6 +42,7 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('marketplace');
   const bottomSheetRef = useRef<BottomSheet>(null);
   const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding: 0 });
 
@@ -117,14 +119,14 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
                 color={isDark ? '$textDark50' : '$textLight900'}
                 textAlign="center"
               >
-                Purchase Successful!
+                {t('screens.marketplace.purchaseSuccess.title')}
               </Text>
               <Text
                 fontSize="$sm"
                 color={isDark ? '$textDark400' : '$textLight600'}
                 textAlign="center"
               >
-                {data.nftTitle ? `You successfully purchased "${data.nftTitle}"` : 'Your NFT purchase was successful'}
+                {data.nftTitle ? t('screens.marketplace.purchaseSuccess.message', { title: data.nftTitle }) : t('screens.marketplace.purchaseSuccess.messageGeneric')}
               </Text>
             </VStack>
 
@@ -144,7 +146,7 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
                     fontWeight="$medium"
                     color={isDark ? '$textDark400' : '$textLight600'}
                   >
-                    Transaction ID
+                    {t('screens.marketplace.purchaseSuccess.transactionId')}
                   </Text>
                   <Text
                     fontSize={11}
@@ -168,14 +170,14 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
                     fontWeight="$medium"
                     color={isDark ? '$textDark400' : '$textLight600'}
                   >
-                    Amount Paid
+                    {t('screens.marketplace.purchaseSuccess.amountPaid')}
                   </Text>
                   <Text
                     fontSize={11}
                     fontWeight="$bold"
                     color={isDark ? '$textDark50' : '$textLight900'}
                   >
-                    {data.buyerTransaction.amount.toFixed(2)} TIPS
+                    {data.buyerTransaction.amount.toFixed(2)} {t('common.tips')}
                   </Text>
                 </HStack>
 
@@ -191,7 +193,7 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
                     fontWeight="$medium"
                     color={isDark ? '$textDark400' : '$textLight600'}
                   >
-                    Status
+                    {t('screens.marketplace.purchaseSuccess.status')}
                   </Text>
                   <Box
                     bg="#C2E607"
@@ -221,7 +223,7 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
                     fontWeight="$medium"
                     color={isDark ? '$textDark400' : '$textLight600'}
                   >
-                    New Owner
+                    {t('screens.marketplace.purchaseSuccess.newOwner')}
                   </Text>
                   <Text
                     fontSize={11}
@@ -245,7 +247,7 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
                 color={isDark ? '$textDark300' : '$textLight600'}
                 textAlign="center"
               >
-                The NFT has been transferred to your wallet. You can view it in your NFT collection.
+                {t('screens.marketplace.purchaseSuccess.infoMessage')}
               </Text>
             </Box>
 
@@ -264,7 +266,7 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
                 color="#596B00"
                 textAlign="center"
               >
-                Done
+                {t('screens.marketplace.purchaseSuccess.done')}
               </Text>
             </Pressable>
           </VStack>

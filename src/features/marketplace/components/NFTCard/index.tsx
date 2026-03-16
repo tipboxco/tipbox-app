@@ -2,6 +2,7 @@ import React from 'react';
 import { VStack, HStack, Text, Pressable, Box, Image } from '@gluestack-ui/themed';
 import { TouchableOpacity } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useNavigation } from '@react-navigation/native';
 import type { NFTCardData } from '../../types';
 
@@ -13,6 +14,7 @@ interface NFTCardProps {
 export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('marketplace');
     const navigation = useNavigation();
 
     console.log('NFTCard mounted for NFT:', data.id, data.title);
@@ -94,7 +96,7 @@ export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
                         fontSize={10}
                         fontWeight="$bold"
                     >
-                        {Math.floor(parseFloat(data.price) || 0)} TIPS
+                        {Math.floor(parseFloat(data.price) || 0)} {t('common.tips')}
                     </Text>
                 </Box>
             </Box>
@@ -145,7 +147,7 @@ export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
                         fontWeight="$bold"
                         textAlign="center"
                     >
-                        View
+                        {t('screens.marketplace.nftCard.view')}
                     </Text>
                 </Pressable>
 
@@ -168,7 +170,7 @@ export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
                             fontWeight="$bold"
                             textAlign="center"
                         >
-                            Quick Buy
+                            {t('screens.marketplace.nftCard.quickBuy')}
                         </Text>
                     </Pressable>
                 )}

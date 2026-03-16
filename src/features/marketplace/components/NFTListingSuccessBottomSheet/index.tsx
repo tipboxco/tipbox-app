@@ -3,6 +3,7 @@ import { VStack, HStack, Text, Box, Pressable, Image } from '@gluestack-ui/theme
 import { Dimensions, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { toImageSource } from '@/src/utils';
 
@@ -38,6 +39,7 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t, i18n } = useTranslation('marketplace');
   const bottomSheetRef = useRef<BottomSheet>(null);
 
   const snapPoints = React.useMemo(() => ['95%'], []);
@@ -118,14 +120,14 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
                 color={isDark ? '$textDark50' : '$textLight900'}
                 textAlign="center"
               >
-                Listed Successfully!
+                {t('screens.marketplace.listingSuccess.title')}
               </Text>
               <Text
                 fontSize="$sm"
                 color={isDark ? '$textDark400' : '$textLight600'}
                 textAlign="center"
               >
-                "{data.title}" is now live on the marketplace
+                {t('screens.marketplace.listingSuccess.message', { title: data.title })}
               </Text>
             </VStack>
 
@@ -210,7 +212,7 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
                     fontWeight="$medium"
                     color={isDark ? '$textDark400' : '$textLight600'}
                   >
-                    Listing ID
+                    {t('screens.marketplace.listingSuccess.listingId')}
                   </Text>
                   <Text
                     fontSize={11}
@@ -234,14 +236,14 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
                     fontWeight="$medium"
                     color={isDark ? '$textDark400' : '$textLight600'}
                   >
-                    Listed Price
+                    {t('screens.marketplace.listingSuccess.listedPrice')}
                   </Text>
                   <Text
                     fontSize={11}
                     fontWeight="$bold"
                     color="#C2E607"
                   >
-                    {data.price} TIPS
+                    {data.price} {t('common.tips')}
                   </Text>
                 </HStack>
 
@@ -257,7 +259,7 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
                     fontWeight="$medium"
                     color={isDark ? '$textDark400' : '$textLight600'}
                   >
-                    Seller
+                    {t('screens.marketplace.listingSuccess.seller')}
                   </Text>
                   <Text
                     fontSize={11}
@@ -280,14 +282,14 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
                     fontWeight="$medium"
                     color={isDark ? '$textDark400' : '$textLight600'}
                   >
-                    Listed At
+                    {t('screens.marketplace.listingSuccess.listedAt')}
                   </Text>
                   <Text
                     fontSize={11}
                     fontWeight="$bold"
                     color={isDark ? '$textDark50' : '$textLight900'}
                   >
-                    {new Date(data.listedAt).toLocaleString('en-US', {
+                    {new Date(data.listedAt).toLocaleString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric',
@@ -310,7 +312,7 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
                 color={isDark ? '$textDark300' : '$textLight600'}
                 textAlign="center"
               >
-                Your NFT is now visible to all marketplace users. You can manage your listings in the marketplace section.
+                {t('screens.marketplace.listingSuccess.infoMessage')}
               </Text>
             </Box>
 
@@ -332,7 +334,7 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
                   color={isDark ? '$textDark200' : '$textLight800'}
                   textAlign="center"
                 >
-                  Close
+                  {t('screens.marketplace.listingSuccess.close')}
                 </Text>
               </Pressable>
               <Pressable
@@ -352,7 +354,7 @@ export const NFTListingSuccessBottomSheet: React.FC<NFTListingSuccessBottomSheet
                   color="#596B00"
                   textAlign="center"
                 >
-                  View Listing
+                  {t('screens.marketplace.listingSuccess.viewListing')}
                 </Text>
               </Pressable>
             </HStack>

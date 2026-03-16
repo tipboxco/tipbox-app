@@ -13,6 +13,42 @@
       "empty": {
         "noNFTs": "No NFTs for sale yet.",
         "noListings": "You don't have any active listings yet."
+      },
+      "nftCard": {
+        "view": "View",
+        "quickBuy": "Quick Buy"
+      },
+      "filter": {
+        "title": "Filter",
+        "reset": "Reset",
+        "done": "Done",
+        "types": {
+          "all": "All",
+          "badge": "Badge",
+          "cosmetic": "Cosmetic"
+        }
+      },
+      "listingSuccess": {
+        "title": "Listed Successfully!",
+        "message": "\"{{title}}\" is now live on the marketplace",
+        "listingId": "Listing ID",
+        "listedPrice": "Listed Price",
+        "seller": "Seller",
+        "listedAt": "Listed At",
+        "infoMessage": "Your NFT is now visible to all marketplace users. You can manage your listings in the marketplace section.",
+        "close": "Close",
+        "viewListing": "View Listing"
+      },
+      "purchaseSuccess": {
+        "title": "Purchase Successful!",
+        "message": "You successfully purchased \"{{title}}\"",
+        "messageGeneric": "Your NFT purchase was successful",
+        "transactionId": "Transaction ID",
+        "amountPaid": "Amount Paid",
+        "status": "Status",
+        "newOwner": "New Owner",
+        "infoMessage": "The NFT has been transferred to your wallet. You can view it in your NFT collection.",
+        "done": "Done"
       }
     },
     "nftDetail": {

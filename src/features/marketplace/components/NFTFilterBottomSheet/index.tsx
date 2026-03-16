@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, VStack, Text, Pressable, HStack, Button, ButtonText } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import type { NFTType } from '../SearchFilter';
 
 interface NFTFilterBottomSheetProps {
@@ -16,14 +17,15 @@ export const NFTFilterBottomSheet: React.FC<NFTFilterBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('marketplace');
 
   // Local state for temporary selection (applied on Done)
   const [tempSelectedType, setTempSelectedType] = useState<NFTType>(selectedType);
 
   const nftTypes: { value: NFTType; label: string }[] = [
-    { value: 'ALL', label: 'All' },
-    { value: 'BADGE', label: 'Badge' },
-    { value: 'COSMETIC', label: 'Cosmetic' },
+    { value: 'ALL', label: t('screens.marketplace.filter.types.all') },
+    { value: 'BADGE', label: t('screens.marketplace.filter.types.badge') },
+    { value: 'COSMETIC', label: t('screens.marketplace.filter.types.cosmetic') },
   ];
 
   const handleReset = () => {
@@ -52,7 +54,7 @@ export const NFTFilterBottomSheet: React.FC<NFTFilterBottomSheetProps> = ({
           color={isDark ? '$textDark50' : '$textLight900'}
           textAlign="center"
         >
-          Filter
+          {t('screens.marketplace.filter.title')}
         </Text>
 
         {/* Filter Options */}
@@ -118,7 +120,7 @@ export const NFTFilterBottomSheet: React.FC<NFTFilterBottomSheetProps> = ({
               fontSize="$md"
               fontWeight="$semibold"
             >
-              Reset
+              {t('screens.marketplace.filter.reset')}
             </ButtonText>
           </Button>
 
@@ -134,7 +136,7 @@ export const NFTFilterBottomSheet: React.FC<NFTFilterBottomSheetProps> = ({
               fontSize="$md"
               fontWeight="$semibold"
             >
-              Done
+              {t('screens.marketplace.filter.done')}
             </ButtonText>
           </Button>
         </HStack>
