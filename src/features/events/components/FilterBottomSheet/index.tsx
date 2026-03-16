@@ -26,6 +26,7 @@ interface FilterBottomSheetProps {
 }
 
 export interface FilterSelection {
+  eventType?: string;
   mainCategory?: string;
   subCategory?: string;
   productGroup?: string;
@@ -38,6 +39,18 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   isDark = false,
 }) => {
   const { t } = useTranslation('events');
+
+  // Event type filter options
+  const EVENT_TYPES: FilterOption[] = useMemo(() => [
+    { label: t('communityFilter.allTypes'), value: 'all' },
+    { label: t('eventTypes.roast_picks'), value: 'roast_picks' },
+    { label: t('eventTypes.challenge'), value: 'challenge' },
+    { label: t('eventTypes.poll'), value: 'poll' },
+    { label: t('eventTypes.community'), value: 'community' },
+    { label: t('eventTypes.review'), value: 'review' },
+    { label: t('eventTypes.giveaway'), value: 'giveaway' },
+    { label: t('eventTypes.discussion'), value: 'discussion' },
+  ], [t]);
 
   // Mock data - Backend'den gelecek
   const MAIN_CATEGORIES: FilterOption[] = useMemo(() => [
@@ -54,6 +67,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
     { label: t('communityFilter.subCategories.laptops'), value: 'laptops' },
     { label: t('communityFilter.subCategories.tablets'), value: 'tablets' },
   ], [t]);
+  const [selectedEventType, setSelectedEventType] = useState<string | undefined>();
   const [mainCategory, setMainCategory] = useState<string | undefined>();
   const [subCategory, setSubCategory] = useState<string | undefined>();
   const [showMainDropdown, setShowMainDropdown] = useState(false);
@@ -87,6 +101,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
 
   const handleDone = () => {
     onApply({
+      eventType: selectedEventType && selectedEventType !== 'all' ? selectedEventType : undefined,
       mainCategory,
       subCategory,
       productGroup: undefined, // Coming soon
@@ -95,6 +110,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   };
 
   const handleReset = () => {
+    setSelectedEventType(undefined);
     setMainCategory(undefined);
     setSubCategory(undefined);
   };
@@ -133,6 +149,50 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             <Text style={[styles.title, { color: isDark ? '#FFF' : '#000' }]}>
               {t('communityFilter.title')}
             </Text>
+          </View>
+
+          {/* Event Type Chips */}
+          <View style={styles.content}>
+            <Text style={[styles.fieldLabel, { color: isDark ? '#FFF' : '#000' }]}>
+              {t('communityFilter.eventType')}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.eventTypeChipsContainer}
+            >
+              {EVENT_TYPES.map((et) => {
+                const isActive = (selectedEventType ?? 'all') === et.value;
+                return (
+                  <Pressable
+                    key={et.value}
+                    style={[
+                      styles.eventTypeChip,
+                      {
+                        backgroundColor: isActive
+                          ? (isDark ? '#FFF' : '#000')
+                          : (isDark ? '#2A2A2A' : '#FFF'),
+                        borderColor: isDark ? '#444' : '#E9E9E9',
+                      },
+                    ]}
+                    onPress={() => setSelectedEventType(et.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.eventTypeChipText,
+                        {
+                          color: isActive
+                            ? (isDark ? '#000' : '#FFF')
+                            : (isDark ? '#FFF' : '#000'),
+                        },
+                      ]}
+                    >
+                      {et.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
 
           {/* Filter Fields */}
@@ -317,6 +377,25 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     gap: 8,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  eventTypeChipsContainer: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  eventTypeChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  eventTypeChipText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   fieldContainer: {
     position: 'relative',

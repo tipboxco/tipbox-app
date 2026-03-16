@@ -14,6 +14,7 @@ import type { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard
 import { useSafeAreaValues } from '@/src/utils';
 import { EventSkeleton } from '@/src/components/Skeletons';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 // EventCard genişliği: Daha kompakt, peek effect daha belirgin
@@ -81,6 +82,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
   onEventPress,
   communityFilters,
 }) => {
+  const { t } = useTranslation('events');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
@@ -177,14 +179,28 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
   );
 
   const activeEventsFiltered = useMemo(() => {
-    if (!(searchQuery ?? '').trim()) return activeEvents;
-    return activeEvents.filter((e) => matchesSearch(e.title, e.description));
-  }, [activeEvents, searchQuery, matchesSearch]);
+    let filtered = activeEvents;
+    if ((searchQuery ?? '').trim()) {
+      filtered = filtered.filter((e) => matchesSearch(e.title, e.description));
+    }
+    // Client-side event type filtering
+    if (communityFilters?.eventType) {
+      filtered = filtered.filter((e) => e.eventType === communityFilters.eventType);
+    }
+    return filtered;
+  }, [activeEvents, searchQuery, matchesSearch, communityFilters?.eventType]);
 
   const upcomingEventsFiltered = useMemo(() => {
-    if (!(searchQuery ?? '').trim()) return upcomingEvents;
-    return upcomingEvents.filter((e) => matchesSearch(e.title, e.description));
-  }, [upcomingEvents, searchQuery, matchesSearch]);
+    let filtered = upcomingEvents;
+    if ((searchQuery ?? '').trim()) {
+      filtered = filtered.filter((e) => matchesSearch(e.title, e.description));
+    }
+    // Client-side event type filtering
+    if (communityFilters?.eventType) {
+      filtered = filtered.filter((e) => e.eventType === communityFilters.eventType);
+    }
+    return filtered;
+  }, [upcomingEvents, searchQuery, matchesSearch, communityFilters?.eventType]);
 
   // Handle active events scroll for pagination dots
   const handleActiveEventsScroll = useCallback((event: any) => {
@@ -318,7 +334,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                   fontSize="$sm"
                   fontWeight="$bold"
                 >
-                  Active Events
+                  {t('list.activeEvents')}
                 </Text>
                 {isActiveEventsLoading && !activeEventsData ? (
                   <EventSkeleton count={3} isHorizontal={true} />
@@ -331,7 +347,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                 ) : activeEventsFiltered.length === 0 ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                      {searchQuery?.trim() ? `No results for "${searchQuery.trim()}"` : 'No active events yet'}
+                      {searchQuery?.trim() ? t('list.noResults', { query: searchQuery.trim() }) : t('list.noActiveEvents')}
                     </Text>
                   </Box>
                 ) : (
@@ -424,7 +440,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                 fontSize="$sm"
                 fontWeight="$bold"
               >
-                Upcoming Events
+                {t('list.upcomingEvents')}
               </Text>
             </Box>
 
@@ -448,7 +464,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
             {!isUpcomingEventsLoading && upcomingEventsFiltered.length === 0 && !upcomingEventsError && (
               <Box pt="$4" alignItems="center" px="$4">
                   <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                  {searchQuery?.trim() ? `No results for "${searchQuery.trim()}"` : 'No upcoming events yet'}
+                  {searchQuery?.trim() ? t('list.noResults', { query: searchQuery.trim() }) : t('list.noUpcomingEvents')}
                 </Text>
               </Box>
             )}

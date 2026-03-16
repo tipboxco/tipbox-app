@@ -150,7 +150,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   };
 
   return (
-    <View style={{ paddingBottom: 20, paddingTop: 8, minHeight: 200 }}>
+    <View style={{ flex: 1, paddingTop: 8 }}>
       {/* Header */}
       <Text style={[styles.title, { color: isDark ? '#FFF' : '#000', textAlign: 'center', marginBottom: 16 }]}>
         {t('collectionsFilter.title')}
@@ -159,7 +159,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
       {/* Scrollable Content */}
       <ScrollView
         ref={scrollViewRef}
-        style={{ maxHeight: 400 }}
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
         showsVerticalScrollIndicator={true}
         nestedScrollEnabled={true}
@@ -170,8 +170,8 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               style={[
                 styles.dropdown,
                 {
-                  borderColor: isDark ? '#3A3A3C' : '#BBB',
-                  backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+                  borderColor: '#BBB',
+                  backgroundColor: isDark ? '#2A2A2A' : '#FFF',
                 },
               ]}
               onPress={() => {
@@ -184,62 +184,59 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               <Text
                 style={[
                   styles.dropdownText,
-                  { color: mainCategoryId ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666') },
+                  { color: mainCategoryId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
                 ]}
                 numberOfLines={1}
               >
                 {isLoadingMain ? t('collectionsFilter.loading') : getSelectedMainCategoryName()}
               </Text>
               {isLoadingMain ? (
-                <ActivityIndicator size="small" color="#C7C7CC" />
+                <ActivityIndicator size="small" color="#C1BEBF" />
               ) : (
-                <View
-                  style={[
-                    styles.chevronIcon,
-                    showMainDropdown && styles.chevronIconRotated,
-                  ]}
-                >
-                  <Feather name="chevron-left" size={25} color="#C7C7CC" />
-                </View>
+                <Feather
+                  name={showMainDropdown ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color="#C1BEBF"
+                />
               )}
             </Pressable>
 
-            {/* Main Category Options - Scrollable */}
+            {/* Main Category Options */}
             {showMainDropdown && !isLoadingMain && (
-              <ScrollView
-                style={styles.inlineOptionsList}
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
+              <View
+                style={[
+                  styles.optionsList,
+                  {
+                    backgroundColor: isDark ? '#2A2A2A' : '#FFF',
+                    borderColor: '#BBB',
+                  },
+                ]}
               >
-                {mainCategories.length === 0 ? (
-                  <View style={styles.errorContainer}>
-                    <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                      {t('collectionsFilter.noCategories')}
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    {mainCategories.map((option) => (
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                  {mainCategories.length === 0 ? (
+                    <View style={styles.errorContainer}>
+                      <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
+                        {t('collectionsFilter.noCategories')}
+                      </Text>
+                    </View>
+                  ) : (
+                    mainCategories.map((option) => (
                       <Pressable
                         key={option.id}
-                        style={styles.simpleOptionItem}
+                        style={styles.optionItem}
                         onPress={() => {
-                          console.log('[CollectionsBottomSheet] Main category selected:', option.id, option.name);
                           setMainCategoryId(option.id);
                           setShowMainDropdown(false);
                         }}
                       >
-                        <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
                           {option.name}
                         </Text>
-                        {mainCategoryId === option.id && (
-                          <Feather name="check" size={16} color="#007AFF" style={styles.checkIcon} />
-                        )}
                       </Pressable>
-                    ))}
-                  </>
-                )}
-              </ScrollView>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
             )}
           </View>
 
@@ -249,8 +246,8 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               style={[
                 styles.dropdown,
                 {
-                  borderColor: isDark ? '#3A3A3C' : '#BBB',
-                  backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+                  borderColor: '#BBB',
+                  backgroundColor: isDark ? '#2A2A2A' : '#FFF',
                   opacity: !mainCategoryId ? 0.5 : 1,
                 },
               ]}
@@ -266,61 +263,59 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               <Text
                 style={[
                   styles.dropdownText,
-                  { color: subCategoryId ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666') },
+                  { color: subCategoryId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
                 ]}
                 numberOfLines={1}
               >
                 {isLoadingSub ? t('collectionsFilter.loading') : getSelectedSubCategoryName()}
               </Text>
               {isLoadingSub ? (
-                <ActivityIndicator size="small" color="#C7C7CC" />
+                <ActivityIndicator size="small" color="#C1BEBF" />
               ) : (
-                <View
-                  style={[
-                    styles.chevronIcon,
-                    showSubDropdown && styles.chevronIconRotated,
-                  ]}
-                >
-                  <Feather name="chevron-left" size={25} color="#C7C7CC" />
-                </View>
+                <Feather
+                  name={showSubDropdown ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color="#C1BEBF"
+                />
               )}
             </Pressable>
 
-            {/* Sub Category Options - Scrollable */}
+            {/* Sub Category Options */}
             {showSubDropdown && !isLoadingSub && mainCategoryId && (
-              <ScrollView
-                style={styles.inlineOptionsList}
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
+              <View
+                style={[
+                  styles.optionsList,
+                  {
+                    backgroundColor: isDark ? '#2A2A2A' : '#FFF',
+                    borderColor: '#BBB',
+                  },
+                ]}
               >
-                {subCategories.length === 0 ? (
-                  <View style={styles.errorContainer}>
-                    <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                      {t('collectionsFilter.noSubCategories')}
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    {subCategories.map((option) => (
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                  {subCategories.length === 0 ? (
+                    <View style={styles.errorContainer}>
+                      <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
+                        {t('collectionsFilter.noSubCategories')}
+                      </Text>
+                    </View>
+                  ) : (
+                    subCategories.map((option) => (
                       <Pressable
                         key={option.id}
-                        style={styles.simpleOptionItem}
+                        style={styles.optionItem}
                         onPress={() => {
                           setSubCategoryId(option.id);
                           setShowSubDropdown(false);
                         }}
                       >
-                        <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
                           {option.name}
                         </Text>
-                        {subCategoryId === option.id && (
-                          <Feather name="check" size={16} color="#007AFF" style={styles.checkIcon} />
-                        )}
                       </Pressable>
-                    ))}
-                  </>
-                )}
-              </ScrollView>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
             )}
           </View>
 
@@ -330,8 +325,8 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               style={[
                 styles.dropdown,
                 {
-                  borderColor: isDark ? '#3A3A3C' : '#BBB',
-                  backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+                  borderColor: '#BBB',
+                  backgroundColor: isDark ? '#2A2A2A' : '#FFF',
                   opacity: !subCategoryId ? 0.5 : 1,
                 },
               ]}
@@ -347,82 +342,77 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
               <Text
                 style={[
                   styles.dropdownText,
-                  { color: productGroupId ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666') },
+                  { color: productGroupId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
                 ]}
                 numberOfLines={1}
               >
                 {isLoadingProductGroup ? t('collectionsFilter.loading') : getSelectedProductGroupName()}
               </Text>
               {isLoadingProductGroup ? (
-                <ActivityIndicator size="small" color="#C7C7CC" />
+                <ActivityIndicator size="small" color="#C1BEBF" />
               ) : (
-                <View
-                  style={[
-                    styles.chevronIcon,
-                    showProductGroupDropdown && styles.chevronIconRotated,
-                  ]}
-                >
-                  <Feather name="chevron-left" size={25} color="#C7C7CC" />
-                </View>
+                <Feather
+                  name={showProductGroupDropdown ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color="#C1BEBF"
+                />
               )}
             </Pressable>
 
-            {/* Product Group Options - Scrollable */}
+            {/* Product Group Options */}
             {showProductGroupDropdown && !isLoadingProductGroup && subCategoryId && (
-              <ScrollView
-                style={styles.inlineOptionsList}
-                nestedScrollEnabled={true}
-                showsVerticalScrollIndicator={true}
+              <View
+                style={[
+                  styles.optionsList,
+                  {
+                    backgroundColor: isDark ? '#2A2A2A' : '#FFF',
+                    borderColor: '#BBB',
+                  },
+                ]}
               >
-                {productGroups.length === 0 ? (
-                  <View style={styles.errorContainer}>
-                    <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                      {t('collectionsFilter.noProductGroups')}
-                    </Text>
-                  </View>
-                ) : (
-                  <>
-                    {productGroups.map((option) => (
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                  {productGroups.length === 0 ? (
+                    <View style={styles.errorContainer}>
+                      <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
+                        {t('collectionsFilter.noProductGroups')}
+                      </Text>
+                    </View>
+                  ) : (
+                    productGroups.map((option) => (
                       <Pressable
                         key={option.id}
-                        style={styles.simpleOptionItem}
+                        style={styles.optionItem}
                         onPress={() => {
                           setProductGroupId(option.id);
                           setShowProductGroupDropdown(false);
                         }}
                       >
-                        <Text style={[styles.simpleOptionText, { color: isDark ? '#FFF' : '#000' }]}>
+                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
                           {option.name}
                         </Text>
-                        {productGroupId === option.id && (
-                          <Feather name="check" size={16} color="#007AFF" style={styles.checkIcon} />
-                        )}
                       </Pressable>
-                    ))}
-                  </>
-                )}
-              </ScrollView>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
             )}
           </View>
       </ScrollView>
 
-      {/* Apply Button */}
-      <Pressable
-        style={{
-          backgroundColor: isDark ? '#FFFFFF' : '#000000',
-          marginHorizontal: 16,
-          marginTop: 16,
-          height: 48,
-          borderRadius: 8,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-        onPress={handleDone}
-      >
-        <Text style={{ color: isDark ? '#000000' : '#FFFFFF', fontSize: 16, fontWeight: 'bold' }}>
-          {t('collectionsFilter.apply')}
-        </Text>
-      </Pressable>
+      {/* Footer - Apply Button */}
+      <View style={styles.footer}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.applyButton,
+            { opacity: pressed ? 0.8 : 1 },
+          ]}
+          onPress={handleDone}
+        >
+          <Text style={styles.applyButtonText}>
+            {t('collectionsFilter.apply')}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 };
@@ -433,6 +423,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   fieldContainer: {
+    position: 'relative',
     marginBottom: 8,
   },
   dropdown: {
@@ -440,6 +431,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -449,34 +441,25 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: '500',
   },
-  chevronIcon: {
-    transform: [{ rotate: '-90deg' }],
-    width: 25,
-    height: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
+  optionsList: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderRadius: 5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  chevronIconRotated: {
-    transform: [{ rotate: '90deg' }],
-  },
-  inlineOptionsList: {
-    marginTop: 8,
-    paddingVertical: 8,
-    maxHeight: 200,
-  },
-  simpleOptionItem: {
+  optionItem: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9E9E9',
   },
-  simpleOptionText: {
-    fontSize: 14,
-    flex: 1,
-  },
-  checkIcon: {
-    marginLeft: 8,
+  optionText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   errorContainer: {
     paddingHorizontal: 16,
@@ -486,6 +469,25 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  applyButton: {
+    backgroundColor: '#D8FF08',
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: '#111',
+    fontSize: 15,
+    fontWeight: 'bold',
   },
 });
 

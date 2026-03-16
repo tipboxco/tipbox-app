@@ -116,7 +116,7 @@ const EventsScreen: React.FC = () => {
   // Filter apply handler (Community tab - FilterBottomSheet)
   const handleFilterApply = useCallback((filters: FilterSelection) => {
     setCommunityFilters(filters);
-    setShowFilterSheet(false);
+    setShowCommunityFilterSheet(false);
   }, []);
 
   // Collections filter apply handler (Collections tab - CollectionsBottomSheet)

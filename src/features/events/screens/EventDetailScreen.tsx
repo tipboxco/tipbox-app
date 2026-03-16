@@ -266,7 +266,7 @@ const EventDetailScreen: React.FC = () => {
                 name: item.user.name,
                 title: item.user.title,
                 avatar: toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png'),
-                action: event?.title ? `📤 Posted in ${event.title}` : undefined,
+                action: event?.title ? `📤 ${t('details.postedIn', { eventTitle: event.title })}` : undefined,
             },
             content: contentString,
             images,

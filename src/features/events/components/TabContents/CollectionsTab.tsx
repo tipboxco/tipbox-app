@@ -374,15 +374,15 @@ const styles = StyleSheet.create({
   },
   filterChips: {
     backgroundColor: 'transparent',
-    maxHeight: 44,
+    maxHeight: 52,
   },
   scrollView: {
     marginTop: 0,
   },
   filterChipsContainer: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    marginBottom: 4,
+    paddingTop: 12,
+    paddingBottom: 12,
     gap: 6,
   },
   filterChip: {

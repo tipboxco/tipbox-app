@@ -19,7 +19,8 @@
     "community": "Community",
     "review": "Review",
     "giveaway": "Giveaway",
-    "discussion": "Discussion"
+    "discussion": "Discussion",
+    "PICKS": "Picks"
   },
   "search": {
     "events": "Search events",
@@ -55,7 +56,8 @@
     "latest": "Latest",
     "postsLoadError": "An error occurred while loading posts",
     "noPosts": "No posts yet",
-    "product": "Product"
+    "product": "Product",
+    "postedIn": "Posted in {{eventTitle}}"
   },
   "badges": {
     "title": "Badges",

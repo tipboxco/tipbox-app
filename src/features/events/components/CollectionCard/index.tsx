@@ -22,7 +22,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
   onPress,
 }) => {
   const cardHeight = isFullWidth ? 200 : 160;
-  const bgImageSource = toImageSource(collection.backgroundImage) || DEFAULT_COLLECTION_IMAGE;
+  const bgImageSource = toImageSource(collection.coverImage) || DEFAULT_COLLECTION_IMAGE;
 
   const renderContent = () => (
     <View style={styles.innerContainer}>

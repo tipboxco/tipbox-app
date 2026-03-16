@@ -19,7 +19,8 @@
     "community": "Topluluk",
     "review": "İnceleme",
     "giveaway": "Çekiliş",
-    "discussion": "Tartışma"
+    "discussion": "Tartışma",
+    "PICKS": "Picks"
   },
   "search": {
     "events": "Etkinlik ara",
@@ -55,7 +56,8 @@
     "latest": "En Son",
     "postsLoadError": "Gönderiler yüklenirken bir hata oluştu",
     "noPosts": "Henüz gönderi yok",
-    "product": "Ürün"
+    "product": "Ürün",
+    "postedIn": "{{eventTitle}} etkinliğinde paylaşıldı"
   },
   "badges": {
     "title": "Rozetler",
