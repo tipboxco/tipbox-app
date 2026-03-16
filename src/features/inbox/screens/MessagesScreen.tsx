@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { FlatList, RefreshControl } from 'react-native';
+import { FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import {
@@ -26,7 +26,6 @@ import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { MessageSkeleton } from '@/src/components/Skeletons';
 import { inboxTypingStore } from '../store/typingStore';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
@@ -555,7 +554,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     <Text color="#CE4A4A">{t('messages.error', { message: error.message })}</Text>
                 </Box>
             ) : isLoading ? (
-                <MessageSkeleton />
+                <Box flex={1} justifyContent="center" alignItems="center">
+                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                </Box>
             ) : (
                 <FlatList
                     style={{ flex: 1 }}
