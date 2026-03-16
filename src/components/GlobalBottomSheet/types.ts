@@ -77,9 +77,9 @@ export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'on
   paddingBottom?: number;
   animationConfigs?: any;
 } = {
-  // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
-  // Dynamic sizing adapts to content height automatically
-  enableDynamicSizing: true,
+  // STABILITY FIX: enableDynamicSizing bazı cihazlarda bottom sheet'in açılmamasına neden olabiliyor
+  // Default olarak false yapıp snapPoints ile kontrol ediyoruz
+  enableDynamicSizing: false,
   enablePanDownToClose: true,
   enableOverDrag: false,
   enableHandlePanningGesture: true,
@@ -99,7 +99,7 @@ export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'on
   bottomInset: 0,
   enableHandle: true,
   maxDynamicContentSize: 0,
-  snapPoints: [],
+  snapPoints: ['40%'],
   initialSnapIndex: 0,
 };
 
@@ -111,6 +111,7 @@ export type BottomSheetState = {
   content: ReactNode | null;
   index: number; // -1 closed, 0 open
   options: BottomSheetOptions | null;
+  openId: number; // Unique ID per open - forces fresh BottomSheet instance via key
 };
 
 /**

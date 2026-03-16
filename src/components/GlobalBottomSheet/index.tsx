@@ -32,7 +32,7 @@ export const GlobalBottomSheet: React.FC = () => {
   }
   
   const { state, closeBottomSheet } = context;
-  const { content, index, options } = state;
+  const { content, index, options, openId } = state;
   
 
   // CRITICAL FIX: Son index değerini track et (onChange race condition'ını önlemek için)
@@ -59,7 +59,7 @@ export const GlobalBottomSheet: React.FC = () => {
     return {
       ...DEFAULT_BOTTOM_SHEET_OPTIONS,
       ...safeOptions,
-      enableDynamicSizing: hasSnapPoints ? false : (safeOptions.enableDynamicSizing ?? true),
+      enableDynamicSizing: hasSnapPoints ? false : (safeOptions.enableDynamicSizing ?? DEFAULT_BOTTOM_SHEET_OPTIONS.enableDynamicSizing),
     };
   }, [options]);
 
@@ -211,6 +211,7 @@ export const GlobalBottomSheet: React.FC = () => {
   // Portal kullanmak çift render'a neden oluyor (Portal + GlobalUIHost)
   return (
     <BottomSheet
+        key={openId} // REOPEN FIX: Force fresh instance on each open to prevent gorhom stale state
         index={index} // STABİL FIX: TEK SOURCE OF TRUTH, koşullu değiştirilmez
         {...bottomSheetProps}
         enablePanDownToClose={mergedOptions.enablePanDownToClose}

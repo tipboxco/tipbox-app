@@ -16,6 +16,7 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
     content: null,
     index: -1, // -1 closed, 0 open
     options: null,
+    openId: 0,
   });
 
   /**
@@ -26,6 +27,7 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
    */
   const cleanupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opIdRef = useRef(0);
+  const openIdRef = useRef(0);
   /** animateOnMount true olan sheet'lerde kapanış animasyonu bitene kadar beklemek için */
   const optionsRef = useRef<BottomSheetOptions | null>(null);
   optionsRef.current = state.options;
@@ -52,10 +54,12 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
     bumpOpId();
 
     // PERFORMANCE: Tek setState ile instant açılış (no animation delay)
+    openIdRef.current += 1;
     setState({
       content,
       index: 0, // Open
       options: options || null,
+      openId: openIdRef.current, // Force fresh BottomSheet instance via key
     });
   }, []);
 
