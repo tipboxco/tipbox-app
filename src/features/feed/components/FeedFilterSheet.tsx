@@ -1,16 +1,16 @@
 /**
- * FeedFilterSheet - Grid card selection bottom sheet content
- * Shows filter options in a 2-column grid layout with multi/single select
+ * FeedFilterSheet - Per-filter bottom sheet content
+ * Opens with a specific filterId and shows relevant options
+ * Uses radio buttons for single-select (category, sort) and checkboxes for multi-select (interest, tag)
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, Pressable, Dimensions, StyleSheet } from 'react-native';
-import { CheckIcon } from 'react-native-heroicons/solid';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import type { FeedFilterParams } from '../api/feedApi';
-import { INTEREST_OPTIONS, TAG_OPTIONS, CATEGORY_OPTIONS, SORT_OPTIONS } from './FilterFeed';
+import { TAG_OPTIONS, SORT_OPTIONS, INTEREST_OPTIONS, CATEGORY_OPTIONS } from './FilterFeed';
 import { useTranslation } from '@/src/hooks/useTranslation';
-
-type FilterId = 'interest' | 'tag' | 'category' | 'sort';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import type { FilterId } from './FeedFilterChips';
 
 interface FeedFilterSheetProps {
   filterId: FilterId;
@@ -19,8 +19,27 @@ interface FeedFilterSheetProps {
   onClose: () => void;
 }
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = (SCREEN_WIDTH - 48 - 8) / 2; // padding (24*2) + gap (8)
+/** Radio circle component (single-select) */
+const RadioCircle: React.FC<{ selected: boolean; isDark: boolean }> = ({ selected, isDark }) => {
+  const activeColor = isDark ? '#FFFFFF' : '#000000';
+  const inactiveColor = isDark ? '#555555' : '#CCCCCC';
+  return (
+    <View style={[styles.radioOuter, { borderColor: selected ? activeColor : inactiveColor }]}>
+      {selected && <View style={[styles.radioInner, { backgroundColor: activeColor }]} />}
+    </View>
+  );
+};
+
+/** Checkbox component (multi-select) */
+const CheckBox: React.FC<{ selected: boolean; isDark: boolean }> = ({ selected, isDark }) => {
+  const activeColor = '#829905';
+  const inactiveColor = isDark ? '#555555' : '#CCCCCC';
+  return (
+    <View style={[styles.checkOuter, { borderColor: selected ? activeColor : inactiveColor, backgroundColor: selected ? activeColor : 'transparent' }]}>
+      {selected && <Text style={styles.checkMark}>✓</Text>}
+    </View>
+  );
+};
 
 export const FeedFilterSheet: React.FC<FeedFilterSheetProps> = React.memo(({
   filterId,
@@ -29,145 +48,131 @@ export const FeedFilterSheet: React.FC<FeedFilterSheetProps> = React.memo(({
   onClose,
 }) => {
   const { t } = useTranslation('feed');
-  const [localFilters, setLocalFilters] = useState<FeedFilterParams>(filters);
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
 
-  useEffect(() => {
-    setLocalFilters(filters);
-  }, [filters]);
+  const isMultiSelect = filterId === 'interest' || filterId === 'tag';
 
-  const options = useMemo(() => {
-    switch (filterId) {
-      case 'interest':
-        return INTEREST_OPTIONS;
-      case 'tag':
-        return TAG_OPTIONS;
-      case 'category':
-        return CATEGORY_OPTIONS;
-      case 'sort':
-        return SORT_OPTIONS;
-      default:
-        return [];
-    }
-  }, [filterId]);
-
+  // Get title based on filterId
   const title = useMemo(() => {
     switch (filterId) {
-      case 'interest':
-        return t('filterFeed.title.interests');
-      case 'tag':
-        return t('filterFeed.title.tags');
-      case 'category':
-        return t('filterFeed.title.category');
-      case 'sort':
-        return t('filterFeed.title.sort');
-      default:
-        return '';
+      case 'interest': return t('filterFeed.title.interests');
+      case 'tag': return t('filterFeed.title.tags');
+      case 'category': return t('filterFeed.title.category');
+      case 'sort': return t('filterFeed.title.sort');
+      default: return '';
     }
   }, [filterId, t]);
 
-  const isSelected = useCallback((value: string) => {
+  // Get options based on filterId
+  const options = useMemo(() => {
     switch (filterId) {
-      case 'interest':
-        return localFilters.interests?.includes(value) || false;
-      case 'tag':
-        return localFilters.tags?.includes(value) || false;
-      case 'category':
-        return localFilters.category === value;
-      case 'sort':
-        return localFilters.sort === value;
-      default:
-        return false;
+      case 'interest': return INTEREST_OPTIONS;
+      case 'tag': return TAG_OPTIONS;
+      case 'category': return CATEGORY_OPTIONS;
+      case 'sort': return SORT_OPTIONS;
+      default: return [];
     }
-  }, [filterId, localFilters]);
+  }, [filterId]);
 
-  const handleToggle = useCallback((value: string) => {
-    switch (filterId) {
-      case 'interest': {
-        const current = localFilters.interests || [];
-        const updated = current.includes(value)
-          ? current.filter((v) => v !== value)
-          : [...current, value];
-        setLocalFilters({ ...localFilters, interests: updated.length > 0 ? updated : undefined });
-        break;
-      }
-      case 'tag': {
-        const current = localFilters.tags || [];
-        const updated = current.includes(value)
-          ? current.filter((v) => v !== value)
-          : [...current, value];
-        setLocalFilters({ ...localFilters, tags: updated.length > 0 ? updated : undefined });
-        break;
-      }
-      case 'category': {
-        const newVal = localFilters.category === value ? undefined : value;
-        setLocalFilters({ ...localFilters, category: newVal });
-        break;
-      }
-      case 'sort': {
-        const newVal = localFilters.sort === value ? undefined : (value as 'recent' | 'top');
-        setLocalFilters({ ...localFilters, sort: newVal });
-        break;
-      }
+  // Local state for multi-select (array)
+  const [selectedMulti, setSelectedMulti] = useState<string[]>(() => {
+    if (filterId === 'interest') return filters.interests || [];
+    if (filterId === 'tag') return filters.tags || [];
+    return [];
+  });
+
+  // Local state for single-select (string | null)
+  const [selectedSingle, setSelectedSingle] = useState<string | null>(() => {
+    if (filterId === 'category') return filters.category || null;
+    if (filterId === 'sort') return filters.sort || null;
+    return null;
+  });
+
+  // Sync with external filters
+  useEffect(() => {
+    if (filterId === 'interest') setSelectedMulti(filters.interests || []);
+    else if (filterId === 'tag') setSelectedMulti(filters.tags || []);
+    else if (filterId === 'category') setSelectedSingle(filters.category || null);
+    else if (filterId === 'sort') setSelectedSingle(filters.sort || null);
+  }, [filters, filterId]);
+
+  const handleToggleMulti = useCallback((value: string) => {
+    setSelectedMulti(prev =>
+      prev.includes(value)
+        ? prev.filter(v => v !== value)
+        : [...prev, value]
+    );
+  }, []);
+
+  const handleSelectSingle = useCallback((value: string) => {
+    setSelectedSingle(prev => prev === value ? null : value);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (isMultiSelect) setSelectedMulti([]);
+    else setSelectedSingle(null);
+  }, [isMultiSelect]);
+
+  const handleDone = useCallback(() => {
+    const newFilters: FeedFilterParams = { ...filters };
+
+    if (filterId === 'interest') {
+      newFilters.interests = selectedMulti.length > 0 ? selectedMulti : undefined;
+    } else if (filterId === 'tag') {
+      newFilters.tags = selectedMulti.length > 0 ? selectedMulti : undefined;
+    } else if (filterId === 'category') {
+      newFilters.category = selectedSingle || undefined;
+    } else if (filterId === 'sort') {
+      newFilters.sort = (selectedSingle as FeedFilterParams['sort']) || undefined;
     }
-  }, [filterId, localFilters]);
 
-  const handleClear = useCallback(() => {
-    switch (filterId) {
-      case 'interest':
-        setLocalFilters({ ...localFilters, interests: undefined });
-        break;
-      case 'tag':
-        setLocalFilters({ ...localFilters, tags: undefined });
-        break;
-      case 'category':
-        setLocalFilters({ ...localFilters, category: undefined });
-        break;
-      case 'sort':
-        setLocalFilters({ ...localFilters, sort: undefined });
-        break;
-    }
-  }, [filterId, localFilters]);
-
-  const handleApply = useCallback(() => {
-    onFiltersChange(localFilters);
+    onFiltersChange(newFilters);
     onClose();
-  }, [localFilters, onFiltersChange, onClose]);
+  }, [filterId, selectedMulti, selectedSingle, filters, onFiltersChange, onClose]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      {/* Title */}
+      <Text style={[styles.title, isDark && styles.textDark]}>
+        {title}
+      </Text>
 
-      <View style={styles.grid}>
-        {options.map((option) => {
-          const selected = isSelected(option.value);
-          return (
-            <Pressable
-              key={option.value}
-              onPress={() => handleToggle(option.value)}
-              style={[
-                styles.card,
-                selected ? styles.cardSelected : styles.cardUnselected,
-              ]}
-            >
-              <Text style={[styles.cardText, selected && styles.cardTextSelected]}>
-                {t(option.labelKey)}
-              </Text>
-              {selected && (
-                <View style={styles.checkIcon}>
-                  <CheckIcon width={14} height={14} color="#829905" />
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* Options */}
+      {options.map((option) => {
+        const isSelected = isMultiSelect
+          ? selectedMulti.includes(option.value)
+          : selectedSingle === option.value;
 
+        return (
+          <Pressable
+            key={option.value}
+            style={styles.optionRow}
+            onPress={() => isMultiSelect ? handleToggleMulti(option.value) : handleSelectSingle(option.value)}
+          >
+            {isMultiSelect ? (
+              <CheckBox selected={isSelected} isDark={isDark} />
+            ) : (
+              <RadioCircle selected={isSelected} isDark={isDark} />
+            )}
+            <Text style={[styles.optionText, isDark && styles.textDark, isSelected && styles.optionTextSelected]}>
+              {t(option.labelKey)}
+            </Text>
+          </Pressable>
+        );
+      })}
+
+      {/* Action Buttons */}
       <View style={styles.actions}>
-        <Pressable onPress={handleClear} style={styles.clearButton}>
-          <Text style={styles.clearButtonText}>{t('filterFeed.clear')}</Text>
+        <Pressable onPress={handleReset} style={[styles.resetButton, isDark && styles.resetButtonDark]}>
+          <Text style={[styles.resetButtonText, isDark && styles.resetButtonTextDark]}>
+            {t('filterFeed.reset')}
+          </Text>
         </Pressable>
-        <Pressable onPress={handleApply} style={styles.applyButton}>
-          <Text style={styles.applyButtonText}>{t('filterFeed.apply')}</Text>
+        <Pressable onPress={handleDone} style={styles.doneButton}>
+          <Text style={styles.doneButtonText}>
+            {t('filterFeed.done')}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -179,85 +184,98 @@ FeedFilterSheet.displayName = 'FeedFilterSheet';
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
+  containerDark: {},
   title: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#000000',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  grid: {
+  textDark: {
+    color: '#FFFFFF',
+  },
+  optionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  card: {
-    width: CARD_WIDTH,
-    minHeight: 52,
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    position: 'relative',
+    paddingVertical: 7,
+    gap: 10,
   },
-  cardSelected: {
-    backgroundColor: '#F5F5F5',
-    borderColor: '#829905',
-  },
-  cardUnselected: {
-    backgroundColor: 'transparent',
-    borderColor: '#E9E9E9',
-  },
-  cardText: {
+  optionText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#000000',
-    textAlign: 'center',
+    fontWeight: '400',
+    color: '#333333',
   },
-  cardTextSelected: {
+  optionTextSelected: {
     fontWeight: '600',
-    color: '#000000',
   },
-  checkIcon: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#CCCCCC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#000000',
+  },
+  checkOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#CCCCCC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkMark: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: -1,
   },
   actions: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 20,
-    paddingBottom: 16,
+    gap: 10,
+    marginTop: 18,
+    paddingBottom: 6,
   },
-  clearButton: {
+  resetButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#E9E9E9',
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    paddingVertical: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 40,
   },
-  clearButtonText: {
+  resetButtonDark: {
+    borderColor: '#444444',
+  },
+  resetButtonText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#666666',
   },
-  applyButton: {
+  resetButtonTextDark: {
+    color: '#AAAAAA',
+  },
+  doneButton: {
     flex: 1,
     backgroundColor: '#D0F205',
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingVertical: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 40,
   },
-  applyButtonText: {
+  doneButtonText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#000000',

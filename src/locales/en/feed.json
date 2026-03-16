@@ -41,6 +41,7 @@
     "tags": "Tags",
     "category": "Category",
     "sort": "Sort",
+    "filterSort": "Filter / Sort",
     "clearAll": "Clear All"
   },
   "filterFeed": {
@@ -48,18 +49,24 @@
       "interests": "Interests",
       "tags": "Tags",
       "category": "Category",
-      "sort": "Sort"
+      "sort": "Sort",
+      "filterSort": "Filter / Sort"
     },
+    "sectionFilter": "Filter",
+    "sectionSort": "Sort",
     "loading": "Loading...",
     "clear": "Clear",
     "apply": "Apply",
+    "reset": "Reset",
+    "done": "Done",
     "tagOptions": {
-      "free": "Free",
-      "benchmark": "Benchmark",
-      "experience": "Experience",
-      "update": "Update",
-      "question": "Question",
-      "tipsAndTricks": "Tips and Tricks"
+      "all": "All",
+      "free": "Reviews",
+      "benchmark": "Benchmarks",
+      "experience": "Generals",
+      "update": "Updates",
+      "question": "Questions",
+      "tipsAndTricks": "Tips & Tricks"
     },
     "interestOptions": {
       "truster": "Truster",
@@ -71,8 +78,9 @@
       "productGroupMatch": "Product Group Match"
     },
     "sortOptions": {
-      "recent": "Recent",
-      "top": "Top"
+      "recent": "Newest First",
+      "oldest": "Oldest First",
+      "top": "Most Popular"
     },
     "categoryOptions": {
       "beauty": "Beauty",

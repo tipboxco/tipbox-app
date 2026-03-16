@@ -41,6 +41,7 @@
     "tags": "Etiketler",
     "category": "Kategori",
     "sort": "Sırala",
+    "filterSort": "Filtre / Sırala",
     "clearAll": "Tümünü Temizle"
   },
   "filterFeed": {
@@ -48,15 +49,21 @@
       "interests": "İlgi Alanları",
       "tags": "Etiketler",
       "category": "Kategori",
-      "sort": "Sırala"
+      "sort": "Sırala",
+      "filterSort": "Filtre / Sırala"
     },
+    "sectionFilter": "Filtre",
+    "sectionSort": "Sırala",
     "loading": "Yükleniyor...",
     "clear": "Temizle",
     "apply": "Uygula",
+    "reset": "Sıfırla",
+    "done": "Tamam",
     "tagOptions": {
-      "free": "Serbest",
+      "all": "Tümü",
+      "free": "İnceleme",
       "benchmark": "Karşılaştırma",
-      "experience": "Deneyim",
+      "experience": "Genel",
       "update": "Güncelleme",
       "question": "Soru",
       "tipsAndTricks": "İpuçları ve Püf Noktaları"
@@ -71,8 +78,9 @@
       "productGroupMatch": "Ürün Grubu Eşleşmesi"
     },
     "sortOptions": {
-      "recent": "En Yeni",
-      "top": "En İyi"
+      "recent": "En Yeniler",
+      "oldest": "En Eskiler",
+      "top": "En Popüler"
     },
     "categoryOptions": {
       "beauty": "Güzellik",

@@ -1,21 +1,16 @@
 /**
- * FeedFilterChips - Horizontal chip/pill filter buttons for FeedScreen
- * Shows active filter counts and opens bottom sheet on press
+ * FeedFilterChips - Horizontal scrollable filter chip buttons for FeedScreen
+ * 4 chips: Interests, Tags, Category, Sort
+ * Each chip opens its own bottom sheet on press
  */
 
-import React, { useCallback } from 'react';
-import { ScrollView, Pressable, View, Text, StyleSheet } from 'react-native';
-import { ChevronDownIcon, XMarkIcon } from 'react-native-heroicons/outline';
+import React from 'react';
+import { View, Pressable, Text, StyleSheet } from 'react-native';
 import type { FeedFilterParams } from '../api/feedApi';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
-type FilterId = 'interest' | 'tag' | 'category' | 'sort';
-
-interface FeedFilterChipsProps {
-  filters: FeedFilterParams;
-  onFilterPress: (filterId: FilterId) => void;
-  onClearAll: () => void;
-}
+export type FilterId = 'interest' | 'tag' | 'category' | 'sort';
 
 const FILTER_BUTTONS: { id: FilterId; labelKey: string }[] = [
   { id: 'interest', labelKey: 'filterButtons.interests' },
@@ -24,20 +19,11 @@ const FILTER_BUTTONS: { id: FilterId; labelKey: string }[] = [
   { id: 'sort', labelKey: 'filterButtons.sort' },
 ];
 
-const getFilterCount = (filterId: FilterId, filters: FeedFilterParams): number => {
-  switch (filterId) {
-    case 'interest':
-      return filters.interests?.length || 0;
-    case 'tag':
-      return filters.tags?.length || 0;
-    case 'category':
-      return filters.category ? 1 : 0;
-    case 'sort':
-      return filters.sort ? 1 : 0;
-    default:
-      return 0;
-  }
-};
+interface FeedFilterChipsProps {
+  filters: FeedFilterParams;
+  onFilterPress: (filterId: FilterId) => void;
+  onClearAll: () => void;
+}
 
 export const FeedFilterChips: React.FC<FeedFilterChipsProps> = React.memo(({
   filters,
@@ -45,57 +31,71 @@ export const FeedFilterChips: React.FC<FeedFilterChipsProps> = React.memo(({
   onClearAll,
 }) => {
   const { t } = useTranslation('feed');
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
 
-  const hasAnyActiveFilter = !!(
+  const hasActiveFilter = !!(
     (filters.interests && filters.interests.length > 0) ||
     (filters.tags && filters.tags.length > 0) ||
     filters.category ||
     filters.sort
   );
 
-  const handlePress = useCallback((filterId: FilterId) => {
-    onFilterPress(filterId);
-  }, [onFilterPress]);
+  const isChipActive = (id: FilterId): boolean => {
+    switch (id) {
+      case 'interest':
+        return !!(filters.interests && filters.interests.length > 0);
+      case 'tag':
+        return !!(filters.tags && filters.tags.length > 0);
+      case 'category':
+        return !!filters.category;
+      case 'sort':
+        return !!filters.sort;
+      default:
+        return false;
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {hasAnyActiveFilter && (
-          <Pressable onPress={onClearAll} style={styles.clearAllChip}>
-            <XMarkIcon width={12} height={12} color="#000000" />
-            <Text style={styles.clearAllText}>{t('filterButtons.clearAll')}</Text>
-          </Pressable>
-        )}
-        {FILTER_BUTTONS.map((button) => {
-          const count = getFilterCount(button.id, filters);
-          const isActive = count > 0;
-
+      <View style={styles.row}>
+        {FILTER_BUTTONS.map((btn) => {
+          const active = isChipActive(btn.id);
           return (
             <Pressable
-              key={button.id}
-              onPress={() => handlePress(button.id)}
+              key={btn.id}
+              onPress={() => onFilterPress(btn.id)}
               style={[
                 styles.chip,
-                isActive ? styles.chipActive : styles.chipInactive,
+                active
+                  ? styles.chipActive
+                  : (isDark ? styles.chipInactiveDark : styles.chipInactive),
               ]}
             >
-              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
-                {t(button.labelKey)}
+              <Text
+                style={[
+                  styles.chipText,
+                  active && styles.chipTextActive,
+                  isDark && !active && styles.chipTextDark,
+                ]}
+              >
+                {t(btn.labelKey)}
               </Text>
-              {count > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{count}</Text>
-                </View>
-              )}
-              <ChevronDownIcon width={9} height={9} color="#000000" />
+              {active && <View style={styles.dot} />}
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
+
+      {hasActiveFilter && (
+        <View style={styles.clearRow}>
+          <Pressable onPress={onClearAll} style={[styles.clearChip, isDark && styles.clearChipDark]}>
+            <Text style={[styles.clearText, isDark && styles.clearTextDark]}>
+              {t('filterButtons.clearAll')}
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 });
@@ -104,37 +104,23 @@ FeedFilterChips.displayName = 'FeedFilterChips';
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
+    marginTop: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 16,
   },
-  scrollContent: {
-    paddingHorizontal: 12,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  clearAllChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#E9E9E9',
-  },
-  clearAllText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000000',
   },
   chip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    justifyContent: 'center',
+    gap: 5,
+    borderRadius: 10,
+    paddingVertical: 5,
     borderWidth: 1,
   },
   chipActive: {
@@ -145,6 +131,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderColor: '#E9E9E9',
   },
+  chipInactiveDark: {
+    backgroundColor: '#1A1A1A',
+    borderColor: '#333333',
+  },
   chipText: {
     fontSize: 12,
     fontWeight: '600',
@@ -153,18 +143,37 @@ const styles = StyleSheet.create({
   chipTextActive: {
     fontWeight: '700',
   },
-  badge: {
-    backgroundColor: '#000000',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+  chipTextDark: {
+    color: '#FFFFFF',
   },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#000000',
+  },
+  clearRow: {
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  clearChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E9E9E9',
+    backgroundColor: '#F5F5F5',
+  },
+  clearChipDark: {
+    borderColor: '#333333',
+    backgroundColor: '#1A1A1A',
+  },
+  clearText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  clearTextDark: {
     color: '#FFFFFF',
   },
 });

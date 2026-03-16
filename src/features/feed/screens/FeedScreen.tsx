@@ -304,7 +304,7 @@ const FeedScreenInner = React.memo(() => {
     );
   };
 
-  // Handle filter button press - open bottom sheet with FeedFilterSheet
+  // Handle filter button press - open per-filter bottom sheet
   const handleFilterButtonPress = useCallback((filterId: 'interest' | 'tag' | 'category' | 'sort') => {
     openBottomSheet(
       <FeedFilterSheet
@@ -314,9 +314,11 @@ const FeedScreenInner = React.memo(() => {
         onClose={closeBottomSheet}
       />,
       {
-        snapPoints: ['45%'],
+        snapPoints: ['50%'],
         enableDynamicSizing: false,
         enablePanDownToClose: true,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
         animateOnMount: false,
         paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
       }
@@ -384,12 +386,18 @@ const FeedScreenInner = React.memo(() => {
       : defaultPostImage;
 
     const contentBlocks = item.experienceContent ?? (Array.isArray(item.content) ? item.content : []);
+    // Section title çevirisi: API İngilizce döner, kullanıcı diline çevir
+    const titleTranslations: Record<string, string> = {
+      'Price and Shopping Experience': t('post:create.experience.step3.priceAndShopping'),
+      'Product and Usage Experience': t('post:create.experience.step3.productAndUsage'),
+    };
     const content: ExperiencePostCardContentItem[] = Array.isArray(contentBlocks)
       ? contentBlocks
         .filter((contentItem) => contentItem != null)
         .map((contentItem) => {
-          const title = contentItem?.title || '';
-          const icon: 'tag' | 'package' = (title.toLowerCase().includes('product') || title.toLowerCase().includes('usage')) ? 'package' : 'tag';
+          const rawTitle = contentItem?.title || '';
+          const title = titleTranslations[rawTitle] || rawTitle;
+          const icon: 'tag' | 'package' = (rawTitle.toLowerCase().includes('product') || rawTitle.toLowerCase().includes('usage')) ? 'package' : 'tag';
           return {
             tag: { icon, title },
             text: contentItem?.content || '',
@@ -412,11 +420,19 @@ const FeedScreenInner = React.memo(() => {
     const subNameRaw = rawProduct?.subName ?? '';
     const subName = subNameRaw && !/^Status:\s*(tested|own)$/i.test(String(subNameRaw)) ? subNameRaw : '';
     // 3 tag: duration, condition (location), purpose. API tags yoksa/eksikse *Name alanlarından doldur.
+    // Tag çevirisi: API İngilizce döner, kullanıcı diline çevir
+    const translateTag = (tag: string) => {
+      const key = `post:create.experience.step1.optionNames.${tag}`;
+      const keyWithoutNs = `create.experience.step1.optionNames.${tag}`;
+      const translated = t(key);
+      return (translated === key || translated === keyWithoutNs) ? tag : translated;
+    };
     const tagsFromApi = Array.isArray(item.tags) ? item.tags : [];
-    const tags =
+    const rawTags =
       tagsFromApi.length >= 3
         ? tagsFromApi
         : [item.durationName, item.locationName, item.purposeName].filter((s): s is string => !!s);
+    const tags = rawTags.map(translateTag);
 
     return {
       id: item.id || '',

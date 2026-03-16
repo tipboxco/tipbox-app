@@ -85,7 +85,7 @@ export interface FeedFilterParams {
    * - top: Relevance score'a göre popüler olanlar
    * Query: ?sort=recent veya ?sort=top
    */
-  sort?: 'recent' | 'top';
+  sort?: 'recent' | 'top' | 'oldest';
 }
 
 /**

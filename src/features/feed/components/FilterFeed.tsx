@@ -35,6 +35,7 @@ export const INTEREST_OPTIONS = [
 
 export const SORT_OPTIONS = [
   { value: 'recent', labelKey: 'filterFeed.sortOptions.recent' },
+  { value: 'oldest', labelKey: 'filterFeed.sortOptions.oldest' },
   { value: 'top', labelKey: 'filterFeed.sortOptions.top' },
 ] as const;
 
@@ -126,7 +127,7 @@ export const FilterFeed: React.FC<FilterFeedProps> = React.memo(({
         break;
       }
       case 'sort': {
-        const newSort = localFilters.sort === value ? undefined : (value as 'recent' | 'top');
+        const newSort = localFilters.sort === value ? undefined : (value as 'recent' | 'top' | 'oldest');
         setLocalFilters({ ...localFilters, sort: newSort });
         break;
       }
