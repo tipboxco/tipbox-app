@@ -381,13 +381,6 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         </Box>
       )}
 
-      {/* Images - Update post'un kendi görselleri (related post'tan bağımsız her zaman göster) */}
-      {data.images && data.images.length > 0 && (
-        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} isDetailMode={true} />
-        </VStack>
-      )}
-
       {/* Related Post Section - Render using ExperiencePostCard for consistent display */}
       {transformedRelatedPost && (
         <ExperiencePostCard
@@ -396,6 +389,13 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
           showActions={false}
           hideProduct={false}
         />
+      )}
+
+      {/* Images - Update post'un kendi görselleri (related post'tan bağımsız her zaman göster) */}
+      {data.images && data.images.length > 0 && (
+        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} isDetailMode={true} />
+        </VStack>
       )}
 
       {/* Stats - Actions */}
