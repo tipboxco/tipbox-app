@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText, FlatList } from 'react-native';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText, FlatList, type ListRenderItem } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent, Divider } from '@gluestack-ui/themed';
@@ -412,8 +412,6 @@ interface ProfileActionButtonsHandle {
 interface ProfileActionButtonsProps {
   targetUserId: string;
   isOwnProfile: boolean;
-  isTrusted: boolean;
-  isMuted: boolean;
   userName: string;
   onEdit: () => void;
   onSendTips: () => void;
@@ -421,11 +419,14 @@ interface ProfileActionButtonsProps {
   onDM: () => void;
 }
 
+const selectActionState = (data: UserProfile) => ({
+  isMuted: !!data.isMuted,
+  isTrusted: !!data.isTrusted,
+});
+
 const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, ProfileActionButtonsProps>(({
   targetUserId,
   isOwnProfile,
-  isTrusted,
-  isMuted,
   userName,
   onEdit,
   onSendTips,
@@ -435,6 +436,11 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
   const { t } = useTranslation('profile');
   const toast = useToast();
   const userId = useAppStore(state => state.user?.id);
+
+  // Read isMuted/isTrusted directly from cache with select for narrow subscription
+  const { data: actionState } = useUserProfile(targetUserId, { select: selectActionState });
+  const isMuted = actionState?.isMuted ?? false;
+  const isTrusted = actionState?.isTrusted ?? false;
 
   const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
   const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
@@ -574,432 +580,50 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
     </HStack>
   );
 }));
-type BadgeFilterKey = typeof BADGE_FILTER_KEYS[number];
-
-// Tab content props
-interface TabContentProps {
-  tabKey: TabKey;
+// ─── Memoized Mute Menu Item (reads isMuted from cache, isolates from parent) ───
+interface MuteMenuItemProps {
   targetUserId: string;
   isDark: boolean;
-  onQueryRef?: (tabKey: TabKey, query: any) => void;
-  isActive?: boolean; // Sadece aktif tab API çağrısı yapmalı
-  profileBadges?: Badge[];
-  onBadgePress?: (badge: Badge) => void;
-  bottomPadding?: number;
+  onPress: () => void;
 }
 
-// TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
-interface TabsBarProps {
-  activeTab: TabKey;
-  onChangeTab: (tab: TabKey) => void;
-  isDark: boolean;
-}
+const selectMuteState = (data: UserProfile) => ({ isMuted: !!data.isMuted });
 
-const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => {
-  const activeColor = isDark ? '#FFFFFF' : '#000000';
-  const inactiveColor = '#A3A3A3';
-
-  return (
-    <Box
-      mb={0}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-      borderBottomWidth={StyleSheet.hairlineWidth}
-      borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
-    >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ 
-          paddingHorizontal: 16,
-        }}
-        scrollEnabled={true}
-        bounces={false}
-      >
-        <HStack
-          borderBottomWidth={1}
-          borderColor="#E9E9E9"
-          p={0}
-          mb={0}
-          position="relative"
-          space="md"
-        >
-          {TABS.map((tab, index) => {
-            const isActive = tab.key === activeTab;
-            return (
-              <Pressable
-                key={tab.key}
-                onPress={() => onChangeTab(tab.key)}
-                alignItems="center"
-                py="$1"
-                px="$2"
-              >
-                <VStack alignItems="center" space="xs">
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 'bold',
-                      color: isActive ? activeColor : inactiveColor,
-                    }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {tab.title}
-                  </Text>
-                </VStack>
-                {/* Active indicator */}
-                {isActive && (
-                  <Box
-                    position="absolute"
-                    bottom={0}
-                    left="50%"
-                    height={2}
-                    width={40}
-                    backgroundColor={isDark ? '#FFFFFF' : '#000000'}
-                    style={{
-                      transform: [{ translateX: -15 }],
-                    }}
-                  />
-                )}
-              </Pressable>
-            );
-          })}
-        </HStack>
-      </ScrollView>
-    </Box>
-  );
-};
-
-// Tab Content Component
-const TabContent: React.FC<TabContentProps> = ({
-  tabKey,
-  targetUserId,
-  isDark,
-  onQueryRef,
-  isActive = true,
-  profileBadges = [],
-  onBadgePress,
-  bottomPadding = 0
-}) => {
+const MuteMenuItem = React.memo(({ targetUserId, isDark, onPress }: MuteMenuItemProps) => {
   const { t } = useTranslation('profile');
-  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('allBadges');
-  // API hooks for each tab
-  // FEED TAB FIX: Feed tab için TÜM query'leri enable et (posts, reviews, benchmarks, tips, replies)
-  // Diğer tab'lar için sadece kendi query'lerini enable et
-  const feedQuery = useUserPosts(targetUserId, 5, { enabled: isActive && tabKey === 'feed' && !!targetUserId });
-  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: isActive && (tabKey === 'feed' || tabKey === 'reviews') && !!targetUserId });
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: isActive && (tabKey === 'feed' || tabKey === 'benchmarks') && !!targetUserId });
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: isActive && (tabKey === 'feed' || tabKey === 'tips') && !!targetUserId });
-  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: isActive && (tabKey === 'feed' || tabKey === 'replies') && !!targetUserId });
-
-  // Get active tab query
-  const activeTabQuery = useMemo(() => {
-    switch (tabKey) {
-      case 'feed': return feedQuery; // Feed tab için feedQuery'yi döndür (diğer query'ler mappedPosts'ta birleştirilecek)
-      case 'reviews': return reviewsQuery;
-      case 'benchmarks': return benchmarksQuery;
-      case 'tips': return tipsQuery;
-      case 'replies': return repliesQuery;
-      default: return feedQuery;
-    }
-  }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]) as typeof feedQuery;
-  
-  // Query ref'ini parent'a gönder
-  useEffect(() => {
-    if (onQueryRef && activeTabQuery) {
-      onQueryRef(tabKey, activeTabQuery);
-    }
-  }, [tabKey, activeTabQuery, onQueryRef]);
-
-  // Filter badges based on selected filter
-  const filteredBadges = useMemo(() => {
-    if (tabKey !== 'badge') return [];
-    if (badgeFilter === 'allBadges') return profileBadges;
-    if (badgeFilter === 'eventBadges') return profileBadges.filter((b) => b.type === 'event');
-    if (badgeFilter === 'collections') return profileBadges.filter((b) => b.type === 'collection');
-    return profileBadges;
-  }, [tabKey, profileBadges, badgeFilter]);
-
-  // Flatten and map posts based on active tab
-  const mappedPosts = useMemo(() => {
-    if (tabKey === 'badge' || tabKey === 'collections') return [];
-
-    // FEED TAB FIX: Feed tab için TÜM query'lerin sonuçlarını birleştir
-    let allItems: any[] = [];
-
-    if (tabKey === 'feed') {
-      // Feed tab: TÜM query sonuçlarını birleştir
-      const feedData = feedQuery.data as any;
-      const reviewsData = reviewsQuery.data as any;
-      const benchmarksData = benchmarksQuery.data as any;
-      const tipsData = tipsQuery.data as any;
-      const repliesData = repliesQuery.data as any;
-
-      // Her query'nin items'larını flat'le ve birleştir
-      const feedItems = feedData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
-      const reviewItems = reviewsData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
-      const benchmarkItems = benchmarksData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
-      const tipsItems = tipsData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
-      const repliesItems = repliesData?.pages?.flatMap((page: any) => page?.items ?? []) ?? [];
-
-      // Tüm item'ları birleştir
-      allItems = [
-        ...feedItems,
-        ...reviewItems,
-        ...benchmarkItems,
-        ...tipsItems,
-        ...repliesItems,
-      ];
-    } else {
-      // Diğer tab'lar: Sadece aktif tab'ın query'sini kullan
-      const queryData = activeTabQuery.data as any;
-      if (!queryData?.pages) return [];
-      allItems = queryData.pages.flatMap((page: any) => page?.items ?? []) ?? [];
-    }
-
-    // Geçerli item'ları filtrele (id olan item'lar)
-    const validItems = allItems.filter((item: any) => item?.id);
-
-    // Benzersiz item'ları al (duplicate'leri kaldır)
-    const uniqueItems = validItems.filter((item: any, index: number, self: any[]) =>
-      index === self.findIndex((t: any) => t?.id === item?.id)
-    );
-
-    const mapped: MappedPost[] = [];
-
-    for (const item of uniqueItems) {
-      let mappedItem: MappedPost | null = null;
-
-      switch (item.type) {
-        case CardType.UPDATE:
-          const updateData = mapUpdateToCardData(item);
-          mappedItem = { type: 'update', id: item.id, data: updateData };
-          break;
-        case CardType.EXPERIENCE: {
-          // Feed endpoint: product + experienceContent + string content
-          // Reviews endpoint: contextData + array content
-          // Her iki formatı da kabul et
-          const hasExperienceData = item?.experienceContent || item?.product || item?.contextData || Array.isArray(item?.content);
-          if (hasExperienceData) {
-            const experienceData = mapExperienceToCardData(item as ProfileReview);
-            if (experienceData) {
-              mappedItem = { type: 'experience', id: item.id, data: experienceData };
-            }
-          }
-          break;
-        }
-        case CardType.BENCHMARK:
-          const benchmarkData = mapBenchmarkToCardData(item as BenchmarkApiItem);
-          if (benchmarkData) {
-            mappedItem = { type: 'benchmark', id: item.id, data: benchmarkData };
-          }
-          break;
-        case CardType.TIPS_AND_TRICKS:
-          if (item?.contextData?.id) {
-            const tipsData = mapTipsToCardData(item as TipsApiItem);
-            if (tipsData) {
-              mappedItem = { type: 'tips', id: item.id, data: tipsData };
-            }
-          }
-          break;
-        case CardType.QUESTION: {
-          // contextData boş obje ({}) olabilir, isBoosted opsiyonel
-          const questionData = mapQuestionToCardData(item as QuestionApiItem);
-          if (questionData) {
-            mappedItem = { type: 'question', id: item.id, data: questionData };
-          }
-          break;
-        }
-        case CardType.POST:
-        default:
-          const postData = mapPostToCardData(item as ProfilePost);
-          if (postData) {
-            mappedItem = { type: 'post', id: item.id, data: postData };
-          }
-          break;
-      }
-
-      if (mappedItem) {
-        mapped.push(mappedItem);
-      }
-    }
-
-    return mapped;
-  }, [tabKey, feedQuery.data, reviewsQuery.data, benchmarksQuery.data, tipsQuery.data, repliesQuery.data, activeTabQuery.data]);
-  
-  // Render post card
-  const renderPostCard = useCallback((postData: MappedPost) => {
-    switch (postData.type) {
-      case 'update':
-        return <UpdatePostCard data={postData.data} />;
-      case 'experience':
-        return <ExperiencePostCard data={postData.data} />;
-      case 'benchmark':
-        return <BenchmarkPostCard data={postData.data} />;
-      case 'tips':
-        return <TipsAndTricksPostCard data={postData.data} />;
-      case 'question':
-        return <QuestionPostCard data={postData.data} />;
-      case 'post':
-      default:
-        return <PostCard data={postData.data} />;
-    }
-  }, []);
-
-  // Render Badge Tab
-  if (tabKey === 'badge') {
-    return (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: bottomPadding,
-          flexGrow: 0, // İçerik kadar büyüsün, boşluk eklemesin
-        }}
-      >
-        <Box px={16} pt={8}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-            <HStack space="sm" alignItems="center">
-              {BADGE_FILTER_KEYS.map((filterKey) => {
-                const isActive = badgeFilter === filterKey;
-                return (
-                  <Pressable
-                    key={filterKey}
-                    onPress={() => setBadgeFilter(filterKey)}
-                    bg={isActive ? (isDark ? '#333' : '#E9E9E9') : (isDark ? '#1A1A1A' : '#FFF')}
-                    borderWidth={1}
-                    borderColor={isDark ? '#444' : '#E9E9E9'}
-                    borderRadius={8}
-                    px="$3"
-                    py="$2"
-                  >
-                    <Text
-                      fontSize="$sm"
-                      fontWeight="$semibold"
-                      color={isActive ? (isDark ? '#FFF' : '#000') : (isDark ? '#999' : '#666')}
-                    >
-                      {t(`badges.${filterKey}`)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </HStack>
-          </ScrollView>
-          {filteredBadges.length === 0 ? (
-            <Box py={32} alignItems="center">
-              <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                {t('emptyStates.noBadgesYet')}
-              </Text>
-            </Box>
-          ) : (
-            <Box flexDirection="row" flexWrap="wrap" justifyContent="center" alignItems="center">
-              {filteredBadges.map((badge) => (
-                <Pressable
-                  key={badge.id}
-                  onPress={() => onBadgePress?.(badge)}
-                  width={114}
-                  height={130}
-                  mb={12}
-                  alignItems="center"
-                  justifyContent="center"
-                  bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                  borderWidth={1}
-                  borderColor={isDark ? '#333' : '#E9E9E9'}
-                  borderRadius={5}
-                  p="$2"
-                >
-                  <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
-                    <Image
-                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                      alt={badge.title}
-                      style={{ width: 56, height: 56 }}
-                      resizeMode="contain"
-                    />
-                  </Box>
-                  <Text
-                    mt="$1"
-                    fontSize="$2xs"
-                    fontWeight="$semibold"
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    textAlign="center"
-                    numberOfLines={2}
-                  >
-                    {badge.title}
-                  </Text>
-                </Pressable>
-              ))}
-            </Box>
-          )}
-        </Box>
-      </ScrollView>
-    );
-  }
-
-  // Render Collections Tab
-  if (tabKey === 'collections') {
-    return (
-      <CollectionsTab userId={targetUserId} />
-    );
-  }
-
-  // Loading state
-  // FEED TAB FIX: Feed tab için TÜM query'lerin loading durumunu kontrol et
-  const isLoading = tabKey === 'feed'
-    ? (feedQuery.isLoading || reviewsQuery.isLoading || benchmarksQuery.isLoading || tipsQuery.isLoading || repliesQuery.isLoading) &&
-      !(feedQuery.data as any)?.pages?.[0] &&
-      !(reviewsQuery.data as any)?.pages?.[0] &&
-      !(benchmarksQuery.data as any)?.pages?.[0] &&
-      !(tipsQuery.data as any)?.pages?.[0] &&
-      !(repliesQuery.data as any)?.pages?.[0]
-    : activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]);
-
-  if (isLoading) {
-    return (
-      <Box py={20}>
-        <FeedSkeleton count={3} />
-      </Box>
-    );
-  }
-
-  // Empty state
-  if (mappedPosts.length === 0) {
-    return (
-      <Box py={20} alignItems="center">
-        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-          No content found yet.
-        </Text>
-      </Box>
-    );
-  }
-
-  // Render posts
-  // FEED TAB FIX: Feed tab için TÜM query'lerin fetchingNextPage durumunu kontrol et
-  const isFetchingNextPage = tabKey === 'feed'
-    ? feedQuery.isFetchingNextPage || reviewsQuery.isFetchingNextPage || benchmarksQuery.isFetchingNextPage || tipsQuery.isFetchingNextPage || repliesQuery.isFetchingNextPage
-    : activeTabQuery.isFetchingNextPage;
+  const { data } = useUserProfile(targetUserId, { select: selectMuteState });
+  const isMuted = data?.isMuted ?? false;
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      bounces={true}
-      contentContainerStyle={{
-        paddingBottom: bottomPadding,
-        flexGrow: 0, // İçerik kadar büyüsün, boşluk eklemesin
-      }}
-    >
-      <Box px={16} pt={8}>
-        {mappedPosts.map((item) => (
-          <Box key={item.id} mb={16}>
-            {renderPostCard(item)}
+    <Pressable onPress={onPress} py={8}>
+      <HStack alignItems="center" justifyContent="flex-start" space="xs">
+        {isMuted ? (
+          <Box position="relative" justifyContent="center" alignItems="center">
+            <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <Box
+              position="absolute"
+              width={24}
+              height={1}
+              bg={isDark ? '#FFFFFF' : '#000000'}
+              style={{ transform: [{ rotate: '-45deg' }] }}
+            />
           </Box>
-        ))}
-        {isFetchingNextPage && (
-          <Box py={20} alignItems="center">
-            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-          </Box>
+        ) : (
+          <BellSlashIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
         )}
-      </Box>
-    </ScrollView>
+        <Text
+          color={isDark ? '#FFFFFF' : '#000000'}
+          fontSize="$sm"
+          fontWeight="$medium"
+        >
+          {isMuted ? t('actions.unmute') : t('actions.mute')}
+        </Text>
+      </HStack>
+    </Pressable>
   );
-};
+});
+
+type BadgeFilterKey = typeof BADGE_FILTER_KEYS[number];
 
 const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Guard: useFocusEffect çift tetiklenmeyi önle
@@ -1042,9 +666,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Query client for manual refetch
   const queryClient = useQueryClient();
   
-  // Profile API hook
-  const profileQueryResult = useUserProfile(targetUserId);
-  const userProfile = profileQueryResult.data as UserProfile | undefined;
+  // Profile API hook - select excludes volatile action fields (isMuted, isTrusted, isBlocked)
+  // so TanStack Query's structural sharing keeps the same reference when only those change
+  const profileQueryResult = useUserProfile(targetUserId, {
+    select: ({ isMuted, isTrusted, isBlocked, ...stableProfile }) => stableProfile,
+  });
+  const userProfile = profileQueryResult.data as Omit<UserProfile, 'isMuted' | 'isTrusted' | 'isBlocked'> | undefined;
   const isProfileLoading = profileQueryResult.isLoading;
   const profileError = profileQueryResult.error;
   const refetchProfile = profileQueryResult.refetch;
@@ -1199,21 +826,22 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }, [scrollToContent]);
 
 
-  // Instagram Model: Query hooks (aktif tab bazlı)
-  const feedQuery = useUserPosts(targetUserId, 10, {
+  // Query hooks: Each query only runs when its own tab is active
+  // Feed endpoint (/users/{id}/feed) already returns ALL post types
+  const feedQuery = useUserPosts(targetUserId, 20, {
     enabled: activeTab === 'feed' && !!targetUserId
   });
-  const reviewsQuery = useUserReviews(targetUserId, 10, {
-    enabled: (activeTab === 'feed' || activeTab === 'reviews') && !!targetUserId
+  const reviewsQuery = useUserReviews(targetUserId, 20, {
+    enabled: activeTab === 'reviews' && !!targetUserId
   });
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 10, {
-    enabled: (activeTab === 'feed' || activeTab === 'benchmarks') && !!targetUserId
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 20, {
+    enabled: activeTab === 'benchmarks' && !!targetUserId
   });
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 10, {
-    enabled: (activeTab === 'feed' || activeTab === 'tips') && !!targetUserId
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 20, {
+    enabled: activeTab === 'tips' && !!targetUserId
   });
-  const repliesQuery = useUserReplies(targetUserId, 10, {
-    enabled: (activeTab === 'feed' || activeTab === 'replies') && !!targetUserId
+  const repliesQuery = useUserReplies(targetUserId, 20, {
+    enabled: activeTab === 'replies' && !!targetUserId
   });
 
   // Instagram Model: Active tab query
@@ -1229,25 +857,20 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }, [activeTab, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]);
 
 
-  // Instagram Model: Mapped posts for FlatList
+  // Mapped posts for FlatList
+  // Feed tab: uses only /users/{id}/feed (returns all post types)
+  // Other tabs: uses their own dedicated endpoint
   const mappedPosts = useMemo(() => {
     if (activeTab === 'badge' || activeTab === 'collections') return [];
 
     let allItems: any[] = [];
 
     if (activeTab === 'feed') {
-      // Feed: Aggregate all queries
-      const feedItems = (feedQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
-      const reviewItems = (reviewsQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
-      const benchmarkItems = (benchmarksQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
-      const tipsItems = (tipsQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
-      const repliesItems = (repliesQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
-
-      allItems = [...feedItems, ...reviewItems, ...benchmarkItems, ...tipsItems, ...repliesItems];
+      // Feed endpoint already returns all post types (post, experience, update, question)
+      allItems = (feedQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
     } else {
       // Other tabs: Only active tab query
-      const queryData = activeTabQuery.data as any;
-      allItems = queryData?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
+      allItems = (activeTabQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
     }
 
     // Filter valid items
@@ -1303,7 +926,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
 
     return mapped;
-  }, [activeTab, feedQuery.data, reviewsQuery.data, benchmarksQuery.data, tipsQuery.data, repliesQuery.data, activeTabQuery.data]);
+  }, [activeTab, feedQuery.data, activeTabQuery.data]);
 
   // Instagram Model: Render post card
   const renderPostCard = useCallback((post: MappedPost) => {
@@ -1328,7 +951,29 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Instagram Model: FlatList keyExtractor
   const keyExtractor = useCallback((item: MappedPost) => item.id, []);
 
-  // Instagram Model: FlatList ListEmptyComponent
+  // Map Badge to SeeAllReward format for BadgeBottomSheet
+  const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
+    const imageSource = badge.image ? toImageSource(badge.image) : require('@/assets/defaultImages/default-badge.png');
+
+    return {
+      id: badge.id,
+      title: badge.title,
+      image: imageSource,
+      description: `You earned the "${badge.title}" badge!`,
+      category: 'achievement',
+      isUnlocked: true,
+      completed: 1,
+      task: 1,
+    };
+  }, []);
+
+  // Handle badge press - open modal
+  const handleBadgePress = useCallback((badge: Badge) => {
+    const badgeData = mapBadgeToSeeAllReward(badge);
+    setSelectedBadge(badgeData);
+  }, [mapBadgeToSeeAllReward]);
+
+  // FlatList ListEmptyComponent
   const ListEmptyComponent = useCallback(() => {
     // Badge tab: Show badge grid
     if (activeTab === 'badge') {
@@ -1731,28 +1376,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }, []);
 
 
-  // Map Badge to SeeAllReward format for BadgeBottomSheet
-  const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
-    const imageSource = badge.image ? toImageSource(badge.image) : require('@/assets/defaultImages/default-badge.png');
-    
-    return {
-      id: badge.id,
-      title: badge.title,
-      image: imageSource,
-      description: `You earned the "${badge.title}" badge!`,
-      category: 'achievement',
-      isUnlocked: true, // Profile'da gösterilen badge'ler zaten kazanılmış
-      completed: 1,
-      task: 1,
-    };
-  }, []);
-
-  // Handle badge press - open modal
-  const handleBadgePress = useCallback((badge: Badge) => {
-    const badgeData = mapBadgeToSeeAllReward(badge);
-    setSelectedBadge(badgeData);
-  }, [mapBadgeToSeeAllReward]);
-
   // Handle modal close
   const handleCloseModal = useCallback(() => {
     setSelectedBadge(null);
@@ -1909,8 +1532,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               ref={actionButtonsRef}
               targetUserId={targetUserId!}
               isOwnProfile={isOwnProfile}
-              isTrusted={!!profile.isTrusted}
-              isMuted={!!profile.isMuted}
               userName={profile.name || ''}
               onEdit={() => navigation.navigate('ProfileEdit')}
               onSendTips={handleSendTIPS}
@@ -2383,40 +2004,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 style={{ flex: 1 }}
               >
                 <VStack px={8} pl={12} py={2} width="100%">
-                  {/* Mute / Unmute */}
-                  <Pressable
+                  {/* Mute / Unmute - self-contained, reads from cache */}
+                  <MuteMenuItem
+                    targetUserId={targetUserId!}
+                    isDark={isDark}
                     onPress={() => {
                       setIsMenuOpen(false);
                       actionButtonsRef.current?.handleMuteToggle();
                     }}
-                    py={8}
-                  >
-                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                      {userProfile?.isMuted ? (
-                        <Box position="relative" justifyContent="center" alignItems="center">
-                          <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                          <Box
-                            position="absolute"
-                            width={24}
-                            height={1}
-                            bg={isDark ? '#FFFFFF' : '#000000'}
-                            style={{
-                              transform: [{ rotate: '-45deg' }],
-                            }}
-                          />
-                        </Box>
-                      ) : (
-                        <BellSlashIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                      )}
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize="$sm"
-                        fontWeight="$medium"
-                      >
-                        {userProfile?.isMuted ? t('actions.unmute') : t('actions.mute')}
-                      </Text>
-                    </HStack>
-                  </Pressable>
+                  />
                   <Divider 
                     bg={isDark ? '#333333' : '#E9E9E9'} 
                     mx={0}
