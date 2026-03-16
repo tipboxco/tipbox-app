@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo, useEffect } from 'react';
+import React, { useCallback, useState, useMemo, useRef, memo } from 'react';
 import {
   View,
   Text,
@@ -52,6 +52,57 @@ interface CollectionBadge {
 
 type FilterTab = 'All' | 'Not Started' | 'In Progress' | 'Completed';
 
+/* ── Memoized Hero Card ── */
+interface CollectionHeroProps {
+  collection: Collection;
+  searchPlaceholder: string;
+  onSearchChange: (text: string) => void;
+}
+
+const CollectionHero = memo(({ collection, searchPlaceholder, onSearchChange }: CollectionHeroProps) => {
+  const searchRef = useRef<TextInput>(null);
+
+  return (
+    <View style={styles.heroCardContainer}>
+      <ImageBackground
+        source={toImageSource(collection.coverImage) || DEFAULT_COLLECTION_IMAGE}
+        style={styles.heroCard}
+        imageStyle={styles.heroCardImage}
+        resizeMode="cover"
+      >
+        {/* Dark overlay */}
+        <View style={styles.heroOverlay} />
+
+        {/* Progress Badge */}
+        <View style={styles.progressBadge}>
+          <Text style={styles.progressBadgeText}>
+            {collection.currentProgress}/{collection.totalProgress}
+          </Text>
+        </View>
+
+        {/* Title & Description Card */}
+        <View style={styles.heroTextCard}>
+          <Text style={styles.heroTitle}>{collection.title}</Text>
+          <Text style={styles.heroDescription}>
+            {collection.description}
+          </Text>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchBar}>
+          <Feather name="search" size={18} color="rgba(255, 255, 255, 0.6)" />
+          <TextInput
+            ref={searchRef}
+            style={styles.searchInput}
+            placeholder={searchPlaceholder}
+            placeholderTextColor="rgba(255, 255, 255, 0.6)"
+            onChangeText={onSearchChange}
+          />
+        </View>
+      </ImageBackground>
+    </View>
+  );
+});
 
 const CollectionDetailScreen: React.FC = () => {
   const { t } = useTranslation('events');
@@ -62,23 +113,18 @@ const CollectionDetailScreen: React.FC = () => {
   const bottomInset = useSafeAreaValues('bottom');
 
   const { collectionId } = route.params;
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedBadgeSearch, setDebouncedBadgeSearch] = useState('');
+  const [badgeSearch, setBadgeSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All');
   const [selectedBadge, setSelectedBadge] = useState<CollectionBadge | null>(null);
 
-  // Debounce search for badge API (GET /api/collections/:id?search=...)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedBadgeSearch(searchQuery.trim());
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  // Stable search handler - only updates local filter state, no API call
+  const handleSearchChange = useCallback((text: string) => {
+    setBadgeSearch(text);
+  }, []);
 
-  // Backend'den collection detayını çek; badgeSearch ile badge'ler name/description'da filtrelenir
+  // Fetch collection once - no search param, all badges come in single request
   const { data: collectionDetail, isLoading: isLoadingCollection } = useCollectionDetail(
-    collectionId,
-    debouncedBadgeSearch || undefined
+    collectionId
   );
 
   const collection: Collection | null = useMemo(
@@ -99,20 +145,32 @@ const CollectionDetailScreen: React.FC = () => {
     }));
   }, [collectionDetail?.badges]);
 
-  // Filter badges: arama API'de yapılıyor (badgeSearch); burada sadece status filtresi uygulanıyor
+  // Filter badges locally: search + status
   const filteredBadges = useMemo(() => {
+    let result = allBadges;
+
+    // Text search filter
+    const query = badgeSearch.trim().toLowerCase();
+    if (query) {
+      result = result.filter(
+        (b) =>
+          b.title.toLowerCase().includes(query) ||
+          b.description.toLowerCase().includes(query)
+      );
+    }
+
+    // Status filter
     switch (activeFilter) {
       case 'Not Started':
-        return allBadges.filter((b) => b.status === 'not_started');
+        return result.filter((b) => b.status === 'not_started');
       case 'In Progress':
-        return allBadges.filter((b) => b.status === 'in_progress');
+        return result.filter((b) => b.status === 'in_progress');
       case 'Completed':
-        return allBadges.filter((b) => b.status === 'completed');
-      case 'All':
+        return result.filter((b) => b.status === 'completed');
       default:
-        return allBadges;
+        return result;
     }
-  }, [allBadges, activeFilter]);
+  }, [allBadges, activeFilter, badgeSearch]);
 
   const handleGoBack = useCallback(() => {
     navigation.goBack();
@@ -319,45 +377,12 @@ const CollectionDetailScreen: React.FC = () => {
         ]}
         ListHeaderComponent={
           <>
-            {/* Collection Hero Card */}
-            <View style={styles.heroCardContainer}>
-              <ImageBackground
-                source={toImageSource(collection.backgroundImage) || DEFAULT_COLLECTION_IMAGE}
-                style={styles.heroCard}
-                imageStyle={styles.heroCardImage}
-                resizeMode="cover"
-              >
-                {/* Dark overlay */}
-                <View style={styles.heroOverlay} />
-
-                {/* Progress Badge */}
-                <View style={styles.progressBadge}>
-                  <Text style={styles.progressBadgeText}>
-                    {collection.currentProgress}/{collection.totalProgress}
-                  </Text>
-                </View>
-
-                {/* Title & Description Card */}
-                <View style={styles.heroTextCard}>
-                  <Text style={styles.heroTitle}>{collection.title}</Text>
-                  <Text style={styles.heroDescription}>
-                    {collection.description}
-                  </Text>
-                </View>
-
-                {/* Search Bar */}
-                <View style={styles.searchBar}>
-                  <Feather name="search" size={18} color="rgba(255, 255, 255, 0.6)" />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder={t('search.badge')}
-                    placeholderTextColor="rgba(255, 255, 255, 0.6)"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                  />
-                </View>
-              </ImageBackground>
-            </View>
+            {/* Collection Hero Card - memoized, won't re-render on search */}
+            <CollectionHero
+              collection={collection}
+              searchPlaceholder={t('search.badge')}
+              onSearchChange={handleSearchChange}
+            />
 
             {/* Filter Pills */}
             <View style={styles.filterContainer}>
@@ -405,7 +430,7 @@ const CollectionDetailScreen: React.FC = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: isDark ? '#B9B9B9' : '#666' }]}>
-              {searchQuery ? t('collection.noBadgesFound') : t('collection.noBadgesInCollection')}
+              {badgeSearch.trim() ? t('collection.noBadgesFound') : t('collection.noBadgesInCollection')}
             </Text>
           </View>
         }
