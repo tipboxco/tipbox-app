@@ -1018,7 +1018,6 @@ const FeedScreenInner = React.memo(() => {
           <FeedFilterChips
             filters={filters}
             onFilterPress={handleFilterButtonPress}
-            onClearAll={() => setFilters({})}
           />
         </View>
         <View style={{ flex: 1, minHeight: 0 }}>

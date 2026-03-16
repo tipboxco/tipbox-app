@@ -22,24 +22,15 @@ const FILTER_BUTTONS: { id: FilterId; labelKey: string }[] = [
 interface FeedFilterChipsProps {
   filters: FeedFilterParams;
   onFilterPress: (filterId: FilterId) => void;
-  onClearAll: () => void;
 }
 
 export const FeedFilterChips: React.FC<FeedFilterChipsProps> = React.memo(({
   filters,
   onFilterPress,
-  onClearAll,
 }) => {
   const { t } = useTranslation('feed');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-
-  const hasActiveFilter = !!(
-    (filters.interests && filters.interests.length > 0) ||
-    (filters.tags && filters.tags.length > 0) ||
-    filters.category ||
-    filters.sort
-  );
 
   const isChipActive = (id: FilterId): boolean => {
     switch (id) {
@@ -86,16 +77,6 @@ export const FeedFilterChips: React.FC<FeedFilterChipsProps> = React.memo(({
           );
         })}
       </View>
-
-      {hasActiveFilter && (
-        <View style={styles.clearRow}>
-          <Pressable onPress={onClearAll} style={[styles.clearChip, isDark && styles.clearChipDark]}>
-            <Text style={[styles.clearText, isDark && styles.clearTextDark]}>
-              {t('filterButtons.clearAll')}
-            </Text>
-          </Pressable>
-        </View>
-      )}
     </View>
   );
 });
@@ -151,29 +132,5 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 2.5,
     backgroundColor: '#000000',
-  },
-  clearRow: {
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  clearChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#E9E9E9',
-    backgroundColor: '#F5F5F5',
-  },
-  clearChipDark: {
-    borderColor: '#333333',
-    backgroundColor: '#1A1A1A',
-  },
-  clearText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  clearTextDark: {
-    color: '#FFFFFF',
   },
 });
