@@ -61,8 +61,8 @@ class TranslationService implements ITranslationService {
         {
           q: text,
           target: targetLanguage,
-          source: sourceLanguage,
           format: 'text',
+          // source parametresi gönderilmiyor - Google auto-detect yapacak
         },
         {
           params: {

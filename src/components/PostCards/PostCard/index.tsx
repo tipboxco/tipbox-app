@@ -50,6 +50,7 @@ import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 
 interface PostCardProps {
   data: PostCardData;
@@ -63,7 +64,19 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const navigation = useNavigation<any>();
   const { user } = useAppStore();
   const { t, i18n } = useTranslation('post');
-  
+
+  // Translation hooks
+  const {
+    translatedContent,
+    isTranslating,
+    showTranslation,
+    toggleTranslation,
+    shouldTranslate,
+  } = usePostTranslation({
+    postId: data.id,
+    originalContent: data.content || '',
+  });
+
   const [isLiked, setIsLiked] = useState(data.isLiked ?? false);
   const [isBookmarked, setIsBookmarked] = useState(data.isBookmarked ?? false);
   const [isShared, setIsShared] = useState(data.isShared ?? false);
@@ -788,6 +801,47 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           </Text>
         </VStack>
       </Pressable>
+
+      {/* Translated Content */}
+      {showTranslation && translatedContent && (
+        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
+          <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
+          <Text
+            color={isDark ? '$textDark200' : '#666'}
+            fontSize="$sm"
+            fontStyle="italic"
+          >
+            {translatedContent}
+          </Text>
+        </VStack>
+      )}
+
+      {/* Translate Button */}
+      {shouldTranslate && (
+        <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <Pressable onPress={toggleTranslation}>
+            <HStack alignItems="center" space="xs">
+              <Image
+                source={require('@/assets/translate.png')}
+                alt="translate"
+                width={16}
+                height={16}
+              />
+              <Text
+                color="#829905"
+                fontSize="$sm"
+                textDecorationLine="underline"
+              >
+                {isTranslating
+                  ? t('card.translate.translating')
+                  : showTranslation
+                  ? t('card.translate.hideTranslation')
+                  : t('card.translate.translate')}
+              </Text>
+            </HStack>
+          </Pressable>
+        </Box>
+      )}
 
       {/* Images */}
       {(() => {

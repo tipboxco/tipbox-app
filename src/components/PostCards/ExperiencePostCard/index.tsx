@@ -52,6 +52,7 @@ import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareT
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 
 
 interface PostCardProps {
@@ -76,6 +77,21 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const { colorMode } = useColorMode();
   const { t, i18n } = useTranslation();
   const isDark = colorMode === 'dark';
+
+  // Translation hooks - content array'den text'leri birleştir
+  const contentText = Array.isArray(data.content)
+    ? data.content.map(item => item.text).join('\n\n')
+    : '';
+  const {
+    translatedContent,
+    isTranslating,
+    showTranslation,
+    toggleTranslation,
+    shouldTranslate,
+  } = usePostTranslation({
+    postId: data.id,
+    originalContent: contentText,
+  });
 
   // Translate content tag title (e.g. "Price and Shopping Experience" → TR)
   const translateTagTitle = useCallback((title: string) => {
@@ -749,6 +765,47 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           ) : null}
         </VStack>
       </Pressable>
+
+      {/* Translated Content */}
+      {showTranslation && translatedContent && (
+        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
+          <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
+          <Text
+            color={isDark ? '$textDark200' : '#666'}
+            fontSize="$sm"
+            fontStyle="italic"
+          >
+            {translatedContent}
+          </Text>
+        </VStack>
+      )}
+
+      {/* Translate Button */}
+      {shouldTranslate && (
+        <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <Pressable onPress={toggleTranslation}>
+            <HStack alignItems="center" space="xs">
+              <Image
+                source={require('@/assets/translate.png')}
+                alt="translate"
+                width={16}
+                height={16}
+              />
+              <Text
+                color="#829905"
+                fontSize="$sm"
+                textDecorationLine="underline"
+              >
+                {isTranslating
+                  ? t('post:card.translate.translating')
+                  : showTranslation
+                  ? t('post:card.translate.hideTranslation')
+                  : t('post:card.translate.translate')}
+              </Text>
+            </HStack>
+          </Pressable>
+        </Box>
+      )}
 
       {/* Usage Context: Duration, Condition, Purpose - Owned/Tried sadece product (ProductInfoCard) içinde. */}
       {data.tags && data.tags.length > 0 && (

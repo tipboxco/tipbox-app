@@ -238,10 +238,10 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                                 textDecorationLine="underline"
                             >
                                 {isTranslating
-                                    ? 'Çeviriliyor...'
+                                    ? t('card.translate.translating')
                                     : showTranslation
-                                    ? 'Hide Translation'
-                                    : 'Translate'}
+                                    ? t('card.translate.hideTranslation')
+                                    : t('card.translate.translate')}
                             </Text>
                         </HStack>
                     </Pressable>

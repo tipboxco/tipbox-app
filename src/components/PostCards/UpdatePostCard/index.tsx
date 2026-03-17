@@ -46,6 +46,7 @@ import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareT
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 
 interface UpdatePostCardProps {
   data: UpdateCardData;
@@ -61,6 +62,19 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
   const navigation = useNavigation<any>();
   const { user } = useAppStore();
   const { t, i18n } = useTranslation('post');
+
+  // Translation hooks
+  const {
+    translatedContent,
+    isTranslating,
+    showTranslation,
+    toggleTranslation,
+    shouldTranslate,
+  } = usePostTranslation({
+    postId: data.id,
+    originalContent: data.content || '',
+  });
+
   const targetUserId = data.user.id;
   const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -583,6 +597,47 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         )}
       </VStack>
 
+      {/* Translated Content */}
+      {showTranslation && translatedContent && (
+        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
+          <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
+          <Text
+            color={isDark ? '$textDark200' : '#666'}
+            fontSize="$sm"
+            fontStyle="italic"
+          >
+            {translatedContent}
+          </Text>
+        </VStack>
+      )}
+
+      {/* Translate Button */}
+      {shouldTranslate && (
+        <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <Pressable onPress={toggleTranslation}>
+            <HStack alignItems="center" space="xs">
+              <Image
+                source={require('@/assets/translate.png')}
+                alt="translate"
+                width={16}
+                height={16}
+              />
+              <Text
+                color="#829905"
+                fontSize="$sm"
+                textDecorationLine="underline"
+              >
+                {isTranslating
+                  ? t('card.translate.translating')
+                  : showTranslation
+                  ? t('card.translate.hideTranslation')
+                  : t('card.translate.translate')}
+              </Text>
+            </HStack>
+          </Pressable>
+        </Box>
+      )}
+
       {/* Images */}
       {(() => {
         const validImages = data.images?.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) || [];
@@ -593,8 +648,8 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               if (isDetailMode) return; // Detay modunda navigation yapma
               navigationService.navigate(ROOT_ROUTES.POST, {
                 screen: 'PostDetailScreen',
-                params: { 
-                  postData: data, 
+                params: {
+                  postData: data,
                   type: 'update',
                   showRelatedPost: true,
                   relatedPostData: data.relatedPost,

@@ -166,7 +166,6 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     } = usePostTranslation({
         postId: data.id,
         originalContent: data.content,
-        enabled: isDetailMode,
     });
 
     // Interaction hooks
@@ -644,28 +643,43 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     )}
                 </VStack>
             ) : (
-                <Pressable onPress={() => {
-                    navigationService.navigate(ROOT_ROUTES.POST, {
-                        screen: 'PostDetailScreen',
-                        params: { postData: data, type: 'benchmark' }
-                    });
-                }}>
-                    <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$sm"
-                            lineHeight={18}
-                            numberOfLines={3}
-                        >
-                            {data.content}
-                        </Text>
-                    </VStack>
-                </Pressable>
+                <>
+                    <Pressable onPress={() => {
+                        navigationService.navigate(ROOT_ROUTES.POST, {
+                            screen: 'PostDetailScreen',
+                            params: { postData: data, type: 'benchmark' }
+                        });
+                    }}>
+                        <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$sm"
+                                lineHeight={18}
+                                numberOfLines={3}
+                            >
+                                {data.content}
+                            </Text>
+                        </VStack>
+                    </Pressable>
+                    {/* Translated Content (feed mode) */}
+                    {showTranslation && translatedContent && (
+                        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
+                            <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
+                            <Text
+                                color={isDark ? '$textDark200' : '#666'}
+                                fontSize="$sm"
+                                fontStyle="italic"
+                            >
+                                {translatedContent}
+                            </Text>
+                        </VStack>
+                    )}
+                </>
             )}
 
-            {/* Translate Button (only in detail mode) */}
-            {isDetailMode && shouldTranslate && (
-                <Box pb="$3" px="$3">
+            {/* Translate Button */}
+            {shouldTranslate && (
+                <Box pb="$2" px="$3" {...(!isDetailMode && { borderRightWidth: 1, borderLeftWidth: 1, borderColor: '#E9E9E9' })}>
                     <Pressable onPress={toggleTranslation}>
                         <HStack alignItems="center" space="xs">
                             <Image

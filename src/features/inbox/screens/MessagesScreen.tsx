@@ -269,24 +269,29 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping])
     );
 
-    // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
-    // ✅ FIX: Screen focus olduğunda typing state'i temizle
-    // ✅ FIX: PagerView initial mount'ta query subscription'ın düzgün çalışmaması durumunda refetch yap
+    // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat ve typing state'i temizle
+    // CRITICAL: Query state (messages, isLoading, error) dependency'den ÇIKARILDI
+    // useFocusEffect dependency'sine query state koymak her state change'de effect'i tekrar çalıştırır
+    // → closeBottomSheet() → context update → re-render → yeni callback ref → effect tekrar çalışır (loop)
     useFocusEffect(
         useCallback(() => {
             closeBottomSheet();
-
-            // PagerView bazen ilk mount'ta query güncellemelerini component'e iletmiyor
-            // Data yoksa ve loading değilse (query resolve olmuş ama component güncellenememiş) refetch yap
-            if (!messages && !isLoading && !error) {
-                refetch();
-            }
-
             return () => {
                 inboxTypingStore.clearAll();
             };
-        }, [closeBottomSheet, messages, isLoading, error, refetch])
+        }, [closeBottomSheet])
     );
+
+    // PagerView bazen ilk mount'ta query güncellemelerini component'e iletmiyor
+    // Data yoksa ve loading değilse (query resolve olmuş ama component güncellenememiş) refetch yap
+    // useEffect ile ayrı handle et - useFocusEffect'e query state koymak loop yaratır
+    const hasAttemptedRefetchRef = useRef(false);
+    useEffect(() => {
+        if (!messages && !isLoading && !error && !hasAttemptedRefetchRef.current) {
+            hasAttemptedRefetchRef.current = true;
+            refetch();
+        }
+    }, [messages, isLoading, error, refetch]);
     
     const handleMessagePress = (messageId: string) => {
         // CRITICAL FIX: messages array kontrolü

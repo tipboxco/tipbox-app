@@ -281,10 +281,10 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                                 textDecorationLine="underline"
                             >
                                 {isTranslating
-                                    ? 'Çeviriliyor...'
+                                    ? t('card.translate.translating')
                                     : showTranslation
-                                    ? 'Hide Translation'
-                                    : 'Translate'}
+                                    ? t('card.translate.hideTranslation')
+                                    : t('card.translate.translate')}
                             </Text>
                         </HStack>
                     </Pressable>
