@@ -102,7 +102,7 @@ export const useCatalogPrefetch = () => {
  * @example
  * const { data, isLoading, error } = useCatalogCategories();
  */
-export const useCatalogCategories = (limit: number = 500) => {
+export const useCatalogCategories = (limit: number = 100) => {
   return useQuery<CatalogPaginationResponse<CatalogCategory>, Error>({
     queryKey: catalogKeys.categories(undefined, limit),
     queryFn: () => getCatalogCategories(undefined, limit),
@@ -181,7 +181,7 @@ export const useBrandsByCategory = (categoryId: string | undefined, limit: numbe
  * @example
  * const { data, isLoading, error } = useCatalogSubCategories('category-123');
  */
-export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 500) => {
+export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 100) => {
   const query = useQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
     queryKey: categoryId ? catalogKeys.subCategories(categoryId, undefined, limit) : ['catalog', 'subCategories', 'disabled'],
     queryFn: () => {
