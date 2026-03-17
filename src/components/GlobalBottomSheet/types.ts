@@ -121,10 +121,12 @@ export type BottomSheetState = {
 export interface GlobalBottomSheetContextType {
   // State
   state: BottomSheetState;
-  
+
   // Actions
   openBottomSheet: (content: ReactNode, options?: BottomSheetOptions) => void;
   closeBottomSheet: () => void;
+  /** Instantly removes the bottom sheet without close animation */
+  dismissBottomSheet: () => void;
   snapToIndex: (index: number) => void;
 }
 

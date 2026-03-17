@@ -90,7 +90,7 @@ export const PostsScreen = () => {
   }, [selectedProduct]);
 
   // Global bottom sheet hook
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const { openBottomSheet, closeBottomSheet, dismissBottomSheet } = useGlobalBottomSheet();
   
   // Bottom offset for bottom sheet padding
   const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -440,7 +440,7 @@ export const PostsScreen = () => {
       }
     }
 
-    closeBottomSheet();
+    dismissBottomSheet();
 
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
@@ -626,14 +626,13 @@ export const PostsScreen = () => {
         product: selectedProductPayload,
       });
     } else if (type === 'update') {
-      // Update post oluşturmak için önce experience post seçilmeli
-      // SelectExperienceForUpdateScreen'e yönlendir
-      navigation.navigate('SelectExperienceForUpdateScreen', {
+      // Direkt CreateUpdatePostScreen'e yönlendir
+      navigation.navigate('CreateUpdatePostScreen', {
         product: selectedProductPayload,
       });
     }
     // Handle other post types here if needed
-  }, [navigation, selectedProductPayload, closeBottomSheet, contextType, contextId, stage, productInfo, selectedProduct, checkProduct, feedContextId, toast]);
+  }, [navigation, selectedProductPayload, dismissBottomSheet, contextType, contextId, stage, productInfo, selectedProduct, checkProduct, feedContextId, toast]);
 
   // Mapping functions (from FeedScreen)
   const mapFeedToCardData = useCallback((item: ProfilePost): PostCardData => {

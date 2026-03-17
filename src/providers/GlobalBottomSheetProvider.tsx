@@ -74,7 +74,7 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
   }, []);
 
   /**
-   * Bottom sheet kapat
+   * Bottom sheet kapat (animasyonlu)
    * STABİL FIX: Double close guard - index zaten -1 ise tekrar set etme
    */
   const closeBottomSheet = useCallback(() => {
@@ -117,15 +117,31 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
     }, cleanupDelay);
   }, []);
 
+  /**
+   * Bottom sheet'i anında kaldır (animasyonsuz)
+   * Navigation öncesi kullanılır - sheet hemen kaybolur, sonra ekran geçişi yapılır
+   */
+  const dismissBottomSheet = useCallback(() => {
+    cancelPendingCleanup();
+    bumpOpId();
+    setState({
+      content: null,
+      index: -1,
+      options: null,
+      openId: openIdRef.current,
+    });
+  }, []);
+
   // Context value
   const contextValue = useMemo<GlobalBottomSheetContextType>(
     () => ({
       state,
       openBottomSheet,
       closeBottomSheet,
+      dismissBottomSheet,
       snapToIndex,
     }),
-    [state, openBottomSheet, closeBottomSheet, snapToIndex]
+    [state, openBottomSheet, closeBottomSheet, dismissBottomSheet, snapToIndex]
   );
 
   return (

@@ -145,8 +145,8 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
             setCurrentView('experience');
             onViewChange?.('experience');
         } else {
+            // onPostTypeSelect already calls closeBottomSheet + delayed navigation
             onPostTypeSelect?.(type);
-            onClose();
         }
     };
 
@@ -157,8 +157,8 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
             setCurrentView('options');
             onViewChange?.('options');
         }
+        // onPostTypeSelect already calls closeBottomSheet + delayed navigation
         onPostTypeSelect?.('experience', optionId);
-        onClose();
     };
 
     const handleBackPress = () => {
