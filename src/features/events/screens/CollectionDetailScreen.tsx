@@ -45,6 +45,7 @@ interface CollectionBadge {
   title: string;
   description: string;
   icon: ImageSourcePropType | string; // Local require() or URL from backend
+  highlightsImage?: string | null;
   currentProgress: number;
   totalProgress: number;
   status: 'not_started' | 'in_progress' | 'completed';
@@ -139,6 +140,7 @@ const CollectionDetailScreen: React.FC = () => {
       title: b.title,
       description: b.description,
       icon: typeof b.icon === 'string' ? (toImageSource(b.icon) ?? b.icon) : b.icon,
+      highlightsImage: b.highlightsImage,
       currentProgress: b.currentProgress,
       totalProgress: b.totalProgress,
       status: b.status,

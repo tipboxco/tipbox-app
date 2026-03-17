@@ -304,7 +304,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
         data={upcomingEventsFiltered}
         numColumns={2}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 0, paddingBottom: bottomInset + 24, paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingTop: 12, paddingBottom: bottomInset + 24, paddingHorizontal: 16 }}
         ItemSeparatorComponent={() => <Box height={12} />}
         columnWrapperStyle={{ gap: 12 }}
         renderItem={({ item }) => (

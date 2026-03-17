@@ -23,6 +23,8 @@ export interface CollectionBadge {
   description: string;
   /** Backend'den: mutlaka public image URL (örn. CDN). Download için gerekli. */
   icon: string; // API'den iconUrl gelirse map: icon = response.iconUrl
+  /** Badge'e özel highlights görseli (backend'den badge seviyesinde gelir). */
+  highlightsImage: string | null;
   currentProgress: number;
   totalProgress: number;
   status: CollectionBadgeStatus;
@@ -133,4 +135,10 @@ export interface UserProgressCollectionsResponse {
     limit: number;
     total: number;
   };
+}
+
+// ─── EP-06: Badge Reminder ──────────────────────────────────────────
+export interface BadgeReminderResponse {
+  id: string;
+  remindAt: string;
 }

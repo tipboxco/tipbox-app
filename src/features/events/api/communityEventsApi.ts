@@ -11,6 +11,7 @@ import type {
   CompletedCollectionsResponse,
   UserProgressCollectionsParams,
   UserProgressCollectionsResponse,
+  BadgeReminderResponse,
 } from '../types/collection.types';
 
 /** Community events filter - FilterBottomSheet ile uyumlu */
@@ -1272,6 +1273,37 @@ export const createEventPostWithContext = async (
     };
     
     console.error('❌ [createEventPostWithContext] Error Response (JSON):', JSON.stringify(errorJson, null, 2));
+    throw error;
+  }
+};
+
+/**
+ * EP-06: Set Badge Reminder endpoint function
+ * POST /collections/badges/:badgeId/reminder
+ * Hatırlatıcı oluşturur; remindAt verilmezse backend 1 gün sonraya ayarlar.
+ *
+ * @param badgeId - Badge ID
+ * @param remindAt - ISO date string (opsiyonel)
+ * @returns BadgeReminderResponse - { id, remindAt }
+ */
+export const setBadgeReminder = async (
+  badgeId: string,
+  remindAt?: string
+): Promise<BadgeReminderResponse> => {
+  try {
+    const response = await apiService.getClient().post<BadgeReminderResponse>(
+      `/collections/badges/${badgeId}/reminder`,
+      remindAt ? { remindAt } : {}
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[setBadgeReminder] API Error:', {
+      url: `/collections/badges/${badgeId}/reminder`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
     throw error;
   }
 };

@@ -381,8 +381,8 @@ const styles = StyleSheet.create({
   },
   filterChipsContainer: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
     gap: 6,
   },
   filterChip: {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from 'react-native-heroicons/outline';
 import { useMainCategories, useSubCategories } from '../../api/hooks';
 import type { CollectionFilters } from '../../types/medusa.types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -24,391 +25,243 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   isDark = false,
   initialFilters,
 }) => {
-  const { closeBottomSheet } = useGlobalBottomSheet();
+  const { closeBottomSheet, snapToIndex } = useGlobalBottomSheet();
   const { t } = useTranslation('events');
+  const insets = useSafeAreaInsets();
+
   const [mainCategoryId, setMainCategoryId] = useState<string | undefined>(initialFilters?.mainCategoryId);
   const [subCategoryId, setSubCategoryId] = useState<string | undefined>(initialFilters?.subCategoryId);
   const [productGroupId, setProductGroupId] = useState<string | undefined>(initialFilters?.productGroupId);
-  const [showMainDropdown, setShowMainDropdown] = useState(false);
-  const [showSubDropdown, setShowSubDropdown] = useState(false);
-  const [showProductGroupDropdown, setShowProductGroupDropdown] = useState(false);
 
-  const scrollViewRef = useRef<any>(null);
-  const mainCategoryRef = useRef<View>(null);
-  const subCategoryRef = useRef<View>(null);
-  const productGroupRef = useRef<View>(null);
+  // Hangi dropdown açık: 'main' | 'sub' | 'product' | null
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  // Medusa'dan gerçek kategori verileri
-  const { data: mainCategoriesData, isLoading: isLoadingMain } = useMainCategories();
-  const { data: subCategoriesData, isLoading: isLoadingSub } = useSubCategories(
+  // API hooks
+  const { data: mainCategoriesRaw, isLoading: isLoadingMain } = useMainCategories();
+  const { data: subCategoriesRaw, isLoading: isLoadingSub } = useSubCategories(
     mainCategoryId ?? '',
-    !!mainCategoryId
+    !!mainCategoryId,
   );
-  const { data: productGroupsData, isLoading: isLoadingProductGroup } = useSubCategories(
+  const { data: productGroupsRaw, isLoading: isLoadingProduct } = useSubCategories(
     subCategoryId ?? '',
-    !!subCategoryId
+    !!subCategoryId,
   );
 
   const mainCategories = useMemo(
-    () => (mainCategoriesData ?? []).map((c) => ({ id: c.id, name: c.name })),
-    [mainCategoriesData]
+    () => (mainCategoriesRaw ?? []).map((c) => ({ id: c.id, name: c.name })),
+    [mainCategoriesRaw],
   );
-
-  const subCategories = useMemo(() => {
-    console.log('[CollectionsBottomSheet] subCategoriesData:', subCategoriesData);
-    console.log('[CollectionsBottomSheet] mainCategoryId:', mainCategoryId);
-    const mapped = (subCategoriesData ?? []).map((c) => ({ id: c.id, name: c.name }));
-    console.log('[CollectionsBottomSheet] Mapped subCategories:', mapped);
-    return mapped;
-  }, [subCategoriesData, mainCategoryId]);
-
+  const subCategories = useMemo(
+    () => (subCategoriesRaw ?? []).map((c) => ({ id: c.id, name: c.name })),
+    [subCategoriesRaw],
+  );
   const productGroups = useMemo(
-    () => (productGroupsData ?? []).map((c) => ({ id: c.id, name: c.name })),
-    [productGroupsData]
+    () => (productGroupsRaw ?? []).map((c) => ({ id: c.id, name: c.name })),
+    [productGroupsRaw],
   );
 
+  // Cascade reset
   useEffect(() => {
     setSubCategoryId(undefined);
     setProductGroupId(undefined);
-    setShowSubDropdown(false);
-    setShowProductGroupDropdown(false);
   }, [mainCategoryId]);
 
   useEffect(() => {
     setProductGroupId(undefined);
-    setShowProductGroupDropdown(false);
   }, [subCategoryId]);
 
-  // Auto scroll to opened dropdown
-  useEffect(() => {
-    if (showMainDropdown && mainCategoryRef.current) {
-      setTimeout(() => {
-        mainCategoryRef.current?.measureLayout(
-          scrollViewRef.current as any,
-          (x, y) => {
-            scrollViewRef.current?.scrollTo?.({ y: y - 20, animated: true });
-          },
-          () => {}
-        );
-      }, 100);
-    }
-  }, [showMainDropdown]);
+  const toggleDropdown = useCallback((key: string) => {
+    setOpenDropdown((prev) => (prev === key ? null : key));
+  }, []);
 
+  // Dropdown açılınca sheet'i 75%'e genişlet
   useEffect(() => {
-    if (showSubDropdown && subCategoryRef.current) {
-      setTimeout(() => {
-        subCategoryRef.current?.measureLayout(
-          scrollViewRef.current as any,
-          (x, y) => {
-            scrollViewRef.current?.scrollTo?.({ y: y - 20, animated: true });
-          },
-          () => {}
-        );
-      }, 100);
+    if (openDropdown) {
+      snapToIndex(1);
     }
-  }, [showSubDropdown]);
+  }, [openDropdown, snapToIndex]);
 
-  useEffect(() => {
-    if (showProductGroupDropdown && productGroupRef.current) {
-      setTimeout(() => {
-        productGroupRef.current?.measureLayout(
-          scrollViewRef.current as any,
-          (x, y) => {
-            scrollViewRef.current?.scrollTo?.({ y: y - 20, animated: true });
-          },
-          () => {}
-        );
-      }, 100);
-    }
-  }, [showProductGroupDropdown]);
-
-  const handleDone = useCallback(() => {
-    onApply({
-      mainCategoryId,
-      subCategoryId,
-      productGroupId,
-    });
+  const handleApply = useCallback(() => {
+    onApply({ mainCategoryId, subCategoryId, productGroupId });
     closeBottomSheet();
   }, [mainCategoryId, subCategoryId, productGroupId, onApply, closeBottomSheet]);
 
-  const getSelectedMainCategoryName = () => {
-    if (!mainCategoryId) return t('collectionsFilter.mainCategory');
-    const category = mainCategories.find((c) => c.id === mainCategoryId);
-    return category?.name || t('collectionsFilter.mainCategory');
+  const handleReset = useCallback(() => {
+    setMainCategoryId(undefined);
+    setSubCategoryId(undefined);
+    setProductGroupId(undefined);
+    setOpenDropdown(null);
+  }, []);
+
+  // Helper: seçili item adını bul
+  const getLabel = (
+    list: { id: string; name: string }[],
+    selectedId: string | undefined,
+    placeholder: string,
+  ) => {
+    if (!selectedId) return placeholder;
+    return list.find((i) => i.id === selectedId)?.name ?? placeholder;
   };
 
-  const getSelectedSubCategoryName = () => {
-    if (!subCategoryId) return t('collectionsFilter.subCategory');
-    const category = subCategories.find((c) => c.id === subCategoryId);
-    return category?.name || t('collectionsFilter.subCategory');
+  const bg = isDark ? '#1C1C1E' : '#FFFFFF';
+  const dropdownBg = isDark ? '#2C2C2E' : '#F9F9F9';
+  const textColor = isDark ? '#FFFFFF' : '#000000';
+  const placeholderColor = '#999999';
+  const borderColor = isDark ? '#3A3A3C' : '#E5E5E5';
+
+  const renderDropdown = (
+    key: string,
+    label: string,
+    items: { id: string; name: string }[],
+    selectedId: string | undefined,
+    onSelect: (id: string) => void,
+    isLoading: boolean,
+    disabled: boolean,
+  ) => {
+    const isOpen = openDropdown === key;
+    const displayLabel = getLabel(items, selectedId, label);
+    const hasSelection = !!selectedId;
+
+    return (
+      <View style={styles.fieldContainer}>
+        <Pressable
+          style={[
+            styles.dropdown,
+            {
+              backgroundColor: dropdownBg,
+              borderColor: isOpen ? (isDark ? '#636366' : '#C7C7CC') : borderColor,
+              opacity: disabled ? 0.4 : 1,
+            },
+          ]}
+          onPress={() => !disabled && toggleDropdown(key)}
+          disabled={disabled || isLoading}
+        >
+          <Text
+            style={[
+              styles.dropdownText,
+              { color: hasSelection ? textColor : placeholderColor },
+            ]}
+            numberOfLines={1}
+          >
+            {isLoading ? t('collectionsFilter.loading') : displayLabel}
+          </Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={placeholderColor} />
+          ) : isOpen ? (
+            <ChevronUpIcon width={16} height={16} color={placeholderColor} />
+          ) : (
+            <ChevronDownIcon width={16} height={16} color={placeholderColor} />
+          )}
+        </Pressable>
+
+        {isOpen && !isLoading && (
+          <View style={[styles.optionsList, { backgroundColor: dropdownBg, borderColor }]}>
+            <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled bounces={false}>
+              {items.length === 0 ? (
+                <View style={styles.emptyRow}>
+                  <Text style={[styles.emptyText, { color: placeholderColor }]}>
+                    {t('collectionsFilter.noCategories')}
+                  </Text>
+                </View>
+              ) : (
+                items.map((item, idx) => {
+                  const isSelected = item.id === selectedId;
+                  const isLast = idx === items.length - 1;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      style={[
+                        styles.optionItem,
+                        !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
+                        isSelected && { backgroundColor: isDark ? '#3A3A3C' : '#F0F0F0' },
+                      ]}
+                      onPress={() => {
+                        onSelect(item.id);
+                        setOpenDropdown(null);
+                      }}
+                    >
+                      <Text style={[styles.optionText, { color: textColor }]}>
+                        {item.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+    );
   };
 
-  const getSelectedProductGroupName = () => {
-    if (!productGroupId) return t('collectionsFilter.productGroup');
-    const group = productGroups.find((g) => g.id === productGroupId);
-    return group?.name || t('collectionsFilter.productGroup');
-  };
+  const hasAnyFilter = !!(mainCategoryId || subCategoryId || productGroupId);
 
   return (
-    <View style={{ flex: 1, paddingTop: 8 }}>
+    <View style={[styles.container, { backgroundColor: bg }]}>
       {/* Header */}
-      <Text style={[styles.title, { color: isDark ? '#FFF' : '#000', textAlign: 'center', marginBottom: 16 }]}>
-        {t('collectionsFilter.title')}
-      </Text>
+      <View style={styles.header}>
+        <View style={styles.headerSide} />
+        <Text style={[styles.title, { color: textColor }]}>
+          {t('collectionsFilter.title')}
+        </Text>
+        <View style={styles.headerSide}>
+          {hasAnyFilter && (
+            <Pressable onPress={handleReset} hitSlop={8}>
+              <XMarkIcon width={20} height={20} color={placeholderColor} />
+            </Pressable>
+          )}
+        </View>
+      </View>
 
-      {/* Scrollable Content */}
+      {/* Content */}
       <ScrollView
-        ref={scrollViewRef}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
-        showsVerticalScrollIndicator={true}
-        nestedScrollEnabled={true}
+        style={styles.scrollContent}
+        contentContainerStyle={styles.scrollContentContainer}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
       >
-          {/* Main Category */}
-          <View ref={mainCategoryRef} style={styles.fieldContainer}>
-            <Pressable
-              style={[
-                styles.dropdown,
-                {
-                  borderColor: '#BBB',
-                  backgroundColor: isDark ? '#2A2A2A' : '#FFF',
-                },
-              ]}
-              onPress={() => {
-                setShowMainDropdown(!showMainDropdown);
-                setShowSubDropdown(false);
-                setShowProductGroupDropdown(false);
-              }}
-              disabled={isLoadingMain}
-            >
-              <Text
-                style={[
-                  styles.dropdownText,
-                  { color: mainCategoryId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
-                ]}
-                numberOfLines={1}
-              >
-                {isLoadingMain ? t('collectionsFilter.loading') : getSelectedMainCategoryName()}
-              </Text>
-              {isLoadingMain ? (
-                <ActivityIndicator size="small" color="#C1BEBF" />
-              ) : (
-                <Feather
-                  name={showMainDropdown ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color="#C1BEBF"
-                />
-              )}
-            </Pressable>
-
-            {/* Main Category Options */}
-            {showMainDropdown && !isLoadingMain && (
-              <View
-                style={[
-                  styles.optionsList,
-                  {
-                    backgroundColor: isDark ? '#2A2A2A' : '#FFF',
-                    borderColor: '#BBB',
-                  },
-                ]}
-              >
-                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                  {mainCategories.length === 0 ? (
-                    <View style={styles.errorContainer}>
-                      <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                        {t('collectionsFilter.noCategories')}
-                      </Text>
-                    </View>
-                  ) : (
-                    mainCategories.map((option) => (
-                      <Pressable
-                        key={option.id}
-                        style={styles.optionItem}
-                        onPress={() => {
-                          setMainCategoryId(option.id);
-                          setShowMainDropdown(false);
-                        }}
-                      >
-                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-                          {option.name}
-                        </Text>
-                      </Pressable>
-                    ))
-                  )}
-                </ScrollView>
-              </View>
-            )}
-          </View>
-
-          {/* Sub Category */}
-          <View ref={subCategoryRef} style={styles.fieldContainer}>
-            <Pressable
-              style={[
-                styles.dropdown,
-                {
-                  borderColor: '#BBB',
-                  backgroundColor: isDark ? '#2A2A2A' : '#FFF',
-                  opacity: !mainCategoryId ? 0.5 : 1,
-                },
-              ]}
-              onPress={() => {
-                if (mainCategoryId) {
-                  setShowSubDropdown(!showSubDropdown);
-                  setShowMainDropdown(false);
-                  setShowProductGroupDropdown(false);
-                }
-              }}
-              disabled={!mainCategoryId || isLoadingSub}
-            >
-              <Text
-                style={[
-                  styles.dropdownText,
-                  { color: subCategoryId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
-                ]}
-                numberOfLines={1}
-              >
-                {isLoadingSub ? t('collectionsFilter.loading') : getSelectedSubCategoryName()}
-              </Text>
-              {isLoadingSub ? (
-                <ActivityIndicator size="small" color="#C1BEBF" />
-              ) : (
-                <Feather
-                  name={showSubDropdown ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color="#C1BEBF"
-                />
-              )}
-            </Pressable>
-
-            {/* Sub Category Options */}
-            {showSubDropdown && !isLoadingSub && mainCategoryId && (
-              <View
-                style={[
-                  styles.optionsList,
-                  {
-                    backgroundColor: isDark ? '#2A2A2A' : '#FFF',
-                    borderColor: '#BBB',
-                  },
-                ]}
-              >
-                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                  {subCategories.length === 0 ? (
-                    <View style={styles.errorContainer}>
-                      <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                        {t('collectionsFilter.noSubCategories')}
-                      </Text>
-                    </View>
-                  ) : (
-                    subCategories.map((option) => (
-                      <Pressable
-                        key={option.id}
-                        style={styles.optionItem}
-                        onPress={() => {
-                          setSubCategoryId(option.id);
-                          setShowSubDropdown(false);
-                        }}
-                      >
-                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-                          {option.name}
-                        </Text>
-                      </Pressable>
-                    ))
-                  )}
-                </ScrollView>
-              </View>
-            )}
-          </View>
-
-          {/* Product Group */}
-          <View ref={productGroupRef} style={styles.fieldContainer}>
-            <Pressable
-              style={[
-                styles.dropdown,
-                {
-                  borderColor: '#BBB',
-                  backgroundColor: isDark ? '#2A2A2A' : '#FFF',
-                  opacity: !subCategoryId ? 0.5 : 1,
-                },
-              ]}
-              onPress={() => {
-                if (subCategoryId) {
-                  setShowProductGroupDropdown(!showProductGroupDropdown);
-                  setShowMainDropdown(false);
-                  setShowSubDropdown(false);
-                }
-              }}
-              disabled={!subCategoryId || isLoadingProductGroup}
-            >
-              <Text
-                style={[
-                  styles.dropdownText,
-                  { color: productGroupId ? (isDark ? '#FFF' : '#000') : '#C1BEBF' },
-                ]}
-                numberOfLines={1}
-              >
-                {isLoadingProductGroup ? t('collectionsFilter.loading') : getSelectedProductGroupName()}
-              </Text>
-              {isLoadingProductGroup ? (
-                <ActivityIndicator size="small" color="#C1BEBF" />
-              ) : (
-                <Feather
-                  name={showProductGroupDropdown ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color="#C1BEBF"
-                />
-              )}
-            </Pressable>
-
-            {/* Product Group Options */}
-            {showProductGroupDropdown && !isLoadingProductGroup && subCategoryId && (
-              <View
-                style={[
-                  styles.optionsList,
-                  {
-                    backgroundColor: isDark ? '#2A2A2A' : '#FFF',
-                    borderColor: '#BBB',
-                  },
-                ]}
-              >
-                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                  {productGroups.length === 0 ? (
-                    <View style={styles.errorContainer}>
-                      <Text style={[styles.emptyText, { color: '#8E8E93' }]}>
-                        {t('collectionsFilter.noProductGroups')}
-                      </Text>
-                    </View>
-                  ) : (
-                    productGroups.map((option) => (
-                      <Pressable
-                        key={option.id}
-                        style={styles.optionItem}
-                        onPress={() => {
-                          setProductGroupId(option.id);
-                          setShowProductGroupDropdown(false);
-                        }}
-                      >
-                        <Text style={[styles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-                          {option.name}
-                        </Text>
-                      </Pressable>
-                    ))
-                  )}
-                </ScrollView>
-              </View>
-            )}
-          </View>
+        {renderDropdown(
+          'main',
+          t('collectionsFilter.mainCategory'),
+          mainCategories,
+          mainCategoryId,
+          setMainCategoryId,
+          isLoadingMain,
+          false,
+        )}
+        {renderDropdown(
+          'sub',
+          t('collectionsFilter.subCategory'),
+          subCategories,
+          subCategoryId,
+          setSubCategoryId,
+          isLoadingSub,
+          !mainCategoryId,
+        )}
+        {renderDropdown(
+          'product',
+          t('collectionsFilter.productGroup'),
+          productGroups,
+          productGroupId,
+          setProductGroupId,
+          isLoadingProduct,
+          !subCategoryId,
+        )}
       </ScrollView>
 
-      {/* Footer - Apply Button */}
-      <View style={styles.footer}>
+      {/* Apply Button */}
+      <View style={[styles.footer, { borderTopColor: borderColor, paddingBottom: Math.max(insets.bottom, 20) }]}>
         <Pressable
-          style={({ pressed }) => [
+          style={[
             styles.applyButton,
-            { opacity: pressed ? 0.8 : 1 },
+            { backgroundColor: hasAnyFilter ? '#C2E607' : (isDark ? '#374151' : '#E5E7EB') },
           ]}
-          onPress={handleDone}
+          onPress={handleApply}
         >
-          <Text style={styles.applyButtonText}>
+          <Text style={[
+            styles.applyButtonText,
+            { color: hasAnyFilter ? '#111827' : (isDark ? '#9CA3AF' : '#6B7280') },
+          ]}>
             {t('collectionsFilter.apply')}
           </Text>
         </Pressable>
@@ -418,76 +271,89 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  headerSide: {
+    width: 32,
+    alignItems: 'center',
+  },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
   },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 10,
+  },
   fieldContainer: {
-    position: 'relative',
-    marginBottom: 8,
+    zIndex: 1,
   },
   dropdown: {
-    height: 42,
+    height: 44,
     borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   dropdownText: {
-    fontSize: 12,
+    fontSize: 14,
     flex: 1,
     fontWeight: '500',
   },
   optionsList: {
-    marginTop: 4,
+    marginTop: 6,
     borderWidth: 1,
-    borderRadius: 5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   optionItem: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9E9E9',
   },
   optionText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
   },
-  errorContainer: {
-    paddingHorizontal: 16,
+  emptyRow: {
+    paddingHorizontal: 14,
     paddingVertical: 16,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
   },
   footer: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
   },
   applyButton: {
-    backgroundColor: '#D8FF08',
     height: 48,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   applyButtonText: {
-    color: '#111',
     fontSize: 15,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

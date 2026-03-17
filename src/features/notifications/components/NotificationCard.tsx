@@ -1640,9 +1640,12 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
     const eventImageUrl = (notification.type === 'EVENT_STARTED' || notification.type === 'EVENT_ENDING_SOON' || notification.type === 'EVENT_REWARD_AVAILABLE') ? data.imageUrl : null;
     const eventImage = eventImageUrl ? toImageSource(eventImageUrl) : null;
     
-    // Badge image - Badge bildirimleri için
-    const badgeImageUrl = (notification.type === 'NEW_BADGE' || notification.type === 'ACHIEVEMENT_UNLOCKED') ? data.imageUrl : null;
-    const badgeImage = badgeImageUrl ? toImageSource(badgeImageUrl) : null;
+    // Badge image - Badge bildirimleri için (null ise default placeholder kullan)
+    const isBadgeNotification = notification.type === 'NEW_BADGE' || notification.type === 'ACHIEVEMENT_UNLOCKED';
+    const badgeImageUrl = isBadgeNotification ? data.imageUrl : null;
+    const badgeImage = isBadgeNotification
+        ? (badgeImageUrl ? toImageSource(badgeImageUrl) : require('@/assets/defaultImages/default-badge.png'))
+        : null;
     
     // Avatar sadece user bildirimlerinde gösterilecek (event ve badge bildirimlerinde gösterilmeyecek)
     const shouldShowAvatar = !eventImage && !badgeImage && (category === 'post' || category === 'comment' || category === 'trust' || category === 'message' || category === 'tips' || category === 'expert');
@@ -1738,7 +1741,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                             <Box
                                 width={40}
                                 height={40}
-                                borderRadius={20}
+                                borderRadius={8}
                                 overflow="hidden"
                                 borderWidth={1}
                                 borderColor={isDark ? '#333' : '#E9E9E9'}

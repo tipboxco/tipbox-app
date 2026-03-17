@@ -26,6 +26,7 @@ import {
   getEventPostComments,
   deleteEventPostComment,
   createEventPostWithContext,
+  setBadgeReminder,
   type CommunityEventsFilter,
   type CreateEventPostRequest,
   type CreateEventPostResponse,
@@ -53,6 +54,7 @@ import type {
   CollectionCategoriesResponse,
   CompletedCollectionsResponse,
   UserProgressCollectionsResponse,
+  BadgeReminderResponse,
 } from '../types/collection.types';
 import type { SurveyQuestionsApiResponse, SurveyCompleteApiResponse } from '../types/survey.types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
@@ -390,6 +392,29 @@ export const useCollectionDetail = (collectionId: string, badgeSearch?: string) 
     staleTime: 5 * 60 * 1000,  // 5 dakika
     gcTime: 10 * 60 * 1000,    // 10 dakika
     retry: 1,
+  });
+};
+
+/**
+ * EP-06: Set Badge Reminder mutation hook
+ * POST /collections/badges/:badgeId/reminder - Hatırlatıcı oluşturur.
+ * remindAt verilmezse backend 1 gün sonraya ayarlar.
+ *
+ * @returns React Query mutation hook
+ *
+ * @example
+ * const setReminder = useSetBadgeReminder();
+ * setReminder.mutate({ badgeId: 'badge-123' });
+ */
+export const useSetBadgeReminder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<BadgeReminderResponse, Error, { badgeId: string; remindAt?: string }>({
+    mutationFn: ({ badgeId, remindAt }) => setBadgeReminder(badgeId, remindAt),
+    onSuccess: () => {
+      // Collection detail query'lerini invalidate et (reminder durumu değişmiş olabilir)
+      queryClient.invalidateQueries({ queryKey: [...eventsKeys.all, 'collections', 'detail'] });
+    },
   });
 };
 

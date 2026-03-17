@@ -23,6 +23,8 @@ import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { mediaService } from '@/src/services/MediaService';
+import { useSetBadgeReminder } from '../../api/hooks';
+import { toImageSource } from '@/src/utils';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -34,6 +36,7 @@ interface CollectionCardModalProps {
     title: string;
     description: string;
     icon: ImageSourcePropType | string;
+    highlightsImage?: string | null;
     currentProgress: number;
     totalProgress: number;
     status: 'not_started' | 'in_progress' | 'completed';
@@ -51,6 +54,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const flipRotation = useSharedValue(0);
   const cardScale = useSharedValue(1);
+  const badgeReminderMutation = useSetBadgeReminder();
 
   // Front side animation
   const frontAnimatedStyle = useAnimatedStyle(() => {
@@ -89,8 +93,19 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
   const isCompleted = badge.status === 'completed';
 
   const handleSetReminder = () => {
-    console.log('[CollectionCardModal] Set Reminder pressed');
-    // TODO: Implement reminder functionality
+    if (!badge || badgeReminderMutation.isPending) return;
+
+    badgeReminderMutation.mutate(
+      { badgeId: badge.id },
+      {
+        onSuccess: () => {
+          Alert.alert('Reminder Set', 'You will be reminded about this badge.');
+        },
+        onError: () => {
+          Alert.alert('Error', 'Failed to set reminder. Please try again.');
+        },
+      }
+    );
   };
 
   const performDownload = async () => {
@@ -193,11 +208,17 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
                 {/* Set Reminder Button (Top Center) */}
                 <Pressable
                   onPress={handleSetReminder}
-                  style={styles.reminderButtonTop}
+                  style={[
+                    styles.reminderButtonTop,
+                    badgeReminderMutation.isPending && { opacity: 0.6 },
+                  ]}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  disabled={badgeReminderMutation.isPending}
                 >
-                  <Feather name="bell" size={16} color="#8E8E93" />
-                  <Text style={styles.reminderText}>Set Reminder</Text>
+                  <Feather name="bell" size={16} color={badgeReminderMutation.isSuccess ? '#10B981' : '#8E8E93'} />
+                  <Text style={[styles.reminderText, badgeReminderMutation.isSuccess && { color: '#10B981' }]}>
+                    {badgeReminderMutation.isPending ? 'Setting...' : badgeReminderMutation.isSuccess ? 'Reminder Set' : 'Set Reminder'}
+                  </Text>
                 </Pressable>
 
                 {/* Content */}
@@ -345,6 +366,17 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
                   </View>
                 )}
               </View>
+
+              {/* Highlights Image (if available) */}
+              {badge.highlightsImage ? (
+                <View style={styles.highlightsImageContainer}>
+                  <Image
+                    source={toImageSource(badge.highlightsImage) as ImageSourcePropType}
+                    style={styles.highlightsImage}
+                    resizeMode="cover"
+                  />
+                </View>
+              ) : null}
 
               {/* Badge Info at Bottom */}
               <View style={styles.backInfo}>
@@ -512,6 +544,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#8E8E93',
+  },
+
+  // Highlights image on back side
+  highlightsImageContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    zIndex: 10,
+  },
+  highlightsImage: {
+    width: '100%',
+    height: '100%',
   },
 
   // BACK SIDE STYLES

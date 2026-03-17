@@ -133,7 +133,7 @@ const EventsScreen: React.FC = () => {
         initialFilters={collectionFilters}
       />,
       {
-        snapPoints: ['65%'], // Same as ShareToTrustedBottomSheet
+        snapPoints: ['50%', '75%'],
       }
     );
   }, [openBottomSheet, handleCollectionsFilterApply, isDark, collectionFilters]);
@@ -436,11 +436,13 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   tabHeader: {
-    paddingBottom: 16,
+    paddingBottom: 0,
   },
   tabContainer: {
     flexDirection: 'row',
     position: 'relative',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9E9E9',
   },
   tabButton: {
     flex: 1,

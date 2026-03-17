@@ -64,7 +64,7 @@ export interface UserNFTApiItem {
     id: string;
     price: number;
     listedAt: string;
-    status: string; // "ACTIVE", "CANCELLED", "SOLD"
+    status: 'ACTIVE'; // Backend artık sadece ACTIVE listing döndürüyor
   };
 }
 
@@ -77,6 +77,7 @@ export interface UserNFTsApiResponse {
   pagination: {
     hasMore: boolean;
     limit: number;
+    cursor?: string;
   };
 }
 

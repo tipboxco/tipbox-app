@@ -92,6 +92,9 @@ yarn-error.*
 # local env files
 .env
 .env*.local
+.env.development
+.env.production
+.env.test
 
 # Sentry
 .sentryclirc
