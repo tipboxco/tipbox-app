@@ -100,12 +100,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     padding: 12,
+    gap: 8,
   },
   categoryBadge: {
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
+    alignSelf: 'flex-start',
   },
   categoryText: {
     color: '#FFFFFF',
@@ -113,6 +116,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   progressBadge: {
+    flexShrink: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
     paddingHorizontal: 12,
     paddingVertical: 6,
