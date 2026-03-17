@@ -285,6 +285,7 @@ const getNotificationCategory = (type: NotificationType): 'post' | 'comment' | '
         case 'NEW_MESSAGE':
         case 'DM_REQUEST_RECEIVED':
         case 'DM_REQUEST_ACCEPTED':
+        case 'DM_REQUEST_DECLINED':
             return 'message';
         
         case 'TIPS_RECEIVED':
@@ -1180,22 +1181,37 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
         }
     };
 
-    // Handle Chat button press - Navigate to SupportRequestsScreen (all tab)
+    // Handle Chat button press
     const handleChatPress = () => {
-        // ✅ FIX: DM_REQUEST_RECEIVED bildirimi için SupportRequestsScreen'e, "all" tab'ına yönlendir
-        // Thread'e yönlendirme yapılmamalı
         try {
-            // Inbox tab'ına navigate et (Support Requests tab'ı orada)
-            // initialTab: 1 = Support Requests tab (SupportRequestsScreen default filter zaten 'all')
-            navigationService.navigateNested(TAB_ROUTES.INBOX, 'InboxScreen', {
-                params: {
-                    initialTab: 1, // Support Requests tab index
-                },
-                priority: 'high',
-                force: false,
-            });
+            if (notification.type === 'DM_REQUEST_ACCEPTED') {
+                // DM_REQUEST_ACCEPTED: Kabul edilen mesaj thread'ine yönlendir
+                const threadId = notification.data?.threadId || notification.threadId || notification.data?.requestId;
+                if (threadId) {
+                    navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
+                        threadId,
+                        recipientUserId: notification.userId,
+                    });
+                } else {
+                    // threadId yoksa Inbox'a yönlendir
+                    navigationService.navigateNested(TAB_ROUTES.INBOX, 'InboxScreen', {
+                        params: { initialTab: 0 },
+                        priority: 'high',
+                        force: false,
+                    });
+                }
+            } else {
+                // DM_REQUEST_RECEIVED: SupportRequestsScreen'e yönlendir
+                navigationService.navigateNested(TAB_ROUTES.INBOX, 'InboxScreen', {
+                    params: {
+                        initialTab: 1, // Support Requests tab index
+                    },
+                    priority: 'high',
+                    force: false,
+                });
+            }
         } catch (error) {
-            console.error('[NotificationCard] SupportRequestsScreen navigation error:', error);
+            console.error('[NotificationCard] Chat navigation error:', error);
         }
     };
 
@@ -1764,6 +1780,8 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                                     username = notificationData.commenterName;
                                 } else if (notificationData.userName) {
                                     username = notificationData.userName;
+                                } else if (notificationData.username) {
+                                    username = notificationData.username;
                                 } else if (notificationData.senderName) {
                                     username = notificationData.senderName;
                                 } else if (notificationData.senderUsername) {

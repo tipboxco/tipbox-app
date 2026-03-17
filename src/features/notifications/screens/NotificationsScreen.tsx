@@ -32,7 +32,6 @@ import {
 } from '@gluestack-ui/themed';
 import {
   MagnifyingGlassIcon,
-  ChevronDownIcon,
 } from 'react-native-heroicons/outline';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -326,7 +325,15 @@ const NotificationsScreenComponent: React.FC = () => {
           }
           return [];
         });
-        return allNotifications;
+
+        // createdAt boş obje/null/undefined ise bugünün tarihini set et
+        const now = new Date().toISOString();
+        return allNotifications.map((n: any) => {
+          if (!n.createdAt || typeof n.createdAt !== 'string' || isNaN(new Date(n.createdAt).getTime())) {
+            return { ...n, createdAt: now };
+          }
+          return n;
+        });
       }
 
       return [];
@@ -983,43 +990,6 @@ const NotificationsScreenComponent: React.FC = () => {
       // Sonra tarihe göre grupla (Instagram benzeri)
       const groupedData = groupNotificationsByDate(activityGrouped);
 
-      // DEBUG: hasNextPage değerini kontrol et
-      // CRITICAL FIX: hasNextPage undefined olabilir, bu durumda false olarak değerlendir
-      // Backend'den pagination gelmeyebilir, bu durumda hasNextPage false olur
-      // Eğer data varsa ve son sayfada limit kadar bildirim varsa, muhtemelen daha fazla sayfa var
-      // CRITICAL FIX: Safe array access to prevent Hermes crash (NULL pointer at array index)
-      const currentPageData =
-        notificationsResponse?.pages?.length > 0
-          ? notificationsResponse.pages[notificationsResponse.pages.length - 1]
-          : null;
-      const currentPageNotifications = currentPageData?.data || [];
-      // Son sayfada limit kadar bildirim varsa, muhtemelen daha fazla sayfa var
-      const limit = 20;
-      const hasMoreData = currentPageNotifications.length >= limit;
-
-      // hasNextPage true ise göster, yoksa ama data limit kadar varsa da göster (backend pagination sorunu olabilir)
-      const shouldShowLoadMore =
-        hasNextPage === true ||
-        (hasNextPage !== false && hasMoreData && filtered.length > 0);
-
-      // DEBUG: Console log ekle (production'da kaldırılabilir)
-      if (__DEV__) {
-        console.log(
-          '[NotificationsScreen] hasNextPage:',
-          hasNextPage,
-          'hasMoreData:',
-          hasMoreData,
-          'filtered.length:',
-          filtered.length,
-          'currentPageNotifications.length:',
-          currentPageNotifications.length,
-          'limit:',
-          limit,
-          'shouldShowLoadMore:',
-          shouldShowLoadMore
-        );
-      }
-
       // Estimated item height: avatar (48px) + content + extra content (post card, comment, etc.) + margins (~150px)
       const estimatedItemHeight = 150;
 
@@ -1031,7 +1001,7 @@ const NotificationsScreenComponent: React.FC = () => {
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingTop: 8,
-            // paddingBottom kaldırıldı - sadece ListFooterComponent'te padding var
+            paddingBottom: bottomOffset,
           }}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -1044,48 +1014,24 @@ const NotificationsScreenComponent: React.FC = () => {
               tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
             />
           }
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.3}
           ListEmptyComponent={null}
           ListFooterComponent={
-            shouldShowLoadMore ? (
-              <Box px={16} py={24} pb={bottomOffset} alignItems='center'>
-                <Pressable
-                  onPress={() => {
-                    if (!isFetchingNextPage && hasNextPage) {
-                      fetchNextPage();
-                    }
-                  }}
-                  disabled={isFetchingNextPage}
-                >
-                  <HStack
-                    alignItems='center'
-                    justifyContent='center'
-                    space='sm'
-                  >
-                    <Text
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                      fontSize={14}
-                      fontWeight='$medium'
-                    >
-                      {t('notifications.actions.showMore')}
-                    </Text>
-                    <ChevronDownIcon
-                      width={20}
-                      height={20}
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </HStack>
-                </Pressable>
-                {isFetchingNextPage && (
-                  <View style={{ marginTop: 8 }}>
-                    <ActivityIndicator
-                      size='small'
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </View>
-                )}
+            isFetchingNextPage ? (
+              <Box py={20} alignItems='center'>
+                <ActivityIndicator
+                  size='small'
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                />
               </Box>
             ) : null
           }
+          estimatedItemSize={estimatedItemHeight}
           style={{ flex: 1 }}
         />
       );
