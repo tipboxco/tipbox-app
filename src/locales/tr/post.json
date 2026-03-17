@@ -277,7 +277,8 @@
       },
       "validation": {
         "experiencePostIdRequired": "Deneyim gönderisi ID'si gereklidir. Lütfen tekrar deneyin.",
-        "invalidUsage": "Geçersiz ekran kullanımı. Lütfen önce bir deneyim gönderisi seçin."
+        "invalidUsage": "Geçersiz ekran kullanımı. Lütfen önce bir deneyim gönderisi seçin.",
+        "noExperiencePostForProduct": "Bu ürün için henüz bir deneyim gönderiniz bulunmuyor. Önce bir deneyim gönderisi oluşturun."
       },
       "success": {
         "postUpdated": {

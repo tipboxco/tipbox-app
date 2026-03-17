@@ -277,7 +277,8 @@
       },
       "validation": {
         "experiencePostIdRequired": "Experience post ID is required. Please try again.",
-        "invalidUsage": "Invalid screen usage. Please select an experience post first."
+        "invalidUsage": "Invalid screen usage. Please select an experience post first.",
+        "noExperiencePostForProduct": "You don't have an experience post for this product yet. Please create an experience post first."
       },
       "success": {
         "postUpdated": {

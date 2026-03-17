@@ -21,7 +21,7 @@ import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType, type ApiContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
-import { profileKeys } from '@/src/features/profile/api/hooks';
+import { profileKeys, useUserReviews } from '@/src/features/profile/api/hooks';
 import * as ImageManipulator from 'expo-image-manipulator';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -58,9 +58,34 @@ export const CreateUpdatePostScreen = () => {
   
   // Update modu kontrolü
   const isUpdateMode = !!postId;
-  // Experience post'tan update oluşturma modu
-  const isExperienceUpdateMode = !!experiencePostId && !!experiencePost;
-  
+  // Experience post'tan update oluşturma modu (doğrudan params'tan veya auto-detect'ten)
+  const isProductOnlyMode = !!product && !experiencePostId && !postId;
+
+  // Auto-detect: product verilmiş ama experiencePostId yok → kullanıcının experience post'unu bul
+  const { data: userReviewsData, isLoading: isLoadingReviews } = useUserReviews(
+    user?.id,
+    50,
+    { enabled: isProductOnlyMode }
+  );
+
+  // Product ID'ye göre eşleşen experience post'u bul
+  const autoDetectedExperience = React.useMemo(() => {
+    if (!isProductOnlyMode || !userReviewsData?.pages || !product?.id) return null;
+
+    const allReviews = userReviewsData.pages.flatMap((page) => page.items || []);
+    // Product ID ile eşleşen experience post'u bul
+    const matching = allReviews.find((review) => {
+      const reviewProductId = review.contextData?.id || (review as any).product?.id;
+      return reviewProductId === product.id;
+    });
+
+    return matching || null;
+  }, [isProductOnlyMode, userReviewsData, product?.id]);
+
+  // Resolved experience post ID ve data (params'tan veya auto-detect'ten)
+  const resolvedExperiencePostId = experiencePostId || autoDetectedExperience?.id;
+  const isExperienceUpdateMode = !!resolvedExperiencePostId && (!!experiencePost || !!autoDetectedExperience);
+
   // Post detayını fetch et (update modu için)
   const { data: postDetail, isLoading: isLoadingPost } = usePostDetail(
     postId,
@@ -84,16 +109,24 @@ export const CreateUpdatePostScreen = () => {
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
 
-  // Experience update modunda flow store'da context yoksa experiencePost.product'tan set et
+  // Experience update modunda flow store'da context yoksa product bilgisinden set et
   useEffect(() => {
-    if (isExperienceUpdateMode && experiencePost?.product?.id && (!contextType || !contextId)) {
-      setFlowContext(ProductInfoType.PRODUCT, experiencePost.product.id, {
-        image: experiencePost.product.image,
-        title: experiencePost.product.name,
-        subName: experiencePost.product.subName,
+    if (!isExperienceUpdateMode || (contextType && contextId)) return;
+
+    // Params'tan gelen experiencePost veya auto-detect'ten product bilgisi
+    const productId = experiencePost?.product?.id || autoDetectedExperience?.contextData?.id || product?.id;
+    const productName = experiencePost?.product?.name || autoDetectedExperience?.contextData?.name || product?.name;
+    const productSubName = experiencePost?.product?.subName || autoDetectedExperience?.contextData?.subName || product?.description;
+    const productImage = experiencePost?.product?.image || autoDetectedExperience?.contextData?.image || product?.image;
+
+    if (productId) {
+      setFlowContext(ProductInfoType.PRODUCT, productId, {
+        image: productImage,
+        title: productName || '',
+        subName: productSubName,
       });
     }
-  }, [isExperienceUpdateMode, experiencePost?.product?.id, experiencePost?.product?.name, experiencePost?.product?.image, experiencePost?.product?.subName, contextType, contextId, setFlowContext]);
+  }, [isExperienceUpdateMode, experiencePost?.product?.id, autoDetectedExperience?.contextData?.id, product?.id, contextType, contextId, setFlowContext]);
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -198,7 +231,8 @@ export const CreateUpdatePostScreen = () => {
     console.log('[CreateUpdatePostScreen] Product from route params:', product);
     console.log('[CreateUpdatePostScreen] Is update mode:', isUpdateMode);
     console.log('[CreateUpdatePostScreen] Is experience update mode:', isExperienceUpdateMode);
-    console.log('[CreateUpdatePostScreen] Experience post ID:', experiencePostId);
+    console.log('[CreateUpdatePostScreen] Experience post ID:', resolvedExperiencePostId);
+    console.log('[CreateUpdatePostScreen] Auto-detected:', !!autoDetectedExperience);
     
     try {
       if (isUpdateMode && postId) {
@@ -222,10 +256,10 @@ export const CreateUpdatePostScreen = () => {
         
         // Geri dön
         navigation.goBack();
-      } else if (isExperienceUpdateMode && experiencePostId) {
+      } else if (isExperienceUpdateMode && resolvedExperiencePostId) {
         // Experience post'tan update oluşturma modu
         // Backend'e göre experiencePostId ZORUNLU
-        if (!experiencePostId || experiencePostId.trim() === '') {
+        if (!resolvedExperiencePostId || resolvedExperiencePostId.trim() === '') {
           console.error('[CreateUpdatePostScreen] experiencePostId is missing or empty');
           showCustomToast(toast, {
             title: t('create.common.errors.title'),
@@ -237,31 +271,32 @@ export const CreateUpdatePostScreen = () => {
 
         // Backend kuralı: Update post sadece PRODUCT context'i için oluşturulabilir
         // contextId opsiyonel - Backend boşsa experience post'taki productId'yi kullanır
-        const effectiveContextId = contextId ?? experiencePost?.product?.id;
-        
+        const effectiveContextId = contextId ?? experiencePost?.product?.id ?? autoDetectedExperience?.contextData?.id ?? product?.id;
+
         // contextId tamamen opsiyonel - backend experience post'tan alır
         // Ama gönderilecekse product ID olmalı
         if (effectiveContextId && !effectiveContextId.startsWith('prod_')) {
           console.warn('[CreateUpdatePostScreen] ⚠️ contextId is not a product ID, setting to undefined. Backend will use experience post productId.');
         }
-        
+
         // Backend sadece 'product' contextType kabul ediyor
         const apiContextType = 'product' as ApiContextType;
-        
+
         console.log('[CreateUpdatePostScreen] 📤 Creating update post with:', {
           contextType: apiContextType, // Her zaman 'product'
           contextId: effectiveContextId, // Opsiyonel - backend experience post'tan alır
-          experiencePostId: experiencePostId,
+          experiencePostId: resolvedExperiencePostId,
+          autoDetected: !!autoDetectedExperience,
           contentLength: data.description?.length || 0,
           imagesCount: data.selectedImages?.length || 0,
         });
-        
+
         const response = await createUpdatePostMutation.mutateAsync({
           contextType: apiContextType, // Her zaman 'product'
           contextId: effectiveContextId || '', // Boş string gönderilebilir, backend ignore eder
           content: data.description,
           images: data.selectedImages || [],
-          experiencePostId: experiencePostId,
+          experiencePostId: resolvedExperiencePostId,
         });
         
         console.log('[CreateUpdatePostScreen] ✅ Update Post Created from Experience:', response);
@@ -334,13 +369,22 @@ export const CreateUpdatePostScreen = () => {
           );
         }
       } else {
-        // Hatalı kullanım: Bu ekran sadece experience update veya post edit için kullanılmalı
-        console.error('[CreateUpdatePostScreen] Invalid usage: experiencePostId or postId required');
-        showCustomToast(toast, {
-          title: t('create.common.errors.title'),
-          description: t('create.update.validation.invalidUsage'),
-          action: 'error',
-        });
+        // Experience post bulunamadı veya hatalı kullanım
+        if (isProductOnlyMode && !isLoadingReviews) {
+          console.warn('[CreateUpdatePostScreen] No experience post found for product:', product?.id);
+          showCustomToast(toast, {
+            title: t('create.common.errors.title'),
+            description: t('create.update.validation.noExperiencePostForProduct'),
+            action: 'error',
+          });
+        } else {
+          console.error('[CreateUpdatePostScreen] Invalid usage: experiencePostId or postId required');
+          showCustomToast(toast, {
+            title: t('create.common.errors.title'),
+            description: t('create.update.validation.invalidUsage'),
+            action: 'error',
+          });
+        }
 
         // Geri dön
         handleBackPress();
@@ -394,7 +438,7 @@ export const CreateUpdatePostScreen = () => {
   };
 
   // Check if share button should be enabled (product exists and form is valid)
-  const isShareEnabled = (product !== undefined || experiencePost !== undefined) && formState.isValid;
+  const isShareEnabled = (product !== undefined || experiencePost !== undefined || autoDetectedExperience !== null) && formState.isValid && !isLoadingReviews;
   const isShareLoading = isUpdateMode ? updatePostMutation.isPending : createUpdatePostMutation.isPending;
 
   const handleSharePress = () => {
@@ -529,15 +573,15 @@ export const CreateUpdatePostScreen = () => {
                 </Box>
               )}
 
-              {/* Product Info Card - Show if not experience update mode */}
-              {!isExperienceUpdateMode && product && (
+              {/* Product Info Card - Show if not experience update mode OR auto-detected mode */}
+              {(!isExperienceUpdateMode || (isProductOnlyMode && autoDetectedExperience)) && product && (
                 <Box px="$4" py="$2">
                   <ProductInfoCard
                     image={product.image}
                     title={product.name}
                     subName={product.description}
                     size="big"
-                    type={ProductInfoType.SUB_CATEGORY}
+                    type={ProductInfoType.PRODUCT}
                   />
                 </Box>
               )}
