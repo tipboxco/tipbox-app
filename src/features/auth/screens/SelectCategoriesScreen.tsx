@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import { View } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable, Spinner } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, HStack, Pressable, Spinner } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -108,11 +108,24 @@ export const SelectCategoriesScreen = () => {
   const insets = useSafeAreaInsets();
   const setSelectedCategories = useAppStore((state) => state.setSelectedCategories);
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
-  
-  // API'den kategorileri getir
-  const { data: categories, isLoading, error } = useUserCategories();
 
-  // Edge-to-Edge Design: Top ve bottom insets için theme-aware background
+  // API'den kategorileri getir (10'arlı pagination)
+  const {
+    data: categoriesData,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useUserCategories(10);
+
+  // Flatten pages
+  const categories = useMemo(() => {
+    if (!categoriesData?.pages) return [];
+    return categoriesData.pages.flatMap((page) => page.items || []);
+  }, [categoriesData]);
+
+  // Edge-to-Edge Design: Top ve bottom insets icin theme-aware background
   const backgroundColor = isDark ? '#1F2937' : '#FFFFFF';
 
   const handleSelectSubCategory = useCallback((subCategoryId: string) => {
@@ -126,13 +139,13 @@ export const SelectCategoriesScreen = () => {
 
   const handleNext = useCallback(() => {
     const MIN_SELECTED = 3;
-    if (!categories) {
+    if (!categories || categories.length === 0) {
       Alert.alert(t('toasts.error'), t('toasts.genericError'));
       return;
     }
 
     if (selectedSubCategories.length >= MIN_SELECTED) {
-      // Seçilen subCategory'leri categoryId'lerine göre grupla
+      // Secilen subCategory'leri categoryId'lerine gore grupla
       const categoriesMap = new Map<string, string[]>();
 
       categories.forEach((category) => {
@@ -144,7 +157,7 @@ export const SelectCategoriesScreen = () => {
         });
       });
 
-      // Backend formatına çevir
+      // Backend formatina cevir
       const formattedCategories = Array.from(categoriesMap.entries()).map(([categoryId, subCategoryIds]) => ({
         categoryId,
         subCategoryIds,
@@ -153,17 +166,35 @@ export const SelectCategoriesScreen = () => {
       // Global state'e kaydet (route params yerine)
       setSelectedCategories(formattedCategories);
 
-      // SetupProfile ekranına yönlendir (params olmadan)
+      // SetupProfile ekranina yonlendir (params olmadan)
       navigation.navigate('SetupProfile');
     } else {
       Alert.alert(t('toasts.error'), t('selectCategoriesScreen.selectAtLeastThree'));
     }
   }, [categories, selectedSubCategories, setSelectedCategories, navigation, t]);
 
-  // Minimum 3 kategori seçilmesi gerekiyor (görseldeki tasarıma göre)
+  // Infinite scroll handler
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Minimum 3 kategori secilmesi gerekiyor
   const MIN_SELECTED = 3;
   const selectedCount = selectedSubCategories.length;
   const isNextEnabled = selectedCount >= MIN_SELECTED;
+
+  const renderCategoryItem = useCallback(({ item }: { item: UserCategory }) => (
+    <CategoryItem
+      category={item}
+      selectedSubCategories={selectedSubCategories}
+      onSelectSubCategory={handleSelectSubCategory}
+      isDark={isDark}
+    />
+  ), [selectedSubCategories, handleSelectSubCategory, isDark]);
+
+  const keyExtractor = useCallback((item: UserCategory) => item.categoryId, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor }} edges={['top']}>
@@ -192,62 +223,64 @@ export const SelectCategoriesScreen = () => {
         </Box>
 
         {/* Content */}
-        <ScrollView 
-          flex={1} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
-        >
-          {isLoading ? (
-            <Box flex={1} alignItems="center" justifyContent="center" py="$20">
-              <Spinner size="large" color={isDark ? '$textDark300' : '$textLight600'} />
-              <Text
-                fontSize="$sm"
-                color={isDark ? '$textDark300' : '$textLight600'}
-                mt="$4"
-              >
-                {t('selectCategoriesScreen.loadingCategories')}
-              </Text>
-            </Box>
-          ) : error ? (
-            <Box flex={1} alignItems="center" justifyContent="center" py="$20" px="$4">
-              <Text
-                fontSize="$md"
-                color="$error500"
-                textAlign="center"
-                mb="$4"
-              >
-                {t('selectCategoriesScreen.failedToLoadCategories')}
-              </Text>
-              <Text
-                fontSize="$sm"
-                color={isDark ? '$textDark300' : '$textLight600'}
-                textAlign="center"
-              >
-                {error instanceof Error ? error.message : t('selectCategoriesScreen.errorOccurred')}
-              </Text>
-            </Box>
-          ) : categories && categories.length > 0 ? (
-            categories.map((category) => (
-              <CategoryItem
-                key={category.categoryId}
-                category={category}
-                selectedSubCategories={selectedSubCategories}
-                onSelectSubCategory={handleSelectSubCategory}
-                isDark={isDark}
-              />
-            ))
-          ) : (
-            <Box flex={1} alignItems="center" justifyContent="center" py="$20">
-              <Text
-                fontSize="$sm"
-                color={isDark ? '$textDark300' : '$textLight600'}
-                textAlign="center"
-              >
-                {t('selectCategoriesScreen.noCategoriesAvailable')}
-              </Text>
-            </Box>
-          )}
-        </ScrollView>
+        {isLoading ? (
+          <Box flex={1} alignItems="center" justifyContent="center" py="$20">
+            <Spinner size="large" color={isDark ? '$textDark300' : '$textLight600'} />
+            <Text
+              fontSize="$sm"
+              color={isDark ? '$textDark300' : '$textLight600'}
+              mt="$4"
+            >
+              {t('selectCategoriesScreen.loadingCategories')}
+            </Text>
+          </Box>
+        ) : error ? (
+          <Box flex={1} alignItems="center" justifyContent="center" py="$20" px="$4">
+            <Text
+              fontSize="$md"
+              color="$error500"
+              textAlign="center"
+              mb="$4"
+            >
+              {t('selectCategoriesScreen.failedToLoadCategories')}
+            </Text>
+            <Text
+              fontSize="$sm"
+              color={isDark ? '$textDark300' : '$textLight600'}
+              textAlign="center"
+            >
+              {error instanceof Error ? error.message : t('selectCategoriesScreen.errorOccurred')}
+            </Text>
+          </Box>
+        ) : (
+          <FlatList
+            data={categories}
+            renderItem={renderCategoryItem}
+            keyExtractor={keyExtractor}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListEmptyComponent={
+              <Box flex={1} alignItems="center" justifyContent="center" py="$20">
+                <Text
+                  fontSize="$sm"
+                  color={isDark ? '$textDark300' : '$textLight600'}
+                  textAlign="center"
+                >
+                  {t('selectCategoriesScreen.noCategoriesAvailable')}
+                </Text>
+              </Box>
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <Box py="$4" alignItems="center">
+                  <ActivityIndicator size="small" color={isDark ? '#CCCCCC' : '#666666'} />
+                </Box>
+              ) : null
+            }
+          />
+        )}
 
         {/* Sticky Footer */}
         <Box

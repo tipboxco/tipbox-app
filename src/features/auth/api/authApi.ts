@@ -658,6 +658,18 @@ export interface UserCategory {
 }
 
 /**
+ * Pagination response formatı (UserCategory için)
+ */
+export interface UserCategoryPaginationResponse {
+  items: UserCategory[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
  * Avatar listesi tipi (GET /users/avatars response)
  */
 export interface UserAvatar {
@@ -702,18 +714,55 @@ export const getUserAvatars = async (): Promise<GetUserAvatarsResponse> => {
 
 /**
  * Get User Categories endpoint function
- * Kullanıcı kategori seçimi için tüm kategorileri ve alt kategorileri getirir
- * Her kategori için en fazla 10 alt kategori döner (alfabetik sıraya göre)
- * 
- * @returns UserCategory[] - Kategori listesi (her kategori içinde subCategories var)
+ * Kullanıcı kategori seçimi için kategorileri ve alt kategorileri getirir (pagination ile)
+ *
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 10)
+ * @returns UserCategoryPaginationResponse - Kategori listesi ve pagination bilgisi
  */
-export const getUserCategories = async (): Promise<UserCategory[]> => {
+export const getUserCategories = async (
+  cursor?: string,
+  limit: number = 10
+): Promise<UserCategoryPaginationResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
   try {
-    const response = await apiService.getClient().get<UserCategory[]>(
-      '/users/categories'
+    const response = await apiService.getClient().get<UserCategoryPaginationResponse | UserCategory[]>(
+      `/users/categories?${params.toString()}`
     );
-    return response.data;
+
+    // Backend pagination destekliyorsa direkt döndür
+    if (response.data && typeof response.data === 'object' && 'items' in response.data && 'pagination' in response.data) {
+      return response.data as UserCategoryPaginationResponse;
+    }
+
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    if (Array.isArray(response.data)) {
+      return {
+        items: response.data,
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+
+    throw new Error('Unexpected response format from /users/categories');
   } catch (error: any) {
+    // Backend array döndürüyorsa fallback
+    if (error.response?.data && Array.isArray(error.response.data)) {
+      return {
+        items: error.response.data,
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
     console.error('[getUserCategories] API Error:', {
       url: '/users/categories',
       status: error.response?.status,

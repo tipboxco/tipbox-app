@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { register, login, setupProfile, updateUserInterests, googleLogin, verifyEmail, checkUsernameAvailability, getUsernameSuggestions, getUserCategories, getUserAvatars, forgotPassword, verifyResetCode, resetPassword } from './authApi';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
 import type { RegisterResponse, ApiLoginResponse } from '../types';
-import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse, VerifyEmailRequest, VerifyEmailResponse, UsernameCheckResponse, UsernameSuggestionsResponse, UserCategory, GetUserAvatarsResponse, ForgotPasswordResponse, VerifyResetCodeRequest, VerifyResetCodeResponse, ResetPasswordRequest, ResetPasswordResponse } from './authApi';
+import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse, VerifyEmailRequest, VerifyEmailResponse, UsernameCheckResponse, UsernameSuggestionsResponse, UserCategory, UserCategoryPaginationResponse, GetUserAvatarsResponse, ForgotPasswordResponse, VerifyResetCodeRequest, VerifyResetCodeResponse, ResetPasswordRequest, ResetPasswordResponse } from './authApi';
 import { useAppStore } from '../../../store/appStore';
 import { notificationService } from '@/src/services/ExpoNotificationService';
 import { notificationKeys } from '@/src/features/notifications/api/hooks';
@@ -256,18 +256,27 @@ export const useUserAvatars = () => {
 };
 
 /**
- * Get User Categories query hook
- * Kullanıcı kategori seçimi için tüm kategorileri ve alt kategorileri getirir
- * 
- * @returns React Query hook result
- * 
+ * Get User Categories infinite query hook
+ * Kullanıcı kategori seçimi için kategorileri 10'arlı pagination ile getirir
+ *
+ * @param limit - Sayfa başına item sayısı (default: 10)
+ * @returns React Query infinite query hook result
+ *
  * @example
- * const { data, isLoading, error } = useUserCategories();
+ * const { data, isLoading, error, fetchNextPage, hasNextPage } = useUserCategories();
  */
-export const useUserCategories = () => {
-  return useQuery<UserCategory[], Error>({
-    queryKey: authKeys.userCategories(),
-    queryFn: getUserCategories,
+export const useUserCategories = (limit: number = 10) => {
+  return useInfiniteQuery<UserCategoryPaginationResponse, Error>({
+    queryKey: [...authKeys.userCategories(), limit],
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getUserCategories(cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) return undefined;
+      return lastPage.pagination?.cursor;
+    },
     staleTime: 24 * 60 * 60 * 1000, // 24 saat - kategoriler nadiren değişir
     gcTime: 7 * 24 * 60 * 60 * 1000, // 7 gün - cache'de tut
     refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
