@@ -201,10 +201,13 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     }
   }, [catalogSubCategoriesData, selectedCategoryId, isLoadingSubCategories, isSubCategoriesError, subCategoriesError]);
   
-  // API'den seçili alt kategoriye ait product groups'u getir
-  const { 
-    data: catalogProductGroupsData, 
+  // API'den seçili alt kategoriye ait product groups'u getir (infinite scroll)
+  const {
+    data: catalogProductGroupsData,
     isLoading: isLoadingProductGroups,
+    fetchNextPage: fetchNextProductGroupsPage,
+    hasNextPage: hasNextProductGroupsPage,
+    isFetchingNextPage: isFetchingNextProductGroupsPage,
   } = useCatalogProductGroups(selectedSubCategoryId);
   
   // Debounce search query for API calls
@@ -268,9 +271,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     return catalogSubCategoriesData.items;
   }, [catalogSubCategoriesData, selectedCategoryId]);
 
-  // ProductGroups için
+  // ProductGroups için (InfiniteData yapısından tüm product groups'ı çıkar)
   const catalogProductGroups = useMemo(() => {
-    if (!catalogProductGroupsData?.items) {
+    if (!catalogProductGroupsData?.pages) {
       if (__DEV__) {
         console.log('[ProductCatalogScreen] ⚠️ No product groups data:', {
           catalogProductGroupsData,
@@ -279,11 +282,13 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       }
       return [];
     }
-    
+
+    const allItems = catalogProductGroupsData.pages.flatMap((page) => page.items || []);
+
     if (__DEV__) {
       console.log('[ProductCatalogScreen] ✅ Product groups loaded:', {
-        count: catalogProductGroupsData.items.length,
-        items: catalogProductGroupsData.items.map(item => ({
+        count: allItems.length,
+        items: allItems.map(item => ({
           productGroupId: item.productGroupId,
           name: item.name,
           subCategoryId: item.subCategoryId,
@@ -291,8 +296,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         selectedSubCategoryId,
       });
     }
-    
-    return catalogProductGroupsData.items;
+
+    return allItems;
   }, [catalogProductGroupsData, selectedSubCategoryId]);
 
   // İlk 3 kategorinin subcategories'ini prefetch et (kullanıcı deneyimini iyileştirmek için)
@@ -1417,7 +1422,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       });
     } else if (type === 'update') {
       navigationService.navigate(ROOT_ROUTES.POST, {
-        screen: 'SelectExperienceForUpdateScreen',
+        screen: 'CreateUpdatePostScreen',
         params: {
           product: selectedProduct ? {
             id: selectedProduct.id,
@@ -1608,8 +1613,13 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           if (!showGlobalSearchResults && currentView === 'products' && hasNextProductsPage && !isFetchingNextProductsPage) {
             fetchNextProductsPage();
           }
+
+          // Product groups view için infinite scroll
+          if (!showGlobalSearchResults && currentView === 'productgroups' && hasNextProductGroupsPage && !isFetchingNextProductGroupsPage) {
+            fetchNextProductGroupsPage();
+          }
         }}
-        scrollEventThrottle={400}
+        scrollEventThrottle={16}
       >
         <VStack space="md" pt="$4" pb={scrollViewPaddingBottom}>
           {/* Global Search Results - Categories view'da yerel filtre kullanılır (Be → Beauty) */}
@@ -1866,6 +1876,13 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                   {!showGlobalSearchResults && currentView === 'products' && isFetchingNextProductsPage && (
                     <Box py="$4" alignItems="center">
                       <ProductSkeleton count={3} />
+                    </Box>
+                  )}
+
+                  {/* Load More Indicator - Product groups view için */}
+                  {!showGlobalSearchResults && currentView === 'productgroups' && isFetchingNextProductGroupsPage && (
+                    <Box py="$4" alignItems="center">
+                      <CategorySkeleton count={3} />
                     </Box>
                   )}
                 </>

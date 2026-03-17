@@ -503,7 +503,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
               }
               onScroll?.(event);
             }}
-            scrollEventThrottle={400}
+            scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
           >
             <VStack space="md" pt="$4">
@@ -613,7 +613,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
                 }
                 onScroll?.(event);
               }}
-              scrollEventThrottle={400}
+              scrollEventThrottle={16}
               showsVerticalScrollIndicator={false}
             >
               <VStack space="md" pt="$4">

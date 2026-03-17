@@ -69,9 +69,10 @@ export const useCatalogPrefetch = () => {
   }, [queryClient]);
 
   const prefetchProductGroups = useCallback((subCategoryId: string) => {
-    queryClient.prefetchQuery({
+    queryClient.prefetchInfiniteQuery({
       queryKey: catalogKeys.productGroups(subCategoryId, undefined, 20),
       queryFn: () => getCatalogProductGroups(subCategoryId, undefined, 20),
+      initialPageParam: undefined,
       staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
     });
   }, [queryClient]);
@@ -101,7 +102,7 @@ export const useCatalogPrefetch = () => {
  * @example
  * const { data, isLoading, error } = useCatalogCategories();
  */
-export const useCatalogCategories = (limit: number = 100) => {
+export const useCatalogCategories = (limit: number = 500) => {
   return useQuery<CatalogPaginationResponse<CatalogCategory>, Error>({
     queryKey: catalogKeys.categories(undefined, limit),
     queryFn: () => getCatalogCategories(undefined, limit),
@@ -180,7 +181,7 @@ export const useBrandsByCategory = (categoryId: string | undefined, limit: numbe
  * @example
  * const { data, isLoading, error } = useCatalogSubCategories('category-123');
  */
-export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 100) => {
+export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 500) => {
   const query = useQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
     queryKey: categoryId ? catalogKeys.subCategories(categoryId, undefined, limit) : ['catalog', 'subCategories', 'disabled'],
     queryFn: () => {
@@ -251,14 +252,22 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
 export const useCatalogProductGroups = (subCategoryId: string | undefined, limit: number = 20) => {
   // Backend limit constraint: 1-50 arası olmalı
   const validLimit = Math.min(Math.max(limit, 1), 50);
-  
-  return useQuery<CatalogPaginationResponse<CatalogProductGroup>, Error>({
+
+  return useInfiniteQuery<CatalogPaginationResponse<CatalogProductGroup>, Error>({
     queryKey: subCategoryId ? catalogKeys.productGroups(subCategoryId, undefined, validLimit) : ['catalog', 'productGroups', 'disabled'],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!subCategoryId) {
         throw new Error('SubCategory ID is required');
       }
-      return getCatalogProductGroups(subCategoryId, undefined, validLimit);
+      const cursor = pageParam as string | undefined;
+      return getCatalogProductGroups(subCategoryId, cursor, validLimit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
     },
     enabled: !!subCategoryId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
