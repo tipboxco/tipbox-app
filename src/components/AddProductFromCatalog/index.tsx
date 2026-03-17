@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
 import { ProductCatalogScreen } from '@/src/features/catalog/screens/ProductCatalogScreen';
 import { CatalogProduct } from '@/src/features/catalog/types';
@@ -18,6 +19,7 @@ export const AddProductFromCatalog: React.FC<AddProductFromCatalogProps> = ({
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('catalog');
 
     // Handle product selection from ProductCatalogScreen
     const handleProductSelect = useCallback((product: CatalogProduct & { id: string; image: any; description?: string }) => {
@@ -32,11 +34,11 @@ export const AddProductFromCatalog: React.FC<AddProductFromCatalogProps> = ({
     }, [onProductSelect]);
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
             <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 {/* Header */}
                 <Header
-                    title="Add Product from Catalog"
+                    title={t('common.addProductFromCatalog')}
                     leftAction="back"
                     onLeftActionPress={onClose}
                 />
@@ -48,12 +50,10 @@ export const AddProductFromCatalog: React.FC<AddProductFromCatalogProps> = ({
                             // Handle state changes if needed
                         }}
                         scrollViewPaddingBottom={52}
-                        selectMode="benchmark"
-                        returnScreen={undefined}
+                        selectMode="picker"
                         onProductSelect={handleProductSelect}
                         initialView="categories"
                         initialBreadcrumbItems={[]}
-                        onCreatePost={undefined}
                     />
                 </Box>
             </VStack>

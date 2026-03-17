@@ -305,7 +305,7 @@ const MessageDetailScreen: React.FC = () => {
   // Route params'dan gelen verileri al
   const params = (route.params as MessageDetailScreenParams) || {
     messageId: '',
-    senderName: 'Unknown',
+    senderName: t('messageDetail.fallback.unknown'),
     senderTitle: '',
     senderAvatar: undefined,
     openSendTips: false,
@@ -473,7 +473,7 @@ const MessageDetailScreen: React.FC = () => {
           
           const senderName = isSent 
             ? undefined 
-            : (msg.senderName || currentParams.senderName || 'Unknown');
+            : (msg.senderName || currentParams.senderName || t('messageDetail.fallback.unknown'));
           const senderAvatar = isSent 
             ? undefined 
             : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : currentParams.senderAvatar);
@@ -597,7 +597,7 @@ const MessageDetailScreen: React.FC = () => {
             // Backend'den gelen sender bilgilerini kullan (varsa), yoksa params'dan al
             const senderName = isSent 
               ? undefined 
-              : (msg.senderName || currentParams.senderName || 'Unknown');
+              : (msg.senderName || currentParams.senderName || t('messageDetail.fallback.unknown'));
             const senderAvatar = isSent 
               ? undefined 
               : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : currentParams.senderAvatar);
@@ -897,7 +897,7 @@ const MessageDetailScreen: React.FC = () => {
         sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
         senderId: eventData.senderId, // ✅ FIX: senderId ekle - isSent yeniden hesaplaması için gerekli
-        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderName: isSent ? undefined : (currentParams.senderName || t('messageDetail.fallback.unknown')),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         isRead: false, // Yeni mesaj henüz okunmadı
       };
@@ -960,7 +960,7 @@ const MessageDetailScreen: React.FC = () => {
         sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
         senderId: eventData.senderId, // ✅ FIX: senderId ekle - isSent yeniden hesaplaması için gerekli
-        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderName: isSent ? undefined : (currentParams.senderName || t('messageDetail.fallback.unknown')),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: eventData.messageType === 'image' ? 'image' : 'message',
         mediaUrl: eventData.mediaUrl,
@@ -1047,7 +1047,7 @@ const MessageDetailScreen: React.FC = () => {
         sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
         senderId: eventData.senderId, // ✅ FIX: senderId ekle - isSent yeniden hesaplaması için gerekli
-        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderName: isSent ? undefined : (currentParams.senderName || t('messageDetail.fallback.unknown')),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: 'tips',
         tipsAmount: tipsAmount,
@@ -1131,7 +1131,7 @@ const MessageDetailScreen: React.FC = () => {
         sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(),
         isSent,
         senderId: eventData.senderId,
-        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderName: isSent ? undefined : (currentParams.senderName || t('messageDetail.fallback.unknown')),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: 'sharedpost',
         sharedPost: (() => {
@@ -1139,7 +1139,7 @@ const MessageDetailScreen: React.FC = () => {
           return {
             postId: sharedPostPayload.postId,
             postType: sp.postType ?? null,
-            authorName: sp.authorName || currentParams.senderName || 'Unknown',
+            authorName: sp.authorName || currentParams.senderName || t('messageDetail.fallback.unknown'),
             authorTitle: sp.authorTitle ?? null,
             authorAvatar: sp.authorAvatar ?? currentParams.senderAvatar ?? null,
             imageUrl: sp.imageUrl ?? sp.productImageUrl ?? sp.contextData?.image ?? null,
@@ -1496,12 +1496,12 @@ const MessageDetailScreen: React.FC = () => {
     // Eğer current user sender ise, expert = recipient
     // Eğer current user recipient ise, expert = sender
     // Şimdilik params'dan gelen bilgileri kullanıyoruz
-    const expertName = params.senderName || 'Unknown';
+    const expertName = params.senderName || t('messageDetail.fallback.unknown');
     const expertTitle = params.senderTitle || '';
     const expertAvatar = params.senderAvatar || DEFAULT_USER_AVATAR;
     
     // Mevcut kullanıcının bilgileri (user store'dan alınabilir)
-    const userName = user?.fullName || 'You';
+    const userName = user?.fullName || t('messageDetail.fallback.unknown');
     const userTitle = ''; // User interface'inde title yok
     const userAvatar = user?.avatar ? toImageSource(user.avatar) : DEFAULT_USER_AVATAR;
 
@@ -1825,15 +1825,15 @@ const MessageDetailScreen: React.FC = () => {
     if (!user?.id || !effectiveRecipientUserId) return;
     
     Alert.alert(
-      'Report User',
-      'Are you sure you want to report this user?',
+      t('messageDetail.alerts.reportTitle'),
+      t('messageDetail.alerts.reportMessage'),
       [
         {
-          text: 'Cancel',
+          text: t('messageDetail.alerts.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Report',
+          text: t('messageDetail.alerts.report'),
           style: 'destructive',
           onPress: () => {
             reportUserMutation.mutate({
@@ -1888,15 +1888,15 @@ const MessageDetailScreen: React.FC = () => {
     if (!user?.id || !effectiveRecipientUserId) return;
     
     Alert.alert(
-      'Block User',
-      `Are you sure you want to block ${params.senderName}? You will no longer receive messages from this user.`,
+      t('messageDetail.alerts.blockTitle'),
+      t('messageDetail.alerts.blockMessage', { name: params.senderName }),
       [
         {
-          text: 'Cancel',
+          text: t('messageDetail.alerts.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Block',
+          text: t('messageDetail.alerts.block'),
           style: 'destructive',
           onPress: () => {
             blockUserMutation.mutate({
@@ -1991,9 +1991,9 @@ const MessageDetailScreen: React.FC = () => {
           const currentMessages = messages; // State'i capture et
 
           Alert.alert(
-            'Success', 
-            `${amount} TIPS sent successfully!`,
-            [{ text: 'OK' }]
+            t('tipsSentAlert.title'),
+            t('tipsSentAlert.message', { amount }),
+            [{ text: t('tipsSentAlert.ok') }]
           );
           closeBottomSheet();
           
@@ -2028,7 +2028,7 @@ const MessageDetailScreen: React.FC = () => {
     
     const routeParams = (route.params as MessageDetailScreenParams) || {
       messageId: '',
-      senderName: 'Unknown',
+      senderName: t('messageDetail.fallback.unknown'),
       senderTitle: '',
       senderAvatar: undefined,
     };
@@ -2147,7 +2147,7 @@ const MessageDetailScreen: React.FC = () => {
     
     const routeParams = (route.params as MessageDetailScreenParams) || {
       messageId: '',
-      senderName: 'Unknown',
+      senderName: t('messageDetail.fallback.unknown'),
       senderTitle: '',
       senderAvatar: undefined,
     };
@@ -2385,12 +2385,12 @@ const MessageDetailScreen: React.FC = () => {
     }
 
     Alert.alert(
-      'Destek Talebini Reddet',
-      'Bu destek talebini reddetmek istediğinizden emin misiniz?',
+      t('supportMessageDetail.alerts.rejectTitle'),
+      t('supportMessageDetail.alerts.rejectMessage'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('supportMessageDetail.buttons.cancel'), style: 'cancel' },
         {
-          text: 'Reddet',
+          text: t('supportMessageDetail.buttons.reject'),
           style: 'destructive',
           onPress: () => {
             if (isConnected && isSocketReady) {
@@ -2425,12 +2425,12 @@ const MessageDetailScreen: React.FC = () => {
     }
 
     Alert.alert(
-      'Cancel Support Request',
-      'Are you sure you want to cancel this support request?',
+      t('supportMessageDetail.alerts.cancelTitle'),
+      t('supportMessageDetail.alerts.cancelMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('supportMessageDetail.buttons.cancel'), style: 'cancel' },
         {
-          text: 'Cancel',
+          text: t('supportMessageDetail.buttons.cancel'),
           style: 'destructive',
           onPress: () => {
             // Optimistic update: Local state'te hemen canceled olarak işaretle
@@ -3543,14 +3543,6 @@ const MessageDetailScreen: React.FC = () => {
             params: { userId: effectiveRecipientUserId },
           });
         } : undefined}
-        onMenuPress={() => {}}
-        onShare={handleShare}
-        onReport={handleReport}
-        onBlock={handleBlock}
-        onMute={handleMute}
-        onUnmute={handleUnmute}
-        isMuted={isMuted}
-        recipientUserId={effectiveRecipientUserId}
       />
 
       {/* ✅ WhatsApp Engine: Normal FlashList (WhatsApp style) - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir */}

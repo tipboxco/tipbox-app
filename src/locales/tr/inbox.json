@@ -12,7 +12,13 @@
     "empty": "Bir sohbet başlatın",
     "newMessage": "Yeni Mesaj",
     "typeMessage": "Bir mesaj yazın...",
-    "error": "Hata: {{message}}"
+    "error": "Hata: {{message}}",
+    "fallback": {
+      "unknown": "Bilinmiyor",
+      "newMessages": "Yeni mesajlar var",
+      "noMessages": "Mesaj yok"
+    },
+    "typing": "{{name}} yazıyor"
   },
   "supportRequests": {
     "empty": "Henüz destek talebi yok",
@@ -23,7 +29,38 @@
       "active": "Aktif Talepler",
       "awaitingCompletion": "Tamamlanma Bekleyen",
       "completed": "Tamamlanan"
+    },
+    "status": {
+      "pending": "Beklemede",
+      "active": "Aktif",
+      "awaitingCompletion": "Tamamlanma Bekleniyor",
+      "completed": "Tamamlandı",
+      "finalized": "Sonlandırıldı",
+      "reported": "Şikayet Edildi",
+      "unknown": "Bilinmiyor"
+    },
+    "buttons": {
+      "accept": "Kabul Et",
+      "message": "Mesaj",
+      "complete": "Tamamla",
+      "view": "Görüntüle",
+      "details": "Detaylar"
+    },
+    "errors": {
+      "errorTitle": "Hata",
+      "notFound": "Destek talebi bulunamadı",
+      "acceptFailed": "Destek talebi kabul edilemedi"
     }
+  },
+  "sharedPost": {
+    "seePost": "Gönderiyi Gör",
+    "seeQuestionPost": "Soru Gönderisini Gör",
+    "seeUpdatePost": "Güncelleme Gönderisini Gör",
+    "seeExperiencePost": "Deneyim Gönderisini Gör",
+    "seeComparePost": "Karşılaştırma Gönderisini Gör",
+    "seeTipsPost": "TIPS Gönderisini Gör",
+    "sharedPost": "Paylaşılan gönderi",
+    "unknownAuthor": "Bilinmiyor"
   },
   "supportMessageDetail": {
     "empty": "Henüz mesaj yok",
@@ -109,6 +146,18 @@
     "imageAlt": "Gönderilen görsel",
     "userImageAlt": "{{userName}} kullanıcı resmi",
     "tipsSent": "Bahşiş Gönderildi",
+    "alerts": {
+      "reportTitle": "Kullanıcıyı Şikayet Et",
+      "reportMessage": "Bu kullanıcıyı şikayet etmek istediğinize emin misiniz?",
+      "blockTitle": "Kullanıcıyı Engelle",
+      "blockMessage": "{{name}} kullanıcısını engellemek istediğinize emin misiniz? Bu kullanıcıdan artık mesaj almayacaksınız.",
+      "cancel": "İptal",
+      "report": "Şikayet Et",
+      "block": "Engelle"
+    },
+    "fallback": {
+      "unknown": "Bilinmiyor"
+    },
     "months": {
       "january": "Ocak",
       "february": "Şubat",
@@ -253,6 +302,26 @@
       "confirmButton": "Onayla",
       "cancelButton": "Vazgeç"
     }
+  },
+  "closeSupportModal": {
+    "finalizeDescription": "Kullanıcıyla olan 1-1 destek talebini sonlandırmak üzeresiniz.",
+    "closeDescription": "Kullanıcıyla olan 1-1 destek talebini kapatmak üzeresiniz.",
+    "rateProcess": "Lütfen süreci değerlendirin!",
+    "finalize": "Destek Talebini Sonlandır",
+    "close": "Destek Talebini Kapat",
+    "cancel": "Vazgeç"
+  },
+  "actionButtons": {
+    "requestOneOnOne": "1-1 Destek Talep Et",
+    "sendTips": "TIPS Gönder",
+    "finalizeSupportRequest": "Destek Talebini Sonlandır",
+    "closeSupportRequest": "Destek Talebini Kapat",
+    "report": "Şikayet Et"
+  },
+  "tipsSentAlert": {
+    "title": "Başarılı",
+    "message": "{{amount}} TIPS başarıyla gönderildi!",
+    "ok": "Tamam"
   },
   "sendTips": {
     "title": "Bahşiş Gönder",

@@ -1,5 +1,6 @@
 {
   "common": {
+    "addProductFromCatalog": "Katalogdan Ürün Ekle",
     "loading": "Yükleniyor...",
     "error": "Hata",
     "noResultsFound": "Sonuç bulunamadı",

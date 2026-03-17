@@ -7,6 +7,7 @@ import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { formatMessageTime } from '../../utils/messageHelpers';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import type { MessageItemProps } from './types';
 
 interface SharedPostMessageProps extends Pick<MessageItemProps, 'item' | 'isDark' | 'params'> {
@@ -17,13 +18,13 @@ const SEPARATOR_COLOR_LIGHT = '#E5E5E5';
 const SEPARATOR_COLOR_DARK = '#333333';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const POST_TYPE_BUTTON_LABELS: Record<string, string> = {
-  QUESTION: 'See Question Post',
-  UPDATE: 'See Update Post',
-  EXPERIENCE: 'See Experience Post',
-  COMPARE: 'See Compare Post',
-  TIPS: 'See Tips Post',
-  FREE: 'See Post',
+const POST_TYPE_BUTTON_KEYS: Record<string, string> = {
+  QUESTION: 'sharedPost.seeQuestionPost',
+  UPDATE: 'sharedPost.seeUpdatePost',
+  EXPERIENCE: 'sharedPost.seeExperiencePost',
+  COMPARE: 'sharedPost.seeComparePost',
+  TIPS: 'sharedPost.seeTipsPost',
+  FREE: 'sharedPost.seePost',
 };
 
 /**
@@ -40,22 +41,24 @@ export const SharedPostMessage: React.FC<SharedPostMessageProps> = ({
   params,
   isFirstInGroup,
 }) => {
+  const { t } = useTranslation('inbox');
   const sharedPost = item.sharedPost;
   if (!sharedPost) return null;
 
-  const authorName = sharedPost.authorName || 'Unknown';
+  const authorName = sharedPost.authorName || t('sharedPost.unknownAuthor');
   const authorTitle = sharedPost.authorTitle ?? '';
   const authorAvatar = sharedPost.authorAvatar ?? null;
   const contextData = sharedPost.contextData;
   const products = sharedPost.products;
   const postId = sharedPost.postId;
   const postType = sharedPost.postType ?? null;
-  const buttonLabel =
-    (postType && POST_TYPE_BUTTON_LABELS[postType]) || 'See Post';
+  const buttonLabelKey =
+    (postType && POST_TYPE_BUTTON_KEYS[postType]) || 'sharedPost.seePost';
+  const buttonLabel = t(buttonLabelKey);
 
   const contentTitle =
     contextData?.name ??
-    ((products?.length ? products.map((p) => p.name).join(' vs ') : '') || 'Shared post');
+    ((products?.length ? products.map((p) => p.name).join(' vs ') : '') || t('sharedPost.sharedPost'));
 
   const thumbnailSource = sharedPost.imageUrl ?? contextData?.image ?? null;
   const contentImageSource = thumbnailSource ? toImageSource(thumbnailSource) : null;

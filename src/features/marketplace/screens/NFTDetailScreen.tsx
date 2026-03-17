@@ -742,7 +742,7 @@ const NFTDetailScreen = () => {
                                         fontWeight="$medium"
                                         color={isDark ? '$textDark400' : '$textLight600'}
                                     >
-                                        {t('screens.nftDetail.rarity')}
+                                        {t('screens.nftDetail.rarityLabel')}
                                     </Text>
                                     <Text
                                         fontSize={11}

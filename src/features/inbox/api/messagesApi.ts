@@ -1,4 +1,5 @@
 import { apiService } from '../../../services/ApiService';
+import i18n from 'i18next';
 import type { InboxMessage } from '../types';
 
 /**
@@ -546,7 +547,7 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
       if (!senderInfo) {
         senderInfo = {
           id: senderId || 'unknown',
-          senderName: 'Unknown',
+          senderName: i18n.t('inbox:messageDetail.fallback.unknown'),
           senderTitle: '',
           senderAvatar: null,
         };
@@ -643,7 +644,7 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
         baseMessage.sharedPost = {
           postId: sp.postId || sp.experiencePostId || data.sharedPost.postId,
           postType: sp.postType ?? null,
-          authorName: sp.authorName ?? 'Unknown',
+          authorName: sp.authorName ?? i18n.t('inbox:messageDetail.fallback.unknown'),
           authorTitle: sp.authorTitle ?? null,
           authorAvatar: sp.authorAvatar ?? null,
           imageUrl: sp.imageUrl ?? sp.productImageUrl ?? (ctx?.image ?? null) ?? null,
@@ -656,7 +657,7 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
         baseMessage.sharedPost = {
           postId: data.sharedPostId,
           postType: null,
-          authorName: senderInfo.senderName ?? 'Unknown',
+          authorName: senderInfo.senderName ?? i18n.t('inbox:messageDetail.fallback.unknown'),
           authorTitle: senderInfo.senderTitle ?? null,
           authorAvatar: senderInfo.senderAvatar ?? null,
         };

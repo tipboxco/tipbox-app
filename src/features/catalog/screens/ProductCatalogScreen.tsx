@@ -39,8 +39,10 @@ interface ProductCatalogScreenProps {
     breadcrumbItems: BreadcrumbItem[];
   }) => void;
   scrollViewPaddingBottom?: number;
-  selectMode?: 'event';
+  selectMode?: 'event' | 'picker';
   returnScreen?: string;
+  /** Callback for product selection in picker mode */
+  onProductSelect?: (product: CatalogProduct & { id: string; image: any; description?: string }) => void;
   // Initial state props (from navigation store)
   initialView?: 'categories' | 'subcategories' | 'productgroups' | 'products';
   initialSelectedCategoryId?: string;
@@ -55,6 +57,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   scrollViewPaddingBottom = 52,
   selectMode,
   returnScreen,
+  onProductSelect,
   initialView,
   initialSelectedCategoryId,
   initialSelectedSubCategoryId,
@@ -694,7 +697,13 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   };
 
   const handleProductPress = (product: CatalogProduct & { id: string; image: any; description?: string }) => {
-    // If selectMode is 'event' and returnScreen is 'EventCreatePost', 
+    // If onProductSelect callback is provided (picker mode), call it and return
+    if (onProductSelect) {
+      onProductSelect(product);
+      return;
+    }
+
+    // If selectMode is 'event' and returnScreen is 'EventCreatePost',
     // navigate back to EventCreatePost with productId and clear all Catalog screens
     if (selectMode === 'event' && returnScreen === 'EventCreatePost') {
       // Get current EventCreatePost route params to preserve eventId
@@ -1590,7 +1599,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       />
 
       {/* Action Buttons - Show for productgroups and products (after subcategory is selected) */}
-      {(currentView === 'productgroups' || currentView === 'products') && (
+      {/* Hidden in picker/select mode (onProductSelect or selectMode set) */}
+      {(currentView === 'productgroups' || currentView === 'products') && !onProductSelect && !selectMode && (
         <ActionButtons
           onShowPosts={handleShowPosts}
           onCreatePost={handleCreatePost}

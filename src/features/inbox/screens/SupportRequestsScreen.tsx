@@ -195,9 +195,9 @@ const SupportRequestsScreen: React.FC = () => {
     // Tüm durumlar için SupportMessageDetail ekranını kullan
     // Request'i oluşturan kullanıcının bilgileri (user olarak)
     // Yeni yapı: request.sender, Eski yapı: request.userName/userTitle/userAvatar (backward compatibility)
-    const userName = request.sender?.senderName || request.userName || 'Unknown';
+    const userName = request.sender?.senderName || request.userName || t('messageDetail.fallback.unknown');
     const userTitle = request.sender?.senderTitle || request.userTitle || '';
-    
+
     // Avatar URL logları
     const rawUserAvatar = request.sender?.senderAvatar || request.userAvatar;
     console.log('[SupportRequestsScreen] handleRequestPress - User Avatar URLs:', {
@@ -210,7 +210,7 @@ const SupportRequestsScreen: React.FC = () => {
     const userAvatar = rawUserAvatar ? (toImageSource(rawUserAvatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
     
     // Mevcut kullanıcının bilgileri (expert olarak - request'i kabul eden/edebilecek kişi)
-    const expertName = user?.fullName || 'Expert';
+    const expertName = user?.fullName || t('messageDetail.fallback.unknown');
     const expertTitle = ''; // User interface'inde title yok
     
     // Expert Avatar URL logları
@@ -242,7 +242,7 @@ const SupportRequestsScreen: React.FC = () => {
     const request = supportRequests?.find(r => r.id === requestId);
 
     if (!request) {
-      Alert.alert('Error', 'Support request not found');
+      Alert.alert(t('supportRequests.errors.errorTitle'), t('supportRequests.errors.notFound'));
       return;
     }
 
@@ -263,7 +263,7 @@ const SupportRequestsScreen: React.FC = () => {
         console.log('[SupportRequestsScreen] ✅ Support request accepted, threadId:', data.threadId);
         
         // Mevcut kullanıcının bilgileri (expert olarak)
-        const expertName = user?.fullName || 'Expert';
+        const expertName = user?.fullName || t('messageDetail.fallback.unknown');
         const expertTitle = '';
         
         // Expert Avatar URL logları
@@ -278,9 +278,9 @@ const SupportRequestsScreen: React.FC = () => {
         
         // Request'i oluşturan kullanıcının bilgileri (user olarak)
         // Yeni yapı: request.sender, Eski yapı: request.userName/userTitle/userAvatar (backward compatibility)
-        const userName = request.sender?.senderName || request.userName || 'Unknown';
+        const userName = request.sender?.senderName || request.userName || t('messageDetail.fallback.unknown');
         const userTitle = request.sender?.senderTitle || request.userTitle || '';
-        
+
         // User Avatar URL logları
         const rawUserAvatar = request.sender?.senderAvatar || request.userAvatar;
         console.log('[SupportRequestsScreen] handleAccept - User Avatar URLs:', {
@@ -307,7 +307,7 @@ const SupportRequestsScreen: React.FC = () => {
       },
       onError: (error: any) => {
         console.error('[SupportRequestsScreen] ❌ Support request accept error:', error);
-        Alert.alert('Error', error.message || 'Support request could not be accepted');
+        Alert.alert(t('supportRequests.errors.errorTitle'), error.message || t('supportRequests.errors.acceptFailed'));
       },
     });
   };

@@ -9,6 +9,7 @@ import {
 import { Image } from 'expo-image';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useTranslation } from 'react-i18next';
 import type { SupportRequest } from '@/src/features/inbox/api/messagesApi';
 
 interface SupportRequestCardProps {
@@ -17,47 +18,50 @@ interface SupportRequestCardProps {
   onAccept?: (requestId: string) => void;
 }
 
-// Status mapping helper
-const getStatusInfo = (status: SupportRequest['status']) => {
+// Status color helper
+const getStatusColor = (status: SupportRequest['status']) => {
   switch (status) {
-    case 'pending':
-      return { text: 'Pending', color: '#FFA500' };
-    case 'active':
-      return { text: 'Active', color: '#4CAF50' };
-    case 'awaiting_completion':
-      return { text: 'Awaiting Completion', color: '#2196F3' };
-    case 'completed':
-      return { text: 'Completed', color: '#4CAF50' };
-    case 'finalized':
-      return { text: 'Finalized', color: '#9E9E9E' };
-    case 'reported':
-      return { text: 'Reported', color: '#F44336' };
-    default:
-      return { text: 'Unknown', color: '#9E9E9E' };
+    case 'pending': return '#FFA500';
+    case 'active': return '#4CAF50';
+    case 'awaiting_completion': return '#2196F3';
+    case 'completed': return '#4CAF50';
+    case 'finalized': return '#9E9E9E';
+    case 'reported': return '#F44336';
+    default: return '#9E9E9E';
   }
 };
 
-// Button text helper
-const getButtonText = (status: SupportRequest['status']) => {
+// Status i18n key helper
+const getStatusKey = (status: SupportRequest['status']) => {
   switch (status) {
-    case 'pending':
-      return 'Accept';
-    case 'active':
-      return 'Message';
-    case 'awaiting_completion':
-      return 'Complete';
-    case 'completed':
-      return 'View';
-    default:
-      return 'Details';
+    case 'pending': return 'supportRequests.status.pending';
+    case 'active': return 'supportRequests.status.active';
+    case 'awaiting_completion': return 'supportRequests.status.awaitingCompletion';
+    case 'completed': return 'supportRequests.status.completed';
+    case 'finalized': return 'supportRequests.status.finalized';
+    case 'reported': return 'supportRequests.status.reported';
+    default: return 'supportRequests.status.unknown';
+  }
+};
+
+// Button i18n key helper
+const getButtonKey = (status: SupportRequest['status']) => {
+  switch (status) {
+    case 'pending': return 'supportRequests.buttons.accept';
+    case 'active': return 'supportRequests.buttons.message';
+    case 'awaiting_completion': return 'supportRequests.buttons.complete';
+    case 'completed': return 'supportRequests.buttons.view';
+    default: return 'supportRequests.buttons.details';
   }
 };
 
 export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, onPress, onAccept }) => {
+  const { t } = useTranslation('inbox');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const statusInfo = getStatusInfo(data.status);
-  const buttonText = getButtonText(data.status);
+  const statusColor = getStatusColor(data.status);
+  const statusText = t(getStatusKey(data.status));
+  const buttonText = t(getButtonKey(data.status));
   const [avatarError, setAvatarError] = useState(false);
 
   const handlePress = () => {
@@ -158,7 +162,7 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
             lineHeight={16}
             numberOfLines={3}
           >
-            {data.requestDescription}
+            {data.message || data.requestDescription}
           </Text>
 
           {/* Status */}
@@ -167,14 +171,14 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
               width={10}
               height={10}
               borderRadius={5}
-              bg={statusInfo.color}
+              bg={statusColor}
             />
             <Text
-              color={statusInfo.color}
+              color={statusColor}
               fontSize="$xs"
               fontWeight="$semibold"
             >
-              {statusInfo.text}
+              {statusText}
             </Text>
           </HStack>
         </VStack>

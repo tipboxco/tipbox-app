@@ -37,7 +37,7 @@ const MarketPlaceScreen = () => {
   const isDark = colorMode === 'dark';
   const { t } = useTranslation('marketplace');
   const screenWidth = Dimensions.get('window').width;
-  const cardWidth = (screenWidth - 48) / 2; // 2 cards per row with 16px padding on each side
+  const cardWidth = (screenWidth - 40) / 2; // 2 cards per row with tighter spacing
   const navigation = useNavigation();
   const route = useRoute();
   const queryClient = useQueryClient();
@@ -310,7 +310,7 @@ const MarketPlaceScreen = () => {
             key={nft.id}
             width={cardWidth}
           >
-            <NFTCard data={nft} showQuickBuy={tab === 'all'} />
+            <NFTCard data={nft} showQuickBuy={false} />
           </VStack>
         ))}
         {item.length === 1 && <VStack width={cardWidth} />}

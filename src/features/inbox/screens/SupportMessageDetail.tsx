@@ -344,7 +344,7 @@ const SupportMessageDetailScreen: React.FC = () => {
           // Backend'den gelen sender bilgilerini kullan (varsa), yoksa params'dan al
           const senderName = isSent 
             ? undefined 
-            : (msg.senderName || params.expertName || 'Unknown');
+            : (msg.senderName || params.expertName || t('messageDetail.fallback.unknown'));
           const senderAvatar = isSent 
             ? undefined 
             : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : params.expertAvatar);
@@ -1909,7 +1909,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         messages={messages}
         isDark={isDark}
         params={{
-          senderName: params.expertName || 'Expert',
+          senderName: params.expertName || t('messageDetail.fallback.unknown'),
           senderTitle: params.expertTitle || '',
           senderAvatar: params.expertAvatar,
         }}
@@ -1981,7 +1981,7 @@ const SupportMessageDetailScreen: React.FC = () => {
           if (!user?.id || !params.recipientUserId) return;
           RNAlert.alert(
             t('supportMessageDetail.alerts.blockUserTitle'),
-            t('supportMessageDetail.alerts.blockUserMessage', { userName: params.userName || 'User' }),
+            t('supportMessageDetail.alerts.blockUserMessage', { userName: params.userName || t('messageDetail.fallback.unknown') }),
             [
               { text: t('supportMessageDetail.buttons.cancel'), style: 'cancel' },
               {
@@ -2016,9 +2016,9 @@ const SupportMessageDetailScreen: React.FC = () => {
             // user1: Backend'den gelen userOne (kullanıcının kendi bilgileri)
             const userOne = (participantsData.participants as any)?.userOne;
             if (userOne && 'name' in userOne) {
-              return userOne.name || 'User';
+              return userOne.name || t('messageDetail.fallback.unknown');
             }
-            return participantInfo.userName ?? params.userName ?? 'User';
+            return participantInfo.userName ?? params.userName ?? t('messageDetail.fallback.unknown');
           })()}
           user1Title={(() => {
             const userOne = (participantsData.participants as any)?.userOne;
@@ -2038,9 +2038,9 @@ const SupportMessageDetailScreen: React.FC = () => {
             // user2: Backend'den gelen userTwo (2. kullanıcının bilgileri)
             const userTwo = (participantsData.participants as any)?.userTwo;
             if (userTwo && 'name' in userTwo) {
-              return userTwo.name || 'User';
+              return userTwo.name || t('messageDetail.fallback.unknown');
             }
-            return participantInfo.expertName ?? params.expertName ?? 'Expert';
+            return participantInfo.expertName ?? params.expertName ?? t('messageDetail.fallback.unknown');
           })()}
           user2Title={(() => {
             const userTwo = (participantsData.participants as any)?.userTwo;
@@ -2148,7 +2148,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               fontSize={12}
               fontStyle="italic"
             >
-              {t('supportMessageDetail.typing', { name: params.expertName || 'User' })}
+              {t('supportMessageDetail.typing', { name: params.expertName || t('messageDetail.fallback.unknown') })}
             </Text>
             <HStack space="xs" alignItems="center">
               <Box
@@ -2372,11 +2372,11 @@ const SupportMessageDetailScreen: React.FC = () => {
                       })()}
                       alt={(() => {
                         if (supportRequestUserIds.fromUserId === user?.id) {
-                          return participantInfo.expertName ?? params.expertName ?? 'Expert';
+                          return participantInfo.expertName ?? params.expertName ?? t('messageDetail.fallback.unknown');
                         } else if (supportRequestUserIds.toUserId === user?.id) {
-                          return participantInfo.userName ?? params.userName ?? 'User';
+                          return participantInfo.userName ?? params.userName ?? t('messageDetail.fallback.unknown');
                         }
-                        return params.expertName ?? params.userName ?? 'User';
+                        return params.expertName ?? params.userName ?? t('messageDetail.fallback.unknown');
                       })()}
                       style={{
                         width: 110,
@@ -2396,11 +2396,11 @@ const SupportMessageDetailScreen: React.FC = () => {
                     >
                       {(() => {
                         if (supportRequestUserIds.fromUserId === user?.id) {
-                          return participantInfo.expertName ?? params.expertName ?? 'Expert';
+                          return participantInfo.expertName ?? params.expertName ?? t('messageDetail.fallback.unknown');
                         } else if (supportRequestUserIds.toUserId === user?.id) {
-                          return participantInfo.userName ?? params.userName ?? 'User';
+                          return participantInfo.userName ?? params.userName ?? t('messageDetail.fallback.unknown');
                         }
-                        return params.expertName ?? params.userName ?? 'User';
+                        return params.expertName ?? params.userName ?? t('messageDetail.fallback.unknown');
                       })()}
                     </Text>
 
@@ -2645,11 +2645,11 @@ const SupportMessageDetailScreen: React.FC = () => {
                       })()}
                       alt={(() => {
                         if (supportRequestUserIds.fromUserId === user?.id) {
-                          return participantInfo.expertName ?? params.expertName ?? 'Expert';
+                          return participantInfo.expertName ?? params.expertName ?? t('messageDetail.fallback.unknown');
                         } else if (supportRequestUserIds.toUserId === user?.id) {
-                          return participantInfo.userName ?? params.userName ?? 'User';
+                          return participantInfo.userName ?? params.userName ?? t('messageDetail.fallback.unknown');
                         }
-                        return params.expertName ?? params.userName ?? 'User';
+                        return params.expertName ?? params.userName ?? t('messageDetail.fallback.unknown');
                       })()}
                       style={{
                         width: 110,
@@ -2669,11 +2669,11 @@ const SupportMessageDetailScreen: React.FC = () => {
                     >
                       {(() => {
                         if (supportRequestUserIds.fromUserId === user?.id) {
-                          return participantInfo.expertName ?? params.expertName ?? 'Expert';
+                          return participantInfo.expertName ?? params.expertName ?? t('messageDetail.fallback.unknown');
                         } else if (supportRequestUserIds.toUserId === user?.id) {
-                          return participantInfo.userName ?? params.userName ?? 'User';
+                          return participantInfo.userName ?? params.userName ?? t('messageDetail.fallback.unknown');
                         }
-                        return params.expertName ?? params.userName ?? 'User';
+                        return params.expertName ?? params.userName ?? t('messageDetail.fallback.unknown');
                       })()}
                     </Text>
 

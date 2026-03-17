@@ -6,14 +6,15 @@ import {
     Text,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface SupportMessageDetailActionButtonsProps {
     onCloseRequestPress?: () => void;
     onReportPress?: () => void;
-    keyboardHeight?: number; // Klavye yüksekliği (kullanılmıyor, KeyboardAvoidingView ile otomatik)
-    isKeyboardVisible?: boolean; // Klavye görünür mü?
-    isFinalize?: boolean; // Finalize mode (awaiting_completion - other party closed)
-    onFinalizePress?: () => void; // Finalize button callback
+    keyboardHeight?: number;
+    isKeyboardVisible?: boolean;
+    isFinalize?: boolean;
+    onFinalizePress?: () => void;
 }
 
 export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailActionButtonsProps> = ({
@@ -26,6 +27,7 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('inbox');
 
     return (
         <Box
@@ -57,7 +59,7 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
                     fontSize={11}
                     fontWeight="$semibold"
                 >
-                    {isFinalize ? 'Finalize Support Request' : 'Close Support Request'}
+                    {isFinalize ? t('actionButtons.finalizeSupportRequest') : t('actionButtons.closeSupportRequest')}
                 </Text>
             </Pressable>
 
@@ -81,7 +83,7 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
                     fontSize={11}
                     fontWeight="$medium"
                 >
-                    Report
+                    {t('actionButtons.report')}
                 </Text>
             </Pressable>
             </VStack>
@@ -90,4 +92,3 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
 };
 
 export default SupportMessageDetailActionButtons;
-

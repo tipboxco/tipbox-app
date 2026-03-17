@@ -12,7 +12,13 @@
     "empty": "Start a conversation",
     "newMessage": "New Message",
     "typeMessage": "Type a message...",
-    "error": "Error: {{message}}"
+    "error": "Error: {{message}}",
+    "fallback": {
+      "unknown": "Unknown",
+      "newMessages": "New messages available",
+      "noMessages": "No messages"
+    },
+    "typing": "{{name}} is typing"
   },
   "supportRequests": {
     "empty": "No support requests yet",
@@ -23,7 +29,38 @@
       "active": "Active Requests",
       "awaitingCompletion": "Awaiting Completion",
       "completed": "Completed"
+    },
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "awaitingCompletion": "Awaiting Completion",
+      "completed": "Completed",
+      "finalized": "Finalized",
+      "reported": "Reported",
+      "unknown": "Unknown"
+    },
+    "buttons": {
+      "accept": "Accept",
+      "message": "Message",
+      "complete": "Complete",
+      "view": "View",
+      "details": "Details"
+    },
+    "errors": {
+      "errorTitle": "Error",
+      "notFound": "Support request not found",
+      "acceptFailed": "Support request could not be accepted"
     }
+  },
+  "sharedPost": {
+    "seePost": "See Post",
+    "seeQuestionPost": "See Question Post",
+    "seeUpdatePost": "See Update Post",
+    "seeExperiencePost": "See Experience Post",
+    "seeComparePost": "See Compare Post",
+    "seeTipsPost": "See Tips Post",
+    "sharedPost": "Shared post",
+    "unknownAuthor": "Unknown"
   },
   "supportMessageDetail": {
     "empty": "No messages yet",
@@ -108,6 +145,18 @@
     "placeholder": "Type a message...",
     "imageAlt": "Sent image",
     "userImageAlt": "{{userName}} user image",
+    "alerts": {
+      "reportTitle": "Report User",
+      "reportMessage": "Are you sure you want to report this user?",
+      "blockTitle": "Block User",
+      "blockMessage": "Are you sure you want to block {{name}}? You will no longer receive messages from this user.",
+      "cancel": "Cancel",
+      "report": "Report",
+      "block": "Block"
+    },
+    "fallback": {
+      "unknown": "Unknown"
+    },
     "tipsSent": "Tip Sent",
     "months": {
       "january": "January",
@@ -253,6 +302,26 @@
       "confirmButton": "Confirm",
       "cancelButton": "Cancel"
     }
+  },
+  "closeSupportModal": {
+    "finalizeDescription": "You are about to finalize the one-on-one support request with the user.",
+    "closeDescription": "You are about to close the one-on-one support request with the user.",
+    "rateProcess": "Please rate the process!",
+    "finalize": "Finalize Support Request",
+    "close": "Close Support Request",
+    "cancel": "Cancel"
+  },
+  "actionButtons": {
+    "requestOneOnOne": "Request 1-on-1",
+    "sendTips": "Send TIPS",
+    "finalizeSupportRequest": "Finalize Support Request",
+    "closeSupportRequest": "Close Support Request",
+    "report": "Report"
+  },
+  "tipsSentAlert": {
+    "title": "Success",
+    "message": "{{amount}} TIPS sent successfully!",
+    "ok": "OK"
   },
   "sendTips": {
     "title": "Send Tips",

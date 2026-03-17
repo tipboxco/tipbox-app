@@ -8,13 +8,14 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface MessageDetailActionButtonsProps {
     onSendTipsPress?: () => void;
     onRequestSupportPress?: () => void;
-    keyboardHeight?: number; // Klavye yüksekliği (kullanılmıyor, KeyboardAvoidingView ile otomatik)
-    isKeyboardVisible?: boolean; // Klavye görünür mü?
-    keyboardAnim?: any; // Kullanılmıyor (basitleştirme)
+    keyboardHeight?: number;
+    isKeyboardVisible?: boolean;
+    keyboardAnim?: any;
 }
 
 export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProps> = ({
@@ -26,6 +27,7 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('inbox');
 
     return (
         <Box
@@ -37,7 +39,7 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
                 space="sm"
                 alignItems="flex-end"
             >
-            {/* Send TIPS Button */}
+            {/* Request 1-on-1 Button */}
             <Pressable
                 onPress={onRequestSupportPress}
                 bg="#E8FF6B"
@@ -63,12 +65,12 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
                         fontSize={11}
                         fontWeight="$semibold"
                     >
-                        Request 1-on-1
+                        {t('actionButtons.requestOneOnOne')}
                     </Text>
                 </HStack>
             </Pressable>
 
-            {/* Request 1-on-1 Button */}
+            {/* Send TIPS Button */}
             <Pressable
                 onPress={onSendTipsPress}
                 bg="#BC6BFF"
@@ -94,7 +96,7 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
                         fontSize={11}
                         fontWeight="$medium"
                     >
-                        Send TIPS
+                        {t('actionButtons.sendTips')}
                     </Text>
                 </HStack>
             </Pressable>
@@ -104,4 +106,3 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
 };
 
 export default MessageDetailActionButtons;
-

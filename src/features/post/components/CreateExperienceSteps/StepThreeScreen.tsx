@@ -14,6 +14,7 @@ import {
   TagIcon,
   CubeIcon,
 } from 'react-native-heroicons/outline';
+import { StarIcon as StarIconSolid } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -94,11 +95,10 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                         onPress={() => onRatingChange(star)}
                         disabled={disabled}
                     >
-                        <Feather
-                            name="star"
-                            size={24}
+                        <StarIconSolid
+                            width={24}
+                            height={24}
                             color={star <= rating ? '#829905' : '#E9E9E9'}
-                            fill={star <= rating ? '#829905' : 'transparent'}
                         />
                     </Pressable>
                 ))}

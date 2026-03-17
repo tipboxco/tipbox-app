@@ -57,7 +57,7 @@
       "currentPrice": "Mevcut Fiyat",
       "suggestedPrice": "Önerilen Fiyat",
       "earnDate": "Kazanma Tarihi",
-      "rarity": "Nadirlik",
+      "rarityLabel": "Nadirlik",
       "owners": "Sahipler",
       "description": "Açıklama",
       "salesHistory": "Satış Geçmişi",

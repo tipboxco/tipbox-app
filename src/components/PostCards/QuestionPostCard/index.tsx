@@ -577,36 +577,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                 <VStack px={8} pl={12} py={2} width="100%">
                   {isPostOwner ? (
                     <>
-                      <Pressable py={8} onPress={() => setIsMenuOpen(false)}>
-                        <HStack alignItems="center" justifyContent="space-between">
-                          <HStack alignItems="center" space="xs" flex={1}>
-                            <Image
-                              source={require('@/assets/boost.svg')}
-                              alt="boost"
-                              width={20}
-                              height={20}
-                            />
-                            <Text
-                              color={isDark ? '#FFFFFF' : '#000000'}
-                              fontSize="$sm"
-                              fontWeight="$medium"
-                            >
-                              {isBoosted ? t('card.boost.disableBoost') : t('card.boost.boostPost')}
-                            </Text>
-                          </HStack>
-                          <Switch
-                            value={isBoosted}
-                            onValueChange={(v) => { setIsMenuOpen(false); handleBoostToggle(v); }}
-                            trackColor={{
-                              false: isDark ? '#333333' : '#E9E9E9',
-                              true: '#829905',
-                            }}
-                            thumbColor={isBoosted ? '#B8CC04' : (isDark ? '#666666' : '#FFFFFF')}
-                            disabled={toggleBoostMutation.isPending}
-                          />
-                        </HStack>
-                      </Pressable>
-                      <Divider bg={isDark ? '#333333' : '#E9E9E9'} mx={0} />
                       <Pressable
                         onPress={() => {
                           setIsMenuOpen(false);
@@ -747,7 +717,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       }
 
       {/* Badges */}
-      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space={8} alignItems="center">
+      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" gap={8} alignItems="center">
           <Box
             borderWidth={2}
             borderColor="#B8CC04"

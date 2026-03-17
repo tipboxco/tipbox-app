@@ -449,12 +449,25 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
 
   const handleTrust = useCallback(() => {
     if (!targetUserId) return;
+    if (isTrusting || isUntrusting) return;
+
     if (isTrusted) {
-      untrustUser(targetUserId);
+      Alert.alert(
+        t('actions.unTrustConfirmTitle'),
+        t('actions.unTrustConfirmMessage', { name: userName }),
+        [
+          { text: t('actions.cancel'), style: 'cancel' },
+          {
+            text: t('actions.unTrustConfirmButton'),
+            style: 'destructive',
+            onPress: () => untrustUser(targetUserId),
+          },
+        ]
+      );
     } else {
       trustUser(targetUserId);
     }
-  }, [targetUserId, isTrusted, trustUser, untrustUser]);
+  }, [targetUserId, isTrusted, isTrusting, isUntrusting, trustUser, untrustUser, userName, t]);
 
   const handleMuteToggle = useCallback(() => {
     if (!userId || !targetUserId) return;
@@ -507,17 +520,17 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
 
   if (isOwnProfile) {
     return (
-      <HStack space="sm" alignItems="center" flexShrink={0} mt={60}>
+      <HStack space="xs" alignItems="center" flexShrink={1} mt={60}>
         <Pressable
           bg="#F7F7F7"
           borderRadius={200}
           borderWidth={1}
           borderColor="#E9E9E9"
-          px={12}
-          py={8}
+          px={10}
+          h={30}
           flexDirection="row"
           alignItems="center"
-          gap={6}
+          gap={4}
           onPress={onEdit}
         >
           <PencilIcon size={14} color="#000" />
@@ -530,27 +543,27 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
   }
 
   return (
-    <HStack space="sm" alignItems="center" flexShrink={0} mt={60}>
+    <HStack space="xs" alignItems="center" flexShrink={1} flexWrap="wrap" mt={60} justifyContent="flex-end">
       <Pressable
-        w={34} h={34} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        w={30} h={30} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
         justifyContent="center" alignItems="center" onPress={onSendTips}
       >
-        <GiftIcon size={16} color="#000" />
+        <GiftIcon size={14} color="#000" />
       </Pressable>
       <Pressable
-        w={34} h={34} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        w={30} h={30} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
         justifyContent="center" alignItems="center" onPress={on1on1}
       >
-        <PhoneIcon size={16} color="#000" />
+        <PhoneIcon size={14} color="#000" />
       </Pressable>
       <Pressable
-        w={34} h={34} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        w={30} h={30} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
         justifyContent="center" alignItems="center" onPress={onDM}
       >
-        <ChatBubbleLeftIcon size={16} color="#000" />
+        <ChatBubbleLeftIcon size={14} color="#000" />
       </Pressable>
       <Pressable
-        w={34} h={34} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
+        w={30} h={30} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
         justifyContent="center" alignItems="center"
         onPress={handleMuteToggle}
         disabled={isMuting || isUnmuting}
@@ -558,23 +571,27 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
       >
         {isMuted ? (
           <Box position="relative" justifyContent="center" alignItems="center">
-            <BellIcon size={16} color="#000" />
-            <Box position="absolute" width={20} height={1} bg="#000" style={{ transform: [{ rotate: '-45deg' }] }} />
+            <BellIcon size={14} color="#000" />
+            <Box position="absolute" width={18} height={1} bg="#000" style={{ transform: [{ rotate: '-45deg' }] }} />
           </Box>
         ) : (
-          <BellIcon size={16} color="#000" />
+          <BellIcon size={14} color="#000" />
         )}
       </Pressable>
       <Pressable
-        bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
-        px={14} py={10} flexDirection="row" alignItems="center" gap={2}
+        bg={isTrusted ? '#10B981' : '#F7F7F7'}
+        borderRadius={200}
+        borderWidth={1}
+        borderColor={isTrusted ? '#10B981' : '#E9E9E9'}
+        px={10} h={30}
+        flexDirection="row" alignItems="center" gap={4}
         onPress={handleTrust}
         disabled={isTrusting || isUntrusting}
         opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
       >
-        {isTrusted ? <UserMinusIcon size={16} color="#000" /> : <UserPlusIcon size={16} color="#000" />}
-        <Text color="#000" fontSize={10} fontWeight="$semibold">
-          {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : (isTrusted ? t('actions.unTrust') : t('actions.trust'))}
+        {isTrusted ? <UserMinusIcon size={14} color="#FFF" /> : <UserPlusIcon size={14} color="#000" />}
+        <Text color={isTrusted ? '#FFF' : '#000'} fontSize={10} fontWeight="$semibold">
+          {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : t('actions.trust')}
         </Text>
       </Pressable>
     </HStack>

@@ -285,6 +285,7 @@ const HeaderComponent = ({
                 fontWeight="$semibold"
                 textAlign="center"
                 lineHeight={rightButton.fontSize ? rightButton.fontSize * 1.2 : 16.8}
+                numberOfLines={1}
               >
                 {rightButton.text}
               </Text>
@@ -360,7 +361,8 @@ const HeaderComponent = ({
                 fontWeight="$bold"
                 textAlign="center"
                 numberOfLines={1}
-                ellipsizeMode="tail"
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
               >
                 {title}
               </Text>

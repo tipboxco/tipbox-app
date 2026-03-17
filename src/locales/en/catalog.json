@@ -1,5 +1,6 @@
 {
   "common": {
+    "addProductFromCatalog": "Add Product from Catalog",
     "loading": "Loading...",
     "error": "Error",
     "noResultsFound": "No results found",

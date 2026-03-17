@@ -8,6 +8,7 @@ import { Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useAppStore } from '@/src/store/appStore';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { inboxKeys } from '../api/hooks';
 import { formatMessageTime } from '../utils/messageHelpers';
 import type { MessageDetailItem } from '../components/MessageItem/types';
@@ -31,6 +32,7 @@ export const useMessageHandlers = ({
   setMessages,
   paramsRef,
 }: UseMessageHandlersProps) => {
+  const { t } = useTranslation('inbox');
   const queryClient = useQueryClient();
   const { user } = useAppStore();
   const {
@@ -64,7 +66,7 @@ export const useMessageHandlers = ({
         text: eventData.message || eventData.text || eventData.caption || '',
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
         isSent,
-        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderName: isSent ? undefined : (currentParams.senderName || t('messageDetail.fallback.unknown')),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: isImageMessage ? 'image' : 'message',
         mediaUrl: isImageMessage ? (eventData.mediaUrl || eventData.imageUrl) : undefined,
@@ -134,7 +136,7 @@ export const useMessageHandlers = ({
         text: tipsMessageText,
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
         isSent,
-        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderName: isSent ? undefined : (currentParams.senderName || t('messageDetail.fallback.unknown')),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: 'tips',
         tipsAmount: tipsAmount,

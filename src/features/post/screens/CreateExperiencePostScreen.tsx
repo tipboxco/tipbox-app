@@ -837,39 +837,19 @@ export const CreateExperiencePostScreen = () => {
     const isSelectProductNextEnabled = selectedProduct !== null;
 
     // Render Step 0 (SelectProduct)
+    // No header - AddProductFromCatalog has its own header
     if (currentStep === 0) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-                <FormProvider {...methods}>
-                    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
-                        {/* Header */}
-                        <Header
-                            title={fromInventory ? t('create.experience.header.addToInventory') : t('create.experience.header.title')}
-                            leftAction="cancel"
-                            onLeftActionPress={handleBackPress}
-                            rightButton={{
-                                text: t('create.experience.header.next'),
-                                backgroundColor: isSelectProductNextEnabled ? '#D0F205' : '#EDEDED',
-                                borderWidth: 1,
-                                borderColor: isSelectProductNextEnabled ? '#B8CC04' : '#B1B1B1',
-                                textColor: isSelectProductNextEnabled ? '#111111' : '#B1B1B1',
-                                fontSize: 14,
-                                borderRadius: 25,
-                                paddingX: 12,
-                                paddingY: 8,
-                                onPress: handleNextPress,
-                            }}
-                        />
-
-                        {/* SelectProduct Content */}
-                        <SelectProduct
-                            onProductSelect={handleProductSelect}
-                            selectedProduct={selectedProduct}
-                            fromInventory={fromInventory}
-                        />
-                    </Box>
-                </FormProvider>
-            </SafeAreaView>
+            <FormProvider {...methods}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+                    <SelectProduct
+                        onProductSelect={handleProductSelect}
+                        selectedProduct={selectedProduct}
+                        fromInventory={fromInventory}
+                        onCancel={handleBackPress}
+                    />
+                </Box>
+            </FormProvider>
         );
     }
 
@@ -1083,7 +1063,7 @@ const styles = StyleSheet.create({
     },
     loadingBox: {
         paddingHorizontal: 32,
-        paddingVertical: 24,
+        paddingVertical: 20,
         borderRadius: 12,
         alignItems: 'center',
         minWidth: 160,

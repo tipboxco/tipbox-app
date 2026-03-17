@@ -9,6 +9,7 @@ import {
 import { Image } from 'expo-image';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import type { InboxMessage } from '../../types';
 
 const AVATAR_BG_COLORS = [
@@ -46,6 +47,7 @@ function messageCardPropsAreEqual(prev: MessageCardProps, next: MessageCardProps
 }
 
 const MessageCardInner: React.FC<MessageCardProps> = ({ data, onPress, isTyping = false, typingUserName }) => {
+  const { t } = useTranslation('inbox');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [avatarError, setAvatarError] = useState(false);
@@ -114,7 +116,7 @@ const MessageCardInner: React.FC<MessageCardProps> = ({ data, onPress, isTyping 
             fontSize="$xs"
             fontWeight="$semibold"
           >
-            {data.senderName || 'Unknown'}
+            {data.senderName || t('messages.fallback.unknown')}
           </Text>
           
           {isTyping ? (
@@ -125,7 +127,7 @@ const MessageCardInner: React.FC<MessageCardProps> = ({ data, onPress, isTyping 
                 fontWeight="$normal"
                 fontStyle="italic"
               >
-                {typingUserName || data.senderName || 'Kullanıcı'} yazıyor
+                {t('messages.typing', { name: typingUserName || data.senderName || t('messages.fallback.unknown') })}
               </Text>
               <HStack space="xs" alignItems="center">
                 <Box
@@ -174,10 +176,10 @@ const MessageCardInner: React.FC<MessageCardProps> = ({ data, onPress, isTyping 
                         unreadCount: data.unreadCount,
                       });
                     }
-                    return 'Yeni mesajlar var';
+                    return t('messages.fallback.newMessages');
                   }
                   // Thread'de mesaj yoksa "Mesaj yok" göster
-                  return 'Mesaj yok';
+                  return t('messages.fallback.noMessages');
                 }
                 return data.lastMessage;
               })()}

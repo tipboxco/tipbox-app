@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
+import { Modal, View, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import {
   VStack,
   HStack,
@@ -10,6 +10,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import StarRating from '../StarRating';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface CloseSupportRequestModalProps {
   isVisible: boolean;
@@ -32,6 +33,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
   userAvatar,
   isFinalize = false, // ✅ FIX: Default false (close modal)
 }) => {
+  const { t } = useTranslation('inbox');
   const [rating, setRating] = useState(0);
 
   const handleConfirm = () => {
@@ -100,67 +102,26 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
 
                 {/* Description Text */}
                 <VStack space="xs" alignItems="center">
-                  {isFinalize ? (
-                    <>
-                      <Text
-                        fontSize={14}
-                        fontWeight="$normal"
-                        color="#4B5563"
-                        textAlign="center"
-                        lineHeight={20}
-                      >
-                        You are about to finalize the one-on-one
-                      </Text>
-                      <Text
-                        fontSize={14}
-                        fontWeight="$normal"
-                        color="#4B5563"
-                        textAlign="center"
-                        lineHeight={20}
-                      >
-                        support request with the user.
-                      </Text>
-                      <Text
-                        fontSize={15}
-                        fontWeight="$semibold"
-                        color="#000000"
-                        textAlign="center"
-                        mt="$1"
-                      >
-                        Please rate the process!
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text
-                        fontSize={14}
-                        fontWeight="$normal"
-                        color="#4B5563"
-                        textAlign="center"
-                        lineHeight={20}
-                      >
-                        You are about to close the one-on-one
-                      </Text>
-                      <Text
-                        fontSize={14}
-                        fontWeight="$normal"
-                        color="#4B5563"
-                        textAlign="center"
-                        lineHeight={20}
-                      >
-                        support request with the user.
-                      </Text>
-                      <Text
-                        fontSize={15}
-                        fontWeight="$semibold"
-                        color="#000000"
-                        textAlign="center"
-                        mt="$1"
-                      >
-                        Please rate the process!
-                      </Text>
-                    </>
-                  )}
+                    <Text
+                    fontSize={14}
+                    fontWeight="$normal"
+                    color="#4B5563"
+                    textAlign="center"
+                    lineHeight={20}
+                  >
+                    {isFinalize
+                      ? t('closeSupportModal.finalizeDescription')
+                      : t('closeSupportModal.closeDescription')}
+                  </Text>
+                  <Text
+                    fontSize={15}
+                    fontWeight="$semibold"
+                    color="#000000"
+                    textAlign="center"
+                    mt="$1"
+                  >
+                    {t('closeSupportModal.rateProcess')}
+                  </Text>
                 </VStack>
 
                 {/* Star Rating */}
@@ -196,7 +157,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                             fontWeight="$semibold"
                             color="#000000"
                           >
-                            {isFinalize ? 'Finalize Support Request' : 'Close Support Request'}
+                            {isFinalize ? t('closeSupportModal.finalize') : t('closeSupportModal.close')}
                           </Text>
                         </Box>
                       </Pressable>
@@ -241,7 +202,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                         fontWeight="$semibold"
                         color="#000000"
                       >
-                        Cancel
+                        {t('closeSupportModal.cancel')}
                       </Text>
                     </Box>
                   </Pressable>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ActivityIndicator, FlatList, RefreshControl, Platform } from 'react-native';
-import { VStack, Text, Box, HStack, Image } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, FlatList, StyleSheet, RefreshControl } from 'react-native';
+import { VStack, Text, Box, Pressable, HStack, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,8 +18,12 @@ import { toImageSource, useBottomOffset, formatRelativeTime, isSameImageSource }
 import { navigationService } from '@/src/services/NavigationService';
 import {
   useBrandProductDetail,
+  useBrandProductFeed,
+  useBrandProductReviews,
+  useBrandProductBenchmarks,
+  useBrandProductTips,
+  useBrandProductQuestions,
   useBrandProductNews,
-  useCatalogProductPosts,
 } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
 import type { ExperiencePostCardData, ExperiencePostCardContentItem } from '@/src/types/ExperienceCard';
@@ -33,10 +37,19 @@ import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
 import { useTranslation } from '@/src/hooks/useTranslation';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { CatalogFilterChips } from '../components/CatalogFilterChips';
-import type { CatalogFilterId, CatalogFilterParams } from '../components/CatalogFilterChips';
-import { CatalogFilterSheet } from '../components/CatalogFilterSheet';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolateColor,
+  withTiming,
+  useAnimatedScrollHandler,
+} from 'react-native-reanimated';
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
+
+const TAB_KEYS = ['feed', 'reviews', 'benchmarks', 'tips', 'questions', 'news'] as const;
+type TabKey = typeof TAB_KEYS[number];
 
 type BrandProductDetailScreenNavigationProp = NativeStackNavigationProp<BrandStackParamList, 'BrandProductDetailScreen'>;
 type BrandProductDetailScreenRouteProp = RouteProp<BrandStackParamList, 'BrandProductDetailScreen'>;
@@ -314,102 +327,240 @@ type MappedPost =
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };
 
-// Map catalog filter tag value to API filter param
-const mapTagToApiFilter = (tag?: string): 'all' | 'reviews' | 'benchmarks' | 'tips_and_tricks' | 'questions' | 'updates' | undefined => {
-  if (!tag || tag === 'all' || tag === 'news') return undefined;
-  return tag as any;
-};
+interface TabPageProps {
+  tabKey: TabKey;
+  brandId: string;
+  productId: string;
+  isDark: boolean;
+  bottomPadding: number;
+}
 
-const mapSortToApiSort = (sort?: string): 'newest' | 'oldest' | 'most_popular' | undefined => {
-  if (!sort || sort === 'newest') return undefined;
-  return sort as any;
-};
+interface TabsBarProps {
+  activeTab: TabKey;
+  onChangeTab: (tab: TabKey) => void;
+  isDark: boolean;
+  progress: ReturnType<typeof useSharedValue<number>>;
+  tabContainerRef: React.RefObject<any>;
+  onTabContainerLayout: (width: number) => void;
+  tabLabels: string[];
+}
 
-const BrandProductDetailScreen: React.FC = () => {
-  const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
-  const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
-  const route = useRoute<BrandProductDetailScreenRouteProp>();
-  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
-  const { t } = useTranslation('catalog');
-  const insets = useSafeAreaInsets();
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-  const flatListRef = useRef<FlatList>(null);
+const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout, tabLabels }) => {
+  const activeColor = isDark ? '#FFFFFF' : '#000000';
+  const inactiveColor = '#A3A3A3';
+  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  const [tabWidths, setTabWidths] = useState<number[]>([]);
+  const [tabPositions, setTabPositions] = useState<number[]>([]);
+  const tabRefs = useRef<{ [key: string]: any }>({});
+  const scrollViewOffset = useSharedValue(0);
 
-  const { brandId, productId, productName: initialProductName, productImage: initialProductImage } = route.params;
+  const handleScrollViewScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollViewOffset.value = event.contentOffset.x;
+    },
+  });
 
-  // API hooks - Brand product detail
-  const { data: productDetail } = useBrandProductDetail(brandId, productId);
+  const getTabWidth = useCallback((index: number) => {
+    if (tabWidths[index]) {
+      return tabWidths[index];
+    }
+    return 80;
+  }, [tabWidths]);
 
-  // Seçilen product bilgisi (navigation'dan gelen veya API'den gelen)
-  const displayProductName = productDetail?.name || initialProductName || '';
-  const displayProductImage = productDetail?.image
-    ? toImageSource(productDetail.image)
-    : (initialProductImage || require('@/assets/events/card-icon.png'));
+  const activeTabIndex = TAB_KEYS.findIndex(tab => tab === activeTab);
+  const activeTabWidth = activeTabIndex >= 0 ? getTabWidth(activeTabIndex) : 80;
 
-  // Filter state
-  const [filters, setFilters] = useState<CatalogFilterParams>({});
-  const isInitialMount = useRef(true);
+  const tabStyles = TAB_KEYS.map((_, index) => {
+    return useAnimatedStyle(() => {
+      const color = interpolateColor(
+        progress.value,
+        [index - 0.5, index, index + 0.5],
+        [inactiveColor, activeColor, inactiveColor]
+      );
+      return { color };
+    }, [isDark]);
+  });
 
-  // Determine if we're in news mode
-  const isNewsMode = filters.tag === 'news';
+  const getTabStyle = (index: number) => {
+    return tabStyles[index] || tabStyles[0];
+  };
 
-  // API hooks - Posts (catalog context endpoint with filter/sort)
-  const apiFilter = mapTagToApiFilter(filters.tag);
-  const apiSort = mapSortToApiSort(filters.sort);
-  const postsQuery = useCatalogProductPosts(
-    isNewsMode ? undefined : productId,
-    apiFilter,
-    apiSort,
-    20
-  );
+  const tabWidthsShared = useSharedValue<number[]>([]);
+  const tabPositionsShared = useSharedValue<number[]>([]);
 
-  // API hooks - News (separate endpoint)
-  const newsQuery = useBrandProductNews(brandId, productId, 20, isNewsMode);
-
-  // Active query based on filter
-  const activeQuery = isNewsMode ? newsQuery : postsQuery;
-
-  // Scroll to top when filters change
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
+    if (tabWidths.length === TAB_KEYS.length) {
+      tabWidthsShared.value = tabWidths;
     }
-    if (flatListRef.current) {
-      flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+  }, [tabWidths]);
+
+  useEffect(() => {
+    if (tabPositions.length === TAB_KEYS.length) {
+      tabPositionsShared.value = tabPositions;
     }
-  }, [filters]);
+  }, [tabPositions]);
 
-  // Handle filter chip press - open bottom sheet
-  const handleFilterButtonPress = useCallback((filterId: CatalogFilterId) => {
-    openBottomSheet(
-      <CatalogFilterSheet
-        filterId={filterId}
-        filters={filters}
-        onFiltersChange={setFilters}
-        onClose={closeBottomSheet}
-      />,
-      {
-        snapPoints: ['50%'],
-        enableDynamicSizing: false,
-        enablePanDownToClose: true,
-        animateOnMount: false,
-        paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0,
-      }
-    );
-  }, [filters, openBottomSheet, closeBottomSheet, insets.bottom]);
+  const indicatorStyle = useAnimatedStyle(() => {
+    'worklet';
+    const currentIndex = Math.floor(progress.value);
+    const nextIndex = Math.min(Math.ceil(progress.value), TAB_KEYS.length - 1);
+    const offset = progress.value - currentIndex;
 
-  // Mapping cache
+    const widths = tabWidthsShared.value;
+    const positions = tabPositionsShared.value;
+
+    if (widths.length === 0 || positions.length === 0) {
+      return { transform: [{ translateX: 0 }], width: 0 };
+    }
+
+    const currentWidth = widths[currentIndex] || 80;
+    const nextWidth = widths[nextIndex] || currentWidth;
+    const currentPosition = positions[currentIndex] || 0;
+    const nextPosition = positions[nextIndex] || currentPosition;
+
+    const baseTranslateX = currentPosition + (nextPosition - currentPosition) * offset;
+    const baseWidth = currentWidth + (nextWidth - currentWidth) * offset;
+    const indicatorWidthAnimated = baseWidth * 0.8;
+
+    const translateX = baseTranslateX + (baseWidth - indicatorWidthAnimated) / 2 - scrollViewOffset.value;
+
+    return {
+      transform: [{ translateX }],
+      width: indicatorWidthAnimated,
+    };
+  });
+
+  return (
+    <Box
+      mb={16}
+      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+      borderBottomWidth={StyleSheet.hairlineWidth}
+      borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
+      position="relative"
+    >
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+        }}
+        scrollEventThrottle={16}
+        onScroll={handleScrollViewScroll}
+        scrollEnabled={true}
+        bounces={false}
+      >
+        <HStack
+          ref={tabContainerRef}
+          borderBottomWidth={1}
+          borderColor="#E9E9E9"
+          p={0}
+          mb="$2"
+          position="relative"
+          space="md"
+          onLayout={(event: any) => {
+            const width = event.nativeEvent.layout.width;
+            onTabContainerLayout(width);
+          }}
+        >
+          {TAB_KEYS.map((tabKey, index) => {
+            const tabStyle = getTabStyle(index);
+            return (
+              <Pressable
+                key={tabKey}
+                ref={(ref: any) => {
+                  if (ref) {
+                    tabRefs.current[tabKey] = ref;
+                  }
+                }}
+                onPress={() => onChangeTab(tabKey)}
+                alignItems="center"
+                py="$1"
+                px="$2"
+                onLayout={(event: any) => {
+                  const { width, x } = event.nativeEvent.layout;
+                  setTabWidths((prev) => {
+                    const newWidths = [...prev];
+                    newWidths[index] = width;
+                    return newWidths;
+                  });
+                  setTabPositions((prev) => {
+                    const newPositions = [...prev];
+                    newPositions[index] = x;
+                    return newPositions;
+                  });
+                }}
+              >
+                <VStack alignItems="center" space="xs">
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                      },
+                      tabStyle,
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {tabLabels[index]}
+                  </Animated.Text>
+                </VStack>
+              </Pressable>
+            );
+          })}
+
+          {activeTabWidth > 0 && tabPositions.length === TAB_KEYS.length && (
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  height: 2,
+                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                },
+                indicatorStyle,
+              ]}
+            />
+          )}
+        </HStack>
+      </Animated.ScrollView>
+    </Box>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.activeTab === nextProps.activeTab &&
+         prevProps.isDark === nextProps.isDark;
+});
+
+const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId, isDark, bottomPadding }) => {
+  const flatListRef = useRef<FlatList>(null);
+  const { t } = useTranslation('catalog');
+
+  // API hooks for each tab - Lazy loading
+  const feedQuery = useBrandProductFeed(brandId, productId, 20, tabKey === 'feed');
+  const reviewsQuery = useBrandProductReviews(brandId, productId, 20, tabKey === 'reviews');
+  const benchmarksQuery = useBrandProductBenchmarks(brandId, productId, 20, tabKey === 'benchmarks');
+  const tipsQuery = useBrandProductTips(brandId, productId, 20, tabKey === 'tips');
+  const questionsQuery = useBrandProductQuestions(brandId, productId, 20, tabKey === 'questions');
+  const newsQuery = useBrandProductNews(brandId, productId, 20, tabKey === 'news');
+
+  const activeTabQuery = useMemo(() => {
+    switch (tabKey) {
+      case 'feed': return feedQuery;
+      case 'reviews': return reviewsQuery;
+      case 'benchmarks': return benchmarksQuery;
+      case 'tips': return tipsQuery;
+      case 'questions': return questionsQuery;
+      case 'news': return newsQuery;
+      default: return feedQuery;
+    }
+  }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, questionsQuery, newsQuery]);
+
   const mappingCacheRef = useRef<Map<string, MappedPost | { type: 'news'; id: string; data: any }>>(new Map());
 
-  // Clear cache when filters change
-  useEffect(() => {
-    mappingCacheRef.current.clear();
-  }, [filters]);
-
   const mappedPosts = useMemo(() => {
-    if (isNewsMode) {
+    if (tabKey === 'news') {
       const queryData = newsQuery.data as any;
       if (!queryData?.pages) return [];
 
@@ -424,7 +575,7 @@ const BrandProductDetailScreen: React.FC = () => {
       });
     }
 
-    const queryData = postsQuery.data as any;
+    const queryData = activeTabQuery.data as any;
     if (!queryData?.pages) return [];
 
     const allItems = queryData.pages.flatMap((page: any) => page?.items ?? page?.posts ?? []) ?? [];
@@ -434,7 +585,7 @@ const BrandProductDetailScreen: React.FC = () => {
       return index === self.findIndex((t: any) => (t?.id || t?.data?.id) === id);
     });
 
-    const mapped: (MappedPost | { type: 'news'; id: string; data: any })[] = [];
+    const mapped: MappedPost[] = [];
 
     for (const item of uniqueItems) {
       const itemId = item?.id || item?.data?.id;
@@ -496,14 +647,13 @@ const BrandProductDetailScreen: React.FC = () => {
     }
 
     return mapped;
-  }, [postsQuery.data, newsQuery.data, isNewsMode]);
+  }, [activeTabQuery.data, tabKey, newsQuery.data]);
 
-  // Pull to refresh
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await activeQuery.refetch();
+      await activeTabQuery.refetch();
     } catch (error) {
       if (__DEV__) {
         console.error('[BrandProductDetailScreen] Refresh error:', error);
@@ -511,7 +661,33 @@ const BrandProductDetailScreen: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
-  }, [activeQuery]);
+  }, [activeTabQuery]);
+
+  const ListFooterComponent = useMemo(() => {
+    if (!activeTabQuery.isFetchingNextPage) return null;
+    return (
+      <Box py={20} alignItems="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }, [activeTabQuery.isFetchingNextPage, isDark]);
+
+  const ListEmptyComponent = useMemo(() => {
+    if (activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0])) {
+      return (
+        <Box py={20} alignItems="center">
+          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+        </Box>
+      );
+    }
+    return (
+      <Box py={20} alignItems="center">
+        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+          {tabKey === 'news' ? t('brandProductDetail.noNews') : t('brandProductDetail.noContent')}
+        </Text>
+      </Box>
+    );
+  }, [activeTabQuery.isLoading, activeTabQuery.data, tabKey, isDark, t]);
 
   const renderPostCard = useCallback((postData: MappedPost | { type: 'news'; id: string; data: any }) => {
     if (postData.type === 'news') {
@@ -536,7 +712,7 @@ const BrandProductDetailScreen: React.FC = () => {
                 newsId: postData.data?.id || postData.id,
                 brandId: brandId,
                 productId: productId,
-              }
+              },
             });
           }}
         />
@@ -574,44 +750,117 @@ const BrandProductDetailScreen: React.FC = () => {
     paddingBottom: bottomPadding,
   }), [bottomPadding]);
 
-  const ListFooterComponent = useMemo(() => {
-    if (!activeQuery.isFetchingNextPage) return null;
-    return (
-      <Box py={20} alignItems="center">
-        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-      </Box>
-    );
-  }, [activeQuery.isFetchingNextPage, isDark]);
-
-  const ListEmptyComponent = useMemo(() => {
-    if (activeQuery.isLoading && !((activeQuery.data as any)?.pages?.[0])) {
-      return (
-        <Box py={20} alignItems="center">
-          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-        </Box>
-      );
-    }
-    return (
-      <Box py={20} alignItems="center">
-        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-          {isNewsMode ? t('brandProductDetail.noNews') : t('brandProductDetail.noContent')}
-        </Text>
-      </Box>
-    );
-  }, [activeQuery.isLoading, activeQuery.data, isNewsMode, isDark, t]);
-
   const isLoadingMoreRef = useRef(false);
   const handleLoadMore = useCallback(() => {
-    if (isLoadingMoreRef.current || !activeQuery.hasNextPage || activeQuery.isFetchingNextPage) {
+    if (isLoadingMoreRef.current || !activeTabQuery.hasNextPage || activeTabQuery.isFetchingNextPage) {
       return;
     }
     isLoadingMoreRef.current = true;
-    activeQuery.fetchNextPage().finally(() => {
+    activeTabQuery.fetchNextPage().finally(() => {
       setTimeout(() => {
         isLoadingMoreRef.current = false;
       }, 500);
     });
-  }, [activeQuery]);
+  }, [activeTabQuery]);
+
+  return (
+    <FlatList
+      ref={flatListRef}
+      data={mappedPosts}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={isDark ? '#FFFFFF' : '#000000'}
+          colors={['#000000']}
+        />
+      }
+      ListEmptyComponent={ListEmptyComponent}
+      ListFooterComponent={ListFooterComponent}
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.5}
+      contentContainerStyle={contentContainerStyle}
+      showsVerticalScrollIndicator={true}
+      removeClippedSubviews={true}
+      initialNumToRender={3}
+      maxToRenderPerBatch={3}
+      windowSize={5}
+      updateCellsBatchingPeriod={50}
+    />
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.tabKey === nextProps.tabKey &&
+         prevProps.brandId === nextProps.brandId &&
+         prevProps.productId === nextProps.productId &&
+         prevProps.isDark === nextProps.isDark &&
+         prevProps.bottomPadding === nextProps.bottomPadding;
+});
+
+const BrandProductDetailScreen: React.FC = () => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
+  const route = useRoute<BrandProductDetailScreenRouteProp>();
+  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
+  const { t } = useTranslation('catalog');
+
+  const { brandId, productId, productName: initialProductName, productImage: initialProductImage } = route.params;
+
+  // API hooks - Brand product detail
+  const { data: productDetail } = useBrandProductDetail(brandId, productId);
+
+  const displayProductName = productDetail?.name || initialProductName || '';
+  const displayProductImage = productDetail?.image
+    ? toImageSource(productDetail.image)
+    : (initialProductImage || require('@/assets/events/card-icon.png'));
+
+  // Tab labels from i18n
+  const tabLabels = useMemo(() => TAB_KEYS.map((key) => t(`brandProductDetail.tabs.${key}`)), [t]);
+
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<TabKey>('feed');
+  const pagerRef = useRef<PagerView>(null);
+  const tabContainerRef = useRef<any>(null);
+  const progress = useSharedValue(0);
+
+  const getTabIndex = useCallback((tabKey: TabKey) => {
+    return TAB_KEYS.findIndex(tab => tab === tabKey);
+  }, []);
+
+  const handleTabChange = useCallback((tabKey: TabKey) => {
+    const index = getTabIndex(tabKey);
+    if (index !== -1 && pagerRef.current) {
+      pagerRef.current.setPage(index);
+    }
+  }, [getTabIndex]);
+
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      progress.value = position + offset;
+    },
+    [progress]
+  );
+
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      progress.value = withTiming(position, { duration: 0 });
+
+      const tabKey = TAB_KEYS[position];
+      if (tabKey) {
+        setActiveTab(tabKey);
+      }
+    },
+    [progress]
+  );
+
+  const handleTabContainerLayout = useCallback((_width: number) => {
+    // Tab container width
+  }, []);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
@@ -666,39 +915,38 @@ const BrandProductDetailScreen: React.FC = () => {
           )}
         </Box>
 
-        {/* Filter Chips */}
-        <CatalogFilterChips
-          filters={filters}
-          onFilterPress={handleFilterButtonPress}
-          onClearAll={() => setFilters({})}
+        {/* Tab Bar */}
+        <TabsBar
+          activeTab={activeTab}
+          onChangeTab={handleTabChange}
+          isDark={isDark}
+          progress={progress}
+          tabContainerRef={tabContainerRef}
+          onTabContainerLayout={handleTabContainerLayout}
+          tabLabels={tabLabels}
         />
 
-        {/* Post List */}
-        <FlatList
-          ref={flatListRef}
-          data={mappedPosts}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={isDark ? '#FFFFFF' : '#000000'}
-              colors={['#000000']}
-            />
-          }
-          ListEmptyComponent={ListEmptyComponent}
-          ListFooterComponent={ListFooterComponent}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          contentContainerStyle={contentContainerStyle}
-          showsVerticalScrollIndicator={true}
-          removeClippedSubviews={true}
-          initialNumToRender={3}
-          maxToRenderPerBatch={3}
-          windowSize={5}
-          updateCellsBatchingPeriod={50}
-        />
+        {/* PagerView - Lazy loading */}
+        <AnimatedPagerView
+          ref={pagerRef}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageScroll={handlePageScroll}
+          onPageSelected={handlePageSelected}
+          offscreenPageLimit={1}
+        >
+          {TAB_KEYS.map((tabKey) => (
+            <Box key={tabKey} flex={1} collapsable={false}>
+              <TabPage
+                tabKey={tabKey}
+                brandId={brandId}
+                productId={productId}
+                isDark={isDark}
+                bottomPadding={bottomPadding}
+              />
+            </Box>
+          ))}
+        </AnimatedPagerView>
       </VStack>
     </SafeAreaView>
   );

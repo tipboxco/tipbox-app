@@ -416,7 +416,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     toImageSource(item.senderAvatar || params.senderAvatar) ||
                     DEFAULT_USER_AVATAR
                   }
-                  alt={item.senderName || params.senderName || 'User'}
+                  alt={item.senderName || params.senderName || t('messageDetail.fallback.unknown')}
                   width={32}
                   height={32}
                   borderRadius={16}

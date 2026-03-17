@@ -34,6 +34,8 @@ interface SelectProductProps {
     onProductSelect: (product: { id: string; name: string; brand?: string; description?: string; image: any }) => void;
     selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any } | null;
     fromInventory?: boolean;
+    /** Called when catalog back is pressed without selecting a product */
+    onCancel?: () => void;
 }
 
 // Usage options for inventory
@@ -45,11 +47,13 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
     onProductSelect,
     selectedProduct,
     fromInventory = false,
+    onCancel,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const { t } = useTranslation('post');
-    const [showProductSelector, setShowProductSelector] = useState(false);
+    // Auto-open catalog when no product is selected and not from inventory
+    const [showProductSelector, setShowProductSelector] = useState(!selectedProduct && !fromInventory);
     const [selectedDuration, setSelectedDuration] = useState<string>('');
     const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [selectedPurpose, setSelectedPurpose] = useState<string>('');
@@ -114,7 +118,12 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
     };
 
     const handleCloseProductSelector = () => {
-        setShowProductSelector(false);
+        if (onCancel && !selectedProduct) {
+            // No product was selected, navigate back
+            onCancel();
+        } else {
+            setShowProductSelector(false);
+        }
     };
 
     // Show AddProductFromCatalog if showProductSelector is true (only for catalog, inventory uses bottom sheet)

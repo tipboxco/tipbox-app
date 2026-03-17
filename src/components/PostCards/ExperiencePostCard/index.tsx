@@ -8,7 +8,6 @@ import {
   EllipsisHorizontalIcon,
   TagIcon,
   CubeIcon,
-  StarIcon,
   HeartIcon,
   ChatBubbleLeftIcon,
   PaperAirplaneIcon,
@@ -743,21 +742,12 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                 </Text>
                 <HStack ml={26} mt={6} space="xs">
                   {item.rating.map((star, idx) => (
-                    star ? (
-                      <StarIconSolid
-                        key={idx}
-                        width={16}
-                        height={16}
-                        color="#829905"
-                      />
-                    ) : (
-                      <StarIcon
-                        key={idx}
-                        width={16}
-                        height={16}
-                        color={isDark ? '#7E7E7E' : '#D4D4D4'}
-                      />
-                    )
+                    <StarIconSolid
+                      key={idx}
+                      width={16}
+                      height={16}
+                      color={star ? '#829905' : (isDark ? '#7E7E7E' : '#D4D4D4')}
+                    />
                   ))}
                 </HStack>
               </VStack>

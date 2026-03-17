@@ -57,7 +57,7 @@
       "currentPrice": "Current Price",
       "suggestedPrice": "Suggested Price",
       "earnDate": "Earn Date",
-      "rarity": "Rarity",
+      "rarityLabel": "Rarity",
       "owners": "Owners",
       "description": "Description",
       "salesHistory": "Sales History",
