@@ -22,6 +22,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { useInventoryProductCheck } from '../hooks/useInventoryProductCheck';
+import { useSyncInventoryToStore } from '../hooks/useSyncInventoryToStore';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
 import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { useSubCategoryPosts, useProductGroupPosts, useCatalogProductPosts } from '@/src/features/catalog/api/hooks';
@@ -55,6 +56,9 @@ export const PostsScreen = () => {
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
   const { t } = useTranslation('post');
+
+  // Sync inventory to store (must be called before useInventoryProductCheck)
+  useSyncInventoryToStore();
 
   // Inventory check hook for quick product lookups
   const { checkProduct } = useInventoryProductCheck();
