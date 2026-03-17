@@ -335,6 +335,7 @@ export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = fa
       >
         <Carousel
           ref={carouselRef}
+          loop={false}
           width={imageWidth}
           height={carouselHeight}
           data={images}
@@ -410,6 +411,7 @@ export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = fa
         >
           <Carousel
             ref={carouselRef}
+            loop={false}
             width={feedImageWidth}
             height={carouselHeight}
             data={images}

@@ -521,6 +521,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#1A1A1A',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
   },
   backContainer: {
     width: '100%',
