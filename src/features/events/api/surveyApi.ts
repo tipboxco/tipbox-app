@@ -1,52 +1,38 @@
 import { apiService } from '@/src/services/ApiService';
 import type {
   SurveyQuestionsApiResponse,
-  SurveyAnswerApiResponse,
+  SurveySubmitRequest,
   SurveyCompleteApiResponse,
   SurveyCompleteErrorResponse,
 } from '../types/survey.types';
 
 /**
- * GET /surveys/{surveyId}/questions
- * Anket sorularını getirir (Authorization: Bearer token)
+ * GET /brands/{brandId}/surveys/{surveyId}/questions
+ * Anket sorularini getirir (Authorization: Bearer token)
  */
 export const getSurveyQuestions = async (
+  brandId: string,
   surveyId: string
 ): Promise<SurveyQuestionsApiResponse> => {
   const response = await apiService.getClient().get<SurveyQuestionsApiResponse>(
-    `/surveys/${surveyId}/questions`
+    `/brands/${brandId}/surveys/${surveyId}/questions`
   );
   return response.data;
 };
 
 /**
- * POST /surveys/{surveyId}/questions/{questionId}/answer
- * Tek bir soruya cevap gönderir. Her cevap otomatik kaydedilir.
- * isCompleted: true dönünce "Tamamla" butonu aktif edilir.
+ * POST /brands/{brandId}/surveys/{surveyId}/submit
+ * Tum cevaplari tek seferde gonderir.
+ * Doner: pointsAwarded, totalSurveyPoints, badgesEarned[] (veya hata)
  */
-export const submitSurveyQuestionAnswer = async (
+export const submitSurveyAnswers = async (
+  brandId: string,
   surveyId: string,
-  questionId: string,
-  answerId: string
-): Promise<SurveyAnswerApiResponse> => {
-  const response = await apiService.getClient().post<SurveyAnswerApiResponse>(
-    `/surveys/${surveyId}/questions/${questionId}/answer`,
-    { answerId }
-  );
-  return response.data;
-};
-
-/**
- * POST /surveys/{surveyId}/complete
- * Tüm sorular cevaplandıktan sonra anketi tamamlar.
- * Döner: pointsAwarded, totalSurveyPoints, badgesEarned[] (veya hata: zaten tamamlanmış / eksik soru)
- */
-export const completeSurvey = async (
-  surveyId: string
+  answers: SurveySubmitRequest['answers']
 ): Promise<SurveyCompleteApiResponse> => {
   const response = await apiService.getClient().post<
     SurveyCompleteApiResponse | SurveyCompleteErrorResponse
-  >(`/surveys/${surveyId}/complete`, {});
+  >(`/brands/${brandId}/surveys/${surveyId}/submit`, { answers });
 
   const data = response.data;
   if (!data.success) {

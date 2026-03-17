@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from 'react-native-heroicons/outline';
+import { ChevronDownIcon, ChevronUpIcon } from 'react-native-heroicons/outline';
 import { useMainCategories, useSubCategories } from '../../api/hooks';
 import type { CollectionFilters } from '../../types/medusa.types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -200,17 +200,9 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
     <View style={[styles.container, { backgroundColor: bg }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerSide} />
         <Text style={[styles.title, { color: textColor }]}>
           {t('collectionsFilter.title')}
         </Text>
-        <View style={styles.headerSide}>
-          {hasAnyFilter && (
-            <Pressable onPress={handleReset} hitSlop={8}>
-              <XMarkIcon width={20} height={20} color={placeholderColor} />
-            </Pressable>
-          )}
-        </View>
       </View>
 
       {/* Content */}
@@ -249,22 +241,38 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
         )}
       </ScrollView>
 
-      {/* Apply Button */}
+      {/* Footer Buttons */}
       <View style={[styles.footer, { borderTopColor: borderColor, paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <Pressable
-          style={[
-            styles.applyButton,
-            { backgroundColor: hasAnyFilter ? '#C2E607' : (isDark ? '#374151' : '#E5E7EB') },
-          ]}
-          onPress={handleApply}
-        >
-          <Text style={[
-            styles.applyButtonText,
-            { color: hasAnyFilter ? '#111827' : (isDark ? '#9CA3AF' : '#6B7280') },
-          ]}>
-            {t('collectionsFilter.apply')}
-          </Text>
-        </Pressable>
+        <View style={styles.footerButtons}>
+          {/* Reset */}
+          <Pressable
+            style={[
+              styles.footerButton,
+              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F2', borderWidth: 1, borderColor },
+            ]}
+            onPress={handleReset}
+          >
+            <Text style={[styles.applyButtonText, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+              {t('collectionsFilter.reset')}
+            </Text>
+          </Pressable>
+
+          {/* Apply */}
+          <Pressable
+            style={[
+              styles.footerButton,
+              { backgroundColor: hasAnyFilter ? '#C2E607' : (isDark ? '#374151' : '#E5E7EB') },
+            ]}
+            onPress={handleApply}
+          >
+            <Text style={[
+              styles.applyButtonText,
+              { color: hasAnyFilter ? '#111827' : (isDark ? '#9CA3AF' : '#6B7280') },
+            ]}>
+              {t('collectionsFilter.apply')}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -275,16 +283,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 16,
-  },
-  headerSide: {
-    width: 32,
-    alignItems: 'center',
   },
   title: {
     fontSize: 16,
@@ -344,7 +346,12 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderTopWidth: 1,
   },
-  applyButton: {
+  footerButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  footerButton: {
+    flex: 1,
     height: 48,
     borderRadius: 12,
     justifyContent: 'center',

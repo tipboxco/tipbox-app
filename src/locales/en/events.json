@@ -47,7 +47,9 @@
     "eventLoadError": "An error occurred while loading the event",
     "eventNotFoundError": "Event not found",
     "duration": "Duration",
+    "endDate": "End Date",
     "participants": "Participants",
+    "winners": "Winners",
     "peopleJoined": "+ people joined",
     "rewardsAndBadges": "Rewards & Badges",
     "seeAll": "See All",
@@ -122,7 +124,25 @@
     "noCategories": "No categories available",
     "noSubCategories": "No sub categories available",
     "noProductGroups": "No product groups available",
-    "apply": "Apply"
+    "apply": "Apply",
+    "reset": "Reset"
+  },
+  "survey": {
+    "title": "Surveys",
+    "questionOf": "{{current}}/{{total}}",
+    "next": "Next",
+    "back": "Back",
+    "previousQuestion": "Go to Previous Question",
+    "complete": "Complete",
+    "selectOption": "Select an option",
+    "success": "Survey Completed!",
+    "pointsEarned": "+{{points}} Points",
+    "badgesEarned": "Badges Earned",
+    "submitError": "An error occurred while submitting the survey",
+    "noSurveys": "No surveys available",
+    "noOptions": "No options available for this question",
+    "loading": "Loading questions...",
+    "alreadyAnswered": "Already answered"
   },
   "createPost": {
     "title": "Write a Post",

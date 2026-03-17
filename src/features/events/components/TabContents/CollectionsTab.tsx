@@ -14,10 +14,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../../navigation';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import CollectionCard from '../CollectionCard';
-import type { Collection, CollectionCategory } from '../../types/collection.types';
+import type { Collection } from '../../types/collection.types';
 import type { CollectionFilters } from '../../types/medusa.types';
 import { useSafeAreaValues } from '@/src/utils';
-import { useCollections, useCollectionCategories, useUserProgressCollections } from '../../api/hooks';
+import { useCollections, useUserProgressCollections, useMainCategories } from '../../api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useTranslation } from '@/src/hooks/useTranslation';
@@ -48,7 +48,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
-  const [selectedHandle, setSelectedHandle] = useState<string>('all');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'completed' | 'in_progress' | 'not_started'>('all');
   const [debouncedSearch, setDebouncedSearch] = useState<string | undefined>(undefined);
   const navigation = useNavigation<CollectionsTabNavigationProp>();
@@ -66,9 +66,6 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     label: t(STATUS_LABEL_KEYS[key]),
   }));
 
-  /** "All" chip'i her zaman başta sabit olur — backend'den gelmez */
-  const ALL_CATEGORY: CollectionCategory = { id: 'all', name: t('collection.all'), handle: 'all' };
-
   // Arama debounce (500ms)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -78,20 +75,22 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // EP-02: Chip filtre kategorileri
-  const { data: categoriesData } = useCollectionCategories();
-  const chipCategories = useMemo<CollectionCategory[]>(
-    () => [ALL_CATEGORY, ...(categoriesData?.categories ?? [])],
-    [categoriesData, ALL_CATEGORY]
+  // Main categories for chip filters
+  const { data: mainCategoriesData } = useMainCategories();
+  const chipCategories = useMemo(
+    () => [
+      { id: 'all', name: t('collection.all') },
+      ...(mainCategoriesData ?? []),
+    ],
+    [mainCategoriesData, t]
   );
 
   // EP-01: Collections listesi (infinite scroll)
   // Profile'da userId varsa user'ın tamamladığı collections'ları getir
   const allCollectionsQuery = useCollections({
     search: debouncedSearch,
-    category: selectedHandle !== 'all' ? selectedHandle : undefined,
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
-    mainCategoryId: collectionFilters?.mainCategoryId,
+    mainCategoryId: selectedCategoryId !== 'all' ? selectedCategoryId : collectionFilters?.mainCategoryId,
     subCategoryId: collectionFilters?.subCategoryId,
     productGroupId: collectionFilters?.productGroupId,
   });
@@ -157,9 +156,9 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
 
   // Chip seçimi
   const handleCategoryPress = useCallback(
-    (handle: string) => {
-      setSelectedHandle(handle);
-      onFilterChange?.(handle);
+    (categoryId: string) => {
+      setSelectedCategoryId(categoryId);
+      onFilterChange?.(categoryId);
     },
     [onFilterChange]
   );
@@ -270,7 +269,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
         style={styles.filterChips}
       >
         {chipCategories.map((cat) => {
-          const isActive = cat.handle === selectedHandle;
+          const isActive = cat.id === selectedCategoryId;
           return (
             <Pressable
               key={cat.id}
@@ -281,7 +280,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
                   borderColor: '#EFEFEF',
                 },
               ]}
-              onPress={() => handleCategoryPress(cat.handle)}
+              onPress={() => handleCategoryPress(cat.id)}
             >
               <Text style={styles.filterChipText}>
                 {cat.name}
@@ -291,7 +290,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
         })}
       </ScrollView>
     ),
-    [chipCategories, selectedHandle, handleCategoryPress]
+    [chipCategories, selectedCategoryId, handleCategoryPress]
   );
 
   // Footer: infinite scroll yükleme göstergesi
@@ -326,14 +325,14 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
                 ? t('collection.emptyStates.noResults')
                 : selectedStatus !== 'all'
                 ? t('collection.emptyStates.noStatus')
-                : selectedHandle !== 'all'
+                : selectedCategoryId !== 'all'
                 ? t('collection.emptyStates.noCategory')
                 : t('collection.emptyStates.noCollections')}
             </Text>
           )}
         </View>
       ) : null,
-    [isLoading, debouncedSearch, selectedStatus, selectedHandle, isDark, userId]
+    [isLoading, debouncedSearch, selectedStatus, selectedCategoryId, isDark, userId]
   );
 
   if (isLoading) {

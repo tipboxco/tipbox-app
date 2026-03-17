@@ -65,6 +65,8 @@ export interface NotificationData {
   message?: string; // DM_REQUEST_RECEIVED için mesaj önizlemesi
   messagePreview?: string;
   imageUrl?: string; // Post veya badge image URL
+  badgeUrl?: string; // NEW_BADGE: badge image URL (root seviyeden taşınır)
+  badgeName?: string; // NEW_BADGE: badge adı (root seviyeden taşınır)
   shareType?: string; // POST_SHARED için share tipi
   amount?: number;
   rewardAmount?: number;
@@ -112,7 +114,8 @@ export type NotificationType =
   | 'EVENT_ENDING_SOON'
   | 'EVENT_REWARD_AVAILABLE'
   | 'COLLECTION_POST_ADDED'
-  | 'COLLECTION_SHARED';
+  | 'COLLECTION_SHARED'
+  | 'NFT_PURCHASED';
 
 export interface NotificationMetadata {
   userId?: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { EventDetailScreen, EventCreatePost, RewardsBadgesScreen } from './screens';
+import { EventDetailScreen, EventCreatePost, RewardsBadgesScreen, SurveyScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { EventType } from '@/src/utils';
 import { EventProduct } from '@/src/mock/events/communityEvents/types';
@@ -39,6 +39,11 @@ export type EventStackParamList = {
   RewardsBadgesScreen: {
     eventId: string;
   };
+  SurveyScreen: {
+    brandId: string;
+    surveyId: string;
+    title: string;
+  };
 };
 
 const EventStack = createNativeStackNavigator<EventStackParamList>();
@@ -67,6 +72,10 @@ export const EventNavigator = () => {
       <EventStack.Screen
         name="RewardsBadgesScreen"
         component={RewardsBadgesScreen}
+      />
+      <EventStack.Screen
+        name="SurveyScreen"
+        component={SurveyScreen}
       />
     </EventStack.Navigator>
   );

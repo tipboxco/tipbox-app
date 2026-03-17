@@ -176,8 +176,13 @@ const getNotificationMessage = (
             return data?.title || data?.message || 'Transaction confirmed';
 
         // GAMIFICATION NOTIFICATIONS
-        case 'NEW_BADGE':
+        case 'NEW_BADGE': {
+            const badgeName = data?.badgeName || data?.title || '';
+            if (badgeName) {
+                return translate('messages.single.newBadgeNamed', { badgeName });
+            }
             return translate('messages.single.newBadge');
+        }
         case 'ACHIEVEMENT_UNLOCKED':
             return translate('messages.single.achievementUnlocked');
         case 'REWARD_EARNED':
@@ -209,6 +214,16 @@ const getNotificationMessage = (
         case 'SYSTEM_ANNOUNCEMENT':
             return data?.publisherName ? translate('messages.single.systemAnnouncement', { publisherName: data.publisherName }) : translate('messages.single.systemAnnouncement', { publisherName: '' });
 
+        // NFT NOTIFICATIONS
+        case 'NFT_PURCHASED': {
+            const nftTitle = data?.title || data?.nftTitle || '';
+            const nftAmount = data?.amount;
+            if (nftTitle && nftAmount != null) {
+                return translate('messages.single.nftPurchased', { title: nftTitle, amount: Number(nftAmount).toFixed(2) });
+            }
+            return translate('messages.single.nftPurchasedGeneric');
+        }
+
         default:
             return translate('common.newNotification');
     }
@@ -232,6 +247,7 @@ const getNotificationTypeIcon = (type: NotificationType): React.ComponentType<{ 
         case 'TIPS_RECEIVED':
         case 'TIPS_SENT':
         case 'TRANSACTION_CONFIRMED':
+        case 'NFT_PURCHASED':
             return GiftIcon;
         case 'POST_COMMENTED':
         case 'COMMENT_REPLIED':
@@ -291,6 +307,7 @@ const getNotificationCategory = (type: NotificationType): 'post' | 'comment' | '
         case 'TIPS_RECEIVED':
         case 'TIPS_SENT':
         case 'TRANSACTION_CONFIRMED':
+        case 'NFT_PURCHASED':
             return 'tips';
 
         case 'EVENT_STARTED':
@@ -404,7 +421,7 @@ const TipsCard: React.FC<{
                 fontSize={11}
                 fontWeight="$semibold"
             >
-                +{tipsAmount} TIPS
+                +{Number(tipsAmount).toFixed(2)} TIPS
             </Text>
         </Pressable>
     );
@@ -614,7 +631,7 @@ const GamificationCard: React.FC<{
                         fontSize={11}
                         fontWeight="$bold"
                     >
-                        +{rewardAmount}
+                        +{Number(rewardAmount).toFixed(2)}
                     </Text>
                 </Box>
             </HStack>
@@ -677,7 +694,7 @@ const DepositCard: React.FC<{
                         )}
                         <Box bg="#E8FF6B" borderRadius={8} px={6} py={2}>
                             <Text color="#000000" fontSize={11} fontWeight="$bold">
-                                +{amount} TIPS
+                                +{Number(amount).toFixed(2)} TIPS
                             </Text>
                         </Box>
                     </HStack>
@@ -849,8 +866,8 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
         const data = notification.data || notification.metadata || {};
         const transactionId = data.transactionId;
 
-        // TIPS_RECEIVED / TRANSACTION_CONFIRMED (deposit): card press → Wallet (optional transactionId)
-        if (type === 'TIPS_RECEIVED' || (type === 'TRANSACTION_CONFIRMED' && data.actionType === 'DEPOSIT')) {
+        // TIPS_RECEIVED / TRANSACTION_CONFIRMED (deposit) / NFT_PURCHASED: card press → Wallet (optional transactionId)
+        if (type === 'TIPS_RECEIVED' || type === 'NFT_PURCHASED' || (type === 'TRANSACTION_CONFIRMED' && data.actionType === 'DEPOSIT')) {
             navigationService.navigate(ROOT_ROUTES.WALLET, {
                 screen: 'WalletScreen',
                 params: transactionId ? { transactionId } : undefined,
@@ -1642,13 +1659,35 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
     
     // Badge image - Badge bildirimleri için (null ise default placeholder kullan)
     const isBadgeNotification = notification.type === 'NEW_BADGE' || notification.type === 'ACHIEVEMENT_UNLOCKED';
-    const badgeImageUrl = isBadgeNotification ? data.imageUrl : null;
+    // CRITICAL FIX: badgeUrl birden fazla yerde olabilir - tüm olası konumları kontrol et
+    const rawNotif = notification as any;
+    const badgeImageUrl = isBadgeNotification
+        ? (data.badgeUrl || data.imageUrl || data.badge_url
+            || rawNotif.badgeUrl || rawNotif.badge_url || rawNotif.badgeImage || rawNotif.imageUrl
+            || null)
+        : null;
+
+    if (__DEV__ && isBadgeNotification) {
+        console.log('[NotificationCard] 🏅 Badge render debug:', {
+            id: notification.id,
+            resolvedUrl: badgeImageUrl,
+            'data.badgeUrl': data.badgeUrl,
+            'data.imageUrl': data.imageUrl,
+            dataKeys: Object.keys(data),
+            notifKeys: Object.keys(notification),
+            fullData: JSON.stringify(data).substring(0, 500),
+        });
+    }
+
     const badgeImage = isBadgeNotification
         ? (badgeImageUrl ? toImageSource(badgeImageUrl) : require('@/assets/defaultImages/default-badge.png'))
         : null;
     
     // Avatar sadece user bildirimlerinde gösterilecek (event ve badge bildirimlerinde gösterilmeyecek)
     const shouldShowAvatar = !eventImage && !badgeImage && (category === 'post' || category === 'comment' || category === 'trust' || category === 'message' || category === 'tips' || category === 'expert');
+
+    // Right-side thumbnail for post-related notifications only
+    const hasRightThumbnail = !!(postImage && !isBadgeNotification && !eventImage && (category === 'post' || category === 'comment'));
 
     // Category-based content rendering - Instagram benzeri tasarım
     const showTipsButton = category === 'tips' && tipsAmount != null; // Tips bildirimlerinde buton gösterilecek
@@ -1689,8 +1728,9 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
             position="relative"
             borderBottomWidth={1}
             borderBottomColor={isDark ? '#333' : '#E9E9E9'}
+            {...(isBadgeNotification && { minHeight: 72, py: '$3.5' })}
         >
-            <HStack space="md" alignItems="flex-start" flex={1}>
+            <HStack space="md" alignItems={isBadgeNotification ? 'center' : 'flex-start'} flex={1}>
 
                     {/* Avatar - Sol tarafta gradient/mor border ile */}
                     {shouldShowAvatar ? (
@@ -1739,19 +1779,20 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                     ) : badgeImage ? (
                         <Pressable onPress={handlePress}>
                             <Box
-                                width={40}
-                                height={40}
-                                borderRadius={8}
+                                width={52}
+                                height={52}
+                                borderRadius={10}
                                 overflow="hidden"
                                 borderWidth={1}
                                 borderColor={isDark ? '#333' : '#E9E9E9'}
+                                bg={isDark ? '#2A2A2A' : '#F5F5F5'}
                                 flexShrink={0}
                             >
                                 <Image
                                     source={badgeImage}
                                     alt="Badge preview"
-                                    width={40}
-                                    height={40}
+                                    width={52}
+                                    height={52}
                                     style={{ resizeMode: 'cover' }}
                                 />
                             </Box>
@@ -1759,7 +1800,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                     ) : null}
 
                     {/* Content - Ortada */}
-                    <VStack flex={1} space="xs" justifyContent="flex-start" pr="$10">
+                    <VStack flex={1} space="xs" justifyContent="flex-start" pr={hasRightThumbnail ? 60 : "$10"}>
                         {/* Başlık ve açıklama */}
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
@@ -1891,20 +1932,14 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                         {/* Request Card */}
                         {showRequestCard && (
                             <Box mt={4} alignSelf="stretch">
-                                <RequestCard
-                                    notification={notification}
-                                    isDark={isDark}
-                                />
+                                <RequestCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 
                         {/* Event Card */}
                         {showEventCard && (
                             <Box mt={4} alignSelf="stretch">
-                                <EventCard
-                                    notification={notification}
-                                    isDark={isDark}
-                                />
+                                <EventCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 
@@ -1954,7 +1989,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                 <HStack
                     position="absolute"
                     top="$3"
-                    right="$3"
+                    right={12}
                     space="xs"
                     alignItems="center"
                 >
@@ -1967,6 +2002,33 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                     </Text>
                     <TypeIcon width={14} height={14} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
                 </HStack>
+
+                {/* Right thumbnail - post image, tarihin altında sağda */}
+                {hasRightThumbnail && postImage && (
+                    <Pressable
+                        onPress={handlePress}
+                        position="absolute"
+                        top={32}
+                        right={12}
+                    >
+                        <Box
+                            width={44}
+                            height={44}
+                            borderRadius={8}
+                            overflow="hidden"
+                            borderWidth={1}
+                            borderColor={isDark ? '#333' : '#E9E9E9'}
+                        >
+                            <Image
+                                source={postImage}
+                                alt="Content preview"
+                                width={44}
+                                height={44}
+                                style={{ resizeMode: 'cover' }}
+                            />
+                        </Box>
+                    </Pressable>
+                )}
 
                 {/* Context Menu - long-press ile açılır, Modal aynı kalır */}
                 {targetUserId && user?.id && targetUserId !== user.id && (

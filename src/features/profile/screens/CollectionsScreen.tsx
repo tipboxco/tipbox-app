@@ -258,6 +258,18 @@ const CollectionsScreen: React.FC = () => {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
+            {searchQuery.length > 0 && (
+              <Pressable
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather
+                  name="x-circle"
+                  size={18}
+                  color={isDark ? '#8C8C8C' : '#B9B9B9'}
+                />
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -366,7 +378,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 9,
+    fontSize: 14,
     height: 36,
     paddingVertical: 0,
   },

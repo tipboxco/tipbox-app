@@ -26,12 +26,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { eventsKeys } from '../api/hooks';
 import {
   ChevronLeftIcon,
+  ChevronRightIcon,
   ArrowTopRightOnSquareIcon,
   CalendarIcon,
   UsersIcon,
   PencilSquareIcon,
   TrophyIcon,
   UserPlusIcon,
+  ClipboardDocumentListIcon,
 } from 'react-native-heroicons/outline';
 import { useEventDetail, useEventPosts, useJoinEvent, useLeaveEvent } from '../api/hooks';
     import { toImageSource, useSafeAreaValues, isSameImageSource } from '@/src/utils';
@@ -994,7 +996,7 @@ const EventDetailScreen: React.FC = () => {
                         </VStack>
                     ) : null}
 
-                    {/* Details Section */}
+                    {/* Details Section - 3 Column Grid */}
                     <VStack space="xs" mb="$3">
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
@@ -1009,72 +1011,109 @@ const EventDetailScreen: React.FC = () => {
                             borderWidth={1}
                             borderColor="#E9E9E9"
                             borderRadius={5}
-                            px="$4"
-                            py="$3"
+                            px="$3"
+                            py="$4"
                         >
-                            <VStack space="md">
-                                {/* Duration */}
-                                <HStack alignItems="center" space="sm">
+                            <HStack justifyContent="space-around" alignItems="flex-start">
+                                {/* End Date */}
+                                <VStack alignItems="center" space="xs" flex={1}>
                                     <Box
-                                        width={30}
-                                        height={30}
-                                        borderRadius={15}
+                                        width={40}
+                                        height={40}
+                                        borderRadius={20}
                                         borderWidth={1}
-                                        borderColor="#B9B9B9"
+                                        borderColor="#D9D9D9"
                                         alignItems="center"
                                         justifyContent="center"
                                     >
-                                        <CalendarIcon width={16} height={16} color="#B9B9B9" />
+                                        <CalendarIcon width={20} height={20} color="#B9B9B9" />
                                     </Box>
-                                    <VStack>
-                                        <Text
-                                            color="#B9B9B9"
-                                            fontSize={11}
-                                            fontWeight="$medium"
-                                        >
-                                            {t('details.duration')}
-                                        </Text>
-                                        <Text
-                                            color="#000000"
-                                            fontSize={11}
-                                            fontWeight="$bold"
-                                        >
-                                            {dateRange}
-                                        </Text>
-                                    </VStack>
-                                </HStack>
+                                    <Text
+                                        color="#B9B9B9"
+                                        fontSize={11}
+                                        fontWeight="$medium"
+                                        textAlign="center"
+                                    >
+                                        {t('details.endDate')}
+                                    </Text>
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                        fontSize={12}
+                                        fontWeight="$bold"
+                                        textAlign="center"
+                                    >
+                                        {(() => {
+                                            try {
+                                                const end = new Date(event.endDate);
+                                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                                return `${end.getDate()} ${months[end.getMonth()]}`;
+                                            } catch { return ''; }
+                                        })()}
+                                    </Text>
+                                </VStack>
 
                                 {/* Participants */}
-                                <HStack alignItems="center" space="sm">
+                                <VStack alignItems="center" space="xs" flex={1}>
                                     <Box
-                                        width={30}
-                                        height={30}
-                                        borderRadius={15}
+                                        width={40}
+                                        height={40}
+                                        borderRadius={20}
                                         borderWidth={1}
-                                        borderColor="#B9B9B9"
+                                        borderColor="#D9D9D9"
                                         alignItems="center"
                                         justifyContent="center"
                                     >
-                                        <UsersIcon width={16} height={16} color="#B9B9B9" />
+                                        <UsersIcon width={20} height={20} color="#B9B9B9" />
                                     </Box>
-                                    <VStack>
-                                        <Text
-                                            color="#B9B9B9"
-                                            fontSize={11}
-                                            fontWeight="$medium"
-                                        >
-                                            {t('details.participants')}
-                                        </Text>
-                                        <Text
-                                            color="#000000"
-                                            fontSize={11}
-                                            fontWeight="$bold"
-                                        >
-                                            {event.interaction}{t('details.peopleJoined')}
-                                        </Text>
-                                    </VStack>
-                                </HStack>
-                            </VStack>
+                                    <Text
+                                        color="#B9B9B9"
+                                        fontSize={11}
+                                        fontWeight="$medium"
+                                        textAlign="center"
+                                    >
+                                        {t('details.participants')}
+                                    </Text>
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                        fontSize={12}
+                                        fontWeight="$bold"
+                                        textAlign="center"
+                                    >
+                                        {event.interaction}
+                                    </Text>
+                                </VStack>
+
+                                {/* Winners */}
+                                <VStack alignItems="center" space="xs" flex={1}>
+                                    <Box
+                                        width={40}
+                                        height={40}
+                                        borderRadius={20}
+                                        borderWidth={1}
+                                        borderColor="#D9D9D9"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                    >
+                                        <TrophyIcon width={20} height={20} color="#B9B9B9" />
+                                    </Box>
+                                    <Text
+                                        color="#B9B9B9"
+                                        fontSize={11}
+                                        fontWeight="$medium"
+                                        textAlign="center"
+                                    >
+                                        {t('details.winners')}
+                                    </Text>
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                        fontSize={12}
+                                        fontWeight="$bold"
+                                        textAlign="center"
+                                    >
+                                        {event.winners || `Top ${event.rewards?.length || 0}`}
+                                    </Text>
+                                </VStack>
+                            </HStack>
                         </Box>
                     </VStack>
 
@@ -1107,69 +1146,64 @@ const EventDetailScreen: React.FC = () => {
                             )}
                         </HStack>
 
-                        {/* Badge Cards - Horizontal Scroll */}
+                        {/* Badge Cards - 3 Column Grid */}
                         {event.rewards && event.rewards.length > 0 ? (
-                            <FlatList
-                                data={event.rewards.slice(0, 5)}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                ItemSeparatorComponent={() => <Box width={6} />}
-                                contentContainerStyle={{ paddingRight: 16 }}
-                                renderItem={({ item }) => {
+                            <HStack flexWrap="wrap" mx={-4}>
+                                {event.rewards.slice(0, 6).map((item) => {
                                     const imageSource = item.image ? toImageSource(item.image) : undefined;
                                     return (
-                                        <Pressable
-                                            onPress={() => handleBadgePress(item)}
-                                        >
-                                            <Box
-                                                width={108}
-                                                height={122}
-                                                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                                                borderWidth={1}
-                                                borderColor="#E9E9E9"
-                                                borderRadius={5}
-                                                alignItems="center"
-                                                justifyContent="center"
-                                                p="$3"
+                                        <Box key={item.id} width="33.33%" p={4}>
+                                            <Pressable
+                                                onPress={() => handleBadgePress(item)}
                                             >
-                                                {imageSource ? (
-                                                    <Image
-                                                        source={imageSource}
-                                                        alt={item.title}
-                                                        width={62}
-                                                        height={62}
-                                                        borderRadius={5}
-                                                        mb="$2"
-                                                        resizeMode="cover"
-                                                    />
-                                                ) : (
-                                                    <Box
-                                                        width={62}
-                                                        height={62}
-                                                        bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                                                        borderRadius={5}
-                                                        mb="$2"
-                                                        alignItems="center"
-                                                        justifyContent="center"
-                                                    >
-                                                        <TrophyIcon width={24} height={24} color={isDark ? '#666' : '#999'} />
-                                                    </Box>
-                                                )}
-                                                <Text
-                                                    color={isDark ? '#FFFFFF' : '#000000'}
-                                                    fontSize={10}
-                                                    fontWeight="$bold"
-                                                    textAlign="center"
-                                                    numberOfLines={2}
+                                                <Box
+                                                    bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                                                    borderWidth={1}
+                                                    borderColor="#E9E9E9"
+                                                    borderRadius={5}
+                                                    alignItems="center"
+                                                    justifyContent="center"
+                                                    p="$3"
+                                                    py="$4"
                                                 >
-                                                    {item.title}
-                                                </Text>
-                                            </Box>
-                                        </Pressable>
+                                                    {imageSource ? (
+                                                        <Image
+                                                            source={imageSource}
+                                                            alt={item.title}
+                                                            width={62}
+                                                            height={62}
+                                                            borderRadius={5}
+                                                            mb="$2"
+                                                            resizeMode="contain"
+                                                        />
+                                                    ) : (
+                                                        <Box
+                                                            width={62}
+                                                            height={62}
+                                                            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                                                            borderRadius={5}
+                                                            mb="$2"
+                                                            alignItems="center"
+                                                            justifyContent="center"
+                                                        >
+                                                            <TrophyIcon width={24} height={24} color={isDark ? '#666' : '#999'} />
+                                                        </Box>
+                                                    )}
+                                                    <Text
+                                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                                        fontSize={10}
+                                                        fontWeight="$bold"
+                                                        textAlign="center"
+                                                        numberOfLines={2}
+                                                    >
+                                                        {item.title}
+                                                    </Text>
+                                                </Box>
+                                            </Pressable>
+                                        </Box>
                                     );
-                                }}
-                                keyExtractor={(item) => item.id}
-                            />
+                                })}
+                            </HStack>
                         ) : (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
@@ -1178,6 +1212,75 @@ const EventDetailScreen: React.FC = () => {
                             </Box>
                         )}
                     </VStack>
+
+                    {/* Surveys Section */}
+                    {event.surveys && event.surveys.length > 0 && (
+                        <VStack space="xs" mb="$3">
+                            <Text
+                                color={isDark ? '#FFFFFF' : '#000000'}
+                                fontSize={12}
+                                fontWeight="$bold"
+                            >
+                                {t('survey.title')}
+                            </Text>
+                            <VStack space="sm">
+                                {event.surveys.map((survey) => (
+                                    <Pressable
+                                        key={survey.id}
+                                        onPress={() => {
+                                            navigation.navigate('SurveyScreen', {
+                                                brandId: survey.brandId,
+                                                surveyId: survey.id,
+                                                title: survey.title,
+                                            });
+                                        }}
+                                    >
+                                        <Box
+                                            bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                                            borderWidth={1}
+                                            borderColor="#E9E9E9"
+                                            borderRadius={8}
+                                            px="$3"
+                                            py="$3"
+                                        >
+                                            <HStack alignItems="center" justifyContent="space-between">
+                                                <HStack alignItems="center" space="sm" flex={1}>
+                                                    <Box
+                                                        width={36}
+                                                        height={36}
+                                                        borderRadius={18}
+                                                        bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                                                        alignItems="center"
+                                                        justifyContent="center"
+                                                    >
+                                                        <ClipboardDocumentListIcon
+                                                            width={18}
+                                                            height={18}
+                                                            color={isDark ? '#E2FF46' : '#8B5CF6'}
+                                                        />
+                                                    </Box>
+                                                    <Text
+                                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                                        fontSize={14}
+                                                        fontWeight="$medium"
+                                                        flex={1}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {survey.title}
+                                                    </Text>
+                                                </HStack>
+                                                <ChevronRightIcon
+                                                    width={18}
+                                                    height={18}
+                                                    color={isDark ? '#666' : '#999'}
+                                                />
+                                            </HStack>
+                                        </Box>
+                                    </Pressable>
+                                ))}
+                            </VStack>
+                        </VStack>
+                    )}
 
                     {/* Event Feed Section */}
                     <VStack space="xs" mt="$3">

@@ -7,7 +7,7 @@ import {
   TrashIcon,
 } from 'react-native-heroicons/outline';
 import { Alert, Share } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useSharePost } from '@/src/features/interactions/api/hooks';
@@ -57,7 +57,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     try {
       const shareMessage = postContent
         ? `${postAuthorName ? `${postAuthorName}: ` : ''}${postContent.substring(0, 100)}${postContent.length > 100 ? '...' : ''}`
-        : t('common.messages.checkOutPost');
+        : t('messages.checkOutPost');
       
       await Share.share({
         message: shareMessage,
@@ -88,7 +88,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     } else {
       // Diğer post tipleri için update özelliği yok
       // Bu kod bloğuna normalde ulaşılmamalı (showUpdateOption = false)
-      Alert.alert(t('common.dialogs.info'), t('common.messages.updateOnlyForExperience'));
+      Alert.alert(t('dialogs.info'), t('messages.updateOnlyForExperience'));
     }
   }, [postId, postType, postContextType, postContextId, close, t]);
 
@@ -98,18 +98,18 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     console.log('[PostOptionsMenu] 🗑️ Delete button clicked for post:', postId);
     
     Alert.alert(
-      t('common.dialogs.deletePost.title'),
-      t('common.dialogs.deletePost.message'),
+      t('dialogs.deletePost.title'),
+      t('dialogs.deletePost.message'),
       [
         {
-          text: t('common.buttons.cancel'),
+          text: t('buttons.cancel'),
           style: 'cancel',
           onPress: () => {
             console.log('[PostOptionsMenu] ❌ Delete cancelled by user');
           },
         },
         {
-          text: t('common.buttons.delete'),
+          text: t('buttons.delete'),
           style: 'destructive',
           onPress: async () => {
             console.log('[PostOptionsMenu] ✅ Delete confirmed, sending DELETE request to /posts/' + postId);
@@ -123,7 +123,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                 timestamp: new Date().toISOString(),
               });
               
-              Alert.alert(t('common.messages.success'), t('common.messages.postDeleted'));
+              Alert.alert(t('messages.success'), t('messages.postDeleted'));
               // Navigate back if needed
               navigationService.goBack();
             } catch (error: any) {
@@ -138,8 +138,8 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
               });
 
               Alert.alert(
-                t('common.messages.error'),
-                error.response?.data?.message || t('common.messages.deleteError')
+                t('messages.error'),
+                error.response?.data?.message || t('messages.deleteError')
               );
             }
           },
@@ -152,20 +152,20 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     close();
 
     Alert.alert(
-      t('common.dialogs.reportPost.title'),
-      t('common.dialogs.reportPost.message'),
+      t('dialogs.reportPost.title'),
+      t('dialogs.reportPost.message'),
       [
         {
-          text: t('common.buttons.cancel'),
+          text: t('buttons.cancel'),
           style: 'cancel',
         },
         {
-          text: t('common.buttons.report'),
+          text: t('buttons.report'),
           style: 'destructive',
           onPress: () => {
             // TODO: Post report API endpoint eklendiğinde buraya entegre edilecek
             console.log('[PostOptionsMenu] Report post:', postId);
-            Alert.alert(t('common.messages.success'), t('common.messages.postReported'));
+            Alert.alert(t('messages.success'), t('messages.postReported'));
           },
         },
       ]
@@ -201,7 +201,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                   fontSize="$md"
                   fontWeight="$medium"
                 >
-                  {t('common.menu.update')}
+                  {t('menu.update')}
                 </Text>
               </HStack>
             </Pressable>
@@ -222,7 +222,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                 fontSize="$md"
                 fontWeight="$medium"
               >
-                {t('common.menu.delete')}
+                {t('menu.delete')}
               </Text>
             </HStack>
           </Pressable>
@@ -244,7 +244,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
             fontSize="$md"
             fontWeight="$medium"
           >
-            {t('common.menu.externalShare')}
+            {t('menu.externalShare')}
           </Text>
         </HStack>
       </Pressable>
@@ -263,7 +263,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
               fontSize="$md"
               fontWeight="$medium"
             >
-              {t('common.menu.report')}
+              {t('menu.report')}
             </Text>
           </HStack>
         </Pressable>

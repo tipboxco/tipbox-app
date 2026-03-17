@@ -590,36 +590,34 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5, op
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserCollectionAchievements('user-123', 20);
  */
 export const useUserCollectionAchievements = (
-  userId: string | undefined, 
+  userId: string | undefined,
   limit: number = 20,
   searchQuery?: string
 ) => {
-  const hasSearchQuery = !!searchQuery && searchQuery.trim().length > 0;
-  
+  // Normalize: treat '' and undefined the same (no search)
+  const normalizedSearch = searchQuery?.trim() || undefined;
+
   return useInfiniteQuery<UserCollectionAchievementsApiResponse, Error>({
-    queryKey: userId ? [...profileKeys.userCollectionAchievements(userId, limit), searchQuery] : ['profile', 'collections', 'achievements', 'disabled'],
+    queryKey: userId ? [...profileKeys.userCollectionAchievements(userId, limit), normalizedSearch] : ['profile', 'collections', 'achievements', 'disabled'],
     queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getUserCollectionAchievements(userId, cursor, limit, searchQuery);
+      return getUserCollectionAchievements(userId, cursor, limit, normalizedSearch);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
-      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
       if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
         return undefined;
       }
-      // Son item'ın id'sini cursor olarak kullan
       return lastPage.pagination.cursor;
     },
     enabled: !!userId,
-    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
-    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+    staleTime: 2 * 60 * 60 * 1000,
+    gcTime: 4 * 60 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 };
@@ -636,20 +634,21 @@ export const useUserCollectionAchievements = (
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserCollectionBridges('user-123', 20);
  */
 export const useUserCollectionBridges = (
-  userId: string | undefined, 
+  userId: string | undefined,
   limit: number = 20,
   searchQuery?: string
 ) => {
-  const hasSearchQuery = !!searchQuery && searchQuery.trim().length > 0;
-  
+  // Normalize: treat '' and undefined the same (no search)
+  const normalizedSearch = searchQuery?.trim() || undefined;
+
   return useInfiniteQuery<UserCollectionBridgesApiResponse, Error>({
-    queryKey: userId ? [...profileKeys.userCollectionBridges(userId, limit), searchQuery] : ['profile', 'collections', 'bridges', 'disabled'],
+    queryKey: userId ? [...profileKeys.userCollectionBridges(userId, limit), normalizedSearch] : ['profile', 'collections', 'bridges', 'disabled'],
     queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getUserCollectionBridges(userId, cursor, limit, searchQuery);
+      return getUserCollectionBridges(userId, cursor, limit, normalizedSearch);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -657,11 +656,10 @@ export const useUserCollectionBridges = (
       return lastPage.pagination.cursor ?? undefined;
     },
     enabled: !!userId,
-    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
-    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+    staleTime: 2 * 60 * 60 * 1000,
+    gcTime: 4 * 60 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 };

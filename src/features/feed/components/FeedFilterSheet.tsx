@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   checkOuter: {
     width: 20,
     height: 20,
-    borderRadius: 5,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#CCCCCC',
     alignItems: 'center',

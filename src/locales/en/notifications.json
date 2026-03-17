@@ -68,7 +68,8 @@
       "newMessage": "{{username}} sent a new message",
       "tipsReceived": "{{username}} sent you {{amount}} TIPS",
       "tipsSent": "Tip sent to {{username}}",
-      "newBadge": "Congratulations! You earned the Wishmaker badge!",
+      "newBadge": "Congratulations! You earned a new badge!",
+      "newBadgeNamed": "Congratulations! You earned the {{badgeName}} badge!",
       "achievementUnlocked": "Congratulations! You earned a badge!",
       "rewardEarned": "You earned {{amount}} TIPS!",
       "expertRequestAvailable": "New expert question available",
@@ -78,7 +79,9 @@
       "eventRewardAvailable": "Event reward available!",
       "collectionPostAdded": "Post added to collection",
       "collectionShared": "Collection shared",
-      "systemAnnouncement": "{{publisherName}} published a new survey!"
+      "systemAnnouncement": "{{publisherName}} published a new survey!",
+      "nftPurchased": "NFT \"{{title}}\" purchased for {{amount}} TIPS",
+      "nftPurchasedGeneric": "NFT purchased successfully"
     },
     "deposit": {
       "received": "Deposit received",

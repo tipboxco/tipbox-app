@@ -47,7 +47,9 @@
     "eventLoadError": "Etkinlik yüklenirken bir hata oluştu",
     "eventNotFoundError": "Etkinlik bulunamadı",
     "duration": "Süre",
+    "endDate": "Bitiş Tarihi",
     "participants": "Katılımcılar",
+    "winners": "Kazananlar",
     "peopleJoined": "+ kişi katıldı",
     "rewardsAndBadges": "Ödüller ve Rozetler",
     "seeAll": "Tümünü Gör",
@@ -122,7 +124,25 @@
     "noCategories": "Kategori bulunamadı",
     "noSubCategories": "Alt kategori bulunamadı",
     "noProductGroups": "Ürün grubu bulunamadı",
-    "apply": "Uygula"
+    "apply": "Uygula",
+    "reset": "Sıfırla"
+  },
+  "survey": {
+    "title": "Anketler",
+    "questionOf": "{{current}}/{{total}}",
+    "next": "Sonraki",
+    "back": "Geri",
+    "previousQuestion": "Onceki Soruya Don",
+    "complete": "Tamamla",
+    "selectOption": "Bir secenek secin",
+    "success": "Anket Tamamlandi!",
+    "pointsEarned": "+{{points}} Puan",
+    "badgesEarned": "Kazanilan Rozetler",
+    "submitError": "Anket gonderilirken bir hata olustu",
+    "noSurveys": "Mevcut anket yok",
+    "noOptions": "Bu soru icin secenek bulunmuyor",
+    "loading": "Sorular yukleniyor...",
+    "alreadyAnswered": "Zaten cevaplanmis"
   },
   "createPost": {
     "title": "Gönderi Yaz",

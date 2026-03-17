@@ -171,7 +171,7 @@ export const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
               fontWeight="$semibold"
               color={isDark ? '$textDark200' : '$textLight700'}
             >
-              {sale.price} TIPS
+              {Number(sale.price).toFixed(2)} TIPS
             </Text>
           </HStack>
         ))}

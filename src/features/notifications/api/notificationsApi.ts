@@ -80,7 +80,27 @@ export const convertOptimizedNotificationsToFlat = (
     // Ungrouped notifications (gruplandırılmamış bildirimler)
     dateGroup.ungroupedNotifications.forEach((optimizedNotif) => {
       const userInfo = getUserInfo(optimizedNotif.userId);
-      
+
+      // Content'ten data oluştur
+      const notifData: any = optimizedNotif.content || {};
+
+      // CRITICAL FIX: Badge bildirimleri için badge verilerini content veya root'tan al
+      if (optimizedNotif.type === 'NEW_BADGE' || optimizedNotif.type === 'ACHIEVEMENT_UNLOCKED') {
+        const rawNotif = optimizedNotif as any;
+        const badgeUrl = rawNotif.badgeUrl || rawNotif.badge_url || notifData.badgeUrl || notifData.imageUrl;
+        const badgeName = rawNotif.badgeName || rawNotif.badge_name || notifData.badgeName;
+
+        if (badgeUrl && !notifData.imageUrl) {
+          notifData.imageUrl = badgeUrl;
+        }
+        if (badgeUrl && !notifData.badgeUrl) {
+          notifData.badgeUrl = badgeUrl;
+        }
+        if (badgeName && !notifData.badgeName) {
+          notifData.badgeName = badgeName;
+        }
+      }
+
       const notification: Notification = {
         id: optimizedNotif.id,
         userId: optimizedNotif.userId,
@@ -90,9 +110,9 @@ export const convertOptimizedNotificationsToFlat = (
         read: optimizedNotif.read,
         readAt: optimizedNotif.readAt,
         createdAt: optimizedNotif.createdAt,
-        data: optimizedNotif.content,
+        data: notifData,
       };
-      
+
       allNotifications.push(notification);
     });
   });
@@ -193,7 +213,7 @@ export const getNotifications = async (
     const mappedData = notificationsArray.map((item) => {
       // Backend'den gelen `data` objesi (yeni format) veya `metadata` (eski format - backward compatibility)
       const notificationData = item.data || item.metadata || {};
-      
+
       // CRITICAL FIX: Root seviyedeki postId ve imageUrl'i data'ya taşı (eğer data'da yoksa)
       // Backend'den root seviyede gelmişse data'ya kopyala, sonra root seviyeden kaldır
       if (item.postId && !notificationData.postId) {
@@ -201,6 +221,60 @@ export const getNotifications = async (
       }
       if (item.imageUrl && !notificationData.imageUrl) {
         notificationData.imageUrl = item.imageUrl;
+      }
+
+      // CRITICAL FIX: NEW_BADGE / ACHIEVEMENT_UNLOCKED bildirimleri için badge verileri
+      // badgeUrl ve badgeName root seviyede veya data içinde olabilir
+      // Tüm olası konumları kontrol et ve data'ya taşı
+      if (item.type === 'NEW_BADGE' || item.type === 'ACHIEVEMENT_UNLOCKED') {
+        // badgeUrl: root > data.badgeUrl > data.imageUrl > imageUrl
+        const resolvedBadgeUrl = item.badgeUrl || item.badge_url || item.badgeImage
+          || notificationData.badgeUrl || notificationData.badge_url
+          || notificationData.imageUrl || item.imageUrl;
+
+        if (resolvedBadgeUrl) {
+          if (!notificationData.imageUrl) {
+            notificationData.imageUrl = resolvedBadgeUrl;
+          }
+          if (!notificationData.badgeUrl) {
+            notificationData.badgeUrl = resolvedBadgeUrl;
+          }
+        }
+
+        // badgeName: root > data
+        const resolvedBadgeName = item.badgeName || item.badge_name
+          || notificationData.badgeName || notificationData.badge_name;
+        if (resolvedBadgeName && !notificationData.badgeName) {
+          notificationData.badgeName = resolvedBadgeName;
+        }
+
+        if (__DEV__) {
+          console.log('[getNotifications] 🏅 Badge notification mapping:', {
+            notificationId: item.id,
+            type: item.type,
+            'root.badgeUrl': item.badgeUrl,
+            'root.badge_url': item.badge_url,
+            'root.imageUrl': item.imageUrl,
+            'data.badgeUrl': notificationData.badgeUrl,
+            'data.imageUrl': notificationData.imageUrl,
+            'data.badgeName': notificationData.badgeName,
+            resolvedBadgeUrl,
+            resolvedBadgeName,
+            rawItemKeys: Object.keys(item),
+            rawDataKeys: item.data ? Object.keys(item.data) : 'no data obj',
+          });
+        }
+      } else {
+        // Diğer tipler için eski badgeUrl mapping (backward compat)
+        if (item.badgeUrl && !notificationData.imageUrl) {
+          notificationData.imageUrl = item.badgeUrl;
+        }
+        if (item.badgeUrl && !notificationData.badgeUrl) {
+          notificationData.badgeUrl = item.badgeUrl;
+        }
+        if (item.badgeName && !notificationData.badgeName) {
+          notificationData.badgeName = item.badgeName;
+        }
       }
       
       // read/isRead field'ını normalize et
@@ -248,8 +322,8 @@ export const getNotifications = async (
         userId: item.userId,
         type: item.type as any,
         username: item.username || undefined, // Backend'den gelen username alanı
-        title: item.title || '', // Dokümana göre: title field'ı yok, boş bırak (backward compatibility)
-        message: '', // Dokümana göre: message field'ı yok, frontend'de type ve data'ya göre oluşturulacak (backward compatibility)
+        title: item.title || '', // Backend'den gelen title (NEW_BADGE gibi tiplerde dolu geliyor)
+        message: item.message || '', // Backend'den gelen message (NEW_BADGE gibi tiplerde dolu geliyor)
         avatar: item.avatar || item.avatarUrl || null, // Dokümana göre: avatar root seviyede
         // CRITICAL FIX: imageUrl root seviyede kaldırıldı, sadece data içinde olacak
         // imageUrl property'si kaldırıldı - sadece data.imageUrl kullanılacak

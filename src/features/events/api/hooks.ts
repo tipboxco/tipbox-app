@@ -42,7 +42,7 @@ import {
   type CreateEventPostWithContextRequestV2 as CreateEventPostWithContextRequest,
   type CreateEventPostWithContextResponse,
 } from './communityEventsApi';
-import { getSurveyQuestions, submitSurveyQuestionAnswer, completeSurvey } from './surveyApi';
+import { getSurveyQuestions, submitSurveyAnswers } from './surveyApi';
 import { getMainCategories, getSubCategories, getCategoryById } from './medusaApi';
 import type { MedusaCategory } from '../types/medusa.types';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
@@ -56,7 +56,7 @@ import type {
   UserProgressCollectionsResponse,
   BadgeReminderResponse,
 } from '../types/collection.types';
-import type { SurveyQuestionsApiResponse, SurveyCompleteApiResponse } from '../types/survey.types';
+import type { SurveyQuestionsApiResponse, SurveyCompleteApiResponse, SurveySubmitRequest } from '../types/survey.types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
 import { invalidateCatalogPosts } from '@/src/features/post/api/hooks';
@@ -94,8 +94,8 @@ export const eventsKeys = {
     [...eventsKeys.all, 'collections', 'completed', userId ?? 'me'] as const,
   userProgressCollections: (userId?: string) =>
     [...eventsKeys.all, 'collections', 'user-progress', userId ?? 'me'] as const,
-  surveyQuestions: (surveyId: string) =>
-    [...eventsKeys.all, 'surveys', 'questions', surveyId] as const,
+  surveyQuestions: (brandId: string, surveyId: string) =>
+    [...eventsKeys.all, 'surveys', 'questions', brandId, surveyId] as const,
   achievements: (cursor?: string, limit?: number, search?: string) =>
     [...eventsKeys.all, 'achievements', cursor, limit, search] as const,
   requirements: (eventId: string) => [...eventsKeys.all, 'requirements', eventId] as const,
@@ -468,13 +468,13 @@ export const useUserProgressCollections = (userId?: string) => {
 
 /**
  * Get Survey Questions query hook
- * GET /surveys/{surveyId}/questions – event'ten gelen anketin soruları
+ * GET /brands/{brandId}/surveys/{surveyId}/questions
  */
-export const useSurveyQuestions = (surveyId: string) => {
+export const useSurveyQuestions = (brandId: string, surveyId: string) => {
   return useQuery<SurveyQuestionsApiResponse, Error>({
-    queryKey: eventsKeys.surveyQuestions(surveyId),
-    queryFn: () => getSurveyQuestions(surveyId),
-    enabled: !!surveyId,
+    queryKey: eventsKeys.surveyQuestions(brandId, surveyId),
+    queryFn: () => getSurveyQuestions(brandId, surveyId),
+    enabled: !!brandId && !!surveyId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: 1,
@@ -482,37 +482,20 @@ export const useSurveyQuestions = (surveyId: string) => {
 };
 
 /**
- * Submit Survey Question Answer mutation hook
- * POST /surveys/{surveyId}/questions/{questionId}/answer – tek soruya cevap (isCompleted döner)
+ * Submit Survey mutation hook
+ * POST /brands/{brandId}/surveys/{surveyId}/submit – tum cevaplari tek seferde gonderir
  */
-export const useSubmitSurveyQuestionAnswer = () => {
+export const useSubmitSurvey = () => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      surveyId,
-      questionId,
-      answerId,
-    }: {
-      surveyId: string;
-      questionId: string;
-      answerId: string;
-    }) => submitSurveyQuestionAnswer(surveyId, questionId, answerId),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: eventsKeys.surveyQuestions(variables.surveyId) });
-    },
-  });
-};
-
-/**
- * Complete Survey mutation hook
- * POST /surveys/{surveyId}/complete – tüm sorular cevaplandıktan sonra; pointsAwarded, badgesEarned döner
- */
-export const useCompleteSurvey = () => {
-  const queryClient = useQueryClient();
-  return useMutation<SurveyCompleteApiResponse, Error, string>({
-    mutationFn: (surveyId: string) => completeSurvey(surveyId),
-    onSuccess: (_, surveyId) => {
-      queryClient.invalidateQueries({ queryKey: eventsKeys.surveyQuestions(surveyId) });
+  return useMutation<
+    SurveyCompleteApiResponse,
+    Error,
+    { brandId: string; surveyId: string; answers: SurveySubmitRequest['answers'] }
+  >({
+    mutationFn: ({ brandId, surveyId, answers }) =>
+      submitSurveyAnswers(brandId, surveyId, answers),
+    onSuccess: (_, { brandId, surveyId }) => {
+      queryClient.invalidateQueries({ queryKey: eventsKeys.surveyQuestions(brandId, surveyId) });
       queryClient.invalidateQueries({ queryKey: eventsKeys.all });
     },
   });

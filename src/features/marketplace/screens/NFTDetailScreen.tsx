@@ -268,7 +268,7 @@ const NFTDetailScreen = () => {
         if (!hasSufficientBalance) {
             Alert.alert(
                 t('screens.nftDetail.alerts.insufficientBalanceTitle'),
-                t('screens.nftDetail.alerts.insufficientBalanceMessage', { required: nftDetail.price, available: userBalance }),
+                t('screens.nftDetail.alerts.insufficientBalanceMessage', { required: Number(nftDetail.price).toFixed(2), available: Number(userBalance).toFixed(2) }),
                 [{ text: t('screens.nftDetail.alerts.ok'), style: 'cancel' }]
             );
             return;
@@ -277,7 +277,7 @@ const NFTDetailScreen = () => {
         // Show confirmation modal
         Alert.alert(
             t('screens.nftDetail.alerts.confirmPurchase'),
-            t('screens.nftDetail.alerts.confirmPurchaseMessage', { title: nftDetail.title, price: nftDetail.price }),
+            t('screens.nftDetail.alerts.confirmPurchaseMessage', { title: nftDetail.title, price: Number(nftDetail.price).toFixed(2) }),
             [
                 {
                     text: t('screens.nftDetail.alerts.no'),
@@ -660,14 +660,14 @@ const NFTDetailScreen = () => {
                                                 fontWeight="$bold"
                                                 color={isDark ? '$textDark50' : '$textLight900'}
                                             >
-                                                {nftDetail.price} {t('common.tips')}
+                                                {Number(nftDetail.price).toFixed(2)} {t('common.tips')}
                                             </Text>
                                             <Text
                                                 fontSize="$sm"
                                                 fontWeight="$medium"
                                                 color={isDark ? '$textDark400' : '$textLight600'}
                                             >
-                                                (${(nftDetail.price * 0.01).toFixed(2)})
+                                                (${(Number(nftDetail.price) * 0.01).toFixed(2)})
                                             </Text>
                                         </VStack>
                                     </HStack>
@@ -693,7 +693,7 @@ const NFTDetailScreen = () => {
                                         fontWeight="$bold"
                                         color={isDark ? '$textDark200' : '$textLight800'}
                                     >
-                                        {nftDetail.suggestedPrice} {t('common.tips')}
+                                        {Number(nftDetail.suggestedPrice).toFixed(2)} {t('common.tips')}
                                     </Text>
                                 </HStack>
                             </Box>
@@ -863,7 +863,7 @@ const NFTDetailScreen = () => {
                                 textAlign="center"
                                 mb="$2"
                             >
-                                {t('screens.nftDetail.insufficientBalance', { amount: nftDetail.price })}
+                                {t('screens.nftDetail.insufficientBalance', { amount: Number(nftDetail.price).toFixed(2) })}
                             </Text>
                         )}
 
@@ -885,7 +885,7 @@ const NFTDetailScreen = () => {
                                     color={hasSufficientBalance ? '#000000' : '#666666'}
                                     textAlign="center"
                                 >
-                                    {t('screens.nftDetail.buttons.buyNFT', { price: nftDetail.price })}
+                                    {t('screens.nftDetail.buttons.buyNFT', { price: Number(nftDetail.price).toFixed(2) })}
                                 </Text>
                             )}
                         </Pressable>

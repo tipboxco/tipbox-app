@@ -1,46 +1,45 @@
 /**
  * Survey API Types - Backend Mobil Entegrasyon ile uyumlu
  *
- * Akış: Event Detail → surveys[] → GET /surveys/:id/questions → POST answer per question → POST /surveys/:id/complete
+ * Akis: Event Detail -> surveys[] -> GET /brands/{brandId}/surveys/{surveyId}/questions -> POST /brands/{brandId}/surveys/{surveyId}/submit
  */
 
-/** Event detail içinde gelen survey öğesi (GET /events/{eventId}) */
+/** Event detail icinde gelen survey ogesi (GET /events/{eventId}) */
 export interface EventSurveyItem {
   id: string;
   brandId: string;
   title: string;
 }
 
-/** GET /surveys/{surveyId}/questions - soru seçeneği */
+/** GET /brands/{brandId}/surveys/{surveyId}/questions - soru secenegi */
 export interface SurveyQuestionOption {
   id: string;
   text: string;
 }
 
-/** GET /surveys/{surveyId}/questions - tek soru */
+/** GET /brands/{brandId}/surveys/{surveyId}/questions - tek soru */
 export interface SurveyQuestionItem {
   id: string;
   text: string;
+  type: string; // e.g. "SINGLE_CHOICE"
   options: SurveyQuestionOption[];
   order: number;
+  isAnswered: boolean;
 }
 
-/** GET /surveys/{surveyId}/questions response */
+/** GET /brands/{brandId}/surveys/{surveyId}/questions response */
 export interface SurveyQuestionsApiResponse {
   surveyId: string;
   totalQuestions: number;
   questions: SurveyQuestionItem[];
 }
 
-/** POST /surveys/{surveyId}/questions/{questionId}/answer response */
-export interface SurveyAnswerApiResponse {
-  success: boolean;
-  message: string;
-  /** Tüm sorular cevaplandığında true; "Tamamla" butonu buna göre aktif edilir */
-  isCompleted: boolean;
+/** POST /brands/{brandId}/surveys/{surveyId}/submit request body */
+export interface SurveySubmitRequest {
+  answers: { questionId: string; optionId: string }[];
 }
 
-/** Completion sırasında kazanılan badge (POST /surveys/{surveyId}/complete) */
+/** Completion sirasinda kazanilan badge */
 export interface SurveyBadgeEarned {
   id: string;
   name: string;
@@ -49,19 +48,16 @@ export interface SurveyBadgeEarned {
   rarity: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 }
 
-/** POST /surveys/{surveyId}/complete - başarılı response */
+/** POST /brands/{brandId}/surveys/{surveyId}/submit - basarili response */
 export interface SurveyCompleteApiResponse {
   success: true;
   message: string;
-  /** Bu anket tamamlandığında kazanılan puan */
   pointsAwarded: number;
-  /** Toplam survey puanı (tüm tamamlanan anketlerden) */
   totalSurveyPoints: number;
-  /** Bu completion'da unlock edilen badge'ler (10+, 25+, 50+ kuralına göre) */
   badgesEarned: SurveyBadgeEarned[];
 }
 
-/** POST /surveys/{surveyId}/complete - hata response (zaten tamamlanmış / eksik soru) */
+/** POST /brands/{brandId}/surveys/{surveyId}/submit - hata response */
 export interface SurveyCompleteErrorResponse {
   success: false;
   message: string;

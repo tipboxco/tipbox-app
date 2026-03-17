@@ -1634,10 +1634,8 @@ export const getUserCollectionAchievements = async (
   if (cursor) {
     params.append('cursor', cursor);
   }
-  if (searchQuery) {
-    // Backend'de hem 'q' hem de 'search' parametresi destekleniyor
-    params.append('q', searchQuery);
-    params.append('search', searchQuery);
+  if (searchQuery?.trim()) {
+    params.append('q', searchQuery.trim());
   }
   params.append('limit', limit.toString());
 

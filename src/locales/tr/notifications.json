@@ -68,7 +68,8 @@
       "newMessage": "{{username}} yeni mesaj gönderdi",
       "tipsReceived": "{{username}} sana {{amount}} TIPS gönderdi",
       "tipsSent": "{{username}}'e bahşiş gönderildi",
-      "newBadge": "Tebrikler! Wishmaker rozetini kazandın!",
+      "newBadge": "Tebrikler! Yeni bir rozet kazandın!",
+      "newBadgeNamed": "Tebrikler! {{badgeName}} rozetini kazandın!",
       "achievementUnlocked": "Tebrikler! Rozet kazandın!",
       "rewardEarned": "{{amount}} TIPS kazandın!",
       "expertRequestAvailable": "Yeni uzman sorusu mevcut",
@@ -78,7 +79,9 @@
       "eventRewardAvailable": "Etkinlik ödülü mevcut!",
       "collectionPostAdded": "Gönderi koleksiyona eklendi",
       "collectionShared": "Koleksiyon paylaşıldı",
-      "systemAnnouncement": "{{publisherName}}, yeni bir anket yayınladı!"
+      "systemAnnouncement": "{{publisherName}}, yeni bir anket yayınladı!",
+      "nftPurchased": "\"{{title}}\" NFT'si {{amount}} TIPS karşılığında satın alındı",
+      "nftPurchasedGeneric": "NFT başarıyla satın alındı"
     },
     "deposit": {
       "received": "Para yatırıldı",

@@ -1,11 +1,11 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import { VStack, HStack, Text, Box, Pressable } from '@gluestack-ui/themed';
 import { Dimensions, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { useBottomOffset } from '@/src/utils';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -44,9 +44,9 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
   const isDark = colorMode === 'dark';
   const { t } = useTranslation('marketplace');
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding: 0 });
+  const insets = useSafeAreaInsets();
 
-  const snapPoints = React.useMemo(() => ['60%'], []);
+  const snapPoints = React.useMemo(() => ['85%'], []);
 
   useEffect(() => {
     if (isVisible) {
@@ -92,9 +92,10 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
       handleIndicatorStyle={{
         backgroundColor: isDark ? '#404040' : '#E0E0E0',
       }}
-      bottomInset={bottomOffset}
+      bottomInset={0}
+      topInset={0}
     >
-      <BottomSheetView style={styles.contentContainer}>
+      <BottomSheetScrollView style={styles.contentContainer} contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
         <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(200)}>
           <VStack space="lg" px="$4" py="$2">
             {/* Success Icon */}
@@ -256,12 +257,12 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
               onPress={handleClose}
               bg="#C2E607"
               borderRadius="$lg"
-              py="$3"
+              py="$4"
               px="$4"
               mt="$2"
             >
               <Text
-                fontSize={12}
+                fontSize={14}
                 fontWeight="$bold"
                 color="#596B00"
                 textAlign="center"
@@ -271,7 +272,7 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
             </Pressable>
           </VStack>
         </Animated.View>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 };
@@ -279,5 +280,8 @@ export const NFTPurchaseSuccessBottomSheet: React.FC<NFTPurchaseSuccessBottomShe
 const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
 });

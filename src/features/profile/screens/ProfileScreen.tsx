@@ -1062,43 +1062,37 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               </Text>
             </Box>
           ) : (
-            <Box flexDirection="row" flexWrap="wrap" justifyContent="center" alignItems="center">
-              {filteredBadges.map((badge) => (
-                <Pressable
-                  key={badge.id}
-                  onPress={() => handleBadgePress?.(badge)}
-                  width={114}
-                  height={130}
-                  mb={12}
-                  alignItems="center"
-                  justifyContent="center"
-                  bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                  borderWidth={1}
-                  borderColor={isDark ? '#333' : '#E9E9E9'}
-                  borderRadius={5}
-                  p="$2"
-                >
-                  <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
-                    <Image
-                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                      alt={badge.title}
-                      style={{ width: 56, height: 56 }}
-                      resizeMode="contain"
-                    />
-                  </Box>
-                  <Text
-                    mt="$1"
-                    fontSize="$2xs"
-                    fontWeight="$semibold"
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    textAlign="center"
-                    numberOfLines={2}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {filteredBadges.map((badge) => {
+                const badgeItemWidth = (SCREEN_WIDTH - 32 - 16) / 3;
+                return (
+                  <Pressable
+                    key={badge.id}
+                    onPress={() => handleBadgePress?.(badge)}
+                    style={{ width: badgeItemWidth, height: 130, marginBottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? '#1A1A1A' : '#FDFDFD', borderWidth: 1, borderColor: isDark ? '#333' : '#E9E9E9', borderRadius: 5, padding: 8 }}
                   >
-                    {badge.title}
-                  </Text>
-                </Pressable>
-              ))}
-            </Box>
+                    <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
+                      <Image
+                        source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                        alt={badge.title}
+                        style={{ width: 56, height: 56 }}
+                        resizeMode="contain"
+                      />
+                    </Box>
+                    <Text
+                      mt="$1"
+                      fontSize="$2xs"
+                      fontWeight="$semibold"
+                      color={isDark ? '$textDark50' : '$textLight900'}
+                      textAlign="center"
+                      numberOfLines={2}
+                    >
+                      {badge.title}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           )}
         </Box>
       );

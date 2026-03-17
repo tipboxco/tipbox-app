@@ -33,6 +33,7 @@ export interface EventDetailApiResponse {
   banner?: string | null; // API'den gelen banner field'ı (detail sayfası banner'ı)
   image?: string | null; // Event card image (EventsScreen'de görünen)
   rewards: EventDetailReward[];
+  winners?: string | null; // "Top 15" gibi kazanan bilgisi
   participants?: Array<{
     userId: string;
     avatar: string | null;

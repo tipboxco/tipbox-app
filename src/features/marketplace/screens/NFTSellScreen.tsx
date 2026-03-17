@@ -357,7 +357,7 @@ export const NFTSellScreen = () => {
                   <Text
                     fontSize="$xs"
                     fontWeight="$semibold"
-                    color={rarityInfo.color}
+                    color={isDark ? '$textDark200' : '$textLight700'}
                   >
                     {nftInfo.rarity?.toUpperCase() || 'COMMON'}
                   </Text>
@@ -401,7 +401,7 @@ export const NFTSellScreen = () => {
                         fontWeight="$bold"
                         color="#C2E607"
                       >
-                        {currentListingPrice}
+                        {Number(currentListingPrice).toFixed(2)}
                       </Text>
                       <Text
                         fontSize="$sm"
@@ -536,7 +536,7 @@ export const NFTSellScreen = () => {
                     fontWeight="$bold"
                     color={isDark ? '$textDark50' : '$textLight900'}
                   >
-                    {nftInfo.suggestedPrice} TIPS
+                    {Number(nftInfo.suggestedPrice).toFixed(2)} TIPS
                   </Text>
                 </Pressable>
               </HStack>
