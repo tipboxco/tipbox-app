@@ -73,14 +73,13 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     
     // CRITICAL: Update seçeneği sadece experience post tipinde görünür
     if (postType === 'experience') {
-      // Experience post için: SelectExperienceForUpdateScreen'e yönlendir
-      // Bu ekranda kullanıcı experience post'unu seçecek ve ardından update oluşturacak
+      // Experience post için: Direkt CreateUpdatePostScreen'e yönlendir
       navigationService.navigate(ROOT_ROUTES.POST, {
-        screen: 'SelectExperienceForUpdateScreen',
+        screen: 'CreateUpdatePostScreen',
         params: {
           product: postContextType === 'product' && postContextId ? {
             id: postContextId,
-            name: '', // SelectExperience screen'de post detayından alınacak
+            name: '',
           } : undefined,
         },
       });

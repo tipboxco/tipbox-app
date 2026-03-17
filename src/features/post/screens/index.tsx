@@ -6,5 +6,4 @@ export { CreateQuestionPostScreen } from './CreateQuestionPostScreen';
 export { CreateExperiencePostScreen } from './CreateExperiencePostScreen';
 export { CreateBenchmarkPostScreen } from './CreateBenchmarkPostScreen';
 export { CreateUpdatePostScreen } from './CreateUpdatePostScreen';
-export { SelectExperienceForUpdateScreen } from './SelectExperienceForUpdateScreen';
 export { SelectCompareProductScreen } from './SelectCompareProductScreen';

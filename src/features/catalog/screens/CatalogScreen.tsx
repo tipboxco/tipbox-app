@@ -559,7 +559,7 @@ const CatalogScreenComponent = () => {
       }
       setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
       navigationService.navigate(ROOT_ROUTES.POST, {
-        screen: 'SelectExperienceForUpdateScreen',
+        screen: 'CreateUpdatePostScreen',
         params: {
           product: selectedProductLocal ? {
             id: selectedProductLocal.id,
