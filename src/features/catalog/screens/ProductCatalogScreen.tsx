@@ -170,33 +170,38 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   // Prefetch helper
   const { prefetchSubCategories, prefetchProductGroups, prefetchProducts } = useCatalogPrefetch();
   
-  // API'den kategorileri getir
-  const { 
-    data: catalogCategoriesData, 
-    isLoading: isLoadingCategories, 
+  // API'den kategorileri getir (infinite scroll)
+  const {
+    data: catalogCategoriesData,
+    isLoading: isLoadingCategories,
     isError,
+    fetchNextPage: fetchNextCategoriesPage,
+    hasNextPage: hasNextCategoriesPage,
+    isFetchingNextPage: isFetchingNextCategoriesPage,
   } = useCatalogCategories();
-  
-  // API'den seçili kategoriye ait subcategories'i getir
-  const { 
-    data: catalogSubCategoriesData, 
+
+  // API'den seçili kategoriye ait subcategories'i getir (infinite scroll)
+  const {
+    data: catalogSubCategoriesData,
     isLoading: isLoadingSubCategories,
     isError: isSubCategoriesError,
     error: subCategoriesError,
+    fetchNextPage: fetchNextSubCategoriesPage,
+    hasNextPage: hasNextSubCategoriesPage,
+    isFetchingNextPage: isFetchingNextSubCategoriesPage,
   } = useCatalogSubCategories(selectedCategoryId);
   
   // subcategories verisi takibi (debug mode'da aktif)
   useEffect(() => {
     if (__DEV__) {
+      const allItems = catalogSubCategoriesData?.pages?.flatMap((page) => page.items || []) || [];
       console.log('[ProductCatalogScreen] 🔍 useCatalogSubCategories Hook State:', {
         selectedCategoryId,
         isLoading: isLoadingSubCategories,
         isError: isSubCategoriesError,
         error: subCategoriesError,
         hasData: !!catalogSubCategoriesData,
-        dataType: typeof catalogSubCategoriesData,
-        itemsCount: catalogSubCategoriesData?.items?.length || 0,
-        data: catalogSubCategoriesData,
+        itemsCount: allItems.length,
       });
     }
   }, [catalogSubCategoriesData, selectedCategoryId, isLoadingSubCategories, isSubCategoriesError, subCategoriesError]);
@@ -244,22 +249,23 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     undefined
   );
   
-  // API'den gelen verileri formatla
+  // API'den gelen verileri formatla (InfiniteData yapısından flatten)
   // Categories için
   const catalogCategories = useMemo(() => {
-    if (!catalogCategoriesData?.items) return [];
-    return catalogCategoriesData.items;
+    if (!catalogCategoriesData?.pages) return [];
+    return catalogCategoriesData.pages.flatMap((page) => page.items || []);
   }, [catalogCategoriesData]);
 
-  // SubCategories için
+  // SubCategories için (InfiniteData yapısından flatten)
   const catalogSubCategories = useMemo(() => {
-    if (!catalogSubCategoriesData?.items) return [];
-    
-    // DEBUG: Backend'den gelen veriyi log'la
+    if (!catalogSubCategoriesData?.pages) return [];
+
+    const allItems = catalogSubCategoriesData.pages.flatMap((page) => page.items || []);
+
     if (__DEV__) {
       console.log('[ProductCatalogScreen] 📦 SubCategories Data:', {
-        itemsCount: catalogSubCategoriesData.items.length,
-        items: catalogSubCategoriesData.items.map(item => ({
+        itemsCount: allItems.length,
+        items: allItems.map(item => ({
           subCategoryId: item.subCategoryId,
           name: item.name,
           categoryId: item.categoryId,
@@ -267,8 +273,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         selectedCategoryId,
       });
     }
-    
-    return catalogSubCategoriesData.items;
+
+    return allItems;
   }, [catalogSubCategoriesData, selectedCategoryId]);
 
   // ProductGroups için (InfiniteData yapısından tüm product groups'ı çıkar)
@@ -1618,6 +1624,16 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           if (!showGlobalSearchResults && currentView === 'productgroups' && hasNextProductGroupsPage && !isFetchingNextProductGroupsPage) {
             fetchNextProductGroupsPage();
           }
+
+          // Categories view için infinite scroll
+          if (!showGlobalSearchResults && currentView === 'categories' && hasNextCategoriesPage && !isFetchingNextCategoriesPage) {
+            fetchNextCategoriesPage();
+          }
+
+          // Subcategories view için infinite scroll
+          if (!showGlobalSearchResults && currentView === 'subcategories' && hasNextSubCategoriesPage && !isFetchingNextSubCategoriesPage) {
+            fetchNextSubCategoriesPage();
+          }
         }}
         scrollEventThrottle={16}
       >
@@ -1881,6 +1897,20 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
 
                   {/* Load More Indicator - Product groups view için */}
                   {!showGlobalSearchResults && currentView === 'productgroups' && isFetchingNextProductGroupsPage && (
+                    <Box py="$4" alignItems="center">
+                      <CategorySkeleton count={3} />
+                    </Box>
+                  )}
+
+                  {/* Load More Indicator - Categories view için */}
+                  {!showGlobalSearchResults && currentView === 'categories' && isFetchingNextCategoriesPage && (
+                    <Box py="$4" alignItems="center">
+                      <CategorySkeleton count={3} />
+                    </Box>
+                  )}
+
+                  {/* Load More Indicator - Subcategories view için */}
+                  {!showGlobalSearchResults && currentView === 'subcategories' && isFetchingNextSubCategoriesPage && (
                     <Box py="$4" alignItems="center">
                       <CategorySkeleton count={3} />
                     </Box>

@@ -77,20 +77,29 @@ export const ProductSelectScreen: React.FC = () => {
   const { prefetchSubCategories, prefetchProductGroups, prefetchProducts } = useCatalogPrefetch();
   
   // API hooks
-  const { 
-    data: catalogCategoriesData, 
-    isLoading: isLoadingCategories, 
+  const {
+    data: catalogCategoriesData,
+    isLoading: isLoadingCategories,
     isError,
+    fetchNextPage: fetchNextCategoriesPage,
+    hasNextPage: hasNextCategoriesPage,
+    isFetchingNextPage: isFetchingNextCategoriesPage,
   } = useCatalogCategories();
-  
-  const { 
-    data: catalogSubCategoriesData, 
+
+  const {
+    data: catalogSubCategoriesData,
     isLoading: isLoadingSubCategories,
+    fetchNextPage: fetchNextSubCategoriesPage,
+    hasNextPage: hasNextSubCategoriesPage,
+    isFetchingNextPage: isFetchingNextSubCategoriesPage,
   } = useCatalogSubCategories(selectedCategoryId);
-  
-  const { 
-    data: catalogProductGroupsData, 
+
+  const {
+    data: catalogProductGroupsData,
     isLoading: isLoadingProductGroups,
+    fetchNextPage: fetchNextProductGroupsPage,
+    hasNextPage: hasNextProductGroupsPage,
+    isFetchingNextPage: isFetchingNextProductGroupsPage,
   } = useCatalogProductGroups(selectedSubCategoryId);
   
   // Debounce search query
@@ -123,8 +132,8 @@ export const ProductSelectScreen: React.FC = () => {
   
   // Format API data
   const catalogCategories = useMemo(() => {
-    if (!catalogCategoriesData?.items) return [];
-    return catalogCategoriesData.items;
+    if (!catalogCategoriesData?.pages) return [];
+    return catalogCategoriesData.pages.flatMap((page) => page.items || []);
   }, [catalogCategoriesData]);
 
   // Reset store on mount - EventCreatePost'tan geldiğinde temiz başla
@@ -160,13 +169,13 @@ export const ProductSelectScreen: React.FC = () => {
   }, [productGroupFilter]); // productGroupFilter değiştiğinde de çalışmalı
 
   const catalogSubCategories = useMemo(() => {
-    if (!catalogSubCategoriesData?.items) return [];
-    return catalogSubCategoriesData.items;
+    if (!catalogSubCategoriesData?.pages) return [];
+    return catalogSubCategoriesData.pages.flatMap((page) => page.items || []);
   }, [catalogSubCategoriesData]);
 
   const catalogProductGroups = useMemo(() => {
-    if (!catalogProductGroupsData?.items) return [];
-    return catalogProductGroupsData.items;
+    if (!catalogProductGroupsData?.pages) return [];
+    return catalogProductGroupsData.pages.flatMap((page) => page.items || []);
   }, [catalogProductGroupsData]);
 
   const currentProducts = useMemo(() => {
@@ -597,15 +606,25 @@ export const ProductSelectScreen: React.FC = () => {
           flex={1} 
           px="$4"
           onScroll={(event) => {
+            const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+            const paddingToBottom = 20;
+            const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+            if (!isNearBottom) return;
+
             if (hasGlobalSearch && hasNextGlobalSearchPage && !isFetchingNextGlobalSearchPage) {
-              const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-              const paddingToBottom = 20;
-              if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
-                fetchNextGlobalSearchPage();
-              }
+              fetchNextGlobalSearchPage();
+            }
+            if (!hasGlobalSearch && currentView === 'categories' && hasNextCategoriesPage && !isFetchingNextCategoriesPage) {
+              fetchNextCategoriesPage();
+            }
+            if (!hasGlobalSearch && currentView === 'subcategories' && hasNextSubCategoriesPage && !isFetchingNextSubCategoriesPage) {
+              fetchNextSubCategoriesPage();
+            }
+            if (!hasGlobalSearch && currentView === 'productgroups' && hasNextProductGroupsPage && !isFetchingNextProductGroupsPage) {
+              fetchNextProductGroupsPage();
             }
           }}
-          scrollEventThrottle={400}
+          scrollEventThrottle={16}
         >
           <VStack space="md" pt="$4" pb={52}>
             {/* Global Search Results */}

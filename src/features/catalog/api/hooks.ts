@@ -61,9 +61,10 @@ export const useCatalogPrefetch = () => {
   const queryClient = useQueryClient();
 
   const prefetchSubCategories = useCallback((categoryId: string) => {
-    queryClient.prefetchQuery({
-      queryKey: catalogKeys.subCategories(categoryId, undefined, 100),
-      queryFn: () => getCatalogSubCategories(categoryId, undefined, 100),
+    queryClient.prefetchInfiniteQuery({
+      queryKey: catalogKeys.subCategories(categoryId, undefined, 10),
+      queryFn: () => getCatalogSubCategories(categoryId, undefined, 10),
+      initialPageParam: undefined,
       staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
     });
   }, [queryClient]);
@@ -102,10 +103,18 @@ export const useCatalogPrefetch = () => {
  * @example
  * const { data, isLoading, error } = useCatalogCategories();
  */
-export const useCatalogCategories = (limit: number = 100) => {
-  return useQuery<CatalogPaginationResponse<CatalogCategory>, Error>({
+export const useCatalogCategories = (limit: number = 10) => {
+  return useInfiniteQuery<CatalogPaginationResponse<CatalogCategory>, Error>({
     queryKey: catalogKeys.categories(undefined, limit),
-    queryFn: () => getCatalogCategories(undefined, limit),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getCatalogCategories(cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) return undefined;
+      return lastPage.pagination?.cursor;
+    },
     staleTime: 24 * 60 * 60 * 1000, // 24 saat - dokümana göre backend cache TTL
     gcTime: 7 * 24 * 60 * 60 * 1000, // 7 gün - cache'de tut
     refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
@@ -181,14 +190,20 @@ export const useBrandsByCategory = (categoryId: string | undefined, limit: numbe
  * @example
  * const { data, isLoading, error } = useCatalogSubCategories('category-123');
  */
-export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 100) => {
-  const query = useQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
+export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 10) => {
+  return useInfiniteQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
     queryKey: categoryId ? catalogKeys.subCategories(categoryId, undefined, limit) : ['catalog', 'subCategories', 'disabled'],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!categoryId) {
         throw new Error('Category ID is required');
       }
-      return getCatalogSubCategories(categoryId, undefined, limit);
+      const cursor = pageParam as string | undefined;
+      return getCatalogSubCategories(categoryId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) return undefined;
+      return lastPage.pagination?.cursor;
     },
     enabled: !!categoryId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
@@ -198,44 +213,6 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
     retry: 3, // Dokümana göre retry mekanizması
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
-  
-  // DEBUG: React Query response'unu log'la
-  if (__DEV__) {
-    useEffect(() => {
-      // Log summary only; avoid nesting objects so console doesn't show "[Object]"
-      console.log('[useCatalogSubCategories] 🔍 React Query State:', {
-        categoryId,
-        limit,
-        enabled: !!categoryId,
-        isLoading: query.isLoading,
-        isFetching: query.isFetching,
-        isError: query.isError,
-        error: query.error,
-        hasData: !!query.data,
-        dataType: typeof query.data,
-        itemsCount: query.data?.items?.length || 0,
-      });
-      
-      if (query.data) {
-        console.log('[useCatalogSubCategories] 📦 React Query Data:', {
-          categoryId,
-          limit,
-          itemsCount: query.data.items?.length || 0,
-          items: query.data.items?.map(item => ({ subCategoryId: item.subCategoryId, name: item.name })) || [],
-          pagination: query.data.pagination,
-        });
-      }
-      if (query.isError) {
-        console.error('[useCatalogSubCategories] ❌ React Query Error:', {
-          categoryId,
-          limit,
-          error: query.error,
-        });
-      }
-    }, [query.data, query.isLoading, query.isFetching, query.isError, query.error, categoryId, limit]);
-  }
-  
-  return query;
 };
 
 /**

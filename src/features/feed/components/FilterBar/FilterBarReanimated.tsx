@@ -216,20 +216,19 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     return totalHeight;
   }, []);
 
-  // Categories
+  // Categories (infinite query - flatten pages)
   const { data: catalogCategoriesData } = useCatalogCategories();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const { data: catalogSubCategoriesData } = useCatalogSubCategories(selectedCategoryId || undefined);
 
-  // FIX: API'den gelen data'yı items array'inden çıkar
   const catalogCategories = useMemo(() => {
-    if (!catalogCategoriesData?.items) return [];
-    return catalogCategoriesData.items;
+    if (!catalogCategoriesData?.pages) return [];
+    return catalogCategoriesData.pages.flatMap((page) => page.items || []);
   }, [catalogCategoriesData]);
 
   const catalogSubCategories = useMemo(() => {
-    if (!catalogSubCategoriesData?.items) return [];
-    return catalogSubCategoriesData.items;
+    if (!catalogSubCategoriesData?.pages) return [];
+    return catalogSubCategoriesData.pages.flatMap((page) => page.items || []);
   }, [catalogSubCategoriesData]);
 
   // Auto-select first category

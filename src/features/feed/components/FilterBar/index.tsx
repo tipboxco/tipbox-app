@@ -112,9 +112,20 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
   };
 
   // Get categories from API (only for Category filter, not for Interests)
-  const { data: catalogCategories } = useCatalogCategories();
+  const { data: catalogCategoriesData } = useCatalogCategories();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const { data: catalogSubCategories } = useCatalogSubCategories(selectedCategoryId || undefined);
+  const { data: catalogSubCategoriesData } = useCatalogSubCategories(selectedCategoryId || undefined);
+
+  // Flatten infinite query pages
+  const catalogCategories = useMemo(() => {
+    if (!catalogCategoriesData?.pages) return [];
+    return catalogCategoriesData.pages.flatMap((page) => page.items || []);
+  }, [catalogCategoriesData]);
+
+  const catalogSubCategories = useMemo(() => {
+    if (!catalogSubCategoriesData?.pages) return [];
+    return catalogSubCategoriesData.pages.flatMap((page) => page.items || []);
+  }, [catalogSubCategoriesData]);
 
   // Auto-select first category
   React.useEffect(() => {
