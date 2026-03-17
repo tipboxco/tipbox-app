@@ -40,7 +40,6 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useTranslation } from '@/src/hooks/useTranslation';
@@ -158,7 +157,6 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
     // Translation hooks (only in detail mode)
-    const deviceLocale = useDeviceLocale();
     const {
         translatedContent,
         isTranslating,
@@ -168,9 +166,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     } = usePostTranslation({
         postId: data.id,
         originalContent: data.content,
-        targetLanguage: deviceLocale,
-        sourceLanguage: 'en',
-        enabled: isDetailMode, // Only enable translation in detail mode
+        enabled: isDetailMode,
     });
 
     // Interaction hooks

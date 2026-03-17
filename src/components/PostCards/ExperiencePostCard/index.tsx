@@ -50,7 +50,6 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useTranslation } from '@/src/hooks/useTranslation';
 

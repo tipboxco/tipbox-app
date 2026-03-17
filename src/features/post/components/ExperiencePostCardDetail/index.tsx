@@ -33,7 +33,6 @@ import {
 } from '@/src/features/interactions/api/hooks';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
-import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 
 interface ExperiencePostCardDetailProps {
     data: PostCardType;
@@ -44,7 +43,6 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
     const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const deviceLocale = useDeviceLocale();
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -62,8 +60,6 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
     } = usePostTranslation({
         postId: data.id,
         originalContent: allContentText,
-        originalLocale: data.locale || 'en',
-        targetLocale: deviceLocale,
     });
 
     // Interaction hooks

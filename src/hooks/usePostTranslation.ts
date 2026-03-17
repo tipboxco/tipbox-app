@@ -1,28 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { translationService } from '../services/TranslationService';
 import { TranslationCacheService } from '../services/TranslationCacheService';
 
 interface UsePostTranslationParams {
   postId: string;
   originalContent: string;
-  targetLanguage: string;
-  sourceLanguage?: string;
   enabled?: boolean;
 }
+
+/**
+ * Basit Türkçe tespit heuristic'i.
+ * Türkçeye özgü karakterler veya yaygın Türkçe kelimeler içeriyorsa true döner.
+ */
+const detectIsTurkish = (text: string): boolean => {
+  // Türkçeye özgü karakterler (ş, ğ, ç, ı, İ, Ş, Ğ, Ç)
+  if (/[şŞğĞıİçÇ]/.test(text)) return true;
+  // Yaygın Türkçe kelimeler
+  const turkishWords = /\b(ve|bir|bu|ile|için|olan|gibi|daha|çok|ama|ancak|fakat|değil|olarak|kadar|nasıl|neden|bence|güzel|iyi|kötü|benim|senin|onun|ürün|telefon|ekran|çünkü|oldu|aldım|yaptım|kullanıyorum|tavsiye|denedim|memnunum)\b/i;
+  return turkishWords.test(text);
+};
 
 export const usePostTranslation = ({
   postId,
   originalContent,
-  targetLanguage,
-  sourceLanguage = 'en',
   enabled = true,
 }: UsePostTranslationParams) => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [manualTrigger, setManualTrigger] = useState(false);
 
-  // Aynı dil ise çeviri yapma
-  const shouldTranslate = targetLanguage !== sourceLanguage && enabled;
+  // İçerik diline göre kaynak ve hedef dili otomatik belirle
+  const { sourceLanguage, targetLanguage } = useMemo(() => {
+    const isTurkish = detectIsTurkish(originalContent);
+    return {
+      sourceLanguage: isTurkish ? 'tr' : 'en',
+      targetLanguage: isTurkish ? 'en' : 'tr',
+    };
+  }, [originalContent]);
+
+  const shouldTranslate = enabled;
 
   const {
     data: translatedContent,
@@ -86,4 +102,3 @@ export const usePostTranslation = ({
     shouldTranslate,
   };
 };
-

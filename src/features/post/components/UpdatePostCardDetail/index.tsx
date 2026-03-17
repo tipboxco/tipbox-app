@@ -33,7 +33,6 @@ import {
   useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
-import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { useTranslation } from '@/src/hooks/useTranslation';
@@ -52,7 +51,6 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
   const isDark = colorMode === 'dark';
 
   // Translation hooks
-  const deviceLocale = useDeviceLocale();
   const {
     translatedContent,
     isTranslating,
@@ -62,8 +60,6 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
   } = usePostTranslation({
     postId: data.id,
     originalContent: data.content,
-    targetLanguage: deviceLocale,
-    sourceLanguage: 'en',
   });
   
   const [isLiked, setIsLiked] = useState(false);

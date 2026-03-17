@@ -28,7 +28,6 @@ import {
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
-import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
@@ -43,7 +42,6 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
     const isDark = colorMode === 'dark';
 
     // Translation hooks
-    const deviceLocale = useDeviceLocale();
     const {
         translatedContent,
         isTranslating,
@@ -53,8 +51,6 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
     } = usePostTranslation({
         postId: data.id,
         originalContent: data.content || '',
-        targetLanguage: deviceLocale,
-        sourceLanguage: 'en',
     });
     
     const [isLiked, setIsLiked] = useState(false);
