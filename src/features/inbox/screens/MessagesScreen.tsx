@@ -44,14 +44,16 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const [activeCategory, setActiveCategory] = useState<string>('1');
     const navigation = useNavigation<MessagesScreenNavigationProp>();
     const bottomInset = useSafeAreaValues('bottom');
-    
+
     // Search parametresini useMessages hook'una geçir (username ve son mesaj bazlı arama)
     // ✅ FIX: Sadece DM thread'lerini göster (Support thread'leri MessageDetail'de görünecek)
-    const searchParams: GetMessagesParams = {
-      threadType: 'DM', // Sadece DM thread'lerini getir
-      ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
-    };
-    const { data: messages, isLoading, error, refetch } = useMessages(true, searchParams);
+    // ✅ FIX: Memoize searchParams - PagerView re-render'larında query key stability
+    const trimmedSearch = searchQuery.trim();
+    const searchParams: GetMessagesParams = useMemo(() => ({
+      threadType: 'DM' as const,
+      ...(trimmedSearch ? { search: trimmedSearch } : {}),
+    }), [trimmedSearch]);
+    const { data: messages, isLoading, isFetching, error, refetch } = useMessages(true, searchParams);
     const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
     // Özet log (BrandScreen tarzı): mesaj sayısı ve ilk mesaj
@@ -269,15 +271,21 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
 
     // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
     // ✅ FIX: Screen focus olduğunda typing state'i temizle
-    // NOT: Refetch yapmıyoruz çünkü optimistic update yeterli ve socket event'leri cache'i güncel tutuyor
+    // ✅ FIX: PagerView initial mount'ta query subscription'ın düzgün çalışmaması durumunda refetch yap
     useFocusEffect(
         useCallback(() => {
             closeBottomSheet();
 
+            // PagerView bazen ilk mount'ta query güncellemelerini component'e iletmiyor
+            // Data yoksa ve loading değilse (query resolve olmuş ama component güncellenememiş) refetch yap
+            if (!messages && !isLoading && !error) {
+                refetch();
+            }
+
             return () => {
                 inboxTypingStore.clearAll();
             };
-        }, [closeBottomSheet])
+        }, [closeBottomSheet, messages, isLoading, error, refetch])
     );
     
     const handleMessagePress = (messageId: string) => {
@@ -549,11 +557,13 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             </VStack>
 
             {/* Messages List - Full Height */}
+            {/* ✅ FIX: isLoading && !messages - PagerView'da query resolve olup component güncellenemezse
+                messages undefined olsa bile isLoading false olduğunda FlatList göster */}
             {error ? (
                 <Box py={20} alignItems="center">
                     <Text color="#CE4A4A">{t('messages.error', { message: error.message })}</Text>
                 </Box>
-            ) : isLoading ? (
+            ) : isLoading && !messages ? (
                 <Box flex={1} justifyContent="center" alignItems="center">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>
