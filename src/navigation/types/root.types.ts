@@ -77,6 +77,9 @@ export type RootStackParamList = {
     collectionId: string;
   };
 
+  // ProductCatalog - Standalone product catalog screen (inventory FAB)
+  ProductCatalog: undefined;
+
   // ProductSelect - Global product selection screen
   ProductSelect: {
     returnScreen?: string;

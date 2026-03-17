@@ -1,23 +1,19 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { FlatList, Dimensions, Modal as RNModal, Pressable as RNPressable, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Search } from 'lucide-react-native';
 import { VStack, HStack, Box, Input, InputField, Pressable, Text, useToast } from '@gluestack-ui/themed';
 import { PlusIcon } from 'react-native-heroicons/outline';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { Platform } from 'react-native';
-
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { Header } from '@/src/components/Header';
 import { ProfileStackParamList } from '../navigation';
 import type { InventoryItem } from '../types';
 import InventoryCard from '../components/InventoryCard';
-import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useInventory, useDeleteInventoryItem, useUserProfile } from '../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
@@ -52,9 +48,6 @@ const InventoryScreen = () => {
   const { user } = useAppStore();
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { t } = useTranslation('profile');
-
-  // Global bottom sheet hook
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
   // PERFORMANCE FIX: Debounce search query - 500ms delay
   // 1000+ item'da her keystroke'da filter çok yavaş (500ms+ lag)
@@ -145,43 +138,7 @@ const InventoryScreen = () => {
   }, []);
 
   const handleCreatePress = () => {
-    console.log('Create button pressed');
-    openBottomSheet(
-      <CreatePostBottomSheet
-        onClose={closeBottomSheet}
-        onPostTypeSelect={handlePostTypeSelect}
-        onViewChange={handleViewChange}
-        showExperienceOptionsDirectly={true}
-      />,
-      {
-        enablePanDownToClose: true,
-        enableOverDrag: false,
-        enableHandlePanningGesture: true,
-        enableContentPanningGesture: true,
-        snapPoints: ['50%'], // CRITICAL FIX: Use string format like ShareToTrustedBottomSheet
-        animateOnMount: false,
-        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8,
-      }
-    );
-  };
-
-  const handlePostTypeSelect = (type: string, experienceOption?: 'own' | 'tried') => {
-    console.log('Post type selected:', type, 'experienceOption:', experienceOption);
-    
-    // Close bottom sheet first
-    closeBottomSheet();
-    
-    // Navigate to ProductSelectScreen with experienceOption
-    if (type === 'experience' && experienceOption) {
-      navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT, {
-        returnScreen: 'CreateExperiencePostScreen',
-        experienceOption: experienceOption,
-      });
-    }
-  };
-
-  const handleViewChange = (view: 'options' | 'experience') => {
-    console.log('BottomSheet view changed:', view);
+    navigationService.navigate(ROOT_ROUTES.PRODUCT_CATALOG);
   };
 
   // Handle update experience - CreateExperiencePostScreen'e yönlendir
@@ -445,8 +402,9 @@ const InventoryScreen = () => {
         <Pressable
           onPress={handleCreatePress}
           position="absolute"
-          bottom={insets.bottom + 8} // bottom.inset + tabbar height + 8px
+          bottom={insets.bottom + 8}
           right={16}
+          zIndex={10}
         >
         <Box
           bg="#E8FF6B"

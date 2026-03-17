@@ -16,6 +16,7 @@ import { BrandNavigator } from '@/src/features/catalog/BrandNavigator';
 import MessageDetailScreen from '@/src/features/inbox/screens/MessageDetail';
 import SupportMessageDetailScreen from '@/src/features/inbox/screens/SupportMessageDetail';
 import { ProductSelectScreen } from '@/src/screens/ProductSelectScreen';
+import { ProductCatalogWrapper } from '@/src/features/catalog/screens/ProductCatalogWrapper';
 import CollectionDetailScreen from '@/src/features/events/screens/CollectionDetailScreen';
 import type { RootStackParamList } from '../types/root.types';
 
@@ -144,6 +145,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="ProductSelect"
               component={ProductSelectScreen}
+            />
+            <RootStack.Screen
+              name="ProductCatalog"
+              component={ProductCatalogWrapper}
             />
           </RootStack.Group>
           
