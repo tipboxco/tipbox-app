@@ -57,11 +57,11 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
     const getSupportTypeLabel = (type: 'GENERAL' | 'TECHNICAL' | 'PRODUCT' | '') => {
         switch (type) {
             case 'GENERAL':
-                return 'General';
+                return t('support.types.general');
             case 'TECHNICAL':
-                return 'Technical';
+                return t('support.types.technical');
             case 'PRODUCT':
-                return 'Product';
+                return t('support.types.product');
             default:
                 return t('support.selectType');
         }
@@ -144,7 +144,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                         fontWeight="$bold"
                         textAlign="center"
                     >
-                        1 on 1 Support Request
+                        {t('support.title')}
                     </Text>
                 </HStack>
 
@@ -229,7 +229,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                             fontSize={11}
                             fontWeight="$semibold"
                         >
-                            Which area do you need support in?
+                            {t('support.areaQuestion')}
                         </Text>
 
                         <VStack space="xs" position="relative">
@@ -343,7 +343,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                             fontSize={10}
                             fontWeight="$semibold"
                         >
-                            What do you need help?
+                            {t('support.helpQuestion')}
                         </Text>
 
                         <Box
@@ -396,7 +396,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                             fontSize={10}
                             fontWeight="$medium"
                         >
-                            TIPS Amount
+                            {t('support.tipsAmount')}
                         </Text>
 
                         {/* TIPS Miktarı ve Alt Bilgiler - Tek Bileşen */}
@@ -447,7 +447,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                         fontSize={9}
                                         fontWeight="$semibold"
                                     >
-                                        Max
+                                        {t('support.maxButton')}
                                     </Text>
                                 </Pressable>
                             </HStack>
@@ -480,7 +480,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                     fontSize={9}
                                     fontWeight="$normal"
                                 >
-                                    Current Balance : {currentBalance} TIPS
+                                    {t('support.currentBalance', { balance: currentBalance })}
                                 </Text>
                             </HStack>
                         </Box>
@@ -500,7 +500,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                 fontWeight="$normal"
                                 flex={1}
                             >
-                                "{expertName}" offers support for at least 50 TIPS
+                                {t('support.minTipsInfo', { name: expertName, amount: 50 })}
                             </Text>
                         </HStack>
                     </Box>
@@ -520,7 +520,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                             fontWeight="$bold"
                             textAlign="center"
                         >
-                            Create 1-On-1 Request
+                            {t('support.createButton')}
                         </Text>
                     </Pressable>
                 </VStack>

@@ -230,15 +230,28 @@
     }
   },
   "support": {
+    "title": "1-1 Destek Talebi",
     "types": {
       "general": "Genel",
       "technical": "Teknik",
       "product": "Ürün"
     },
     "selectType": "Destek Türü Seçin",
+    "areaQuestion": "Hangi alanda desteğe ihtiyacınız var?",
+    "helpQuestion": "Nasıl yardımcı olabiliriz?",
+    "tipsAmount": "TIPS Miktarı",
+    "maxButton": "Maks",
+    "currentBalance": "Mevcut Bakiye : {{balance}} TIPS",
+    "minTipsInfo": "\"{{name}}\" en az {{amount}} TIPS karşılığında destek sunuyor",
+    "createButton": "1-1 Destek Talebi Oluştur",
     "placeholders": {
       "describeIssue": "Sorununuzu veya talebinizi detaylı bir şekilde açıklayın...",
       "amount": "50"
+    },
+    "confirmModal": {
+      "currentBalance": "Mevcut Bakiye",
+      "confirmButton": "Onayla",
+      "cancelButton": "Vazgeç"
     }
   },
   "sendTips": {

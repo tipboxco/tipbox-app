@@ -9,6 +9,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Modal, View, StyleSheet, Dimensions, Pressable as RNPressable } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface OneOnOneSupportRequestModalProps {
     isVisible: boolean;
@@ -37,6 +38,7 @@ const OneOnOneSupportRequestModal: React.FC<OneOnOneSupportRequestModalProps> = 
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('inbox');
     const { width } = Dimensions.get('window');
 
     return (
@@ -152,7 +154,7 @@ const OneOnOneSupportRequestModal: React.FC<OneOnOneSupportRequestModalProps> = 
                                     fontWeight="$normal"
                                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                                 >
-                                    Current Balance
+                                    {t('support.confirmModal.currentBalance')}
                                 </Text>
                                 <Text
                                     fontSize={9}
@@ -179,7 +181,7 @@ const OneOnOneSupportRequestModal: React.FC<OneOnOneSupportRequestModalProps> = 
                                     fontWeight="$bold"
                                     textAlign="center"
                                 >
-                                    Confirm
+                                    {t('support.confirmModal.confirmButton')}
                                 </Text>
                             </Pressable>
 
@@ -198,7 +200,7 @@ const OneOnOneSupportRequestModal: React.FC<OneOnOneSupportRequestModalProps> = 
                                     fontWeight="$normal"
                                     textAlign="center"
                                 >
-                                    Cancel
+                                    {t('support.confirmModal.cancelButton')}
                                 </Text>
                             </Pressable>
                         </VStack>

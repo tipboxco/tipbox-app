@@ -230,15 +230,28 @@
     }
   },
   "support": {
+    "title": "1 on 1 Support Request",
     "types": {
       "general": "General",
       "technical": "Technical",
       "product": "Product"
     },
     "selectType": "Select Support Type",
+    "areaQuestion": "Which area do you need support in?",
+    "helpQuestion": "What do you need help with?",
+    "tipsAmount": "TIPS Amount",
+    "maxButton": "Max",
+    "currentBalance": "Current Balance : {{balance}} TIPS",
+    "minTipsInfo": "\"{{name}}\" offers support for at least {{amount}} TIPS",
+    "createButton": "Create 1-On-1 Request",
     "placeholders": {
       "describeIssue": "Describe your problem or request in detail...",
       "amount": "50"
+    },
+    "confirmModal": {
+      "currentBalance": "Current Balance",
+      "confirmButton": "Confirm",
+      "cancelButton": "Cancel"
     }
   },
   "sendTips": {
