@@ -140,29 +140,31 @@ export const CreatePostScreen = () => {
   };
 
   const handlePhotoTaken = async (uri: string) => {
+    // Immediately show photo and close camera - no blocking
+    const currentImages = methods.getValues('selectedImages') || [];
+    const newImages = [...currentImages, uri];
+    methods.setValue('selectedImages', newImages, { shouldValidate: false });
+    setLastPhotoUri(uri);
+    setShowCamera(false);
+
+    // Compress in background - replace raw image when done
     try {
-      // PERFORMANCE FIX: Image compression - max 2MB, max 1920px, quality 0.8
-      // 5-10x küçük dosya boyutu = daha hızlı upload
       const compressedImage = await ImageManipulator.manipulateAsync(
         uri,
-        [{ resize: { width: 1920 } }], // Max width 1920px (aspect ratio korunur)
+        [{ resize: { width: 1920 } }],
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      const currentImages = methods.getValues('selectedImages') || [];
-      const newImages = [...currentImages, compressedImage.uri];
-      // PERFORMANCE FIX: shouldValidate: false - validation sadece submit'te
-      methods.setValue('selectedImages', newImages, { shouldValidate: false });
-      setLastPhotoUri(compressedImage.uri);
-      setShowCamera(false);
+      const updatedImages = methods.getValues('selectedImages') || [];
+      const index = updatedImages.indexOf(uri);
+      if (index !== -1) {
+        updatedImages[index] = compressedImage.uri;
+        methods.setValue('selectedImages', [...updatedImages], { shouldValidate: false });
+        setLastPhotoUri(compressedImage.uri);
+      }
     } catch (error) {
       console.error('[CreatePostScreen] Image compression error:', error);
-      // Hata durumunda orijinal resmi kullan
-      const currentImages = methods.getValues('selectedImages') || [];
-      const newImages = [...currentImages, uri];
-      methods.setValue('selectedImages', newImages, { shouldValidate: false });
-      setLastPhotoUri(uri);
-      setShowCamera(false);
+      // Keep original image on error - already added above
     }
   };
 

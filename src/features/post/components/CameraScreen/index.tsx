@@ -89,12 +89,14 @@ export const CameraScreen: React.FC<CameraScreenProps> = ({
   const handleGalleryPress = async () => {
     const remainingSlots = 10; // Max images
     const result = await imagePickerService.pickMultipleFromGallery(remainingSlots);
-    
+
     if (result.success && result.assets && result.assets.length > 0) {
-      // İlk seçilen fotoğrafı kullan
-      const firstPhotoUri = result.assets[0].uri;
-      setLastPhoto(firstPhotoUri);
-      onPhotoTaken(firstPhotoUri);
+      // Pass each selected image (already JPEG-compressed by pickMultipleFromGallery)
+      for (const asset of result.assets) {
+        onPhotoTaken(asset.uri);
+      }
+      // Show last selected photo as preview
+      setLastPhoto(result.assets[result.assets.length - 1].uri);
     }
   };
 
