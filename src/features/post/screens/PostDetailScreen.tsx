@@ -30,6 +30,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useKeyboard } from '@/src/hooks/useKeyboard';
 import ShareBottomSheet from '../components/ShareBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
+import { ProductInfoType } from '@/src/types/common';
 
 type PostDetailScreenRouteProp = RouteProp<PostStackParamList, 'PostDetailScreen'>;
 
@@ -618,41 +619,43 @@ export const PostDetailScreen = () => {
     // Post kartı ve Comments başlığı FlatList DIŞINDA render edilir; böylece Update post detayda like/comment/share dokunmaları scroll ile çakışmaz.
     const postCardAndCommentsHeader = useMemo(() => (
         <>
-            {/* Detail Card */}
-            {isLoadingPost && (!postData || !isPostDataComplete) ? (
-                <Box flex={1} justifyContent="center" alignItems="center" py="$8">
-                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
-                        {t('screens.detail.loading')}
-                    </Text>
-                </Box>
-            ) : finalPostData && finalPostData.id ? (
-                <>
-                    {finalType === 'tipsAndTricks' ? (
-                        <TipsAndTricksPostCard data={finalPostData} isDetailMode={true} />
-                    ) : finalType === 'question' ? (
-                        <QuestionPostCard data={finalPostData} isDetailMode={true} />
-                    ) : finalType === 'benchmark' ? (
-                        <BenchmarkPostCard data={finalPostData} onCommentPress={handleCommentInputPress} isDetailMode={true} />
-                    ) : finalType === 'experience' ? (
-                        <ExperiencePostCard data={finalExperienceData ?? finalPostData} isDetailMode={true} />
-                    ) : finalType === 'update' ? (
-                        <UpdatePostCardDetail
-                            data={finalPostData}
-                            showRelatedPost={true}
-                            relatedPostData={finalUpdateRelatedPostData || postData?.relatedPost || relatedPostData}
-                            onCommentPress={handleCommentInputPress}
-                        />
-                    ) : (
-                        <PostCard data={finalPostData} isDetailMode={true} />
-                    )}
-                </>
-            ) : (
-                <Box flex={1} justifyContent="center" alignItems="center" py="$8">
-                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
-                        {t('screens.detail.notFound')}
-                    </Text>
-                </Box>
-            )}
+            {/* Detail Card - FeedScreen ile aynı padding: paddingHorizontal: 16, paddingTop: 8 */}
+            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+                {isLoadingPost && (!postData || !isPostDataComplete) ? (
+                    <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
+                            {t('screens.detail.loading')}
+                        </Text>
+                    </Box>
+                ) : finalPostData && finalPostData.id ? (
+                    <>
+                        {finalType === 'tipsAndTricks' ? (
+                            <TipsAndTricksPostCard data={finalPostData} isDetailMode={true} />
+                        ) : finalType === 'question' ? (
+                            <QuestionPostCard data={finalPostData} isDetailMode={true} />
+                        ) : finalType === 'benchmark' ? (
+                            <BenchmarkPostCard data={finalPostData} onCommentPress={handleCommentInputPress} isDetailMode={true} />
+                        ) : finalType === 'experience' ? (
+                            <ExperiencePostCard data={finalExperienceData ?? finalPostData} isDetailMode={true} />
+                        ) : finalType === 'update' ? (
+                            <UpdatePostCardDetail
+                                data={finalPostData}
+                                showRelatedPost={true}
+                                relatedPostData={finalUpdateRelatedPostData || postData?.relatedPost || relatedPostData}
+                                onCommentPress={handleCommentInputPress}
+                            />
+                        ) : (
+                            <PostCard data={finalPostData} isDetailMode={true} />
+                        )}
+                    </>
+                ) : (
+                    <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
+                            {t('screens.detail.notFound')}
+                        </Text>
+                    </Box>
+                )}
+            </View>
 
             {/* Comments Header + Filter */}
             <HStack
@@ -769,13 +772,16 @@ export const PostDetailScreen = () => {
             {/* Status Bar & Header */}
             <Header
                 title={
-                    type === 'post' ? t('screens.detail.titles.post') :
-                    type === 'tipsAndTricks' ? t('screens.detail.titles.tips') :
-                    type === 'question' ? t('screens.detail.titles.question') :
-                    type === 'benchmark' ? t('screens.detail.titles.benchmark') :
-                    type === 'experience' ? t('screens.detail.titles.experience') :
-                    type === 'update' ? t('screens.detail.titles.update') :
-                    t('screens.detail.titles.post')
+                    // contextType sub_category ise subcategory adını göster
+                    finalPostData?.contextType === ProductInfoType.SUB_CATEGORY && finalPostData?.contextData?.name
+                      ? finalPostData.contextData.name.charAt(0).toUpperCase() + finalPostData.contextData.name.slice(1)
+                      : type === 'post' ? t('screens.detail.titles.post') :
+                        type === 'tipsAndTricks' ? t('screens.detail.titles.tips') :
+                        type === 'question' ? t('screens.detail.titles.question') :
+                        type === 'benchmark' ? t('screens.detail.titles.benchmark') :
+                        type === 'experience' ? t('screens.detail.titles.experience') :
+                        type === 'update' ? t('screens.detail.titles.update') :
+                        t('screens.detail.titles.post')
                 }
                 showBackButton
                 onBackPress={() => navigation.goBack()}
