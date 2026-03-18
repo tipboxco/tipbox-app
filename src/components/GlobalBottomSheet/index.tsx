@@ -42,6 +42,12 @@ export const GlobalBottomSheet: React.FC = () => {
   // Açılış zamanını kaydet, 500ms içindeki onChange(-1)'leri yoksay
   const openTimestampRef = useRef<number>(0);
 
+  // REPLACEMENT FIX: Mevcut openId'yi ref ile track et
+  // Sheet değiştirildiğinde (key değişimi → unmount), eski sheet'in onChange(-1) event'i
+  // yeni sheet'i kapatmasın diye stale callback tespiti yapılır
+  const currentOpenIdRef = useRef(openId);
+  currentOpenIdRef.current = openId;
+
   // Index değiştiğinde ref'i güncelle
   React.useEffect(() => {
     lastIndexRef.current = index;
@@ -94,34 +100,35 @@ export const GlobalBottomSheet: React.FC = () => {
   // Çözüm: Sadece gerçek kullanıcı kapanma durumunda closeBottomSheet çağır
   const handleSheetChanges = useCallback(
     (newIndex: number) => {
+      // REPLACEMENT FIX: Bu callback oluşturulduğundaki openId ile güncel openId'yi karşılaştır.
+      // Eğer farklıysa, sheet değiştirilmiş demektir (key değişimi → unmount).
+      // Eski sheet'in unmount sırasındaki onChange(-1) event'ini yoksay,
+      // aksi halde yeni sheet de kapanır (stale close bug).
+      if (openId !== currentOpenIdRef.current) {
+        return;
+      }
+
       // CRITICAL FIX: Sadece gerçek kapanma durumunda closeBottomSheet çağır
-      // Koşullar:
-      // 1. newIndex === -1 (sheet kapandı)
-      // 2. lastIndexRef.current >= 0 (sheet açıktı - herhangi bir snap point'te)
-      // 3. content var (sheet gerçekten render edilmiş)
-      // Bu sayede mount/unmount sırasındaki yanlış tetiklemeleri önleriz
       if (newIndex === -1 && lastIndexRef.current >= 0 && content) {
         // RACE CONDITION FIX: gorhom mount sırasında spurious onChange(-1) tetikleyebilir
         // Açılıştan 500ms içindeki close event'lerini yoksay
         const timeSinceOpen = Date.now() - openTimestampRef.current;
         if (timeSinceOpen < 500) {
-          // Mount sırasında tetiklenen spurious event - yoksay
-          // lastIndexRef güncellenmez, böylece gerçek kapanışta koşul hâlâ çalışır
           return;
         }
         // Gerçek kapanma: Sheet açıktı, şimdi kapandı
         closeBottomSheet();
       }
-      
+
       // Ref'i güncelle (bir sonraki onChange için)
       lastIndexRef.current = newIndex;
-      
+
       // Custom onChange callback'i varsa çağır
       if (mergedOptions.onChange) {
         mergedOptions.onChange(newIndex);
       }
     },
-    [closeBottomSheet, mergedOptions.onChange, content]
+    [closeBottomSheet, mergedOptions.onChange, content, openId]
   );
 
   // Styles
