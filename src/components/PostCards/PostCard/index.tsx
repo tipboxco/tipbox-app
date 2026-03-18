@@ -1,6 +1,6 @@
-import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
-import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Alert, Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Keyboard } from 'react-native';
+import React, { memo, useState, useEffect, useCallback } from 'react';
+import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { Alert, Platform, View } from 'react-native';
 // Heroicons imports
 import {
   EllipsisHorizontalIcon,
@@ -18,6 +18,8 @@ import {
   HeartIcon as HeartIconSolid,
   BookmarkIcon as BookmarkIconSolid,
 } from 'react-native-heroicons/solid';
+import { PostCardContextMenu } from '@/src/components/PostCardContextMenu';
+import type { PostCardMenuItem } from '@/src/components/PostCardContextMenu';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
@@ -56,9 +58,10 @@ interface PostCardProps {
   data: PostCardData;
   hideProduct?: boolean;
   isDetailMode?: boolean;
+  onDelete?: (postId: string) => void;
 }
 
-const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardProps) => {
+const PostCard = ({ data, hideProduct = false, isDetailMode = false, onDelete }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
@@ -75,6 +78,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   } = usePostTranslation({
     postId: data.id,
     originalContent: data.content || '',
+    enabled: isDetailMode,
   });
 
   const [isLiked, setIsLiked] = useState(data.isLiked ?? false);
@@ -88,10 +92,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const [sharesCount, setSharesCount] = useState(data.stats.shares);
   const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
   const [upvotesCount, setUpvotesCount] = useState(data.stats.upvotes ?? 0);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuTriggerRef = useRef<View>(null);
-  const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   // User profile check
   const targetUserId = data.user.id;
@@ -341,6 +341,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           onPress: async () => {
             try {
               await deletePostMutation.mutateAsync(data.id);
+              onDelete?.(data.id);
               Alert.alert(t('delete.successTitle'), t('delete.successMessage'));
             } catch (error: any) {
               Alert.alert(
@@ -352,93 +353,34 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         },
       ]
     );
-  }, [data.id, deletePostMutation, t]);
+  }, [data.id, deletePostMutation, t, onDelete]);
 
-  // Calculate menu position
-  // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
-  const handleTriggerLayout = useCallback(() => {
-    if (menuTriggerRef.current) {
-      menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-        if (width > 0 && height > 0) {
-          triggerPositionRef.current = { x, y, width, height };
-        }
-      });
+  const menuItems = React.useMemo<PostCardMenuItem[]>(() => {
+    const iconColor = isDark ? '#fff' : '#000';
+    if (isPostOwner) {
+      return [
+        {
+          label: t('menu.delete'),
+          icon: <TrashIcon width={20} height={20} color="#FF3040" />,
+          onPress: handleDelete,
+          color: '#FF3040',
+        },
+      ];
     }
-  }, []);
-
-  // Calculate menu position - event koordinatlarını öncelikli kullan
-  const handleMenuOpen = useCallback((event?: any) => {
-    const screenWidth = Dimensions.get('window').width;
-    const screenHeight = Dimensions.get('window').height;
-    const menuWidth = 140;
-    const menuHeight = isPostOwner ? 80 : 80;
-    
-    const calculatePosition = (x: number, y: number, width: number, height: number, source: string) => {
-      let left = x + width - menuWidth - 20;
-      let top = y + height - 16;
-      
-      if (left < 12) {
-        left = 12;
-      }
-      if (left + menuWidth > screenWidth - 12) {
-        left = screenWidth - menuWidth - 12;
-      }
-      if (top < 12) {
-        top = 12;
-      }
-      if (top + menuHeight > screenHeight - 12) {
-        top = y - menuHeight - 8;
-        if (top < 12) {
-          top = 12;
-        }
-      }
-      
-      return { top, left };
-    };
-
-    // ÖNCELİK 1: Event'ten gelen koordinatları kullan
-    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
-      const pageX = event.nativeEvent.pageX;
-      const pageY = event.nativeEvent.pageY;
-      const triggerWidth = 44;
-      const triggerHeight = 44;
-      const triggerX = pageX - triggerWidth / 2;
-      const triggerY = pageY - triggerHeight / 2;
-      const position = calculatePosition(triggerX, triggerY, triggerWidth, triggerHeight, 'event-coordinates');
-      setMenuPosition(position);
-      setIsMenuOpen(true);
-      return;
-    }
-
-    // ÖNCELİK 2: Stored position'ı kullan
-    if (triggerPositionRef.current) {
-      const stored = triggerPositionRef.current;
-      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height, 'stored');
-      setMenuPosition(position);
-      setIsMenuOpen(true);
-      return;
-    }
-
-    // ÖNCELİK 3: measureInWindow ile ölç
-    InteractionManager.runAfterInteractions(() => {
-      if (menuTriggerRef.current) {
-        menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-          if (width > 0 && height > 0 && x >= 0 && y >= 0) {
-            triggerPositionRef.current = { x, y, width, height };
-            const position = calculatePosition(x, y, width, height, 'measureInWindow');
-            setMenuPosition(position);
-            setIsMenuOpen(true);
-          } else {
-            setMenuPosition({ top: 40, left: screenWidth - 152 });
-            setIsMenuOpen(true);
-          }
-        });
-      } else {
-        setMenuPosition({ top: 40, left: screenWidth - 152 });
-        setIsMenuOpen(true);
-      }
-    });
-  }, [isPostOwner]);
+    return [
+      {
+        label: t('menu.viewProfile'),
+        icon: <UserIcon width={20} height={20} color={iconColor} />,
+        onPress: handleViewProfile,
+      },
+      {
+        label: t('menu.report'),
+        icon: <FlagIcon width={20} height={20} color="#FF3040" />,
+        onPress: handleReport,
+        color: '#FF3040',
+      },
+    ];
+  }, [isDark, isPostOwner, t, handleDelete, handleViewProfile, handleReport]);
 
   const hasContextData = !!data.contextType && !!data.contextData;
   const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;
@@ -454,7 +396,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
       <View
         style={{
           backgroundColor: isDark ? '#000000' : '#FFFFFF',
-          marginBottom: 16,
           position: 'relative',
         }}
       >
@@ -517,118 +458,9 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               ) : null}
             </VStack>
           </Pressable>
-          <View
-            ref={menuTriggerRef}
-            collapsable={false}
-            onLayout={handleTriggerLayout}
-          >
-            <Pressable onPress={(event) => handleMenuOpen(event)}>
-              <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
-            </Pressable>
-          </View>
-
-          {/* Menu Modal */}
-          <Modal
-            visible={isMenuOpen}
-            transparent={true}
-            animationType="fade"
-            presentationStyle="overFullScreen"
-            onRequestClose={() => setIsMenuOpen(false)}
-          >
-            <RNPressable
-              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
-              onPress={() => setIsMenuOpen(false)}
-            />
-            <View
-              style={[
-                styles.menuContainer,
-                {
-                  top: menuPosition.top,
-                  left: menuPosition.left,
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: isDark ? '#333333' : '#E9E9E9',
-                  shadowOpacity: isDark ? 0.3 : 0.1,
-                  zIndex: 1,
-                  elevation: 10,
-                }
-              ]}
-            >
-              <RNPressable 
-                onPress={(e) => e.stopPropagation()}
-                style={{ flex: 1 }}
-              >
-                <VStack px={12} py={8} width="100%">
-                  {isPostOwner ? (
-                    <>
-                      {/* Update butonu kaldırıldı - Sadece experience post'larda update var */}
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleDelete();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <TrashIcon width={20} height={20} color="#FF3040" />
-                          <Text
-                            color="#FF3040"
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            {t('menu.delete')}
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                    </>
-                  ) : (
-                    <>
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleViewProfile();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            {t('menu.viewProfile')}
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                      <Divider
-                        bg={isDark ? '#333333' : '#E9E9E9'}
-                        mx={0}
-                      />
-                      <Pressable
-                        onPress={() => {
-                          setIsMenuOpen(false);
-                          handleReport();
-                        }}
-                        py={8}
-                      >
-                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                          <FlagIcon width={20} height={20} color="#FF3040" />
-                          <Text
-                            color="#FF3040"
-                            fontSize="$sm"
-                            fontWeight="$medium"
-                          >
-                            {t('menu.report')}
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                    </>
-                  )}
-                </VStack>
-              </RNPressable>
-            </View>
-          </Modal>
+          <PostCardContextMenu items={menuItems}>
+            <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
+          </PostCardContextMenu>
         </HStack>
       </VStack>
 
@@ -646,7 +478,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 image={imageSource}
                 title={context.name}
                 subName={context.subName}
-                ownershipLabel={context.isOwned !== undefined ? (context.isOwned ? 'Owned' : 'Tried') : undefined}
+                ownershipLabel={context.isOwned !== undefined ? (context.isOwned ? t('card.owned') : t('card.tried')) : undefined}
                 onPress={() => {
                   // Product için PostsScreen'e navigate et
                   // FIX: Use data.contextId instead of context.id for correct ID
@@ -675,6 +507,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                       },
                       contextType: data.contextType,
                       contextId: contextId, // FIX: Use corrected contextId
+                      isOwned: context.isOwned,
                     },
                   });
                 }}
@@ -697,7 +530,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 image={imageSource}
                 title={context.name}
                 subName={context.subName}
-                ownershipLabel={context.isOwned !== undefined ? (context.isOwned ? 'Owned' : 'Tried') : undefined}
+                ownershipLabel={context.isOwned !== undefined ? (context.isOwned ? t('card.owned') : t('card.tried')) : undefined}
                 onPress={() => {
                   // ProductGroup veya SubCategory için PostsScreen'e navigate et
                   // FIX: Use data.contextId instead of context.id for correct ID
@@ -802,8 +635,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         </VStack>
       </Pressable>
 
-      {/* Translated Content */}
-      {showTranslation && translatedContent && (
+      {/* Translated Content - only in detail mode */}
+      {isDetailMode && showTranslation && translatedContent && (
         <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
           <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
           <Text
@@ -816,8 +649,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         </VStack>
       )}
 
-      {/* Translate Button */}
-      {shouldTranslate && (
+      {/* Translate Button - only in detail mode */}
+      {isDetailMode && shouldTranslate && (
         <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Pressable onPress={toggleTranslation}>
             <HStack alignItems="center" space="xs">
@@ -932,8 +765,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           </Pressable>
         </HStack>
 
-        {/* Upvote button - Event posts için (en sağda) */}
-        {data.stats.upvotes !== undefined && (
+        {/* Upvote button - Event posts için (en sağda), kendi gönderisinde gizle */}
+        {data.stats.upvotes !== undefined && !isPostOwner && (
           <Pressable onPress={handleUpvote}>
             <HStack alignItems="center" space="xs">
               <AnimatedCounter
@@ -964,19 +797,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
 
 const MemoizedPostCard = memo(PostCard);
 MemoizedPostCard.displayName = 'PostCard';
-const styles = StyleSheet.create({
-  menuContainer: {
-    position: 'absolute',
-    width: 140,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 10,
-    overflow: 'hidden',
-  },
-});
 
 export { MemoizedPostCard as PostCard };
 export default MemoizedPostCard;

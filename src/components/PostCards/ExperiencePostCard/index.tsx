@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { ImageSourcePropType } from 'react-native';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager, Keyboard } from 'react-native';
-import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View } from 'react-native';
+import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { PostCardContextMenu } from '@/src/components/PostCardContextMenu';
+import type { PostCardMenuItem } from '@/src/components/PostCardContextMenu';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -46,9 +47,7 @@ import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { ShareToTrustedBottomSheet } from '@/src/features/post/components/ShareToTrustedBottomSheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
@@ -64,6 +63,7 @@ interface PostCardProps {
   showHeader?: boolean;
   /** Hide action bar (like, comment, share, bookmark). Used when card is embedded as "Related Post" in update detail. */
   showActions?: boolean;
+  onDelete?: (postId: string) => void;
 }
 
 // Map known content tag titles to translation keys
@@ -72,7 +72,7 @@ const CONTENT_TAG_TITLE_KEYS: Record<string, string> = {
   'Product and Usage Experience': 'post:create.experience.step3.productAndUsage',
 };
 
-export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress, showHeader = true, showActions = true }: PostCardProps) => {
+export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress, showHeader = true, showActions = true, onDelete }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const { t, i18n } = useTranslation();
   const isDark = colorMode === 'dark';
@@ -90,6 +90,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   } = usePostTranslation({
     postId: data.id,
     originalContent: contentText,
+    enabled: isDetailMode,
   });
 
   // Translate content tag title (e.g. "Price and Shopping Experience" → TR)
@@ -115,10 +116,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuTriggerRef = React.useRef<View>(null);
-  const triggerPositionRef = React.useRef<{ x: number; y: number; width: number; height: number } | null>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
   // Animated counter states
@@ -133,7 +130,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const bookmarkPostMutation = useBookmarkPost();
   const unbookmarkPostMutation = useUnbookmarkPost();
   const { data: postStatus } = usePostStatus(data.id);
-  const insets = useSafeAreaInsets();
   const { mutate: reportUser } = useReportUser();
   const updatePostMutation = useUpdatePost();
   const deletePostMutation = useDeletePost();
@@ -316,6 +312,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           onPress: async () => {
             try {
               await deletePostMutation.mutateAsync(data.id);
+              onDelete?.(data.id);
               Alert.alert(t('post:delete.successTitle'), t('post:delete.successMessage'));
             } catch (error: any) {
               Alert.alert(
@@ -327,110 +324,44 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         },
       ]
     );
-  }, [data.id, deletePostMutation, t]);
+  }, [data.id, deletePostMutation, t, onDelete]);
 
-  // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
-  // FlatList scroll edildiğinde pozisyon değişir, onLayout her değişiklikte çağrılır
-  const handleTriggerLayout = useCallback(() => {
-    if (menuTriggerRef.current) {
-      menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-        if (width > 0 && height > 0) {
-          triggerPositionRef.current = { x, y, width, height };
-        }
-      });
+  const menuItems = React.useMemo<PostCardMenuItem[]>(() => {
+    const iconColor = isDark ? '#fff' : '#000';
+    if (isPostOwner) {
+      return [
+        {
+          label: t('post:menu.update'),
+          icon: <PencilIcon width={20} height={20} color={iconColor} />,
+          onPress: handleUpdate,
+        },
+        {
+          label: t('post:menu.delete'),
+          icon: <TrashIcon width={20} height={20} color="#FF3040" />,
+          onPress: handleDelete,
+          color: '#FF3040',
+        },
+      ];
     }
-  }, []);
-
-  // Calculate menu position - event koordinatlarını öncelikli kullan
-  const handleMenuOpen = useCallback((event?: any) => {
-    const screenWidth = Dimensions.get('window').width;
-    const screenHeight = Dimensions.get('window').height;
-    const menuWidth = 140;
-    const menuHeight = isPostOwner ? 80 : 80;
-    
-    const calculatePosition = (x: number, y: number, width: number, height: number, source: string) => {
-      // Menu'yu trigger button'ın sağında konumlandır, daha sola kaydır
-      let left = x + width - menuWidth - 20;
-      let top = y + height - 16;
-      
-      // Ekran sınırları kontrolü
-      if (left < 12) {
-        left = 12;
-      }
-      if (left + menuWidth > screenWidth - 12) {
-        left = screenWidth - menuWidth - 12;
-      }
-      if (top < 12) {
-        top = 12;
-      }
-      if (top + menuHeight > screenHeight - 12) {
-        // Eğer altında yer yoksa, üstünde göster
-        top = y - menuHeight - 8;
-        if (top < 12) {
-          top = 12;
-        }
-      }
-      
-      return { top, left };
-    };
-
-    // ÖNCELİK 1: Event'ten gelen koordinatları kullan (en güvenilir)
-    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
-      const pageX = event.nativeEvent.pageX;
-      const pageY = event.nativeEvent.pageY;
-      
-      // Trigger button'ın yaklaşık boyutları (24x24 icon + padding)
-      const triggerWidth = 44;
-      const triggerHeight = 44;
-      
-      // Event koordinatları button'ın merkezine yakın, sağ üst köşesini hesapla
-      const triggerX = pageX - triggerWidth / 2;
-      const triggerY = pageY - triggerHeight / 2;
-      
-      const position = calculatePosition(triggerX, triggerY, triggerWidth, triggerHeight, 'event-coordinates');
-      setMenuPosition(position);
-      setIsMenuOpen(true);
-      return;
-    }
-
-    // ÖNCELİK 2: Stored position'ı kullan (onLayout'dan gelen)
-    if (triggerPositionRef.current) {
-      const stored = triggerPositionRef.current;
-      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height, 'stored');
-      setMenuPosition(position);
-      setIsMenuOpen(true);
-      return;
-    }
-
-    // ÖNCELİK 3: measureInWindow ile ölç (ref varsa)
-    InteractionManager.runAfterInteractions(() => {
-      if (menuTriggerRef.current) {
-        menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-          if (width > 0 && height > 0 && x >= 0 && y >= 0) {
-            // Stored position'ı güncelle
-            triggerPositionRef.current = { x, y, width, height };
-            const position = calculatePosition(x, y, width, height, 'measureInWindow');
-            setMenuPosition(position);
-            setIsMenuOpen(true);
-          } else {
-            // Invalid position - fallback kullan
-            setMenuPosition({ top: 40, left: screenWidth - 152 });
-            setIsMenuOpen(true);
-          }
-        });
-      } else {
-        // Ref yok - fallback kullan
-        setMenuPosition({ top: 40, left: screenWidth - 152 });
-        setIsMenuOpen(true);
-      }
-    });
-  }, [isPostOwner]);
+    return [
+      {
+        label: t('common:menu.viewProfile'),
+        icon: <UserIcon width={20} height={20} color={iconColor} />,
+        onPress: handleViewProfile,
+      },
+      {
+        label: t('common:menu.report'),
+        icon: <FlagIcon width={20} height={20} color="#FF3040" />,
+        onPress: handleReport,
+        color: '#FF3040',
+      },
+    ];
+  }, [isDark, isPostOwner, t, handleUpdate, handleDelete, handleViewProfile, handleReport]);
 
   return (
     <View
       style={{
         backgroundColor: isDark ? '#000000' : '#FFFFFF',
-        marginBottom: 16,
         position: 'relative',
       }}
     >
@@ -500,142 +431,12 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                 ) : null}
               </VStack>
             </Pressable>
-            <View
-              ref={menuTriggerRef}
-              collapsable={false}
-              onLayout={handleTriggerLayout}
-            >
-              <Pressable onPress={(event) => handleMenuOpen(event)}>
-                <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
-              </Pressable>
-            </View>
+            <PostCardContextMenu items={menuItems}>
+              <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
+            </PostCardContextMenu>
           </HStack>
         </VStack>
       )}
-
-      {/* Menu Modal */}
-      <Modal
-        visible={isMenuOpen}
-        transparent={true}
-        animationType="fade"
-        presentationStyle="overFullScreen"
-        onRequestClose={() => setIsMenuOpen(false)}
-      >
-        <RNPressable
-          style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}
-          onPress={() => setIsMenuOpen(false)}
-        />
-        <View
-          style={[
-            styles.menuContainer,
-            {
-              top: menuPosition.top,
-              left: menuPosition.left,
-              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-              borderWidth: 1,
-              borderColor: isDark ? '#333333' : '#E9E9E9',
-              shadowOpacity: isDark ? 0.3 : 0.1,
-              zIndex: 1,
-              elevation: 10,
-            }
-          ]}
-        >
-          <RNPressable 
-            onPress={(e) => e.stopPropagation()}
-            style={{ flex: 1 }}
-          >
-            <VStack px={12} py={8} width="100%">
-              {isPostOwner ? (
-                <>
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleUpdate();
-                    }}
-                    py={8}
-                  >
-                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                      <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize="$sm"
-                        fontWeight="$medium"
-                      >
-                        {t('post:menu.update')}
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                  <Divider 
-                    bg={isDark ? '#333333' : '#E9E9E9'} 
-                    mx={0}
-                  />
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleDelete();
-                    }}
-                    py={8}
-                  >
-                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                      <TrashIcon width={20} height={20} color="#FF3040" />
-                      <Text
-                        color="#FF3040"
-                        fontSize="$sm"
-                        fontWeight="$medium"
-                      >
-                        {t('post:menu.delete')}
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                </>
-              ) : (
-                <>
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleViewProfile();
-                    }}
-                    py={8}
-                  >
-                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                      <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize="$sm"
-                        fontWeight="$medium"
-                      >
-                        {t('common:menu.viewProfile')}
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                  <Divider 
-                    bg={isDark ? '#333333' : '#E9E9E9'} 
-                    mx={0}
-                  />
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleReport();
-                    }}
-                    py={8}
-                  >
-                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                      <FlagIcon width={20} height={20} color="#FF3040" />
-                      <Text
-                        color="#FF3040"
-                        fontSize="$sm"
-                        fontWeight="$medium"
-                      >
-                        {t('common:menu.report')}
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                </>
-              )}
-            </VStack>
-          </RNPressable>
-        </View>
-      </Modal>
 
       {/* Product */}
       {
@@ -651,36 +452,40 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
             <VStack space="xs">
               <ProductInfoCard
                 size="small"
-                type={ProductInfoType.PRODUCT}
+                type={data.contextType || ProductInfoType.PRODUCT}
                 image={toImageSource(data.contextData.image)}
                 title={data.contextData.name}
                 subName={data.contextData.subName && !/^Status:\s*(tested|own)$/i.test(String(data.contextData.subName)) ? data.contextData.subName : undefined}
-                ownershipLabel={data.contextData?.isOwned ? 'Owned' : 'Tried'}
+                ownershipLabel={data.contextData?.isOwned ? t('post:card.owned') : t('post:card.tried')}
                 onPress={() => {
-                // Product için PostsScreen'e navigate et
                 if (!data.contextData?.id) return;
-                
-                // Experience post'ları genelde Product context'inde olduğu için varsayılan olarak Product kullan
+
                 const contextType = data.contextType || ProductInfoType.PRODUCT;
-                
+                const stage = contextType === ProductInfoType.SUB_CATEGORY ? 'SubCategories'
+                  : contextType === ProductInfoType.PRODUCT_GROUP ? 'ProductGroup'
+                  : 'Product';
+
                 navigationService.navigate(ROOT_ROUTES.POST, {
                   screen: 'PostsScreen',
                   params: {
-                    stage: 'Product',
+                    stage,
                     name: data.contextData.name,
                     productInfo: {
                       image: toImageSource(data.contextData.image),
                       title: data.contextData.name,
                       subName: data.contextData.subName,
                     },
-                    selectedProduct: {
-                      id: data.contextData.id,
-                      name: data.contextData.name,
-                      description: data.contextData.subName,
-                      image: toImageSource(data.contextData.image),
-                    },
+                    ...(contextType === ProductInfoType.PRODUCT && {
+                      selectedProduct: {
+                        id: data.contextData.id,
+                        name: data.contextData.name,
+                        description: data.contextData.subName,
+                        image: toImageSource(data.contextData.image),
+                      },
+                    }),
                     contextType,
                     contextId: data.contextData.id,
+                    isOwned: data.contextData.isOwned,
                   },
                 });
               }}
@@ -756,8 +561,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         </VStack>
       </Pressable>
 
-      {/* Translated Content */}
-      {showTranslation && translatedContent && (
+      {/* Translated Content - only in detail mode */}
+      {isDetailMode && showTranslation && translatedContent && (
         <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
           <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
           <Text
@@ -770,8 +575,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         </VStack>
       )}
 
-      {/* Translate Button */}
-      {shouldTranslate && (
+      {/* Translate Button - only in detail mode */}
+      {isDetailMode && shouldTranslate && (
         <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Pressable onPress={toggleTranslation}>
             <HStack alignItems="center" space="xs">
@@ -925,19 +730,5 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  menuContainer: {
-    position: 'absolute',
-    width: 140,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 10,
-    overflow: 'hidden',
-  },
-});
 
 export default ExperiencePostCard;
