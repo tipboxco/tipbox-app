@@ -108,21 +108,31 @@ const BookMarksScreen = () => {
   // Map Tips bookmark to TipsCardData
   const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
     const avatarSource = toImageSource(item.user.avatar)!;
+    const contextImage = toImageSource(item.contextData.image)!;
 
-    const product: TipsProduct = {
-      id: item.contextData.id,
-      name: item.contextData.name,
-      subName: item.contextData.subName,
-      image: toImageSource(item.contextData.image)!,
-    };
-
-    const category: TipsCategory = {
-      id: item.contextData.id,
-      name: item.contextData.name,
-      subCategory: item.contextData.subName,
-      image: toImageSource(item.contextData.image)!,
-      product,
-    };
+    let category: TipsCategory;
+    if (item.contextType === 'sub_category') {
+      category = {
+        id: item.contextData.id,
+        name: item.contextData.name,
+        subCategory: item.contextData.subName,
+        image: contextImage,
+      };
+    } else {
+      const product: TipsProduct = {
+        id: item.contextData.id,
+        name: item.contextData.name,
+        subName: item.contextData.subName,
+        image: contextImage,
+      };
+      category = {
+        id: item.contextData.id,
+        name: item.contextData.name,
+        subCategory: item.contextData.subName,
+        image: contextImage,
+        product,
+      };
+    }
 
     return {
       id: item.id,
@@ -147,21 +157,31 @@ const BookMarksScreen = () => {
   // Map Question bookmark to QuestionCardData
   const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
     const avatarSource = toImageSource(item.user.avatar)!;
+    const contextImage = toImageSource(item.contextData.image)!;
 
-    const product: QuestionCardProduct = {
-      id: item.contextData.id,
-      name: item.contextData.name,
-      subName: item.contextData.subName,
-      image: toImageSource(item.contextData.image)!,
-    };
-
-    const category: QuestionCardCategory = {
-      id: item.contextData.id,
-      name: item.contextData.name,
-      subCategory: item.contextData.subName,
-      image: toImageSource(item.contextData.image)!,
-      product,
-    };
+    let category: QuestionCardCategory;
+    if (item.contextType === 'sub_category') {
+      category = {
+        id: item.contextData.id,
+        name: item.contextData.name,
+        subCategory: item.contextData.subName,
+        image: contextImage,
+      };
+    } else {
+      const product: QuestionCardProduct = {
+        id: item.contextData.id,
+        name: item.contextData.name,
+        subName: item.contextData.subName,
+        image: contextImage,
+      };
+      category = {
+        id: item.contextData.id,
+        name: item.contextData.name,
+        subCategory: item.contextData.subName,
+        image: contextImage,
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     const mappedImages = item.images
@@ -255,9 +275,9 @@ const BookMarksScreen = () => {
         />
 
         {/* Content */}
-        <ScrollView 
-          flex={1} 
-          px={15} 
+        <ScrollView
+          flex={1}
+          px={16}
           py={0}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: insets.bottom }}
