@@ -106,6 +106,16 @@ class NotificationService {
       };
     }
 
+    // Collection notification - GlobalStackGroup (collectionId varsa CollectionDetail'e git)
+    if (metadata?.collectionId) {
+      return {
+        route: ROOT_ROUTES.COLLECTION_DETAIL,
+        params: {
+          collectionId: metadata.collectionId,
+        },
+      };
+    }
+
     // Profile notification - GlobalStackGroup
     if (metadata?.userId) {
       return {
@@ -193,8 +203,6 @@ class NotificationService {
       // Fallback: Metadata'da userId yoksa Feed'e yönlendir
       case 'NEW_TRUSTER':
       case 'NEW_TRUSTED_BY':
-      case 'NEW_BADGE':
-      case 'ACHIEVEMENT_UNLOCKED':
         if (metadata?.userId) {
           return {
             route: ROOT_ROUTES.PROFILE,
@@ -213,6 +221,59 @@ class NotificationService {
             screen: 'FeedScreen',
           },
         };
+
+      // Badge/Achievement bildirimleri → CollectionDetail (collectionId varsa)
+      case 'NEW_BADGE':
+      case 'ACHIEVEMENT_UNLOCKED': {
+        const data = notification.data || notification.metadata || {};
+        const collectionId = data.collectionId || metadata?.collectionId;
+        if (collectionId) {
+          return {
+            route: ROOT_ROUTES.COLLECTION_DETAIL,
+            params: {
+              collectionId,
+            },
+          };
+        }
+        if (metadata?.userId) {
+          return {
+            route: ROOT_ROUTES.PROFILE,
+            params: {
+              screen: 'ProfileMain',
+              params: {
+                userId: metadata.userId,
+              },
+            },
+          };
+        }
+        return {
+          route: TAB_ROUTES.FEED,
+          params: {
+            screen: 'FeedScreen',
+          },
+        };
+      }
+
+      // Collection bildirimleri → CollectionDetail (collectionId varsa)
+      case 'COLLECTION_POST_ADDED':
+      case 'COLLECTION_SHARED': {
+        const collectionData = notification.data || notification.metadata || {};
+        const colId = collectionData.collectionId || metadata?.collectionId;
+        if (colId) {
+          return {
+            route: ROOT_ROUTES.COLLECTION_DETAIL,
+            params: {
+              collectionId: colId,
+            },
+          };
+        }
+        return {
+          route: TAB_ROUTES.EVENTS,
+          params: {
+            screen: 'EventsScreen',
+          },
+        };
+      }
 
       // TIPS bildirimleri → Wallet (GlobalStackGroup)
       case 'TIPS_RECEIVED':

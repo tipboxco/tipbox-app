@@ -891,10 +891,13 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
         }
 
         // Sohbeti Görüntüle ve Profili Görüntüle butonları olan bildirimlerde sadece butonlara tıklanınca navigation
-        // NEW_BADGE ve ACHIEVEMENT_UNLOCKED bildirimlerinde tıklanınca bir şey olmamalı
+        // NEW_BADGE ve ACHIEVEMENT_UNLOCKED: collectionId varsa CollectionDetail'e git, yoksa bir şey yapma
         if (type === 'TIPS_SENT' || type === 'DM_REQUEST_ACCEPTED' ||
-            type === 'NEW_TRUSTER' || type === 'NEW_TRUSTED_BY' ||
-            type === 'NEW_BADGE' || type === 'ACHIEVEMENT_UNLOCKED') {
+            type === 'NEW_TRUSTER' || type === 'NEW_TRUSTED_BY') {
+            return;
+        }
+        if ((type === 'NEW_BADGE' || type === 'ACHIEVEMENT_UNLOCKED') &&
+            !(notification.data?.collectionId || notification.metadata?.collectionId)) {
             return;
         }
 
@@ -993,12 +996,13 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                 }
             }
 
-            // 5. Gamification (Badge & Achievement) → Profile → Collections (badgeId ile)
+            // 5. Gamification (Badge & Achievement) → CollectionDetail (collectionId varsa)
             if (type === 'NEW_BADGE' || type === 'ACHIEVEMENT_UNLOCKED') {
-                if (data.badgeId) {
-                    // Profile → Collections ekranına yönlendir (badge detayı burada gösterilir)
-                    navigationService.navigate(ROOT_ROUTES.PROFILE, {
-                        screen: 'Collections',
+                const collectionId = data.collectionId;
+                if (collectionId) {
+                    // CollectionDetail ekranına yönlendir - /api/events/collections/{collectionId} çağrılacak
+                    navigationService.navigate(ROOT_ROUTES.COLLECTION_DETAIL, {
+                        collectionId,
                     }, {
                         priority: 'high',
                         force: false,
@@ -1049,12 +1053,12 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                 }
             }
 
-            // 8. Collection Bildirimleri → Profile → Collections (collectionId ile)
+            // 8. Collection Bildirimleri → CollectionDetail (collectionId ile)
             if (type === 'COLLECTION_POST_ADDED' || type === 'COLLECTION_SHARED') {
                 if (data.collectionId) {
-                    // CollectionsScreen'e yönlendir (collectionId ile detay gösterilebilir)
-                    navigationService.navigate(ROOT_ROUTES.PROFILE, {
-                        screen: 'Collections',
+                    // CollectionDetail ekranına yönlendir - /api/events/collections/{collectionId} çağrılacak
+                    navigationService.navigate(ROOT_ROUTES.COLLECTION_DETAIL, {
+                        collectionId: data.collectionId,
                     }, {
                         priority: 'high',
                         force: false,
