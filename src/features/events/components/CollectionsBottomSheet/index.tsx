@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronDownIcon, ChevronUpIcon } from 'react-native-heroicons/outline';
 import { useMainCategories, useSubCategories } from '../../api/hooks';
 import type { CollectionFilters } from '../../types/medusa.types';
+import type { Collection } from '../../types/collection.types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
@@ -18,47 +19,83 @@ interface CollectionsBottomSheetProps {
   onApply: (filters: CollectionFilters) => void;
   isDark?: boolean;
   initialFilters?: CollectionFilters | null;
+  /** Sağlanırsa response verisinden unique mainCategory/subCategory çıkarılır (client-side mode) */
+  collections?: Collection[];
 }
 
 const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   onApply,
   isDark = false,
   initialFilters,
+  collections,
 }) => {
   const { closeBottomSheet, snapToIndex } = useGlobalBottomSheet();
   const { t } = useTranslation('events');
   const insets = useSafeAreaInsets();
 
-  const [mainCategoryId, setMainCategoryId] = useState<string | undefined>(initialFilters?.mainCategoryId);
-  const [subCategoryId, setSubCategoryId] = useState<string | undefined>(initialFilters?.subCategoryId);
+  // collections prop varsa "name mode" (client-side), yoksa "id mode" (catalog API)
+  const isNameMode = !!collections;
+
+  const [mainCategoryId, setMainCategoryId] = useState<string | undefined>(
+    isNameMode ? initialFilters?.mainCategoryName : initialFilters?.mainCategoryId
+  );
+  const [subCategoryId, setSubCategoryId] = useState<string | undefined>(
+    isNameMode ? initialFilters?.subCategoryName : initialFilters?.subCategoryId
+  );
   const [productGroupId, setProductGroupId] = useState<string | undefined>(initialFilters?.productGroupId);
 
   // Hangi dropdown açık: 'main' | 'sub' | 'product' | null
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  // API hooks
+  // === NAME MODE: collections'dan unique kategori çıkar ===
+  const collectionMainCategories = useMemo(() => {
+    if (!collections) return [];
+    const names = new Set<string>();
+    for (const c of collections) {
+      if (c.mainCategory?.name) names.add(c.mainCategory.name);
+    }
+    return Array.from(names).sort().map((name) => ({ id: name, name }));
+  }, [collections]);
+
+  const collectionSubCategories = useMemo(() => {
+    if (!collections || !mainCategoryId) return [];
+    const names = new Set<string>();
+    for (const c of collections) {
+      if (c.mainCategory?.name === mainCategoryId && c.subCategory?.name) {
+        names.add(c.subCategory.name);
+      }
+    }
+    return Array.from(names).sort().map((name) => ({ id: name, name }));
+  }, [collections, mainCategoryId]);
+
+  // === ID MODE: catalog API hooks ===
   const { data: mainCategoriesRaw, isLoading: isLoadingMain } = useMainCategories();
   const { data: subCategoriesRaw, isLoading: isLoadingSub } = useSubCategories(
-    mainCategoryId ?? '',
-    !!mainCategoryId,
+    (!isNameMode && mainCategoryId) ? mainCategoryId : '',
+    !isNameMode && !!mainCategoryId,
   );
   const { data: productGroupsRaw, isLoading: isLoadingProduct } = useSubCategories(
-    subCategoryId ?? '',
-    !!subCategoryId,
+    (!isNameMode && subCategoryId) ? subCategoryId : '',
+    !isNameMode && !!subCategoryId,
   );
 
-  const mainCategories = useMemo(
+  const apiMainCategories = useMemo(
     () => (mainCategoriesRaw ?? []).map((c) => ({ id: c.id, name: c.name })),
     [mainCategoriesRaw],
   );
-  const subCategories = useMemo(
+  const apiSubCategories = useMemo(
     () => (subCategoriesRaw ?? []).map((c) => ({ id: c.id, name: c.name })),
     [subCategoriesRaw],
   );
-  const productGroups = useMemo(
+  const apiProductGroups = useMemo(
     () => (productGroupsRaw ?? []).map((c) => ({ id: c.id, name: c.name })),
     [productGroupsRaw],
   );
+
+  // Aktif mod'a göre kategori listelerini seç
+  const mainCategories = isNameMode ? collectionMainCategories : apiMainCategories;
+  const subCategories = isNameMode ? collectionSubCategories : apiSubCategories;
+  const productGroups = isNameMode ? [] : apiProductGroups;
 
   // Cascade reset
   useEffect(() => {
@@ -82,16 +119,28 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   }, [openDropdown, snapToIndex]);
 
   const handleApply = useCallback(() => {
-    onApply({ mainCategoryId, subCategoryId, productGroupId });
+    if (isNameMode) {
+      // Client-side mode: name olarak gönder
+      onApply({
+        mainCategoryName: mainCategoryId,
+        subCategoryName: subCategoryId,
+      });
+    } else {
+      // Catalog API mode: ID olarak gönder
+      onApply({ mainCategoryId, subCategoryId, productGroupId });
+    }
     closeBottomSheet();
-  }, [mainCategoryId, subCategoryId, productGroupId, onApply, closeBottomSheet]);
+  }, [isNameMode, mainCategoryId, subCategoryId, productGroupId, onApply, closeBottomSheet]);
 
   const handleReset = useCallback(() => {
-    setMainCategoryId(undefined);
-    setSubCategoryId(undefined);
-    setProductGroupId(undefined);
-    setOpenDropdown(null);
-  }, []);
+    // Filtreleri temizle, apply et ve kapat
+    if (isNameMode) {
+      onApply({ mainCategoryName: undefined, subCategoryName: undefined });
+    } else {
+      onApply({ mainCategoryId: undefined, subCategoryId: undefined, productGroupId: undefined });
+    }
+    closeBottomSheet();
+  }, [isNameMode, onApply, closeBottomSheet]);
 
   // Helper: seçili item adını bul
   const getLabel = (
@@ -107,7 +156,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
   const dropdownBg = isDark ? '#2C2C2E' : '#F9F9F9';
   const textColor = isDark ? '#FFFFFF' : '#000000';
   const placeholderColor = '#999999';
-  const borderColor = isDark ? '#3A3A3C' : '#E5E5E5';
+  const borderClr = isDark ? '#3A3A3C' : '#E5E5E5';
 
   const renderDropdown = (
     key: string,
@@ -115,7 +164,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
     items: { id: string; name: string }[],
     selectedId: string | undefined,
     onSelect: (id: string) => void,
-    isLoading: boolean,
+    loading: boolean,
     disabled: boolean,
   ) => {
     const isOpen = openDropdown === key;
@@ -129,12 +178,12 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
             styles.dropdown,
             {
               backgroundColor: dropdownBg,
-              borderColor: isOpen ? (isDark ? '#636366' : '#C7C7CC') : borderColor,
+              borderColor: isOpen ? (isDark ? '#636366' : '#C7C7CC') : borderClr,
               opacity: disabled ? 0.4 : 1,
             },
           ]}
           onPress={() => !disabled && toggleDropdown(key)}
-          disabled={disabled || isLoading}
+          disabled={disabled || loading}
         >
           <Text
             style={[
@@ -143,9 +192,9 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
             ]}
             numberOfLines={1}
           >
-            {isLoading ? t('collectionsFilter.loading') : displayLabel}
+            {loading ? t('collectionsFilter.loading') : displayLabel}
           </Text>
-          {isLoading ? (
+          {loading ? (
             <ActivityIndicator size="small" color={placeholderColor} />
           ) : isOpen ? (
             <ChevronUpIcon width={16} height={16} color={placeholderColor} />
@@ -154,8 +203,8 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
           )}
         </Pressable>
 
-        {isOpen && !isLoading && (
-          <View style={[styles.optionsList, { backgroundColor: dropdownBg, borderColor }]}>
+        {isOpen && !loading && (
+          <View style={[styles.optionsList, { backgroundColor: dropdownBg, borderColor: borderClr }]}>
             <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled bounces={false}>
               {items.length === 0 ? (
                 <View style={styles.emptyRow}>
@@ -172,7 +221,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
                       key={item.id}
                       style={[
                         styles.optionItem,
-                        !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor },
+                        !isLast && { borderBottomWidth: 1, borderBottomColor: borderClr },
                         isSelected && { backgroundColor: isDark ? '#3A3A3C' : '#F0F0F0' },
                       ]}
                       onPress={() => {
@@ -218,7 +267,7 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
           mainCategories,
           mainCategoryId,
           setMainCategoryId,
-          isLoadingMain,
+          !isNameMode && isLoadingMain,
           false,
         )}
         {renderDropdown(
@@ -227,10 +276,11 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
           subCategories,
           subCategoryId,
           setSubCategoryId,
-          isLoadingSub,
+          !isNameMode && isLoadingSub,
           !mainCategoryId,
         )}
-        {renderDropdown(
+        {/* Product group sadece ID mode'da gösterilir */}
+        {!isNameMode && renderDropdown(
           'product',
           t('collectionsFilter.productGroup'),
           productGroups,
@@ -242,13 +292,13 @@ const CollectionsBottomSheet: React.FC<CollectionsBottomSheetProps> = ({
       </ScrollView>
 
       {/* Footer Buttons */}
-      <View style={[styles.footer, { borderTopColor: borderColor, paddingBottom: Math.max(insets.bottom, 20) }]}>
+      <View style={[styles.footer, { borderTopColor: borderClr, paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View style={styles.footerButtons}>
           {/* Reset */}
           <Pressable
             style={[
               styles.footerButton,
-              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F2', borderWidth: 1, borderColor },
+              { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F2', borderWidth: 1, borderColor: borderClr },
             ]}
             onPress={handleReset}
           >

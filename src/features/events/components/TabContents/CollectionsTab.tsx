@@ -19,7 +19,7 @@ import CollectionCard from '../CollectionCard';
 import type { Collection } from '../../types/collection.types';
 import type { CollectionFilters } from '../../types/medusa.types';
 import { useSafeAreaValues } from '@/src/utils';
-import { useCollections, useUserProgressCollections, useMainCategories } from '../../api/hooks';
+import { useCollections, useUserProgressCollections } from '../../api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useTranslation } from '@/src/hooks/useTranslation';
@@ -77,27 +77,11 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Main categories for chip filters (only Beauty & Electronics)
-  const ALLOWED_CATEGORY_NAMES = ['beauty', 'electronics'];
-  const { data: mainCategoriesData } = useMainCategories();
-  const chipCategories = useMemo(
-    () => [
-      { id: 'all', name: t('collection.all') },
-      ...(mainCategoriesData ?? [])
-        .filter((c) => ALLOWED_CATEGORY_NAMES.includes(c.name.toLowerCase()))
-        .map((c) => ({ id: c.id, name: c.name })),
-    ],
-    [mainCategoriesData, t]
-  );
-
   // EP-01: Collections listesi (infinite scroll)
-  // Profile'da userId varsa user'ın tamamladığı collections'ları getir
+  // Tüm filtreleme client-side yapılacak (mainCategory.name / subCategory.name)
   const allCollectionsQuery = useCollections({
     search: debouncedSearch,
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
-    mainCategoryId: selectedCategory !== 'all' ? selectedCategory : collectionFilters?.mainCategoryId,
-    subCategoryId: collectionFilters?.subCategoryId,
-    productGroupId: collectionFilters?.productGroupId,
   });
 
   const userCollectionsQuery = useUserProgressCollections(userId);
@@ -115,11 +99,11 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     refetch,
   } = activeQuery;
 
-  const collections = useMemo<Collection[]>(() => {
+  // Tüm collections (filtresiz)
+  const allCollections = useMemo<Collection[]>(() => {
     if (!data) return [];
 
     return data.pages.flatMap((page: any) => {
-      // Both EP-01 and EP-05 return 'collections' array
       return (page.collections || []).map((c: any) => ({
         id: c.id,
         title: c.title,
@@ -128,11 +112,50 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
         totalProgress: c.totalProgress ?? 0,
         coverImage: c.coverImage ?? null,
         category: c.category ?? undefined,
+        mainCategory: c.mainCategory ?? null,
+        subCategory: c.subCategory ?? null,
         totalBadges: c.totalBadges ?? 0,
         earnedBadges: c.earnedBadges ?? 0,
       }));
     });
   }, [data]);
+
+  // Chip kategorileri: response'daki unique mainCategory.name değerlerinden oluştur
+  const chipCategories = useMemo(
+    () => {
+      const names = new Set<string>();
+      for (const c of allCollections) {
+        if (c.mainCategory?.name) names.add(c.mainCategory.name);
+      }
+      return [
+        { id: 'all', name: t('collection.all') },
+        ...Array.from(names).sort().map((name) => ({ id: name, name })),
+      ];
+    },
+    [allCollections, t]
+  );
+
+  // Client-side filtreleme: mainCategory.name ve subCategory.name
+  const collections = useMemo<Collection[]>(() => {
+    let filtered = allCollections;
+
+    // Chip filtresi: mainCategory.name ile eşleştir
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter((c) => c.mainCategory?.name === selectedCategory);
+    }
+
+    // Bottom sheet filtresi: mainCategoryName ile eşleştir
+    if (collectionFilters?.mainCategoryName && selectedCategory === 'all') {
+      filtered = filtered.filter((c) => c.mainCategory?.name === collectionFilters.mainCategoryName);
+    }
+
+    // Bottom sheet filtresi: subCategoryName ile eşleştir
+    if (collectionFilters?.subCategoryName) {
+      filtered = filtered.filter((c) => c.subCategory?.name === collectionFilters.subCategoryName);
+    }
+
+    return filtered;
+  }, [allCollections, selectedCategory, collectionFilters]);
 
   // Pull-to-refresh
   const handleRefresh = useCallback(() => {
