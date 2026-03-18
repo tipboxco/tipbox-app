@@ -208,6 +208,8 @@
     "participants": "Participants",
     "rewards": "Rewards",
     "requirements": "Requirements",
+    "requirementFallback": "Requirement",
+    "taskFallback": "Task",
     "description": "Description",
     "statistic": "Statistic",
     "complete": "Complete",

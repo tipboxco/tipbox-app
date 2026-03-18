@@ -59,8 +59,8 @@
       "postFavorited": "{{username}} favorited",
       "commentLiked": "{{username}} liked your comment",
       "commentReplied": "{{username}} replied",
-      "newTruster": "{{username}} added you to their trust list!",
-      "newTrustedBy": "{{username}} added you to their trust list!",
+      "newTruster": "{{username}} added you to their Trust List!",
+      "newTrustedBy": "{{username}} added you to their Trust List!",
       "dmRequestReceived": "{{username}} sent a message request",
       "dmRequestAccepted": "{{username}} accepted your message request",
       "dmRequestDeclined": "{{username}} declined your message request",
@@ -81,7 +81,10 @@
       "collectionShared": "Collection shared",
       "systemAnnouncement": "{{publisherName}} published a new survey!",
       "nftPurchased": "NFT \"{{title}}\" purchased for {{amount}} TIPS",
-      "nftPurchasedGeneric": "NFT purchased successfully"
+      "nftPurchasedGeneric": "NFT purchased successfully",
+      "nftSent": "You sent \"{{nftName}}\" NFT to {{recipientName}}",
+      "nftSentGeneric": "You sent \"{{nftName}}\" NFT",
+      "nftSentDefault": "NFT sent successfully"
     },
     "deposit": {
       "received": "Deposit received",

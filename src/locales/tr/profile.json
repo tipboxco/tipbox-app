@@ -17,8 +17,8 @@
     "following": "Takip Edilenler",
     "posts": "Gönderiler",
     "tips": "Bahşişler",
-    "trust": "Güvenilen",
-    "truster": "Güvenen"
+    "trust": "Trust",
+    "truster": "Truster"
   },
   "actions": {
     "follow": "Takip Et",
@@ -32,11 +32,11 @@
     "cancel": "İptal",
     "adding": "Ekleniyor...",
     "removing": "Kaldırılıyor...",
-    "trust": "Güven",
-    "unTrust": "Güveni Kaldır",
-    "unTrustConfirmTitle": "Güveni Kaldır",
-    "unTrustConfirmMessage": "{{name}} kullanıcısını güvenilir listenizden çıkarmak istediğinize emin misiniz?",
-    "unTrustConfirmButton": "Kaldır",
+    "trust": "Trust",
+    "unTrust": "Untrust",
+    "unTrustConfirmTitle": "Trust Listesinden Çıkar",
+    "unTrustConfirmMessage": "{{name}} kullanıcısını Trust listenizden çıkarmak istediğinize emin misiniz?",
+    "unTrustConfirmButton": "Çıkar",
     "mute": "Sessize Al",
     "unmute": "Sessizden Çıkar",
     "muting": "Sessize alınıyor...",
@@ -158,20 +158,21 @@
     "title": "{{name}} Koleksiyonları",
     "searchPlaceholder": "Rozet adına göre ara",
     "achievementBadges": "Başarı Rozetleri",
-    "bridgeBadges": "Köprü Rozetleri"
+    "bridgeBadges": "Köprü Rozetleri",
+    "all": "Tümü"
   },
   "trustList": {
-    "trust": "Güvenilen",
-    "truster": "Güvenen",
-    "searchTrust": "Güvenilen Listesinde kullanıcı arayın.",
-    "searchTruster": "Güvenen Listesinde kullanıcı arayın.",
+    "trust": "Trust",
+    "truster": "Truster",
+    "searchTrust": "Trust Listesinde kullanıcı arayın.",
+    "searchTruster": "Truster Listesinde kullanıcı arayın.",
     "viewSuggested": "Önerilen Kullanıcıları Gör",
     "viewSuggestedSubtitle": "İlgi alanlarınıza göre.",
     "noUserId": "Kullanıcı ID bulunamadı",
     "error": "Hata: {{message}}",
     "noUserFound": "Kullanıcı bulunamadı",
-    "trustListEmpty": "Henüz güvenilen listeniz boş",
-    "trusterListEmpty": "Henüz güvenen listeniz boş",
+    "trustListEmpty": "Trust listeniz henüz boş",
+    "trusterListEmpty": "Truster listeniz henüz boş",
     "loading": "Yükleniyor...",
     "sort": "Sırala",
     "sortDefault": "Varsayılan",
@@ -181,10 +182,15 @@
   "editHighlightBadges": {
     "title": "Öne Çıkan Rozetleri Düzenle",
     "save": "Kaydet",
-    "eventBadges": "Etkinlik Rozetleri",
-    "collections": "Koleksiyonlar",
+    "eventBadges": "Etkinlik",
+    "collections": "Koleksiyon",
+    "cosmetic": "Kozmetik",
+    "brand": "Marka",
     "noEventBadges": "Henüz etkinlik rozeti yok.",
-    "noCollectionBadges": "Henüz koleksiyon rozeti yok."
+    "noCollectionBadges": "Henüz koleksiyon rozeti yok.",
+    "noCosmeticBadges": "Henüz kozmetik rozet yok.",
+    "noBrandBadges": "Henüz marka rozeti yok.",
+    "loadMore": "Daha Fazla Göster"
   },
   "suggestedUsers": {
     "title": "Önerilen Kullanıcılar",
@@ -230,13 +236,13 @@
     "operationFailed": "İşlem başarısız. Lütfen tekrar deneyin.",
     "error": "Hata",
     "errorSendingTips": "TIPS gönderilirken bir hata oluştu",
-    "removingFromTrust": "Kullanıcı güvenilen listesinden çıkarılırken bir hata oluştu.",
+    "removingFromTrust": "Kullanıcı Trust listesinden çıkarılırken bir hata oluştu.",
     "blocking": "Kullanıcı engellenirken bir hata oluştu.",
     "muting": "Kullanıcı sessize alınırken bir hata oluştu."
   },
   "trustUserCard": {
-    "removeTitle": "Güvenilen Listesinden Çıkar",
-    "removeMessage": "{{name}} kullanıcısını güvenilen listenizden çıkarmak istediğinizden emin misiniz?",
+    "removeTitle": "Trust Listesinden Çıkar",
+    "removeMessage": "{{name}} kullanıcısını Trust listenizden çıkarmak istediğinizden emin misiniz?",
     "blockTitle": "Kullanıcıyı Engelle",
     "blockMessage": "{{name}} kullanıcısını engellemek istediğinizden emin misiniz? Engellenen kullanıcılar sizinle etkileşime geçemez.",
     "unblockTitle": "Engeli Kaldır",
@@ -245,7 +251,7 @@
     "remove": "Çıkar",
     "block": "Engelle",
     "unblock": "Engeli Kaldır",
-    "removeFromTrust": "Güvenilen Listesinden Çıkar",
+    "removeFromTrust": "Trust Listesinden Çıkar",
     "blocking": "Engelleniyor...",
     "unblocking": "Engel kaldırılıyor...",
     "muting": "Sessize alınıyor...",
@@ -253,7 +259,7 @@
   },
   "suggestedUserCard": {
     "mutualFriends": "{{count}} ortak arkadaş",
-    "addTrust": "Güven Ekle",
+    "addTrust": "Trust",
     "added": "Eklendi"
   },
   "badgeDetail": {
@@ -262,6 +268,49 @@
   },
   "share": {
     "profileMessage": "Tipbox'ta {{name}} profilini incele!"
+  },
+  "tabStates": {
+    "achievements": {
+      "loading": "Başarılar yükleniyor...",
+      "error": "Başarılar yüklenirken bir hata oluştu: {{message}}",
+      "empty": "Henüz başarı yok."
+    },
+    "bridgeBadges": {
+      "loading": "Köprü rozetleri yükleniyor...",
+      "error": "Köprü rozetleri yüklenirken bir hata oluştu: {{message}}",
+      "empty": "Henüz köprü rozeti yok."
+    },
+    "benchmarks": {
+      "loading": "Karşılaştırmalar yükleniyor...",
+      "error": "Karşılaştırmalar yüklenirken bir hata oluştu: {{message}}",
+      "empty": "Henüz karşılaştırma yok."
+    },
+    "tips": {
+      "loading": "İpuçları yükleniyor...",
+      "error": "İpuçları yüklenirken bir hata oluştu: {{message}}",
+      "empty": "Henüz ipucu yok."
+    },
+    "replies": {
+      "loading": "Sorular yükleniyor...",
+      "error": "Sorular yüklenirken bir hata oluştu: {{message}}",
+      "empty": "Henüz soru yok."
+    },
+    "feed": {
+      "loading": "Akış yükleniyor...",
+      "error": "Akış yüklenirken bir hata oluştu: {{message}}",
+      "empty": "Henüz akış içeriği bulunamadı."
+    },
+    "experience": {
+      "loading": "Deneyimler yükleniyor...",
+      "error": "Deneyimler yüklenirken bir hata oluştu: {{message}}",
+      "empty": "Henüz deneyim gönderisi yok."
+    }
+  },
+  "badgeModal": {
+    "earnedMessage": "\"{{badge}}\" rozetini kazandınız!",
+    "noBadgesTitle": "Henüz Rozet Kazanılmadı",
+    "noBadgesSubtitle": "Bu kullanıcı henüz rozet kazanmadı.",
+    "tipsSentMessage": "Profilden gönderilen TIPS"
   },
   "sendTipsModal": {
     "to": "Kime",

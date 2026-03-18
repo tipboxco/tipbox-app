@@ -152,6 +152,9 @@
       },
       "modal": {
         "title": "İkinci Ürünü Seç",
+        "addProduct": "Ürün Ekle",
+        "addFromInventory": "Envanterden Ekle",
+        "addFromCatalog": "Katalogdan Ekle",
         "fromInventory": "Envanterden",
         "fromInventoryDesc": "Karşılaştırmak için envanterinizdeki ürünlerden seçin.",
         "fromCatalog": "Katalogdan",
@@ -343,9 +346,20 @@
       }
     }
   },
+  "filterSort": {
+    "title": "Filtre / Sırala",
+    "filter": "Filtre",
+    "sort": "Sırala",
+    "reset": "Sıfırla",
+    "done": "Tamam",
+    "popular": "Popüler"
+  },
   "screens": {
     "posts": {
       "title": "Gönderiler",
+      "productFeed": "Ürün Akışı",
+      "productGroupFeed": "Ürün Grubu Akışı",
+      "subcategoryFeed": "Alt Kategori Akışı",
       "empty": "Bu bağlamda henüz gönderi bulunamadı.",
       "errors": {
         "failedToLoad": "Akış Yüklenemedi",
@@ -408,8 +422,8 @@
     "loading": "Yükleniyor...",
     "noResults": "Sonuç bulunamadı",
     "tryDifferentSearch": "Farklı bir arama deneyin.",
-    "emptyList": "Trust listesi boş",
-    "addPeopleToTrustList": "Paylaşmak için trust listenize kişi ekleyin."
+    "emptyList": "Trust Listesi boş",
+    "addPeopleToTrustList": "Paylaşmak için Trust listenize kişi ekleyin."
   },
   "altTexts": {
     "benchmarks": "Karşılaştırmalar",

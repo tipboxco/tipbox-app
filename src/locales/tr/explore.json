@@ -17,6 +17,7 @@
     "empty": "Henüz gönderi yok"
   },
   "news": {
+    "error": "İçerikler yüklenirken bir hata oluştu. Lütfen tekrar deneyin.",
     "sections": {
       "events": {
         "title": "Yeni Topluluk Etkinlikleri",

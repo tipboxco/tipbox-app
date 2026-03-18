@@ -18,7 +18,8 @@
       "newMessages": "Yeni mesajlar var",
       "noMessages": "Mesaj yok"
     },
-    "typing": "{{name}} yazıyor"
+    "typing": "{{name}} yazıyor",
+    "retry": "Tekrar Dene"
   },
   "supportRequests": {
     "empty": "Henüz destek talebi yok",
@@ -267,16 +268,68 @@
       "mention": "sizden bahsetti"
     }
   },
+  "supportRequest": {
+    "title": "Destek Talebi",
+    "statusLabels": {
+      "created": "Destek Talebi Oluşturuldu",
+      "canceled": "Destek Talebi İptal Edildi",
+      "accepted": "Destek Talebi Kabul Edildi",
+      "rejected": "Destek Talebi Reddedildi"
+    },
+    "labels": {
+      "supportType": "Destek Türü",
+      "requestDetails": "Talep Detayları",
+      "status": "Durum"
+    },
+    "buttons": {
+      "cancelRequest": "Talebi İptal Et",
+      "accept": "Kabul Et",
+      "reject": "Reddet",
+      "goToSupportChat": "Destek Sohbetine Git",
+      "finalize": "Destek Talebini Sonlandır"
+    },
+    "statusMessages": {
+      "pendingAutoClose": "Destek talebi 24 saat içinde yanıtlanmazsa otomatik olarak kapanacaktır.",
+      "acceptedGoToChat": "Destek talebi kabul edildi. Sohbeti başlatmak için \"Destek Sohbetine Git\" butonuna tıklayın.",
+      "acceptedActive": "Destek talebi kabul edildi. Destek sohbeti artık aktif.",
+      "rejected": "Bu destek talebi reddedildi.",
+      "canceled": "Bu destek talebi iptal edildi.",
+      "awaitingCompletion": "Destek talebi tamamlanmayı bekliyor. Lütfen değerlendirin ve sonlandırın.",
+      "awaitingOtherParty": "Bu destek talebini kapatma isteği gönderildi. Karşı tarafın onayı bekleniyor.",
+      "completed": "Destek talebi tamamlandı.",
+      "statusPrefix": "Destek talebi durumu: {{status}}"
+    },
+    "statusBadges": {
+      "pending": "Beklemede",
+      "accepted": "Kabul Edildi",
+      "rejected": "Reddedildi",
+      "canceled": "İptal Edildi",
+      "awaitingCompletion": "Tamamlanma Bekleniyor",
+      "completed": "Tamamlandı"
+    }
+  },
   "supportChat": {
     "requestType": "Talep Türü",
     "requestAmount": "Talep Tutarı",
     "totalTips": "Toplam Tips",
     "tipsAmount": "Tips Miktarı",
+    "requestMessages": "Talep Mesajları",
+    "requestMessage": "Talep Mesajı",
     "types": {
       "general": "Genel",
       "technical": "Teknik",
       "product": "Ürün"
     }
+  },
+  "messageInput": {
+    "addCaption": "Açıklama ekle...",
+    "typeMessage": "Mesajınızı yazın...",
+    "selectedImageAlt": "Seçilen görsel"
+  },
+  "tipsConfirmModal": {
+    "currentBalance": "Mevcut Bakiye",
+    "confirm": "Onayla",
+    "cancel": "İptal Et"
   },
   "support": {
     "title": "1-1 Destek Talebi",

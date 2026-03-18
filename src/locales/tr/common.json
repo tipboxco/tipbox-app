@@ -99,9 +99,15 @@
     "deleteError": "Gönderi silinirken bir hata oluştu.",
     "updateOnlyForExperience": "Güncelleme özelliği yalnızca deneyim gönderileri için kullanılabilir.",
     "checkOutPost": "Tipbox'taki bu gönderiyi inceleyin!",
+    "checkOutProfile": "Tipbox'ta {{name}} profiline göz atın!",
     "adding": "Ekleniyor...",
     "removing": "Kaldırılıyor...",
     "reporting": "Şikayet ediliyor..."
+  },
+  "share": {
+    "internalShare": "İçeride Paylaş",
+    "externalShare": "Dışarıda Paylaş",
+    "sharing": "Paylaşılıyor..."
   },
   "menu": {
     "update": "Güncelle",
@@ -109,8 +115,8 @@
     "externalShare": "Paylaş",
     "report": "Şikayet Et",
     "viewProfile": "Profili Görüntüle",
-    "trust": "Takip Et",
-    "unTrust": "Takibi Bırak",
+    "trust": "Trust",
+    "unTrust": "Untrust",
     "reportUser": "Kullanıcıyı Şikayet Et",
     "reportPost": "Gönderiyi Şikayet Et",
     "block": "Engelle",
@@ -192,7 +198,8 @@
       "users": "Kullanıcılar",
       "brands": "Markalar",
       "products": "Ürünler"
-    }
+    },
+    "loadMore": "Daha Fazla"
   },
   "createPost": {
     "title": "Gönderi Oluştur",

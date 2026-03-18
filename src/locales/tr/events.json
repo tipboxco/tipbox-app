@@ -20,7 +20,8 @@
     "review": "İnceleme",
     "giveaway": "Çekiliş",
     "discussion": "Tartışma",
-    "PICKS": "Picks"
+    "PICKS": "Picks",
+    "ROASTS": "Roasts"
   },
   "search": {
     "events": "Etkinlik ara",
@@ -59,7 +60,36 @@
     "postsLoadError": "Gönderiler yüklenirken bir hata oluştu",
     "noPosts": "Henüz gönderi yok",
     "product": "Ürün",
-    "postedIn": "{{eventTitle}} etkinliğinde paylaşıldı"
+    "postedIn": "{{eventTitle}} etkinliğinde paylaşıldı",
+    "shareMessage": "Tipbox'ta {{eventTitle}} etkinliğine göz atın!",
+    "months": {
+      "jan": "Oca",
+      "feb": "Şub",
+      "mar": "Mar",
+      "apr": "Nis",
+      "may": "May",
+      "jun": "Haz",
+      "jul": "Tem",
+      "aug": "Ağu",
+      "sep": "Eyl",
+      "oct": "Eki",
+      "nov": "Kas",
+      "dec": "Ara"
+    },
+    "monthsFull": {
+      "jan": "Ocak",
+      "feb": "Şubat",
+      "mar": "Mart",
+      "apr": "Nisan",
+      "may": "Mayıs",
+      "jun": "Haziran",
+      "jul": "Temmuz",
+      "aug": "Ağustos",
+      "sep": "Eylül",
+      "oct": "Ekim",
+      "nov": "Kasım",
+      "dec": "Aralık"
+    }
   },
   "badges": {
     "title": "Rozetler",
@@ -183,5 +213,19 @@
     "success": {
       "postCreated": "Gönderi başarıyla oluşturuldu!"
     }
+  },
+  "collectionCardModal": {
+    "reminderSet": "Hatırlatıcı Ayarlandı",
+    "reminderSetMessage": "Bu rozet hakkında hatırlatılacaksınız.",
+    "reminderError": "Hatırlatıcı ayarlanamadı. Lütfen tekrar deneyin.",
+    "badgeImageNotFound": "Rozet görseli bulunamadı",
+    "savedToGallery": "Rozet galerinize kaydedildi",
+    "saveError": "Rozet kaydedilemedi",
+    "downloadError": "Rozet indirilirken bir hata oluştu",
+    "setting": "Ayarlanıyor...",
+    "setReminder": "Hatırlatıcı Ayarla",
+    "seeRewardPool": "Ödül Havuzunu Gör",
+    "completedBadge": "Tamamlanan Rozet",
+    "noAchievementsYet": "Henüz başarı yok"
   }
 }

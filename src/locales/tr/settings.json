@@ -80,12 +80,19 @@
     "forgotPassword": "Şifremi Unuttum",
     "changePasswordButton": "Şifreyi Değiştir",
     "changing": "Değiştiriliyor...",
+    "description": "Mevcut şifrenizi girin ve hesabınız için yeni bir şifre belirleyin.",
     "errors": {
       "currentPasswordRequired": "Mevcut şifre gereklidir",
       "newPasswordRequired": "Yeni şifre gereklidir",
       "passwordMinLength": "Şifre en az 6 karakter olmalıdır",
+      "passwordMinLength8": "Şifre en az 8 karakter uzunluğunda olmalıdır.",
       "confirmPasswordRequired": "Lütfen şifrenizi onaylayın",
-      "passwordsMustMatch": "Şifreler eşleşmelidir"
+      "passwordsMustMatch": "Şifreler eşleşmelidir",
+      "missingInfoTitle": "Eksik Bilgi",
+      "missingInfoDescription": "Lütfen tüm alanları doldurun.",
+      "passwordsDontMatch": "Şifreler Uyuşmuyor",
+      "passwordsDontMatchDescription": "Yeni şifre ile onay şifresi aynı olmalıdır.",
+      "invalidPassword": "Geçersiz Şifre"
     },
     "success": {
       "title": "Şifre Değiştirildi",

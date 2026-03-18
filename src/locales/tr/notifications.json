@@ -59,8 +59,8 @@
       "postFavorited": "{{username}} favoriledi",
       "commentLiked": "{{username}} yorumunu beğendi",
       "commentReplied": "{{username}} yanıt verdi",
-      "newTruster": "{{username}} seni güvenilen listesine ekledi!",
-      "newTrustedBy": "{{username}} seni güvenilen listesine ekledi!",
+      "newTruster": "{{username}} seni Trust listesine ekledi!",
+      "newTrustedBy": "{{username}} seni Trust listesine ekledi!",
       "dmRequestReceived": "{{username}} mesaj isteği gönderdi",
       "dmRequestAccepted": "{{username}} mesaj isteğini kabul etti",
       "dmRequestDeclined": "{{username}} mesaj isteğini reddetti",
@@ -81,7 +81,10 @@
       "collectionShared": "Koleksiyon paylaşıldı",
       "systemAnnouncement": "{{publisherName}}, yeni bir anket yayınladı!",
       "nftPurchased": "\"{{title}}\" NFT'si {{amount}} TIPS karşılığında satın alındı",
-      "nftPurchasedGeneric": "NFT başarıyla satın alındı"
+      "nftPurchasedGeneric": "NFT başarıyla satın alındı",
+      "nftSent": "\"{{nftName}}\" NFT'si {{recipientName}} kullanıcısına gönderildi",
+      "nftSentGeneric": "\"{{nftName}}\" NFT'si gönderildi",
+      "nftSentDefault": "NFT başarıyla gönderildi"
     },
     "deposit": {
       "received": "Para yatırıldı",

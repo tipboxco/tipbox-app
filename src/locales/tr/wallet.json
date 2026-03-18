@@ -109,7 +109,9 @@
       "secondsToCancel": "İptal etmek için {{count}} saniyeniz var.",
       "transactionHash": "İşlem hash'i",
       "pleaseWait": "İstek biraz zaman alırsa lütfen bekleyin.",
-      "cancelling": "İptal ediliyor…"
+      "cancelling": "İptal ediliyor…",
+      "tipsTransfer": "TIPS transferi",
+      "transactionFailedMessage": "İşlem başarısız oldu."
     },
     "recentAddresses": {
       "title": "Son Adresler",
@@ -272,8 +274,8 @@
   "selectFriend": {
     "loading": "Arkadaşlar yükleniyor...",
     "noFriendsTitle": "Arkadaş Bulunamadı",
-    "noFriendsMessage": "Henüz trust listenizde arkadaşınız yok.",
-    "trusted": "Güvenilen"
+    "noFriendsMessage": "Henüz Trust listenizde arkadaşınız yok.",
+    "trusted": "Trusted"
   },
   "sendFriend": {
     "title": "TIPS Gönder",

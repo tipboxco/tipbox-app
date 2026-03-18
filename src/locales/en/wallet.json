@@ -109,7 +109,9 @@
       "secondsToCancel": "You have {{count}} seconds to cancel.",
       "transactionHash": "Transaction hash",
       "pleaseWait": "Please wait if the request takes a moment.",
-      "cancelling": "Cancelling…"
+      "cancelling": "Cancelling…",
+      "tipsTransfer": "TIPS transfer",
+      "transactionFailedMessage": "Transaction failed."
     },
     "recentAddresses": {
       "title": "Recent Addresses",
@@ -122,7 +124,7 @@
       "cancelFailed": "Failed to cancel transaction"
     },
     "friendSelection": {
-      "youAreAbout": "You are about to send TIPS to this friend from your trust list."
+      "youAreAbout": "You are about to send TIPS to this friend from your Trust List."
     }
   },
   "receiveBottomSheet": {
@@ -247,14 +249,14 @@
   },
   "nftTransfer": {
     "title": "NFT Transfer",
-    "searchPlaceholder": "Search in trust list",
+    "searchPlaceholder": "Search in Trust List",
     "searchUser": "Search user",
-    "loading": "Loading trust list...",
+    "loading": "Loading Trust List...",
     "loadingUsers": "Loading users...",
-    "loadFailed": "Could not load trust list",
+    "loadFailed": "Could not load Trust List",
     "loadFailedUsers": "Could not load user list",
     "tryAgain": "Please try again later.",
-    "emptyList": "Your trust list is empty",
+    "emptyList": "Your Trust List is empty",
     "emptyUsers": "No users found",
     "transfer": "Transfer",
     "transferring": "Transfer...",
@@ -275,7 +277,7 @@
   "selectFriend": {
     "loading": "Loading friends...",
     "noFriendsTitle": "No Friends Found",
-    "noFriendsMessage": "You don't have any friends in your trust list yet.",
+    "noFriendsMessage": "You don't have any friends in your Trust List yet.",
     "trusted": "Trusted"
   },
   "sendFriend": {

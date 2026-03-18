@@ -80,12 +80,19 @@
     "forgotPassword": "Forgot Password",
     "changePasswordButton": "Change Password",
     "changing": "Changing...",
+    "description": "Enter your current password and set a new password for your account.",
     "errors": {
       "currentPasswordRequired": "Current password is required",
       "newPasswordRequired": "New password is required",
       "passwordMinLength": "Password must be at least 6 characters",
+      "passwordMinLength8": "Password must be at least 8 characters long.",
       "confirmPasswordRequired": "Please confirm your password",
-      "passwordsMustMatch": "Passwords must match"
+      "passwordsMustMatch": "Passwords must match",
+      "missingInfoTitle": "Missing Information",
+      "missingInfoDescription": "Please fill in all fields.",
+      "passwordsDontMatch": "Passwords Don't Match",
+      "passwordsDontMatchDescription": "New password and confirmation password must be the same.",
+      "invalidPassword": "Invalid Password"
     },
     "success": {
       "title": "Password Changed",

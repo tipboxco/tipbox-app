@@ -152,6 +152,9 @@
       },
       "modal": {
         "title": "Select Second Product",
+        "addProduct": "Add a Product",
+        "addFromInventory": "Add from Inventory",
+        "addFromCatalog": "Add from Catalog",
         "fromInventory": "From Inventory",
         "fromInventoryDesc": "Select a product from your inventory to compare.",
         "fromCatalog": "From Catalog",
@@ -343,9 +346,20 @@
       }
     }
   },
+  "filterSort": {
+    "title": "Filter / Sort",
+    "filter": "Filter",
+    "sort": "Sort",
+    "reset": "Reset",
+    "done": "Done",
+    "popular": "Popular"
+  },
   "screens": {
     "posts": {
       "title": "Posts",
+      "productFeed": "Product Feed",
+      "productGroupFeed": "Product Group Feed",
+      "subcategoryFeed": "Subcategory Feed",
       "empty": "No posts found for this context yet.",
       "errors": {
         "failedToLoad": "Failed to Load Feed",
@@ -408,8 +422,8 @@
     "loading": "Loading...",
     "noResults": "No results found",
     "tryDifferentSearch": "Try a different search.",
-    "emptyList": "Trust list is empty",
-    "addPeopleToTrustList": "Add people to your trust list to share with them."
+    "emptyList": "Trust List is empty",
+    "addPeopleToTrustList": "Add people to your Trust List to share with them."
   },
   "altTexts": {
     "benchmarks": "Benchmarks",

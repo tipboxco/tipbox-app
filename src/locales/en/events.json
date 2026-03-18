@@ -20,7 +20,8 @@
     "review": "Review",
     "giveaway": "Giveaway",
     "discussion": "Discussion",
-    "PICKS": "Picks"
+    "PICKS": "Picks",
+    "ROASTS": "Roasts"
   },
   "search": {
     "events": "Search events",
@@ -59,7 +60,36 @@
     "postsLoadError": "An error occurred while loading posts",
     "noPosts": "No posts yet",
     "product": "Product",
-    "postedIn": "Posted in {{eventTitle}}"
+    "postedIn": "Posted in {{eventTitle}}",
+    "shareMessage": "Check out {{eventTitle}} event on Tipbox!",
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "May",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Dec"
+    },
+    "monthsFull": {
+      "jan": "January",
+      "feb": "February",
+      "mar": "March",
+      "apr": "April",
+      "may": "May",
+      "jun": "June",
+      "jul": "July",
+      "aug": "August",
+      "sep": "September",
+      "oct": "October",
+      "nov": "November",
+      "dec": "December"
+    }
   },
   "badges": {
     "title": "Badges",
@@ -183,5 +213,19 @@
     "success": {
       "postCreated": "Post created successfully!"
     }
+  },
+  "collectionCardModal": {
+    "reminderSet": "Reminder Set",
+    "reminderSetMessage": "You will be reminded about this badge.",
+    "reminderError": "Failed to set reminder. Please try again.",
+    "badgeImageNotFound": "Badge image not found",
+    "savedToGallery": "Badge saved to your gallery",
+    "saveError": "Failed to save badge",
+    "downloadError": "An error occurred while downloading badge",
+    "setting": "Setting...",
+    "setReminder": "Set Reminder",
+    "seeRewardPool": "See Reward Pool",
+    "completedBadge": "Completed Badge",
+    "noAchievementsYet": "No achievements yet"
   }
 }

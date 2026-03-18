@@ -33,9 +33,9 @@
     "adding": "Adding...",
     "removing": "Removing...",
     "trust": "Trust",
-    "unTrust": "Un Trust",
+    "unTrust": "Untrust",
     "unTrustConfirmTitle": "Remove Trust",
-    "unTrustConfirmMessage": "Are you sure you want to remove {{name}} from your trust list?",
+    "unTrustConfirmMessage": "Are you sure you want to remove {{name}} from your Trust List?",
     "unTrustConfirmButton": "Remove",
     "mute": "Mute",
     "unmute": "Unmute",
@@ -158,20 +158,21 @@
     "title": "{{name}}'s Collections",
     "searchPlaceholder": "Search by badge name",
     "achievementBadges": "Achievements Badges",
-    "bridgeBadges": "Bridge Badges"
+    "bridgeBadges": "Bridge Badges",
+    "all": "All"
   },
   "trustList": {
     "trust": "Trust",
     "truster": "Truster",
-    "searchTrust": "Search for a user in the Trust List.",
-    "searchTruster": "Search for a user in the Truster List.",
+    "searchTrust": "Search for a user in the Trust List",
+    "searchTruster": "Search for a user in the Truster List",
     "viewSuggested": "View Suggested Users",
     "viewSuggestedSubtitle": "Based on the categories you are interested in.",
     "noUserId": "User ID not found",
     "error": "Error: {{message}}",
     "noUserFound": "User not found",
-    "trustListEmpty": "Your trust list is empty",
-    "trusterListEmpty": "Your truster list is empty",
+    "trustListEmpty": "Your Trust List is empty",
+    "trusterListEmpty": "Your Truster List is empty",
     "loading": "Loading...",
     "sort": "Sort",
     "sortDefault": "Default",
@@ -181,10 +182,15 @@
   "editHighlightBadges": {
     "title": "Edit Highlight Badges",
     "save": "Save",
-    "eventBadges": "Event Badges",
-    "collections": "Collections",
+    "eventBadges": "Event",
+    "collections": "Collection",
+    "cosmetic": "Cosmetic",
+    "brand": "Brand",
     "noEventBadges": "No event badges yet.",
-    "noCollectionBadges": "No collection badges yet."
+    "noCollectionBadges": "No collection badges yet.",
+    "noCosmeticBadges": "No cosmetic badges yet.",
+    "noBrandBadges": "No brand badges yet.",
+    "loadMore": "Load More"
   },
   "suggestedUsers": {
     "title": "Suggested Users",
@@ -230,13 +236,13 @@
     "operationFailed": "Operation failed. Please try again.",
     "error": "Error",
     "errorSendingTips": "An error occurred while sending TIPS",
-    "removingFromTrust": "An error occurred while removing user from trust list.",
+    "removingFromTrust": "An error occurred while removing user from Trust List.",
     "blocking": "An error occurred while blocking user.",
     "muting": "An error occurred while muting user."
   },
   "trustUserCard": {
     "removeTitle": "Remove from Trust List",
-    "removeMessage": "Are you sure you want to remove {{name}} from your trust list?",
+    "removeMessage": "Are you sure you want to remove {{name}} from your Trust List?",
     "blockTitle": "Block User",
     "blockMessage": "Are you sure you want to block {{name}}? Blocked users cannot interact with you.",
     "unblockTitle": "Unblock User",
@@ -262,6 +268,49 @@
   },
   "share": {
     "profileMessage": "Check out {{name}}'s profile on Tipbox!"
+  },
+  "tabStates": {
+    "achievements": {
+      "loading": "Loading achievements...",
+      "error": "An error occurred while loading achievements: {{message}}",
+      "empty": "No achievements yet."
+    },
+    "bridgeBadges": {
+      "loading": "Loading bridge badges...",
+      "error": "An error occurred while loading bridge badges: {{message}}",
+      "empty": "No bridge badges yet."
+    },
+    "benchmarks": {
+      "loading": "Loading benchmarks...",
+      "error": "An error occurred while loading benchmarks: {{message}}",
+      "empty": "No benchmarks yet."
+    },
+    "tips": {
+      "loading": "Loading tips & tricks...",
+      "error": "An error occurred while loading tips & tricks: {{message}}",
+      "empty": "No tips & tricks yet."
+    },
+    "replies": {
+      "loading": "Loading questions...",
+      "error": "An error occurred while loading questions: {{message}}",
+      "empty": "No questions yet."
+    },
+    "feed": {
+      "loading": "Loading feed...",
+      "error": "An error occurred while loading feed: {{message}}",
+      "empty": "No feed content found yet."
+    },
+    "experience": {
+      "loading": "Loading experiences...",
+      "error": "An error occurred while loading experiences: {{message}}",
+      "empty": "No experience posts yet."
+    }
+  },
+  "badgeModal": {
+    "earnedMessage": "You earned the \"{{badge}}\" badge!",
+    "noBadgesTitle": "No Badges Earned Yet",
+    "noBadgesSubtitle": "This user hasn't earned any badges yet.",
+    "tipsSentMessage": "TIPS sent from profile"
   },
   "sendTipsModal": {
     "to": "To",

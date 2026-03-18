@@ -99,9 +99,15 @@
     "deleteError": "An error occurred while deleting the post.",
     "updateOnlyForExperience": "Update feature is only available for experience posts.",
     "checkOutPost": "Check out this post on Tipbox!",
+    "checkOutProfile": "Check out {{name}}'s profile on Tipbox!",
     "adding": "Adding...",
     "removing": "Removing...",
     "reporting": "Reporting..."
+  },
+  "share": {
+    "internalShare": "Share Internally",
+    "externalShare": "Share Externally",
+    "sharing": "Sharing..."
   },
   "menu": {
     "update": "Update",
@@ -110,7 +116,7 @@
     "report": "Report",
     "viewProfile": "View Profile",
     "trust": "Trust",
-    "unTrust": "Un Trust",
+    "unTrust": "Untrust",
     "reportUser": "Report User",
     "reportPost": "Report Post",
     "block": "Block",
@@ -192,7 +198,8 @@
       "users": "Users",
       "brands": "Brands",
       "products": "Products"
-    }
+    },
+    "loadMore": "Load More"
   },
   "createPost": {
     "title": "Create Post",

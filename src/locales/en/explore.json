@@ -17,6 +17,7 @@
     "empty": "No posts yet"
   },
   "news": {
+    "error": "An error occurred while loading content. Please try again.",
     "sections": {
       "events": {
         "title": "New Community Events",

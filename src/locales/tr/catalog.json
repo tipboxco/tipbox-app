@@ -208,6 +208,8 @@
     "participants": "Katılımcılar",
     "rewards": "Ödüller",
     "requirements": "Gereksinimler",
+    "requirementFallback": "Gereksinim",
+    "taskFallback": "Görev",
     "description": "Açıklama",
     "statistic": "İstatistik",
     "complete": "Tamamla",
