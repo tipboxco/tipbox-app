@@ -1083,7 +1083,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               : 'Processing…';
       const isFailed = effectiveStatus === 'failed';
       const isPendingOrCreated = effectiveStatus === 'created' || effectiveStatus === 'pending';
-      const showCancelButton = effectiveStatus === 'created' && transactionIdForPoll && (cancelCountdown == null || cancelCountdown > 0) && !isCancelling;
+      const showCancelButton = effectiveStatus === 'created' && transactionIdForPoll && cancelCountdown != null && cancelCountdown > 0 && !isCancelling;
 
       return (
         <VStack px="$4" py="$4" space="md" flex={1}>
