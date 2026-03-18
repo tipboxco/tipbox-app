@@ -7,7 +7,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Search } from 'lucide-react-native';
 import { VStack, HStack, Box, Input, InputField, Pressable, Text, useToast } from '@gluestack-ui/themed';
-import { PlusIcon, ArchiveBoxIcon, BeakerIcon } from 'react-native-heroicons/outline';
+import { PlusIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { Header } from '@/src/components/Header';
@@ -20,7 +20,6 @@ import { useAppStore } from '@/src/store/appStore';
 import { InventorySkeleton } from '@/src/components/Skeletons';
 import { Alert } from 'react-native';
 import { useTranslation } from '@/src/hooks/useTranslation';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 6;
@@ -35,89 +34,6 @@ type InventoryScreenNavigationProp = NativeStackNavigationProp<ProfileStackParam
 
 type InventoryScreenRouteProp = RouteProp<ProfileStackParamList, 'InventoryList'>;
 
-/** Bottom sheet content for Add Product to Inventory */
-const AddProductBottomSheetContent: React.FC<{
-  isDark: boolean;
-  t: (key: string) => string;
-  onSelect: (option: 'own' | 'tried') => void;
-}> = ({ isDark, t, onSelect }) => (
-  <VStack px={16} pt={8} pb={16} space="md">
-    <Text
-      color={isDark ? '#FFFFFF' : '#000000'}
-      fontSize={17}
-      fontWeight="$bold"
-      textAlign="center"
-    >
-      {t('inventory.addProductToInventory')}
-    </Text>
-
-    {/* I Own the Product */}
-    <Pressable onPress={() => onSelect('own')}>
-      <HStack
-        alignItems="center"
-        bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-        borderWidth={1}
-        borderColor={isDark ? '#333333' : '#E9E9E9'}
-        borderRadius={12}
-        px={16}
-        py={14}
-        space="md"
-      >
-        <Box
-          width={44}
-          height={44}
-          borderRadius={22}
-          bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-          justifyContent="center"
-          alignItems="center"
-        >
-          <ArchiveBoxIcon width={22} height={22} color={isDark ? '#FFFFFF' : '#000000'} />
-        </Box>
-        <VStack flex={1}>
-          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={15} fontWeight="$bold">
-            {t('common:createPost.experienceOptions.own')}
-          </Text>
-          <Text color={isDark ? '#999999' : '#888888'} fontSize={12}>
-            {t('common:createPost.experienceOptions.ownDesc')}
-          </Text>
-        </VStack>
-      </HStack>
-    </Pressable>
-
-    {/* Tried / Tested */}
-    <Pressable onPress={() => onSelect('tried')}>
-      <HStack
-        alignItems="center"
-        bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-        borderWidth={1}
-        borderColor={isDark ? '#333333' : '#E9E9E9'}
-        borderRadius={12}
-        px={16}
-        py={14}
-        space="md"
-      >
-        <Box
-          width={44}
-          height={44}
-          borderRadius={22}
-          bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-          justifyContent="center"
-          alignItems="center"
-        >
-          <BeakerIcon width={22} height={22} color={isDark ? '#FFFFFF' : '#000000'} />
-        </Box>
-        <VStack flex={1}>
-          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={15} fontWeight="$bold">
-            {t('common:createPost.experienceOptions.tried')}
-          </Text>
-          <Text color={isDark ? '#999999' : '#888888'} fontSize={12}>
-            {t('common:createPost.experienceOptions.triedDesc')}
-          </Text>
-        </VStack>
-      </HStack>
-    </Pressable>
-  </VStack>
-);
 
 const InventoryScreen = () => {
   const { colorMode } = useColorMode();
@@ -132,7 +48,6 @@ const InventoryScreen = () => {
   const insets = useSafeAreaInsets();
   const { user } = useAppStore();
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const { t } = useTranslation('profile');
 
   // PERFORMANCE FIX: Debounce search query - 500ms delay
@@ -223,33 +138,15 @@ const InventoryScreen = () => {
     setOpenMenuItemId(() => (isOpen ? itemId : null));
   }, []);
 
-  const handleExperienceOptionSelect = useCallback((option: 'own' | 'tried') => {
-    closeBottomSheet();
+  const handleCreatePress = useCallback(() => {
     navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'CreateExperiencePostScreen',
       params: {
         fromInventory: false,
-        experienceOption: option,
+        experienceOption: 'own',
       },
     });
-  }, [closeBottomSheet]);
-
-  const handleCreatePress = useCallback(() => {
-    openBottomSheet(
-      <AddProductBottomSheetContent
-        isDark={isDark}
-        t={t}
-        onSelect={handleExperienceOptionSelect}
-      />,
-      {
-        snapPoints: ['40%'],
-        enablePanDownToClose: true,
-        enableDynamicSizing: false,
-        animateOnMount: true,
-        initialSnapIndex: 0,
-      }
-    );
-  }, [openBottomSheet, isDark, t, handleExperienceOptionSelect]);
+  }, []);
 
   // Handle update experience - CreateExperiencePostScreen'e yönlendir
   const handleUpdateExperience = useCallback((item: InventoryItem) => {
