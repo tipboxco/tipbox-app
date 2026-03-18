@@ -1,22 +1,23 @@
-import React, { useCallback, useMemo, useEffect, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
-import { Box, VStack, Text, Modal, ModalBackdrop, ModalContent } from '@gluestack-ui/themed';
+import { Box, VStack, Text } from '@gluestack-ui/themed';
 import { Badge } from '@/src/mock/profile/badges/types';
 import BadgeCard from '../BadgeCard';
-import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
 import { useSafeAreaValues, toImageSource, useCurrentUserIdOrLogout } from '@/src/utils';
 import { useUserCollectionBridges } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import type { CollectionBadgeApiItem } from '../../types';
 
 interface AchievementBadgesTabProps {
   userId?: string;
   onBadgePress?: (badge: Badge) => void;
   searchQuery?: string;
+  mainCategoryId?: string;
+  subCategoryId?: string;
 }
 
-// Map CollectionBadgeApiItem (achievement item from GET /users/:id/collections/bridges) to Badge format
+// Map CollectionBadgeApiItem to Badge format
 const mapAchievementToBadge = (item: CollectionBadgeApiItem): Badge => {
   const imageSource = toImageSource(item.image ?? '') || require('@/assets/defaultImages/default-badge.png');
 
@@ -25,7 +26,7 @@ const mapAchievementToBadge = (item: CollectionBadgeApiItem): Badge => {
     title: item.title,
     icon: imageSource,
     rarity: item.rarity,
-    category: 'achievement',
+    category: item.category === 'event' ? 'event' : 'collection',
     earnedDate: item.earnedDate,
     totalEarned: item.totalEarned,
     isClaimed: item.isClaimed,
@@ -38,17 +39,18 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   userId,
   onBadgePress,
   searchQuery,
+  mainCategoryId,
+  subCategoryId,
 }) => {
   const bottomInset = useSafeAreaValues('bottom');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('profile');
   const currentUserId = useCurrentUserIdOrLogout();
   const targetUserId = userId || currentUserId;
-  const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
 
   const ACHIEVEMENTS_PER_PAGE = 10;
 
-  // Aynı endpoint (GET /users/:id/collections/bridges) – achievement tab = response.achievement.items
   const {
     data,
     fetchNextPage,
@@ -56,7 +58,7 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     isFetchingNextPage,
     isLoading,
     error,
-  } = useUserCollectionBridges(targetUserId, ACHIEVEMENTS_PER_PAGE, searchQuery);
+  } = useUserCollectionBridges(targetUserId, ACHIEVEMENTS_PER_PAGE, searchQuery, mainCategoryId, subCategoryId);
 
   // Flatten achievement.items from all pages
   const achievements = useMemo(() => {
@@ -71,7 +73,11 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
       }
     }
 
-    return Array.from(uniqueItemsMap.values());
+    return Array.from(uniqueItemsMap.values()).sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : (a.earnedDate ? new Date(a.earnedDate).getTime() : 0);
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : (b.earnedDate ? new Date(b.earnedDate).getTime() : 0);
+      return dateB - dateA;
+    });
   }, [data]);
 
   // Map achievements to Badge format
@@ -79,14 +85,12 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     return achievements.map(mapAchievementToBadge);
   }, [achievements]);
 
-
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Footer için activity indicator
   const activityIndicatorColor = useMemo(() => isDark ? '#FFFFFF' : '#000000', [isDark]);
 
   const renderFooter = useCallback(() => {
@@ -98,49 +102,37 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     );
   }, [isFetchingNextPage, activityIndicatorColor]);
 
-  // Badge tıklandığında modal aç
-  const handleBadgePress = useCallback((badge: Badge) => {
-    // Badge'i SeeAllReward formatına map et
-    const badgeData: SeeAllReward = {
-      id: badge.id,
-      title: badge.title,
-      image: badge.icon,
-      description: '', // Badge'de description yok
-      category: badge.category,
-      isUnlocked: true, // Badge zaten kazanılmış
-      completed: 1,
-      task: 1,
-    };
-
-    // Modal aç - performanslı, tek seferde açılır kapanır
-    setSelectedBadge(badgeData);
-  }, []);
-
-  // Modal kapatma handler - Eş zamanlı kapanma için state'i hemen güncelle
-  const handleCloseModal = useCallback(() => {
-    // State'i hemen güncelle - Modal ve backdrop eş zamanlı kapansın
-    setSelectedBadge(null);
-  }, []);
-
   const renderItem = useCallback(({ item }: { item: Badge }) => {
     return (
       <Box width="50%" p="$2">
         <BadgeCard
           badge={item}
-          onPress={() => handleBadgePress(item)}
+          onPress={() => onBadgePress?.(item)}
         />
       </Box>
     );
-  }, [handleBadgePress]);
+  }, [onBadgePress]);
 
-  // Loading state – cache varsa loading spinner gösterme
+  const keyExtractor = useCallback((item: Badge) => item.id, []);
+
+  const contentContainerStyle = useMemo(() => ({
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingBottom: bottomInset + 8,
+  }), [bottomInset]);
+
+  const columnWrapperStyle = useMemo(() => ({
+    justifyContent: 'space-between' as const,
+  }), []);
+
+  // Loading state
   const hasCachedData = Boolean(data?.pages?.length);
   if (isLoading && !hasCachedData) {
     return (
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-          Achievements yükleniyor...
+          {t('tabStates.achievements.loading')}
         </Text>
       </VStack>
     );
@@ -151,7 +143,7 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     return (
       <VStack px={16} py={16}>
         <Text color="#CE4A4A" fontSize="$sm">
-          Achievements yüklenirken bir hata oluştu: {error.message}
+          {t('tabStates.achievements.error', { message: error.message })}
         </Text>
       </VStack>
     );
@@ -162,59 +154,27 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          No achievements yet.
+          {t('tabStates.achievements.empty')}
         </Text>
       </VStack>
     );
   }
 
   return (
-    <>
-      <FlatList
-        data={mappedBadges}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={{
-          paddingHorizontal: 8,
-          paddingTop: 8,
-          paddingBottom: bottomInset + 8,
-        }}
-        showsVerticalScrollIndicator={false}
-        columnWrapperStyle={{ justifyContent: 'space-between' }}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.1}
-        ListFooterComponent={renderFooter}
-        removeClippedSubviews={false}
-      />
-
-      {/* Badge Detail Modal - Performanslı, tek seferde açılır kapanır */}
-      <Modal
-        isOpen={!!selectedBadge}
-        onClose={handleCloseModal}
-        size="lg"
-        closeOnOverlayClick={true}
-      >
-        <ModalBackdrop onPress={handleCloseModal} />
-        {selectedBadge ? (
-          <ModalContent
-            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
-            borderRadius={20}
-            marginHorizontal={24}
-            marginBottom={bottomInset + 24}
-            maxHeight="80%"
-          >
-            <BadgeBottomSheet
-              data={selectedBadge}
-              onClose={handleCloseModal}
-            />
-          </ModalContent>
-        ) : null}
-      </Modal>
-    </>
+    <FlatList
+      data={mappedBadges}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      numColumns={2}
+      columnWrapperStyle={columnWrapperStyle}
+      contentContainerStyle={contentContainerStyle}
+      showsVerticalScrollIndicator={false}
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.3}
+      ListFooterComponent={renderFooter}
+    />
   );
 };
 
 
 export default AchievementBadgesTab;
-

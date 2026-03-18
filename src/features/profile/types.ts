@@ -3,7 +3,6 @@ import type { ExperiencePostApiItem } from '@/src/types/ExperienceCard';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
-import type { AchievementApiItem } from '@/src/features/events/types';
 
 /**
  * Inventory Review - API'den gelen review bilgisi
@@ -166,6 +165,7 @@ export interface ProfilePostStats {
   comments: number;
   shares: number;
   bookmarks: number;
+  upvotes?: number;
 }
 
 export interface ProfilePostContextData {
@@ -203,6 +203,8 @@ export interface ProfilePost {
   isLiked?: boolean;
   isBookmarked?: boolean;
   isShared?: boolean;
+  isUpvoted?: boolean;
+  hasUpvoted?: boolean; // Backend event feed'de hasUpvoted olarak gönderir
   // Post source (e.g., "BOOSTED")
   source?: string;
 }
@@ -337,7 +339,7 @@ export interface ProfileLadderBadge {
  * /users/{id}/collections/achievements endpoint'inden dönen response
  */
 export interface UserCollectionAchievementsApiResponse {
-  items: AchievementApiItem[];
+  items: CollectionBadgeApiItem[];
   pagination: {
     cursor?: string;
     hasMore: boolean;
@@ -370,6 +372,9 @@ export interface CollectionBadgeApiItem {
   nftAddress: string | null;
   totalEarned: number;
   earnedDate: string | null; // ISO8601
+  createdAt?: string | null; // ISO8601
+  /** Badge'in event mi yoksa collection mi olduğunu belirtir */
+  category?: 'event' | 'collection';
   tasks: CollectionBadgeTask[];
 }
 
@@ -434,12 +439,30 @@ export interface BadgeDetailApiResponse extends CollectionBadgeApiItem {
 }
 
 /**
+ * Highlight Badge Item - GET /users/me/highlight-badges endpoint'inden gelen badge bilgisi
+ */
+export interface HighlightBadgeItem {
+  id: string;
+  title: string;
+  image: string | null;
+  rarity: 'Usual' | 'Rare' | 'Epic' | 'Legendary';
+  /** Badge'in event mi yoksa collection mi olduğunu belirtir */
+  category?: 'event' | 'collection';
+}
+
+/**
  * Highlight Badges API Response - GET /users/me/highlight-badges
  * Kullanıcının profil kartında gösterilen 4 adet seçili badge
+ * availableBadges: 4 kategoride tüm badge'ler (COLLECTION, EVENT, COSMETIC, BRAND)
  */
 export interface HighlightBadgesApiResponse {
-  badgeIds: string[];
-  badges: CollectionBadgeApiItem[];
+  selectedBadgeIds: string[];
+  availableBadges: {
+    collection: HighlightBadgeItem[];
+    event: HighlightBadgeItem[];
+    cosmetic: HighlightBadgeItem[];
+    brand: HighlightBadgeItem[];
+  };
 }
 
 /**

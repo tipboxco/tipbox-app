@@ -4,6 +4,7 @@ import { VStack, Text, Box } from '@gluestack-ui/themed';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import { useUserReplies } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ProfileReplies } from '../../types';
@@ -31,6 +32,7 @@ const mapQuestionToCardData = (item: ProfileReplies): QuestionCardData => {
       name: item.contextData.name,
       subName: item.contextData.subName,
       image: contextImage,
+      isOwned: item.contextData.isOwned,
     };
 
     category = {
@@ -71,7 +73,8 @@ const RepliesTabComponent = () => {
   const userId = useCurrentUserIdOrLogout();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+  const { t } = useTranslation('profile');
+
   // Render sayısını takip et ve değişen değerleri log'la
   const renderCountRef = useRef(0);
   const prevValuesRef = useRef<any>({});
@@ -223,7 +226,7 @@ const RepliesTabComponent = () => {
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-          Replies yükleniyor...
+          {t('tabStates.replies.loading')}
         </Text>
       </VStack>
     );
@@ -233,7 +236,7 @@ const RepliesTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color="#CE4A4A" fontSize="$sm">
-          Replies yüklenirken bir hata oluştu: {error.message}
+          {t('tabStates.replies.error', { message: error.message })}
         </Text>
       </VStack>
     );
@@ -243,7 +246,7 @@ const RepliesTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          No replies yet.
+          {t('tabStates.replies.empty')}
         </Text>
       </VStack>
     );

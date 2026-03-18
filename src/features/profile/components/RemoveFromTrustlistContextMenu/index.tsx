@@ -8,6 +8,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from 'react-i18next';
 import { XCircleIcon, BellIcon } from 'react-native-heroicons/outline';
 
 // Custom Mute Icon - çan simgesi üzerinde Z harfi
@@ -63,7 +64,8 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+  const { t } = useTranslation('profile');
+
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<View>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
@@ -73,19 +75,19 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
   // Menu items
   const iconColor = isDark ? '#fff' : '#000';
   const items = [
-    ...(onRemoveFromTrustList ? [{ 
-      label: 'Remove from Trust List', 
-      icon: <XCircleIcon width={20} height={20} color={iconColor} />, 
-      onPress: onRemoveFromTrustList 
+    ...(onRemoveFromTrustList ? [{
+      label: t('trustUserCard.removeFromTrust'),
+      icon: <XCircleIcon width={20} height={20} color={iconColor} />,
+      onPress: onRemoveFromTrustList
     }] : []),
-    ...(onMute ? [{ 
-      label: 'Mute', 
-      icon: <MuteIcon color={iconColor} />, 
-      onPress: onMute 
+    ...(onMute ? [{
+      label: t('actions.mute'),
+      icon: <MuteIcon color={iconColor} />,
+      onPress: onMute
     }] : []),
-    ...(onBlock ? [{ 
-      label: 'Block', 
-      icon: <XCircleIcon width={20} height={20} color={iconColor} />, 
+    ...(onBlock ? [{
+      label: t('actions.block'),
+      icon: <XCircleIcon width={20} height={20} color={iconColor} />,
       onPress: onBlock,
     }] : []),
   ];

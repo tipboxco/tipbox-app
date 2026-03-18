@@ -8,11 +8,14 @@ import Animated, {
   useAnimatedStyle,
   interpolateColor,
 } from 'react-native-reanimated';
-import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import BadgeDetail from '../components/BadgeDetail';
+import type { Badge as MockBadge } from '@/src/mock/profile/badges/types';
+import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useUserCollectionAchievements, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -32,7 +35,7 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { UpdateCardData } from '@/src/types/UpdateCard';
-import type { ProfilePost, ProfileReview, UserProfile } from '../types';
+import type { ProfilePost, ProfileReview, UserProfile, CollectionBadgeApiItem } from '../types';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
@@ -238,19 +241,31 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData | null => {
   
   const avatarSource = toImageSource(item?.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
   const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
-  const product: TipsProduct = {
-    id: item.contextData.id,
-    name: item.contextData.name || '',
-    subName: item.contextData.subName || '',
-    image: contextImage,
-  };
-  const category: TipsCategory = {
-    id: item.contextData.id,
-    name: item.contextData.name || '',
-    subCategory: item.contextData.subName || '',
-    image: contextImage,
-    product,
-  };
+
+  let category: TipsCategory;
+  if (item.contextType === 'sub_category') {
+    category = {
+      id: item.contextData.id,
+      name: item.contextData.name || '',
+      subCategory: item.contextData.subName || '',
+      image: contextImage,
+    };
+  } else {
+    const product: TipsProduct = {
+      id: item.contextData.id,
+      name: item.contextData.name || '',
+      subName: item.contextData.subName || '',
+      image: contextImage,
+      isOwned: item.contextData.isOwned,
+    };
+    category = {
+      id: item.contextData.id,
+      name: item.contextData.name || '',
+      subCategory: item.contextData.subName || '',
+      image: contextImage,
+      product,
+    };
+  }
 
   return {
     id: item.id,
@@ -278,24 +293,35 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
   }
 
   const avatarSource = toImageSource(item?.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
-  // contextData boş obje ({}) olabilir veya id içermeyebilir - handle et
   const contextId = item.contextData?.id || '';
   const contextName = item.contextData?.name || '';
   const contextSubName = item.contextData?.subName || '';
   const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
-  const product: QuestionCardProduct = {
-    id: contextId,
-    name: contextName,
-    subName: contextSubName,
-    image: contextImage,
-  };
-  const category: QuestionCardCategory = {
-    id: contextId,
-    name: contextName,
-    subCategory: contextSubName,
-    image: contextImage,
-    product,
-  };
+
+  let category: QuestionCardCategory;
+  if (item.contextType === 'sub_category') {
+    category = {
+      id: contextId,
+      name: contextName,
+      subCategory: contextSubName,
+      image: contextImage,
+    };
+  } else {
+    const product: QuestionCardProduct = {
+      id: contextId,
+      name: contextName,
+      subName: contextSubName,
+      image: contextImage,
+      isOwned: item.contextData.isOwned,
+    };
+    category = {
+      id: contextId,
+      name: contextName,
+      subCategory: contextSubName,
+      image: contextImage,
+      product,
+    };
+  }
 
   // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
   const mappedImages = item.images
@@ -401,8 +427,6 @@ type MappedPost =
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };
 
-// Badge filter keys
-const BADGE_FILTER_KEYS = ['allBadges', 'eventBadges', 'collections'] as const;
 
 // ─── Memoized Action Buttons (isolates trust/mute mutation state from parent) ───
 interface ProfileActionButtonsHandle {
@@ -520,81 +544,129 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
 
   if (isOwnProfile) {
     return (
-      <HStack space="xs" alignItems="center" flexShrink={1} mt={60}>
-        <Pressable
-          bg="#F7F7F7"
-          borderRadius={200}
-          borderWidth={1}
-          borderColor="#E9E9E9"
-          px={10}
-          h={30}
-          flexDirection="row"
-          alignItems="center"
-          gap={4}
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 60 }}>
+        <RNPressable
+          style={{
+            backgroundColor: '#F7F7F7',
+            borderRadius: 200,
+            borderWidth: 1,
+            borderColor: '#E9E9E9',
+            paddingHorizontal: 10,
+            height: 30,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          }}
           onPress={onEdit}
         >
           <PencilIcon size={14} color="#000" />
-          <Text color="#000" fontSize={10} fontWeight="$semibold">
+          <RNText style={{ color: '#000', fontSize: 10, fontWeight: '600' }}>
             {t('actions.edit')}
-          </Text>
-        </Pressable>
-      </HStack>
+          </RNText>
+        </RNPressable>
+      </View>
     );
   }
 
   return (
-    <HStack space="xs" alignItems="center" flexShrink={1} flexWrap="wrap" mt={60} justifyContent="flex-end">
-      <Pressable
-        w={30} h={30} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
-        justifyContent="center" alignItems="center" onPress={onSendTips}
+    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginTop: 60, gap: 4, flexWrap: 'nowrap' }}>
+      <RNPressable
+        style={{
+          width: '16%',
+          height: 34,
+          backgroundColor: '#F7F7F7',
+          borderRadius: 200,
+          borderWidth: 1,
+          borderColor: '#E9E9E9',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+        onPress={onSendTips}
       >
-        <GiftIcon size={14} color="#000" />
-      </Pressable>
-      <Pressable
-        w={30} h={30} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
-        justifyContent="center" alignItems="center" onPress={on1on1}
+        <GiftIcon size={15} color="#000" />
+      </RNPressable>
+      <RNPressable
+        style={{
+          width: '16%',
+          height: 34,
+          backgroundColor: '#F7F7F7',
+          borderRadius: 200,
+          borderWidth: 1,
+          borderColor: '#E9E9E9',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+        onPress={on1on1}
       >
-        <PhoneIcon size={14} color="#000" />
-      </Pressable>
-      <Pressable
-        w={30} h={30} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
-        justifyContent="center" alignItems="center" onPress={onDM}
+        <PhoneIcon size={15} color="#000" />
+      </RNPressable>
+      <RNPressable
+        style={{
+          width: '16%',
+          height: 34,
+          backgroundColor: '#F7F7F7',
+          borderRadius: 200,
+          borderWidth: 1,
+          borderColor: '#E9E9E9',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+        onPress={onDM}
       >
-        <ChatBubbleLeftIcon size={14} color="#000" />
-      </Pressable>
-      <Pressable
-        w={30} h={30} bg="#F7F7F7" borderRadius={200} borderWidth={1} borderColor="#E9E9E9"
-        justifyContent="center" alignItems="center"
+        <ChatBubbleLeftIcon size={15} color="#000" />
+      </RNPressable>
+      <RNPressable
+        style={{
+          width: '16%',
+          height: 34,
+          backgroundColor: '#F7F7F7',
+          borderRadius: 200,
+          borderWidth: 1,
+          borderColor: '#E9E9E9',
+          justifyContent: 'center',
+          alignItems: 'center',
+          opacity: (isMuting || isUnmuting) ? 0.6 : 1,
+        }}
         onPress={handleMuteToggle}
         disabled={isMuting || isUnmuting}
-        opacity={(isMuting || isUnmuting) ? 0.6 : 1}
       >
         {isMuted ? (
-          <Box position="relative" justifyContent="center" alignItems="center">
-            <BellIcon size={14} color="#000" />
-            <Box position="absolute" width={18} height={1} bg="#000" style={{ transform: [{ rotate: '-45deg' }] }} />
-          </Box>
+          <View style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}>
+            <BellIcon size={15} color="#000" />
+            <View style={{ position: 'absolute', width: 18, height: 1, backgroundColor: '#000', transform: [{ rotate: '-45deg' }] }} />
+          </View>
         ) : (
-          <BellIcon size={14} color="#000" />
+          <BellIcon size={15} color="#000" />
         )}
-      </Pressable>
-      <Pressable
-        bg={isTrusted ? '#10B981' : '#F7F7F7'}
-        borderRadius={200}
-        borderWidth={1}
-        borderColor={isTrusted ? '#10B981' : '#E9E9E9'}
-        px={10} h={30}
-        flexDirection="row" alignItems="center" gap={4}
+      </RNPressable>
+      <RNPressable
+        style={{
+          flex: 1,
+          minHeight: 34,
+          paddingVertical: 5,
+          paddingHorizontal: 6,
+          backgroundColor: isTrusted ? '#F7F7F7' : '#D0F205',
+          borderRadius: 200,
+          borderWidth: 1,
+          borderColor: isTrusted ? '#E9E9E9' : '#D0F205',
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 3,
+          opacity: (isTrusting || isUntrusting) ? 0.6 : 1,
+        }}
         onPress={handleTrust}
         disabled={isTrusting || isUntrusting}
-        opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
       >
-        {isTrusted ? <UserMinusIcon size={14} color="#FFF" /> : <UserPlusIcon size={14} color="#000" />}
-        <Text color={isTrusted ? '#FFF' : '#000'} fontSize={10} fontWeight="$semibold">
-          {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : t('actions.trust')}
-        </Text>
-      </Pressable>
-    </HStack>
+        {isTrusted ? <UserMinusIcon size={14} color="#000" /> : <UserPlusIcon size={14} color="#000" />}
+        <RNText
+          style={{ color: '#000', fontSize: 9, fontWeight: '600', flexShrink: 1, textAlign: 'center', lineHeight: 12 }}
+          numberOfLines={2}
+        >
+          {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : isTrusted ? t('actions.unTrust') : t('actions.trust')}
+        </RNText>
+      </RNPressable>
+    </View>
   );
 }));
 // ─── Memoized Mute Menu Item (reads isMuted from cache, isolates from parent) ───
@@ -640,12 +712,7 @@ const MuteMenuItem = React.memo(({ targetUserId, isDark, onPress }: MuteMenuItem
   );
 });
 
-type BadgeFilterKey = typeof BADGE_FILTER_KEYS[number];
-
 const ProfileScreen = ({ route }: ProfileScreenProps) => {
-  // Guard: useFocusEffect çift tetiklenmeyi önle
-  const lastFocusRefetchRef = useRef<number>(0);
-
   const { t } = useTranslation('profile');
 
   // Translated tabs
@@ -656,6 +723,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const { visible: fullScreenVisible, imageSource: fullScreenSource, openImage, closeImage } = useFullScreenImage();
   // PERFORMANCE FIX: Sadece user.id'yi select et - tüm user objesi yerine
   const userId = useAppStore(state => state.user?.id);
@@ -703,60 +771,18 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Badge modal state
   const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
 
+  // Deleted post IDs - silinen gönderiler anında listeden kaldırılır
+  const [deletedPostIds, setDeletedPostIds] = useState<Set<string>>(new Set());
+
   // Send TIPS modal state
   const [isSendTipsModalVisible, setIsSendTipsModalVisible] = useState(false);
-  
-  // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
-  // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
-  useFocusEffect(
-    useCallback(() => {
-      // Sadece kendi profilimizdeysek (targetUserId === user?.id) refetch et
-      if (targetUserId && user?.id && targetUserId === user.id) {
-        // GUARD: 3 saniye içinde tekrar tetiklenmeyi önle (double-fire prevention)
-        const now = Date.now();
-        if (now - lastFocusRefetchRef.current < 3000) {
-          return;
-        }
-        lastFocusRefetchRef.current = now;
-
-        // invalidateQueries refetchActive: true ile zaten otomatik refetch yapar
-        // Ayrı refetchQueries çağırmaya gerek yok - bu double-fetch'i önler
-        Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.profile(targetUserId),
-            exact: false
-          }),
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.userPosts(targetUserId),
-            exact: false
-          }),
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.userReviews(targetUserId),
-            exact: false
-          }),
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.userBenchmarks(targetUserId),
-            exact: false
-          }),
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.userTipsAndTricks(targetUserId),
-            exact: false
-          }),
-          queryClient.invalidateQueries({
-            queryKey: profileKeys.userReplies(targetUserId),
-            exact: false
-          }),
-        ]).catch(() => {
-          // Silently handle refetch errors
-        });
-      }
-    }, [targetUserId, user?.id, queryClient])
-  );
   
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
     if (!targetUserId) return;
     setRefreshing(true);
+    // Refresh'te deleted IDs'i temizle - backend'den güncel veri gelecek
+    setDeletedPostIds(new Set());
     try {
       // Tüm profil verilerini backend'den yeniden çek
       await Promise.all([
@@ -781,6 +807,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         }),
         queryClient.refetchQueries({
           queryKey: profileKeys.userReplies(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userCollectionAchievements(targetUserId, 20),
           exact: false,
         }),
       ]);
@@ -817,7 +847,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterKey>('allBadges');
   const tabBarRef = useRef<any>(null);
   const flatListRef = useRef<FlatList>(null);
   const actionButtonsRef = useRef<ProfileActionButtonsHandle>(null);
@@ -860,6 +889,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const repliesQuery = useUserReplies(targetUserId, 20, {
     enabled: activeTab === 'replies' && !!targetUserId
   });
+  const achievementsQuery = useUserCollectionAchievements(
+    activeTab === 'badge' ? targetUserId : undefined,
+    20
+  );
 
   // Instagram Model: Active tab query
   const activeTabQuery = useMemo(() => {
@@ -890,8 +923,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       allItems = (activeTabQuery.data as any)?.pages?.flatMap((p: any) => p?.items ?? []) ?? [];
     }
 
-    // Filter valid items
-    const validItems = allItems.filter((item: any) => item?.id);
+    // Filter valid items and exclude deleted posts
+    const validItems = allItems.filter((item: any) => item?.id && !deletedPostIds.has(item.id));
     const uniqueItems = validItems.filter((item: any, index: number, self: any[]) =>
       index === self.findIndex((t: any) => t?.id === item?.id)
     );
@@ -943,20 +976,25 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
 
     return mapped;
-  }, [activeTab, feedQuery.data, activeTabQuery.data]);
+  }, [activeTab, feedQuery.data, activeTabQuery.data, deletedPostIds]);
+
+  // Post silindi callback - anında listeden kaldır
+  const handlePostDelete = useCallback((postId: string) => {
+    setDeletedPostIds(prev => new Set(prev).add(postId));
+  }, []);
 
   // Instagram Model: Render post card
   const renderPostCard = useCallback((post: MappedPost) => {
     switch (post.type) {
-      case 'update': return <UpdatePostCard data={post.data} />;
-      case 'experience': return <ExperiencePostCard data={post.data} />;
-      case 'benchmark': return <BenchmarkPostCard data={post.data} />;
-      case 'tips': return <TipsAndTricksPostCard data={post.data} />;
-      case 'question': return <QuestionPostCard data={post.data} />;
+      case 'update': return <UpdatePostCard data={post.data} onDelete={handlePostDelete} />;
+      case 'experience': return <ExperiencePostCard data={post.data} onDelete={handlePostDelete} />;
+      case 'benchmark': return <BenchmarkPostCard data={post.data} onDelete={handlePostDelete} />;
+      case 'tips': return <TipsAndTricksPostCard data={post.data} onDelete={handlePostDelete} />;
+      case 'question': return <QuestionPostCard data={post.data} onDelete={handlePostDelete} />;
       case 'post':
-      default: return <PostCard data={post.data} />;
+      default: return <PostCard data={post.data} onDelete={handlePostDelete} />;
     }
-  }, []);
+  }, [handlePostDelete]);
 
   // Instagram Model: FlatList renderItem
   const renderItem: ListRenderItem<MappedPost> = useCallback(({ item }) => (
@@ -969,14 +1007,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const keyExtractor = useCallback((item: MappedPost) => item.id, []);
 
   // Map Badge to SeeAllReward format for BadgeBottomSheet
-  const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
+  const mapBadgeToSeeAllReward = useCallback((badge: Badge | CollectionBadgeApiItem): SeeAllReward => {
     const imageSource = badge.image ? toImageSource(badge.image) : require('@/assets/defaultImages/default-badge.png');
 
     return {
       id: badge.id,
       title: badge.title,
       image: imageSource,
-      description: `You earned the "${badge.title}" badge!`,
+      description: t('badgeModal.earnedMessage', { badge: badge.title }),
       category: 'achievement',
       isUnlocked: true,
       completed: 1,
@@ -984,116 +1022,108 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     };
   }, []);
 
-  // Handle badge press - open modal
-  const handleBadgePress = useCallback((badge: Badge) => {
-    const badgeData = mapBadgeToSeeAllReward(badge);
-    setSelectedBadge(badgeData);
-  }, [mapBadgeToSeeAllReward]);
+  // Handle badge press - CollectionBadgeApiItem → BadgeDetail bottom sheet, profile Badge → existing modal
+  const handleBadgePress = useCallback((badge: Badge | CollectionBadgeApiItem) => {
+    if ('isClaimed' in badge && 'totalEarned' in badge) {
+      // CollectionBadgeApiItem from achievements API → open BadgeDetail bottom sheet
+      const apiItem = badge as CollectionBadgeApiItem;
+      const mockBadge: MockBadge = {
+        id: apiItem.id,
+        title: apiItem.title,
+        icon: apiItem.image ? toImageSource(apiItem.image) : require('@/assets/defaultImages/default-badge.png'),
+        rarity: apiItem.rarity,
+        category: 'collection',
+        earnedDate: apiItem.earnedDate,
+        totalEarned: apiItem.totalEarned,
+        isClaimed: apiItem.isClaimed,
+        nftAddress: apiItem.nftAddress,
+        tasks: apiItem.tasks,
+      };
+      openBottomSheet(
+        <BadgeDetail badge={mockBadge} onClose={closeBottomSheet} hideHeader />,
+        {
+          snapPoints: ['75%'],
+          enablePanDownToClose: true,
+        }
+      );
+      return;
+    }
+    // Profile header Badge type → existing modal
+    setSelectedBadge(mapBadgeToSeeAllReward(badge));
+  }, [mapBadgeToSeeAllReward, openBottomSheet, closeBottomSheet]);
 
   // FlatList ListEmptyComponent
   const ListEmptyComponent = useCallback(() => {
-    // Badge tab: Show badge grid
+    // Badge tab: Show badge grid from achievements API
     if (activeTab === 'badge') {
-      const allBadges = userProfile?.badges || [];
+      // Loading state
+      if (achievementsQuery.isLoading) {
+        return (
+          <Box py={20}>
+            <FeedSkeleton count={3} />
+          </Box>
+        );
+      }
+
+      const rawBadges = achievementsQuery.data?.pages?.flatMap(p => p.items) ?? [];
+      // Deduplicate by id (API may return overlapping items across pages)
+      const seen = new Set<string>();
+      const allBadges = rawBadges.filter(b => {
+        if (seen.has(b.id)) return false;
+        seen.add(b.id);
+        return true;
+      });
 
       // No badges at all - show clean empty state
       if (allBadges.length === 0) {
         return (
           <Box py={40} alignItems="center" px={20}>
             <RNText style={{ fontSize: 16, fontWeight: '700', color: isDark ? '#FFFFFF' : '#000000', textAlign: 'center' }}>
-              No Badges Earned Yet
+              {t('badgeModal.noBadgesTitle')}
             </RNText>
             <RNText style={{ fontSize: 14, color: '#999999', textAlign: 'center', marginTop: 8 }}>
-              This user hasn't earned any badges yet.
+              {t('badgeModal.noBadgesSubtitle')}
             </RNText>
           </Box>
         );
       }
 
-      // Has badges - show filters + grid
-      const filteredBadges = (() => {
-        if (badgeFilter === 'allBadges') return allBadges;
-        if (badgeFilter === 'eventBadges') return allBadges.filter((b) => b.type === 'event');
-        if (badgeFilter === 'collections') return allBadges.filter((b) => b.type === 'collection');
-        return allBadges;
-      })();
-
       return (
         <Box px={16} pt={8}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 12 }}
-            nestedScrollEnabled={true}
-            directionalLockEnabled={true}
-          >
-            <HStack space="xs" alignItems="center">
-              {BADGE_FILTER_KEYS.map((filterKey) => {
-                const isActive = badgeFilter === filterKey;
-                return (
-                  <RNPressable
-                    key={filterKey}
-                    onPress={() => setBadgeFilter(filterKey)}
-                    style={{
-                      backgroundColor: isActive ? '#F1F1F1' : 'transparent',
-                      borderWidth: 1,
-                      borderColor: '#EFEFEF',
-                      borderRadius: 10,
-                      paddingHorizontal: 12,
-                      paddingVertical: 3,
-                      marginRight: 6,
-                      minHeight: 28,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <RNText style={{ fontSize: 12, fontWeight: '600', color: '#000000' }}>
-                      {t(`badges.${filterKey}`)}
-                    </RNText>
-                  </RNPressable>
-                );
-              })}
-            </HStack>
-          </ScrollView>
-          {filteredBadges.length === 0 ? (
-            <Box py={32} alignItems="center">
-              <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                {t('emptyStates.noBadgesYet')}
-              </Text>
-            </Box>
-          ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {filteredBadges.map((badge) => {
-                const badgeItemWidth = (SCREEN_WIDTH - 32 - 16) / 3;
-                return (
-                  <Pressable
-                    key={badge.id}
-                    onPress={() => handleBadgePress?.(badge)}
-                    style={{ width: badgeItemWidth, height: 130, marginBottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? '#1A1A1A' : '#FDFDFD', borderWidth: 1, borderColor: isDark ? '#333' : '#E9E9E9', borderRadius: 5, padding: 8 }}
-                  >
-                    <Box w={70} h={70} alignItems="center" justifyContent="center" overflow="hidden">
-                      <Image
-                        source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                        alt={badge.title}
-                        style={{ width: 56, height: 56 }}
-                        resizeMode="contain"
-                      />
-                    </Box>
-                    <Text
-                      mt="$1"
-                      fontSize="$2xs"
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '$textLight900'}
-                      textAlign="center"
-                      numberOfLines={2}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {allBadges.map((badge) => {
+              const badgeItemWidth = (SCREEN_WIDTH - 32 - 16) / 3;
+              return (
+                <RNPressable
+                  key={badge.id}
+                  onPress={() => handleBadgePress(badge)}
+                  style={{ width: badgeItemWidth, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: isDark ? '#333' : '#E9E9E9' }}
+                >
+                  <View style={{ width: '100%', aspectRatio: 1, backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5', alignItems: 'center', justifyContent: 'center' }}>
+                    <Image
+                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                      alt={badge.title}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="contain"
+                    />
+                    {badge.isClaimed && (
+                      <View style={{ position: 'absolute', top: 6, left: 6, backgroundColor: '#D0F205', borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 }}>
+                        <RNText style={{ fontSize: 8, fontWeight: '700', color: '#000' }}>NFT</RNText>
+                      </View>
+                    )}
+                  </View>
+                  <View style={{ backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF', paddingVertical: 6, paddingHorizontal: 4 }}>
+                    <RNText
+                      numberOfLines={1}
+                      style={{ fontSize: 11, fontWeight: '600', textAlign: 'center', color: isDark ? '#FFFFFF' : '#000000' }}
                     >
                       {badge.title}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
+                    </RNText>
+                  </View>
+                </RNPressable>
+              );
+            })}
+          </View>
         </Box>
       );
     }
@@ -1129,18 +1159,26 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         </RNText>
       </Box>
     );
-  }, [activeTab, badgeFilter, userProfile?.badges, isDark, activeTabQuery.isLoading, handleBadgePress, targetUserId]);
+  }, [activeTab, achievementsQuery.isLoading, achievementsQuery.data, isDark, activeTabQuery.isLoading, handleBadgePress, targetUserId]);
 
   // Instagram Model: FlatList ListFooterComponent
   const ListFooterComponent = useCallback(() => {
-    if (activeTab === 'badge' || activeTab === 'collections') return null;
+    if (activeTab === 'collections') return null;
+    if (activeTab === 'badge') {
+      if (!achievementsQuery.isFetchingNextPage) return null;
+      return (
+        <Box py={20} alignItems="center">
+          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+        </Box>
+      );
+    }
     if (!activeTabQuery.isFetchingNextPage) return null;
     return (
       <Box py={20} alignItems="center">
         <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
       </Box>
     );
-  }, [activeTab, activeTabQuery.isFetchingNextPage, isDark]);
+  }, [activeTab, activeTabQuery.isFetchingNextPage, achievementsQuery.isFetchingNextPage, isDark]);
 
   // Handle Send TIPS - API call
   const handleSendTips = useCallback((amount: number) => {
@@ -1155,7 +1193,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         senderUserId: user.id,
         recipientUserId: targetUserId,
         amount: amount,
-        message: 'TIPS sent from profile',
+        message: t('badgeModal.tipsSentMessage'),
         timestamp: new Date().toISOString(),
       },
       {
@@ -1711,9 +1749,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           </Box>
         </Box>
 
-        {/* Badge Items - hide for other users with no badges */}
-        {isOwnProfile || (profile.badges && profile.badges.length > 0) ? (
-          isProfileLoading ? (
+        {/* Badge Items */}
+        {isProfileLoading ? (
             <Box mt={6} px={15} pb={6}>
               <Box
                 borderRadius={5}
@@ -1799,12 +1836,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                         </VStack>
                       </Pressable>
                     ))}
-                    {/* Own profile: fill remaining slots with dashed placeholders */}
-                    {isOwnProfile && profile.badges.length < 4 &&
+                    {/* Fill remaining slots with dashed placeholders */}
+                    {profile.badges.length < 4 &&
                       Array.from({ length: 4 - Math.min(profile.badges.length, 4) }).map((_, index) => (
                         <Pressable
                           key={`empty-${index}`}
-                          onPress={() => navigation.navigate('EditHighlightBadges')}
+                          onPress={isOwnProfile ? () => navigation.navigate('EditHighlightBadges') : undefined}
                           flex={1}
                           alignItems="center"
                         >
@@ -1820,11 +1857,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                               alignItems="center"
                               bg={isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'}
                             >
-                              <PlusIcon
-                                size={24}
-                                color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)'}
-                                strokeWidth={1.5}
-                              />
+                              {isOwnProfile && (
+                                <PlusIcon
+                                  size={24}
+                                  color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)'}
+                                  strokeWidth={1.5}
+                                />
+                              )}
                             </Box>
                             <Text fontSize={10} lineHeight={13}>{' '}</Text>
                           </VStack>
@@ -1835,7 +1874,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 ) : (
                   <Box flex={1} height={64}>
                     {/* 4 dashed badge placeholders */}
-                    <HStack justifyContent="space-between">
+                    <HStack justifyContent="flex-start" space="md">
                       {[1, 2, 3, 4].map((index) => (
                         <Pressable
                           key={index}
@@ -1854,11 +1893,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                             alignItems="center"
                             bg={isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'}
                           >
-                            <PlusIcon
-                              size={24}
-                              color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)'}
-                              strokeWidth={1.5}
-                            />
+                            {isOwnProfile && (
+                              <PlusIcon
+                                size={24}
+                                color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)'}
+                                strokeWidth={1.5}
+                              />
+                            )}
                           </Box>
                         </Pressable>
                       ))}
@@ -1884,8 +1925,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 )}
               </Box>
             </Box>
-          )
-        ) : null}
+        )}
       </Box>
     );
   }, [userProfile, isDark, isOwnProfile, targetUserId, rootNavigation, user, navigation, handleReport, handleBlock, handleBadgePress, openImage, handleSendTIPS, handle1on1Request, handleDM]);
@@ -1927,14 +1967,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     return (
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>
         <Text color="#CE4A4A" fontSize="$sm">
-          {profileError?.message || 'Profil yüklenirken bir hata oluştu'}
+          {profileError?.message || t('errors.profileLoadError')}
         </Text>
       </Box>
     );
   }
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} width="100%">
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#F5F5F5'} width="100%">
       <StatusBar style="light" />
 
       {/* Single FlatList with touch-based swipe for tab switching */}
@@ -1948,15 +1988,23 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           ListEmptyComponent={ListEmptyComponent}
           ListFooterComponent={ListFooterComponent}
           onEndReached={() => {
-            if (activeTab !== 'badge' && activeTab !== 'collections') {
+            if (activeTab === 'badge') {
+              if (achievementsQuery.hasNextPage && !achievementsQuery.isFetchingNextPage) {
+                achievementsQuery.fetchNextPage();
+              }
+            } else if (activeTab !== 'collections') {
               if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
                 activeTabQuery.fetchNextPage();
               }
             }
           }}
           onEndReachedThreshold={0.3}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+            />
+          }
           bounces={false}
           overScrollMode="never"
           showsVerticalScrollIndicator={true}

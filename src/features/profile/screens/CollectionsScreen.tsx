@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   Pressable,
   StyleSheet,
   Dimensions,
+  ScrollView,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
@@ -20,7 +22,6 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft } from 'lucide-react-native';
 import { Feather } from '@expo/vector-icons';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Header } from '@/src/components/Header';
 import type { Badge } from '@/src/mock/profile/badges/types';
 import AchievementBadgesTab from '../components/TabsPage/AchievementBadgesTab';
@@ -28,15 +29,109 @@ import BridgeBadgesTab from '../components/TabsPage/BridgeBadgesTab';
 import BadgeDetail from '../components/BadgeDetail';
 import { useSafeAreaValues } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { ProfileStackParamList } from '../navigation';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { useMainCategories } from '@/src/features/events/api/hooks';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import CollectionsBottomSheet from '@/src/features/events/components/CollectionsBottomSheet';
+import type { CollectionFilters } from '@/src/features/events/types/medusa.types';
+import { AdjustmentsHorizontalIcon } from 'react-native-heroicons/outline';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 type CollectionsScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'Collections'>;
+
+// Memoized category chip component - prevents re-render when parent state changes
+type CategoryChipItem = { id: string; name: string };
+
+const CategoryFilterChips = React.memo(({
+  categories,
+  selectedId,
+  isDark,
+  onPress,
+  onFilterPress,
+  hasActiveFilter,
+}: {
+  categories: CategoryChipItem[];
+  selectedId: string;
+  isDark: boolean;
+  onPress: (id: string) => void;
+  onFilterPress: () => void;
+  hasActiveFilter: boolean;
+}) => {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.filterChipsContainer}
+      style={styles.filterChips}
+    >
+      {categories.map((cat) => {
+        const isActive = cat.id === selectedId;
+        return (
+          <Pressable
+            key={cat.id}
+            style={[
+              styles.filterChip,
+              {
+                backgroundColor: isActive
+                  ? (isDark ? '#FFFFFF' : '#000000')
+                  : 'transparent',
+                borderColor: isDark ? '#333333' : '#EFEFEF',
+              },
+            ]}
+            onPress={() => onPress(cat.id)}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                {
+                  color: isActive
+                    ? (isDark ? '#000000' : '#FFFFFF')
+                    : (isDark ? '#8C8C8C' : '#000000'),
+                },
+              ]}
+            >
+              {cat.name}
+            </Text>
+          </Pressable>
+        );
+      })}
+      {/* Filter Button */}
+      <Pressable
+        style={[
+          styles.filterChip,
+          {
+            backgroundColor: hasActiveFilter
+              ? (isDark ? '#FFFFFF' : '#000000')
+              : 'transparent',
+            borderColor: isDark ? '#333333' : '#EFEFEF',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          },
+        ]}
+        onPress={onFilterPress}
+      >
+        <AdjustmentsHorizontalIcon
+          width={14}
+          height={14}
+          color={hasActiveFilter
+            ? (isDark ? '#000000' : '#FFFFFF')
+            : (isDark ? '#8C8C8C' : '#000000')}
+        />
+        {hasActiveFilter && (
+          <View style={[
+            styles.filterDot,
+            { backgroundColor: isDark ? '#C2E607' : '#8B5CF6' },
+          ]} />
+        )}
+      </Pressable>
+    </ScrollView>
+  );
+});
 
 const CollectionsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -51,15 +146,37 @@ const CollectionsScreen: React.FC = () => {
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [selectedChipId, setSelectedChipId] = useState<string>('all');
   const safeAreaBottom = useSafeAreaValues('bottom');
   const { t } = useTranslation('profile');
-  
+  const { openBottomSheet } = useGlobalBottomSheet();
+
+  // Category filter state (mainCategoryId & subCategoryId)
+  const [mainCategoryId, setMainCategoryId] = useState<string | undefined>(undefined);
+  const [subCategoryId, setSubCategoryId] = useState<string | undefined>(undefined);
+
+  // Fetch main categories for chip filters (only Beauty & Electronics)
+  const ALLOWED_CATEGORY_NAMES = ['beauty', 'electronics'];
+  const { data: mainCategoriesData } = useMainCategories();
+  const chipCategories = useMemo<CategoryChipItem[]>(
+    () => [
+      { id: 'all', name: t('collections.all') },
+      ...(mainCategoriesData ?? [])
+        .filter((c) => ALLOWED_CATEGORY_NAMES.includes(c.name.toLowerCase()))
+        .map((c) => ({ id: c.id, name: c.name })),
+    ],
+    [mainCategoriesData, t]
+  );
+
+  // Check if bottom sheet filter (subCategory) is active
+  const hasActiveSubFilter = !!subCategoryId;
+
   // 🎯 CORE: Shared progress value (0 = Achievements, 1 = Bridges)
   const progress = useSharedValue(0);
-  
-  // Tab state - currentPage'e göre hesaplanıyor
+
+  // Tab state - currentPage'e gore hesaplaniyor
   const activeTab: 'achievements' | 'bridges' = currentPage === 0 ? 'achievements' : 'bridges';
-  
+
   // Debounce search query for API calls
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -67,16 +184,50 @@ const CollectionsScreen: React.FC = () => {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-  
-  // Global bottom sheet hook
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
-  // Tab press handler - PagerView native animasyonu ile geçiş
+  // Category chip press handler - sets mainCategoryId and clears subCategoryId
+  const handleChipPress = useCallback((id: string) => {
+    setSelectedChipId(id);
+    if (id === 'all') {
+      setMainCategoryId(undefined);
+    } else {
+      setMainCategoryId(id);
+    }
+    // Chip secildiginde subCategory temizlenir
+    setSubCategoryId(undefined);
+  }, []);
+
+  // CollectionsBottomSheet filter apply handler
+  const handleCollectionsFilterApply = useCallback((filters: CollectionFilters) => {
+    setMainCategoryId(filters.mainCategoryId);
+    setSubCategoryId(filters.subCategoryId);
+    // Chip'i sync et: mainCategoryId varsa ilgili chip, yoksa 'all'
+    setSelectedChipId(filters.mainCategoryId ?? 'all');
+  }, []);
+
+  // Open CollectionsBottomSheet
+  const handleOpenFilter = useCallback(() => {
+    openBottomSheet(
+      <CollectionsBottomSheet
+        onApply={handleCollectionsFilterApply}
+        isDark={isDark}
+        initialFilters={{
+          mainCategoryId,
+          subCategoryId,
+        }}
+      />,
+      {
+        snapPoints: ['50%', '75%'],
+      }
+    );
+  }, [openBottomSheet, handleCollectionsFilterApply, isDark, mainCategoryId, subCategoryId]);
+
+  // Tab press handler - PagerView native animasyonu ile gecis
   const handleTabPress = useCallback((index: number) => {
     pagerRef.current?.setPage(index);
   }, []);
 
-  // PagerView scroll handler - realtime progress güncelleme
+  // PagerView scroll handler - realtime progress guncelleme
   const handlePageScroll = useCallback(
     (e: any) => {
       'worklet';
@@ -86,7 +237,7 @@ const CollectionsScreen: React.FC = () => {
     [progress]
   );
 
-  // PagerView page selected handler - snap sonrası progress'i sync et
+  // PagerView page selected handler - snap sonrasi progress'i sync et
   const handlePageSelected = useCallback(
     (e: any) => {
       const position = e.nativeEvent.position;
@@ -122,112 +273,28 @@ const CollectionsScreen: React.FC = () => {
 
   // Indicator position animation
   const tabWidth = tabContainerWidth / 2 || 0;
-  const indicatorWidth = tabWidth * 0.8; // Tab genişliğinin %80'i
+  const indicatorWidth = tabWidth * 0.8; // Tab genisliginin %80'i
   const indicatorStyle = useAnimatedStyle(() => {
-    // Indicator'ı tab genişliğine göre translate et
-    // Her tab'in ortasına yerleştirmek için: tabWidth * progress + (tabWidth - indicatorWidth) / 2
     const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
     return {
       transform: [{ translateX }],
     };
   });
 
-  // Rozete tıklanınca bottom sheet'i aç
+  // Badge tiklaninca modal ac
   const handleBadgePress = useCallback((badge: Badge) => {
     setSelectedBadge(badge);
-    
-    const handleClose = () => {
-      closeBottomSheet();
-      setTimeout(() => setSelectedBadge(null), 300);
-    };
+  }, []);
 
-    // Badge detail content'i hazırla
-    openBottomSheet(
-      <View style={styles.bottomSheetContainer}>
-        {/* Sticky Header */}
-        <View style={[
-          styles.bottomSheetHeader,
-          { 
-            backgroundColor: isDark ? '#1F1F1F' : '#FFFFFF',
-            borderBottomColor: isDark ? '#333333' : '#F0F0F0',
-          }
-        ]}>
-          <View style={styles.bottomSheetHeaderContent}>
-            <Pressable
-              onPress={handleClose}
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-            >
-              <ChevronLeft size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Pressable>
-            <View style={styles.bottomSheetHeaderTitle}>
-              <Text
-                style={[
-                  styles.bottomSheetTitle,
-                  { color: isDark ? '#FFFFFF' : '#000' }
-                ]}
-              >
-                {badge.title}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Scrollable Content */}
-        <BottomSheetScrollView
-          contentContainerStyle={{ paddingBottom: safeAreaBottom }}
-          showsVerticalScrollIndicator={false}
-        >
-          <BadgeDetail
-            badge={badge}
-            onClose={handleClose}
-            hideHeader={true}
-          />
-        </BottomSheetScrollView>
-      </View>,
-      {
-        enablePanDownToClose: true,
-        enableOverDrag: false,
-        enableHandlePanningGesture: true,
-        enableContentPanningGesture: false,
-        animateOnMount: true,
-        backdropOpacity: 0.5,
-        backdropPressBehavior: 'close',
-        detached: true,
-        bottomInset: safeAreaBottom,
-        snapPoints: ['50%', '85%'],
-        style: {
-          marginHorizontal: 4,
-          marginBottom: safeAreaBottom + 24,
-        },
-        backgroundStyle: {
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderRadius: 20,
-        },
-        handleStyle: {
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-        },
-        handleIndicatorStyle: {
-          backgroundColor: isDark ? '#333333' : '#CCCCCC',
-          width: 40,
-          height: 4,
-        },
-        onChange: (index: number) => {
-          // Sheet kapandığında selectedBadge'i temizle
-          if (index === -1) {
-            setTimeout(() => setSelectedBadge(null), 300);
-          }
-        },
-      }
-    );
-  }, [openBottomSheet, closeBottomSheet, isDark, safeAreaBottom]);
+  const handleCloseModal = useCallback(() => {
+    setSelectedBadge(null);
+  }, []);
 
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.container}>
       <View style={[
-        styles.mainContainer, 
+        styles.mainContainer,
         { backgroundColor: isDark ? '#000000' : '#FFFFFF' }
       ]}>
         {/* Header */}
@@ -273,10 +340,20 @@ const CollectionsScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Category Filter Chips */}
+        <CategoryFilterChips
+          categories={chipCategories}
+          selectedId={selectedChipId}
+          isDark={isDark}
+          onPress={handleChipPress}
+          onFilterPress={handleOpenFilter}
+          hasActiveFilter={hasActiveSubFilter}
+        />
+
         {/* Tab Header */}
         <View style={[
           styles.tabHeader,
-          { 
+          {
             backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
             borderBottomColor: isDark ? '#333333' : '#F0F0F0',
           }
@@ -337,7 +414,10 @@ const CollectionsScreen: React.FC = () => {
           <View key="0" style={styles.page}>
             <AchievementBadgesTab
               userId={userId}
+              onBadgePress={handleBadgePress}
               searchQuery={debouncedSearchQuery}
+              mainCategoryId={mainCategoryId}
+              subCategoryId={subCategoryId}
             />
           </View>
 
@@ -347,10 +427,61 @@ const CollectionsScreen: React.FC = () => {
               userId={userId}
               onBadgePress={handleBadgePress}
               searchQuery={debouncedSearchQuery}
+              mainCategoryId={mainCategoryId}
+              subCategoryId={subCategoryId}
             />
           </View>
         </AnimatedPagerView>
       </View>
+
+      {/* Badge Detail Modal */}
+      <Modal
+        visible={!!selectedBadge}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseModal}
+      >
+        <SafeAreaView
+          edges={['top', 'bottom']}
+          style={[styles.modalContainer, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }]}
+        >
+          {selectedBadge && (
+            <>
+              {/* Modal Header */}
+              <View style={[
+                styles.modalHeader,
+                { borderBottomColor: isDark ? '#333333' : '#F0F0F0' }
+              ]}>
+                <Pressable
+                  onPress={handleCloseModal}
+                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                >
+                  <ChevronLeft size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+                </Pressable>
+                <Text
+                  style={[styles.modalTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}
+                  numberOfLines={1}
+                >
+                  {selectedBadge.title}
+                </Text>
+                <View style={{ width: 24 }} />
+              </View>
+
+              {/* Modal Content */}
+              <ScrollView
+                contentContainerStyle={{ paddingBottom: safeAreaBottom }}
+                showsVerticalScrollIndicator={false}
+              >
+                <BadgeDetail
+                  badge={selectedBadge}
+                  onClose={handleCloseModal}
+                  hideHeader
+                />
+              </ScrollView>
+            </>
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -382,6 +513,31 @@ const styles = StyleSheet.create({
     height: 36,
     paddingVertical: 0,
   },
+  filterChips: {
+    maxHeight: 48,
+  },
+  filterChipsContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 14,
+  },
+  filterDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
   tabHeader: {
     paddingBottom: 8,
     borderBottomWidth: 1,
@@ -411,26 +567,21 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
   },
-  bottomSheetContainer: {
+  modalContainer: {
     flex: 1,
   },
-  bottomSheetHeader: {
-    borderBottomWidth: 1,
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-  },
-  bottomSheetHeaderContent: {
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
   },
-  bottomSheetHeaderTitle: {
+  modalTitle: {
     flex: 1,
-    alignItems: 'center',
-    marginRight: 24,
-  },
-  bottomSheetTitle: {
     fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

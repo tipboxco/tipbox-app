@@ -5,7 +5,7 @@ export interface Badge {
   title: string;
   icon: any;
   rarity: BadgeRarity;
-  category: 'achievement' | 'bridge';
+  category: 'collection' | 'event' | 'cosmetic' | 'brand';
   // Real API data fields (optional, populated from API)
   earnedDate?: string | null;
   totalEarned?: number;
@@ -23,7 +23,9 @@ export interface Badge {
 }
 
 export interface BadgesData {
-  achievements: Badge[];
-  bridges: Badge[];
+  collection: Badge[];
+  event: Badge[];
+  cosmetic: Badge[];
+  brand: Badge[];
 }
 

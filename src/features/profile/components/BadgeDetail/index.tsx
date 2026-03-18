@@ -1,8 +1,9 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { ChevronLeft } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useClaimAchievementBadge } from '@/src/features/profile/api/hooks';
 import type { Badge, BadgeRarity } from '@/src/mock/profile/badges/types';
 
 interface BadgeDetailProps {
@@ -40,11 +41,20 @@ const formatDate = (dateStr: string | null | undefined): string => {
 const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = false }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const claimMutation = useClaimAchievementBadge();
+  const [claimed, setClaimed] = useState(badge.isClaimed ?? false);
 
   const tasks = badge.tasks ?? [];
   const earnedDate = formatDate(badge.earnedDate);
   const totalEarned = badge.totalEarned ?? 0;
-  const isClaimed = badge.isClaimed ?? false;
+
+  const handleClaim = () => {
+    claimMutation.mutate(badge.id, {
+      onSuccess: () => {
+        setClaimed(true);
+      },
+    });
+  };
 
   return (
     <VStack space="lg" p={15}>
@@ -90,21 +100,42 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
         </Box>
 
         {/* Claim NFT Button — only shown when badge is not yet claimed */}
-        {!isClaimed && (
+        {!claimed && (
           <Pressable
-            bg="#E8FF6B"
+            bg={claimMutation.isPending ? '#d4e85e' : '#E8FF6B'}
             px="$8"
             py="$3"
             borderRadius="$full"
+            opacity={claimMutation.isPending ? 0.7 : 1}
+            onPress={handleClaim}
+            disabled={claimMutation.isPending}
           >
-            <Text
-              fontSize={16}
-              fontWeight="$bold"
-              color="#000000"
-            >
-              Claim NFT
-            </Text>
+            {claimMutation.isPending ? (
+              <HStack space="sm" alignItems="center">
+                <ActivityIndicator size="small" color="#000000" />
+                <Text fontSize={16} fontWeight="$bold" color="#000000">
+                  Claiming...
+                </Text>
+              </HStack>
+            ) : (
+              <Text
+                fontSize={16}
+                fontWeight="$bold"
+                color="#000000"
+              >
+                Claim NFT
+              </Text>
+            )}
           </Pressable>
+        )}
+
+        {/* Claimed state */}
+        {claimed && (
+          <HStack space="xs" alignItems="center" mt={4}>
+            <Text fontSize={14} fontWeight="$semibold" color="#3CA241">
+              NFT Claimed
+            </Text>
+          </HStack>
         )}
       </VStack>
 

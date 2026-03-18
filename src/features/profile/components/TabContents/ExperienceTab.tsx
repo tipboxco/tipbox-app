@@ -5,6 +5,7 @@ import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCar
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import { useUserReviews } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import i18n from 'i18next';
 import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { ProductInfoType } from '@/src/types/common';
@@ -140,6 +141,7 @@ const ExperienceTabComponent = () => {
   const userId = useCurrentUserIdOrLogout();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('profile');
 
   const {
     data: experienceData,
@@ -199,7 +201,7 @@ const ExperienceTabComponent = () => {
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-          Experience yükleniyor...
+          {t('tabStates.experience.loading')}
         </Text>
       </VStack>
     );
@@ -209,7 +211,7 @@ const ExperienceTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color="#CE4A4A" fontSize="$sm">
-          Experience yüklenirken bir hata oluştu: {error.message}
+          {t('tabStates.experience.error', { message: error.message })}
         </Text>
       </VStack>
     );
@@ -219,7 +221,7 @@ const ExperienceTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          No experience posts yet.
+          {t('tabStates.experience.empty')}
         </Text>
       </VStack>
     );

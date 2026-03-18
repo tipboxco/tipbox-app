@@ -1,13 +1,12 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { View, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Dimensions, ActivityIndicator, Pressable as RNPressable, Text as RNText } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import {
   VStack,
-  HStack,
   Text,
   Image,
-  Box,
   Pressable,
   ScrollView,
 } from '@gluestack-ui/themed';
@@ -17,33 +16,60 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { ProfileStackParamList } from '../navigation';
-import { useHighlightBadges, useUpdateHighlightBadges, useUserCollectionBridges } from '../api/hooks';
-import { toImageSource, useCurrentUserIdOrLogout } from '@/src/utils';
+import { useHighlightBadges, useUpdateHighlightBadges } from '../api/hooks';
+import { toImageSource } from '@/src/utils';
 import type { Badge } from '@/src/mock/profile/badges/types';
-import type { CollectionBadgeApiItem } from '../types';
+import type { HighlightBadgeItem } from '../types';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
 type ProfileEditHighlightBadgesNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'EditHighlightBadges'>;
 type ProfileEditHighlightBadgesRouteProp = RouteProp<ProfileStackParamList, 'EditHighlightBadges'>;
 
 const SLOT_COUNT = 4;
+const PAGE_SIZE = 10;
+const TAB_COUNT = 4;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_PADDING = 16;
-const GRID_GAP = 10;
+const GRID_GAP = 8;
 const BADGE_CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP * 2) / 3;
 
-const mapApiItemToBadge = (item: CollectionBadgeApiItem, category: 'achievement' | 'bridge'): Badge => ({
+const TAB_KEYS = ['event', 'collection', 'cosmetic', 'brand'] as const;
+type TabKey = typeof TAB_KEYS[number];
+
+const mapHighlightBadgeToBadge = (item: HighlightBadgeItem, category: TabKey): Badge => ({
   id: item.id,
   title: item.title,
   icon: toImageSource(item.image ?? '') || require('@/assets/defaultImages/default-badge.png'),
   rarity: item.rarity,
   category,
-  earnedDate: item.earnedDate,
-  totalEarned: item.totalEarned,
-  isClaimed: item.isClaimed,
-  nftAddress: item.nftAddress,
-  tasks: item.tasks,
 });
+
+/** Animated underline indicator that follows swipe gesture in real-time */
+const AnimatedTabIndicator: React.FC<{
+  position: Animated.SharedValue<number>;
+  tabCount: number;
+  color: string;
+}> = ({ position, tabCount, color }) => {
+  const tabWidth = SCREEN_WIDTH / tabCount;
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: position.value * tabWidth }],
+  }));
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: tabWidth,
+          height: 2,
+          backgroundColor: color,
+        },
+        animatedStyle,
+      ]}
+    />
+  );
+};
 
 const EditHighlightBadgesScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -52,47 +78,49 @@ const EditHighlightBadgesScreen: React.FC = () => {
   const route = useRoute<ProfileEditHighlightBadgesRouteProp>();
   const pagerRef = useRef<PagerView>(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const currentUserId = useCurrentUserIdOrLogout();
   const { t } = useTranslation('profile');
 
-  // Fetch highlight badges to get current selected IDs
-  const { data: highlightData, isLoading: isLoadingHighlights } = useHighlightBadges();
+  // Pagination: visible count per tab
+  const [visibleCounts, setVisibleCounts] = useState<Record<number, number>>({
+    0: PAGE_SIZE, 1: PAGE_SIZE, 2: PAGE_SIZE, 3: PAGE_SIZE,
+  });
 
-  // Fetch all available badges (achievements + bridges) for selection
-  const { data: bridgesData, isLoading: isLoadingBadges } = useUserCollectionBridges(currentUserId, 50);
+  // Animated tab indicator position (0..TAB_COUNT-1)
+  const tabScrollPosition = useSharedValue(0);
+
+  // Fetch highlight badges - includes selectedBadgeIds and availableBadges (4 categories)
+  const { data: highlightData, isLoading } = useHighlightBadges();
 
   const { mutateAsync: saveHighlightBadges } = useUpdateHighlightBadges();
 
-  // Derive badge lists from API data
+  // Derive badge lists from API data per category
   const eventBadges: Badge[] = useMemo(() => {
-    const allPages = bridgesData?.pages ?? [];
-    const items = allPages.flatMap((page) => page.achievement?.items ?? []);
-    const unique = new Map<string, CollectionBadgeApiItem>();
-    for (const item of items) {
-      if (!unique.has(item.id)) unique.set(item.id, item);
-    }
-    return Array.from(unique.values()).map((item) => mapApiItemToBadge(item, 'achievement'));
-  }, [bridgesData]);
+    return (highlightData?.availableBadges?.event ?? []).map((item) => mapHighlightBadgeToBadge(item, 'event'));
+  }, [highlightData]);
 
   const collectionBadges: Badge[] = useMemo(() => {
-    const allPages = bridgesData?.pages ?? [];
-    const items = allPages.flatMap((page) => page.brand?.items ?? []);
-    const unique = new Map<string, CollectionBadgeApiItem>();
-    for (const item of items) {
-      if (!unique.has(item.id)) unique.set(item.id, item);
-    }
-    return Array.from(unique.values()).map((item) => mapApiItemToBadge(item, 'bridge'));
-  }, [bridgesData]);
+    return (highlightData?.availableBadges?.collection ?? []).map((item) => mapHighlightBadgeToBadge(item, 'collection'));
+  }, [highlightData]);
+
+  const cosmeticBadges: Badge[] = useMemo(() => {
+    return (highlightData?.availableBadges?.cosmetic ?? []).map((item) => mapHighlightBadgeToBadge(item, 'cosmetic'));
+  }, [highlightData]);
+
+  const brandBadges: Badge[] = useMemo(() => {
+    return (highlightData?.availableBadges?.brand ?? []).map((item) => mapHighlightBadgeToBadge(item, 'brand'));
+  }, [highlightData]);
+
+  const badgesByTab: Badge[][] = useMemo(() => [eventBadges, collectionBadges, cosmeticBadges, brandBadges], [eventBadges, collectionBadges, cosmeticBadges, brandBadges]);
 
   // All badges combined for slot lookup
-  const allBadges = useMemo(() => [...eventBadges, ...collectionBadges], [eventBadges, collectionBadges]);
+  const allBadges = useMemo(() => [...eventBadges, ...collectionBadges, ...cosmeticBadges, ...brandBadges], [eventBadges, collectionBadges, cosmeticBadges, brandBadges]);
 
   // Initialize slots from route params or highlight API response
   const initialBadgeIds = useMemo(() => {
     const routeIds = route.params?.initialBadgeIds;
     if (routeIds && routeIds.length > 0) return routeIds;
-    return highlightData?.badgeIds ?? [];
-  }, [route.params?.initialBadgeIds, highlightData?.badgeIds]);
+    return highlightData?.selectedBadgeIds ?? [];
+  }, [route.params?.initialBadgeIds, highlightData?.selectedBadgeIds]);
 
   const [slots, setSlots] = useState<(string | null)[]>(() => {
     const arr: (string | null)[] = [];
@@ -172,77 +200,105 @@ const EditHighlightBadgesScreen: React.FC = () => {
 
   const handleTabPress = useCallback((index: number) => {
     pagerRef.current?.setPage(index);
+    tabScrollPosition.value = withTiming(index, { duration: 200, easing: Easing.out(Easing.quad) });
   }, []);
 
   const handlePageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
     setCurrentPage(e.nativeEvent.position);
   }, []);
 
+  const handlePageScroll = useCallback((e: { nativeEvent: { position: number; offset: number } }) => {
+    const { position, offset } = e.nativeEvent;
+    tabScrollPosition.value = position + offset;
+  }, []);
+
+  const handleLoadMore = useCallback((tabIndex: number) => {
+    setVisibleCounts((prev) => ({
+      ...prev,
+      [tabIndex]: (prev[tabIndex] ?? PAGE_SIZE) + PAGE_SIZE,
+    }));
+  }, []);
+
   const tabBorderColor = isDark ? '#FFFFFF' : '#000000';
   const tabInactiveColor = '#9D9D9D';
-  const cardBg = isDark ? '#1A1A1A' : '#FFFFFF';
-  const cardBorder = isDark ? '#2A2A2A' : '#F0F0F0';
 
-  const isLoading = isLoadingHighlights || isLoadingBadges;
+  const tabLabels = [
+    t('editHighlightBadges.eventBadges'),
+    t('editHighlightBadges.collections'),
+    t('editHighlightBadges.cosmetic'),
+    t('editHighlightBadges.brand'),
+  ];
 
-  const renderBadgeGrid = (badges: Badge[]) => {
+  const emptyMessages = [
+    t('editHighlightBadges.noEventBadges'),
+    t('editHighlightBadges.noCollectionBadges'),
+    t('editHighlightBadges.noCosmeticBadges'),
+    t('editHighlightBadges.noBrandBadges'),
+  ];
+
+  const renderBadgeGrid = (badges: Badge[], tabIndex: number) => {
     if (badges.length === 0) {
       return (
         <Text color={isDark ? '#9D9D9D' : '#8A8A8A'} fontSize="$sm" textAlign="center" mt="$4">
-          {currentPage === 0
-            ? t('editHighlightBadges.noEventBadges')
-            : t('editHighlightBadges.noCollectionBadges')}
+          {emptyMessages[tabIndex]}
         </Text>
       );
     }
 
+    const visibleCount = visibleCounts[tabIndex] ?? PAGE_SIZE;
+    const visibleBadges = badges.slice(0, visibleCount);
+    const hasMore = badges.length > visibleCount;
+
     return (
-      <View style={styles.gridWrapper}>
-        {badges.map((badge) => {
-          const selected = isBadgeInSlots(badge.id);
-          return (
-            <Pressable
-              key={badge.id}
-              onPress={() => handleBadgePress(badge)}
-              style={[
-                styles.badgeCard,
-                {
-                  backgroundColor: selected
-                    ? (isDark ? '#2A2A2A' : '#F0F0F0')
-                    : cardBg,
-                  borderColor: selected
-                    ? (isDark ? '#444' : '#E0E0E0')
-                    : cardBorder,
-                },
-              ]}
-            >
-              <View style={styles.badgeImageContainer}>
-                <Image
-                  source={badge.icon}
-                  alt={badge.title}
-                  style={styles.badgeImage}
-                  resizeMode="contain"
-                />
-                {selected && (
-                  <View style={[styles.checkBadge, { backgroundColor: '#C8E600' }]}>
-                    <CheckIcon width={10} height={10} color="#000000" />
-                  </View>
-                )}
-              </View>
-              <Text
-                fontSize={11}
-                fontWeight="$semibold"
-                color={isDark ? '#FFFFFF' : '#000000'}
-                textAlign="center"
-                numberOfLines={2}
-                mt="$1"
+      <>
+        <View style={styles.gridWrapper}>
+          {visibleBadges.map((badge) => {
+            const selected = isBadgeInSlots(badge.id);
+            return (
+              <RNPressable
+                key={badge.id}
+                onPress={() => handleBadgePress(badge)}
+                style={[
+                  styles.badgeCard,
+                  { borderColor: selected ? (isDark ? '#444' : '#E0E0E0') : (isDark ? '#333' : '#E9E9E9') },
+                ]}
               >
-                {badge.title}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+                <View style={[styles.badgeImageContainer, { backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5' }]}>
+                  <Image
+                    source={badge.icon}
+                    alt={badge.title}
+                    style={styles.badgeImage}
+                    resizeMode="contain"
+                  />
+                  {selected && (
+                    <View style={[styles.checkBadge, { backgroundColor: '#C8E600' }]}>
+                      <CheckIcon width={10} height={10} color="#000000" />
+                    </View>
+                  )}
+                </View>
+                <View style={[styles.badgeTitleContainer, { backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }]}>
+                  <RNText
+                    numberOfLines={1}
+                    style={[styles.badgeTitleText, { color: isDark ? '#FFFFFF' : '#000000' }]}
+                  >
+                    {badge.title}
+                  </RNText>
+                </View>
+              </RNPressable>
+            );
+          })}
+        </View>
+        {hasMore && (
+          <RNPressable
+            onPress={() => handleLoadMore(tabIndex)}
+            style={[styles.loadMoreButton, { borderColor: isDark ? '#333' : '#E0E0E0' }]}
+          >
+            <RNText style={[styles.loadMoreText, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+              {t('editHighlightBadges.loadMore')}
+            </RNText>
+          </RNPressable>
+        )}
+      </>
     );
   };
 
@@ -336,67 +392,53 @@ const EditHighlightBadgesScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Tabs */}
-      <HStack borderBottomWidth={1} borderColor={isDark ? '#262626' : '#E9E9E9'}>
-        <Pressable
-          flex={1}
-          py="$3"
-          alignItems="center"
-          borderBottomWidth={2}
-          borderBottomColor={currentPage === 0 ? tabBorderColor : 'transparent'}
-          onPress={() => handleTabPress(0)}
-        >
-          <Text
-            fontSize="$sm"
-            fontWeight={currentPage === 0 ? '$bold' : '$normal'}
-            color={currentPage === 0 ? (isDark ? '#FFFFFF' : '#000000') : tabInactiveColor}
+      {/* Tabs - 4 tabs with animated indicator */}
+      <View style={[styles.tabsContainer, { borderBottomColor: isDark ? '#262626' : '#E9E9E9' }]}>
+        {TAB_KEYS.map((key, index) => (
+          <RNPressable
+            key={key}
+            style={styles.tabButton}
+            onPress={() => handleTabPress(index)}
           >
-            {t('editHighlightBadges.eventBadges')}
-          </Text>
-        </Pressable>
-        <Pressable
-          flex={1}
-          py="$3"
-          alignItems="center"
-          borderBottomWidth={2}
-          borderBottomColor={currentPage === 1 ? tabBorderColor : 'transparent'}
-          onPress={() => handleTabPress(1)}
-        >
-          <Text
-            fontSize="$sm"
-            fontWeight={currentPage === 1 ? '$bold' : '$normal'}
-            color={currentPage === 1 ? (isDark ? '#FFFFFF' : '#000000') : tabInactiveColor}
-          >
-            {t('editHighlightBadges.collections')}
-          </Text>
-        </Pressable>
-      </HStack>
+            <RNText
+              style={[
+                styles.tabText,
+                {
+                  fontWeight: currentPage === index ? '700' : '400',
+                  color: currentPage === index ? (isDark ? '#FFFFFF' : '#000000') : tabInactiveColor,
+                },
+              ]}
+            >
+              {tabLabels[index]}
+            </RNText>
+          </RNPressable>
+        ))}
+        <AnimatedTabIndicator
+          position={tabScrollPosition}
+          tabCount={TAB_COUNT}
+          color={tabBorderColor}
+        />
+      </View>
 
-      {/* Badge grid pages */}
+      {/* Badge grid pages - 4 pages */}
       <PagerView
         ref={pagerRef}
         style={styles.pagerView}
         initialPage={0}
         onPageSelected={handlePageSelected}
+        onPageScroll={handlePageScroll}
       >
-        <View key="0" style={styles.page}>
-          <ScrollView
-            style={styles.scrollPage}
-            contentContainerStyle={styles.gridContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {renderBadgeGrid(eventBadges)}
-          </ScrollView>
-        </View>
-        <View key="1" style={styles.page}>
-          <ScrollView
-            style={styles.scrollPage}
-            contentContainerStyle={styles.gridContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {renderBadgeGrid(collectionBadges)}
-          </ScrollView>
-        </View>
+        {TAB_KEYS.map((key, index) => (
+          <View key={key} style={styles.page}>
+            <ScrollView
+              style={styles.scrollPage}
+              contentContainerStyle={styles.gridContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {renderBadgeGrid(badgesByTab[index], index)}
+            </ScrollView>
+          </View>
+        ))}
       </PagerView>
     </SafeAreaView>
   );
@@ -483,6 +525,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: GRID_PADDING,
     paddingTop: 12,
   },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    position: 'relative',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  tabText: {
+    fontSize: 13,
+  },
   gridWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -490,36 +545,49 @@ const styles = StyleSheet.create({
   },
   badgeCard: {
     width: BADGE_CARD_WIDTH,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 14,
+    borderRadius: 8,
+    overflow: 'hidden',
     borderWidth: 1,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
   },
   badgeImageContainer: {
-    width: 72,
-    height: 72,
+    width: '100%',
+    aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeImage: {
-    width: 64,
-    height: 64,
+    width: '100%',
+    height: '100%',
+  },
+  badgeTitleContainer: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  badgeTitleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   checkBadge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: 4,
+    right: 4,
     width: 20,
     height: 20,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loadMoreButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  loadMoreText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
 

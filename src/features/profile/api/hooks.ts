@@ -14,6 +14,7 @@ import {
   getBadgeDetail,
   getHighlightBadges,
   updateHighlightBadges,
+  claimAchievementBadge,
   searchProductExperiences,
   getTrustList,
   getTrusterList,
@@ -259,8 +260,8 @@ export const useUserProfile = <TData = UserProfile>(
       return getUserProfile(userId.trim());
     },
     enabled: Boolean(isValidUserId),
-    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
+    staleTime: Infinity,           // CACHE-FIRST: Otomatik refetch yapma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat bellekte tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -355,22 +356,17 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3, opti
       return lastPage.pagination.cursor;
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
-    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
-    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+    staleTime: Infinity,               // CACHE-FIRST: Post create/delete invalidation ile guncellenir
+    gcTime: 4 * 60 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
-      // Timeout hatalarında retry yap (network sorunları için)
       if (error?.message?.includes('timeout') || error?.code === 'ECONNABORTED') {
-        return failureCount < 2; // Timeout için 2 kez daha dene
+        return failureCount < 2;
       }
-      // Diğer hatalar için 1 kez dene
       return failureCount < 1;
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
-    // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
-    // Sadece data, hasNextPage ve error değişiklikleri render tetikler
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
   });
 };
@@ -405,7 +401,7 @@ export const useUserReviews = (userId: string | undefined, limit: number = 5, op
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    staleTime: Infinity,               // CACHE-FIRST: Mutation invalidation ile guncellenir
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
@@ -446,7 +442,7 @@ export const useUserBenchmarks = (userId: string | undefined, limit: number = 5,
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    staleTime: Infinity,               // CACHE-FIRST: Mutation invalidation ile guncellenir
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
@@ -487,7 +483,7 @@ export const useUserTipsAndTricks = (userId: string | undefined, limit: number =
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    staleTime: Infinity,               // CACHE-FIRST: Mutation invalidation ile guncellenir
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
@@ -568,7 +564,7 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5, op
     },
     enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    staleTime: Infinity,               // CACHE-FIRST: Mutation invalidation ile guncellenir
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
@@ -614,7 +610,7 @@ export const useUserCollectionAchievements = (
       return lastPage.pagination.cursor;
     },
     enabled: !!userId,
-    staleTime: 2 * 60 * 60 * 1000,
+    staleTime: Infinity,               // CACHE-FIRST
     gcTime: 4 * 60 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -636,19 +632,23 @@ export const useUserCollectionAchievements = (
 export const useUserCollectionBridges = (
   userId: string | undefined,
   limit: number = 20,
-  searchQuery?: string
+  searchQuery?: string,
+  mainCategoryId?: string,
+  subCategoryId?: string
 ) => {
   // Normalize: treat '' and undefined the same (no search)
   const normalizedSearch = searchQuery?.trim() || undefined;
+  const normalizedMainCategoryId = mainCategoryId || undefined;
+  const normalizedSubCategoryId = subCategoryId || undefined;
 
   return useInfiniteQuery<UserCollectionBridgesApiResponse, Error>({
-    queryKey: userId ? [...profileKeys.userCollectionBridges(userId, limit), normalizedSearch] : ['profile', 'collections', 'bridges', 'disabled'],
+    queryKey: userId ? [...profileKeys.userCollectionBridges(userId, limit), normalizedSearch, normalizedMainCategoryId, normalizedSubCategoryId] : ['profile', 'collections', 'bridges', 'disabled'],
     queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getUserCollectionBridges(userId, cursor, limit, normalizedSearch);
+      return getUserCollectionBridges(userId, cursor, limit, normalizedSearch, normalizedMainCategoryId, normalizedSubCategoryId);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -656,7 +656,7 @@ export const useUserCollectionBridges = (
       return lastPage.pagination.cursor ?? undefined;
     },
     enabled: !!userId,
-    staleTime: 2 * 60 * 60 * 1000,
+    staleTime: Infinity,               // CACHE-FIRST
     gcTime: 4 * 60 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -735,25 +735,13 @@ export const useAddToTrustList = () => {
       }
     },
     onSuccess: (_, targetUserId) => {
-      // Backend başarılı yanıt verdi, cache'leri invalidate et (güncel veriyi çek)
+      // CACHE-FIRST: Optimistic update zaten yapildi (onMutate)
+      // Sadece trust/truster listelerini invalidate et (profil cache'i degil)
       if (user?.id) {
-        // User A'nın trust listesini invalidate et
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.trusts(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.profile(user.id),
-        });
+        queryClient.invalidateQueries({ queryKey: profileKeys.trusts() });
       }
       if (targetUserId) {
-        // User C'nin profilini ve truster listesini invalidate et
-        // CRITICAL FIX: Trust işlemi yapıldığında target user'ın truster listesi de güncellenmeli
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.profile(targetUserId),
-        });
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.trusters(),
-        });
+        queryClient.invalidateQueries({ queryKey: profileKeys.trusters() });
       }
     },
   });
@@ -830,25 +818,13 @@ export const useRemoveFromTrustList = () => {
       }
     },
     onSuccess: (_, targetUserId) => {
-      // Backend başarılı yanıt verdi, cache'leri invalidate et (güncel veriyi çek)
+      // CACHE-FIRST: Optimistic update zaten yapildi (onMutate)
+      // Sadece trust/truster listelerini invalidate et (profil cache'i degil)
       if (user?.id) {
-        // User A'nın trust listesini invalidate et
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.trusts(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.profile(user.id),
-        });
+        queryClient.invalidateQueries({ queryKey: profileKeys.trusts() });
       }
       if (targetUserId) {
-        // User C'nin profilini ve truster listesini invalidate et
-        // CRITICAL FIX: Untrust işlemi yapıldığında target user'ın truster listesi de güncellenmeli
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.profile(targetUserId),
-        });
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.trusters(),
-        });
+        queryClient.invalidateQueries({ queryKey: profileKeys.trusters() });
       }
     },
   });
@@ -875,21 +851,13 @@ export const useUpdateProfile = () => {
   return useMutation<UpdateProfileResponse, Error, UpdateProfileRequest>({
     mutationFn: updateProfile,
     onSuccess: (data) => {
-      // Profil query'sini güncelle
+      // CACHE-FIRST: Backend'den donen veriyi direkt cache'e yaz (invalidation yok)
       if (user?.id) {
         queryClient.setQueryData(profileKeys.profile(user.id), data.profile);
-        // Store'daki user bilgisini de güncelle
         updateUser({
           fullName: data.profile.name,
           avatar: data.profile.avatar || undefined,
         });
-        // CRITICAL FIX: Cache'i invalidate et - backend'den güncel veriyi çek
-        // Avatar ve banner upload sonrası backend otomatik güncelliyor, cache'i yenile
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.profile(user.id),
-          exact: false,
-        });
-        console.log('[useUpdateProfile] ✅ Profile cache invalidated after update');
       }
     },
     onError: (error) => {
@@ -1428,6 +1396,32 @@ export const useUpdateHighlightBadges = () => {
       // Profil cache'ini invalidate et (badges alanı güncellendi)
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: profileKeys.profile(user.id) });
+      }
+    },
+  });
+};
+
+/**
+ * Claim Achievement Badge mutation hook
+ * POST /users/collections/achievements/{badgeId}/claim
+ */
+export const useClaimAchievementBadge = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAppStore();
+
+  return useMutation<{ success: boolean }, Error, string>({
+    mutationFn: (badgeId: string) => claimAchievementBadge(badgeId),
+    onSuccess: (_data, badgeId) => {
+      // Achievements cache'ini invalidate et
+      if (user?.id) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.userCollectionAchievements(user.id),
+          exact: false,
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+          exact: false,
+        });
       }
     },
   });

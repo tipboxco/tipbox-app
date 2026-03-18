@@ -4,6 +4,7 @@ import { VStack, Text, Box } from '@gluestack-ui/themed';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useUserTipsAndTricks } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { ProfileTipsAndTricks } from '../../types';
@@ -31,6 +32,7 @@ const mapTipsToCardData = (item: ProfileTipsAndTricks): TipsCardData => {
       name: item.contextData.name,
       subName: item.contextData.subName,
       image: contextImage,
+      isOwned: item.contextData.isOwned,
     };
 
     category = {
@@ -67,6 +69,7 @@ const TipsTabComponent = () => {
   const userId = useCurrentUserIdOrLogout();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('profile');
 
   // Render sayısını takip et ve değişen değerleri log'la
   const renderCountRef = useRef(0);
@@ -219,7 +222,7 @@ const TipsTabComponent = () => {
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-          Tips & Tricks yükleniyor...
+          {t('tabStates.tips.loading')}
         </Text>
       </VStack>
     );
@@ -229,7 +232,7 @@ const TipsTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color="#CE4A4A" fontSize="$sm">
-          Tips & Tricks yüklenirken bir hata oluştu: {error.message}
+          {t('tabStates.tips.error', { message: error.message })}
         </Text>
       </VStack>
     );
@@ -239,7 +242,7 @@ const TipsTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          No tips & tricks yet.
+          {t('tabStates.tips.empty')}
         </Text>
       </VStack>
     );

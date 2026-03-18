@@ -101,7 +101,6 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
             py="$2"
             px="$3"
             borderRadius="$full"
-           
           >
             <Box flexDirection="row" alignItems="center" justifyContent="center">
               <Feather
@@ -126,4 +125,3 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
 };
 
 export default BadgeCard;
-

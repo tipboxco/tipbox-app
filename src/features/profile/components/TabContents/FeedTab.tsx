@@ -9,6 +9,7 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useUserPosts } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import i18n from 'i18next';
 import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR, isSameImageSource } from '@/src/utils';
 import { CardType, ProductInfoType } from '@/src/types/common';
@@ -176,6 +177,7 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData => {
       name: item.contextData.name,
       subName: item.contextData.subName,
       image: contextImage,
+      isOwned: item.contextData.isOwned,
     };
 
     category = {
@@ -231,6 +233,7 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData => {
       name: item.contextData.name,
       subName: item.contextData.subName,
       image: contextImage,
+      isOwned: item.contextData.isOwned,
     };
 
     category = {
@@ -349,7 +352,8 @@ const FeedTabComponent = () => {
   const userId = useCurrentUserIdOrLogout();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+  const { t } = useTranslation('profile');
+
   // User Posts API hook with infinite scroll
   const {
     data,
@@ -539,7 +543,7 @@ const FeedTabComponent = () => {
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-          Feed yükleniyor...
+          {t('tabStates.feed.loading')}
         </Text>
       </VStack>
     );
@@ -549,7 +553,7 @@ const FeedTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color="#CE4A4A" fontSize="$sm">
-          Feed yüklenirken bir hata oluştu: {error.message}
+          {t('tabStates.feed.error', { message: error.message })}
         </Text>
       </VStack>
     );
@@ -559,7 +563,7 @@ const FeedTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          No feed content found yet.
+          {t('tabStates.feed.empty')}
         </Text>
       </VStack>
     );

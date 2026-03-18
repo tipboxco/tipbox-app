@@ -495,11 +495,7 @@ export const addInventoryItem = async (
   data: AddInventoryItemRequest
 ): Promise<AddInventoryItemResponse> => {
   try {
-    console.log('[addInventoryItem] 🚨 CRITICAL: Request payload:', JSON.stringify(data, null, 2));
-    console.log('[addInventoryItem] 🚨 Experience ratings in API:', {
-      priceRating: data.experience.find(e => e.type === 'price_and_shopping')?.rating,
-      productRating: data.experience.find(e => e.type === 'product_and_usage')?.rating,
-    });
+    console.log('[addInventoryItem] Request payload:', JSON.stringify(data, null, 2));
 
     const response = await apiService.getClient().post<AddInventoryItemResponse>(
       '/inventory',
@@ -1743,11 +1739,15 @@ export const getUserCollectionBridges = async (
   userId: string,
   cursor?: string,
   limit: number = 20,
-  searchQuery?: string
+  searchQuery?: string,
+  mainCategoryId?: string,
+  subCategoryId?: string
 ): Promise<UserCollectionBridgesApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) params.append('cursor', cursor);
   if (searchQuery?.trim()) params.append('q', searchQuery.trim());
+  if (mainCategoryId) params.append('mainCategoryId', mainCategoryId);
+  if (subCategoryId) params.append('subCategoryId', subCategoryId);
   const clampedLimit = Math.min(50, Math.max(1, limit));
   params.append('limit', clampedLimit.toString());
 
@@ -2241,9 +2241,21 @@ export const getHighlightBadges = async (): Promise<HighlightBadgesApiResponse> 
 };
 
 /**
+ * POST /users/collections/achievements/{badgeId}/claim
+ * Achievement badge'ini NFT olarak claim eder
+ */
+export const claimAchievementBadge = async (badgeId: string): Promise<{ success: boolean }> => {
+  const response = await apiService.getClient().post<unknown>(
+    `/users/collections/achievements/${badgeId}/claim`
+  );
+  const raw = (response.data as { data?: unknown })?.data ?? response.data;
+  return raw as { success: boolean };
+};
+
+/**
  * PUT /users/me/highlight-badges
  * Kullanıcının profil kartında gösterilen 4 seçili badge'i günceller
- * Not: badgeIds içindeki badge'lerin isClaimed: true olması gerekir
+ * Kullanıcının sahip olduğu herhangi bir badge highlight olarak seçilebilir (claimed zorunluluğu yok)
  */
 export const updateHighlightBadges = async (
   data: UpdateHighlightBadgesRequest
