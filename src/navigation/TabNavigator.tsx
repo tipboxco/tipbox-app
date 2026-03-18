@@ -412,7 +412,8 @@ export const TabNavigator = () => {
         IconComponent = focused ? HomeIconSolid : HomeIconOutline;
         break;
       case 'ExploreStack':
-        return <Ionicons name={focused ? 'binoculars' : 'binoculars-outline'} size={iconSize} color={color} />;
+        // Ionicons stroke Heroicons'a göre daha kalın - boyutu küçülterek görsel ağırlığı eşitle
+        return <Ionicons name={focused ? 'binoculars' : 'binoculars-outline'} size={iconSize * 0.85} color={color} />;
 
       case 'CatalogStack':
         IconComponent = focused ? Squares2X2IconSolid : Squares2X2IconOutline;
