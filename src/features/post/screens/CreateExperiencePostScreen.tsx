@@ -480,42 +480,39 @@ export const CreateExperiencePostScreen = () => {
                 : 'ok',
         });
         
+        // Track whether inventory endpoint already created the post
+        let inventoryCreatedPost = false;
+
         try {
             // Eğer experienceOption === 'own' VE fromInventory === false (katalogdan seçildi):
-            // Önce envantere ekle, sonra post oluştur
+            // Envantere ekle - backend POST /inventory ile hem inventory item hem post oluşturur
             if (willAddToInventory) {
-                console.log('[CreateExperiencePostScreen] 📦 Adding product to inventory first...');
-                console.log('[CreateExperiencePostScreen] 🚫 CRITICAL: NOT sending images to inventory (backend will use catalog image)');
-                console.log('[CreateExperiencePostScreen] ℹ️ Post images (user gallery) will only be used for the post:', {
-                    postImagesCount: data.selectedImages?.length || 0,
-                    productId: data.selectedProduct!.id,
-                    productName: data.selectedProduct!.name,
-                });
+                console.log('[CreateExperiencePostScreen] 📦 Adding product to inventory...');
                 try {
-                    // CRITICAL FIX: Inventory'e HİÇBİR görsel gönderme!
-                    // Backend, productId'ye göre katalog görselini otomatik kullanır.
-                    // Post görselleri (data.selectedImages) sadece experience post için kullanılır.
-
-                    const inventoryPayload = {
+                    const inventoryPayload: {
+                        productId: string;
+                        selectedDurationId: string;
+                        selectedLocationId: string;
+                        selectedPurposeId: string;
+                        content: string;
+                        experience: typeof experience;
+                        status: 'own';
+                    } = {
                         productId: data.selectedProduct!.id,
                         selectedDurationId: selectedDurationId,
                         selectedLocationId: selectedLocationId,
                         selectedPurposeId: selectedPurposeId,
-                        content: data.experienceText,
+                        content: data.experienceText || '',
                         experience: experience,
                         status: 'own' as const,
-                        // ❌ ASLA images gönderme - backend katalog görselini kullanır
-                        // images parametresi YOK!
                     };
 
-                    console.log('[CreateExperiencePostScreen] 🚨 CRITICAL: Inventory payload BEFORE mutation:', JSON.stringify(inventoryPayload, null, 2));
-                    console.log('[CreateExperiencePostScreen] 🚨 Inventory experience array ratings:', {
-                        priceRating: inventoryPayload.experience.find(e => e.type === 'price_and_shopping')?.rating,
-                        productRating: inventoryPayload.experience.find(e => e.type === 'product_and_usage')?.rating,
-                    });
+                    console.log('[CreateExperiencePostScreen] 📦 Inventory payload:', inventoryPayload);
 
                     const inventoryResponse = await addInventoryItemMutation.mutateAsync(inventoryPayload);
                     console.log('[CreateExperiencePostScreen] ✅ Product added to inventory:', inventoryResponse);
+                    // POST /inventory başarılı → backend post'u zaten oluşturdu
+                    inventoryCreatedPost = true;
                 } catch (inventoryError: any) {
                     const errMsg =
                         inventoryError?.response?.data?.error?.message ||
@@ -525,8 +522,8 @@ export const CreateExperiencePostScreen = () => {
                     const alreadyExists =
                         /inventory already exists|already exists for this product/i.test(errMsg);
                     if (alreadyExists) {
-                        // Ürün zaten envanterde; post oluşturmaya devam et
-                        console.log('[CreateExperiencePostScreen] 📦 Product already in inventory, continuing to create post');
+                        // Ürün zaten envanterde; post oluşturmaya devam et (POST /posts/experience ile)
+                        console.log('[CreateExperiencePostScreen] 📦 Product already in inventory, continuing to create post separately');
                     } else {
                         console.error('[CreateExperiencePostScreen] ❌ Add to inventory failed:', {
                             message: inventoryError?.message,
@@ -543,39 +540,38 @@ export const CreateExperiencePostScreen = () => {
                     }
                 }
             }
-            
-            if (!experienceSnippetId || experienceSnippetId.trim() === '') {
-                showCustomToast(toast, {
-                    title: t('create.common.errors.title'),
-                    description: t('create.experience.ai.splitRequired'),
-                    action: 'error',
-                });
-                return;
+
+            // POST /inventory başarılıysa post zaten oluşturuldu, tekrar oluşturma
+            if (!inventoryCreatedPost) {
+                if (!experienceSnippetId || experienceSnippetId.trim() === '') {
+                    showCustomToast(toast, {
+                        title: t('create.common.errors.title'),
+                        description: t('create.experience.ai.splitRequired'),
+                        action: 'error',
+                    });
+                    return;
+                }
+
+                const postPayload = {
+                    contextType: apiContextType,
+                    contextId: contextId,
+                    productId: data.selectedProduct?.id,
+                    experienceSnippetId: experienceSnippetId,
+                    selectedDurationId: selectedDurationId,
+                    selectedLocationId: selectedLocationId,
+                    selectedPurposeId: selectedPurposeId,
+                    content: data.experienceText,
+                    experience: experience,
+                    status: status,
+                    images: data.selectedImages || [],
+                };
+
+                console.log('[CreateExperiencePostScreen] 📝 Creating post via /posts/experience...');
+                const response = await createExperiencePostMutation.mutateAsync(postPayload);
+                console.log('[CreateExperiencePostScreen] ✅ Post created:', response);
+            } else {
+                console.log('[CreateExperiencePostScreen] ⏭️ Skipping POST /posts/experience — inventory endpoint already created the post');
             }
-
-            const postPayload = {
-                contextType: apiContextType,
-                contextId: contextId,
-                productId: data.selectedProduct?.id, // Backend için productId eklendi
-                experienceSnippetId: experienceSnippetId,
-                selectedDurationId: selectedDurationId,
-                selectedLocationId: selectedLocationId,
-                selectedPurposeId: selectedPurposeId,
-                content: data.experienceText,
-                experience: experience,
-                status: status,
-                images: data.selectedImages || [],
-            };
-
-            console.log('[CreateExperiencePostScreen] 🚨 CRITICAL: Post payload BEFORE mutation:', JSON.stringify(postPayload, null, 2));
-            console.log('[CreateExperiencePostScreen] 🚨 Post experience array ratings:', {
-                priceRating: postPayload.experience.find((e: any) => e.type === 'price_and_shopping')?.rating,
-                productRating: postPayload.experience.find((e: any) => e.type === 'product_and_usage')?.rating,
-            });
-
-            const response = await createExperiencePostMutation.mutateAsync(postPayload);
-            
-            console.log('[CreateExperiencePostScreen] ✅ API Response:', response);
 
             // Başarılı toast göster
             showCustomToast(toast, {

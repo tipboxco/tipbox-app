@@ -10,6 +10,7 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import {
   getPostTypeFilterOptions,
   getAllowedPostTypesForContext,
@@ -36,6 +37,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('post');
 
   // State
   const [selectedPostType, setSelectedPostType] = useState<string>(
@@ -88,7 +90,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              Filter / Sort
+              {t('filterSort.title')}
             </Text>
           </HStack>
 
@@ -100,7 +102,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
               color={isDark ? '#FFFFFF' : '#000000'}
               mb="$1"
             >
-              Filter
+              {t('filterSort.filter')}
             </Text>
 
             <VStack space="xs">
@@ -163,7 +165,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
               color={isDark ? '#FFFFFF' : '#000000'}
               mb="$1"
             >
-              Sort
+              {t('filterSort.sort')}
             </Text>
 
             <VStack space="xs">
@@ -234,7 +236,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
                 fontSize={14}
                 fontWeight="$semibold"
               >
-                Reset
+                {t('filterSort.reset')}
               </ButtonText>
             </Button>
             <Button
@@ -247,7 +249,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
                 fontSize={14}
                 fontWeight="$bold"
               >
-                Done
+                {t('filterSort.done')}
               </ButtonText>
             </Button>
           </HStack>

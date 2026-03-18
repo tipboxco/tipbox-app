@@ -689,7 +689,7 @@ export const PostDetailScreen = () => {
                         fontWeight="$medium"
                         mr={6}
                     >
-                        {selectedOption}
+                        {t(`comments.sortOptions.${selectedOption.toLowerCase()}`)}
                     </Text>
                     <ChevronDownIcon
                         width={14}

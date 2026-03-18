@@ -10,7 +10,7 @@ import { useAppStore } from '@/src/store/appStore';
  */
 export const useSyncInventoryToStore = () => {
   const { user } = useAppStore();
-  const { data: inventoryData } = useInventory(user?.id || '', 100);
+  const { data: inventoryData, isLoading: isInventoryLoading } = useInventory(user?.id || '', 100);
   const setInventoryProductIds = useCreatePostFlowStore(
     (state) => state.setInventoryProductIds
   );
@@ -38,8 +38,8 @@ export const useSyncInventoryToStore = () => {
   }, [inventoryData, setInventoryProductIds]);
 
   return {
-    isLoading: false, // useInventory handles loading state
+    isLoading: isInventoryLoading,
     inventoryData,
-    syncComplete: !!inventoryData,
+    syncComplete: !!inventoryData && !isInventoryLoading,
   };
 };

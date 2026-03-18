@@ -3,7 +3,7 @@ import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, Pressable, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { FunnelIcon } from 'react-native-heroicons/outline';
+import { AdjustmentsHorizontalIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
@@ -58,7 +58,7 @@ export const PostsScreen = () => {
   const { t } = useTranslation('post');
 
   // Sync inventory to store (must be called before useInventoryProductCheck)
-  useSyncInventoryToStore();
+  const { syncComplete: inventorySyncComplete } = useSyncInventoryToStore();
 
   // Inventory check hook for quick product lookups
   const { checkProduct } = useInventoryProductCheck();
@@ -66,13 +66,25 @@ export const PostsScreen = () => {
 
   // PERFORMANCE FIX: Memoize route params to prevent unnecessary re-renders
   const routeParams = useMemo(() => route.params, [route.params]);
-  const { stage, name, productInfo, selectedProduct, contextType, contextId } = routeParams;
+  const { stage, name, productInfo, selectedProduct, contextType, contextId, isOwned } = routeParams;
   
-  // Capitalize first letter of name for header
-  const capitalizedName = useMemo(() => {
-    if (!name) return '';
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  }, [name]);
+  // Header title based on context type
+  const headerTitle = useMemo(() => {
+    const mappedType = contextType ? mapProductInfoTypeToContextType(contextType) : undefined;
+    const type = mappedType || (stage === 'Product' ? 'product' : stage === 'ProductGroup' ? 'product_group' : stage === 'SubCategories' ? 'sub_category' : undefined);
+
+    switch (type) {
+      case 'product':
+        return t('screens.posts.productFeed');
+      case 'product_group':
+        return t('screens.posts.productGroupFeed');
+      case 'sub_category':
+        return t('screens.posts.subcategoryFeed');
+      default:
+        if (!name) return '';
+        return name.charAt(0).toUpperCase() + name.slice(1);
+    }
+  }, [contextType, stage, name]);
   
   const selectedProductPayload = useMemo(() => {
     if (!selectedProduct) return undefined;
@@ -174,12 +186,17 @@ export const PostsScreen = () => {
   }, [contextId, feedContextType, selectedProduct]);
 
   // Inventory check - only for PRODUCT level context
+  // Priority: route params isOwned > inventory sync check
   const isProductInInventory = useMemo(() => {
     if (feedContextType !== 'product' || !feedContextId) {
       return undefined; // Not applicable for other context types
     }
+    // If isOwned was passed from feed API via navigation, use it as primary signal
+    if (isOwned === true) {
+      return true;
+    }
     return checkProduct(feedContextId);
-  }, [feedContextType, feedContextId, checkProduct]);
+  }, [feedContextType, feedContextId, checkProduct, isOwned]);
 
   // Determine which API to use based on context type
   // Use catalog posts endpoints for better hierarchical feed support
@@ -430,7 +447,9 @@ export const PostsScreen = () => {
     // Product feed: require product in inventory before navigating
     // EXCEPTIONS: Question (users can ask about products they don't own), Experience + "tried"
     // Check before closing sheet so toast appears on top of the open bottom sheet
-    if (stage === 'Product' && feedContextId && !checkProduct(feedContextId)) {
+    // CRITICAL FIX: Only block if inventory data has fully loaded (syncComplete).
+    // If inventory hasn't loaded yet, allow the user to proceed - backend will validate anyway.
+    if (stage === 'Product' && feedContextId && inventorySyncComplete && isProductInInventory === false) {
       const allowWithoutInventory =
         type === 'question' || // Question posts don't require inventory (users pay TIPS for boost)
         (type === 'experience' && experienceOption === 'tried');
@@ -636,7 +655,7 @@ export const PostsScreen = () => {
       });
     }
     // Handle other post types here if needed
-  }, [navigation, selectedProductPayload, dismissBottomSheet, contextType, contextId, stage, productInfo, selectedProduct, checkProduct, feedContextId, toast]);
+  }, [navigation, selectedProductPayload, dismissBottomSheet, contextType, contextId, stage, productInfo, selectedProduct, isProductInInventory, feedContextId, toast, inventorySyncComplete]);
 
   // Mapping functions (from FeedScreen)
   const mapFeedToCardData = useCallback((item: ProfilePost): PostCardData => {
@@ -845,6 +864,7 @@ export const PostsScreen = () => {
         name: item.contextData.name || '',
         subName: item.contextData.subName || '',
         image: contextImage || require('@/assets/inventory/product_01.png'),
+        isOwned: item.contextData.isOwned,
       };
 
       category = {
@@ -947,6 +967,7 @@ export const PostsScreen = () => {
         name: item.contextData.name || '',
         subName: item.contextData.subName || '',
         image: contextImage || require('@/assets/inventory/product_01.png'),
+        isOwned: item.contextData.isOwned,
       };
 
       category = {
@@ -1301,15 +1322,16 @@ export const PostsScreen = () => {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#F5F5F5'}>
       {/* Header */}
       <Header
-        title={capitalizedName}
+        title={headerTitle}
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
+        backgroundColor={isDark ? '#000000' : '#FFFFFF'}
         rightAction={
           <Pressable onPress={handleFilterPress}>
-            <FunnelIcon
+            <AdjustmentsHorizontalIcon
               width={24}
               height={24}
               color={isDark ? '#FFFFFF' : '#000000'}
@@ -1318,19 +1340,27 @@ export const PostsScreen = () => {
         }
       />
 
-      {/* Content */}
-      <Box flex={1}>
-        {/* Product Info Card */}
-        <Box px="$4" py="$2">
+      {/* Product Info Card - header altında beyaz bg */}
+      <Box bg={isDark ? '$backgroundDark900' : '#FFFFFF'} px={16} py={8}>
+        <Box
+          borderRadius={5}
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          px={12}
+          py={8}
+        >
           <ProductInfoCard
             image={productInfo.image}
             title={productInfo.title}
             subName={productInfo.subName}
-            size="big"
+            size="small"
             type={contextType || ProductInfoType.SUB_CATEGORY}
           />
         </Box>
+      </Box>
 
+      {/* Content */}
+      <Box flex={1}>
         {/* Feed Items */}
         {isLoading && feedItems.length === 0 ? (
           <FeedSkeleton count={5} />
@@ -1373,6 +1403,7 @@ export const PostsScreen = () => {
             }
             ListFooterComponent={ListFooterComponent}
             contentContainerStyle={contentContainerStyle}
+            ItemSeparatorComponent={() => <Box h={8} />}
             showsVerticalScrollIndicator={false}
             // PERFORMANCE FIX: Optimize initial render
             initialNumToRender={3}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface BoostOptionCardProps {
   id: string;
@@ -27,6 +28,7 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
   onPress,
 }) => {
   const { colorMode } = useColorMode();
+  const { t } = useTranslation('post');
   const isDark = colorMode === 'dark';
 
   return (
@@ -102,7 +104,7 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
                     fontSize="$xs"
                     fontWeight="$medium"
                   >
-                    Popular
+                    {t('filterSort.popular')}
                   </Text>
                 </Box>
               )}

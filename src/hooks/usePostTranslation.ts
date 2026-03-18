@@ -19,14 +19,10 @@ export const usePostTranslation = ({
   const [showTranslation, setShowTranslation] = useState(false);
   const [manualTrigger, setManualTrigger] = useState(false);
 
-  // Uygulama diline göre hedef dili belirle
-  // Uygulama TR ise → EN'e çevir, uygulama EN ise → TR'ye çevir
-  const { sourceLanguage, targetLanguage } = useMemo(() => {
-    const appLanguage = i18n.language?.startsWith('tr') ? 'tr' : 'en';
-    return {
-      sourceLanguage: appLanguage,
-      targetLanguage: appLanguage === 'tr' ? 'en' : 'tr',
-    };
+  // Hedef dil her zaman cihaz/uygulama dili olmalı
+  // Kaynak dil otomatik algılanacak (Google API auto-detect)
+  const targetLanguage = useMemo(() => {
+    return i18n.language?.startsWith('tr') ? 'tr' : 'en';
   }, [i18n.language]);
 
   const shouldTranslate = enabled;
@@ -36,13 +32,13 @@ export const usePostTranslation = ({
     isLoading: isTranslating,
     error,
   } = useQuery({
-    queryKey: ['translation', postId, sourceLanguage, targetLanguage],
+    queryKey: ['translation', postId, targetLanguage],
     queryFn: async () => {
       // 1. Önce cache'e bak
       const cached = await TranslationCacheService.get(
         postId,
         originalContent,
-        sourceLanguage,
+        'auto',
         targetLanguage
       );
 
@@ -53,14 +49,13 @@ export const usePostTranslation = ({
 
       // Bozuk cache varsa temizle
       if (cached) {
-        await TranslationCacheService.remove(postId, sourceLanguage, targetLanguage);
+        await TranslationCacheService.remove(postId, 'auto', targetLanguage);
       }
 
-      // 2. Cache'de yoksa Google API'ye istek at
+      // 2. Cache'de yoksa Google API'ye istek at (sourceLanguage yok, auto-detect)
       const translated = await translationService.translate(
         originalContent,
-        targetLanguage,
-        sourceLanguage
+        targetLanguage
       );
 
       // 3. Çeviri orijinalden farklıysa cache'e kaydet (aynıysa bozuk sonuç)
@@ -69,7 +64,7 @@ export const usePostTranslation = ({
           postId,
           originalContent,
           translated,
-          sourceLanguage,
+          'auto',
           targetLanguage
         );
       }

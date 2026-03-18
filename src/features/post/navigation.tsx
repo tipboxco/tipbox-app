@@ -37,6 +37,7 @@ export type PostStackParamList = {
     };
     contextType?: ProductInfoType; // Sadece type gönderiliyor, ID store'dan okunacak
     contextId?: string; // Backward compatibility için optional (fallback)
+    isOwned?: boolean; // Feed API'den gelen ownership bilgisi (envanter kontrolü için)
   };
   CreatePostScreen: {
     contextType?: ProductInfoType; // Sadece type gönderiliyor, ID store'dan okunacak

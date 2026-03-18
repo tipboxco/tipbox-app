@@ -119,7 +119,7 @@ const BoostSwitchField: React.FC<{
                 {t('create.question.boost.available')}
               </Text>
               <Text color={greyValue} fontSize="$sm" fontWeight="$medium">
-                {availableTips} TIPS
+                {Math.floor(availableTips)} TIPS
               </Text>
               <Text color={greyLabel} fontSize={10} mt={2}>
                 (${(availableTips / TIPS_TO_USD_RATE).toFixed(0)})
@@ -134,7 +134,7 @@ const BoostSwitchField: React.FC<{
                 fontSize="$sm"
                 fontWeight="$semibold"
               >
-                {isLoadingPrice ? '—' : `${boostPrice ?? 0} TIPS`}
+                {isLoadingPrice ? '—' : `${Math.floor(boostPrice ?? 0)} TIPS`}
               </Text>
               <Text color={greyLabel} fontSize={10} mt={2}>
                 ({isLoadingPrice ? '—' : `$${((boostPrice ?? 0) / TIPS_TO_USD_RATE).toFixed(1)}`})
@@ -630,7 +630,7 @@ export const CreateQuestionPostScreen = () => {
                     fontSize="$sm"
                     fontWeight="$medium"
                   >
-                    {t('create.question.boost.tipsAvailable', { tips: availableTips })}
+                    {t('create.question.boost.tipsAvailable', { tips: Math.floor(availableTips) })}
                   </Text>
                 </HStack>
               </VStack>

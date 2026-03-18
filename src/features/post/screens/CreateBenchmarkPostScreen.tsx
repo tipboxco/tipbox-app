@@ -401,6 +401,81 @@ const CombinedProductSelection: React.FC<CombinedProductSelectionProps> = ({
   );
 };
 
+// Product Source Selection Bottom Sheet Content
+interface ProductSourceSelectionProps {
+  onSelectInventory: () => void;
+  onSelectCatalog: () => void;
+}
+
+const ProductSourceSelection: React.FC<ProductSourceSelectionProps> = ({
+  onSelectInventory,
+  onSelectCatalog,
+}) => {
+  const { colorMode } = useColorMode();
+  const { t } = useTranslation('post');
+  const isDark = colorMode === 'dark';
+
+  return (
+    <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 }}>
+      {/* Title */}
+      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+        <Text
+          fontSize={18}
+          fontWeight="$bold"
+          color={isDark ? '#FFFFFF' : '#000000'}
+        >
+          {t('create.benchmark.modal.addProduct')}
+        </Text>
+      </View>
+
+      {/* Add from Inventory */}
+      <Pressable
+        onPress={onSelectInventory}
+        flexDirection="row"
+        alignItems="center"
+        p={16}
+        borderWidth={1}
+        borderColor={isDark ? '#333' : '#E9E9E9'}
+        borderRadius={12}
+        mb={12}
+        bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
+      >
+        <Feather name="package" size={22} color={isDark ? '#FFFFFF' : '#000000'} />
+        <Text
+          ml={12}
+          fontSize={16}
+          fontWeight="$semibold"
+          color={isDark ? '#FFFFFF' : '#000000'}
+        >
+          {t('create.benchmark.modal.addFromInventory')}
+        </Text>
+      </Pressable>
+
+      {/* Add from Catalog */}
+      <Pressable
+        onPress={onSelectCatalog}
+        flexDirection="row"
+        alignItems="center"
+        p={16}
+        borderWidth={1}
+        borderColor={isDark ? '#333' : '#E9E9E9'}
+        borderRadius={12}
+        bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
+      >
+        <Feather name="list" size={22} color={isDark ? '#FFFFFF' : '#000000'} />
+        <Text
+          ml={12}
+          fontSize={16}
+          fontWeight="$semibold"
+          color={isDark ? '#FFFFFF' : '#000000'}
+        >
+          {t('create.benchmark.modal.addFromCatalog')}
+        </Text>
+      </Pressable>
+    </View>
+  );
+};
+
 // Product Benchmark Field Component
 const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ onShowSelectModal }) => {
   const { t } = useTranslation('post');
@@ -522,7 +597,7 @@ export const CreateBenchmarkPostScreen = () => {
   const flowProductSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
 
   // Global bottom sheet hook
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const { openBottomSheet, closeBottomSheet, dismissBottomSheet } = useGlobalBottomSheet();
 
   const selectedProduct1 = watch('selectedProduct1');
   const postText = watch('postText');
@@ -664,26 +739,69 @@ export const CreateBenchmarkPostScreen = () => {
     closeBottomSheet();
   };
 
-  // Handler for showing combined product selection bottom sheet (second product)
+  // Handler for showing product source selection bottom sheet (second product)
   const handleShowProductSourceModal = () => {
     const productGroupFilter = selectedProduct1?.productGroupId;
 
+    const handleSelectInventory = () => {
+      // Dismiss current sheet instantly, then open inventory selection
+      dismissBottomSheet();
+      setTimeout(() => {
+        openBottomSheet(
+          <AddProductFromInventory
+            onProductSelect={handleInventoryProductSelect}
+            onClose={closeBottomSheet}
+            productGroupFilter={productGroupFilter}
+            hideHeader
+          />,
+          {
+            snapPoints: ['85%'],
+            enableDynamicSizing: false,
+            enablePanDownToClose: true,
+            enableOverDrag: false,
+            enableHandlePanningGesture: true,
+            enableContentPanningGesture: false,
+            animateOnMount: true,
+            backdropPressBehavior: 'close',
+            wrapWithScrollView: false,
+          }
+        );
+      }, 150);
+    };
+
+    const handleSelectCatalog = () => {
+      // Dismiss bottom sheet and navigate to full-screen ProductSelectScreen
+      dismissBottomSheet();
+      navigation.navigate('ProductSelect' as any, {
+        returnScreen: 'CreateBenchmarkPostScreen',
+        selectedProductField: 'selectedProduct2',
+        initialProduct: selectedProduct1 ? {
+          id: selectedProduct1.id,
+          name: selectedProduct1.name,
+          brand: selectedProduct1.brand,
+          subName: selectedProduct1.subName,
+          image: selectedProduct1.image,
+          productGroupId: selectedProduct1.productGroupId,
+        } : undefined,
+        productGroupFilter: productGroupFilter,
+      });
+    };
+
+    // First: show source selection (Inventory or Catalog)
     openBottomSheet(
-      <CombinedProductSelection
-        onInventoryProductSelect={handleInventoryProductSelect}
-        onCatalogProductSelect={handleCatalogProductSelect}
-        onClose={closeBottomSheet}
-        productGroupFilter={productGroupFilter}
-        productGroupId={productGroupFilter}
+      <ProductSourceSelection
+        onSelectInventory={handleSelectInventory}
+        onSelectCatalog={handleSelectCatalog}
       />,
       {
-        snapPoints: ['85%'],
+        snapPoints: ['50%'],
         enableDynamicSizing: false,
         enablePanDownToClose: true,
-        backdropPressBehavior: 'close',
-        wrapWithScrollView: false,
         enableOverDrag: false,
-        enableHandlePanningGesture: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        animateOnMount: true,
+        backdropPressBehavior: 'close',
       }
     );
   };

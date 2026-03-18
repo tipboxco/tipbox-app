@@ -38,9 +38,8 @@ import type {
 } from './postApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
 import { eventsKeys } from '@/src/features/events/api/hooks';
-import { profileKeys } from '@/src/features/profile/api/hooks';
 import { catalogKeys } from '@/src/features/catalog/api/hooks';
-import { useAppStore } from '@/src/store/appStore';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 
 /**
  * Query Keys - Post feature için cache key pattern'leri
@@ -67,26 +66,81 @@ const invalidateContextFeed = (
   // Invalidate context-specific feed queries
   switch (contextType) {
     case 'product':
-      queryClient.invalidateQueries({ 
-        queryKey: feedKeys.productFeed(contextId) 
+      queryClient.invalidateQueries({
+        queryKey: feedKeys.productFeed(contextId),
+        refetchType: 'all',
       });
       break;
     case 'product_group':
-      queryClient.invalidateQueries({ 
-        queryKey: feedKeys.productGroupFeed(contextId) 
+      queryClient.invalidateQueries({
+        queryKey: feedKeys.productGroupFeed(contextId),
+        refetchType: 'all',
       });
       break;
     case 'sub_category':
-      queryClient.invalidateQueries({ 
-        queryKey: feedKeys.subCategoryFeed(contextId) 
+      queryClient.invalidateQueries({
+        queryKey: feedKeys.subCategoryFeed(contextId),
+        refetchType: 'all',
       });
       break;
   }
-  
+
   // Also invalidate general feed with context parameters
-  queryClient.invalidateQueries({ 
-    queryKey: feedKeys.feed(undefined, undefined, contextType, contextId) 
+  queryClient.invalidateQueries({
+    queryKey: feedKeys.feed(undefined, undefined, contextType, contextId),
+    refetchType: 'all',
   });
+};
+
+/**
+ * Merkezi post cache invalidasyon helper'ı.
+ * Post oluşturma/silme/güncelleme sonrası tüm ilgili cache'leri invalidate eder.
+ * refetchType: 'all' ile hem aktif hem inactive query'ler refetch edilir.
+ */
+export const invalidatePostRelatedCaches = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  options?: {
+    contextType?: ApiContextType;
+    contextId?: string;
+    eventId?: string;
+  }
+) => {
+  const { contextType, contextId, eventId } = options || {};
+
+  // 1. Ana feed (yeni/silinen post görünsün)
+  queryClient.invalidateQueries({ queryKey: feedKeys.all, refetchType: 'all' });
+
+  // 2. Post query'leri (post listesi güncellensin)
+  queryClient.invalidateQueries({ queryKey: postKeys.all, refetchType: 'all' });
+
+  // 3. TARGETED: Sadece profil post icerik tab'lari (trust, inventory, badges vs. dokunma)
+  queryClient.invalidateQueries({ queryKey: profileKeys.posts(), refetchType: 'all' });
+  queryClient.invalidateQueries({ queryKey: profileKeys.reviews(), refetchType: 'all' });
+  queryClient.invalidateQueries({ queryKey: profileKeys.benchmarks(), refetchType: 'all' });
+  queryClient.invalidateQueries({ queryKey: profileKeys.tips(), refetchType: 'all' });
+  queryClient.invalidateQueries({ queryKey: profileKeys.replies(), refetchType: 'all' });
+
+  // 4. Context-specific feed ve catalog posts
+  if (contextType && contextId) {
+    invalidateContextFeed(queryClient, contextType, contextId);
+    invalidateCatalogPosts(queryClient, contextType, contextId);
+  }
+
+  // 5. Event cache'leri
+  if (eventId) {
+    queryClient.invalidateQueries({
+      queryKey: ['events', 'posts', eventId],
+      refetchType: 'all',
+    });
+    queryClient.invalidateQueries({
+      queryKey: eventsKeys.detail(eventId),
+      refetchType: 'all',
+    });
+    queryClient.invalidateQueries({
+      queryKey: eventsKeys.active(),
+      refetchType: 'all',
+    });
+  }
 };
 
 /**
@@ -155,61 +209,15 @@ export const invalidateCatalogPosts = (
  */
 export const useCreateFreePost = () => {
   const queryClient = useQueryClient();
-  const userId = useAppStore((state) => state.user?.id);
-  
+
   return useMutation<CreatePostResponse, Error, CreatePostRequest>({
     mutationFn: createFreePost,
-    onSuccess: (data, variables) => {
-      // Context-based feed'i invalidate et
-      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
-      
-      // Event ID varsa event posts'u da invalidate et (event'e bağlı post için)
-      if (variables.eventId) {
-        // CRITICAL: refetchType: 'all' kullanıyoruz ki hem aktif hem inactive query'ler refetch edilsin
-        queryClient.invalidateQueries({ 
-          queryKey: ['events', 'posts', variables.eventId],
-          refetchType: 'all',
-        });
-        queryClient.invalidateQueries({ 
-          queryKey: eventsKeys.detail(variables.eventId),
-          refetchType: 'all',
-        });
-        queryClient.invalidateQueries({ 
-          queryKey: eventsKeys.active(),
-          refetchType: 'all',
-        });
-      }
-      
-      // Ana feed'i invalidate et ki yeni post görünsün
-      queryClient.invalidateQueries({ 
-        queryKey: feedKeys.all,
-        refetchType: 'all',
+    onSuccess: (_, variables) => {
+      invalidatePostRelatedCaches(queryClient, {
+        contextType: variables.contextType,
+        contextId: variables.contextId,
+        eventId: variables.eventId,
       });
-      // Post listesini de invalidate et
-      queryClient.invalidateQueries({ 
-        queryKey: postKeys.all,
-        refetchType: 'all',
-      });
-      
-      // Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ 
-        queryKey: ['profile'],
-        refetchType: 'all',
-      });
-      
-      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
-      if (userId) {
-        queryClient.invalidateQueries({ 
-          queryKey: profileKeys.userPosts(userId),
-          refetchType: 'all',
-        });
-        // Tüm limit varyasyonlarını da invalidate et
-        queryClient.invalidateQueries({ 
-          queryKey: ['profile', 'posts', userId],
-          exact: false,
-          refetchType: 'all',
-        });
-      }
     },
   });
 };
@@ -233,30 +241,14 @@ export const useCreateFreePost = () => {
  */
 export const useCreateBenchmarkPost = () => {
   const queryClient = useQueryClient();
-  const userId = useAppStore((state) => state.user?.id);
-  
+
   return useMutation<CreatePostResponse, Error, CreateBenchmarkPostRequest>({
     mutationFn: createBenchmarkPost,
-    onSuccess: (data, variables) => {
-      // Context-based feed'i invalidate et
-      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
-      
-      // Ana feed'i invalidate et ki yeni post görünsün
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      // Post listesini de invalidate et
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      
-      // Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
-      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
-      if (userId) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
-        queryClient.invalidateQueries({ 
-          queryKey: ['profile', 'posts', userId],
-          exact: false 
-        });
-      }
+    onSuccess: (_, variables) => {
+      invalidatePostRelatedCaches(queryClient, {
+        contextType: variables.contextType,
+        contextId: variables.contextId,
+      });
     },
   });
 };
@@ -266,29 +258,14 @@ export const useCreateBenchmarkPost = () => {
  */
 export const useCreateTipsAndTricksPost = () => {
   const queryClient = useQueryClient();
-  const userId = useAppStore((state) => state.user?.id);
-  
+
   return useMutation<CreatePostResponse, Error, CreateTipsAndTricksPostRequest>({
     mutationFn: createTipsAndTricksPost,
-    onSuccess: (data, variables) => {
-      // Context-based feed'i invalidate et
-      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
-      
-      // Catalog posts'u invalidate et (product screen'de görünsün)
-      invalidateCatalogPosts(queryClient, variables.contextType, variables.contextId);
-      
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
-      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
-      if (userId) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
-        queryClient.invalidateQueries({ 
-          queryKey: ['profile', 'posts', userId],
-          exact: false 
-        });
-      }
+    onSuccess: (_, variables) => {
+      invalidatePostRelatedCaches(queryClient, {
+        contextType: variables.contextType,
+        contextId: variables.contextId,
+      });
     },
   });
 };
@@ -298,29 +275,14 @@ export const useCreateTipsAndTricksPost = () => {
  */
 export const useCreateQuestionPost = () => {
   const queryClient = useQueryClient();
-  const userId = useAppStore((state) => state.user?.id);
-  
+
   return useMutation<CreatePostResponse, Error, CreateQuestionPostRequest>({
     mutationFn: createQuestionPost,
-    onSuccess: (data, variables) => {
-      // Context-based feed'i invalidate et
-      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
-      
-      // Catalog posts'u invalidate et (product screen'de görünsün)
-      invalidateCatalogPosts(queryClient, variables.contextType, variables.contextId);
-      
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
-      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
-      if (userId) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
-        queryClient.invalidateQueries({ 
-          queryKey: ['profile', 'posts', userId],
-          exact: false 
-        });
-      }
+    onSuccess: (_, variables) => {
+      invalidatePostRelatedCaches(queryClient, {
+        contextType: variables.contextType,
+        contextId: variables.contextId,
+      });
     },
   });
 };
@@ -330,26 +292,14 @@ export const useCreateQuestionPost = () => {
  */
 export const useCreateUpdatePost = () => {
   const queryClient = useQueryClient();
-  const userId = useAppStore((state) => state.user?.id);
-  
+
   return useMutation<CreatePostResponse, Error, CreateUpdatePostRequest>({
     mutationFn: createUpdatePost,
-    onSuccess: (data, variables) => {
-      // Context-based feed'i invalidate et
-      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
-      
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
-      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
-      if (userId) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
-        queryClient.invalidateQueries({ 
-          queryKey: ['profile', 'posts', userId],
-          exact: false 
-        });
-      }
+    onSuccess: (_, variables) => {
+      invalidatePostRelatedCaches(queryClient, {
+        contextType: variables.contextType,
+        contextId: variables.contextId,
+      });
     },
   });
 };
@@ -430,26 +380,14 @@ export const useSplitExperience = () => {
  */
 export const useCreateExperiencePost = () => {
   const queryClient = useQueryClient();
-  const userId = useAppStore((state) => state.user?.id);
-  
+
   return useMutation<CreatePostResponse, Error, CreateExperiencePostRequest>({
     mutationFn: createExperiencePost,
-    onSuccess: (data, variables) => {
-      // Context-based feed'i invalidate et
-      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
-      
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
-      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
-      if (userId) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
-        queryClient.invalidateQueries({ 
-          queryKey: ['profile', 'posts', userId],
-          exact: false 
-        });
-      }
+    onSuccess: (_, variables) => {
+      invalidatePostRelatedCaches(queryClient, {
+        contextType: variables.contextType,
+        contextId: variables.contextId,
+      });
     },
   });
 };
@@ -538,20 +476,19 @@ export const useSearchPosts = (q: string, limit: number = 20) => {
  */
 export const useUpdatePost = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation<UpdatePostResponse, Error, { postId: string; data: UpdatePostRequest }>({
     mutationFn: ({ postId, data }) => updatePost(postId, data),
-    onSuccess: (data, variables) => {
-      // Post detail'i invalidate et
-      queryClient.invalidateQueries({ queryKey: postKeys.detail(variables.postId) });
-      
-      // Tüm feed'leri invalidate et (post güncellendi)
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
-      // Catalog posts'ları da invalidate et
-      queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+    onSuccess: (_, variables) => {
+      // Post detail'i ayrıca invalidate et
+      queryClient.invalidateQueries({
+        queryKey: postKeys.detail(variables.postId),
+        refetchType: 'all',
+      });
+      // Tüm post-related cache'leri invalidate et
+      invalidatePostRelatedCaches(queryClient);
+      // Catalog posts'ları da invalidate et (context bilgisi olmadan tümünü)
+      queryClient.invalidateQueries({ queryKey: catalogKeys.all, refetchType: 'all' });
     },
   });
 };
@@ -568,41 +505,31 @@ export const useDeletePost = () => {
   const queryClient = useQueryClient();
 
   return useMutation<DeletePostResponse, Error, string>({
-    mutationFn: (postId) => deletePost(postId),
-    onSuccess: (data, postId) => {
-      // Post detail'i invalidate et
+    mutationFn: async (postId) => {
+      try {
+        return await deletePost(postId);
+      } catch (error: any) {
+        // 404 = post zaten silinmiş, başarılı kabul et
+        if (error?.response?.status === 404) {
+          return { success: true, message: 'Post already deleted' };
+        }
+        throw error;
+      }
+    },
+    retry: false,
+    onSuccess: (_, postId) => {
+      // Post detail'i ayrıca invalidate et
       queryClient.invalidateQueries({
         queryKey: postKeys.detail(postId),
         refetchType: 'all',
       });
-
-      // Tüm feed'leri invalidate et (post silindi)
-      // refetchType: 'all' hem aktif hem inactive query'leri refetch eder
-      queryClient.invalidateQueries({
-        queryKey: feedKeys.all,
-        refetchType: 'all',
-      });
-      queryClient.invalidateQueries({
-        queryKey: postKeys.all,
-        refetchType: 'all',
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['profile'],
-        refetchType: 'all',
-      });
-
-      // Event posts'larını da invalidate et (event içindeki post silindiğinde)
-      queryClient.invalidateQueries({
-        queryKey: ['events', 'posts'],
-        exact: false,
-        refetchType: 'all',
-      });
+      // Tüm post-related cache'leri invalidate et
+      invalidatePostRelatedCaches(queryClient);
+      // Event ve catalog cache'lerini de invalidate et (context bilgisi olmadan tümünü)
       queryClient.invalidateQueries({
         queryKey: eventsKeys.all,
         refetchType: 'all',
       });
-
-      // Catalog posts'ları da invalidate et
       queryClient.invalidateQueries({
         queryKey: catalogKeys.all,
         refetchType: 'all',
@@ -624,7 +551,7 @@ export const useDeletePost = () => {
  */
 export const useTogglePostBoost = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation<ToggleBoostResponse, Error, ToggleBoostRequest>({
     mutationFn: (data) => togglePostBoost(data),
     onSuccess: (data, variables) => {
@@ -633,17 +560,16 @@ export const useTogglePostBoost = () => {
         isBoosted: data.isBoosted,
         boostPrice: data.boostPrice,
       });
-      
-      // Post detail'i invalidate et
-      queryClient.invalidateQueries({ queryKey: postKeys.detail(variables.postId) });
-      
-      // Tüm feed'leri invalidate et (boost durumu değişti)
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      
-      // Catalog posts'ları da invalidate et
-      queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+
+      // Post detail'i ayrıca invalidate et
+      queryClient.invalidateQueries({
+        queryKey: postKeys.detail(variables.postId),
+        refetchType: 'all',
+      });
+      // Tüm post-related cache'leri invalidate et
+      invalidatePostRelatedCaches(queryClient);
+      // Catalog posts'ları da invalidate et (context bilgisi olmadan tümünü)
+      queryClient.invalidateQueries({ queryKey: catalogKeys.all, refetchType: 'all' });
     },
     onError: (error: any) => {
       console.error('[useTogglePostBoost] ❌ Failed to toggle boost:', {

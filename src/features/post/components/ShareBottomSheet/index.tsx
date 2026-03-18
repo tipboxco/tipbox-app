@@ -6,6 +6,7 @@ import {
 } from 'react-native-heroicons/outline';
 import { Share } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useSharePost } from '@/src/features/interactions/api/hooks';
 
@@ -24,6 +25,7 @@ export const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('common');
   const { closeBottomSheet } = useGlobalBottomSheet();
   const sharePostMutation = useSharePost();
   const [isSharing, setIsSharing] = useState(false);
@@ -34,7 +36,7 @@ export const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
     try {
       const shareMessage = postContent 
         ? `${postAuthorName ? `${postAuthorName}: ` : ''}${postContent.substring(0, 100)}${postContent.length > 100 ? '...' : ''}`
-        : `Check out this post on Tipbox!`;
+        : t('messages.checkOutPost');
       
       await Share.share({
         message: shareMessage,
@@ -99,7 +101,7 @@ export const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
             fontSize="$md"
             fontWeight="$medium"
           >
-            {isSharing || sharePostMutation.isPending ? 'Paylaşılıyor...' : 'İçeride Paylaş'}
+            {isSharing || sharePostMutation.isPending ? t('share.sharing') : t('share.internalShare')}
           </Text>
         </HStack>
       </Pressable>
@@ -117,7 +119,7 @@ export const ShareBottomSheet: React.FC<ShareBottomSheetProps> = ({
             fontSize="$md"
             fontWeight="$medium"
           >
-            Dışarıda Paylaş
+            {t('share.externalShare')}
           </Text>
         </HStack>
       </Pressable>
