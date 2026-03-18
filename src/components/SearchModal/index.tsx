@@ -28,7 +28,7 @@ import {
   XCircleIcon,
 } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useSearch } from '@/src/features/search/api/hooks';
+import { useSearch, useSearchInfinite } from '@/src/features/search/api/hooks';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
@@ -353,32 +353,42 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     };
   }, [isAllDefaultLoading]);
 
-  // For search results (when input has text) - based on selected tab
-  const searchTypes = useMemo(() => {
-    switch (selectedFilter) {
-      case 'users':
-        return ['user'];
-      case 'brands':
-        return ['brand'];
-      case 'products':
-        return ['product'];
-      default:
-        return ['user'];
-    }
-  }, [selectedFilter]);
-
+  // For search results (when input has text) - all types at once with pagination
   const {
-    data: searchData,
+    data: searchInfiniteData,
     isLoading: isSearching,
     error: searchError,
-  } = useSearch(
+    fetchNextPage: fetchNextSearchPage,
+    hasNextPage: hasNextSearchPage,
+    isFetchingNextPage: isFetchingNextSearchPage,
+  } = useSearchInfinite(
     {
       keyword: debouncedQuery,
-      types: searchTypes,
-      limit: 10, // 10 items for search results (aligned with API limit)
+      types: ['user', 'brand', 'product'],
+      limit: 10,
     },
-    debouncedQuery.length > 0 && visible // Active only when query exists and modal is open
+    debouncedQuery.length > 0 && visible
   );
+
+  // Flatten paginated search results
+  const searchData = useMemo(() => {
+    if (!searchInfiniteData?.pages) return null;
+    const allUsers = searchInfiniteData.pages.flatMap((p) => p.userData ?? []);
+    const allBrands = searchInfiniteData.pages.flatMap((p) => p.brandData ?? []);
+    const allProducts = searchInfiniteData.pages.flatMap((p) => p.productData ?? []);
+    return {
+      userData: allUsers,
+      brandData: allBrands,
+      productData: allProducts,
+    };
+  }, [searchInfiniteData]);
+
+  // Handle load more for search results
+  const handleSearchLoadMore = useCallback(() => {
+    if (hasNextSearchPage && !isFetchingNextSearchPage) {
+      fetchNextSearchPage();
+    }
+  }, [hasNextSearchPage, isFetchingNextSearchPage, fetchNextSearchPage]);
 
   // 🎯 PERFORMANCE FIX: displayData, isLoading, hasResults removed
   // These variables are unused and only cause unnecessary JS thread usage
@@ -761,22 +771,49 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
     </Box>
   ), [isDark, debouncedQuery]);
 
+  // Load More footer component for search results
+  const SearchLoadMoreFooter = useMemo(() => {
+    if (!hasNextSearchPage && !isFetchingNextSearchPage) return null;
+    return (
+      <Box py="$3" alignItems="center">
+        {isFetchingNextSearchPage ? (
+          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+        ) : hasNextSearchPage ? (
+          <Pressable onPress={handleSearchLoadMore} px="$4" py="$2">
+            <Text color={isDark ? '#8E8E93' : '#8E8E93'} fontSize="$xs" fontWeight="$medium">
+              {t('searchModal.loadMore')}
+            </Text>
+          </Pressable>
+        ) : null}
+      </Box>
+    );
+  }, [hasNextSearchPage, isFetchingNextSearchPage, isDark, handleSearchLoadMore, t]);
+
   // 🎯 PERFORMANCE FIX: Render callbacks optimized - reduced dependencies
   // LoadingView, ErrorView, EmptyView already memoized, no need to add to dependencies again
   const renderUsersTab = useCallback(() => {
     // When searching
     if (debouncedQuery.length > 0) {
-      if (isSearching) return LoadingView;
+      if (isSearching && !searchData?.userData?.length) return LoadingView;
       if (searchError) return ErrorView;
       if (searchData?.userData && searchData.userData.length > 0) {
         return (
           <View style={{ flex: 1 }}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              onScroll={({ nativeEvent }) => {
+                const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+                const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+                if (isCloseToBottom) handleSearchLoadMore();
+              }}
+              scrollEventThrottle={400}
+            >
               <VStack space="xs" pt="$2" pb="$0.5" px="$4">
                 {searchData.userData.map((user: any) => (
                   <UserItem key={user.id} user={user} isDark={isDark} onPress={handleUserPress} />
                 ))}
               </VStack>
+              {SearchLoadMoreFooter}
             </ScrollView>
           </View>
         );
@@ -799,22 +836,31 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       );
     }
     return EmptyView;
-  }, [debouncedQuery, isSearching, searchError, searchData?.userData, loadingByTab.users, defaultDataByTab.users, isDark, handleUserPress, LoadingView, ErrorView, EmptyView]);
+  }, [debouncedQuery, isSearching, searchError, searchData?.userData, loadingByTab.users, defaultDataByTab.users, isDark, handleUserPress, handleSearchLoadMore, SearchLoadMoreFooter, LoadingView, ErrorView, EmptyView]);
 
   const renderBrandsTab = useCallback(() => {
     // When searching
     if (debouncedQuery.length > 0) {
-      if (isSearching) return LoadingView;
+      if (isSearching && !searchData?.brandData?.length) return LoadingView;
       if (searchError) return ErrorView;
       if (searchData?.brandData && searchData.brandData.length > 0) {
         return (
           <View style={{ flex: 1 }}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              onScroll={({ nativeEvent }) => {
+                const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+                const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+                if (isCloseToBottom) handleSearchLoadMore();
+              }}
+              scrollEventThrottle={400}
+            >
               <VStack space="xs" pt="$2" pb="$0.5" px="$4">
                 {searchData.brandData.map((brand: any) => (
                   <BrandItem key={brand.id} brand={brand} isDark={isDark} onPress={handleBrandPress} />
                 ))}
               </VStack>
+              {SearchLoadMoreFooter}
             </ScrollView>
           </View>
         );
@@ -837,22 +883,31 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       );
     }
     return EmptyView;
-  }, [debouncedQuery, isSearching, searchError, searchData?.brandData, loadingByTab.brands, defaultDataByTab.brands, isDark, handleBrandPress, LoadingView, ErrorView, EmptyView]);
+  }, [debouncedQuery, isSearching, searchError, searchData?.brandData, loadingByTab.brands, defaultDataByTab.brands, isDark, handleBrandPress, handleSearchLoadMore, SearchLoadMoreFooter, LoadingView, ErrorView, EmptyView]);
 
   const renderProductsTab = useCallback(() => {
     // When searching
     if (debouncedQuery.length > 0) {
-      if (isSearching) return LoadingView;
+      if (isSearching && !searchData?.productData?.length) return LoadingView;
       if (searchError) return ErrorView;
       if (searchData?.productData && searchData.productData.length > 0) {
         return (
           <View style={{ flex: 1 }}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              onScroll={({ nativeEvent }) => {
+                const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+                const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+                if (isCloseToBottom) handleSearchLoadMore();
+              }}
+              scrollEventThrottle={400}
+            >
               <VStack space="xs" pt="$2" pb="$0.5" px="$4">
                 {searchData.productData.map((product: any) => (
                   <ProductItem key={product.id} product={product} isDark={isDark} onPress={handleProductPress} />
                 ))}
               </VStack>
+              {SearchLoadMoreFooter}
             </ScrollView>
           </View>
         );
@@ -875,7 +930,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
       );
     }
     return EmptyView;
-  }, [debouncedQuery, isSearching, searchError, searchData?.productData, loadingByTab.products, defaultDataByTab.products, isDark, handleProductPress, LoadingView, ErrorView, EmptyView]);
+  }, [debouncedQuery, isSearching, searchError, searchData?.productData, loadingByTab.products, defaultDataByTab.products, isDark, handleProductPress, handleSearchLoadMore, SearchLoadMoreFooter, LoadingView, ErrorView, EmptyView]);
 
 
   // 🎯 PERFORMANCE FIX: shouldRender removed - component always renders

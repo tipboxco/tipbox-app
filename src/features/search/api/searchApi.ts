@@ -26,12 +26,22 @@ export interface SearchProduct {
 }
 
 /**
+ * Search Pagination
+ */
+export interface SearchPagination {
+  cursor?: string;   // Sonraki sayfa için kullanılacak opaque cursor (varsa)
+  hasMore: boolean;  // Daha fazla sonuç var mı
+  limit: number;     // Her tip için dönen maksimum sonuç sayısı
+}
+
+/**
  * Search API Response
  */
 export interface SearchResponse {
   userData: SearchUser[];
   brandData: SearchBrand[];
   productData: SearchProduct[];
+  pagination?: SearchPagination;
 }
 
 /**
@@ -41,6 +51,7 @@ export interface SearchParams {
   keyword: string;
   types?: string[]; // 'user', 'brand', 'product'
   limit?: number; // Default: 10, Max: 50
+  cursor?: string; // Cursor-based pagination için
 }
 
 /**
@@ -56,13 +67,17 @@ export interface SearchParams {
 export const search = async (params: SearchParams): Promise<SearchResponse> => {
   const queryParams = new URLSearchParams();
   queryParams.append('keyword', params.keyword);
-  
+
   if (params.types && params.types.length > 0) {
     queryParams.append('types', params.types.join(','));
   }
-  
+
   if (params.limit !== undefined) {
     queryParams.append('limit', params.limit.toString());
+  }
+
+  if (params.cursor) {
+    queryParams.append('cursor', params.cursor);
   }
 
   try {
