@@ -34,145 +34,6 @@ import type { BenchmarkPostFormData } from '../schemas/benchmarkPostSchema';
 type CreateBenchmarkPostScreenRouteProp = RouteProp<PostStackParamList, 'CreateBenchmarkPostScreen'>;
 type CreateBenchmarkPostScreenNavigationProp = NativeStackNavigationProp<PostStackParamList & RootStackParamList>;
 
-// Product Source Selection Bottom Sheet Content
-interface ProductSourceSelectionProps {
-  onSelectFromInventory: () => void;
-  onSelectFromCatalog: () => void;
-  onClose: () => void;
-}
-
-const ProductSourceSelection: React.FC<ProductSourceSelectionProps> = ({
-  onSelectFromInventory,
-  onSelectFromCatalog,
-  onClose,
-}) => {
-  const { t } = useTranslation('post');
-  const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
-
-  return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' }}>
-      {/* Header: Back arrow + centered title */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 }}>
-        <Pressable onPress={onClose} p={4}>
-          <Feather name="chevron-left" size={24} color={isDark ? '#FFF' : '#000'} />
-        </Pressable>
-        <View style={{ flex: 1, alignItems: 'center', marginRight: 32 }}>
-          <Text
-            fontSize={17}
-            fontWeight="$bold"
-            color={isDark ? '$textDark50' : '#000'}
-          >
-            {t('create.benchmark.modal.title')}
-          </Text>
-        </View>
-      </View>
-
-      {/* Option Cards */}
-      <VStack space="md" px={16}>
-        {/* From Inventory */}
-        <Pressable
-          onPress={onSelectFromInventory}
-          bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
-          borderRadius={12}
-          p={16}
-        >
-          <HStack space="md" alignItems="center">
-            <Box
-              width={40}
-              height={40}
-              borderRadius={8}
-              borderWidth={1.5}
-              borderColor={isDark ? '$borderDark600' : '#000'}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Feather name="archive" size={18} color={isDark ? '#FFF' : '#000'} />
-            </Box>
-            <VStack flex={1} space="xs">
-              <Text
-                fontSize={15}
-                fontWeight="$bold"
-                color={isDark ? '$textDark50' : '#000'}
-              >
-                {t('create.benchmark.modal.fromInventory')}
-              </Text>
-              <Text
-                fontSize={13}
-                color={isDark ? '$textDark400' : '#999'}
-              >
-                {t('create.benchmark.modal.fromInventoryDesc')}
-              </Text>
-            </VStack>
-          </HStack>
-        </Pressable>
-
-        {/* From Catalog */}
-        <Pressable
-          onPress={onSelectFromCatalog}
-          bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
-          borderRadius={12}
-          p={16}
-        >
-          <HStack space="md" alignItems="center">
-            <Box
-              width={40}
-              height={40}
-              borderRadius={8}
-              borderWidth={1.5}
-              borderColor={isDark ? '$borderDark600' : '#000'}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Feather name="grid" size={18} color={isDark ? '#FFF' : '#000'} />
-            </Box>
-            <VStack flex={1} space="xs">
-              <Text
-                fontSize={15}
-                fontWeight="$bold"
-                color={isDark ? '$textDark50' : '#000'}
-              >
-                {t('create.benchmark.modal.fromCatalog')}
-              </Text>
-              <Text
-                fontSize={13}
-                color={isDark ? '$textDark400' : '#999'}
-              >
-                {t('create.benchmark.modal.fromCatalogDesc')}
-              </Text>
-            </VStack>
-          </HStack>
-        </Pressable>
-      </VStack>
-    </View>
-  );
-};
-
-// Inventory Selection Bottom Sheet Content
-interface InventorySelectionProps {
-  onProductSelect: (item: InventoryItem) => void;
-  onClose: () => void;
-  productGroupFilter?: string;
-}
-
-const InventorySelection: React.FC<InventorySelectionProps> = ({
-  onProductSelect,
-  onClose,
-  productGroupFilter,
-}) => {
-  const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
-
-  return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FAFAFA' }}>
-      <AddProductFromInventory
-        onProductSelect={onProductSelect}
-        onClose={onClose}
-        productGroupFilter={productGroupFilter}
-      />
-    </View>
-  );
-};
 
 // Catalog Selection Bottom Sheet Content
 const CATALOG_CARD_GAP = 8;
@@ -186,12 +47,14 @@ interface CatalogSelectionProps {
   onProductSelect: (product: CatalogProduct) => void;
   onClose: () => void;
   productGroupId?: string;
+  hideHeader?: boolean;
 }
 
 const CatalogSelection: React.FC<CatalogSelectionProps> = ({
   onProductSelect,
   onClose,
   productGroupId,
+  hideHeader = false,
 }) => {
   const { colorMode } = useColorMode();
   const { t } = useTranslation('post');
@@ -336,11 +199,13 @@ const CatalogSelection: React.FC<CatalogSelectionProps> = ({
     <Box bg={isDark ? '$backgroundDark950' : '#FDFDFB'} width="100%" flex={1}>
       <VStack px="$4" py="$3" space="md" flex={1}>
         {/* Header */}
-        <HStack alignItems="center" justifyContent="space-between" mb="$1">
-          <Text fontSize={16} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
-            {t('create.benchmark.modal.fromCatalog')}
-          </Text>
-        </HStack>
+        {!hideHeader && (
+          <HStack alignItems="center" justifyContent="space-between" mb="$1">
+            <Text fontSize={16} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
+              {t('create.benchmark.modal.fromCatalog')}
+            </Text>
+          </HStack>
+        )}
 
         {/* Search Bar */}
         <Box>
@@ -450,6 +315,89 @@ const CatalogSelection: React.FC<CatalogSelectionProps> = ({
         </Box>
       </VStack>
     </Box>
+  );
+};
+
+// Combined Inventory + Catalog Selection Bottom Sheet Content
+interface CombinedProductSelectionProps {
+  onInventoryProductSelect: (item: InventoryItem) => void;
+  onCatalogProductSelect: (item: CatalogProduct) => void;
+  onClose: () => void;
+  productGroupFilter?: string;
+  productGroupId?: string;
+}
+
+const CombinedProductSelection: React.FC<CombinedProductSelectionProps> = ({
+  onInventoryProductSelect,
+  onCatalogProductSelect,
+  onClose,
+  productGroupFilter,
+  productGroupId,
+}) => {
+  const [activeTab, setActiveTab] = useState<'inventory' | 'catalog'>('inventory');
+  const { colorMode } = useColorMode();
+  const { t } = useTranslation('post');
+  const isDark = colorMode === 'dark';
+
+  return (
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FAFAFA' }}>
+      {/* Tab Bar */}
+      <HStack px={16} pt={8} pb={12} space="sm">
+        <Pressable
+          onPress={() => setActiveTab('inventory')}
+          flex={1}
+          py={10}
+          borderRadius={8}
+          bg={activeTab === 'inventory' ? (isDark ? '#FFFFFF' : '#000000') : 'transparent'}
+          borderWidth={activeTab === 'inventory' ? 0 : 1}
+          borderColor={isDark ? '#333' : '#E0E0E0'}
+          alignItems="center"
+        >
+          <Text
+            fontSize={14}
+            fontWeight="$semibold"
+            color={activeTab === 'inventory' ? (isDark ? '#000' : '#FFF') : (isDark ? '#999' : '#666')}
+          >
+            {t('create.benchmark.modal.fromInventory')}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setActiveTab('catalog')}
+          flex={1}
+          py={10}
+          borderRadius={8}
+          bg={activeTab === 'catalog' ? (isDark ? '#FFFFFF' : '#000000') : 'transparent'}
+          borderWidth={activeTab === 'catalog' ? 0 : 1}
+          borderColor={isDark ? '#333' : '#E0E0E0'}
+          alignItems="center"
+        >
+          <Text
+            fontSize={14}
+            fontWeight="$semibold"
+            color={activeTab === 'catalog' ? (isDark ? '#000' : '#FFF') : (isDark ? '#999' : '#666')}
+          >
+            {t('create.benchmark.modal.fromCatalog')}
+          </Text>
+        </Pressable>
+      </HStack>
+
+      {/* Content */}
+      {activeTab === 'inventory' ? (
+        <AddProductFromInventory
+          onProductSelect={onInventoryProductSelect}
+          onClose={onClose}
+          productGroupFilter={productGroupFilter}
+          hideHeader
+        />
+      ) : (
+        <CatalogSelection
+          onProductSelect={onCatalogProductSelect}
+          onClose={onClose}
+          productGroupId={productGroupId}
+          hideHeader
+        />
+      )}
+    </View>
   );
 };
 
@@ -694,23 +642,6 @@ export const CreateBenchmarkPostScreen = () => {
     }, [route.params, setValue])
   );
 
-  // Handler for showing product source selection bottom sheet (second product)
-  const handleShowProductSourceModal = () => {
-    openBottomSheet(
-      <ProductSourceSelection
-        onSelectFromInventory={handleSelectFromInventory}
-        onSelectFromCatalog={handleSelectFromCatalog}
-        onClose={closeBottomSheet}
-      />,
-      {
-        snapPoints: ['35%'],
-        enableDynamicSizing: false,
-        enablePanDownToClose: true,
-        backdropPressBehavior: 'close',
-      }
-    );
-  };
-
   // Handler for when product is selected from catalog bottom sheet
   const handleCatalogProductSelect = (item: CatalogProduct) => {
     console.log('[CreateBenchmarkPostScreen] 🛍️ Catalog product selected:', item);
@@ -733,15 +664,16 @@ export const CreateBenchmarkPostScreen = () => {
     closeBottomSheet();
   };
 
-  // Handler for selecting from catalog (second product)
-  const handleSelectFromCatalog = () => {
+  // Handler for showing combined product selection bottom sheet (second product)
+  const handleShowProductSourceModal = () => {
     const productGroupFilter = selectedProduct1?.productGroupId;
 
-    // Open catalog selection bottom sheet (replaces current sheet directly)
     openBottomSheet(
-      <CatalogSelection
-        onProductSelect={handleCatalogProductSelect}
+      <CombinedProductSelection
+        onInventoryProductSelect={handleInventoryProductSelect}
+        onCatalogProductSelect={handleCatalogProductSelect}
         onClose={closeBottomSheet}
+        productGroupFilter={productGroupFilter}
         productGroupId={productGroupFilter}
       />,
       {
@@ -750,31 +682,8 @@ export const CreateBenchmarkPostScreen = () => {
         enablePanDownToClose: true,
         backdropPressBehavior: 'close',
         wrapWithScrollView: false,
-      }
-    );
-  };
-
-  // Handler for selecting from inventory (second product)
-  const handleSelectFromInventory = () => {
-    console.log('📦 [CreateBenchmarkPostScreen] Opening inventory with filter:', {
-      selectedProduct1: selectedProduct1,
-      productGroupId: selectedProduct1?.productGroupId,
-      productGroupFilter: selectedProduct1?.productGroupId,
-    });
-
-    // Open inventory selection bottom sheet (replaces current sheet directly)
-    openBottomSheet(
-      <InventorySelection
-        onProductSelect={handleInventoryProductSelect}
-        onClose={closeBottomSheet}
-        productGroupFilter={selectedProduct1?.productGroupId}
-      />,
-      {
-        snapPoints: ['85%'],
-        enableDynamicSizing: false,
-        enablePanDownToClose: true,
-        backdropPressBehavior: 'close',
-        wrapWithScrollView: false,
+        enableOverDrag: false,
+        enableHandlePanningGesture: false,
       }
     );
   };
