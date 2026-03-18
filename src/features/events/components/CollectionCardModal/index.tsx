@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -57,6 +57,15 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
   const cardScale = useSharedValue(1);
   const badgeReminderMutation = useSetBadgeReminder();
   const { t } = useTranslation('events');
+
+  // Reset flip state when modal opens or badge changes
+  useEffect(() => {
+    if (visible) {
+      flipRotation.value = 0;
+      cardScale.value = 1;
+      setIsDownloading(false);
+    }
+  }, [visible, badge?.id]);
 
   // Front side animation
   const frontAnimatedStyle = useAnimatedStyle(() => {
