@@ -30,16 +30,16 @@ type CommunityTabProps = {
 };
 
 // Format date range from startDate and endDate
-const formatDateRange = (startDate: string, endDate: string): string => {
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+const formatDateRange = (startDate: string, endDate: string, t: (key: string) => string): string => {
   try {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
-    const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-    
+
     const formatDate = (date: Date): string => {
       const day = date.getDate().toString().padStart(2, '0');
-      const month = months[date.getMonth()];
+      const month = t(`details.months.${MONTH_KEYS[date.getMonth()]}`);
       const year = date.getFullYear();
       return `${day} ${month} ${year}`;
     }
@@ -52,13 +52,13 @@ const formatDateRange = (startDate: string, endDate: string): string => {
 };
 
 // Map API event data to EventCardData format (Active Events için)
-const mapEventToCardData = (event: EventApiItem): EventCardData => {
+const mapEventToCardData = (event: EventApiItem, t: (key: string) => string): EventCardData => {
   return {
     id: event.eventId,
     title: event.title,
     description: event.description,
     image: event.image || null,
-    dateRange: formatDateRange(event.startDate, event.endDate),
+    dateRange: formatDateRange(event.startDate, event.endDate, t),
     interaction: event.interaction,
     avatars: event.participants.map(p => p.avatar),
     eventType: event.eventType || 'default',
@@ -66,13 +66,13 @@ const mapEventToCardData = (event: EventApiItem): EventCardData => {
 };
 
 // Map API upcoming event data to UpcomingEventCardData format (Upcoming Events için - interaction ve participants yok)
-const mapUpcomingEventToCardData = (event: UpcomingEventApiItem): UpcomingEventCardData => {
+const mapUpcomingEventToCardData = (event: UpcomingEventApiItem, t: (key: string) => string): UpcomingEventCardData => {
   return {
     id: event.eventId,
     title: event.title,
     description: event.description,
     image: event.image || null,
-    dateRange: formatDateRange(event.startDate, event.endDate),
+    dateRange: formatDateRange(event.startDate, event.endDate, t),
     eventType: event.eventType || 'default',
   };
 };
@@ -120,7 +120,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
     
     const allEvents = activeEventsData.pages.flatMap((page) => 
       (page.items && Array.isArray(page.items))
-        ? page.items.map(mapEventToCardData)
+        ? page.items.map((event) => mapEventToCardData(event, t))
         : []
     );
     
@@ -151,7 +151,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
     
     const allEvents = upcomingEventsData.pages.flatMap((page) => 
       (page.items && Array.isArray(page.items))
-        ? page.items.map(mapUpcomingEventToCardData)
+        ? page.items.map((event) => mapUpcomingEventToCardData(event, t))
         : []
     );
     
@@ -317,7 +317,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
         ListHeaderComponent={
           <VStack space="md" pb="$4">
             {/* Active Events Section - Sadece aktif etkinlik varsa veya yükleniyorsa göster */}
-            {(isActiveEventsLoading && !activeEventsData) || activeEventsError || activeEventsFiltered.length > 0 ? (
+            {(isActiveEventsLoading && !activeEventsData) || activeEventsFiltered.length > 0 ? (
               <Box>
                 <VStack space="sm">
                   <Text
@@ -329,12 +329,6 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                   </Text>
                   {isActiveEventsLoading && !activeEventsData ? (
                     <EventSkeleton count={3} isHorizontal={true} />
-                  ) : activeEventsError ? (
-                    <Box py="$4" alignItems="center">
-                      <Text color="#CE4A4A" fontSize="$xs">
-                        Hata: {activeEventsError.message}
-                      </Text>
-                    </Box>
                   ) : (
                     <VStack space="sm">
                       {/* Horizontal ScrollView with Peek Effect - 2. kartın yarısı görünür */}

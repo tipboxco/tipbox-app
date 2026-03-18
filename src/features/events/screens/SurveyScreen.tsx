@@ -1,6 +1,12 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, View, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import {
   Box,
   VStack,
@@ -18,6 +24,8 @@ import { useTranslation } from '@/src/hooks/useTranslation';
 import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from 'react-native-heroicons/solid';
 import type { SurveyBadgeEarned } from '../types/survey.types';
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 type SurveyScreenNavigationProp = NativeStackNavigationProp<EventStackParamList, 'SurveyScreen'>;
 type SurveyScreenRouteProp = RouteProp<EventStackParamList, 'SurveyScreen'>;
@@ -54,6 +62,10 @@ const SurveyScreen: React.FC = () => {
 
   // Submit mutation
   const submitSurvey = useSubmitSurvey();
+
+  // PagerView ref
+  const pagerRef = useRef<PagerView>(null);
+  const scrollProgress = useSharedValue(0);
 
   // Local state
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -100,15 +112,35 @@ const SurveyScreen: React.FC = () => {
 
   const handleNext = useCallback(() => {
     if (currentIndex < totalQuestions - 1) {
-      setCurrentIndex((prev) => prev + 1);
+      pagerRef.current?.setPage(currentIndex + 1);
     }
   }, [currentIndex, totalQuestions]);
 
   const handleBack = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
+      pagerRef.current?.setPage(currentIndex - 1);
     }
   }, [currentIndex]);
+
+  // PagerView scroll handler - realtime progress tracking
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      scrollProgress.value = position + offset;
+    },
+    [scrollProgress]
+  );
+
+  // PagerView page selected handler
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      scrollProgress.value = withTiming(position, { duration: 0 });
+      setCurrentIndex(position);
+    },
+    [scrollProgress]
+  );
 
   const handleComplete = useCallback(() => {
     const answersArray = Array.from(answers.entries()).map(([questionId, optionId]) => ({
@@ -134,6 +166,14 @@ const SurveyScreen: React.FC = () => {
 
   // Can proceed: either has selected an option, or question has no options (skip)
   const canProceed = selectedOptionId || !hasOptions;
+
+  // Animated progress bar width
+  const progressBarStyle = useAnimatedStyle(() => {
+    const pct = totalQuestions > 0
+      ? ((scrollProgress.value + 1) / totalQuestions) * 100
+      : 0;
+    return { width: `${Math.min(pct, 100)}%` };
+  });
 
   // Loading state
   if (isLoading) {
@@ -248,124 +288,146 @@ const SurveyScreen: React.FC = () => {
     );
   }
 
-  // Progress
-  const progress = totalQuestions > 0 ? (currentIndex + 1) / totalQuestions : 0;
-
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FAFAFA' }]}>
       {/* Header */}
       <SurveyHeader title={title} isDark={isDark} onBack={() => navigation.goBack()} />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        {/* Question Card */}
-        <Box
-          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-          borderRadius={12}
-          borderWidth={1}
-          borderColor={isDark ? '#2A2A2A' : '#ECECEC'}
-          px="$4"
-          pt="$4"
-          pb="$3"
-          mx="$4"
-          mt="$3"
-        >
-          {/* Progress bar row */}
-          <HStack alignItems="center" space="sm" mb="$4">
-            <Box flex={1} height={8} bg={isDark ? '#333' : '#E5E5E5'} borderRadius={4} overflow="hidden">
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${progress * 100}%`,
-                    backgroundColor: '#C2E607',
-                  },
-                ]}
-              />
-            </Box>
-            <Text color={isDark ? '#888' : '#999'} fontSize={13} fontWeight="$medium">
-              {t('survey.questionOf', { current: currentIndex + 1, total: totalQuestions })}
-            </Text>
-          </HStack>
-
-          {/* Question text */}
-          <Text
-            color={isDark ? '#FFFFFF' : '#000000'}
-            fontSize={16}
-            fontWeight="$normal"
-            lineHeight={24}
-            mb="$3"
-          >
-            {currentQuestion?.text}
+      {/* Progress bar row - outside PagerView so it doesn't swipe */}
+      <View style={styles.progressContainer}>
+        <HStack alignItems="center" space="sm" px="$4">
+          <Box flex={1} height={8} bg={isDark ? '#333' : '#E5E5E5'} borderRadius={4} overflow="hidden">
+            <Animated.View
+              style={[
+                styles.progressFill,
+                { backgroundColor: '#C2E607' },
+                progressBarStyle,
+              ]}
+            />
+          </Box>
+          <Text color={isDark ? '#888' : '#999'} fontSize={13} fontWeight="$medium">
+            {t('survey.questionOf', { current: currentIndex + 1, total: totalQuestions })}
           </Text>
+        </HStack>
+      </View>
 
-          {/* Previous question link */}
-          {currentIndex > 0 && (
-            <Pressable onPress={handleBack} py="$1">
-              <HStack alignItems="center" space="xs">
-                <ChevronLeftIcon width={14} height={14} color={isDark ? '#888' : '#888'} />
-                <Text color={isDark ? '#888' : '#888'} fontSize={13}>
-                  {t('survey.previousQuestion')}
-                </Text>
-              </HStack>
-            </Pressable>
-          )}
-        </Box>
+      {/* Swipeable question pages */}
+      <AnimatedPagerView
+        ref={pagerRef}
+        style={styles.pagerView}
+        initialPage={0}
+        onPageScroll={handlePageScroll}
+        onPageSelected={handlePageSelected}
+        overdrag={false}
+      >
+        {questions.map((question, index) => {
+          const qSelectedOptionId = answers.get(question.id);
+          const qHasOptions = question.options.length > 0;
 
-        {/* Options */}
-        <VStack space="sm" px="$4" mt="$4" mb="$6">
-          {hasOptions ? (
-            currentQuestion?.options.map((option) => {
-              const isSelected = selectedOptionId === option.id;
-              return (
-                <Pressable
-                  key={option.id}
-                  onPress={() => handleSelectOption(option.id)}
+          return (
+            <ScrollView
+              key={question.id}
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              nestedScrollEnabled
+            >
+              {/* Question Card */}
+              <Box
+                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                borderRadius={12}
+                borderWidth={1}
+                borderColor={isDark ? '#2A2A2A' : '#ECECEC'}
+                px="$4"
+                pt="$4"
+                pb="$3"
+                mx="$4"
+                mt="$3"
+              >
+                {/* Question text */}
+                <Text
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  fontSize={16}
+                  fontWeight="$normal"
+                  lineHeight={24}
+                  mb="$3"
                 >
-                  <Box
-                    bg={isSelected ? '#C2E607' : isDark ? '#1A1A1A' : '#FFFFFF'}
-                    borderWidth={1}
-                    borderColor={isSelected ? '#C2E607' : isDark ? '#2A2A2A' : '#ECECEC'}
-                    borderRadius={12}
-                    px="$4"
-                    py="$4"
-                  >
-                    <HStack alignItems="center" space="md">
-                      <RadioCircle selected={isSelected} isDark={isDark} />
-                      <Text
-                        color={isSelected ? '#000000' : isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={15}
-                        fontWeight={isSelected ? '$medium' : '$normal'}
-                        flex={1}
-                      >
-                        {option.text}
+                  {question.text}
+                </Text>
+
+                {/* Previous question link */}
+                {index > 0 && (
+                  <Pressable onPress={() => pagerRef.current?.setPage(index - 1)} py="$1">
+                    <HStack alignItems="center" space="xs">
+                      <ChevronLeftIcon width={14} height={14} color={isDark ? '#888' : '#888'} />
+                      <Text color={isDark ? '#888' : '#888'} fontSize={13}>
+                        {t('survey.previousQuestion')}
                       </Text>
                     </HStack>
+                  </Pressable>
+                )}
+              </Box>
+
+              {/* Options */}
+              <VStack space="sm" px="$4" mt="$4" mb="$6">
+                {qHasOptions ? (
+                  question.options.map((option) => {
+                    const isSelected = qSelectedOptionId === option.id;
+                    return (
+                      <Pressable
+                        key={option.id}
+                        onPress={() => {
+                          setAnswers((prev) => {
+                            const next = new Map(prev);
+                            next.set(question.id, option.id);
+                            return next;
+                          });
+                        }}
+                      >
+                        <Box
+                          bg={isSelected ? '#C2E607' : isDark ? '#1A1A1A' : '#FFFFFF'}
+                          borderWidth={1}
+                          borderColor={isSelected ? '#C2E607' : isDark ? '#2A2A2A' : '#ECECEC'}
+                          borderRadius={12}
+                          px="$4"
+                          py="$4"
+                        >
+                          <HStack alignItems="center" space="md">
+                            <RadioCircle selected={isSelected} isDark={isDark} />
+                            <Text
+                              color={isSelected ? '#000000' : isDark ? '#FFFFFF' : '#000000'}
+                              fontSize={15}
+                              fontWeight={isSelected ? '$medium' : '$normal'}
+                              flex={1}
+                            >
+                              {option.text}
+                            </Text>
+                          </HStack>
+                        </Box>
+                      </Pressable>
+                    );
+                  })
+                ) : (
+                  <Box
+                    bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                    borderWidth={1}
+                    borderColor={isDark ? '#2A2A2A' : '#ECECEC'}
+                    borderRadius={12}
+                    px="$4"
+                    py="$6"
+                    alignItems="center"
+                  >
+                    <Text color={isDark ? '#666' : '#999'} fontSize={14}>
+                      {t('survey.noOptions')}
+                    </Text>
                   </Box>
-                </Pressable>
-              );
-            })
-          ) : (
-            <Box
-              bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-              borderWidth={1}
-              borderColor={isDark ? '#2A2A2A' : '#ECECEC'}
-              borderRadius={12}
-              px="$4"
-              py="$6"
-              alignItems="center"
-            >
-              <Text color={isDark ? '#666' : '#999'} fontSize={14}>
-                {t('survey.noOptions')}
-              </Text>
-            </Box>
-          )}
-        </VStack>
-      </ScrollView>
+                )}
+              </VStack>
+            </ScrollView>
+          );
+        })}
+      </AnimatedPagerView>
 
       {/* Bottom button */}
       <Box px="$4" pb="$4" pt="$2">
@@ -459,6 +521,13 @@ const SurveyHeader: React.FC<{
 
 const styles = StyleSheet.create({
   safeArea: {
+    flex: 1,
+  },
+  progressContainer: {
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  pagerView: {
     flex: 1,
   },
   scrollView: {

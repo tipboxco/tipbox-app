@@ -264,7 +264,7 @@ export const getCompletedCollections = async (
   if (params.cursor)  query.append('cursor', params.cursor);
   query.append('limit', (params.limit ?? 20).toString());
 
-  const url = `/collections/completed?${query.toString()}`;
+  const url = `/events/collections/completed?${query.toString()}`;
   try {
     const response = await apiService.getClient().get<CompletedCollectionsResponse>(url);
     return response.data;
@@ -295,7 +295,7 @@ export const getUserProgressCollections = async (
   if (params.cursor)  query.append('cursor', params.cursor);
   query.append('limit', (params.limit ?? 20).toString());
 
-  const url = `/collections/user-progress?${query.toString()}`;
+  const url = `/events/collections/user-progress?${query.toString()}`;
   try {
     const response = await apiService.getClient().get<UserProgressCollectionsResponse>(url);
     return response.data;
@@ -1292,13 +1292,13 @@ export const setBadgeReminder = async (
 ): Promise<BadgeReminderResponse> => {
   try {
     const response = await apiService.getClient().post<BadgeReminderResponse>(
-      `/collections/badges/${badgeId}/reminder`,
+      `/events/collections/badges/${badgeId}/reminder`,
       remindAt ? { remindAt } : {}
     );
     return response.data;
   } catch (error: any) {
     console.error('[setBadgeReminder] API Error:', {
-      url: `/collections/badges/${badgeId}/reminder`,
+      url: `/events/collections/badges/${badgeId}/reminder`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

@@ -10,6 +10,7 @@ import {
   ModalContent,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import LimitedTimeEventCard from '../LimitedTimeEventCard';
 import AchievementFilter from '../AchievementFilter';
 import BadgeCard from '../BadgeCard';
@@ -38,6 +39,7 @@ const AchievementTab: React.FC<AchievementTabProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('events');
   const bottomInset = useSafeAreaValues('bottom');
   const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
   
@@ -185,9 +187,7 @@ const AchievementTab: React.FC<AchievementTabProps> = ({
       return (
         <Box py="$4" alignItems="center" px={16}>
           <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$md" textAlign="center">
-            {activeFilter === 'All' 
-              ? 'No achievements yet'
-              : `No ${activeFilter} achievements yet`}
+            {t('collectionCardModal.noAchievementsYet')}
           </Text>
         </Box>
       );

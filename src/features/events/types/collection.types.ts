@@ -7,6 +7,8 @@ export interface Collection {
   totalProgress: number;
   coverImage: string | null;
   category?: string;
+  totalBadges: number;
+  earnedBadges: number;
 }
 
 /** Badge durumu - backend'den status alanı ile eşleşmeli */
@@ -28,6 +30,9 @@ export interface CollectionBadge {
   currentProgress: number;
   totalProgress: number;
   status: CollectionBadgeStatus;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
 }
 
 // ─── EP-01: Collections List ───────────────────────────────────────

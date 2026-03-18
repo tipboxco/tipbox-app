@@ -22,9 +22,10 @@ import Animated, {
 import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { mediaService } from '@/src/services/MediaService';
 import { useSetBadgeReminder } from '../../api/hooks';
-import { toImageSource } from '@/src/utils';
+
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -55,6 +56,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
   const flipRotation = useSharedValue(0);
   const cardScale = useSharedValue(1);
   const badgeReminderMutation = useSetBadgeReminder();
+  const { t } = useTranslation('events');
 
   // Front side animation
   const frontAnimatedStyle = useAnimatedStyle(() => {
@@ -99,10 +101,10 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
       { badgeId: badge.id },
       {
         onSuccess: () => {
-          Alert.alert('Reminder Set', 'You will be reminded about this badge.');
+          Alert.alert(t('collectionCardModal.reminderSet'), t('collectionCardModal.reminderSetMessage'));
         },
         onError: () => {
-          Alert.alert('Error', 'Failed to set reminder. Please try again.');
+          Alert.alert(t('badges.loadingError'), t('collectionCardModal.reminderError'));
         },
       }
     );
@@ -111,7 +113,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
   const performDownload = async () => {
     try {
       if (!badge.icon) {
-        Alert.alert('Error', 'Badge image not found');
+        Alert.alert(t('badges.loadingError'), t('collectionCardModal.badgeImageNotFound'));
         setIsDownloading(false);
         return;
       }
@@ -123,13 +125,13 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
       );
 
       if (result.success) {
-        Alert.alert('Success!', 'Badge saved to your gallery');
+        Alert.alert(t('collectionCardModal.reminderSet'), t('collectionCardModal.savedToGallery'));
       } else {
-        Alert.alert('Error', result.error || 'Failed to save badge');
+        Alert.alert(t('badges.loadingError'), result.error || t('collectionCardModal.saveError'));
       }
     } catch (error) {
       console.error('[CollectionCardModal] Download error:', error);
-      Alert.alert('Error', 'An error occurred while downloading badge');
+      Alert.alert(t('badges.loadingError'), t('collectionCardModal.downloadError'));
     } finally {
       setIsDownloading(false);
     }
@@ -217,7 +219,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
                 >
                   <Feather name="bell" size={16} color={badgeReminderMutation.isSuccess ? '#10B981' : '#8E8E93'} />
                   <Text style={[styles.reminderText, badgeReminderMutation.isSuccess && { color: '#10B981' }]}>
-                    {badgeReminderMutation.isPending ? 'Setting...' : badgeReminderMutation.isSuccess ? 'Reminder Set' : 'Set Reminder'}
+                    {badgeReminderMutation.isPending ? t('collectionCardModal.setting') : badgeReminderMutation.isSuccess ? t('collectionCardModal.reminderSet') : t('collectionCardModal.setReminder')}
                   </Text>
                 </Pressable>
 
@@ -304,7 +306,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
                       ]}
                       onPress={handleSeeRewardPool}
                     >
-                      <Text style={styles.rewardButtonText}>See Reward Pool</Text>
+                      <Text style={styles.rewardButtonText}>{t('collectionCardModal.seeRewardPool')}</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -367,29 +369,15 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
                 )}
               </View>
 
-              {/* Highlights Image (if available) */}
-              {badge.highlightsImage ? (
-                <View style={styles.highlightsImageContainer}>
-                  <Image
-                    source={toImageSource(badge.highlightsImage) as ImageSourcePropType}
-                    style={styles.highlightsImage}
-                    resizeMode="cover"
-                  />
-                </View>
-              ) : null}
-
               {/* Badge Info at Bottom */}
               <View style={styles.backInfo}>
                 <Text style={styles.backTitle}>{badge.title}</Text>
-                <Text style={styles.backSubtitle}>Completed Badge</Text>
+                <Text style={styles.backSubtitle}>{t('collectionCardModal.completedBadge')}</Text>
               </View>
 
               {/* Decorative Elements */}
               <View style={styles.backTopLeftDecor}>
                 <Feather name="award" size={24} color="rgba(255, 255, 255, 0.15)" />
-              </View>
-              <View style={styles.backBottomRightDecor}>
-                <Text style={styles.badgeIdText}>#{badge.id.slice(-6)}</Text>
               </View>
             </Pressable>
           </Animated.View>
@@ -546,24 +534,6 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
 
-  // Highlights image on back side
-  highlightsImageContainer: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    zIndex: 10,
-  },
-  highlightsImage: {
-    width: '100%',
-    height: '100%',
-  },
-
   // BACK SIDE STYLES
   backSide: {
     position: 'absolute',
@@ -654,19 +624,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     left: 20,
-  },
-  backBottomRightDecor: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-  },
-  badgeIdText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.3)',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
 });
 

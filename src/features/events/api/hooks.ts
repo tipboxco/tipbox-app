@@ -59,7 +59,9 @@ import type {
 import type { SurveyQuestionsApiResponse, SurveyCompleteApiResponse, SurveySubmitRequest } from '../types/survey.types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 import { invalidateCatalogPosts } from '@/src/features/post/api/hooks';
+import { catalogKeys } from '@/src/features/catalog/api/hooks';
 
 /**
  * Query Keys - Events feature için cache key pattern'leri
@@ -576,13 +578,11 @@ export const useCreateEventPost = (eventId: string) => {
         queryKey: feedKeys.all,
         refetchType: 'all',
       });
-      // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ 
-        queryKey: ['profile'],
-        refetchType: 'all',
-      });
+      // 4. TARGETED: Profil post tab'larini invalidate et
+      queryClient.invalidateQueries({ queryKey: profileKeys.posts(), refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: profileKeys.reviews(), refetchType: 'all' });
       // 5. Active events listesini invalidate et (event post sayısı değişebilir)
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: eventsKeys.active(),
         refetchType: 'all',
       });
@@ -705,11 +705,9 @@ export const useCreateEventPostNew = (eventId: string) => {
         queryKey: feedKeys.all,
         refetchType: 'all',
       });
-      // 4. Profil feed'lerini invalidate et
-      queryClient.invalidateQueries({
-        queryKey: ['profile'],
-        refetchType: 'all',
-      });
+      // 4. TARGETED: Profil post tab'larini invalidate et
+      queryClient.invalidateQueries({ queryKey: profileKeys.posts(), refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: profileKeys.reviews(), refetchType: 'all' });
       // 5. Active events listesini invalidate et
       queryClient.invalidateQueries({
         queryKey: eventsKeys.active(),
@@ -760,16 +758,21 @@ export const useEventPostDetail = (eventId: string, postId: string) => {
  */
 export const useDeleteEventPost = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation<void, Error, { eventId: string; postId: string }>({
     mutationFn: ({ eventId, postId }) => deleteEventPost(eventId, postId),
     onSuccess: (_, { eventId }) => {
       // Event posts listesini invalidate et
-      queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
+      queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId), refetchType: 'all' });
       // Event detail'i invalidate et
-      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId), refetchType: 'all' });
       // Ana feed'i invalidate et
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      queryClient.invalidateQueries({ queryKey: feedKeys.all, refetchType: 'all' });
+      // Profil cache'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: profileKeys.posts(), refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: profileKeys.reviews(), refetchType: 'all' });
+      // Catalog cache'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: catalogKeys.all, refetchType: 'all' });
     },
   });
 };
@@ -1006,11 +1009,9 @@ export const useCreateEventPostWithContext = () => {
         queryKey: feedKeys.all,
         refetchType: 'all',
       });
-      // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({
-        queryKey: ['profile'],
-        refetchType: 'all',
-      });
+      // 4. TARGETED: Profil post tab'larini invalidate et
+      queryClient.invalidateQueries({ queryKey: profileKeys.posts(), refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: profileKeys.reviews(), refetchType: 'all' });
       // 5. Active events listesini invalidate et (event post sayısı değişebilir)
       queryClient.invalidateQueries({
         queryKey: eventsKeys.active(),

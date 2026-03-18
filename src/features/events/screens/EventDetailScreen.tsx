@@ -15,7 +15,7 @@ import {
     ModalContent,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { EventStackParamList } from '../EventNavigator';
@@ -81,6 +81,23 @@ const EventDetailScreen: React.FC = () => {
     // EventDetailScreen artık sadece EventNavigator'dan çağrılır
     const eventId = route.params?.eventId;
 
+    const handleGoBack = useCallback(() => {
+        // EventDetailScreen is the initial screen in EventNavigator.
+        // goBack() action bubbles: EventNavigator → RootStack → pops Event screen.
+        // Try scoped navigation first, then parent, then root ref as final fallback.
+        if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+        }
+        const parent = navigation.getParent();
+        if (parent?.canGoBack()) {
+            parent.goBack();
+            return;
+        }
+        // Final fallback: root navigation ref
+        navigationService.goBack();
+    }, [navigation]);
+
     // Validate eventId
     if (!eventId) {
         return (
@@ -88,7 +105,7 @@ const EventDetailScreen: React.FC = () => {
                 <Header
                     title={t('details.eventNotFound')}
                     showBackButton={true}
-                    onBackPress={() => navigation.goBack()}
+                    onBackPress={handleGoBack}
                 />
                 <Box flex={1} alignItems="center" justifyContent="center">
                     <Text color={isDark ? '#FFFFFF' : '#000000'}>
@@ -151,11 +168,11 @@ const EventDetailScreen: React.FC = () => {
             const start = new Date(startDate);
             const end = new Date(endDate);
             
-            const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-            
+            const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
             const formatDate = (date: Date): string => {
                 const day = date.getDate().toString().padStart(2, '0');
-                const month = months[date.getMonth()];
+                const month = t(`details.months.${monthKeys[date.getMonth()]}`);
                 const year = date.getFullYear();
                 return `${day} ${month} ${year}`;
             };
@@ -218,15 +235,13 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Feed/Post to PostCardData (from FeedScreen)
     const mapFeedToCardData = (item: ProfilePost): PostCardData => {
-        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
         // content array ise string'e çevir, değilse direkt kullan
         const contentString = Array.isArray(item.content)
             ? item.content.map((contentItem) => contentItem.content || '').join(' ')
             : (item.content || '');
 
-        // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-        const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
-        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+        // images array'i - mock image ekleme
+        const images = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
 
         // contextData.image için fallback
         const contextImage = item.contextData?.image
@@ -235,7 +250,7 @@ const EventDetailScreen: React.FC = () => {
         const contextData = item.contextData
             ? {
                 ...item.contextData,
-                image: contextImage || item.contextData.image || defaultPostImage,
+                image: contextImage || item.contextData.image,
               }
             : undefined;
 
@@ -281,7 +296,7 @@ const EventDetailScreen: React.FC = () => {
             contextData,
             eventId: eventId,
             isLiked: item.isLiked,
-            isUpvoted: item.isUpvoted, // Event posts için upvote durumu
+            isUpvoted: item.isUpvoted ?? item.hasUpvoted, // Backend hasUpvoted olarak gönderir
         };
     };
 
@@ -317,7 +332,6 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Experience (ExperiencePostApiItem) to ExperiencePostCardData
     const mapExperienceToCardData = (item: ExperiencePostApiItem & { type: 'experience' }): ExperiencePostCardData => {
-        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
         const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
         const ctx = item.contextData as { product?: { id?: string; name?: string; image?: string | null; subName?: string } } | undefined;
         const rawProduct = ctx?.product ?? item.contextData ?? item.product;
@@ -366,7 +380,7 @@ const EventDetailScreen: React.FC = () => {
                 id: rawProduct?.id || '',
                 name: rawProduct?.name || '',
                 subName,
-                image: productImage ?? defaultPostImage,
+                image: productImage,
                 isOwned,
             },
             content,
@@ -375,7 +389,7 @@ const EventDetailScreen: React.FC = () => {
                 const mapped = item.images
                     ?.map((img) => toImageSource(img))
                     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-                return mapped.filter((img) => !isSameImageSource(img, productImage ?? defaultPostImage));
+                return productImage ? mapped.filter((img) => !isSameImageSource(img, productImage)) : mapped;
             })(),
             stats: item.stats,
             createdAt: item.createdAt,
@@ -385,24 +399,32 @@ const EventDetailScreen: React.FC = () => {
     // Map Tips to TipsCardData (from FeedScreen)
     const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
         const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
+        const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
 
-        const productImage = toImageSource(item.contextData?.image);
-        // Missing product image warning removed for performance
-
-        const product: TipsProduct = {
-            id: item.contextData.id,
-            name: item.contextData.name,
-            subName: item.contextData.subName,
-            image: productImage || require('@/assets/inventory/product_01.png'),
-        };
-
-        const category: TipsCategory = {
-            id: item.contextData.id,
-            name: item.contextData.name,
-            subCategory: item.contextData.subName,
-            image: productImage || require('@/assets/inventory/product_01.png'),
-            product,
-        };
+        let category: TipsCategory;
+        if (item.contextType === 'sub_category') {
+            category = {
+                id: item.contextData.id,
+                name: item.contextData.name,
+                subCategory: item.contextData.subName,
+                image: contextImage,
+            };
+        } else {
+            const product: TipsProduct = {
+                id: item.contextData.id,
+                name: item.contextData.name,
+                subName: item.contextData.subName,
+                image: contextImage,
+                isOwned: item.contextData.isOwned,
+            };
+            category = {
+                id: item.contextData.id,
+                name: item.contextData.name,
+                subCategory: item.contextData.subName,
+                image: contextImage,
+                product,
+            };
+        }
 
         return {
             id: item.id,
@@ -426,32 +448,38 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Question to QuestionCardData (from FeedScreen)
     const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
-            const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
+        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
+        const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
 
-        const productImage = toImageSource(item.contextData?.image);
-        // Missing product image warning removed for performance
+        let category: QuestionCardCategory;
+        if (item.contextType === 'sub_category') {
+            category = {
+                id: item.contextData.id,
+                name: item.contextData.name,
+                subCategory: item.contextData.subName,
+                image: contextImage,
+            };
+        } else {
+            const product: QuestionCardProduct = {
+                id: item.contextData.id,
+                name: item.contextData.name,
+                subName: item.contextData.subName,
+                image: contextImage,
+                isOwned: item.contextData.isOwned,
+            };
+            category = {
+                id: item.contextData.id,
+                name: item.contextData.name,
+                subCategory: item.contextData.subName,
+                image: contextImage,
+                product,
+            };
+        }
 
-        const product: QuestionCardProduct = {
-            id: item.contextData.id,
-            name: item.contextData.name,
-            subName: item.contextData.subName,
-            image: productImage || require('@/assets/inventory/product_01.png'),
-        };
-
-        const category: QuestionCardCategory = {
-            id: item.contextData.id,
-            name: item.contextData.name,
-            subCategory: item.contextData.subName,
-            image: productImage || require('@/assets/inventory/product_01.png'),
-            product,
-        };
-
-        // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
-        const mappedImages = item.images
+        // images array'i - mock image ekleme
+        const images = item.images
             ?.map((img) => toImageSource(img))
             .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
-        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
         return {
             id: item.id,
@@ -474,7 +502,6 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Update to UpdateCardData (from FeedScreen)
     const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
-        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
         const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
         
         // ContextType'ı ProductInfoType'a çevir
@@ -488,11 +515,10 @@ const EventDetailScreen: React.FC = () => {
         // relatedPost null check - eğer yoksa relatedPost olmadan döndür
         if (!item.relatedPost) {
             console.warn('[mapUpdateToCardData] Missing relatedPost for item:', item.id);
-            // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-            const mappedImages = Array.isArray(item.images)
+            // images array'i - mock image ekleme
+            const images = Array.isArray(item.images)
                 ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
                 : [];
-            const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
             // Return a safe default structure without relatedPost
             return {
@@ -542,11 +568,10 @@ const EventDetailScreen: React.FC = () => {
                 })
             : [];
 
-        // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-        const mappedImages = Array.isArray(item.images)
+        // images array'i - mock image ekleme
+        const images = Array.isArray(item.images)
             ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
             : [];
-        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
         return {
             id: item.id || '',
@@ -579,12 +604,9 @@ const EventDetailScreen: React.FC = () => {
                 },
                 content: relatedPostContent,
                 tags: (item.relatedPost.tags && Array.isArray(item.relatedPost.tags)) ? item.relatedPost.tags : [],
-                images: (() => {
-                    const relatedPostImages = (item.relatedPost?.images && Array.isArray(item.relatedPost.images))
-                        ? item.relatedPost.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
-                        : [];
-                    return relatedPostImages.length > 0 ? relatedPostImages : [defaultPostImage];
-                })(),
+                images: (item.relatedPost?.images && Array.isArray(item.relatedPost.images))
+                    ? item.relatedPost.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                    : [],
             } : undefined,
         };
     };
@@ -657,18 +679,22 @@ const EventDetailScreen: React.FC = () => {
         }
     }, [hasNextPostsPage, isFetchingNextPostsPage, fetchNextPostsPage]);
 
-    // Handle share
+    // Handle share with loading state to prevent double sharing
+    const [isSharing, setIsSharing] = useState(false);
     const handleShare = useCallback(async () => {
-        if (!event) return;
+        if (!event || isSharing) return;
+        setIsSharing(true);
         try {
             await Share.share({
-                message: `Check out ${event.title} event on Tipbox!`,
+                message: t('details.shareMessage', { eventTitle: event.title }),
                 url: `tipboxapp://events/event/${eventId}`,
             });
         } catch (error) {
             console.error('[EventDetailScreen] Share error:', error);
+        } finally {
+            setIsSharing(false);
         }
-    }, [event, eventId]);
+    }, [event, eventId, isSharing]);
 
     // Map EventDetailReward to SeeAllReward format for BadgeBottomSheet
     const mapRewardToSeeAllReward = useCallback((reward: EventDetailReward): SeeAllReward => {
@@ -789,7 +815,7 @@ const EventDetailScreen: React.FC = () => {
                 <Header
                     title={t('details.loading')}
                     showBackButton={true}
-                    onBackPress={() => navigation.goBack()}
+                    onBackPress={handleGoBack}
                 />
                 <Box flex={1} alignItems="center" justifyContent="center">
                     <Text color={isDark ? '#FFFFFF' : '#000000'}>{t('details.loading')}</Text>
@@ -805,7 +831,7 @@ const EventDetailScreen: React.FC = () => {
                 <Header
                     title={t('details.eventNotFound')}
                     showBackButton={true}
-                    onBackPress={() => navigation.goBack()}
+                    onBackPress={handleGoBack}
                 />
                 <Box flex={1} alignItems="center" justifyContent="center">
                     <Text color={isDark ? '#FFFFFF' : '#000000'}>
@@ -836,6 +862,7 @@ const EventDetailScreen: React.FC = () => {
                 }}
                 contentContainerStyle={{
                     flexGrow: 1,
+                    paddingBottom: insets.bottom + 80,
                 }}
                 bounces={false}
                 overScrollMode="never"
@@ -1045,8 +1072,8 @@ const EventDetailScreen: React.FC = () => {
                                         {(() => {
                                             try {
                                                 const end = new Date(event.endDate);
-                                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                                                return `${end.getDate()} ${months[end.getMonth()]}`;
+                                                const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+                                                return `${end.getDate()} ${t(`details.months.${monthKeys[end.getMonth()]}`)}`;
                                             } catch { return ''; }
                                         })()}
                                     </Text>
@@ -1350,7 +1377,7 @@ const EventDetailScreen: React.FC = () => {
             >
                 <HStack justifyContent="space-between" alignItems="center">
                     <Pressable
-                        onPress={() => navigation.goBack()}
+                        onPress={handleGoBack}
                         width={36}
                         height={36}
                         borderRadius={18}
@@ -1363,6 +1390,8 @@ const EventDetailScreen: React.FC = () => {
 
                     <Pressable
                         onPress={handleShare}
+                        disabled={isSharing}
+                        opacity={isSharing ? 0.5 : 1}
                         width={36}
                         height={36}
                         borderRadius={18}
@@ -1370,7 +1399,11 @@ const EventDetailScreen: React.FC = () => {
                         alignItems="center"
                         justifyContent="center"
                     >
-                        <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
+                        {isSharing ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                            <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
+                        )}
                     </Pressable>
                 </HStack>
             </Animated.View>
@@ -1406,7 +1439,7 @@ const EventDetailScreen: React.FC = () => {
                 {/* Header content */}
                 <HStack justifyContent="space-between" alignItems="center" style={{ zIndex: 1 }}>
                     <Pressable
-                        onPress={() => navigation.goBack()}
+                        onPress={handleGoBack}
                         width={36}
                         height={36}
                         borderRadius={18}
@@ -1430,6 +1463,8 @@ const EventDetailScreen: React.FC = () => {
 
                     <Pressable
                         onPress={handleShare}
+                        disabled={isSharing}
+                        opacity={isSharing ? 0.5 : 1}
                         width={36}
                         height={36}
                         borderRadius={18}
@@ -1437,7 +1472,11 @@ const EventDetailScreen: React.FC = () => {
                         alignItems="center"
                         justifyContent="center"
                     >
-                        <ArrowTopRightOnSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                        {isSharing ? (
+                            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                        ) : (
+                            <ArrowTopRightOnSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                        )}
                     </Pressable>
                 </HStack>
             </Animated.View>

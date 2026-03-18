@@ -49,6 +49,9 @@ interface CollectionBadge {
   currentProgress: number;
   totalProgress: number;
   status: 'not_started' | 'in_progress' | 'completed';
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
 }
 
 type FilterTab = 'All' | 'Not Started' | 'In Progress' | 'Completed';
@@ -74,11 +77,13 @@ const CollectionHero = memo(({ collection, searchPlaceholder, onSearchChange }: 
         {/* Dark overlay */}
         <View style={styles.heroOverlay} />
 
-        {/* Progress Badge */}
-        <View style={styles.progressBadge}>
-          <Text style={styles.progressBadgeText}>
-            {collection.currentProgress}/{collection.totalProgress}
-          </Text>
+        {/* Progress */}
+        <View style={styles.heroBadgesRow}>
+          <View style={styles.progressBadge}>
+            <Text style={styles.progressBadgeText}>
+              {collection.currentProgress}/{collection.totalProgress}
+            </Text>
+          </View>
         </View>
 
         {/* Title & Description Card */}
@@ -115,17 +120,28 @@ const CollectionDetailScreen: React.FC = () => {
 
   const { collectionId } = route.params;
   const [badgeSearch, setBadgeSearch] = useState('');
+  const [debouncedBadgeSearch, setDebouncedBadgeSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All');
   const [selectedBadge, setSelectedBadge] = useState<CollectionBadge | null>(null);
 
-  // Stable search handler - only updates local filter state, no API call
+  // Debounce badge search (400ms per spec)
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = badgeSearch.trim();
+      setDebouncedBadgeSearch(trimmed);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [badgeSearch]);
+
+  // Stable search handler
   const handleSearchChange = useCallback((text: string) => {
     setBadgeSearch(text);
   }, []);
 
-  // Fetch collection once - no search param, all badges come in single request
+  // Fetch collection with debounced search param - API handles badge filtering
   const { data: collectionDetail, isLoading: isLoadingCollection } = useCollectionDetail(
-    collectionId
+    collectionId,
+    debouncedBadgeSearch || undefined
   );
 
   const collection: Collection | null = useMemo(
@@ -135,44 +151,35 @@ const CollectionDetailScreen: React.FC = () => {
 
   const allBadges: CollectionBadge[] = useMemo(() => {
     if (!collectionDetail?.badges) return [];
-    return collectionDetail.badges.map((b: CollectionBadgeType): CollectionBadge => ({
-      id: b.id,
-      title: b.title,
-      description: b.description,
-      icon: typeof b.icon === 'string' ? (toImageSource(b.icon) ?? b.icon) : b.icon,
-      highlightsImage: b.highlightsImage,
-      currentProgress: b.currentProgress,
-      totalProgress: b.totalProgress,
-      status: b.status,
-    }));
+    return collectionDetail.badges
+      .map((b: CollectionBadgeType): CollectionBadge => ({
+        id: b.id,
+        title: b.title,
+        description: b.description,
+        icon: typeof b.icon === 'string' ? (toImageSource(b.icon) ?? b.icon) : b.icon,
+        highlightsImage: b.highlightsImage,
+        currentProgress: b.currentProgress,
+        totalProgress: b.totalProgress,
+        status: b.status,
+        isActive: b.isActive,
+        displayOrder: b.displayOrder,
+        createdAt: b.createdAt,
+      }));
   }, [collectionDetail?.badges]);
 
-  // Filter badges locally: search + status
+  // Filter badges: text search handled by API, status filter client-side
   const filteredBadges = useMemo(() => {
-    let result = allBadges;
-
-    // Text search filter
-    const query = badgeSearch.trim().toLowerCase();
-    if (query) {
-      result = result.filter(
-        (b) =>
-          b.title.toLowerCase().includes(query) ||
-          b.description.toLowerCase().includes(query)
-      );
-    }
-
-    // Status filter
     switch (activeFilter) {
       case 'Not Started':
-        return result.filter((b) => b.status === 'not_started');
+        return allBadges.filter((b) => b.status === 'not_started');
       case 'In Progress':
-        return result.filter((b) => b.status === 'in_progress');
+        return allBadges.filter((b) => b.status === 'in_progress');
       case 'Completed':
-        return result.filter((b) => b.status === 'completed');
+        return allBadges.filter((b) => b.status === 'completed');
       default:
-        return result;
+        return allBadges;
     }
-  }, [allBadges, activeFilter, badgeSearch]);
+  }, [allBadges, activeFilter]);
 
   const handleGoBack = useCallback(() => {
     navigation.goBack();
@@ -198,6 +205,7 @@ const CollectionDetailScreen: React.FC = () => {
   const renderBadgeItem = useCallback(
     ({ item }: { item: CollectionBadge }) => {
       const isCompleted = item.status === 'completed';
+      const isDisabled = item.isActive === false;
       const progressPercentage =
         item.totalProgress > 0
           ? Math.min((item.currentProgress / item.totalProgress) * 100, 100)
@@ -208,18 +216,22 @@ const CollectionDetailScreen: React.FC = () => {
           style={[
             styles.badgeCard,
             {
-              backgroundColor: isDark ? '#1A1A1A' : '#FFF',
+              backgroundColor: isDisabled
+                ? isDark ? '#111' : '#F5F5F5'
+                : isDark ? '#1A1A1A' : '#FFF',
               borderColor: isDark ? '#2A2A2A' : '#E9E9E9',
             },
+            isDisabled && { opacity: 0.5 },
           ]}
-          onPress={() => handleBadgePress(item.id)}
+          onPress={() => !isDisabled && handleBadgePress(item.id)}
+          disabled={isDisabled}
         >
           {/* Badge Icon/Image */}
           <View style={styles.badgeIconContainer}>
             {item.icon ? (
-              <Image 
-                source={typeof item.icon === 'string' ? { uri: item.icon } : item.icon} 
-                style={styles.badgeImage}
+              <Image
+                source={typeof item.icon === 'string' ? { uri: item.icon } : item.icon}
+                style={[styles.badgeImage, isDisabled && { opacity: 0.4 }]}
                 resizeMode="cover"
               />
             ) : (
@@ -229,7 +241,7 @@ const CollectionDetailScreen: React.FC = () => {
                   { backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5' },
                 ]}
               >
-                <Feather name="award" size={20} color={isCompleted ? '#10B981' : '#C1BEBF'} />
+                <Feather name="award" size={20} color={isDisabled ? '#C1BEBF' : isCompleted ? '#10B981' : '#C1BEBF'} />
               </View>
             )}
           </View>
@@ -237,7 +249,10 @@ const CollectionDetailScreen: React.FC = () => {
           {/* Badge Info */}
           <View style={styles.badgeInfo}>
             <Text
-              style={[styles.badgeTitle, { color: isDark ? '#FFF' : '#000' }]}
+              style={[
+                styles.badgeTitle,
+                { color: isDisabled ? '#B0B0B0' : isDark ? '#FFF' : '#000' },
+              ]}
               numberOfLines={1}
             >
               {item.title}
@@ -245,7 +260,7 @@ const CollectionDetailScreen: React.FC = () => {
             <Text
               style={[
                 styles.badgeDescription,
-                { color: isDark ? '#8E8E93' : '#8E8E93' },
+                { color: isDisabled ? '#C8C8C8' : '#8E8E93' },
               ]}
               numberOfLines={1}
             >
@@ -264,7 +279,9 @@ const CollectionDetailScreen: React.FC = () => {
                     styles.progressBarFill,
                     {
                       width: `${progressPercentage}%`,
-                      backgroundColor: isCompleted ? '#10B981' : isDark ? '#686868' : '#686868',
+                      backgroundColor: isDisabled
+                        ? '#D0D0D0'
+                        : isCompleted ? '#10B981' : '#686868',
                     },
                   ]}
                 />
@@ -276,8 +293,8 @@ const CollectionDetailScreen: React.FC = () => {
           <Text
             style={[
               styles.badgeProgress,
-              { 
-                color: isCompleted ? '#10B981' : isDark ? '#8E8E93' : '#8E8E93',
+              {
+                color: isDisabled ? '#C8C8C8' : isCompleted ? '#10B981' : '#8E8E93',
               },
             ]}
           >
@@ -497,10 +514,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 16,
   },
-  progressBadge: {
+  heroBadgesRow: {
     position: 'absolute',
     top: 16,
     right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  progressBadge: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     paddingHorizontal: 10,
     paddingVertical: 4,

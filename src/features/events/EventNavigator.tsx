@@ -64,6 +64,11 @@ export const EventNavigator = () => {
       <EventStack.Screen
         name="EventDetailScreen"
         component={EventDetailScreen}
+        options={{
+          // Initial screen: disable inner navigator's gesture so
+          // RootStack's swipe-back can dismiss the entire EventNavigator
+          gestureEnabled: false,
+        }}
       />
       <EventStack.Screen
         name="EventCreatePost"

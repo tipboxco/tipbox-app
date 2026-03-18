@@ -8,6 +8,8 @@ import {
   Text,
   ScrollView,
   Pressable,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -48,7 +50,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'completed' | 'in_progress' | 'not_started'>('all');
   const [debouncedSearch, setDebouncedSearch] = useState<string | undefined>(undefined);
   const navigation = useNavigation<CollectionsTabNavigationProp>();
@@ -75,12 +77,15 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Main categories for chip filters
+  // Main categories for chip filters (only Beauty & Electronics)
+  const ALLOWED_CATEGORY_NAMES = ['beauty', 'electronics'];
   const { data: mainCategoriesData } = useMainCategories();
   const chipCategories = useMemo(
     () => [
       { id: 'all', name: t('collection.all') },
-      ...(mainCategoriesData ?? []),
+      ...(mainCategoriesData ?? [])
+        .filter((c) => ALLOWED_CATEGORY_NAMES.includes(c.name.toLowerCase()))
+        .map((c) => ({ id: c.id, name: c.name })),
     ],
     [mainCategoriesData, t]
   );
@@ -90,7 +95,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
   const allCollectionsQuery = useCollections({
     search: debouncedSearch,
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
-    mainCategoryId: selectedCategoryId !== 'all' ? selectedCategoryId : collectionFilters?.mainCategoryId,
+    mainCategoryId: selectedCategory !== 'all' ? selectedCategory : collectionFilters?.mainCategoryId,
     subCategoryId: collectionFilters?.subCategoryId,
     productGroupId: collectionFilters?.productGroupId,
   });
@@ -123,6 +128,8 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
         totalProgress: c.totalProgress ?? 0,
         coverImage: c.coverImage ?? null,
         category: c.category ?? undefined,
+        totalBadges: c.totalBadges ?? 0,
+        earnedBadges: c.earnedBadges ?? 0,
       }));
     });
   }, [data]);
@@ -156,9 +163,9 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
 
   // Chip seçimi
   const handleCategoryPress = useCallback(
-    (categoryId: string) => {
-      setSelectedCategoryId(categoryId);
-      onFilterChange?.(categoryId);
+    (handle: string) => {
+      setSelectedCategory(handle);
+      onFilterChange?.(handle);
     },
     [onFilterChange]
   );
@@ -169,6 +176,18 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
       fetchNextPage();
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // ScrollView onScroll: kullanıcı alt tarafa yaklaşınca handleEndReached tetikle
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+      const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+      if (distanceFromBottom < 200) {
+        handleEndReached();
+      }
+    },
+    [handleEndReached]
+  );
 
   // Layout helper: Her 5 item'da bir full (index % 5 === 0), geri kalan half
   const getItemLayout = (index: number) => (index % 5 === 0 ? 'full' : 'half');
@@ -269,7 +288,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
         style={styles.filterChips}
       >
         {chipCategories.map((cat) => {
-          const isActive = cat.id === selectedCategoryId;
+          const isActive = cat.id === selectedCategory;
           return (
             <Pressable
               key={cat.id}
@@ -290,7 +309,7 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
         })}
       </ScrollView>
     ),
-    [chipCategories, selectedCategoryId, handleCategoryPress]
+    [chipCategories, selectedCategory, handleCategoryPress]
   );
 
   // Footer: infinite scroll yükleme göstergesi
@@ -325,14 +344,14 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
                 ? t('collection.emptyStates.noResults')
                 : selectedStatus !== 'all'
                 ? t('collection.emptyStates.noStatus')
-                : selectedCategoryId !== 'all'
+                : selectedCategory !== 'all'
                 ? t('collection.emptyStates.noCategory')
                 : t('collection.emptyStates.noCollections')}
             </Text>
           )}
         </View>
       ) : null,
-    [isLoading, debouncedSearch, selectedStatus, selectedCategoryId, isDark, userId]
+    [isLoading, debouncedSearch, selectedStatus, selectedCategory, isDark, userId]
   );
 
   if (isLoading) {
@@ -350,6 +369,8 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.listContent, { paddingBottom: bottomInset + 24 }]}
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
       >
         {rows.length === 0 ? EmptyComponent : null}
         {rows.map((item, index) => (

@@ -103,12 +103,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryBadge: {
-    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
-    alignSelf: 'flex-start',
   },
   categoryText: {
     color: '#FFFFFF',
