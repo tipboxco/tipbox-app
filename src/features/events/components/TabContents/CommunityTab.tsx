@@ -270,20 +270,10 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
                            (isUpcomingEventsLoading && !upcomingEventsData);
 
   // İlk yüklemede ve cache'den veri yoksa tüm ekran için skeleton göster
+  // Active Events skeleton gösterilmez - aktif etkinlik varsa veri geldiğinde bölüm açılır
   if (isInitialLoading && !activeEventsData && !upcomingEventsData) {
     return (
       <VStack flex={1} px="$4" py="$4" space="md">
-        {/* Active Events Section Skeleton */}
-        <VStack space="sm">
-          <Box
-            bg={isDark ? '#2A2A2A' : '#E9E9E9'}
-            width={100}
-            height={16}
-            borderRadius={4}
-          />
-          <EventSkeleton count={3} isHorizontal={true} />
-        </VStack>
-
         {/* Upcoming Events Section Skeleton */}
         <VStack space="sm">
           <Box
@@ -326,112 +316,108 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({
         }
         ListHeaderComponent={
           <VStack space="md" pb="$4">
-            {/* Active Events Section - Horizontal Scroll */}
-            <Box>
-              <VStack space="sm">
-                <Text
-                  color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                  fontSize="$sm"
-                  fontWeight="$bold"
-                >
-                  {t('list.activeEvents')}
-                </Text>
-                {isActiveEventsLoading && !activeEventsData ? (
-                  <EventSkeleton count={3} isHorizontal={true} />
-                ) : activeEventsError ? (
-                  <Box py="$4" alignItems="center">
-                    <Text color="#CE4A4A" fontSize="$xs">
-                      Hata: {activeEventsError.message}
-                    </Text>
-                  </Box>
-                ) : activeEventsFiltered.length === 0 ? (
-                  <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                      {searchQuery?.trim() ? t('list.noResults', { query: searchQuery.trim() }) : t('list.noActiveEvents')}
-                    </Text>
-                  </Box>
-                ) : (
-                  <VStack space="sm">
-                    {/* Horizontal ScrollView with Peek Effect - 2. kartın yarısı görünür */}
-                    <Box position="relative">
-                      <FlatList
-                        ref={activeEventsListRef}
-                        data={activeEventsFiltered}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        ItemSeparatorComponent={() => <Box width={CARD_GAP} />}
-                        contentContainerStyle={{ 
-                          paddingRight: HORIZONTAL_PADDING,
-                          paddingLeft: 0, // Sol padding'i kaldır - Upcoming Events ile aynı hizaya getir
-                        }}
-                        renderItem={({ item }) => (
-                          <Box width={CARD_WIDTH}>
-                            <EventCard
-                              data={item}
-                              isGrid={false}
-                              onPress={() => onEventPress(item.id)}
-                            />
-                          </Box>
-                        )}
-                        keyExtractor={(item) => item.id}
-                        snapToInterval={CARD_WIDTH + CARD_GAP}
-                        decelerationRate="fast"
-                        snapToAlignment="start"
-                        pagingEnabled={false}
-                        onScroll={handleActiveEventsScroll}
-                        scrollEventThrottle={16}
-                        ListFooterComponent={
-                          isFetchingNextActivePage ? (
-                            <Box 
-                              justifyContent="center" 
-                              alignItems="center" 
-                              pl={CARD_GAP}
-                              style={{ 
-                                width: 60,
-                                height: 210,
-                              }}
-                            >
-                              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                            </Box>
-                          ) : null
-                        }
-                        onEndReached={() => {
-                          if (hasNextActivePage && !isFetchingNextActivePage) {
-                            fetchNextActivePage();
-                          }
-                        }}
-                        onEndReachedThreshold={0.5}
-                        scrollEnabled={true}
-                        nestedScrollEnabled={true}
-                      />
+            {/* Active Events Section - Sadece aktif etkinlik varsa veya yükleniyorsa göster */}
+            {(isActiveEventsLoading && !activeEventsData) || activeEventsError || activeEventsFiltered.length > 0 ? (
+              <Box>
+                <VStack space="sm">
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                    fontSize="$sm"
+                    fontWeight="$bold"
+                  >
+                    {t('list.activeEvents')}
+                  </Text>
+                  {isActiveEventsLoading && !activeEventsData ? (
+                    <EventSkeleton count={3} isHorizontal={true} />
+                  ) : activeEventsError ? (
+                    <Box py="$4" alignItems="center">
+                      <Text color="#CE4A4A" fontSize="$xs">
+                        Hata: {activeEventsError.message}
+                      </Text>
                     </Box>
-
-                    {/* Pagination Dots - Active event sayısı kadar */}
-                    {activeEventsFiltered.length > 1 && (
-                      <HStack
-                        justifyContent="center"
-                        space="xs"
-                        pt="$2"
-                        flexWrap="wrap"
-                      >
-                        {activeEventsFiltered.map((event, index) => (
-                          <Box
-                            key={event.id}
-                            width={currentActiveIndex === index ? 20 : 6}
-                            height={6}
-                            borderRadius={3}
-                            bg={currentActiveIndex === index 
-                              ? (isDark ? '#FFFFFF' : '#000000')
-                              : (isDark ? '#4A4A4A' : '#D9D9D9')
+                  ) : (
+                    <VStack space="sm">
+                      {/* Horizontal ScrollView with Peek Effect - 2. kartın yarısı görünür */}
+                      <Box position="relative">
+                        <FlatList
+                          ref={activeEventsListRef}
+                          data={activeEventsFiltered}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          ItemSeparatorComponent={() => <Box width={CARD_GAP} />}
+                          contentContainerStyle={{
+                            paddingRight: HORIZONTAL_PADDING,
+                            paddingLeft: 0,
+                          }}
+                          renderItem={({ item }) => (
+                            <Box width={CARD_WIDTH}>
+                              <EventCard
+                                data={item}
+                                isGrid={false}
+                                onPress={() => onEventPress(item.id)}
+                              />
+                            </Box>
+                          )}
+                          keyExtractor={(item) => item.id}
+                          snapToInterval={CARD_WIDTH + CARD_GAP}
+                          decelerationRate="fast"
+                          snapToAlignment="start"
+                          pagingEnabled={false}
+                          onScroll={handleActiveEventsScroll}
+                          scrollEventThrottle={16}
+                          ListFooterComponent={
+                            isFetchingNextActivePage ? (
+                              <Box
+                                justifyContent="center"
+                                alignItems="center"
+                                pl={CARD_GAP}
+                                style={{
+                                  width: 60,
+                                  height: 210,
+                                }}
+                              >
+                                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                              </Box>
+                            ) : null
+                          }
+                          onEndReached={() => {
+                            if (hasNextActivePage && !isFetchingNextActivePage) {
+                              fetchNextActivePage();
                             }
-                          />
-                        ))}
-                      </HStack>
-                    )}
-                  </VStack>
-                )}
-              </VStack>
-            </Box>
+                          }}
+                          onEndReachedThreshold={0.5}
+                          scrollEnabled={true}
+                          nestedScrollEnabled={true}
+                        />
+                      </Box>
+
+                      {/* Pagination Dots - Active event sayısı kadar */}
+                      {activeEventsFiltered.length > 1 && (
+                        <HStack
+                          justifyContent="center"
+                          space="xs"
+                          pt="$2"
+                          flexWrap="wrap"
+                        >
+                          {activeEventsFiltered.map((event, index) => (
+                            <Box
+                              key={event.id}
+                              width={currentActiveIndex === index ? 20 : 6}
+                              height={6}
+                              borderRadius={3}
+                              bg={currentActiveIndex === index
+                                ? (isDark ? '#FFFFFF' : '#000000')
+                                : (isDark ? '#4A4A4A' : '#D9D9D9')
+                              }
+                            />
+                          ))}
+                        </HStack>
+                      )}
+                    </VStack>
+                  )}
+                </VStack>
+              </Box>
+            ) : null}
 
             {/* Upcoming Events Section Header */}
             <Box>
