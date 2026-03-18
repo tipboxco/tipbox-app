@@ -1,6 +1,5 @@
 import React, { useRef, useMemo, useCallback } from 'react';
-import { Box, Pressable } from '@gluestack-ui/themed';
-import { CachedImage } from '@/src/components/CachedImage';
+import { Box, Image, Pressable } from '@gluestack-ui/themed';
 import { Dimensions, View, Pressable as RNPressable } from 'react-native';
 import Carousel, { ICarouselInstance } from 'react-native-reanimated-carousel';
 import { useSharedValue, useAnimatedStyle, interpolate, SharedValue, interpolateColor, runOnJS } from 'react-native-reanimated';
@@ -296,12 +295,10 @@ export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = fa
       >
         {isDetailMode ? (
           <RNPressable onPress={() => openImage(images[0] || defaultPostImage)}>
-            <CachedImage
+            <Image
               source={images[0] || defaultPostImage}
               alt="Post image"
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              priority="high"
+              resizeMode="cover"
               style={{
                 width: '100%',
                 height: carouselHeight,
@@ -310,12 +307,10 @@ export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = fa
             />
           </RNPressable>
         ) : (
-          <CachedImage
+          <Image
             source={images[0] || defaultPostImage}
             alt="Post image"
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            priority="high"
+            resizeMode="cover"
             style={{
               width: '100%',
               height: carouselHeight,
@@ -349,12 +344,10 @@ export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = fa
             const defaultPostImage = require('@/assets/defaultImages/default-post.png');
             return isDetailMode ? (
               <RNPressable onPress={() => openImage(images[index] || defaultPostImage)}>
-                <CachedImage
+                <Image
                   source={images[index] || defaultPostImage}
                   alt="Post image"
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  priority="high"
+                  resizeMode="cover"
                   style={{
                     width: imageWidth,
                     height: carouselHeight,
@@ -363,12 +356,10 @@ export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = fa
                 />
               </RNPressable>
             ) : (
-              <CachedImage
+              <Image
                 source={images[index] || defaultPostImage}
                 alt="Post image"
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                priority="high"
+                resizeMode="cover"
                 style={{
                   width: imageWidth,
                   height: carouselHeight,
@@ -429,12 +420,10 @@ export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = fa
               const defaultPostImage = require('@/assets/defaultImages/default-post.png');
               return isDetailMode ? (
                 <RNPressable onPress={() => openImage(images[index] || defaultPostImage)}>
-                  <CachedImage
+                  <Image
                     source={images[index] || defaultPostImage}
                     alt="Post image"
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    priority="high"
+                    resizeMode="cover"
                     style={{
                       width: feedImageWidth,
                       height: carouselHeight,
@@ -443,12 +432,10 @@ export const CardImageCarousel = ({ images, paddingHorizontal, isDetailMode = fa
                   />
                 </RNPressable>
               ) : (
-                <CachedImage
+                <Image
                   source={images[index] || defaultPostImage}
                   alt="Post image"
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  priority="high"
+                  resizeMode="cover"
                   style={{
                     width: feedImageWidth,
                     height: carouselHeight,

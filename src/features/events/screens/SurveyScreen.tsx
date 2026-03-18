@@ -145,7 +145,7 @@ const SurveyScreen: React.FC = () => {
   const handleComplete = useCallback(() => {
     const answersArray = Array.from(answers.entries()).map(([questionId, optionId]) => ({
       questionId,
-      optionId,
+      answerId: optionId,
     }));
 
     if (answersArray.length === 0) return;

@@ -36,7 +36,7 @@ export interface SurveyQuestionsApiResponse {
 
 /** POST /brands/{brandId}/surveys/{surveyId}/submit request body */
 export interface SurveySubmitRequest {
-  answers: { questionId: string; optionId: string }[];
+  answers: { questionId: string; answerId: string }[];
 }
 
 /** Completion sirasinda kazanilan badge */

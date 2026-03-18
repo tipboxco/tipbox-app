@@ -8,9 +8,12 @@
     "news": "Neler Yeni"
   },
   "banners": {
-    "title": "Tipbox Keşfet",
-    "description1": "Keşfetmeye devam et",
-    "description2": "Yeni içerikler keşfet"
+    "title1": "Tipbox Dünyasına İlk Adım",
+    "description1": "Essentials Koleksiyonunu Tamamlayarak Tipbox Dünyasına İlk Adımı At!",
+    "title2": "Belgrad Yürüyüşü için Çantanı Hazırla!",
+    "description2": "Senin Bu Yolculukta Vazgeçilmezin Nedir? Çok Yakında!",
+    "title3": "Tipbox Keşfet",
+    "description3": "Yeni içerikler keşfet"
   },
   "hottest": {
     "error": "Bir hata oluştu. Lütfen tekrar deneyin.",

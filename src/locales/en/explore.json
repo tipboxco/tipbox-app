@@ -8,9 +8,12 @@
     "news": "What's News"
   },
   "banners": {
-    "title": "Tipbox Explore",
-    "description1": "Keep exploring",
-    "description2": "Discover new content"
+    "title1": "First Step into the Tipbox World",
+    "description1": "Complete the Essentials Collection and Take Your First Step into the Tipbox World!",
+    "title2": "Pack Your Bag for the Belgrade Walk!",
+    "description2": "What's Your Must-Have on This Journey? Coming Soon!",
+    "title3": "Tipbox Explore",
+    "description3": "Discover new content"
   },
   "hottest": {
     "error": "An error occurred. Please try again.",

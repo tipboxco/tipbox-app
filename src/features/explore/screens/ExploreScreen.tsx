@@ -336,16 +336,23 @@ const ExploreScreen: React.FC = () => {
   const staticExploreBanners: MarketplaceBanner[] = useMemo(() => [
     {
       id: 'explore-banner-1',
-      title: t('banners.title'),
+      title: t('banners.title1'),
       description: t('banners.description1'),
-      imageUrl: require('@/src/Explore Banners/Tipbox-explorebanners.png') as any,
+      imageUrl: require('@/src/Explore Banners/explore1-essentials.jpg') as any,
       linkUrl: '',
     },
     {
       id: 'explore-banner-2',
-      title: t('banners.title'),
+      title: t('banners.title2'),
       description: t('banners.description2'),
-      imageUrl: require('@/src/Explore Banners/Tipbox-explorebanners2.png') as any,
+      imageUrl: require('@/src/Explore Banners/explore2-belgradwalk.jpg') as any,
+      linkUrl: '',
+    },
+    {
+      id: 'explore-banner-3',
+      title: t('banners.title3'),
+      description: t('banners.description3'),
+      imageUrl: require('@/src/Explore Banners/explore3-framebyframe.jpg') as any,
       linkUrl: '',
     },
   ], [t]);
@@ -443,8 +450,11 @@ const ExploreScreen: React.FC = () => {
 
   // Item Press Handlers - Navigation
   const handleBrandPress = useCallback((brandId: string) => {
-    // BrandPostListScreen'e navigate et (Catalog stack içinde)
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandPostListScreen' as any, { brandId });
+    // BrandDetailScreen'e navigate et (Brand root stack)
+    navigationService.navigate(ROOT_ROUTES.BRAND, {
+      screen: 'BrandDetailScreen',
+      params: { brandId },
+    });
   }, []);
 
   const handleProductPress = useCallback((productId: string) => {
