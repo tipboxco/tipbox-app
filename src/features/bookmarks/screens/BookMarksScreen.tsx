@@ -124,6 +124,7 @@ const BookMarksScreen = () => {
         name: item.contextData.name,
         subName: item.contextData.subName,
         image: contextImage,
+        isOwned: item.contextData.isOwned,
       };
       category = {
         id: item.contextData.id,
@@ -173,6 +174,7 @@ const BookMarksScreen = () => {
         name: item.contextData.name,
         subName: item.contextData.subName,
         image: contextImage,
+        isOwned: item.contextData.isOwned,
       };
       category = {
         id: item.contextData.id,
@@ -252,7 +254,7 @@ const BookMarksScreen = () => {
   };
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#F5F5F5'}>
       <StatusBar style="dark" backgroundColor="#FFFFFF" translucent={true} />
       
       {/* Top inset view - Status bar için beyaz arka plan */}

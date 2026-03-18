@@ -688,7 +688,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           />
           <Box
             w="100%"
-            h={70}
             overflow="hidden"
             position="relative"
           >
@@ -696,8 +695,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               source={require('@/src/Drawer Premium Selling Banner/getpremium.png')}
               alt="Premium Banner"
               w="100%"
-              h="100%"
-              resizeMode="contain"
+              h={60}
+              resizeMode="cover"
             />
           </Box>
         </Box>

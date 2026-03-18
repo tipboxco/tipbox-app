@@ -50,7 +50,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           color={isDark ? '#FFFFFF' : '#000000'}
           textAlign="center"
         >
-          Change Password
+          {t('changePassword.title')}
         </Text>
         <Box w={24} h={24} />
       </HStack>
@@ -61,7 +61,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           fontWeight="$semibold"
           color={isDark ? '#FFFFFF' : '#000000'}
         >
-          Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+          {t('changePassword.description')}
         </Text>
       </HStack>
 
@@ -73,7 +73,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             fontWeight="$bold"
             color={isDark ? '#FFFFFF' : '#000000'}
           >
-            Current Password
+            {t('changePassword.currentPassword')}
           </Text>
           <Box
             borderWidth={1}
@@ -103,7 +103,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             fontWeight="$semibold"
             color="#B9B9B9"
           >
-            Son güncelleme: 26.03.2025
+            {t('changePassword.lastUpdated')}
           </Text>
           <Pressable
             onPress={() => {
@@ -117,7 +117,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
               color={isDark ? '#FFFFFF' : '#000000'}
               underline
             >
-              Forgot Password
+              {t('changePassword.forgotPassword')}
             </Text>
           </Pressable>
         </HStack>
@@ -138,7 +138,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             fontWeight="$bold"
             color={isDark ? '#FFFFFF' : '#000000'}
           >
-            New Password
+            {t('changePassword.newPassword')}
           </Text>
           <Box
             borderWidth={1}
@@ -168,7 +168,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             fontWeight="$bold"
             color={isDark ? '#FFFFFF' : '#000000'}
           >
-            Confirm New Password
+            {t('changePassword.confirmNewPassword')}
           </Text>
           <Box
             borderWidth={1}
@@ -206,8 +206,8 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                      <ToastTitle>Missing Information</ToastTitle>
-                      <ToastDescription>Please fill in all fields.</ToastDescription>
+                      <ToastTitle>{t('changePassword.errors.missingInfoTitle')}</ToastTitle>
+                      <ToastDescription>{t('changePassword.errors.missingInfoDescription')}</ToastDescription>
                     </Toast>
                   </Box>
                 );
@@ -223,8 +223,8 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                      <ToastTitle>Passwords Don't Match</ToastTitle>
-                      <ToastDescription>New password and confirmation password must be the same.</ToastDescription>
+                      <ToastTitle>{t('changePassword.errors.passwordsDontMatch')}</ToastTitle>
+                      <ToastDescription>{t('changePassword.errors.passwordsDontMatchDescription')}</ToastDescription>
                     </Toast>
                   </Box>
                 );
@@ -240,8 +240,8 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                      <ToastTitle>Invalid Password</ToastTitle>
-                      <ToastDescription>Password must be at least 8 characters long.</ToastDescription>
+                      <ToastTitle>{t('changePassword.errors.invalidPassword')}</ToastTitle>
+                      <ToastDescription>{t('changePassword.errors.passwordMinLength8')}</ToastDescription>
                     </Toast>
                   </Box>
                 );
@@ -263,9 +263,9 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                      <ToastTitle>Password Changed</ToastTitle>
+                      <ToastTitle>{t('changePassword.success.title')}</ToastTitle>
                       <ToastDescription>
-                        {result.message || 'Your password has been updated successfully.'}
+                        {result.message || t('changePassword.success.description')}
                       </ToastDescription>
                     </Toast>
                   </Box>
@@ -291,7 +291,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
                 return (
                   <Box maxWidth="90%" alignSelf="center" px="$4">
                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                      <ToastTitle>Error</ToastTitle>
+                      <ToastTitle>{t('changePassword.error.title')}</ToastTitle>
                       <ToastDescription>{errorMessage}</ToastDescription>
                     </Toast>
                   </Box>
@@ -309,7 +309,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           fontWeight="$bold"
           textAlign="center"
         >
-          {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
+          {changePasswordMutation.isPending ? t('changePassword.changing') : t('changePassword.changePasswordButton')}
         </ButtonText>
       </Button>
     </VStack>

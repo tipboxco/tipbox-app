@@ -188,6 +188,7 @@ const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsC
       name: item.contextData.name,
       subName: item.contextData.subName,
       image: contextImage,
+      isOwned: item.contextData.isOwned,
     };
 
     category = {
@@ -248,6 +249,7 @@ const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): Qu
       name: item.contextData.name,
       subName: item.contextData.subName,
       image: contextImage,
+      isOwned: item.contextData.isOwned,
     };
 
     category = {
@@ -526,7 +528,8 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerCom
     return <FeedSkeleton count={5} />;
   }
 
-  if (error) {
+  // CACHE-FIRST: Sadece cache'de veri yoksa hata göster, varsa cache'den göster
+  if (error && !data?.pages?.[0]) {
     return (
       <Box py="$8" alignItems="center">
         <Text color={isDark ? '#FFFFFF' : '#000000'}>
@@ -568,7 +571,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerCom
   }
 
   return (
-    <Box flex={1} pt={0} mt={0}>
+    <Box flex={1} pt={0} mt={0} bg={isDark ? '$backgroundDark950' : '#F5F5F5'}>
       <FlatList
         data={hottestItems}
         renderItem={({ item }) => renderHottestItem(item)}

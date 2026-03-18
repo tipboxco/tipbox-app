@@ -45,6 +45,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     hasNextPage: hasNextEventsPage,
     isFetchingNextPage: isFetchingNextEventsPage,
     isLoading: isLoadingEvents,
+    error: eventsError,
   } = useExploreEvents(10, searchQuery);
   
   // onEndReached loop'unu önlemek için ref
@@ -57,6 +58,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     hasNextPage: hasNextBrandsPage,
     isFetchingNextPage: isFetchingNextBrandsPage,
     isLoading: isLoadingBrands,
+    error: brandsError,
   } = useNewBrands(10, searchQuery);
 
   // New Products API hook with infinite scroll
@@ -66,6 +68,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     hasNextPage: hasNextProductsPage,
     isFetchingNextPage: isFetchingNextProductsPage,
     isLoading: isLoadingProducts,
+    error: productsError,
   } = useNewProducts(10);
   
   // onEndReached loop'unu önlemek için ref'ler
@@ -335,6 +338,11 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   // PERFORMANCE FIX: Memoize ItemSeparatorComponent
   const ItemSeparator = useCallback(() => <Box width={12} />, []);
 
+  // CACHE-FIRST: Tüm API'ler hata verdi ve cache'de veri yoksa hata mesajı göster
+  const hasNoData = events.length === 0 && brands.length === 0 && products.length === 0;
+  const hasErrors = !!eventsError || !!brandsError || !!productsError;
+  const isAnyLoading = isLoadingEvents || isLoadingBrands || isLoadingProducts;
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={true}
@@ -343,6 +351,18 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     >
       {headerComponent}
       <VStack space="sm" mb="$2" pt={16} mt={0}>
+      {/* CACHE-FIRST: Tüm veriler boş ve hata varsa hata mesajı göster */}
+      {hasNoData && hasErrors && !isAnyLoading && (
+        <Box py="$8" alignItems="center" px="$4">
+          <Text
+            color={isDark ? '#FFFFFF' : '#000000'}
+            fontSize="$md"
+            textAlign="center"
+          >
+            {t('news.error')}
+          </Text>
+        </Box>
+      )}
         {/* New Community Events Section */}
       {(isLoadingEvents || events.length > 0) && (
         <Box pl="$4">

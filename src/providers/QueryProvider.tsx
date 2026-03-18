@@ -30,7 +30,7 @@ const queryClient = new QueryClient({
       networkMode: 'online', // Only fetch when online (default, but explicit)
     },
     mutations: {
-      retry: 1, // Mutation hatalarında 1 kez daha dene
+      retry: false, // Mutation'lar (DELETE, POST, PUT) asla otomatik retry yapmamalı
       // PERFORMANCE FIX: Network mode for mutations
       networkMode: 'online', // Only mutate when online
     },

@@ -750,7 +750,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         mt="auto"
       >
         <Text fontSize={14} fontWeight="$bold" color="#111111" textAlign="center">
-          Confirm
+          {t('sendBottomSheet.confirmation.confirmButton')}
         </Text>
       </Pressable>
     </VStack>
@@ -1073,14 +1073,14 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       const isCancelled = effectiveStatus === 'failed' && effectiveErrorMessage === 'Cancelled by user';
       const statusMessage =
         effectiveStatus === 'created'
-          ? 'Your transaction has been queued. Confirmation will start shortly. You can cancel within 5 seconds if you wish.'
+          ? t('sendBottomSheet.confirmation.transactionQueued')
           : effectiveStatus === 'pending'
-            ? 'Processing on network…'
+            ? t('sendBottomSheet.confirmation.processingNetwork')
             : effectiveStatus === 'failed'
               ? isCancelled
-                ? 'Transaction cancelled.'
-                : (effectiveErrorMessage || 'Transaction failed.')
-              : 'Processing…';
+                ? t('sendBottomSheet.confirmation.transactionCancelled')
+                : (effectiveErrorMessage || t('sendBottomSheet.confirmation.transactionFailedMessage'))
+              : t('sendBottomSheet.confirmation.processing');
       const isFailed = effectiveStatus === 'failed';
       const isPendingOrCreated = effectiveStatus === 'created' || effectiveStatus === 'pending';
       const showCancelButton = effectiveStatus === 'created' && transactionIdForPoll && cancelCountdown != null && cancelCountdown > 0 && !isCancelling;
@@ -1105,7 +1105,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                 <PaperAirplaneIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
               )}
               <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-                {isFailed ? (isCancelled ? 'Transaction Cancelled' : 'Send Failed') : 'Send Tip'}
+                {isFailed ? (isCancelled ? t('sendBottomSheet.confirmation.cancelled') : t('sendBottomSheet.confirmation.sendFailed')) : t('sendBottomSheet.confirmation.sendTip')}
               </Text>
             </HStack>
             <Box w={24} />
@@ -1116,13 +1116,13 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             </Text>
             {effectiveStatus === 'created' && cancelCountdown != null && cancelCountdown > 0 && (
               <Text fontSize={12} color="$textLight500" $dark-color="$textDark400" textAlign="center">
-                You have {cancelCountdown} seconds to cancel.
+                {t('sendBottomSheet.confirmation.secondsToCancel', { count: cancelCountdown })}
               </Text>
             )}
             {effectiveTxHash && (
               <VStack w="100%" space="xs" mt="$2">
                 <Text fontSize={11} fontWeight="$semibold" color="#6B6B6B" $dark-color="$textDark300">
-                  Transaction hash
+                  {t('sendBottomSheet.confirmation.transactionHash')}
                 </Text>
                 <HStack alignItems="center" space="sm">
                   <Text fontSize={10} color="$textLight700" $dark-color="$textDark400" flex={1} numberOfLines={1}>
@@ -1165,7 +1165,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               disabled={isCancelling}
             >
               <Text fontSize={14} fontWeight="$bold" color="#FFFFFF" textAlign="center">
-                {isCancelling ? 'Cancelling…' : 'Cancel'}
+                {isCancelling ? t('sendBottomSheet.confirmation.cancelling') : t('sendBottomSheet.confirmation.cancelButton')}
               </Text>
             </Pressable>
           )}
@@ -1184,7 +1184,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             mt="auto"
           >
             <Text fontSize={14} fontWeight="$bold" color={isFailed ? '#FFFFFF' : '#111111'} textAlign="center">
-              {isFailed ? 'Close' : 'Back'}
+              {isFailed ? t('sendBottomSheet.confirmation.close') : t('sendBottomSheet.confirmation.back')}
             </Text>
           </Pressable>
         </VStack>
@@ -1203,7 +1203,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <HStack flex={1} justifyContent="center" alignItems="center">
         <PaperAirplaneIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            Send TIPS
+            {t('sendBottomSheet.confirmation.sendTips')}
           </Text>
         </HStack>
         <Box w={24} />
@@ -1351,7 +1351,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           <InformationCircleIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
         </Box>
         <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" flex={1} lineHeight={12}>
-          TIPS token is calculated based on the current USD exchange rate.
+          {t('sendBottomSheet.amount.tipsCalculation')}
         </Text>
       </HStack>
 
@@ -1362,7 +1362,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       <VStack space="sm">
         <HStack justifyContent="space-between" alignItems="center" w="100%">
           <Text fontSize={11} fontWeight="$semibold" color="#6B6B6B" $dark-color="$textDark300">
-            Transaction Fee:
+            {t('sendBottomSheet.confirmation.transactionFee')}
           </Text>
           <Text fontSize={11} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
             ${transactionDetails.transactionFee}
@@ -1370,7 +1370,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         </HStack>
         <HStack justifyContent="space-between" alignItems="center" w="100%">
           <Text fontSize={11} fontWeight="$semibold" color="#6B6B6B" $dark-color="$textDark300">
-            Remaining Balance:
+            {t('sendBottomSheet.confirmation.remainingBalance')}
           </Text>
           <Text fontSize={11} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
             {transactionDetails.remainingBalance.toLocaleString()} TIPS
@@ -1399,7 +1399,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               ...(recipientId && { recipientId }),
               ...(walletAddress && { recipientId: walletAddress }),
               amount: tipsAmount,
-              message: 'TIPS transfer',
+              message: t('sendBottomSheet.confirmation.tipsTransfer'),
             },
             {
               onSuccess: (response) => {
@@ -1423,12 +1423,12 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         disabled={isSending}
       >
         <Text fontSize={14} fontWeight="$bold" color="#111111" $dark-color="#111111" textAlign="center">
-          {isSending ? 'Sending...' : 'Send'}
+          {isSending ? t('sendBottomSheet.confirmation.sending') : t('sendBottomSheet.confirmation.sendButton')}
         </Text>
       </Pressable>
       {isSending && (
         <Text fontSize={11} color="$textLight500" $dark-color="$textDark400" textAlign="center" mt="$2">
-          Please wait if the request takes a moment.
+          {t('sendBottomSheet.confirmation.pleaseWait')}
         </Text>
       )}
     </VStack>

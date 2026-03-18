@@ -25,6 +25,7 @@
     ],
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "19",
       "bundleIdentifier": "app.tipbox.ios",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {

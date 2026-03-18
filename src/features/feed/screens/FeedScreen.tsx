@@ -537,21 +537,32 @@ const FeedScreenInner = React.memo(() => {
     }
 
     const productImage = toImageSource(item.contextData.image);
-    // Missing product image warning removed for performance
-    const product: TipsProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
+    const contextImage = productImage || require('@/assets/inventory/product_01.png');
 
-    const category: TipsCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+    let category: TipsCategory;
+    if (item.contextType === 'sub_category') {
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage,
+      };
+    } else {
+      const product: TipsProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage,
+        isOwned: item.contextData.isOwned,
+      };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage,
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
@@ -626,22 +637,32 @@ const FeedScreenInner = React.memo(() => {
     }
 
     const productImage = toImageSource(item.contextData.image);
-    // Missing product image warning removed for performance
+    const contextImage = productImage || require('@/assets/inventory/product_01.png');
 
-    const product: QuestionCardProduct = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subName: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-    };
-
-    const category: QuestionCardCategory = {
-      id: item.contextData.id || '',
-      name: item.contextData.name || '',
-      subCategory: item.contextData.subName || '',
-      image: productImage || require('@/assets/inventory/product_01.png'),
-      product,
-    };
+    let category: QuestionCardCategory;
+    if (item.contextType === 'sub_category') {
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage,
+      };
+    } else {
+      const product: QuestionCardProduct = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subName: item.contextData.subName || '',
+        image: contextImage,
+        isOwned: item.contextData.isOwned,
+      };
+      category = {
+        id: item.contextData.id || '',
+        name: item.contextData.name || '',
+        subCategory: item.contextData.subName || '',
+        image: contextImage,
+        product,
+      };
+    }
 
     // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
     // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
@@ -812,7 +833,8 @@ const FeedScreenInner = React.memo(() => {
       case CardType.EXPERIENCE:
       case 'experience':
         // Experience type için ExperiencePostApiItem kullan ve ExperiencePostCard render et
-        if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
+        // API'den contextData veya product gelebilir, content string veya array olabilir, experienceContent array olabilir
+        if (('contextData' in item.data || 'product' in item.data) && ('experienceContent' in item.data || 'content' in item.data)) {
           return (
             <ExperiencePostCard
               key={itemId}
@@ -1004,7 +1026,7 @@ const FeedScreenInner = React.memo(() => {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <View
-        style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FAFAFA' }}
+        style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }}
       >
         <Header
           logo={require('@/assets/tipbox-nobg.png')}
@@ -1073,6 +1095,7 @@ const FeedScreenInner = React.memo(() => {
               keyExtractor={keyExtractor}
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
+              ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
               ListFooterComponent={renderFooter}
               contentContainerStyle={contentContainerStyle}
               showsVerticalScrollIndicator={false}

@@ -125,7 +125,13 @@ export const ProductSelectScreen: React.FC = () => {
   // Products API
   // BENCHMARK: productGroupFilter varsa bunu kullan (selectedProductGroupId henüz set edilmemiş olabilir)
   const effectiveProductGroupId = selectedProductGroupId || productGroupFilter;
-  const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(
+  const {
+    data: catalogProducts,
+    isLoading: isLoadingProducts,
+    fetchNextPage: fetchNextProductsPage,
+    hasNextPage: hasNextProductsPage,
+    isFetchingNextPage: isFetchingNextProductsPage,
+  } = useCatalogProducts(
     hasGlobalSearch ? undefined : effectiveProductGroupId,
     hasGlobalSearch ? undefined : (debouncedSearchQuery || undefined)
   );
@@ -622,6 +628,9 @@ export const ProductSelectScreen: React.FC = () => {
             }
             if (!hasGlobalSearch && currentView === 'productgroups' && hasNextProductGroupsPage && !isFetchingNextProductGroupsPage) {
               fetchNextProductGroupsPage();
+            }
+            if (!hasGlobalSearch && currentView === 'products' && hasNextProductsPage && !isFetchingNextProductsPage) {
+              fetchNextProductsPage();
             }
           }}
           scrollEventThrottle={16}
