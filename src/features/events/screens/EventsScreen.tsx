@@ -29,6 +29,8 @@ import { useDrawerStore } from '@/src/store/drawerStore';
 import FilterBottomSheet, { FilterSelection } from '../components/FilterBottomSheet';
 import CollectionsBottomSheet from '../components/CollectionsBottomSheet';
 import type { CollectionFilters } from '../types/medusa.types';
+import type { Collection } from '../types/collection.types';
+import { useCollections } from '../api/hooks';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
@@ -96,6 +98,27 @@ const EventsScreen: React.FC = () => {
   /** Collections tab filter (CollectionsBottomSheet) - CollectionsTab'a geçirilir */
   const [collectionFilters, setCollectionFilters] = useState<CollectionFilters | null>(null);
 
+  // Bottom sheet için tüm collections verisini çek (kategori listesi oluşturmak için)
+  const { data: collectionsData } = useCollections({});
+  const allCollections = React.useMemo<Collection[]>(() => {
+    if (!collectionsData?.pages) return [];
+    return collectionsData.pages.flatMap((page: any) =>
+      (page.collections || []).map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        currentProgress: c.currentProgress ?? 0,
+        totalProgress: c.totalProgress ?? 0,
+        coverImage: c.coverImage ?? null,
+        category: c.category ?? undefined,
+        mainCategory: c.mainCategory ?? null,
+        subCategory: c.subCategory ?? null,
+        totalBadges: c.totalBadges ?? 0,
+        earnedBadges: c.earnedBadges ?? 0,
+      }))
+    );
+  }, [collectionsData]);
+
   // Debounce search query for API calls
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -131,12 +154,13 @@ const EventsScreen: React.FC = () => {
         onApply={handleCollectionsFilterApply}
         isDark={isDark}
         initialFilters={collectionFilters}
+        collections={allCollections}
       />,
       {
         snapPoints: ['50%', '75%'],
       }
     );
-  }, [openBottomSheet, handleCollectionsFilterApply, isDark, collectionFilters]);
+  }, [openBottomSheet, handleCollectionsFilterApply, isDark, collectionFilters, allCollections]);
 
   const handleEventPress = (eventId: string) => {
     if (!eventId) {
@@ -272,22 +296,23 @@ const EventsScreen: React.FC = () => {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
-              {/* Filter Icon - Community tab: FilterBottomSheet, Collections tab: CollectionsBottomSheet */}
-              <Pressable
-                onPress={() =>
-                  activeTab === 'community'
-                    ? setShowCommunityFilterSheet(true)
-                    : handleOpenCollectionsFilter()
-                }
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ position: 'relative' }}
-              >
-                <FunnelIcon
-                  width={20}
-                  height={20}
-                  color={isDark ? '#FFF' : '#000'}
-                />
-              </Pressable>
+              {/* Filter Icon - Only visible on Collections tab */}
+              {activeTab === 'collections' && (
+                <Pressable
+                  onPress={handleOpenCollectionsFilter}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={{ position: 'relative' }}
+                >
+                  <FunnelIcon
+                    width={20}
+                    height={20}
+                    color={isDark ? '#FFF' : '#000'}
+                  />
+                  {!!(collectionFilters?.mainCategoryName || collectionFilters?.subCategoryName) && (
+                    <View style={styles.filterBadge} />
+                  )}
+                </Pressable>
+              )}
             </View>
           </View>
 
@@ -464,6 +489,15 @@ const styles = StyleSheet.create({
   },
   page: {
     flex: 1,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#C2E607',
   },
 });
 
