@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Box, VStack, HStack, Text, Button, ButtonText, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { formatMessageTime } from '../../utils/messageHelpers';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import type { MessageItemProps } from './types';
 
 interface SupportRequestMessageProps extends Pick<MessageItemProps,
@@ -22,6 +23,8 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
   onGoToSupportChat,
   currentUserId,
 }) => {
+  const { t } = useTranslation('inbox');
+
   if (!item.supportRequest) return null;
 
   const isExpanded = expandedSupportRequests[item.id];
@@ -64,7 +67,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                       fontWeight="$semibold"
                       color="#000000"
                     >
-                      Support Request Created
+                      {t('supportRequest.statusLabels.created')}
                     </Text>
                   </>
                 ) : requestStatus === 'canceled' ? (
@@ -79,7 +82,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                       fontWeight="$semibold"
                       color="#000000"
                     >
-                      Support Request Canceled
+                      {t('supportRequest.statusLabels.canceled')}
                     </Text>
                   </>
                 ) : requestStatus === 'accepted' ? (
@@ -94,7 +97,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                       fontWeight="$semibold"
                       color="#000000"
                     >
-                      Support Request Accepted
+                      {t('supportRequest.statusLabels.accepted')}
                     </Text>
                   </>
                 ) : requestStatus === 'rejected' ? (
@@ -109,7 +112,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                       fontWeight="$semibold"
                       color="#000000"
                     >
-                      Support Request Rejected
+                      {t('supportRequest.statusLabels.rejected')}
                     </Text>
                   </>
                 ) : (
@@ -130,7 +133,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                       fontWeight="$semibold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
-                      Support Request
+                      {t('supportRequest.title')}
                     </Text>
                   </>
                 )}
@@ -158,7 +161,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                     fontWeight="$medium"
                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                   >
-                    Support Type
+                    {t('supportRequest.labels.supportType')}
                   </Text>
                   <Text
                     fontSize="$xs"
@@ -175,7 +178,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                     fontWeight="$medium"
                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                   >
-                    Request Details
+                    {t('supportRequest.labels.requestDetails')}
                   </Text>
                   <Text
                     fontSize="$xs"
@@ -208,7 +211,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                     fontWeight="$medium"
                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                   >
-                    Status
+                    {t('supportRequest.labels.status')}
                   </Text>
                   <Box
                     bg={
@@ -233,9 +236,8 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                         requestStatus === 'canceled' ? '#9E9E9E' :
                         (isDark ? '#FFFFFF' : '#000000')
                       }
-                      textTransform="capitalize"
                     >
-                      {requestStatus}
+                      {t(`supportRequest.statusBadges.${requestStatus}` as any, { defaultValue: requestStatus })}
                     </Text>
                   </Box>
                 </VStack>
@@ -250,7 +252,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                         py="$2"
                       >
                         <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
-                          Cancel Request
+                          {t('supportRequest.buttons.cancelRequest')}
                         </ButtonText>
                       </Button>
                     )}
@@ -264,7 +266,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                           flex={1}
                         >
                           <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
-                            Accept
+                            {t('supportRequest.buttons.accept')}
                           </ButtonText>
                         </Button>
                         <Button
@@ -275,7 +277,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                           flex={1}
                         >
                           <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
-                            Reject
+                            {t('supportRequest.buttons.reject')}
                           </ButtonText>
                         </Button>
                       </HStack>
@@ -292,7 +294,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
                       py="$2"
                     >
                       <ButtonText color="#000000" fontSize="$xs" fontWeight="$semibold">
-                        Go to Support Chat
+                        {t('supportRequest.buttons.goToSupportChat')}
                       </ButtonText>
                     </Button>
                   </VStack>
@@ -314,7 +316,7 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
               flex={1}
             >
-              Support request will close automatically in 24 hours if unanswered.
+              {t('supportRequest.statusMessages.pendingAutoClose')}
             </Text>
             <Feather
               name="info"
@@ -341,12 +343,12 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
               flex={1}
             >
               {requestStatus === 'accepted'
-                ? 'Support request has been accepted. Click "Go to Support Chat" to start the conversation.'
+                ? t('supportRequest.statusMessages.acceptedGoToChat')
                 : requestStatus === 'rejected'
-                ? 'This support request has been rejected.'
+                ? t('supportRequest.statusMessages.rejected')
                 : requestStatus === 'canceled'
-                ? 'This support request has been canceled.'
-                : 'Support request status: ' + requestStatus
+                ? t('supportRequest.statusMessages.canceled')
+                : t('supportRequest.statusMessages.statusPrefix', { status: requestStatus })
               }
             </Text>
           </HStack>

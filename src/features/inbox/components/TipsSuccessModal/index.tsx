@@ -13,6 +13,7 @@ import {
 } from '@gluestack-ui/themed';
 import { ScrollView } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface TipsSuccessModalProps {
     isVisible: boolean;
@@ -41,6 +42,7 @@ const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { t } = useTranslation('inbox');
 
     return (
         <Modal isOpen={isVisible} onClose={onClose} flex={1}>
@@ -94,18 +96,8 @@ const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({
                             </VStack>
                         </HStack>
 
-                        {/* Başlık */}
-                        <Text
-                            px="$4"
-                            fontSize={11}
-                            fontWeight="$bold"
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            lineHeight={14}
-                        >
-                            Başlık Yazısı Buraya Gelecek Kalın Bir Şekilde - Karakter Sınırı Olabilir
-                        </Text>
-
                         {/* Bahşiş Açıklaması */}
+                        {description ? (
                         <Text
                             px="$4"
                             fontSize={9}
@@ -113,8 +105,9 @@ const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                             lineHeight={13}
                         >
-                            {description || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'}
+                            {description}
                         </Text>
+                        ) : null}
 
                         {/* TIPS Miktarı ve Bakiye */}
                         <HStack borderTopWidth={1} borderBottomWidth={1} borderColor={'#D9D9D9'} justifyContent="space-between" alignItems="flex-end" py="$2">
@@ -136,7 +129,7 @@ const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({
                                     fontWeight="$normal"
                                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                                 >
-                                    Current Balance
+                                    {t('tipsConfirmModal.currentBalance')}
                                 </Text>
                                 <Text
                                     fontSize={9}
@@ -163,7 +156,7 @@ const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({
                                     fontWeight="$bold"
                                     textAlign="center"
                                 >
-                                    Onayla
+                                    {t('tipsConfirmModal.confirm')}
                                 </Text>
                             </Pressable>
 
@@ -182,7 +175,7 @@ const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({
                                     fontWeight="$normal"
                                     textAlign="center"
                                 >
-                                    İptal Et
+                                    {t('tipsConfirmModal.cancel')}
                                 </Text>
                             </Pressable>
                         </VStack>

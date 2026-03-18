@@ -56,6 +56,16 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const { data: messages, isLoading, isFetching, error, refetch } = useMessages(true, searchParams);
     const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
+    // Loading timeout: 10 saniye sonra spinner'ı kaldır, FlatList (boş liste + pull-to-refresh) göster
+    const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+    useEffect(() => {
+        if (isLoading && !messages) {
+            setLoadingTimedOut(false);
+            const timeout = setTimeout(() => setLoadingTimedOut(true), 10_000);
+            return () => clearTimeout(timeout);
+        }
+    }, [isLoading, messages]);
+
     // Özet log (BrandScreen tarzı): mesaj sayısı ve ilk mesaj
     useEffect(() => {
         if (messages != null && !isLoading) {
@@ -282,13 +292,21 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         }, [closeBottomSheet])
     );
 
-    // PagerView bazen ilk mount'ta query güncellemelerini component'e iletmiyor
-    // Data yoksa ve loading değilse (query resolve olmuş ama component güncellenememiş) refetch yap
-    // useEffect ile ayrı handle et - useFocusEffect'e query state koymak loop yaratır
-    const hasAttemptedRefetchRef = useRef(false);
+    // Tab aktif olduğunda mesajları hemen fetch et
+    // PagerView çocukları unmount etmediği için refetchOnMount yetmez,
+    // isActiveTab değişimini izleyerek explicit refetch yapıyoruz
+    const prevActiveRef = useRef(isActiveTab);
     useEffect(() => {
-        if (!messages && !isLoading && !error && !hasAttemptedRefetchRef.current) {
-            hasAttemptedRefetchRef.current = true;
+        if (isActiveTab && !prevActiveRef.current) {
+            // Tab yeni aktif oldu → refetch
+            refetch();
+        }
+        prevActiveRef.current = isActiveTab;
+    }, [isActiveTab, refetch]);
+
+    // İlk mount'ta data yoksa ve loading de değilse (PagerView state sync sorunu) refetch yap
+    useEffect(() => {
+        if (!messages && !isLoading && !error) {
             refetch();
         }
     }, [messages, isLoading, error, refetch]);
@@ -564,11 +582,15 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             {/* Messages List - Full Height */}
             {/* ✅ FIX: isLoading && !messages - PagerView'da query resolve olup component güncellenemezse
                 messages undefined olsa bile isLoading false olduğunda FlatList göster */}
-            {error ? (
+            {/* CACHE-FIRST: Sadece cache'de mesaj yoksa hata göster, varsa cache'den göster */}
+            {error && !messages ? (
                 <Box py={20} alignItems="center">
                     <Text color="#CE4A4A">{t('messages.error', { message: error.message })}</Text>
+                    <Pressable mt="$3" onPress={() => refetch()}>
+                        <Text color={isDark ? '#E2FF46' : '#8B5CF6'} fontWeight="$bold">{t('messages.retry')}</Text>
+                    </Pressable>
                 </Box>
-            ) : isLoading && !messages ? (
+            ) : isLoading && !messages && !loadingTimedOut ? (
                 <Box flex={1} justifyContent="center" alignItems="center">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>

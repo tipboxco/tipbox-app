@@ -11,6 +11,7 @@ import {
   Text,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useTranslation } from '@/src/hooks/useTranslation';
 import { Feather } from '@expo/vector-icons';
 
 interface SelectedImage {
@@ -36,7 +37,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   onAddImage,
   onSendImage,
-  placeholder = 'Type your message...',
+  placeholder: placeholderProp,
   onTypingStart,
   onTypingStop,
   threadId,
@@ -45,6 +46,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { t } = useTranslation('inbox');
+  const placeholder = placeholderProp || t('messageInput.typeMessage');
   const [message, setMessage] = useState('');
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingTimeRef = useRef<number>(0);
@@ -139,7 +142,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <Box position="relative" width="100%" maxHeight={200} borderRadius={12} overflow="hidden">
             <Image
               source={{ uri: selectedImage.uri }}
-              alt="Selected image"
+              alt={t('messageInput.selectedImageAlt')}
               width="100%"
               height={200}
               resizeMode="cover"
@@ -191,7 +194,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           justifyContent="center"
         >
           <InputField
-            placeholder={selectedImage ? 'Add a caption...' : placeholder}
+            placeholder={selectedImage ? t('messageInput.addCaption') : placeholder}
             placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
             color={isDark ? '#FFFFFF' : '#000000'}
             fontSize={11}

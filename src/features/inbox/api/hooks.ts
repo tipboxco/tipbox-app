@@ -71,11 +71,11 @@ export const useMessages = (enabled: boolean = true, params?: GetMessagesParams)
     queryKey: [...inboxKeys.messages(), params],
     queryFn: () => getMessages(params),
     enabled,
-    staleTime: 5 * 60 * 1000,  // 5 dakika
+    staleTime: 30 * 1000,      // 30 saniye - tab'a dönüldüğünde daha hızlı refetch
     gcTime: 10 * 60 * 1000,    // 10 dakika
-    refetchOnMount: true,
+    refetchOnMount: 'always' as const,  // PagerView unmount etmez, her mount'ta refetch yap
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 2,
   });
 };
 

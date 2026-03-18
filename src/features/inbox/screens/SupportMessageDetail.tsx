@@ -1605,7 +1605,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                     fontWeight="$semibold"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
-                    Support Request Created
+                    {t('supportRequest.statusLabels.created')}
                   </Text>
                 </HStack>
                 <Feather
@@ -1633,7 +1633,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
-                      Support Type
+                      {t('supportRequest.labels.supportType')}
                     </Text>
                     <Text
                       fontSize={13}
@@ -1651,7 +1651,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
-                      Request Details
+                      {t('supportRequest.labels.requestDetails')}
                     </Text>
                     <Text
                       fontSize={12}
@@ -1686,7 +1686,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
-                      Status
+                      {t('supportRequest.labels.status')}
                     </Text>
                     <Box
                       bg={
@@ -1717,7 +1717,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         }
                         textTransform="capitalize"
                       >
-                        {requestStatus === 'awaiting_completion' ? 'awaiting completion' : requestStatus}
+                        {t(`supportRequest.statusBadges.${requestStatus === 'awaiting_completion' ? 'awaitingCompletion' : requestStatus}` as any, { defaultValue: requestStatus })}
                       </Text>
                     </Box>
                   </VStack>
@@ -1734,7 +1734,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                             py="$2"
                           >
                             <ButtonText color="#FFFFFF" fontSize={14} fontWeight="$semibold">
-                              Cancel Request
+                              {t('supportRequest.buttons.cancelRequest')}
                             </ButtonText>
                           </Button>
                       )}
@@ -1749,7 +1749,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                             flex={1}
                           >
                             <ButtonText color="#FFFFFF" fontSize={14} fontWeight="$semibold">
-                              Accept
+                              {t('supportRequest.buttons.accept')}
                             </ButtonText>
                           </Button>
                           <Button
@@ -1760,7 +1760,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                             flex={1}
                           >
                             <ButtonText color="#FFFFFF" fontSize={14} fontWeight="$semibold">
-                              Reject
+                              {t('supportRequest.buttons.reject')}
                             </ButtonText>
                           </Button>
                         </HStack>
@@ -1777,7 +1777,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         color={isDark ? '#4CAF50' : '#4CAF50'}
                         fontStyle="italic"
                       >
-                        Support request has been accepted. Support chat is now active.
+                        {t('supportRequest.statusMessages.acceptedActive')}
                       </Text>
                     </VStack>
                   )}
@@ -1792,7 +1792,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         fontStyle="italic"
                         mb="$2"
                       >
-                        Support request is awaiting completion. Please rate and finalize.
+                        {t('supportRequest.statusMessages.awaitingCompletion')}
                       </Text>
                       <Button
                         onPress={handleFinalizeRequest}
@@ -1801,7 +1801,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         py="$2"
                       >
                         <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
-                          Finalize Support Request
+                          {t('supportRequest.buttons.finalize')}
                         </ButtonText>
                       </Button>
                     </VStack>
@@ -1816,7 +1816,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         color={isDark ? '#4CAF50' : '#4CAF50'}
                         fontStyle="italic"
                       >
-                        Support request has been completed.
+                        {t('supportRequest.statusMessages.completed')}
                       </Text>
                     </VStack>
                   )}
@@ -1931,7 +1931,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       
       {/* Header */}
       <MessageDetailHeader
-        senderName={params.expertName || 'Support Request'}
+        senderName={params.expertName || t('supportRequest.title')}
         senderTitle={params.expertTitle || ''}
         senderAvatar={params.expertAvatar}
         onBackPress={() => navigation.goBack()}
@@ -2245,7 +2245,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                   fontWeight="$semibold"
                   textAlign="center"
                 >
-                  Accept
+                  {t('supportRequest.buttons.accept')}
                 </Text>
               </Box>
             </Pressable>
@@ -2265,7 +2265,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                   fontWeight="$semibold"
                   textAlign="center"
                 >
-                  Reject
+                  {t('supportRequest.buttons.reject')}
                 </Text>
               </Box>
             </Pressable>
@@ -2286,7 +2286,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               textAlign="center"
               flex={1}
             >
-              You have requested to close this support request. Waiting for the other party to confirm closure.
+              {t('supportRequest.statusMessages.awaitingOtherParty')}
             </Text>
           </HStack>
         </Box>
@@ -2302,7 +2302,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               fontWeight="$semibold"
               textAlign="center"
             >
-              Support request has been completed.
+              {t('supportRequest.statusMessages.completed')}
             </Text>
           </VStack>
         </Box>
@@ -2326,7 +2326,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                 fontWeight="$semibold"
                 textAlign="center"
               >
-                Cancel Request
+                {t('supportRequest.buttons.cancelRequest')}
               </Text>
             </Box>
           </Pressable>

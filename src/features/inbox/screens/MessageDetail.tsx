@@ -311,6 +311,16 @@ const MessageDetailScreen: React.FC = () => {
     openSendTips: false,
   };
 
+  // Deep link ile açıldığında sender bilgisi gelmeyebilir - thread mesajlarından çıkarılacak
+  const [dynamicSenderName, setDynamicSenderName] = useState<string | null>(null);
+  const [dynamicSenderTitle, setDynamicSenderTitle] = useState<string | null>(null);
+  const [dynamicSenderAvatar, setDynamicSenderAvatar] = useState<any>(null);
+
+  // Header'da gösterilecek sender bilgisi: params varsa params, yoksa thread'den çıkarılan dinamik bilgi
+  const headerSenderName = params.senderName || dynamicSenderName || t('messageDetail.fallback.unknown');
+  const headerSenderTitle = params.senderTitle || dynamicSenderTitle || '';
+  const headerSenderAvatar = params.senderAvatar || dynamicSenderAvatar;
+
   // CRITICAL FIX: params değerlerini useRef ile sakla (dependency array'deki infinite loop'u önlemek için)
   const paramsRef = useRef(params);
   useEffect(() => {
@@ -563,6 +573,35 @@ const MessageDetailScreen: React.FC = () => {
       prevThreadIdRef.current = threadId;
     }
   }, [threadId, queryClient]);
+
+  // Deep link fix: Thread mesajları yüklendiğinde sender bilgisini çıkar (params yoksa)
+  useEffect(() => {
+    if (!params.senderName && threadMessages && Array.isArray(threadMessages) && threadMessages.length > 0 && user?.id) {
+      // Karşı tarafın mesajını bul (current user olmayan sender)
+      const otherUserMessage = threadMessages.find(msg => String(msg.senderId) !== String(user.id));
+      if (otherUserMessage) {
+        if (otherUserMessage.senderName) setDynamicSenderName(otherUserMessage.senderName);
+        if (otherUserMessage.senderTitle) setDynamicSenderTitle(otherUserMessage.senderTitle);
+        if (otherUserMessage.senderAvatar) setDynamicSenderAvatar(toImageSource(otherUserMessage.senderAvatar));
+      } else {
+        // Fallback: Inbox cache'inden sender bilgisini al (karşı taraf hiç mesaj göndermemişse)
+        const cachedMessages = queryClient.getQueriesData<any[]>({ queryKey: inboxKeys.messages() });
+        if (cachedMessages) {
+          for (const [, data] of cachedMessages) {
+            if (Array.isArray(data)) {
+              const cachedThread = data.find((msg: any) => msg.id === threadId);
+              if (cachedThread) {
+                if (cachedThread.senderName) setDynamicSenderName(cachedThread.senderName);
+                if (cachedThread.senderTitle) setDynamicSenderTitle(cachedThread.senderTitle);
+                if (cachedThread.senderAvatar) setDynamicSenderAvatar(toImageSource(cachedThread.senderAvatar));
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  }, [threadMessages, user?.id, params.senderName, threadId, queryClient]);
 
   // Thread mesajlarını local state'e dönüştür
   useEffect(() => {
@@ -1812,7 +1851,7 @@ const MessageDetailScreen: React.FC = () => {
     if (!effectiveRecipientUserId || !params.senderName) return;
     try {
       await Share.share({
-        message: `Check out ${params.senderName}'s profile on Tipbox!`,
+        message: t('common:messages.checkOutProfile', { name: params.senderName }),
         url: `tipboxapp://profile/user/${effectiveRecipientUserId}`,
       });
     } catch (error) {
@@ -3234,7 +3273,7 @@ const MessageDetailScreen: React.FC = () => {
                     fontWeight="$semibold"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
-                    Support Request{item.supportRequest.status === 'pending' ? ' Created' : item.supportRequest.status === 'accepted' ? ' Accepted' : item.supportRequest.status === 'rejected' ? ' Rejected' : item.supportRequest.status === 'canceled' ? ' Canceled' : ''}
+                    {item.supportRequest.status === 'pending' ? t('supportRequest.statusLabels.created') : item.supportRequest.status === 'accepted' ? t('supportRequest.statusLabels.accepted') : item.supportRequest.status === 'rejected' ? t('supportRequest.statusLabels.rejected') : item.supportRequest.status === 'canceled' ? t('supportRequest.statusLabels.canceled') : t('supportRequest.title')}
                   </Text>
                 </HStack>
                 <Feather
@@ -3262,7 +3301,7 @@ const MessageDetailScreen: React.FC = () => {
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
-                      Support Type
+                      {t('supportRequest.labels.supportType')}
                     </Text>
                     <Text
                       fontSize="$sm"
@@ -3280,7 +3319,7 @@ const MessageDetailScreen: React.FC = () => {
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
-                      Request Details
+                      {t('supportRequest.labels.requestDetails')}
                     </Text>
                     <Text
                       fontSize="$sm"
@@ -3315,7 +3354,7 @@ const MessageDetailScreen: React.FC = () => {
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
-                      Status
+                      {t('supportRequest.labels.status')}
                     </Text>
                     <Box
                       bg={
@@ -3340,9 +3379,8 @@ const MessageDetailScreen: React.FC = () => {
                           requestStatus === 'canceled' ? '#9E9E9E' :
                           (isDark ? '#FFFFFF' : '#000000')
                         }
-                        textTransform="capitalize"
                       >
-                        {requestStatus}
+                        {t(`supportRequest.statusBadges.${requestStatus}` as any, { defaultValue: requestStatus })}
                       </Text>
                     </Box>
                   </VStack>
@@ -3359,7 +3397,7 @@ const MessageDetailScreen: React.FC = () => {
                           py="$2"
                         >
                           <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
-                            Cancel Request
+                            {t('supportRequest.buttons.cancelRequest')}
                           </ButtonText>
                         </Button>
                       )}
@@ -3374,7 +3412,7 @@ const MessageDetailScreen: React.FC = () => {
                             flex={1}
                           >
                             <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
-                              Accept
+                              {t('supportRequest.buttons.accept')}
                             </ButtonText>
                           </Button>
                           <Button
@@ -3385,7 +3423,7 @@ const MessageDetailScreen: React.FC = () => {
                             flex={1}
                           >
                             <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
-                              Reject
+                              {t('supportRequest.buttons.reject')}
                             </ButtonText>
                           </Button>
                         </HStack>
@@ -3403,7 +3441,7 @@ const MessageDetailScreen: React.FC = () => {
                         py="$2"
                       >
                         <ButtonText color="#000000" fontSize="$xs" fontWeight="$semibold">
-                          Go to Support Chat
+                          {t('supportRequest.buttons.goToSupportChat')}
                         </ButtonText>
                       </Button>
                     </VStack>
@@ -3432,14 +3470,14 @@ const MessageDetailScreen: React.FC = () => {
                 flex={1}
               >
                 {requestStatus === 'pending'
-                  ? 'Support request will close automatically in 24 hours if unanswered.'
+                  ? t('supportRequest.statusMessages.pendingAutoClose')
                   : requestStatus === 'accepted'
-                  ? 'Click "Go to Support Chat" to start.'
+                  ? t('supportRequest.statusMessages.acceptedGoToChat')
                   : requestStatus === 'rejected'
-                  ? 'This support request has been rejected.'
+                  ? t('supportRequest.statusMessages.rejected')
                   : requestStatus === 'canceled'
-                  ? 'This support request has been canceled.'
-                  : 'Support request status: ' + requestStatus
+                  ? t('supportRequest.statusMessages.canceled')
+                  : t('supportRequest.statusMessages.statusPrefix', { status: requestStatus })
                 }
               </Text>
             </HStack>
@@ -3533,9 +3571,9 @@ const MessageDetailScreen: React.FC = () => {
 
       {/* Header */}
       <MessageDetailHeader
-        senderName={params.senderName}
-        senderTitle={params.senderTitle}
-        senderAvatar={params.senderAvatar}
+        senderName={headerSenderName}
+        senderTitle={headerSenderTitle}
+        senderAvatar={headerSenderAvatar}
         onBackPress={() => navigation.goBack()}
         onAvatarPress={effectiveRecipientUserId ? () => {
           navigationService.navigate(ROOT_ROUTES.PROFILE as any, {
@@ -3759,7 +3797,7 @@ const MessageDetailScreen: React.FC = () => {
               fontSize="$xs"
               fontStyle="italic"
             >
-              {params.senderName || 'Kullanıcı'} yazıyor
+              {t('messages.typing', { name: params.senderName || t('messages.fallback.unknown') })}
             </Text>
             <HStack space="xs" alignItems="center">
               <Box

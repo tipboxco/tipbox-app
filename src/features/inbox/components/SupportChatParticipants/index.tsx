@@ -36,7 +36,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
   user2Name,
   user2Title,
   user2Avatar,
-  supportTitle = 'Support Chat',
+  supportTitle: supportTitleProp,
   tipsAmount = 0,
   category = '',
   requestDetails = '',
@@ -50,6 +50,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { t } = useTranslation('inbox');
+  const supportTitle = supportTitleProp || t('supportMessageDetail.supportChat');
 
   return (
     <VStack
@@ -248,7 +249,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               fontSize={12}
               fontWeight="$normal"
             >
-              Request Messages
+              {t('supportChat.requestMessages')}
             </Text>
             {supportRequestMessages.map((msg, index) => (
               <Text
@@ -272,7 +273,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               fontSize={12}
               fontWeight="$normal"
             >
-              Request Message
+              {t('supportChat.requestMessage')}
             </Text>
             <Text
               fontSize={13}
