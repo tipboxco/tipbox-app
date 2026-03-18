@@ -45,4 +45,8 @@ export interface CollectionFilters {
   mainCategoryId?: string;
   subCategoryId?: string;
   productGroupId?: string; // Coming soon
+  /** Client-side filtreleme için: mainCategory.name */
+  mainCategoryName?: string;
+  /** Client-side filtreleme için: subCategory.name */
+  subCategoryName?: string;
 }

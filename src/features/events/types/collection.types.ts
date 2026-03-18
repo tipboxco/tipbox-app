@@ -1,3 +1,9 @@
+/** Category bilgisi (mainCategory / subCategory) */
+export interface CategoryInfo {
+  id: string;
+  name: string;
+}
+
 /** Collection (list + detail) - backend ile uyumlu */
 export interface Collection {
   id: string;
@@ -7,6 +13,8 @@ export interface Collection {
   totalProgress: number;
   coverImage: string | null;
   category?: string;
+  mainCategory?: CategoryInfo | null;
+  subCategory?: CategoryInfo | null;
   totalBadges: number;
   earnedBadges: number;
 }
