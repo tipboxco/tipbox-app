@@ -62,10 +62,10 @@ export const getMyNFTs = async (
   queryParams.append('offset', offset.toString());
 
   const response = await apiService.getClient().get<UserNFTsApiResponse>(
-    `/marketplace/my-nfts?${queryParams.toString()}`
+    `/wallets/nfts?${queryParams.toString()}`
   );
-  // Backend { items: [...] } formatında döndürüyor, direkt items array'ini döndür
-  return response.data.items || [];
+ 
+  return response.data?.nfts || [];
 };
 
 /**

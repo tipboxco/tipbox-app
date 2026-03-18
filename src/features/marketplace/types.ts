@@ -74,6 +74,7 @@ export interface UserNFTApiItem {
  */
 export interface UserNFTsApiResponse {
   items: UserNFTApiItem[];
+  nfts?:any[];
   pagination: {
     hasMore: boolean;
     limit: number;
