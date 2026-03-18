@@ -26,18 +26,18 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
 
   const renderContent = () => (
     <View style={styles.innerContainer}>
-      {/* Top row: Category (left) + Progress (right) */}
+      {/* Top row: MainCategory name (left) + Progress (right) */}
       <View style={styles.topRow}>
-        {collection.category ? (
+        {collection.mainCategory?.name ? (
           <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{collection.category}</Text>
+            <Text style={styles.categoryText}>{collection.mainCategory.name}</Text>
           </View>
         ) : (
           <View />
         )}
         <View style={styles.progressBadge}>
           <Text style={styles.progressText}>
-            {collection.currentProgress}/{collection.totalProgress}
+            {collection.earnedBadges ?? 0}/{collection.totalBadges ?? 0}
           </Text>
         </View>
       </View>
