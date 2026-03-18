@@ -1216,7 +1216,7 @@ export const getBrandProductNewsComments = async (
 
 /**
  * Create Brand Product News Comment endpoint function
- * /brands/{brandId}/products/{productId}/news/{newsId}/comment endpoint'ine POST request gönderir
+ * /brands/{brandId}/products/{productId}/news/{newsId}/comments endpoint'ine POST request gönderir
  *
  * @param brandId - Brand ID'si
  * @param productId - Product ID'si
@@ -1232,13 +1232,13 @@ export const createBrandProductNewsComment = async (
 ): Promise<import('../types').NewsCommentCreateResponse> => {
   try {
     const response = await apiService.getClient().post<import('../types').NewsCommentCreateResponse>(
-      `/brands/${brandId}/products/${productId}/news/${newsId}/comment`,
+      `/brands/${brandId}/products/${productId}/news/${newsId}/comments`,
       request
     );
     return response.data;
   } catch (error: any) {
     console.error('[createBrandProductNewsComment] API Error:', {
-      url: `/brands/${brandId}/products/${productId}/news/${newsId}/comment`,
+      url: `/brands/${brandId}/products/${productId}/news/${newsId}/comments`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

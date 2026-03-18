@@ -45,9 +45,8 @@ const NewsDetailScreenComponent: React.FC = () => {
 
   const { newsId, brandId, productId } = route.params;
   
-  // 
-  // Actions bar height - sabit değer (tab bar yok çünkü RootNavigator'da)
-  const actionsBarHeight = 56 + insets.bottom; // Sabit yükseklik
+  // Actions bar height
+  const actionsBarHeight = 56;
 
   // API hook - brandId ve productId varsa brand product news detail, yoksa normal news detail
   const newsDetailQuery = brandId && productId
@@ -185,38 +184,35 @@ const NewsDetailScreenComponent: React.FC = () => {
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header - Fixed at top */}
-      <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        zIndex={1000}
-        pt={insets.top}
-        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-      >
-        <Header
-          title={t('newsDetail.title')}
-          showBackButton={true}
-          onBackPress={() => navigation.goBack()}
-        />
-      </Box>
+      <Header
+        title={t('newsDetail.title')}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+      />
 
-      {/* Fixed Banner and Source/Date Section */}
-      {newsDetail && (
-        <VStack
-          position="absolute"
-          top={insets.top + 56} // Header height + safe area top
-          left={0}
-          right={0}
-          zIndex={100}
-        >
-          {/* News Banner Image - Full width, no padding */}
-          <Box
-            width="100%"
-            height={250}
-            bg="rgba(0, 0, 0, 0.2)"
-            overflow="hidden"
-          >
+      {/* Scrollable Content: Banner + Source/Date + Title + Content */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingBottom: actionsBarHeight + 16,
+        }}
+      >
+        {isLoading ? (
+          <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
+              {t('newsDetail.loading')}
+            </Text>
+          </VStack>
+        ) : error ? (
+          <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+            <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
+              {t('newsDetail.error')}
+            </Text>
+          </VStack>
+        ) : newsDetail ? (
+          <VStack>
+            {/* News Banner Image - Full width */}
             <Image
               source={
                 (newsDetail.banner || newsDetail.image)
@@ -226,88 +222,60 @@ const NewsDetailScreenComponent: React.FC = () => {
               alt={newsDetail.title}
               style={{
                 width: '100%',
-                height: '100%',
+                height: 250,
               }}
               resizeMode="cover"
             />
-          </Box>
 
-          {/* Source and Date - Fixed below banner */}
-          <Box px="$4" pt="$2" pb="$2" bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            <HStack alignItems="center" space="xs">
-              <BookOpenIcon width={12} height={12} color="#B9B9B9" />
-              <Text
-                color="#B9B9B9"
-                fontSize={11}
-                fontWeight="$medium"
-              >
-                {newsDetail.source} - {newsDetail.date}
-              </Text>
-            </HStack>
-          </Box>
-        </VStack>
-      )}
-
-      {/* Scrollable Title and Content */}
-        <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ 
-          paddingTop: insets.top + 56 + 250 + 40, // Header + Banner + Source/Date height
-          paddingBottom: actionsBarHeight + insets.bottom, // Actions bar + safe area bottom
-        }}
-        >
-          {isLoading ? (
-            <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
-              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-              <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                {t('newsDetail.loading')}
-              </Text>
-            </VStack>
-          ) : error ? (
-            <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
-              <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                {t('newsDetail.error')}
-              </Text>
-            </VStack>
-          ) : newsDetail ? (
-            <VStack space="md" px="$4" pb="$4">
-                {/* Title */}
+            {/* Source and Date */}
+            <Box px="$4" pt="$2" pb="$2">
+              <HStack alignItems="center" space="xs">
+                <BookOpenIcon width={12} height={12} color="#B9B9B9" />
                 <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={18}
-                  fontWeight="$bold"
-                lineHeight={24}
+                  color="#B9B9B9"
+                  fontSize={11}
+                  fontWeight="$medium"
                 >
-                  {newsDetail.title}
+                  {newsDetail.source} - {newsDetail.date}
                 </Text>
+              </HStack>
+            </Box>
 
-                {/* Content */}
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
+            {/* Title + Content */}
+            <VStack space="md" px="$4" pb="$4">
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize={18}
+                fontWeight="$bold"
+                lineHeight={24}
+              >
+                {newsDetail.title}
+              </Text>
+
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
                 fontSize={12}
                 lineHeight={18}
-                  textAlign="justify"
-                >
-                  {newsDetail.content}
-                </Text>
+                textAlign="justify"
+              >
+                {newsDetail.content}
+              </Text>
             </VStack>
-          ) : null}
-        </ScrollView>
+          </VStack>
+        ) : null}
+      </ScrollView>
 
 
       {/* Actions Bar - Fixed at bottom */}
       {newsDetail && (
         <Box
-          position="absolute"
-          bottom={10}
-          left={0}
-          right={0}
           height={actionsBarHeight}
           bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
           borderTopWidth={1}
           borderTopColor={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
           px="$4"
           justifyContent="center"
+          pb={insets.bottom}
         >
           <HStack alignItems="center" justifyContent="space-between" width="100%">
             {/* Left Side: Like, Comment, Share */}
