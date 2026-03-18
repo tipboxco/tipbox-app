@@ -13,7 +13,12 @@ import { useAppStore } from '@/src/store/appStore';
 import { useNotificationStore } from '@/src/store/notificationStore';
 import { useAuth } from './AuthProvider';
 import { useAppState } from './AppStateProvider';
-import { notificationKeys, useUnreadCount } from '@/src/features/notifications/api/hooks';
+import {
+  notificationKeys,
+  useUnreadCount,
+  prependNotificationToCache,
+  incrementUnreadCountInCache,
+} from '@/src/features/notifications/api/hooks';
 import { useNotificationSettingsCheck } from '@/src/features/settings/hooks/useNotificationSettingsCheck';
 import * as Notifications from 'expo-notifications';
 import type { Notification, NotificationMetadata } from '@/src/features/notifications/api/types';
@@ -412,7 +417,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         // Mesaj bildirimi değilse normal akışı takip et (notifications listesine ekle)
         // State Sync: Zustand store'a ekle (instant UI update için)
         // ÖNEMLİ: Bu optimistic update yapıyor, bildirim anında görünecek
-        // addNotification içinde zaten debounce ile invalidateQueries yapılıyor, burada tekrar yapmaya gerek yok
+        // CACHE-FIRST: addNotification cache'e prepend eder, invalidation yapmaz
         notificationStateSync.addNotification(notification);
 
         // Domain Service'e yönlendir (EventService → NotificationService)
@@ -598,52 +603,32 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           // AppStore'dan aktif thread ID'sini kontrol et (MessageDetail ekranında set edilir)
           const { useAppStore } = await import('@/src/store/appStore');
           const activeThreadId = useAppStore.getState().activeThreadId;
-          
+
           // CRITICAL FIX: MessageDetail ekranındayken (activeThreadId varsa) tüm mesaj bildirimlerini engelle
-          // Sadece aynı thread değil, herhangi bir MessageDetail ekranındayken tüm mesaj bildirimleri gösterilmemeli
           if (activeThreadId) {
-            console.log('[NotificationProvider] 📱 MessageDetail ekranındayken mesaj bildirimi engellendi:', {
-              activeThreadId,
-              notificationType,
-            });
-            // Query'leri yine de refresh et (state update için)
-            queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
-            queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
             return;
           }
-          
+
           // Fallback: NavigationService'den aktif route'u kontrol et
           const { navigationService } = await import('@/src/services/NavigationService');
           const currentRoute = navigationService.getCurrentRoute();
-          
-          // Eğer MessageDetail ekranındaysa tüm mesaj bildirimlerini engelle
-          if (currentRoute?.name === 'MessageDetailScreen' || 
+
+          if (currentRoute?.name === 'MessageDetailScreen' ||
               currentRoute?.params?.screen === 'MessageDetailScreen' ||
               (currentRoute?.params && 'threadId' in currentRoute.params)) {
-            console.log('[NotificationProvider] 📱 MessageDetail ekranındayken mesaj bildirimi engellendi (fallback):', {
-              routeName: currentRoute?.name,
-              notificationType,
-            });
-            // Query'leri yine de refresh et (state update için)
-            queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
-            queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
             return;
           }
         } catch (error) {
-          console.warn('[NotificationProvider] ⚠️ Error checking active thread for push notification:', error);
+          console.warn('[NotificationProvider] Error checking active thread for push notification:', error);
         }
       }
-      
-      // Foreground'da notification geldiğinde unread count'u artır ve query'leri refresh et
-      // CRITICAL FIX: Socket handler zaten count artırdıysa tekrar artırma (double increment önleme)
+
+      // CACHE-FIRST: Push notification geldiginde cache'e prepend et (invalidation yok)
+      // Socket handler zaten count artirdiysa tekrar artirma (double increment onleme)
       if (!isMessageNotification && !isFromSocketHandler) {
         useNotificationStore.getState().incrementUnreadCount();
-        if (__DEV__) {
-          console.log('[NotificationProvider] 📊 Unread count incremented (push notification)');
-        }
+        incrementUnreadCountInCache(queryClient);
       }
-      queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
     };
 
     const handleNotificationResponse = async (response: Notifications.NotificationResponse) => {
@@ -684,10 +669,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         shouldNavigate: true, // Push notification'a tıklandığında navigate et
       });
 
-      // Mark notification as read if notificationId is provided
+      // CACHE-FIRST: Push notification'a tiklandiginda cache'de read olarak isaretle
+      // invalidateQueries KULLANILMAZ
       if (notificationId) {
-        queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
-        queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+        const { updateNotificationInCache, decrementUnreadCountInCache } = await import('@/src/features/notifications/api/hooks');
+        updateNotificationInCache(queryClient, notificationId, (n) => ({
+          ...n,
+          read: true,
+          readAt: new Date().toISOString(),
+        }));
+        decrementUnreadCountInCache(queryClient);
       }
     };
 

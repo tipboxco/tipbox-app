@@ -224,6 +224,18 @@ const getNotificationMessage = (
             return translate('messages.single.nftPurchasedGeneric');
         }
 
+        case 'NFT_SENT': {
+            const nftName = data?.nftName || data?.title || '';
+            const recipientName = data?.recipientName || '';
+            if (nftName && recipientName) {
+                return translate('messages.single.nftSent', { nftName, recipientName });
+            }
+            if (nftName) {
+                return translate('messages.single.nftSentGeneric', { nftName });
+            }
+            return translate('messages.single.nftSentDefault');
+        }
+
         default:
             return translate('common.newNotification');
     }
@@ -248,6 +260,7 @@ const getNotificationTypeIcon = (type: NotificationType): React.ComponentType<{ 
         case 'TIPS_SENT':
         case 'TRANSACTION_CONFIRMED':
         case 'NFT_PURCHASED':
+        case 'NFT_SENT':
             return GiftIcon;
         case 'POST_COMMENTED':
         case 'COMMENT_REPLIED':
@@ -308,6 +321,7 @@ const getNotificationCategory = (type: NotificationType): 'post' | 'comment' | '
         case 'TIPS_SENT':
         case 'TRANSACTION_CONFIRMED':
         case 'NFT_PURCHASED':
+        case 'NFT_SENT':
             return 'tips';
 
         case 'EVENT_STARTED':
@@ -877,8 +891,10 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
         }
 
         // Sohbeti Görüntüle ve Profili Görüntüle butonları olan bildirimlerde sadece butonlara tıklanınca navigation
+        // NEW_BADGE ve ACHIEVEMENT_UNLOCKED bildirimlerinde tıklanınca bir şey olmamalı
         if (type === 'TIPS_SENT' || type === 'DM_REQUEST_ACCEPTED' ||
-            type === 'NEW_TRUSTER' || type === 'NEW_TRUSTED_BY') {
+            type === 'NEW_TRUSTER' || type === 'NEW_TRUSTED_BY' ||
+            type === 'NEW_BADGE' || type === 'ACHIEVEMENT_UNLOCKED') {
             return;
         }
 
@@ -1356,7 +1372,7 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
         try {
             const username = notification.username || userProfile?.name || 'User';
             await Share.share({
-                message: `Check out ${username}'s profile on Tipbox!`,
+                message: rawT('common:messages.checkOutProfile', { name: username }),
                 url: `tipboxapp://profile/user/${targetUserId}`,
             });
         } catch (error) {
@@ -1657,6 +1673,11 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
     const eventImageUrl = (notification.type === 'EVENT_STARTED' || notification.type === 'EVENT_ENDING_SOON' || notification.type === 'EVENT_REWARD_AVAILABLE') ? data.imageUrl : null;
     const eventImage = eventImageUrl ? toImageSource(eventImageUrl) : null;
     
+    // NFT image - NFT_SENT bildirimleri için
+    const isNftSentNotification = notification.type === 'NFT_SENT';
+    const nftImageUrl = isNftSentNotification ? (data.imageUrl || null) : null;
+    const nftImage = nftImageUrl ? toImageSource(nftImageUrl) : null;
+
     // Badge image - Badge bildirimleri için (null ise default placeholder kullan)
     const isBadgeNotification = notification.type === 'NEW_BADGE' || notification.type === 'ACHIEVEMENT_UNLOCKED';
     // CRITICAL FIX: badgeUrl birden fazla yerde olabilir - tüm olası konumları kontrol et
@@ -1683,8 +1704,8 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
         ? (badgeImageUrl ? toImageSource(badgeImageUrl) : require('@/assets/defaultImages/default-badge.png'))
         : null;
     
-    // Avatar sadece user bildirimlerinde gösterilecek (event ve badge bildirimlerinde gösterilmeyecek)
-    const shouldShowAvatar = !eventImage && !badgeImage && (category === 'post' || category === 'comment' || category === 'trust' || category === 'message' || category === 'tips' || category === 'expert');
+    // Avatar sadece user bildirimlerinde gösterilecek (event, badge ve NFT bildirimlerinde gösterilmeyecek)
+    const shouldShowAvatar = !eventImage && !badgeImage && !nftImage && (category === 'post' || category === 'comment' || category === 'trust' || category === 'message' || category === 'tips' || category === 'expert');
 
     // Right-side thumbnail for post-related notifications only
     const hasRightThumbnail = !!(postImage && !isBadgeNotification && !eventImage && (category === 'post' || category === 'comment'));
@@ -1793,6 +1814,27 @@ const NotificationCardInner: React.FC<NotificationCardProps> = ({
                                     alt="Badge preview"
                                     width={52}
                                     height={52}
+                                    style={{ resizeMode: 'cover' }}
+                                />
+                            </Box>
+                        </Pressable>
+                    ) : nftImage ? (
+                        <Pressable onPress={handlePress}>
+                            <Box
+                                width={44}
+                                height={44}
+                                borderRadius={10}
+                                overflow="hidden"
+                                borderWidth={1}
+                                borderColor={isDark ? '#333' : '#E9E9E9'}
+                                bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                                flexShrink={0}
+                            >
+                                <Image
+                                    source={nftImage}
+                                    alt="NFT preview"
+                                    width={44}
+                                    height={44}
                                     style={{ resizeMode: 'cover' }}
                                 />
                             </Box>

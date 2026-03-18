@@ -115,7 +115,8 @@ export type NotificationType =
   | 'EVENT_REWARD_AVAILABLE'
   | 'COLLECTION_POST_ADDED'
   | 'COLLECTION_SHARED'
-  | 'NFT_PURCHASED';
+  | 'NFT_PURCHASED'
+  | 'NFT_SENT';
 
 export interface NotificationMetadata {
   userId?: string;
