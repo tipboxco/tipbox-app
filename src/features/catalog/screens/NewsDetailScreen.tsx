@@ -182,7 +182,7 @@ const NewsDetailScreenComponent: React.FC = () => {
   }, [newsId, brandId, productId, comments, isLoadingComments, openBottomSheet, handleCommentSubmit, createBrandProductNewsCommentMutation.isPending]);
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} pt={insets.top}>
       {/* Header - Fixed at top */}
       <Header
         title={t('newsDetail.title')}

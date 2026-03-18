@@ -276,6 +276,7 @@ const BrandDetailScreen: React.FC = () => {
             name: postData.contextData.name,
             subName: postData.contextData.subName,
             image: toImageSource(postData.contextData.image)!,
+            isOwned: postData.contextData.isOwned,
         };
 
         const category: TipsCategory = {
@@ -320,6 +321,7 @@ const BrandDetailScreen: React.FC = () => {
             name: postData.contextData.name,
             subName: postData.contextData.subName,
             image: toImageSource(postData.contextData.image)!,
+            isOwned: postData.contextData.isOwned,
         };
 
         const category: QuestionCardCategory = {
@@ -579,7 +581,7 @@ const BrandDetailScreen: React.FC = () => {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FAFAFA' }}>
+        <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#F5F5F5' }}>
             {/* Sticky Header - Scroll'da yukarı sabitlenir */}
             <Animated.View
                 style={[
@@ -589,7 +591,7 @@ const BrandDetailScreen: React.FC = () => {
                         left: 0,
                         right: 0,
                         height: HEADER_HEIGHT,
-                        backgroundColor: isDark ? '#000000' : '#FAFAFA',
+                        backgroundColor: isDark ? '#000000' : '#F5F5F5',
                         zIndex: 100,
                         borderBottomWidth: 1,
                         borderBottomColor: isDark ? '#1A1A1A' : '#E9E9E9',
@@ -740,7 +742,7 @@ const BrandDetailScreen: React.FC = () => {
 
                 {/* Content */}
                 <VStack
-                    bg={isDark ? '#000000' : '#FAFAFA'}
+                    bg={isDark ? '#000000' : '#F5F5F5'}
                     borderTopLeftRadius={20}
                     borderTopRightRadius={20}
                     mt={-20}

@@ -126,42 +126,72 @@ export const searchGlobalBrands = async (
   params.append('limit', limit.toString());
   
   try {
-    const response = await apiService.getClient().get<GlobalBrandSearchResponse>(
+    const response = await apiService.getClient().get<any>(
       `/brands/search?${params.toString()}`
     );
-    
-    // Ensure items is always an array (defensive programming)
+
+    const responseData = response.data;
+
+    if (__DEV__) {
+      console.log('[searchGlobalBrands] 🔍 Raw API Response:', {
+        url: `/brands/search?${params.toString()}`,
+        search,
+        responseKeys: responseData ? Object.keys(responseData) : 'null',
+        hasItems: !!responseData?.items,
+        hasData: !!responseData?.data,
+        itemsCount: Array.isArray(responseData?.items) ? responseData.items.length : 'N/A',
+      });
+    }
+
+    // Backend response format'ını normalize et
+    // Olası formatlar: { items: [...] }, { data: { items: [...] } }, { data: [...] }
+    let items: any[] = [];
+    let pagination: any = null;
+
+    if (responseData) {
+      // Format 1: { items: [...], pagination: {...} } (documented format)
+      if (Array.isArray(responseData.items)) {
+        items = responseData.items;
+        pagination = responseData.pagination;
+      }
+      // Format 2: { data: { items: [...], pagination: {...} } } (wrapped format)
+      else if (responseData.data && Array.isArray(responseData.data.items)) {
+        items = responseData.data.items;
+        pagination = responseData.data.pagination;
+      }
+      // Format 3: { data: [...] } (flat array in data)
+      else if (Array.isArray(responseData.data)) {
+        items = responseData.data;
+        pagination = responseData.pagination;
+      }
+      // Format 4: Direct array response
+      else if (Array.isArray(responseData)) {
+        items = responseData;
+      }
+    }
+
     const safeResponse: GlobalBrandSearchResponse = {
-      items: Array.isArray(response.data?.items) ? response.data.items : [],
-      pagination: response.data?.pagination || {
+      items,
+      pagination: pagination || {
         hasMore: false,
         limit: limit,
       },
     };
-    
+
+    if (__DEV__) {
+      console.log('[searchGlobalBrands] ✅ Parsed Response:', {
+        itemsCount: safeResponse.items.length,
+        hasMore: safeResponse.pagination.hasMore,
+        categories: safeResponse.items.map(cat => ({
+          categoryId: cat.categoryId,
+          categoryName: cat.categoryName,
+          brandsCount: cat.brands?.length || 0,
+        })),
+      });
+    }
+
     return safeResponse;
   } catch (error: any) {
-    // 404 hatası: Endpoint backend'de mevcut değil
-    if (error.response?.status === 404) {
-      // Sadece debug modunda log bas (production'da sessiz)
-      if (__DEV__) {
-        console.warn('[searchGlobalBrands] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
-          url: `/brands/search`,
-          search,
-          message: 'This endpoint is not available on the backend server. Please contact backend team.',
-        });
-      }
-      
-      // Boş response döndür (kullanıcıya hata göstermek yerine boş sonuç göster)
-      return {
-        items: [],
-        pagination: {
-          hasMore: false,
-          limit: limit,
-        },
-      };
-    }
-    
     console.error('[searchGlobalBrands] API Error:', {
       url: `/brands/search?${params.toString()}`,
       status: error.response?.status,

@@ -84,7 +84,7 @@ const BrandEventDetail: React.FC = () => {
               fontSize={12}
               fontWeight="$semibold"
             >
-              {requirement.title || requirement.description || 'Task'}
+              {requirement.title || requirement.description || t('brandEventDetail.taskFallback')}
             </Text>
             
             {/* Progress Bar */}

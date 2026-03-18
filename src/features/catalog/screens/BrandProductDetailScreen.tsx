@@ -227,6 +227,7 @@ const mapTipsToCardData = (item: FeedApiItem | BrandFeedPost): TipsCardData | nu
     name: contextData.name || '',
     subName: contextData.subName || '',
     image: contextImage,
+    isOwned: contextData.isOwned,
   };
   const category: TipsCategory = {
     id: contextData.id,
@@ -286,6 +287,7 @@ const mapQuestionToCardData = (item: FeedApiItem | BrandFeedPost): QuestionCardD
     name: postData.contextData.name || '',
     subName: postData.contextData.subName || '',
     image: contextImage,
+    isOwned: postData.contextData.isOwned,
   };
   const category: QuestionCardCategory = {
     id: postData.contextData.id,
@@ -864,7 +866,7 @@ const BrandProductDetailScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
-      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '#F5F5F5'}>
         {/* Header */}
         <Header
           title={t('brandProductDetail.title')}

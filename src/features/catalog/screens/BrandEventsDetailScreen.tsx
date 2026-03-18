@@ -413,7 +413,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                 {requirements.requirements.map((req) => {
                   const requirementWithIcon = {
                     id: req.id,
-                    title: req.title || req.description || 'Requirement',
+                    title: req.title || req.description || t('brandEventDetail.requirementFallback'),
                     description: req.description,
                     completed: req.completed || false,
                     progress: req.progress ? { current: req.progress.current, total: req.progress.total } : { current: 0, total: 1 },

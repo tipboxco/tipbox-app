@@ -1,23 +1,23 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, ScrollView, HStack, VStack, Input, InputField, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Search } from 'lucide-react-native';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import CategoryCard from '../components/CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
-import { CachedImage } from '@/src/components/CachedImage';
 import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
-import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts, useCatalogPrefetch, useGlobalProductSearch } from '../api/hooks';
+import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts, useCatalogPrefetch } from '../api/hooks';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '../types';
 import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
+import { useSearch } from '@/src/features/search/api/hooks';
 import { CategorySkeleton, ProductSkeleton } from '@/src/components/Skeletons';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
@@ -34,6 +34,7 @@ interface ProductCatalogScreenProps {
   onStateChange?: (data: {
     selectedProduct: any | null;
     currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedCategoryId?: string;
     selectedSubCategoryId?: string;
     selectedProductGroupId?: string;
     breadcrumbItems: BreadcrumbItem[];
@@ -132,16 +133,20 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   // Local state for product object (for UI display only)
   const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
-  // CRITICAL FIX: Always reset to root on screen focus
-  // This ensures the screen always starts at "Categories" (index 0), not at a deep navigation state
-  // Track if this is the initial focus to reset state
+  // Track if this is the initial focus to prevent duplicate resets
   const isInitialFocusRef = useRef(true);
 
   useFocusEffect(
     useCallback(() => {
-      // Only reset on initial mount (tab change), not on subsequent focuses (coming back from PostsScreen)
       if (isInitialFocusRef.current) {
         isInitialFocusRef.current = false;
+
+        // If initial state was restored from store (FAB switch), preserve it
+        const hasRestoredState = (initialBreadcrumbItems && initialBreadcrumbItems.length > 0) ||
+          (initialView && initialView !== 'categories');
+        if (hasRestoredState) {
+          return;
+        }
 
         // Reset to root state - always start at "Categories"
         setBreadcrumbItems([]);
@@ -154,10 +159,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         // Scroll to top
         scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
       }
-
-      // CRITICAL FIX: Don't reset the flag on cleanup
-      // This ensures state is preserved when navigating to PostsScreen and back
-      // Flag will only be reset when component unmounts (tab change)
+      // Don't reset the flag on cleanup - preserves state when navigating to PostsScreen and back
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView])
   );
 
@@ -228,19 +231,21 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Her seviyede yerel filtre: arama yazıldığında mevcut liste searchQuery ile filtrelenir.
-  // Global product search disabled - we show locally filtered list instead of "No search results" from API.
-  const showGlobalSearchResults = false;
+  // Arama değiştiğinde scroll pozisyonunu sıfırla
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+  }, [debouncedSearchQuery]);
 
-  const {
-    data: globalSearchData,
-    isLoading: isLoadingGlobalSearch,
-    fetchNextPage: fetchNextGlobalSearchPage,
-    hasNextPage: hasNextGlobalSearchPage,
-    isFetchingNextPage: isFetchingNextGlobalSearchPage
-  } = useGlobalProductSearch(undefined, 20); // Disabled - yerel filtre kullanılıyor
+  // Global product search - /search endpoint kullanılıyor
+  const { data: searchResults, isLoading: isSearchLoading } = useSearch(
+    { keyword: debouncedSearchQuery, types: ['product'], limit: 50 },
+    debouncedSearchQuery.length > 0
+  );
 
-  // API'den seçili ürün grubuna ait products'ı getir (yerel filtre getCurrentData'da yapılıyor)
+  const showGlobalSearchResults = debouncedSearchQuery.length > 0 && !!searchResults?.productData;
+
+  // API'den seçili ürün grubuna ait products'ı getir
+  // Products seviyesinde arama backend'e gönderilir (tüm ürünlerde arama yapılır)
   const {
     data: catalogProducts,
     isLoading: isLoadingProducts,
@@ -249,7 +254,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     isFetchingNextPage: isFetchingNextProductsPage,
   } = useCatalogProducts(
     selectedProductGroupId ?? undefined,
-    undefined
+    currentView === 'products' && debouncedSearchQuery ? debouncedSearchQuery : undefined
   );
   
   // API'den gelen verileri formatla (InfiniteData yapısından flatten)
@@ -320,7 +325,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   }, [catalogCategories, prefetchSubCategories]);
   
   // API'den gelen kategorileri Category formatına dönüştür - useMemo ile cache'le
-  // CachedImage zaten toImageSource'u çağırıyor, bu yüzden image'ı direkt geçirebiliriz
   const currentCategories = useMemo(() => {
     if (!catalogCategories || catalogCategories.length === 0) return [];
     
@@ -423,107 +427,11 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     }));
   }, [catalogProducts]);
 
-  // Global search sonuçlarını formatla - useMemo ile cache'le
-  // Global search InfiniteData döndürüyor, pages.flatMap kullanmalıyız
-  const globalSearchResults = useMemo(() => {
-    if (!globalSearchData?.pages) return [];
-    
-    // InfiniteData yapısından tüm product group'ları çıkar
-    const allGroups = globalSearchData.pages.flatMap((page) => page.items || []);
-    
-    // DEBUG: Backend'den gelen veriyi log'la
-    if (__DEV__ && allGroups.length > 0) {
-      console.log('[ProductCatalogScreen] 🔍 Global Search Results:', {
-        searchQuery: debouncedSearchQuery,
-        groupsCount: allGroups.length,
-        groups: allGroups.map(group => ({
-          productGroupId: group.productGroupId,
-          productGroupName: group.productGroupName,
-          productsCount: group.products.length,
-          products: group.products.map(p => ({
-            productId: p.productId,
-            name: p.name,
-            image: p.image,
-            productGroupId: p.productGroupId,
-          })),
-        })),
-      });
-    }
-    
-    // Backend'den gelen veriyi temizle ve doğrula
-    const cleanedGroups = allGroups
-      .map(group => {
-        // Her product group için unique product'ları filtrele
-        // Aynı productId'ye sahip ürünleri tekilleştir
-        const uniqueProducts = group.products.reduce((acc, product) => {
-          // Product ID'ye göre unique kontrolü
-          if (!acc.find(p => p.productId === product.productId)) {
-            acc.push(product);
-          } else {
-            // Duplicate product bulundu - log'la
-            if (__DEV__) {
-              console.warn('[ProductCatalogScreen] ⚠️ Duplicate product found:', {
-                productId: product.productId,
-                productName: product.name,
-                productGroupId: group.productGroupId,
-                productGroupName: group.productGroupName,
-              });
-            }
-          }
-          return acc;
-        }, [] as CatalogProduct[]);
-        
-        // Eğer unique product yoksa, bu group'u filtrele
-        if (uniqueProducts.length === 0) {
-          if (__DEV__) {
-            console.warn('[ProductCatalogScreen] ⚠️ Empty product group filtered out:', {
-              productGroupId: group.productGroupId,
-              productGroupName: group.productGroupName,
-            });
-          }
-          return null;
-        }
-        
-        return {
-          ...group,
-          products: uniqueProducts,
-        };
-      })
-      .filter((group): group is NonNullable<typeof group> => group !== null);
-    
-    // Tüm product'ları productId'ye göre unique kontrolü yap
-    // Aynı product farklı gruplarda varsa, sadece ilk görünen grubunda tut
-    const seenProductIds = new Set<string>();
-    const finalGroups = cleanedGroups.map(group => {
-      const filteredProducts = group.products.filter(product => {
-        if (seenProductIds.has(product.productId)) {
-          // Bu product başka bir grupta zaten görüldü
-          if (__DEV__) {
-            console.warn('[ProductCatalogScreen] ⚠️ Product appears in multiple groups:', {
-              productId: product.productId,
-              productName: product.name,
-              currentGroup: group.productGroupName,
-            });
-          }
-          return false;
-        }
-        seenProductIds.add(product.productId);
-        return true;
-      });
-      
-      // Eğer tüm product'lar filtrelendiyse, bu group'u kaldır
-      if (filteredProducts.length === 0) {
-        return null;
-      }
-      
-      return {
-        ...group,
-        products: filteredProducts,
-      };
-    }).filter((group): group is NonNullable<typeof group> => group !== null);
-    
-    return finalGroups;
-  }, [globalSearchData, debouncedSearchQuery]);
+  // Search sonuçlarını flat product listesi olarak formatla
+  const searchProductList = useMemo(() => {
+    if (!searchResults?.productData) return [];
+    return searchResults.productData;
+  }, [searchResults]);
 
   // PERFORMANCE FIX: Store onStateChange in ref to prevent infinite loops
   // onStateChange prop may have a new reference on every render from parent
@@ -538,6 +446,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   const prevStateRef = useRef<{
     selectedProduct: any | null;
     currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedCategoryId?: string;
     selectedSubCategoryId?: string;
     selectedProductGroupId?: string;
     breadcrumbItems: BreadcrumbItem[];
@@ -548,6 +457,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     const currentState = {
       selectedProduct,
       currentView,
+      selectedCategoryId,
       selectedSubCategoryId,
       selectedProductGroupId,
       breadcrumbItems,
@@ -561,13 +471,14 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     }
 
     const prev = prevStateRef.current;
-    const hasChanged = 
+    const hasChanged =
       prev.selectedProduct !== currentState.selectedProduct ||
       prev.currentView !== currentState.currentView ||
+      prev.selectedCategoryId !== currentState.selectedCategoryId ||
       prev.selectedSubCategoryId !== currentState.selectedSubCategoryId ||
       prev.selectedProductGroupId !== currentState.selectedProductGroupId ||
       prev.breadcrumbItems.length !== currentState.breadcrumbItems.length ||
-      prev.breadcrumbItems.some((item, idx) => 
+      prev.breadcrumbItems.some((item, idx) =>
         item.id !== currentState.breadcrumbItems[idx]?.id ||
         item.type !== currentState.breadcrumbItems[idx]?.type
       );
@@ -576,7 +487,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       prevStateRef.current = currentState;
       onStateChangeRef.current?.(currentState);
     }
-  }, [selectedProduct, currentView, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems]);
+  }, [selectedProduct, currentView, selectedCategoryId, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems]);
 
   // Ekrana geri dönüldüğünde product breadcrumb'ını temizle
   useFocusEffect(
@@ -922,7 +833,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
   const handleShowPosts = () => {
     // Determine current stage and name from breadcrumbItems (prioritize most specific item)
     let stage: 'SubCategories' | 'ProductGroup' | 'Product' = 'SubCategories';
-    let name = 'Subcategory Feed';
+    let name = t('post:screens.posts.subcategoryFeed');
     let productInfo: { image: any; title: string; subName?: string } | null = null;
 
     // Priority: Product > ProductGroup > SubCategory > Category
@@ -1510,53 +1421,34 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
   }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect]);
 
   const getCurrentData = () => {
-    // Her seviyede yerel filtre: searchQuery ile mevcut liste filtrelenir (API araması yok)
-    const data = (() => {
-      switch (currentView) {
-        case 'categories':
-          return currentCategories.filter(category =>
-            category.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        case 'subcategories':
-          const filtered = currentSubCategories.filter(subCategory =>
-            subCategory.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-          
-          // DEBUG: Filtrelenmiş veriyi log'la
-          if (__DEV__) {
-            console.log('[ProductCatalogScreen] 🔍 Filtered SubCategories:', {
-              currentView,
-              searchQuery,
-              totalCount: currentSubCategories.length,
-              filteredCount: filtered.length,
-              filteredItems: filtered.map(item => ({
-                id: item.id,
-                name: item.name,
-              })),
-            });
-          }
-          
-          return filtered;
-        case 'productgroups':
-          return currentProductGroups.filter(productGroup =>
-            productGroup.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        case 'products':
-          return currentProducts.filter((product: { id: string; name: string; image?: string; description?: string }) =>
-            product.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        default:
-          return [];
-      }
-    })();
-    
-    return data;
+    // Categories, subcategories, productgroups: yerel filtre (API arama desteklemiyor)
+    // Products: backend'e search parametresi gönderiliyor, ek client-side filtre yok
+    const query = searchQuery.trim().toLowerCase();
+    switch (currentView) {
+      case 'categories':
+        return query
+          ? currentCategories.filter(category => category.name.toLowerCase().includes(query))
+          : currentCategories;
+      case 'subcategories':
+        return query
+          ? currentSubCategories.filter(subCategory => subCategory.name.toLowerCase().includes(query))
+          : currentSubCategories;
+      case 'productgroups':
+        return query
+          ? currentProductGroups.filter(productGroup => productGroup.name.toLowerCase().includes(query))
+          : currentProductGroups;
+      case 'products':
+        // Products backend'den search parametresiyle filtreleniyor, client-side filtre gereksiz
+        return currentProducts;
+      default:
+        return [];
+    }
   };
 
   const currentData = getCurrentData();
 
   // PERFORMANCE FIX: Memoize background color to prevent re-renders
-  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
+  const backgroundColor = useMemo(() => isDark ? '#1A1A1A' : '#FFFFFF', [isDark]);
 
   return (
     <Box flex={1}>
@@ -1615,15 +1507,10 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         px="$4"
         onScroll={(event) => {
           const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-          const paddingToBottom = 20;
+          const paddingToBottom = 200;
           const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
 
           if (!isNearBottom) return;
-
-          // Global search için infinite scroll (sadece global sonuçlar gösterilirken)
-          if (showGlobalSearchResults && hasNextGlobalSearchPage && !isFetchingNextGlobalSearchPage) {
-            fetchNextGlobalSearchPage();
-          }
 
           // Normal products view için infinite scroll
           if (!showGlobalSearchResults && currentView === 'products' && hasNextProductsPage && !isFetchingNextProductsPage) {
@@ -1648,154 +1535,67 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         scrollEventThrottle={16}
       >
         <VStack space="md" pt="$4" pb={scrollViewPaddingBottom}>
-          {/* Global Search Results - Categories view'da yerel filtre kullanılır (Be → Beauty) */}
+          {/* Global Search Results - /search endpoint'inden gelen ürünler */}
           {showGlobalSearchResults ? (
-            isLoadingGlobalSearch ? (
+            isSearchLoading ? (
               <ProductSkeleton count={9} />
-            ) : globalSearchResults.length === 0 ? (
+            ) : searchProductList.length === 0 ? (
               <Box py="$8" alignItems="center">
                 <Text color={isDark ? '#999' : '#666'} fontSize="$sm">
-                  No search results
+                  {t('productCatalog.noSearchResults', { query: debouncedSearchQuery })}
                 </Text>
               </Box>
             ) : (
               <>
-                {globalSearchResults.map((group) => (
-                  <VStack key={group.productGroupId} space="sm" mb="$6">
-                    {/* Product Group Header */}
-                    <HStack alignItems="center" space="sm" mb="$2">
-                      {group.productGroupImage && (
-                        <CachedImage
-                          source={{ uri: group.productGroupImage }}
-                          alt={group.productGroupName}
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                          }}
-                          resizeMode="cover"
-                          priority="normal"
-                          cachePolicy="memory-disk"
-                        />
-                      )}
-                      <VStack flex={1}>
-                        <Text
-                          fontSize="$sm"
-                          fontWeight="$semibold"
-                          color={isDark ? '#FFF' : '#000'}
-                        >
-                          {group.productGroupName}
-                        </Text>
-                        <Text
-                          fontSize="$xs"
-                          color={isDark ? '#999' : '#666'}
-                        >
-                          {group.categoryName} • {group.subCategoryName}
-                        </Text>
-                      </VStack>
+                {/* Search Products Grid - 3'lü flat grid */}
+                {Array.from({ length: Math.ceil(searchProductList.length / 3) }).map((_, rowIndex) => {
+                  const itemsPerRow = 3;
+                  const startIndex = rowIndex * itemsPerRow;
+                  const rowItems = searchProductList.slice(startIndex, startIndex + itemsPerRow);
+                  const priority = rowIndex < 3 ? 'high' : 'low';
+
+                  return (
+                    <HStack key={`search-row-${rowIndex}`} space="md">
+                      {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
+                        const product = rowItems[colIndex];
+
+                        if (!product) {
+                          return <Box key={colIndex} flex={1} />;
+                        }
+
+                        const productImage = product.image && product.image.trim() !== ''
+                          ? product.image
+                          : undefined;
+
+                        return (
+                          <CategoryCard
+                            key={`search-${product.id}`}
+                            category={{
+                              id: product.id,
+                              name: product.name,
+                              icon: 'shopping-bag',
+                              image: productImage,
+                              subCategories: []
+                            } as any}
+                            onPress={() => {
+                              const productItem: CatalogProduct & { id: string; image: any; description?: string } = {
+                                productId: product.id,
+                                id: product.id,
+                                name: product.name,
+                                image: product.image || null,
+                                productGroupId: '',
+                                subCategoryId: '',
+                              };
+
+                              handleProductPress(productItem);
+                            }}
+                            priority={priority}
+                          />
+                        );
+                      })}
                     </HStack>
-                    
-                    {/* Products Grid */}
-                    {Array.from({ length: Math.ceil(group.products.length / 3) }).map((_, rowIndex) => {
-                      const itemsPerRow = 3;
-                      const startIndex = rowIndex * itemsPerRow;
-                      const rowItems = group.products.slice(startIndex, startIndex + itemsPerRow);
-                      const priority = rowIndex < 3 ? 'high' : 'low';
-                      
-                      return (
-                        <HStack key={`group-${group.productGroupId}-row-${rowIndex}`} space="md">
-                          {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
-                            const product = rowItems[colIndex];
-                            
-                            if (!product) {
-                              return <Box key={colIndex} flex={1} />;
-                            }
-                            
-                            // Product image'ı doğrula
-                            const productImage = product.image && product.image.trim() !== '' 
-                              ? product.image 
-                              : undefined;
-                            
-                            // DEBUG: Product image kontrolü
-                            if (__DEV__ && !productImage) {
-                              console.warn('[ProductCatalogScreen] ⚠️ Product missing image:', {
-                                productId: product.productId,
-                                productName: product.name,
-                                productGroupId: group.productGroupId,
-                                productGroupName: group.productGroupName,
-                              });
-                            }
-                            
-                            return (
-                              <CategoryCard
-                                key={`${group.productGroupId}-${product.productId}`}
-                                category={{
-                                  id: product.productId,
-                                  name: product.name,
-                                  icon: 'shopping-bag',
-                                  image: productImage,
-                                  subCategories: []
-                                } as any}
-                                onPress={() => {
-                                  // Global search'ten product'a tıklandığında direkt product'ı seç
-                                  // Breadcrumb'ı oluştur
-                                  const categoryBreadcrumb: BreadcrumbItem = {
-                                    id: group.categoryId,
-                                    name: group.categoryName,
-                                    type: 'category',
-                                  };
-                                  const subCategoryBreadcrumb: BreadcrumbItem = {
-                                    id: group.subCategoryId,
-                                    name: group.subCategoryName,
-                                    type: 'subCategory',
-                                  };
-                                  const productGroupBreadcrumb: BreadcrumbItem = {
-                                    id: group.productGroupId,
-                                    name: group.productGroupName,
-                                    type: 'productGroup',
-                                  };
-                                  
-                                  // Breadcrumb'ı set et
-                                  setBreadcrumbItems([
-                                    categoryBreadcrumb,
-                                    subCategoryBreadcrumb,
-                                    productGroupBreadcrumb,
-                                  ]);
-                                  
-                                  // Store'u güncelle
-                                  setSelectedCategoryId(group.categoryId);
-                                  setSelectedSubCategoryId(group.subCategoryId);
-                                  setSelectedProductGroupId(group.productGroupId);
-                                  setCurrentView('products');
-                                  
-                                  // Product'ı seç ve navigate et
-                                  const productItem: CatalogProduct & { id: string; image: any; description?: string } = {
-                                    productId: product.productId,
-                                    id: product.productId,
-                                    name: product.name,
-                                    image: product.image || null,
-                                    productGroupId: product.productGroupId,
-                                    subCategoryId: product.subCategoryId,
-                                  };
-                                  
-                                  handleProductPress(productItem);
-                                }}
-                                priority={priority}
-                              />
-                            );
-                          })}
-                        </HStack>
-                      );
-                    })}
-                  </VStack>
-                ))}
-                
-                {/* Load More Indicator */}
-                {isFetchingNextGlobalSearchPage && (
-                  <Box py="$4" alignItems="center">
-                    <ProductSkeleton count={3} />
-                  </Box>
-                )}
+                  );
+                })}
               </>
             )
           ) : (

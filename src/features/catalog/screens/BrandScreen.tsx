@@ -69,20 +69,23 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
 
   useFocusEffect(
     useCallback(() => {
-      // Only reset on initial focus, not on subsequent focuses (coming back from deeper screens)
       if (isInitialFocusRef.current) {
         isInitialFocusRef.current = false;
+
+        // If initial state was restored from store (FAB switch), preserve it
+        const hasRestoredState = (initialBreadcrumbItems && initialBreadcrumbItems.length > 0) ||
+          (initialStep && initialStep !== 'categories');
+        if (hasRestoredState) {
+          return;
+        }
 
         // Reset to root state - always start at "Brand Category"
         setBreadcrumbItems([]);
         setCurrentStep('categories');
-        onCategorySelect(null); // Clear selected category
+        onCategorySelect(null);
       }
-
-      // Reset the flag when the screen is unfocused (navigating away)
-      return () => {
-        isInitialFocusRef.current = true;
-      };
+      // Don't reset flag on cleanup - parent controls remounting via FAB
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onCategorySelect])
   );
   
@@ -145,9 +148,10 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
 
   // Global brand search - tüm brand kategorileri arasında arama
   const hasGlobalSearch = debouncedSearchQuery && debouncedSearchQuery.length > 0;
-  const { 
-    data: globalBrandSearchData, 
+  const {
+    data: globalBrandSearchData,
     isLoading: isLoadingGlobalBrandSearch,
+    error: globalBrandSearchError,
     fetchNextPage: fetchNextGlobalBrandSearchPage,
     hasNextPage: hasNextGlobalBrandSearchPage,
     isFetchingNextPage: isFetchingNextGlobalBrandSearchPage
@@ -410,7 +414,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   };
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <Box flex={1} bg={isDark ? '#1A1A1A' : '#FAFAFA'}>
       {/* Optional Header (for standalone BrandScreen usage) */}
       {showHeader && (
         <Header
@@ -426,7 +430,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
           space="md"
           pb="$4"
           px="$4"
-          bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+          bg={isDark ? '#1A1A1A' : '#FAFAFA'}
         >
           <HStack
             alignItems="center"
@@ -480,6 +484,12 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         isLoadingGlobalBrandSearch ? (
           <Box flex={1} justifyContent="center" alignItems="center" py="$8">
             <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm">{t('brandScreen.loadingBrands')}</Text>
+          </Box>
+        ) : globalBrandSearchError ? (
+          <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
+            <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+              {globalBrandSearchError.message}
+            </Text>
           </Box>
         ) : globalBrandSearchResults.length === 0 ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">

@@ -371,9 +371,9 @@ export const useGlobalBrandSearch = (
   limit: number = 20
 ) => {
   const hasSearchQuery = !!search && search.trim().length > 0;
-  
+
   return useInfiniteQuery<GlobalBrandSearchResponse, Error>({
-    queryKey: hasSearchQuery 
+    queryKey: hasSearchQuery
       ? catalogKeys.globalBrandSearch(search, undefined, limit)
       : ['catalog', 'globalBrandSearch', 'disabled'],
     queryFn: ({ pageParam }) => {
@@ -392,10 +392,10 @@ export const useGlobalBrandSearch = (
     },
     enabled: hasSearchQuery,
     staleTime: 0, // Search sonuçları her zaman fresh olmalı
-    gcTime: 0, // Search sonuçları cache'lenmemeli
+    gcTime: 5 * 60 * 1000, // 5 dakika cache'de tut
     refetchOnMount: 'always', // Her zaman refetch
-    refetchOnWindowFocus: true, // Focus'ta refetch
-    retry: 0, // Search için retry yok
+    refetchOnWindowFocus: false,
+    retry: 1, // Bir kez yeniden dene
   });
 };
 

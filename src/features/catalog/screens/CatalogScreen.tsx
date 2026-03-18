@@ -641,6 +641,9 @@ const CatalogScreenComponent = () => {
   }, [openBottomSheet, closeBottomSheet, bottomSheetKey, selectedProductLocal, isDark, bottomOffset, handlePostTypeSelect, handleViewChange]);
 
   const handleFloatingButtonPress = () => {
+    // Mod değişirken search query'yi temizle
+    setSearchQuery('');
+
     if (currentMode === 'brand-selection') {
       // Brand selection modundan brand catalog moduna geri dön
       dispatch({ type: 'SET_CURRENT_MODE', payload: 'brand-catalog' });
@@ -680,6 +683,7 @@ const CatalogScreenComponent = () => {
   const handleProductCatalogStateChange = useCallback((data: {
     selectedProduct: any | null;
     currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedCategoryId?: string;
     selectedSubCategoryId?: string;
     selectedProductGroupId?: string;
     breadcrumbItems: any[];
@@ -726,6 +730,7 @@ const CatalogScreenComponent = () => {
     const currentNavState = catalogNavigationStore.getState().productCatalogState;
     const navStateChanged =
       currentNavState.currentView !== data.currentView ||
+      currentNavState.selectedCategoryId !== data.selectedCategoryId ||
       currentNavState.selectedSubCategoryId !== data.selectedSubCategoryId ||
       currentNavState.selectedProductGroupId !== data.selectedProductGroupId ||
       currentNavState.selectedProductId !== data.selectedProduct?.id ||
@@ -739,6 +744,7 @@ const CatalogScreenComponent = () => {
       // Catalog Navigation Store'a kaydet (persist için)
       setProductCatalogState({
         currentView: data.currentView,
+        selectedCategoryId: data.selectedCategoryId,
         selectedSubCategoryId: data.selectedSubCategoryId,
         selectedProductGroupId: data.selectedProductGroupId,
         selectedProductId: data.selectedProduct?.id,
