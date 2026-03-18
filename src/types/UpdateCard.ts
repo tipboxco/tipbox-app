@@ -17,6 +17,7 @@ export interface UpdateApiItem {
     comments: number;
     shares: number;
     bookmarks: number;
+    upvotes?: number;
   };
   createdAt: string;
   contextType: 'product' | 'product_group' | 'sub_category';

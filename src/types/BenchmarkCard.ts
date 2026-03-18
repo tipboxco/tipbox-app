@@ -16,6 +16,7 @@ export interface BenchmarkApiStats {
   comments: number;
   shares: number;
   bookmarks: number;
+  upvotes?: number;
 }
 
 export interface BenchmarkApiProduct {

@@ -16,6 +16,7 @@ export interface ExperiencePostApiStats {
   comments: number;
   shares: number;
   bookmarks: number;
+  upvotes?: number;
 }
 
 export interface ExperiencePostApiContextData {

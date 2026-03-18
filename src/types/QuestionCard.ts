@@ -17,6 +17,7 @@ export interface QuestionApiStats {
   comments: number;
   shares: number;
   bookmarks: number;
+  upvotes?: number;
 }
 
 export interface QuestionApiContextData {
@@ -68,6 +69,7 @@ export interface QuestionCardProduct {
   name: string;
   subName: string;
   image: ImageSourcePropType;
+  isOwned?: boolean;
 }
 
 export interface QuestionCardStats {

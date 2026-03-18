@@ -16,6 +16,7 @@ export interface TipsApiStats {
   comments: number;
   shares: number;
   bookmarks: number;
+  upvotes?: number;
 }
 
 export interface TipsApiContextData {
@@ -61,6 +62,7 @@ export interface TipsProduct {
   name: string;
   subName: string;
   image: ImageSourcePropType;
+  isOwned?: boolean;
 }
 
 export interface TipsStats {
