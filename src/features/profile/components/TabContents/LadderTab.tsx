@@ -159,15 +159,28 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect, onQueryR
           shadowRadius={3}
           mb={10}
         >
-          <Image
-            source={imageSource || defaultImage}
-            alt={badge.title}
-            w={150}
-            h={150}
-            resizeMode="contain"
+          {/* Circular badge image */}
+          <Box
+            width={110}
+            height={110}
+            borderRadius={55}
+            borderWidth={3}
+            borderColor={isCompleted ? '#FFD700' : (isDark ? '#444444' : '#D1D5DB')}
+            overflow="hidden"
             alignSelf="center"
-            mt={5}
-          />
+            mt={12}
+            justifyContent="center"
+            alignItems="center"
+            bg={isDark ? '#1A1A1A' : '#F3F4F6'}
+          >
+            <Image
+              source={imageSource || defaultImage}
+              alt={badge.title}
+              w={88}
+              h={88}
+              resizeMode="contain"
+            />
+          </Box>
 
           <VStack space="xs" position="absolute" bottom={15} left={15} right={15}>
             <HStack space="sm" alignItems="center">

@@ -167,10 +167,10 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
             {isOwnProfile ? (
               // Kendi profili - Edit Profile butonu
               <Pressable
-                bg="#F7F7F7"
+                bg={isDark ? '#2A2A2A' : '#F7F7F7'}
                 borderRadius={200}
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 px={12}
                 py={8}
                 flexDirection="row"
@@ -178,9 +178,9 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                 gap={6}
                 onPress={handleEditProfile}
               >
-                <PencilIcon width={14} height={14} color="#000" />
+                <PencilIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                 <Text
-                  color="#000"
+                  color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize={10}
                   fontWeight="$semibold"
                 >
@@ -194,10 +194,10 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                 <Pressable
                   w={30} 
                   h={30} 
-                  bg="#F7F7F7" 
+                  bg={isDark ? '#2A2A2A' : '#F7F7F7'} 
                   borderRadius={200} 
                   borderWidth={1}
-                  borderColor="#E9E9E9"
+                  borderColor={isDark ? '#333333' : '#E9E9E9'}
                   justifyContent="center" 
                   alignItems="center"
                   onPress={() => {
@@ -205,17 +205,17 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     console.log('[ProfileCard] SendTIPS pressed');
                   }}
                 >
-                  <GiftIcon width={14} height={14} color="#000" />
+                  <GiftIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Pressable>
                 
                 {/* 1-on-1 Request */}
                 <Pressable
                   w={30} 
                   h={30} 
-                  bg="#F7F7F7" 
+                  bg={isDark ? '#2A2A2A' : '#F7F7F7'} 
                   borderRadius={200} 
                   borderWidth={1}
-                  borderColor="#E9E9E9"
+                  borderColor={isDark ? '#333333' : '#E9E9E9'}
                   justifyContent="center" 
                   alignItems="center"
                   onPress={() => {
@@ -223,17 +223,17 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     console.log('[ProfileCard] 1-on-1 Request pressed');
                   }}
                 >
-                  <PhoneIcon width={14} height={14} color="#000" />
+                  <PhoneIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Pressable>
                 
                 {/* DM */}
                 <Pressable
                   w={30} 
                   h={30} 
-                  bg="#F7F7F7" 
+                  bg={isDark ? '#2A2A2A' : '#F7F7F7'} 
                   borderRadius={200} 
                   borderWidth={1}
-                  borderColor="#E9E9E9"
+                  borderColor={isDark ? '#333333' : '#E9E9E9'}
                   justifyContent="center" 
                   alignItems="center"
                   onPress={() => {
@@ -241,17 +241,17 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     console.log('[ProfileCard] DM pressed');
                   }}
                 >
-                  <ChatBubbleLeftIcon width={14} height={14} color="#000" />
+                  <ChatBubbleLeftIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Pressable>
                 
                 {/* Notification */}
                 <Pressable
                   w={30} 
                   h={30} 
-                  bg="#F7F7F7" 
+                  bg={isDark ? '#2A2A2A' : '#F7F7F7'} 
                   borderRadius={200} 
                   borderWidth={1}
-                  borderColor="#E9E9E9"
+                  borderColor={isDark ? '#333333' : '#E9E9E9'}
                   justifyContent="center" 
                   alignItems="center"
                   onPress={() => {
@@ -259,15 +259,15 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     console.log('[ProfileCard] Notification pressed');
                   }}
                 >
-                  <BellIcon width={14} height={14} color="#000" />
+                  <BellIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Pressable>
                 
                 {/* Trust / Un Trust */}
                 <Pressable
-                  bg="#F7F7F7"
+                  bg={isDark ? '#2A2A2A' : '#F7F7F7'}
                   borderRadius={200}
                   borderWidth={1}
-                  borderColor="#E9E9E9"
+                  borderColor={isDark ? '#333333' : '#E9E9E9'}
                   px={12}
                   py={8}
                   flexDirection="row"
@@ -287,13 +287,13 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   disabled={isTrusting || isUntrusting}
                   opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
                 >
-                  <Feather 
-                    name={userData.isTrusted ? "user-minus" : "user-plus"} 
-                    size={14} 
-                    color="#000" 
+                  <Feather
+                    name={userData.isTrusted ? "user-minus" : "user-plus"}
+                    size={14}
+                    color={isDark ? '#FFFFFF' : '#000000'}
                   />
                   <Text
-                    color="#000"
+                    color={isDark ? '#FFFFFF' : '#000000'}
                     fontSize={10}
                     fontWeight="$semibold"
                   >

@@ -15,7 +15,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import BadgeDetail from '../components/BadgeDetail';
 import type { Badge as MockBadge } from '@/src/mock/profile/badges/types';
-import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useUserCollectionAchievements, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
+import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useUserCollectionAchievements, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys, useInventory } from '../api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -459,6 +459,8 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
 }, ref) => {
   const { t } = useTranslation('profile');
   const toast = useToast();
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
   const userId = useAppStore(state => state.user?.id);
 
   // Read isMuted/isTrusted directly from cache with select for narrow subscription
@@ -547,10 +549,10 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 60 }}>
         <RNPressable
           style={{
-            backgroundColor: '#F7F7F7',
+            backgroundColor: isDark ? '#2A2A2A' : '#F7F7F7',
             borderRadius: 200,
             borderWidth: 1,
-            borderColor: '#E9E9E9',
+            borderColor: isDark ? '#444444' : '#E9E9E9',
             paddingHorizontal: 10,
             height: 30,
             flexDirection: 'row',
@@ -559,8 +561,8 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
           }}
           onPress={onEdit}
         >
-          <PencilIcon size={14} color="#000" />
-          <RNText style={{ color: '#000', fontSize: 10, fontWeight: '600' }}>
+          <PencilIcon size={14} color={isDark ? '#FFFFFF' : '#000000'} />
+          <RNText style={{ color: isDark ? '#FFFFFF' : '#000000', fontSize: 10, fontWeight: '600' }}>
             {t('actions.edit')}
           </RNText>
         </RNPressable>
@@ -574,55 +576,55 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
         style={{
           width: '16%',
           height: 34,
-          backgroundColor: '#F7F7F7',
+          backgroundColor: isDark ? '#2A2A2A' : '#F7F7F7',
           borderRadius: 200,
           borderWidth: 1,
-          borderColor: '#E9E9E9',
+          borderColor: isDark ? '#444444' : '#E9E9E9',
           justifyContent: 'center',
           alignItems: 'center',
         }}
         onPress={onSendTips}
       >
-        <GiftIcon size={15} color="#000" />
+        <GiftIcon size={15} color={isDark ? '#FFFFFF' : '#000000'} />
       </RNPressable>
       <RNPressable
         style={{
           width: '16%',
           height: 34,
-          backgroundColor: '#F7F7F7',
+          backgroundColor: isDark ? '#2A2A2A' : '#F7F7F7',
           borderRadius: 200,
           borderWidth: 1,
-          borderColor: '#E9E9E9',
+          borderColor: isDark ? '#444444' : '#E9E9E9',
           justifyContent: 'center',
           alignItems: 'center',
         }}
         onPress={on1on1}
       >
-        <PhoneIcon size={15} color="#000" />
+        <PhoneIcon size={15} color={isDark ? '#FFFFFF' : '#000000'} />
       </RNPressable>
       <RNPressable
         style={{
           width: '16%',
           height: 34,
-          backgroundColor: '#F7F7F7',
+          backgroundColor: isDark ? '#2A2A2A' : '#F7F7F7',
           borderRadius: 200,
           borderWidth: 1,
-          borderColor: '#E9E9E9',
+          borderColor: isDark ? '#444444' : '#E9E9E9',
           justifyContent: 'center',
           alignItems: 'center',
         }}
         onPress={onDM}
       >
-        <ChatBubbleLeftIcon size={15} color="#000" />
+        <ChatBubbleLeftIcon size={15} color={isDark ? '#FFFFFF' : '#000000'} />
       </RNPressable>
       <RNPressable
         style={{
           width: '16%',
           height: 34,
-          backgroundColor: '#F7F7F7',
+          backgroundColor: isDark ? '#2A2A2A' : '#F7F7F7',
           borderRadius: 200,
           borderWidth: 1,
-          borderColor: '#E9E9E9',
+          borderColor: isDark ? '#444444' : '#E9E9E9',
           justifyContent: 'center',
           alignItems: 'center',
           opacity: (isMuting || isUnmuting) ? 0.6 : 1,
@@ -632,11 +634,11 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
       >
         {isMuted ? (
           <View style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}>
-            <BellIcon size={15} color="#000" />
-            <View style={{ position: 'absolute', width: 18, height: 1, backgroundColor: '#000', transform: [{ rotate: '-45deg' }] }} />
+            <BellIcon size={15} color={isDark ? '#FFFFFF' : '#000000'} />
+            <View style={{ position: 'absolute', width: 18, height: 1, backgroundColor: isDark ? '#FFFFFF' : '#000000', transform: [{ rotate: '-45deg' }] }} />
           </View>
         ) : (
-          <BellIcon size={15} color="#000" />
+          <BellIcon size={15} color={isDark ? '#FFFFFF' : '#000000'} />
         )}
       </RNPressable>
       <RNPressable
@@ -645,10 +647,10 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
           minHeight: 34,
           paddingVertical: 5,
           paddingHorizontal: 6,
-          backgroundColor: isTrusted ? '#F7F7F7' : '#D0F205',
+          backgroundColor: isTrusted ? (isDark ? '#2A2A2A' : '#F7F7F7') : '#D0F205',
           borderRadius: 200,
           borderWidth: 1,
-          borderColor: isTrusted ? '#E9E9E9' : '#D0F205',
+          borderColor: isTrusted ? (isDark ? '#444444' : '#E9E9E9') : '#D0F205',
           flexDirection: 'row',
           justifyContent: 'center',
           alignItems: 'center',
@@ -658,9 +660,9 @@ const ProfileActionButtons = React.memo(forwardRef<ProfileActionButtonsHandle, P
         onPress={handleTrust}
         disabled={isTrusting || isUntrusting}
       >
-        {isTrusted ? <UserMinusIcon size={14} color="#000" /> : <UserPlusIcon size={14} color="#000" />}
+        {isTrusted ? <UserMinusIcon size={14} color={isTrusted && isDark ? '#FFFFFF' : '#000000'} /> : <UserPlusIcon size={14} color="#000" />}
         <RNText
-          style={{ color: '#000', fontSize: 9, fontWeight: '600', flexShrink: 1, textAlign: 'center', lineHeight: 12 }}
+          style={{ color: isTrusted && isDark ? '#FFFFFF' : '#000000', fontSize: 9, fontWeight: '600', flexShrink: 1, textAlign: 'center', lineHeight: 12 }}
           numberOfLines={2}
         >
           {isTrusting ? t('actions.adding') : isUntrusting ? t('actions.removing') : isTrusted ? t('actions.unTrust') : t('actions.trust')}
@@ -761,9 +763,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const profileError = profileQueryResult.error;
   const refetchProfile = profileQueryResult.refetch;
   
-  // PERFORMANCE FIX: Trust/Truster sayıları userProfile.stats'tan alınır
-  // Liste verilerine burada ihtiyaç yok - sadece Trust_TrusterListScreen'de fetch edilir
-  // Bu sayede ProfileScreen'de gereksiz API istekleri önlenir
+  // Inventory count for Items stat in header
+  const { data: inventoryData } = useInventory(targetUserId || '');
+  const itemsCount = inventoryData?.pages.reduce((sum, page) => sum + page.items.length, 0) ?? 0;
+  const hasMoreInventory = inventoryData?.pages[inventoryData.pages.length - 1]?.pagination.hasMore ?? false;
   
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -1687,6 +1690,35 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                 >
                   {t('stats.truster')}
+                </Text>
+              </HStack>
+            </Pressable>
+            <Text
+              color={isDark ? '$textDark400' : '$textLight600'}
+              fontSize="$xs"
+            >
+              {" "}•{" "}
+            </Text>
+            <Pressable
+              onPress={() => {
+                if (targetUserId) {
+                  navigation.navigate('InventoryList', { userId: targetUserId });
+                }
+              }}
+            >
+              <HStack alignItems="center" space="xs">
+                <Text
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  fontSize="$xs"
+                  fontWeight="$bold"
+                >
+                  {hasMoreInventory ? `${itemsCount}+` : itemsCount}
+                </Text>
+                <Text
+                  color={isDark ? '$textDark400' : '$textLight600'}
+                  fontSize="$xs"
+                >
+                  {t('stats.items')}
                 </Text>
               </HStack>
             </Pressable>

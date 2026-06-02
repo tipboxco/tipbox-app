@@ -9,6 +9,7 @@ import {
   View,
   ViewToken,
 } from 'react-native';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 /**
  * Generic section list with a header bar that behaves like a tab strip.
@@ -68,6 +69,8 @@ function AutoScrollProfileTabs<T>(props: Props<T>) {
     refreshing,
     hideTabBar,
   } = props;
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
 
   const listRef = useRef<SectionList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -105,7 +108,7 @@ function AutoScrollProfileTabs<T>(props: Props<T>) {
   ).current;
 
   const renderTabBar = () => (
-    <View style={styles.tabContainer}>
+    <View style={[styles.tabContainer, { borderColor: isDark ? '#2A2A2A' : '#E9E9E9', backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
       {sections.map((sec, idx) => {
         const selected = idx === activeIndex;
         return (
@@ -114,7 +117,7 @@ function AutoScrollProfileTabs<T>(props: Props<T>) {
             style={[styles.tabButton, selected && styles.tabButtonActive]}
             onPress={() => scrollToSection(idx)}
           >
-            <Text style={[styles.tabText, selected && styles.tabTextActive]}>
+            <Text style={[styles.tabText, selected && styles.tabTextActive, isDark && { color: selected ? '#FFFFFF' : '#777777' }]}>
               {sec.title}
             </Text>
           </TouchableOpacity>

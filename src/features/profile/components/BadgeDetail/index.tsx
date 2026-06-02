@@ -72,7 +72,7 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
           textAlign="center"
           fontSize={16}
           fontWeight="$bold"
-          color={isDark ? '$textDark50' : '#000'}
+          color={isDark ? '$textDark50' : '#000000'}
           mr={24}
         >
           {badge.title}
@@ -151,7 +151,7 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
 
         {/* Details Card */}
         <Box
-          bg="#F7F7F7"
+          bg={isDark ? '#1A1A1A' : '#F7F7F7'}
           borderRadius={8}
           overflow="hidden"
         >
@@ -234,7 +234,7 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
                     <Text fontSize={10} fontWeight="$semibold">
                       {task.title}
                     </Text>
-                    <View style={{ width: '100%', height: 6, backgroundColor: '#F7F7F7', borderRadius: 10, overflow: 'hidden' }}>
+                    <View style={{ width: '100%', height: 6, backgroundColor: isDark ? '#333333' : '#F7F7F7', borderRadius: 10, overflow: 'hidden' }}>
                       <View
                         style={{ width: progressPercent, height: '100%', backgroundColor: task.isCompleted ? '#3CA241' : '#686868' }}
                       />

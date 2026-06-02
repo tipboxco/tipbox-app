@@ -100,8 +100,8 @@ const BadgeItem = memo<BadgeItemProps>(({
             h={20}
             rounded="$full"
             borderWidth={2}
-            borderColor="#000000"
-            bg="#FFFFFF"
+            borderColor={isDark ? '#FFFFFF' : '#000000'}
+            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
             alignItems="center"
             justifyContent="center"
           >
@@ -109,7 +109,7 @@ const BadgeItem = memo<BadgeItemProps>(({
               w={8}
               h={8}
               rounded="$full"
-              bg="#000000"
+              bg={isDark ? '#FFFFFF' : '#000000'}
             />
           </Box>
         ) : (

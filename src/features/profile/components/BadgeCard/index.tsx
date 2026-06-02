@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  Box,
-  VStack,
-  Text,
-  Image,
-  Pressable,
-} from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
+import { VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import type { Badge, BadgeRarity } from '@/src/mock/profile/badges/types';
 
@@ -15,113 +9,92 @@ interface BadgeCardProps {
   onPress?: () => void;
 }
 
-const getRarityColor = (rarity: BadgeRarity): string => {
-  switch (rarity) {
-    case 'Usual':
-      return '#6B7280';
-    case 'Rare':
-      return '#EC4899';
-    case 'Epic':
-      return '#8B5CF6';
-    case 'Legendary':
-      return '#F59E0B';
-    default:
-      return '#6B7280';
-  }
+const RARITY_CONFIG: Record<BadgeRarity, { ring: string; label: string; glow: string }> = {
+  Usual:     { ring: '#6B7280', label: '#6B7280', glow: 'rgba(107,114,128,0.2)' },
+  Rare:      { ring: '#CD7F32', label: '#CD7F32', glow: 'rgba(205,127,50,0.25)' },
+  Epic:      { ring: '#C0C0C0', label: '#9CA3AF', glow: 'rgba(192,192,192,0.25)' },
+  Legendary: { ring: '#FFD700', label: '#F59E0B', glow: 'rgba(255,215,0,0.3)' },
 };
 
-const getRarityBgColor = (rarity: BadgeRarity, isDark: boolean): string => {
-  switch (rarity) {
-    case 'Usual':
-      return isDark ? 'rgba(107, 114, 128, 0.15)' : 'rgba(107, 114, 128, 0.1)';
-    case 'Rare':
-      return isDark ? 'rgba(236, 72, 153, 0.15)' : 'rgba(236, 72, 153, 0.1)';
-    case 'Epic':
-      return isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)';
-    case 'Legendary':
-      return isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)';
-    default:
-      return isDark ? 'rgba(107, 114, 128, 0.15)' : 'rgba(107, 114, 128, 0.1)';
-  }
-};
-
-export const BadgeCard: React.FC<BadgeCardProps> = ({
-  badge,
-  onPress,
-}) => {
+export const BadgeCard: React.FC<BadgeCardProps> = ({ badge, onPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const cfg = RARITY_CONFIG[badge.rarity] ?? RARITY_CONFIG.Usual;
 
   return (
-    <Pressable onPress={onPress}>
-      <Box
-        bg={isDark ? '$backgroundDark900' : '$white'}
-        borderRadius="$xl"
-        p="$4"
-        borderWidth={1}
-        borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
-      >
-        <VStack space="md" alignItems="center">
-          {/* Badge Icon */}
-          <Box
-            width={125}
-            height={125}
-            borderRadius="$xl"
-            overflow="hidden"
-            justifyContent="center"
-            alignItems="center"
-            bg={"transparent"}
-          >
+    <Pressable onPress={onPress} style={styles.pressable}>
+      <VStack alignItems="center" space="xs">
+        {/* Circular badge with rarity ring */}
+        <View style={[styles.ringOuter, { borderColor: cfg.ring, shadowColor: cfg.glow }]}>
+          <View style={[styles.ringInner, { backgroundColor: isDark ? '#1A1A1A' : '#F3F4F6' }]}>
             <Image
               source={badge.icon}
               alt={badge.title}
-              style={{
-                width: 125,
-                height: 125,
-              }}
+              style={styles.badgeImage}
               resizeMode="contain"
             />
-          </Box>
+          </View>
+        </View>
 
-          {/* Badge Title */}
-          <Text
-            fontSize={13}
-            fontWeight="$semibold"
-            color={isDark ? '$textDark50' : '$textLight950'}
-            textAlign="center"
-            numberOfLines={2}
-            lineHeight={18}
-          >
-            {badge.title}
+        {/* Title */}
+        <Text
+          fontSize={11}
+          fontWeight="$semibold"
+          color={isDark ? '#FFFFFF' : '#111111'}
+          textAlign="center"
+          numberOfLines={2}
+          lineHeight={14}
+          maxWidth={80}
+        >
+          {badge.title}
+        </Text>
+
+        {/* Rarity label */}
+        <View style={[styles.rarityPill, { borderColor: cfg.ring }]}>
+          <Text fontSize={9} fontWeight="$bold" color={cfg.label}>
+            {badge.rarity}
           </Text>
-
-          {/* Rarity Badge */}
-          <Box
-            bg={getRarityBgColor(badge.rarity, isDark)}
-            py="$2"
-            px="$3"
-            borderRadius="$full"
-          >
-            <Box flexDirection="row" alignItems="center" justifyContent="center">
-              <Feather
-                name="award"
-                size={12}
-                color={getRarityColor(badge.rarity)}
-              />
-              <Text
-                fontSize={11}
-                fontWeight="$medium"
-                color={getRarityColor(badge.rarity)}
-                ml="$1"
-              >
-                {badge.rarity}
-              </Text>
-            </Box>
-          </Box>
-        </VStack>
-      </Box>
+        </View>
+      </VStack>
     </Pressable>
   );
 };
+
+const styles = StyleSheet.create({
+  pressable: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+  },
+  ringOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    padding: 3,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 6,
+  },
+  ringInner: {
+    flex: 1,
+    borderRadius: 40,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeImage: {
+    width: 62,
+    height: 62,
+  },
+  rarityPill: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+});
 
 export default BadgeCard;
