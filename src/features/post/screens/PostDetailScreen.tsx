@@ -42,6 +42,7 @@ export const PostDetailScreen = () => {
     const { t } = useTranslation('post');
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
+    const [showSegmented, setShowSegmented] = useState(true);
     const [isSortBottomSheetOpen, setIsSortBottomSheetOpen] = useState(false);
     
     // FIX: route.params undefined kontrolü - güvenli erişim
@@ -624,6 +625,22 @@ export const PostDetailScreen = () => {
         <>
             {/* Detail Card - FeedScreen ile aynı padding: paddingHorizontal: 16, paddingTop: 8 */}
             <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+                {finalType === 'experience' && finalPostData && finalPostData.id && (
+                    <Pressable
+                        onPress={() => setShowSegmented(prev => !prev)}
+                        alignSelf="flex-end"
+                        mb={4}
+                        hitSlop={8}
+                    >
+                        <Text
+                            fontSize={12}
+                            color={isDark ? '#888888' : '#666666'}
+                            sx={{ textDecorationLine: 'underline' }}
+                        >
+                            {showSegmented ? 'Orijinali Gör' : 'Segmentasyonu Gör'}
+                        </Text>
+                    </Pressable>
+                )}
                 {isLoadingPost && (!postData || !isPostDataComplete) ? (
                     <Box flex={1} justifyContent="center" alignItems="center" py="$8">
                         <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
@@ -639,7 +656,7 @@ export const PostDetailScreen = () => {
                         ) : finalType === 'benchmark' ? (
                             <BenchmarkPostCard data={finalPostData} onCommentPress={handleCommentInputPress} isDetailMode={true} />
                         ) : finalType === 'experience' ? (
-                            <ExperiencePostCard data={finalExperienceData ?? finalPostData} isDetailMode={true} />
+                            <ExperiencePostCard data={finalExperienceData ?? finalPostData} isDetailMode={showSegmented} />
                         ) : finalType === 'update' ? (
                             <UpdatePostCardDetail
                                 data={finalPostData}
@@ -702,7 +719,7 @@ export const PostDetailScreen = () => {
                 </Pressable>
             </HStack>
         </>
-    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, isDark, selectedOption, handleSortPress]);
+    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, isDark, selectedOption, handleSortPress, showSegmented]);
 
     // FlatList render item - useCallback ile memoize edildi
     // NOT: isLiking/isDeleting/isEditing global prop'ları kaldırıldı - tüm comment'lerin re-render olmasını engeller
