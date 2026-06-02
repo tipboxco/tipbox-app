@@ -1,0 +1,67 @@
+{
+  "cleanupPeriodDays": 7,
+  "env": {
+    "INSIDE_CLAUDE_CODE": "1",
+    "BASH_DEFAULT_TIMEOUT_MS": "420000",
+    "BASH_MAX_TIMEOUT_MS": "420000"
+  },
+  "includeCoAuthoredBy": true,
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "WebFetch(domain:*)"
+    ],
+    "deny": [
+      "Bash(git push * --force*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git branch -D main*)",
+      "Bash(git branch -d main*)",
+      "Bash(git push origin --delete main*)",
+      "Bash(git push origin :main*)",
+      "Bash(gh repo delete*)",
+      "Bash(git reset --hard*)"
+    ]
+  },
+  "model": "claude-opus-4-6",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "package.json",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm install",
+            "timeout": 60,
+            "statusMessage": "Installing dependencies (npm)"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "IMPORTANT: After completing the current task (not after every single edit), you MUST run `npx -y react-doctor@latest . --score` to measure the health score. Compare it against the baseline score of 43. If the score dropped, fix regressions before reporting the task as done. Do NOT run this after every individual file edit — only when you are about to report the task as complete.",
+            "timeout": 5,
+            "statusMessage": "React Doctor score check reminder"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Summarize the conversation so far in bullet points covering: 1) What was the main task/goal, 2) Key decisions made, 3) Current state/progress, 4) Any blockers or next steps. Keep it concise (max 5-7 bullets).",
+            "timeout": 30,
+            "statusMessage": "Summarizing context for compression"
+          }
+        ]
+      }
+    ]
+  },
+  "showClearContextOnPlanAccept": true
+}
