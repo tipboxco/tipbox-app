@@ -16,6 +16,7 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { toImageSource, useBottomOffset, formatRelativeTime, isSameImageSource } from '@/src/utils';
 import { navigationService } from '@/src/services/NavigationService';
+import { useInventoryProductCheck } from '@/src/features/post/hooks/useInventoryProductCheck';
 import {
   useBrandProductDetail,
   useBrandProductFeed,
@@ -818,6 +819,27 @@ const BrandProductDetailScreen: React.FC = () => {
     ? toImageSource(productDetail.image)
     : (initialProductImage || require('@/assets/events/card-icon.png'));
 
+  // Inventory check - show CTA banner when product is not in user's inventory
+  const { checkProduct } = useInventoryProductCheck();
+  const [isAddedToInventory, setIsAddedToInventory] = useState(() => checkProduct(productId));
+
+  const handleAddToInventory = useCallback(() => {
+    const productPayload = {
+      id: productId,
+      name: displayProductName,
+      image: displayProductImage,
+      brand: productDetail?.brand?.name,
+    };
+    navigationService.navigate('Post', {
+      screen: 'CreateExperiencePostScreen',
+      params: {
+        product: productPayload,
+        fromInventory: false,
+        experienceOption: 'own',
+      },
+    } as any);
+  }, [productId, displayProductName, displayProductImage, productDetail]);
+
   // Tab labels from i18n
   const tabLabels = useMemo(() => TAB_KEYS.map((key) => t(`brandProductDetail.tabs.${key}`)), [t]);
 
@@ -916,6 +938,45 @@ const BrandProductDetailScreen: React.FC = () => {
             </Box>
           )}
         </Box>
+
+        {/* Inventory CTA Banner - shown only when product is not in inventory */}
+        {!isAddedToInventory && (
+          <Pressable
+            onPress={handleAddToInventory}
+            mx="$3"
+            mb="$2"
+            borderRadius={10}
+            overflow="hidden"
+          >
+            <HStack
+              bg="#BBFF4E"
+              px="$3"
+              py="$2.5"
+              alignItems="center"
+              justifyContent="space-between"
+              borderRadius={10}
+            >
+              <Text
+                color="#000000"
+                fontSize="$xs"
+                fontWeight="$medium"
+                flex={1}
+              >
+                Bu ürün envanterinizde yok
+              </Text>
+              <Box
+                bg="#000000"
+                px="$2.5"
+                py="$1"
+                borderRadius={6}
+              >
+                <Text color="#BBFF4E" fontSize="$xs" fontWeight="$bold">
+                  Envantere Ekle
+                </Text>
+              </Box>
+            </HStack>
+          </Pressable>
+        )}
 
         {/* Tab Bar */}
         <TabsBar

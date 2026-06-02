@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Box, Text, ScrollView, HStack, VStack, Input, InputField, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, ScrollView, HStack, VStack, Input, InputField, Pressable, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Search } from 'lucide-react-native';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
@@ -22,6 +22,8 @@ import { CategorySkeleton, ProductSkeleton } from '@/src/components/Skeletons';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { useBottomOffset } from '@/src/utils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LightBulbIcon } from 'react-native-heroicons/outline';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
@@ -90,6 +92,58 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       },
     });
   }, [toast]);
+
+  const handleSuggestProduct = useCallback(async () => {
+    const query = searchQuery.trim();
+    if (!query) return;
+    try {
+      const existing = await AsyncStorage.getItem('tipbox-product-suggestions');
+      const suggestions = existing ? JSON.parse(existing) : [];
+      suggestions.push({ query, createdAt: new Date().toISOString() });
+      await AsyncStorage.setItem('tipbox-product-suggestions', JSON.stringify(suggestions.slice(-50)));
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+              <ToastTitle>Öneri Kaydedildi</ToastTitle>
+              <ToastDescription>"{query}" öneriniz moderasyon onayıyla eklenecektir.</ToastDescription>
+            </Toast>
+          </Box>
+        ),
+      });
+    } catch {}
+  }, [searchQuery, toast]);
+
+  const SuggestButton = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    return (
+      <Pressable onPress={handleSuggestProduct}>
+        <Box
+          mt="$3"
+          mx="$4"
+          py="$3"
+          px="$4"
+          borderWidth={1}
+          borderColor="#BBFF4E"
+          borderRadius={12}
+          flexDirection="row"
+          alignItems="center"
+          bg={isDark ? 'rgba(187,255,78,0.08)' : 'rgba(187,255,78,0.12)'}
+        >
+          <LightBulbIcon size={18} color="#BBFF4E" />
+          <VStack ml="$2" flex={1}>
+            <Text fontSize={13} fontWeight="$semibold" color={isDark ? '#FFFFFF' : '#000000'}>
+              Aradığını bulamadın mı? Öner!
+            </Text>
+            <Text fontSize={11} color={isDark ? '#888' : '#666'}>
+              Moderasyon onayıyla eklenecektir
+            </Text>
+          </VStack>
+        </Box>
+      </Pressable>
+    );
+  }, [searchQuery, isDark, handleSuggestProduct]);
 
   // Create Post Flow Store
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
@@ -1544,6 +1598,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                 <Text color={isDark ? '#999' : '#666'} fontSize="$sm">
                   {t('productCatalog.noSearchResults', { query: debouncedSearchQuery })}
                 </Text>
+                {SuggestButton}
               </Box>
             ) : (
               <>
@@ -1731,6 +1786,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                   <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
                     {t('productCatalog.noSearchResults', { query: searchQuery.trim() })}
                   </Text>
+                  {SuggestButton}
                 </Box>
               ) : currentData.length === 0 ? (
                 <Box py="$8" alignItems="center" px="$4">
