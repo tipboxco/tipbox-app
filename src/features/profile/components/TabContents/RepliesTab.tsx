@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useRef, useEffect } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
-import { VStack, Text, Box } from '@gluestack-ui/themed';
+import { VStack, Text, Box, HStack } from '@gluestack-ui/themed';
+import { ArrowUturnLeftIcon } from 'react-native-heroicons/outline';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import { useUserReplies } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -149,17 +150,22 @@ const RepliesTabComponent = () => {
     return uniqueItems;
   }, [repliesData]);
 
+  interface ReplyListItem {
+    raw: ProfileReplies;
+    card: QuestionCardData;
+  }
+
   const mappedReplies = useMemo(() => {
     if (!replies || !Array.isArray(replies)) return [];
-    const mapped = replies.map(mapQuestionToCardData);
-    
+    const mapped: ReplyListItem[] = replies.map((r) => ({ raw: r, card: mapQuestionToCardData(r) }));
+
     // Detaylı log: Mapping sonrası
     console.log('[RepliesTab] Mapping Sonrası:', {
       repliesCount: replies.length,
       mappedCount: mapped.length,
-      mappedIds: mapped.map((item) => item.id),
+      mappedIds: mapped.map((item) => item.card.id),
     });
-    
+
     return mapped;
   }, [replies]);
 
@@ -220,8 +226,7 @@ const RepliesTabComponent = () => {
     );
   }
 
-  // CACHE FIX: Only show loading when loading and no cached data
-  if (isLoading && !data?.pages?.[0]) {
+  if (isLoading && !repliesData?.pages?.[0]) {
     return (
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
@@ -252,11 +257,25 @@ const RepliesTabComponent = () => {
     );
   }
 
+  const replyContextColor = isDark ? '#888' : '#666';
+
   return (
     <FlatList
       data={mappedReplies}
-      renderItem={({ item }) => <QuestionPostCard data={item} />}
-      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <Box>
+          <HStack alignItems="center" space="xs" mb="$1" px="$1">
+            <ArrowUturnLeftIcon size={12} color={replyContextColor} />
+            <Text fontSize={12} color={replyContextColor} numberOfLines={1} flexShrink={1}>
+              {item.raw.contextData.name
+                ? `${item.raw.contextData.name} hakkındaki yazıya yanıt`
+                : 'Bir yazıya yanıt'}
+            </Text>
+          </HStack>
+          <QuestionPostCard data={item.card} />
+        </Box>
+      )}
+      keyExtractor={(item) => item.card.id}
       contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
       showsVerticalScrollIndicator={false}
       nestedScrollEnabled={true}
