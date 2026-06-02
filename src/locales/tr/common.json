@@ -127,6 +127,7 @@
     "menuItems": {
       "account": "Hesap",
       "wallet": "Cüzdan",
+      "inventory": "Envanterim",
       "bookmarks": "Kaydedilenler",
       "marketplace": "Market",
       "primePass": "Prime Pass",
@@ -201,6 +202,11 @@
     },
     "loadMore": "Daha Fazla"
   },
+  "comments": {
+    "replyTo": "{{name}}'e yanıt",
+    "loading": "Yorumlar yükleniyor...",
+    "empty": "Henüz yorum yok."
+  },
   "createPost": {
     "title": "Gönderi Oluştur",
     "types": {
@@ -222,6 +228,14 @@
       "ownDesc": "Envantere eklenir; deneyim parçaları gönderi olarak paylaşılır.",
       "tried": "Denedim / Test Ettim",
       "triedDesc": "Deneyim parçaları gönderi olarak paylaşılır; envantere eklenmez"
+    },
+    "drafts": {
+      "title": "Taslaklar",
+      "empty": "Kaydedilmiş taslak yok",
+      "saveDraft": "Taslağa Kaydet",
+      "savedAt": "Kaydedildi",
+      "continue": "Devam Et",
+      "delete": "Sil"
     }
   }
 }
