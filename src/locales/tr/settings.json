@@ -14,6 +14,7 @@
       "privacySettings": "Gizlilik Ayarları",
       "supportSettings": "1-1 Destek Ayarları",
       "language": "Dil",
+      "theme": "Tema",
       "yourDevices": "Cihazlarınız",
       "paymentSubscription": "Ödeme ve Abonelik",
       "billingHistory": "Fatura Geçmişi"
@@ -162,6 +163,12 @@
     "feedback": "Geri Bildirim",
     "voteNewFeatures": "Yeni Özellikler İçin Oy Ver",
     "sessionNotFound": "Oturum bulunamadı. Lütfen tekrar giriş yapın."
+  },
+  "theme": {
+    "title": "Tema",
+    "light": "Açık",
+    "dark": "Koyu",
+    "system": "Sistem (Otomatik)"
   },
   "languages": {
     "title": "Dil",

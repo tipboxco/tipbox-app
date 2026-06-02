@@ -20,6 +20,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomOffset } from '@/src/utils';
 import YourDevicesBottomSheet from '../components/YourDevicesBottomSheet';
 import { LanguageBottomSheet } from '../components/LanguageBottomSheet';
+import { ThemeBottomSheet } from '../components/ThemeBottomSheet';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<SettingsStackParamList, 'SettingsScreen'>;
@@ -88,6 +89,38 @@ export const SettingsScreen = () => {
           icon: 'headphones',
           title: t('settingsScreen.menuItems.supportSettings'),
           onPress: () => navigation.navigate('SupportSettings'),
+        },
+        {
+          id: 'theme',
+          icon: 'sun',
+          title: t('settingsScreen.menuItems.theme'),
+          onPress: () => {
+            openBottomSheet(
+              <ThemeBottomSheet onClose={closeBottomSheet} />,
+              {
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableDynamicSizing: false,
+                snapPoints: ['35%'],
+                backgroundStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleIndicatorStyle: {
+                  backgroundColor: isDark ? '#333333' : '#B8B8B7',
+                  width: 40,
+                  height: 4,
+                },
+                paddingBottom: bottomOffset,
+              }
+            );
+          },
         },
         {
           id: 'language',
@@ -197,7 +230,7 @@ export const SettingsScreen = () => {
           alignItems="center"
           bg={isDark ? '#2A2A2A' : '#F2F2F2'}
           borderWidth={1}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           borderRadius={23}
           px="$3"
           space="sm"
