@@ -24,7 +24,7 @@ import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { Feather } from '@expo/vector-icons';
-import { Bars3Icon } from 'react-native-heroicons/outline';
+import { Bars3Icon, MapPinIcon } from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import { useNavigation } from '@react-navigation/native';
@@ -299,7 +299,7 @@ const ExploreScreen: React.FC = () => {
   const progress = useSharedValue(0);
 
   // Tab state - currentPage'e göre hesaplanıyor
-  const activeCategory: 'hottest' | 'news' | 'catalog' = currentPage === 0 ? 'hottest' : currentPage === 1 ? 'news' : 'catalog';
+  const activeCategory: 'hottest' | 'news' | 'catalog' | 'trendler' = currentPage === 0 ? 'hottest' : currentPage === 1 ? 'news' : currentPage === 2 ? 'catalog' : 'trendler';
 
   const bottomInset = useSafeAreaValues('bottom');
   const [searchBarHeight, setSearchBarHeight] = useState(0);
@@ -518,26 +518,33 @@ const ExploreScreen: React.FC = () => {
   const tab1Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(progress.value, [0, 1, 2], [activeColor, inactiveColor, inactiveColor]);
+    const color = interpolateColor(progress.value, [0, 1, 2, 3], [activeColor, inactiveColor, inactiveColor, inactiveColor]);
     return { color };
   });
 
   const tab2Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(progress.value, [0, 1, 2], [inactiveColor, activeColor, inactiveColor]);
+    const color = interpolateColor(progress.value, [0, 1, 2, 3], [inactiveColor, activeColor, inactiveColor, inactiveColor]);
     return { color };
   });
 
   const tab3Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(progress.value, [0, 1, 2], [inactiveColor, inactiveColor, activeColor]);
+    const color = interpolateColor(progress.value, [0, 1, 2, 3], [inactiveColor, inactiveColor, activeColor, inactiveColor]);
     return { color };
   });
 
-  // Indicator position animation (3 tabs)
-  const tabWidth = tabContainerWidth / 3 || 0;
+  const tab4Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(progress.value, [0, 1, 2, 3], [inactiveColor, inactiveColor, inactiveColor, activeColor]);
+    return { color };
+  });
+
+  // Indicator position animation (4 tabs)
+  const tabWidth = tabContainerWidth / 4 || 0;
   const indicatorWidth = tabWidth * 0.7;
   const indicatorStyle = useAnimatedStyle(() => {
     const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
@@ -718,6 +725,28 @@ const ExploreScreen: React.FC = () => {
                 </VStack>
               </Pressable>
 
+              {/* Trendler Tab Label */}
+              <Pressable
+                flex={1}
+                onPress={() => handleTabPress(3)}
+                alignItems="center"
+                pb={8}
+              >
+                <VStack alignItems="center" space="xs">
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                      },
+                      tab4Style,
+                    ]}
+                  >
+                    {t('tabs.trends')}
+                  </Animated.Text>
+                </VStack>
+              </Pressable>
+
               {/* Animated Indicator */}
               {tabWidth > 0 && (
                 <Animated.View
@@ -793,6 +822,30 @@ const ExploreScreen: React.FC = () => {
             {/* Katalog Tab */}
             <Box key="2" flex={1}>
               <CatalogScreen embedded />
+            </Box>
+
+            {/* Trendler Tab */}
+            <Box key="3" flex={1}>
+              <VStack flex={1} justifyContent="center" alignItems="center" px="$8">
+                <MapPinIcon size={48} color={isDark ? '#555' : '#CCC'} />
+                <Text
+                  color={isDark ? '$textDark400' : '$textLight500'}
+                  fontSize="$md"
+                  fontWeight="$semibold"
+                  mt="$4"
+                  textAlign="center"
+                >
+                  {t('tabs.trendsComingSoon')}
+                </Text>
+                <Text
+                  color={isDark ? '$textDark500' : '$textLight400'}
+                  fontSize="$sm"
+                  mt="$1"
+                  textAlign="center"
+                >
+                  {t('tabs.trendsDescription')}
+                </Text>
+              </VStack>
             </Box>
           </AnimatedPagerView>
         </VStack>
