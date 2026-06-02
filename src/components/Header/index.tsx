@@ -8,7 +8,9 @@ import {
   FunnelIcon,
   ArrowTopRightOnSquareIcon,
   MagnifyingGlassIcon,
+  BellIcon,
 } from 'react-native-heroicons/outline';
+import { BellIcon as BellIconSolid } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { useDrawerStore } from '@/src/store/drawerStore';
@@ -51,6 +53,9 @@ interface HeaderProps {
   onBackPress?: () => void;
   rightAction?: React.ReactNode;
   onSearchPress?: () => void;
+  showNotificationBell?: boolean;
+  onNotificationBellPress?: () => void;
+  notificationBadgeCount?: number;
 }
 
 const HeaderComponent = ({
@@ -73,7 +78,10 @@ const HeaderComponent = ({
   showBackButton = false,
   onBackPress,
   rightAction,
-  onSearchPress
+  onSearchPress,
+  showNotificationBell,
+  onNotificationBellPress,
+  notificationBadgeCount = 0,
 }: HeaderProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -295,6 +303,45 @@ const HeaderComponent = ({
       );
     }
 
+    // Notification bell
+    if (showNotificationBell && onNotificationBellPress) {
+      actions.push(
+        <Pressable key="notification-bell" onPress={onNotificationBellPress} mr={rightButton ? '$2' : '$0'}>
+          <Box style={{ position: 'relative' }}>
+            {notificationBadgeCount > 0 ? (
+              <BellIconSolid width={22} height={22} color={isDark ? '#FFFFFF' : '#000000'} />
+            ) : (
+              <BellIcon width={22} height={22} color={isDark ? '#FFFFFF' : '#000000'} />
+            )}
+            {notificationBadgeCount > 0 && (
+              <Box
+                position="absolute"
+                top={-4}
+                right={-4}
+                minWidth={16}
+                height={16}
+                borderRadius={8}
+                bg="#FF3B30"
+                borderWidth={2}
+                borderColor={isDark ? '#000000' : '#FFFFFF'}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Text
+                  color="#FFFFFF"
+                  fontSize={9}
+                  fontWeight="$bold"
+                  lineHeight={11}
+                >
+                  {notificationBadgeCount > 99 ? '99+' : notificationBadgeCount}
+                </Text>
+              </Box>
+            )}
+          </Box>
+        </Pressable>
+      );
+    }
+
     // Geriye uyumluluk için eski rightAction
     if (!actions.length && rightAction) {
       return (
@@ -322,7 +369,7 @@ const HeaderComponent = ({
         {actions}
       </HStack>
     ) : null;
-  }, [showThreeDots, onThreeDotsPress, showFilter, onFilterPress, showShare, onSharePress, rightButton, rightAction, onSearchPress, isDark]);
+  }, [showThreeDots, onThreeDotsPress, showFilter, onFilterPress, showShare, onSharePress, rightButton, rightAction, onSearchPress, showNotificationBell, onNotificationBellPress, notificationBadgeCount, isDark]);
 
   // PERFORMANCE FIX: Fixed header height for consistent tab transitions
   // All screens use the same header height to prevent lag/trembling during tab transitions
@@ -402,7 +449,10 @@ export const Header = memo(HeaderComponent, (prevProps, nextProps) => {
     prevProps.onBackPress === nextProps.onBackPress &&
     prevProps.onMenuPress === nextProps.onMenuPress &&
     prevProps.onSearchPress === nextProps.onSearchPress &&
-    prevProps.rightAction === nextProps.rightAction
+    prevProps.rightAction === nextProps.rightAction &&
+    prevProps.showNotificationBell === nextProps.showNotificationBell &&
+    prevProps.onNotificationBellPress === nextProps.onNotificationBellPress &&
+    prevProps.notificationBadgeCount === nextProps.notificationBadgeCount
   );
 });
 Header.displayName = 'Header';
