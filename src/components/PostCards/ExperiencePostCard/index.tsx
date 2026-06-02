@@ -436,7 +436,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
     >
       {/* Header - hidden when embedded as Related Post in update detail */}
       {showHeader && (
-        <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
+        <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor={isDark ? '#333333' : '#E9E9E9'}>
           <HStack alignItems="center" space="xs">
             {data.user && toImageSource(data.user.avatar) && (
               <Pressable onPress={handleViewProfile}>
@@ -493,7 +493,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                     color={isDark ? '$textDark400' : '#787878'}
                     fontSize={11}
                     numberOfLines={1}
-                    maxWidth={250}
                   >
                     {data.user.title}
                   </Text>
@@ -645,8 +644,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
             py={8}
             borderRightWidth={1}
             borderLeftWidth={1}
-            borderColor="#E9E9E9"
-            {...(!showHeader && { borderTopWidth: 1, borderTopLeftRadius: 5, borderTopRightRadius: 5 })}
+            borderColor={isDark ? '#333333' : '#E9E9E9'}
+            borderTopWidth={1}
+            borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'}
+            bg={isDark ? '#0A0A0A' : '#FAFAFA'}
+            {...(!showHeader && { borderTopLeftRadius: 5, borderTopRightRadius: 5 })}
           >
             <VStack space="xs">
               <ProductInfoCard
@@ -710,55 +712,68 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           borderRightWidth={1}
           borderLeftWidth={1}
           borderBottomWidth={data.tags && data.tags.length > 0 ? 0 : 1}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           {...(!showHeader && !data.contextData && { borderTopWidth: 1, borderTopLeftRadius: 5, borderTopRightRadius: 5 })}
           {...(!data.tags || data.tags.length === 0) && !data.images && { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 }}
         >
           {Array.isArray(data.content) && data.content.length > 0 ? (
-            data.content.map((item, index) => (
-              <VStack key={index} py={10} space="xs">
-                <HStack space="sm" alignItems="center">
-                  {item.tag.icon === 'package' ? (
-                    <CubeIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
-                  ) : (
-                    <TagIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
-                  )}
+            isDetailMode ? (
+              // Detail mode: segmented view with icons, titles and ratings
+              data.content.map((item, index) => (
+                <VStack key={index} py={10} space="xs">
+                  <HStack space="sm" alignItems="center">
+                    {item.tag.icon === 'package' ? (
+                      <CubeIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                    ) : (
+                      <TagIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                    )}
+                    <Text
+                      color={isDark ? '$textDark50' : '#000'}
+                      fontSize="$sm"
+                      fontWeight="$bold"
+                    >
+                      {translateTagTitle(item.tag.title)}
+                    </Text>
+                  </HStack>
                   <Text
-                    color={isDark ? '$textDark50' : '#000'}
+                    color={isDark ? '$textDark50' : '#343434'}
                     fontSize="$sm"
-                    fontWeight="$bold"
+                    lineHeight={18}
+                    ml={26}
                   >
-                    {translateTagTitle(item.tag.title)}
+                    {item.text}
                   </Text>
-                </HStack>
-                <Text
-                  color={isDark ? '$textDark50' : '#343434'}
-                  fontSize="$sm"
-                  lineHeight={18}
-                  ml={26}
-                  numberOfLines={isDetailMode ? undefined : (data.images && data.images!.length > 0 ? 3 : 6)}
-                >
-                  {item.text}
-                </Text>
-                <HStack ml={26} mt={6} space="xs">
-                  {item.rating.map((star, idx) => (
-                    <StarIconSolid
-                      key={idx}
-                      width={16}
-                      height={16}
-                      color={star ? '#829905' : (isDark ? '#7E7E7E' : '#D4D4D4')}
-                    />
-                  ))}
-                </HStack>
-              </VStack>
-            ))
+                  <HStack ml={26} mt={6} space="xs">
+                    {item.rating.map((star, idx) => (
+                      <StarIconSolid
+                        key={idx}
+                        width={16}
+                        height={16}
+                        color={star ? '#829905' : (isDark ? '#7E7E7E' : '#D4D4D4')}
+                      />
+                    ))}
+                  </HStack>
+                </VStack>
+              ))
+            ) : (
+              // Feed mode: plain concatenated text (original reading experience)
+              <Text
+                color={isDark ? '$textDark50' : '#343434'}
+                fontSize="$sm"
+                lineHeight={18}
+                py={10}
+                numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
+              >
+                {data.content.map(item => item.text).filter(Boolean).join('\n\n')}
+              </Text>
+            )
           ) : null}
         </VStack>
       </Pressable>
 
       {/* Translated Content */}
       {showTranslation && translatedContent && (
-        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
+        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
           <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
           <Text
             color={isDark ? '$textDark200' : '#666'}
@@ -772,7 +787,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
 
       {/* Translate Button */}
       {shouldTranslate && (
-        <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
           <Pressable onPress={toggleTranslation}>
             <HStack alignItems="center" space="xs">
               <Image
@@ -805,7 +820,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           borderRightWidth={1}
           borderLeftWidth={1}
           borderBottomWidth={(!data.images || data.images.length === 0) && !showActions ? 1 : 0}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           {...((!data.images || data.images.length === 0) && !showActions && { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 })}
           flexDirection="row"
           flexWrap="wrap"
@@ -819,15 +834,15 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               <Box
                 key={index}
                 borderRadius="$full"
-                px={10}
-                py={4}
+                px={8}
+                py={3}
                 bg={isDark ? 'rgba(255,255,255,0.15)' : '#FFFFFF'}
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
               >
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={11}
+                  fontSize={10}
                   fontWeight="$semibold"
                 >
                   {translateTag(value)}
@@ -856,7 +871,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               borderRightWidth={1}
               borderLeftWidth={1}
               borderBottomWidth={!showActions ? 1 : 0}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               {...(!showActions && { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 })}
             >
               <CardImageCarousel images={validImages} isDetailMode={isDetailMode} />
@@ -866,10 +881,10 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
       })()}
       {/* Stats - hidden when embedded as Related Post in update detail */}
       {showActions && (
-        <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={5} borderBottomLeftRadius={5} borderColor="#E9E9E9"
+        <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={5} borderBottomLeftRadius={5} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center"
         >
           <Pressable onPress={handleLike}>
-          <HStack mr={10} alignItems="center">
+          <HStack alignItems="center">
               {isLiked ? (
                 <HeartIconSolid width={24} height={24} color="#FF3040" />
               ) : (
@@ -884,7 +899,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           </HStack>
           </Pressable>
           <Pressable onPress={handleComment}>
-          <HStack mr={10} alignItems="center">
+          <HStack alignItems="center">
             <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               <AnimatedCounter
                 value={commentsCount}
@@ -895,7 +910,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           </HStack>
           </Pressable>
           <Pressable onPress={handleShare}>
-          <HStack mr={10} alignItems="center">
+          <HStack alignItems="center">
             <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               <AnimatedCounter
                 value={sharesCount}
@@ -906,7 +921,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           </HStack>
           </Pressable>
           <Pressable onPress={handleBookmark}>
-          <HStack mr={10} alignItems="center">
+          <HStack alignItems="center">
               {isBookmarked ? (
                 <BookmarkIconSolid width={24} height={24} color="#829905" />
               ) : (

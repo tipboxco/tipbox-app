@@ -48,7 +48,7 @@ export const VerifyCodeScreen = ({
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
 
-  const backgroundColor = '#FFFFFF';
+  const backgroundColor = isDark ? '#0A0A0A' : '#FFFFFF';
 
   const [value, setValue] = useState('');
   const ref = useBlurOnFulfill({ value, cellCount: CELL_COUNT });
@@ -121,7 +121,7 @@ export const VerifyCodeScreen = ({
                     borderColor={
                       isFocused
                         ? isDark ? '#FFFFFF' : '#000000'
-                        : '#E9E9E9'
+                        : isDark ? '#444444' : '#E9E9E9'
                     }
                     borderRadius={8}
                     bg="transparent"

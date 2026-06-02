@@ -5,6 +5,7 @@ import { ImageSourcePropType, StyleProp, ImageStyle } from 'react-native';
 import { toImageSource } from '@/src/utils';
 import LottieView from 'lottie-react-native';
 import { CubeIcon } from 'react-native-heroicons/outline';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 export interface CachedImageProps {
   source: string | ImageSourcePropType | null | undefined;
@@ -39,6 +40,8 @@ export const CachedImage: React.FC<CachedImageProps> = ({
   resizeMode,
   ...props
 }) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
   const [hasError, setHasError] = useState(false);
   // Loading overlay sadece gecikme sonrası gösterilir - cache'den yüklenen görseller skeleton görmez
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
@@ -138,14 +141,14 @@ export const CachedImage: React.FC<CachedImageProps> = ({
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor: '#F5F5F5',
+              backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
               borderRadius: containerBorderRadius,
               justifyContent: 'center',
               alignItems: 'center',
             }
           ]}
         >
-          <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
+          <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
         </View>
       </View>
     );
@@ -192,7 +195,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor: '#F5F5F5',
+              backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
               borderRadius: containerBorderRadius,
               justifyContent: 'center',
               alignItems: 'center',
@@ -220,11 +223,11 @@ export const CachedImage: React.FC<CachedImageProps> = ({
                   cachePolicy={cachePolicy}
                 />
               ) : (
-                <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
+                <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
               );
             })()
           ) : (
-            <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
+            <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
           )}
         </View>
       )}
@@ -246,14 +249,14 @@ export const CachedImage: React.FC<CachedImageProps> = ({
                 style={[
                   StyleSheet.absoluteFill,
                   {
-                    backgroundColor: '#F5F5F5',
+                    backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
                     borderRadius: containerBorderRadius,
                     justifyContent: 'center',
                     alignItems: 'center',
                   }
                 ]}
               >
-                <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
+                <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
               </View>
             );
           })()
@@ -262,14 +265,14 @@ export const CachedImage: React.FC<CachedImageProps> = ({
             style={[
               StyleSheet.absoluteFill,
               {
-                backgroundColor: '#F5F5F5',
+                backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
                 borderRadius: containerBorderRadius,
                 justifyContent: 'center',
                 alignItems: 'center',
               }
             ]}
           >
-            <CubeIcon size={iconSize} color="#CCCCCC" strokeWidth={1.5} />
+            <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
           </View>
         )
       )}

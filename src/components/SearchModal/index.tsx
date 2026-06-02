@@ -1036,7 +1036,7 @@ export const SearchModal: React.FC<SearchModalProps> = memo(({ visible, onClose 
                   <HStack
                     ref={tabContainerRef}
                     borderBottomWidth={1}
-                    borderColor="#E9E9E9"
+                    borderColor={isDark ? '#333333' : '#E9E9E9'}
                     p={0}
                     m={0}
                     position="relative"

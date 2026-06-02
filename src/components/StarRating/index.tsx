@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable } from 'react-native';
 import { HStack } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface StarRatingProps {
   rating: number;
@@ -18,6 +19,9 @@ export const StarRating: React.FC<StarRatingProps> = ({
   color = '#FFD700',
   onRate,
 }) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
   return (
     <HStack space="sm">
       {Array.from({ length: maxRating }).map((_, index) => (
@@ -28,7 +32,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
           <Feather
             name={index < rating ? 'star' : 'star'}
             size={size}
-            color={index < rating ? color : '#CCCCCC'}
+            color={index < rating ? color : (isDark ? '#555555' : '#CCCCCC')}
           />
         </Pressable>
       ))}

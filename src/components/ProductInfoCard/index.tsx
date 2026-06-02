@@ -75,7 +75,7 @@ const ProductInfoCardComponent = ({
           width={imageSize}
           height={imageSize}
           borderRadius={5}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           overflow="hidden"
           bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
         >
@@ -91,7 +91,7 @@ const ProductInfoCardComponent = ({
         {/* Product Info */}
         <VStack flex={1} space="xs">
           <Text
-            color={titleColor || (isDark ? '$textDark50' : '#A3A3A3')}
+            color={titleColor || (isDark ? '#FFFFFF' : '#222222')}
             fontSize={11}
             fontWeight="$bold"
             numberOfLines={1}

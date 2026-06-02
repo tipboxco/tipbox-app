@@ -380,7 +380,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
             }}
         >
             {/* Header */}
-            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
+            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                 <HStack alignItems="center" space="xs">
                     {data.user && toImageSource(data.user.avatar) && (
                         <Pressable onPress={handleViewProfile}>
@@ -421,7 +421,6 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                                     color={isDark ? '$textDark400' : '#787878'}
                                     fontSize="$xs"
                                     numberOfLines={1}
-                                    maxWidth={250}
                                 >
                                     {data.user.title}
                                 </Text>
@@ -546,7 +545,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
             {/* Product */}
             {
                 !hideProduct && data.category && data.category.product ? (
-                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.PRODUCT}
@@ -581,7 +580,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                         />
                     </Box>
                 ) : !hideProduct && data.category ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.SUB_CATEGORY}
@@ -613,23 +612,23 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
             }
 
             {/* Badges */}
-            <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
+            <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
                 <Box
                     bg={isDark ? '$backgroundDark900' : '$white'}
-                    borderWidth={2}
+                    borderWidth={1}
                     borderColor="#BAC4FF"
                     bgColor='#3E57FFCC'
                     borderRadius={20}
-                    px={10}
-                    py={6}
+                    px={8}
+                    py={3}
                     flexDirection="row"
                     alignItems="center"
                 >
-                    <InformationCircleIcon width={12} height={12} color={'#fff'} />
+                    <InformationCircleIcon width={10} height={10} color={'#fff'} />
                     <Text
-                        fontSize={8}
+                        fontSize={9}
                         fontWeight="$semibold"
-                        ml={5}
+                        ml={4}
                         color={'#fff'}
                         numberOfLines={1}
                     >
@@ -644,21 +643,21 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                         borderWidth={1}
                         borderColor={BENEFIT_CATEGORY_MAP[data.benefitCategory].color + '40'}
                         borderRadius={20}
-                        px={10}
-                        py={6}
+                        px={8}
+                        py={3}
                         flexDirection="row"
                         alignItems="center"
                         justifyContent="center"
                     >
                         <Feather
                             name={BENEFIT_CATEGORY_MAP[data.benefitCategory].icon}
-                            size={14}
+                            size={12}
                             color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
                         />
                         <Text
-                            fontSize={10}
+                            fontSize={9}
                             fontWeight="$semibold"
-                            ml={6}
+                            ml={4}
                             color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
                         >
                             {t(BENEFIT_CATEGORY_MAP[data.benefitCategory].labelKey)}
@@ -675,7 +674,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     params: { postData: data, type: 'tipsAndTricks' }
                 });
             }}>
-                <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
                         fontSize="$sm"
@@ -689,7 +688,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
 
             {/* Translated Content */}
             {showTranslation && translatedContent && (
-                <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
+                <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
                     <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                     <Text
                         color={isDark ? '$textDark200' : '#666'}
@@ -703,7 +702,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
 
             {/* Translate Button */}
             {shouldTranslate && (
-                <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                     <Pressable onPress={toggleTranslation}>
                         <HStack alignItems="center" space="xs">
                             <Image
@@ -742,7 +741,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             });
                         }}
                     >
-                        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                             <CardImageCarousel images={validImages} isDetailMode={isDetailMode} />
                         </VStack>
                     </Pressable>
@@ -758,12 +757,12 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 borderBottomWidth={1}
                 borderBottomRightRadius={5}
                 borderBottomLeftRadius={5}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 justifyContent="space-between"
             >
-                <HStack>
+                <HStack flex={1} justifyContent="space-between" alignItems="center">
                     <Pressable onPress={handleLike}>
-                    <HStack mr={10} alignItems="center">
+                    <HStack alignItems="center">
                             {isLiked ? (
                                 <HeartIconSolid width={24} height={24} color="#FF3040" />
                             ) : (
@@ -778,7 +777,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleComment}>
-                    <HStack mr={10} alignItems="center">
+                    <HStack alignItems="center">
                         <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <AnimatedCounter
                                 value={commentsCount}
@@ -789,7 +788,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleShare}>
-                    <HStack mr={10} alignItems="center">
+                    <HStack alignItems="center">
                         <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <AnimatedCounter
                                 value={sharesCount}
@@ -800,7 +799,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
-                    <HStack mr={10} alignItems="center">
+                    <HStack alignItems="center">
                             {isBookmarked ? (
                                 <BookmarkIconSolid width={24} height={24} color="#829905" />
                             ) : (

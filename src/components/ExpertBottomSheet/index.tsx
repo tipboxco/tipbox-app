@@ -93,7 +93,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             <Text
                                 fontSize={10}
                                 fontWeight="$medium"
-                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                color={isDark ? '#AAAAAA' : '#8C8C8C'}
                                 flex={1}
                             >
                                 {selectedCategory}
@@ -168,7 +168,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                         <PlusIcon
                             width={28}
                             height={28}
-                            color={isDark ? '#C1BEBF' : '#C1BEBF'}
+                            color={isDark ? '#888888' : '#C1BEBF'}
                         />
                     </Pressable>
                 </VStack>
@@ -193,7 +193,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             <Text
                                 fontSize={38}
                                 fontWeight="$bold"
-                                color={isDark ? '#909090' : '#909090'}
+                                color={isDark ? '#B0B0B0' : '#909090'}
                             >
                                 {expertPrize}
                             </Text>
@@ -222,14 +222,14 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             <Text
                                 fontSize={9}
                                 fontWeight="$medium"
-                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                color={isDark ? '#AAAAAA' : '#8C8C8C'}
                             >
                                 $5
                             </Text>
                             <Text
                                 fontSize={9}
                                 fontWeight="$medium"
-                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                color={isDark ? '#AAAAAA' : '#8C8C8C'}
                             >
                                 Current Balance : 500 TIPS
                             </Text>
@@ -288,7 +288,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                     <Text
                         fontSize={11}
                         fontWeight="$medium"
-                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        color={isDark ? '#AAAAAA' : '#8C8C8C'}
                         textAlign="center"
                         px="$4"
                     >
@@ -317,7 +317,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                 <Text
                     fontSize={10}
                     fontWeight="$normal"
-                    color={isDark ? '#343434' : '#343434'}
+                    color={isDark ? '#CCCCCC' : '#343434'}
                     lineHeight={14}
                     px="$3"
                 >
@@ -336,7 +336,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                     <Text
                         fontSize={12}
                         fontWeight="$bold"
-                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        color={isDark ? '#AAAAAA' : '#8C8C8C'}
                     >
                         Answer
                     </Text>
@@ -345,7 +345,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                 <Text
                     fontSize={10}
                     fontWeight="$normal"
-                    color={isDark ? '#343434' : '#343434'}
+                    color={isDark ? '#CCCCCC' : '#343434'}
                     lineHeight={14}
                     px="$3"
                 >
@@ -359,14 +359,14 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                     <Text
                         fontSize={12}
                         fontWeight="$semibold"
-                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        color={isDark ? '#AAAAAA' : '#8C8C8C'}
                     >
                         Expert Prize
                     </Text>
                     <Text
                         fontSize={16}
                         fontWeight="$bold"
-                        color={isDark ? '#909090' : '#909090'}
+                        color={isDark ? '#B0B0B0' : '#909090'}
                     >
                         {expertPrize} TIPS
                     </Text>
@@ -397,7 +397,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                 <Text
                     fontSize={10}
                     fontWeight="$normal"
-                    color={isDark ? '#343434' : '#343434'}
+                    color={isDark ? '#CCCCCC' : '#343434'}
                     lineHeight={14}
                     px="$3"
                 >
@@ -425,7 +425,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                 <Text
                     fontSize={10}
                     fontWeight="$normal"
-                    color={isDark ? '#000000' : '#000000'}
+                    color={isDark ? '#CCCCCC' : '#000000'}
                     lineHeight={12}
                     px="$3"
                 >
@@ -464,7 +464,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             Trevor Nace
                         </Text>
                         <Text
-                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                            color={isDark ? '#AAAAAA' : '#8C8C8C'}
                             fontSize={9}
                             fontWeight="$medium"
                             numberOfLines={1}
@@ -481,14 +481,14 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                     <Text
                         fontSize={12}
                         fontWeight="$semibold"
-                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        color={isDark ? '#AAAAAA' : '#8C8C8C'}
                     >
                         Expert Prize
                     </Text>
                     <Text
                         fontSize={16}
                         fontWeight="$bold"
-                        color={isDark ? '#909090' : '#909090'}
+                        color={isDark ? '#B0B0B0' : '#909090'}
                     >
                         {expertPrize} TIPS
                     </Text>
@@ -527,7 +527,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             <FlagIcon
                                 width={20}
                                 height={20}
-                                color={isDark ? '#9E9E9E' : '#9E9E9E'}
+                                color={isDark ? '#AAAAAA' : '#9E9E9E'}
                             />
                         </Pressable>
 
@@ -543,7 +543,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             <Text
                                 fontSize={12}
                                 fontWeight="$bold"
-                                color={isDark ? '#9E9E9E' : '#9E9E9E'}
+                                color={isDark ? '#AAAAAA' : '#9E9E9E'}
                             >
                                 Extra TIPS
                             </Text>
@@ -584,7 +584,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             <Text
                                 fontSize={12}
                                 fontWeight="$bold"
-                                color={isDark ? '#9E9E9E' : '#9E9E9E'}
+                                color={isDark ? '#AAAAAA' : '#9E9E9E'}
                             >
                                 Cancel
                             </Text>

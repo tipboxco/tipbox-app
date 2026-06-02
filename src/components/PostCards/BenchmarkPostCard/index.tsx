@@ -72,7 +72,7 @@ const ProductCard = ({
         : require('@/assets/inventory/product_01.png');
     
     return (
-    <HStack flex={1} borderWidth={1} borderColor={product.choice ? '#87BB33' : '#E9E9E9'} borderRadius={10} position="relative">
+    <HStack flex={1} borderWidth={1} borderColor={product.choice ? '#87BB33' : (isDark ? '#333333' : '#E9E9E9')} borderRadius={10} position="relative">
         <VStack padding={6} flex={1} >
             <Box position="relative" w={'$full'} justifyContent="center" alignItems="center" overflow='hidden' aspectRatio={1}>
                 <Image
@@ -455,7 +455,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
             }}
         >
             {/* Header */}
-            <VStack px={12} py={8} borderRightWidth={isDetailMode ? 0 : 1} borderLeftWidth={isDetailMode ? 0 : 1} borderTopWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
+            <VStack px={12} py={8} borderRightWidth={isDetailMode ? 0 : 1} borderLeftWidth={isDetailMode ? 0 : 1} borderTopWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                 <HStack alignItems="center" space="xs">
                     <Pressable onPress={handleViewProfile}>
                         <Image
@@ -494,15 +494,14 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                     color={isDark ? '$textDark400' : '#787878'}
                                     fontSize={isDetailMode ? "$sm" : "$xs"}
                                     numberOfLines={1}
-                                    maxWidth={250}
                                 >
                                     {data.user.title}
                                 </Text>
                             ) : null}
                         </VStack>
                     </Pressable>
-                    <View 
-                        ref={menuTriggerRef} 
+                    <View
+                        ref={menuTriggerRef}
                         collapsable={false}
                         onLayout={handleTriggerLayout}
                     >
@@ -618,7 +617,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
 
             {/* Content */}
             {isDetailMode ? (
-                <VStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9" space="sm">
+                <VStack px={12} py={8} borderTopWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="sm">
                     {/* Original Content */}
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
@@ -650,7 +649,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             params: { postData: data, type: 'benchmark' }
                         });
                     }}>
-                        <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
+                        <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                             <Text
                                 color={isDark ? '$textDark50' : '#000'}
                                 fontSize="$sm"
@@ -663,7 +662,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     </Pressable>
                     {/* Translated Content (feed mode) */}
                     {showTranslation && translatedContent && (
-                        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
+                        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
                             <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                             <Text
                                 color={isDark ? '$textDark200' : '#666'}
@@ -679,7 +678,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
 
             {/* Translate Button */}
             {shouldTranslate && (
-                <Box pb="$2" px="$3" {...(!isDetailMode && { borderRightWidth: 1, borderLeftWidth: 1, borderColor: '#E9E9E9' })}>
+                <Box pb="$2" px="$3" {...(!isDetailMode && { borderRightWidth: 1, borderLeftWidth: 1, borderColor: isDark ? '#333333' : '#E9E9E9' })}>
                     <Pressable onPress={toggleTranslation}>
                         <HStack alignItems="center" space="xs">
                             <Image
@@ -747,7 +746,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         params: { postData: data, type: 'benchmark' }
                     });
                 }}>
-                    <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                    <VStack px={12} pb={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
                         <Box position="relative" width="100%">
                             <HStack justifyContent="space-between" width="100%">
                                 {data.products.map((product, index) => (
@@ -793,12 +792,12 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                 borderBottomWidth={1}
                 borderBottomRightRadius={isDetailMode ? 0 : 5}
                 borderBottomLeftRadius={isDetailMode ? 0 : 5}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 justifyContent="space-between"
             >
-                <HStack>
+                <HStack flex={1} justifyContent="space-between" alignItems="center">
                     <Pressable onPress={handleLike}>
-                        <HStack mr={10} alignItems="center">
+                        <HStack alignItems="center">
                             {isLiked ? (
                                 <HeartIconSolid width={24} height={24} color="#FF3040" />
                             ) : (
@@ -812,12 +811,12 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             />
                         </HStack>
                     </Pressable>
-                    <Pressable 
+                    <Pressable
                         onPress={handleComment}
                         disabled={isDetailMode && !onCommentPress}
                         opacity={isDetailMode && !onCommentPress ? 0.5 : 1}
                     >
-                        <HStack mr={10} alignItems="center">
+                        <HStack alignItems="center">
                             <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <AnimatedCounter
                                 value={isDetailMode ? data.stats.comments : commentsCount}
@@ -828,7 +827,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         </HStack>
                     </Pressable>
                     <Pressable onPress={handleShare}>
-                        <HStack mr={10} alignItems="center">
+                        <HStack alignItems="center">
                             <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <AnimatedCounter
                                 value={isDetailMode ? data.stats.shares : sharesCount}
@@ -839,7 +838,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         </HStack>
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
-                        <HStack mr={10} alignItems="center">
+                        <HStack alignItems="center">
                             {isBookmarked ? (
                                 <BookmarkIconSolid width={24} height={24} color="#829905" />
                             ) : (

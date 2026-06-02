@@ -111,7 +111,7 @@ export const EventSkeleton: React.FC<EventSkeletonProps> = ({
             {/* Divider Line */}
             <Box
               height={1}
-              bg="#D9D9D9"
+              bg={isDark ? '#333333' : '#D9D9D9'}
               width="100%"
               mt="$1"
             />

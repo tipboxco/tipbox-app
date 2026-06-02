@@ -411,7 +411,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         borderWidth={1} 
         borderTopRightRadius={5} 
         borderTopLeftRadius={5} 
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
       >
         <HStack alignItems="center" space="xs">
           {data.user && toImageSource(data.user.avatar) && (
@@ -453,15 +453,14 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
                   color={isDark ? '$textDark400' : '#787878'}
                   fontSize="$xs"
                   numberOfLines={1}
-                  maxWidth={250}
                 >
                   {data.user.title}
                 </Text>
               ) : null}
             </VStack>
           </Pressable>
-          <View 
-            ref={menuTriggerRef} 
+          <View
+            ref={menuTriggerRef}
             collapsable={false}
             onLayout={handleTriggerLayout}
           >
@@ -474,7 +473,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
 
       {/* Product */}
       {!hideProduct && product && (
-        <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
           <ProductInfoCard
             size="small"
             type={productInfoType}
@@ -520,7 +519,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
       )}
 
       {/* Badges */}
-      <HStack px={12} pb={8} pt={hideProduct ? 10 : 2} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
+      <HStack px={12} pb={8} pt={hideProduct ? 10 : 2} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
         <Box
           borderWidth={1}
           borderColor="#9672FA"
@@ -528,14 +527,14 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
           borderRadius={20}
           flexDirection="row"
           justifyContent="center"
-          px='$3'
-          py='$2'
+          px={8}
+          py={3}
         >
-          <InformationCircleIcon width={12} height={12} color={'#fff'} />
+          <InformationCircleIcon width={10} height={10} color={'#fff'} />
           <Text
             fontSize={9}
             fontWeight="$bold"
-            ml={5}
+            ml={4}
             color={'#fff'}
           >
             {t('card.badges.update')}
@@ -544,7 +543,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
       </HStack>
 
       {/* Content */}
-      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
         <Pressable onPress={() => {
           if (isDetailMode) return; // Detay modunda navigation yapma
           // Navigate to PostDetailScreen
@@ -599,7 +598,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
 
       {/* Translated Content */}
       {showTranslation && translatedContent && (
-        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="xs">
+        <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
           <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
           <Text
             color={isDark ? '$textDark200' : '#666'}
@@ -613,7 +612,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
 
       {/* Translate Button */}
       {shouldTranslate && (
-        <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
           <Pressable onPress={toggleTranslation}>
             <HStack alignItems="center" space="xs">
               <Image
@@ -657,7 +656,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               });
             }}
           >
-            <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
               <CardImageCarousel images={validImages} isDetailMode={isDetailMode} />
             </VStack>
           </Pressable>
@@ -684,12 +683,12 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         borderBottomWidth={1}
         borderBottomRightRadius={5}
         borderBottomLeftRadius={5}
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
         justifyContent="space-between"
       >
-        <HStack>
+        <HStack flex={1} justifyContent="space-between" alignItems="center">
           <Pressable onPress={handleLike}>
-            <HStack mr={10} alignItems="center">
+            <HStack alignItems="center">
               {isLiked ? (
                 <HeartIconSolid width={24} height={24} color="#FF3040" />
               ) : (
@@ -704,7 +703,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
             </HStack>
           </Pressable>
           <Pressable onPress={handleComment}>
-            <HStack mr={10} alignItems="center">
+            <HStack alignItems="center">
               <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               <AnimatedCounter
                 value={commentsCount}
@@ -715,7 +714,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
             </HStack>
           </Pressable>
           <Pressable onPress={handleShare}>
-            <HStack mr={10} alignItems="center">
+            <HStack alignItems="center">
               <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               <AnimatedCounter
                 value={sharesCount}
@@ -726,7 +725,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
             </HStack>
           </Pressable>
           <Pressable onPress={handleBookmark}>
-            <HStack mr={10} alignItems="center">
+            <HStack alignItems="center">
               {isBookmarked ? (
                 <BookmarkIconSolid width={24} height={24} color="#829905" />
               ) : (

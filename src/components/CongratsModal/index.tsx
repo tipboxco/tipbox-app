@@ -94,7 +94,7 @@ const CongratsModal: React.FC<CongratsModalProps> = ({ isVisible, onClose }) => 
                                         Micheal Clark
                                     </Text>
                                     <Text
-                                        color={isDark ? '#787878' : '#787878'}
+                                        color={isDark ? '#A0A0A0' : '#787878'}
                                         fontSize={9}
                                         fontWeight="$medium"
                                         numberOfLines={1}
@@ -132,7 +132,7 @@ const CongratsModal: React.FC<CongratsModalProps> = ({ isVisible, onClose }) => 
                                         Trevor Nace
                                     </Text>
                                     <Text
-                                        color={isDark ? '#787878' : '#787878'}
+                                        color={isDark ? '#A0A0A0' : '#787878'}
                                         fontSize={9}
                                         fontWeight="$medium"
                                         textAlign='right'
@@ -166,7 +166,7 @@ const CongratsModal: React.FC<CongratsModalProps> = ({ isVisible, onClose }) => 
                                 <Text
                                     fontSize={10}
                                     fontWeight="$normal"
-                                    color={isDark ? '#343434' : '#343434'}
+                                    color={isDark ? '#CCCCCC' : '#343434'}
                                     lineHeight={12}
                                     px="$3"
                                     ml='$6'
@@ -195,7 +195,7 @@ const CongratsModal: React.FC<CongratsModalProps> = ({ isVisible, onClose }) => 
                                 <Text
                                     fontSize={10}
                                     fontWeight="$normal"
-                                    color={isDark ? '#343434' : '#343434'}
+                                    color={isDark ? '#CCCCCC' : '#343434'}
                                     lineHeight={12}
                                     px="$3"
                                     ml='$6'
@@ -217,14 +217,14 @@ const CongratsModal: React.FC<CongratsModalProps> = ({ isVisible, onClose }) => 
                             <Text
                                 fontSize={12}
                                 fontWeight="$semibold"
-                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                color={isDark ? '#AAAAAA' : '#8C8C8C'}
                             >
                                 Expert Prize
                             </Text>
                             <Text
                                 fontSize={16}
                                 fontWeight="$bold"
-                                color={isDark ? '#909090' : '#909090'}
+                                color={isDark ? '#B0B0B0' : '#909090'}
                             >
                                 50 TIPS
                             </Text>

@@ -40,7 +40,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
       <Box
         bg={isDark ? '#1A1A1A' : '#FFF'}
         borderWidth={1}
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
         borderRadius={10}
         width={isGrid ? GRID_CARD_WIDTH : HORIZONTAL_CARD_WIDTH}
         overflow="hidden"
@@ -50,7 +50,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         <Box
           position="relative"
           height={100}
-          bg={'#FFF'}
+          bg={isDark ? '#1A1A1A' : '#FFF'}
           borderRadius={5}
           mb="$2"
           overflow="hidden"
@@ -143,7 +143,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           {isActiveEvent && (
             <Box
               height={1}
-              bg="#D9D9D9"
+              bg={isDark ? '#333333' : '#D9D9D9'}
               width="100%"
               mt="$1"
             />

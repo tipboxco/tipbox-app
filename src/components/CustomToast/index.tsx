@@ -12,6 +12,8 @@ interface CustomToastProps {
   action: 'success' | 'error' | 'warning' | 'info';
   duration?: number;
   onClose?: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 export interface ShowToastOptions {
@@ -19,6 +21,8 @@ export interface ShowToastOptions {
   description?: string;
   action?: 'success' | 'error' | 'warning' | 'info';
   duration?: number;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 /**
@@ -39,8 +43,8 @@ export const showCustomToast = (
   toast: ToastInstance,
   options: ShowToastOptions
 ) => {
-  const { title, description, action = 'info', duration = 3000 } = options;
-  
+  const { title, description, action = 'info', duration = 3000, actionLabel, onAction } = options;
+
   toast.show({
     placement: 'top',
     duration,
@@ -53,6 +57,8 @@ export const showCustomToast = (
           action={action}
           duration={duration}
           onClose={() => toast.close(id)}
+          actionLabel={actionLabel}
+          onAction={() => { toast.close(id); onAction?.(); }}
         />
 
       );
@@ -77,6 +83,8 @@ export const CustomToast: React.FC<CustomToastProps> = ({
   action,
   duration = 3000,
   onClose,
+  actionLabel,
+  onAction,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -210,6 +218,21 @@ export const CustomToast: React.FC<CustomToastProps> = ({
             >
               {description}
             </Text>
+          )}
+          {actionLabel && onAction && (
+            <Pressable
+              onPress={onAction}
+              mt={4}
+              alignSelf="flex-start"
+              px={8}
+              py={4}
+              borderRadius={6}
+              bg={config.iconBgColor}
+            >
+              <Text fontSize="$2xs" fontWeight="$bold" color="#FFFFFF">
+                {actionLabel}
+              </Text>
+            </Pressable>
           )}
         </Box>
 
