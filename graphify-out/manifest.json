@@ -1,0 +1,4137 @@
+{
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\AddProductFromCatalog\\index.tsx": {
+    "mtime": 1775464291.0219564,
+    "ast_hash": "982a133ad8c0ea9666bef33b6143555f",
+    "semantic_hash": "982a133ad8c0ea9666bef33b6143555f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\AddProductFromInventory\\index.tsx": {
+    "mtime": 1775464291.0219564,
+    "ast_hash": "018956bd552d8958b2244889aabac28c",
+    "semantic_hash": "018956bd552d8958b2244889aabac28c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\AnimatedCounter\\index.tsx": {
+    "mtime": 1775464291.0229537,
+    "ast_hash": "83f24976f5ee380b2dc29d2eb9edaa2f",
+    "semantic_hash": "83f24976f5ee380b2dc29d2eb9edaa2f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Breadcrumb\\index.tsx": {
+    "mtime": 1775464291.0229537,
+    "ast_hash": "d45413e705657a93bad383344f4237ce",
+    "semantic_hash": "d45413e705657a93bad383344f4237ce"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\CachedImage\\index.tsx": {
+    "mtime": 1775464291.0239542,
+    "ast_hash": "a9e6b041ffc236b4f1ac6e4435a33ee0",
+    "semantic_hash": "a9e6b041ffc236b4f1ac6e4435a33ee0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\CardImageCarousel\\index.tsx": {
+    "mtime": 1775464291.0239542,
+    "ast_hash": "59c6a85598633be4d445f0092f5d9161",
+    "semantic_hash": "59c6a85598633be4d445f0092f5d9161"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\CenteredScrollableList\\index.tsx": {
+    "mtime": 1775464291.0249536,
+    "ast_hash": "dd6dff69db2f66d62b892b2a36d0602b",
+    "semantic_hash": "dd6dff69db2f66d62b892b2a36d0602b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ComboBox\\index.tsx": {
+    "mtime": 1775464291.0249536,
+    "ast_hash": "92e19b48e627d4f18976c74d5e389713",
+    "semantic_hash": "92e19b48e627d4f18976c74d5e389713"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\CommentsCard\\index.tsx": {
+    "mtime": 1775464291.025952,
+    "ast_hash": "0908d7c51b8b58b4cfeabcb9fd81911a",
+    "semantic_hash": "0908d7c51b8b58b4cfeabcb9fd81911a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\CongratsModal\\index.tsx": {
+    "mtime": 1775464291.0269542,
+    "ast_hash": "43c31b685441b762a2bf2b1cdf613abb",
+    "semantic_hash": "43c31b685441b762a2bf2b1cdf613abb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\CreatePostBottomSheet\\index.tsx": {
+    "mtime": 1775464291.0269542,
+    "ast_hash": "8661365af8df2112eed5a86be413ec2a",
+    "semantic_hash": "8661365af8df2112eed5a86be413ec2a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\CustomDrawer\\DrawerContent.tsx": {
+    "mtime": 1780401220.0470958,
+    "ast_hash": "9977474918e25fd26c1011e761e47261",
+    "semantic_hash": "9977474918e25fd26c1011e761e47261"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\CustomToast\\index.tsx": {
+    "mtime": 1775464291.0279524,
+    "ast_hash": "c36974906c37ffbf91b03bc49c3544d0",
+    "semantic_hash": "c36974906c37ffbf91b03bc49c3544d0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\DraggableKeyboard\\index.tsx": {
+    "mtime": 1775464291.028954,
+    "ast_hash": "2bd30f104c0f6e3729fbee61ed62a6ac",
+    "semantic_hash": "2bd30f104c0f6e3729fbee61ed62a6ac"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ErrorBoundary\\index.tsx": {
+    "mtime": 1775464291.028954,
+    "ast_hash": "bd545c7a9dc72a0eee1604eddc2d4894",
+    "semantic_hash": "bd545c7a9dc72a0eee1604eddc2d4894"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\EventCard\\index.tsx": {
+    "mtime": 1775464291.0299525,
+    "ast_hash": "da998440e956b73b586f636321f67a4c",
+    "semantic_hash": "da998440e956b73b586f636321f67a4c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ExpertBottomSheet\\index.tsx": {
+    "mtime": 1775464291.0299525,
+    "ast_hash": "f871f0fe8e54747b91b8a914fe1dc5df",
+    "semantic_hash": "f871f0fe8e54747b91b8a914fe1dc5df"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\FloatingActionButton\\index.tsx": {
+    "mtime": 1775464291.0309536,
+    "ast_hash": "c2fd5e5d461dc26c24ae4de138d03768",
+    "semantic_hash": "c2fd5e5d461dc26c24ae4de138d03768"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\FullScreenImageViewer\\index.tsx": {
+    "mtime": 1775464291.0309536,
+    "ast_hash": "d606408c61671a67acdb5e3016c44bb5",
+    "semantic_hash": "d606408c61671a67acdb5e3016c44bb5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\GlobalBottomSheet\\context.ts": {
+    "mtime": 1775464291.0309536,
+    "ast_hash": "b0118b10087267fca91025f9d8160800",
+    "semantic_hash": "b0118b10087267fca91025f9d8160800"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\GlobalBottomSheet\\index.tsx": {
+    "mtime": 1775464291.0319524,
+    "ast_hash": "a4b3bd9affc898405545a5d0bb1e32a2",
+    "semantic_hash": "a4b3bd9affc898405545a5d0bb1e32a2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\GlobalBottomSheet\\types.ts": {
+    "mtime": 1775464291.0319524,
+    "ast_hash": "d9c5b9d55589184e58179633b8d3fdc5",
+    "semantic_hash": "d9c5b9d55589184e58179633b8d3fdc5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\GlobalUIHost\\index.tsx": {
+    "mtime": 1775464291.0329592,
+    "ast_hash": "49567168ed68b600823a1e4de91f9edb",
+    "semantic_hash": "49567168ed68b600823a1e4de91f9edb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Header\\index.tsx": {
+    "mtime": 1775464291.033955,
+    "ast_hash": "eed1c7b1d299a7ab4f82581e1fff3020",
+    "semantic_hash": "eed1c7b1d299a7ab4f82581e1fff3020"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\KeyboardAwareBottomSheet\\index.tsx": {
+    "mtime": 1775464291.033955,
+    "ast_hash": "eb3b7acb53a764f82e509705566ad3b0",
+    "semantic_hash": "eb3b7acb53a764f82e509705566ad3b0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\MessageBadge\\index.tsx": {
+    "mtime": 1775464291.0349534,
+    "ast_hash": "ceaecd85bf19ff671ec84a16e6ed653e",
+    "semantic_hash": "ceaecd85bf19ff671ec84a16e6ed653e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\NotificationBadge\\index.tsx": {
+    "mtime": 1775464291.0349534,
+    "ast_hash": "a3de23a9b49f720bf32767b08efd807a",
+    "semantic_hash": "a3de23a9b49f720bf32767b08efd807a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\NotificationToast\\index.tsx": {
+    "mtime": 1775464291.0349534,
+    "ast_hash": "e5df7ce488213529245afb335b9fab60",
+    "semantic_hash": "e5df7ce488213529245afb335b9fab60"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\overlays\\BottomSheetHost\\index.tsx": {
+    "mtime": 1775464291.049955,
+    "ast_hash": "117cad1e479c316a4dbe1dbcb93ee75f",
+    "semantic_hash": "117cad1e479c316a4dbe1dbcb93ee75f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\overlays\\ContextMenuHost\\index.tsx": {
+    "mtime": 1775464291.0509546,
+    "ast_hash": "4bd070f82d18cc18f1ca51b70285bf8e",
+    "semantic_hash": "4bd070f82d18cc18f1ca51b70285bf8e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\overlays\\ToastHost\\index.tsx": {
+    "mtime": 1775464291.0509546,
+    "ast_hash": "33140504555d4f09d67f585f751192b8",
+    "semantic_hash": "33140504555d4f09d67f585f751192b8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\PostCards\\BenchmarkPostCard\\index.tsx": {
+    "mtime": 1780401936.588605,
+    "ast_hash": "8186f85263d880f0eb38862ad52c12b7",
+    "semantic_hash": "8186f85263d880f0eb38862ad52c12b7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\PostCards\\ExperiencePostCard\\index.tsx": {
+    "mtime": 1780401914.99224,
+    "ast_hash": "fbb31dfb549e6f9c8721b191ad3b704b",
+    "semantic_hash": "fbb31dfb549e6f9c8721b191ad3b704b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\PostCards\\PostCard\\index.tsx": {
+    "mtime": 1780401869.5890913,
+    "ast_hash": "d6ba567126fa3ba5fa89abde1a4394d5",
+    "semantic_hash": "d6ba567126fa3ba5fa89abde1a4394d5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\PostCards\\QuestionPostCard\\index.tsx": {
+    "mtime": 1780401899.469694,
+    "ast_hash": "64c6c7c2030ab0bc680ff1f54ac7c0a5",
+    "semantic_hash": "64c6c7c2030ab0bc680ff1f54ac7c0a5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\PostCards\\TipsAndTricksPostCard\\index.tsx": {
+    "mtime": 1780401950.6961303,
+    "ast_hash": "0ada0c19abaaa7f43b09d9ce69055980",
+    "semantic_hash": "0ada0c19abaaa7f43b09d9ce69055980"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\PostCards\\UpdatePostCard\\index.tsx": {
+    "mtime": 1780401886.8797047,
+    "ast_hash": "294e1ea0c1d3cd044e9e9a2d93805314",
+    "semantic_hash": "294e1ea0c1d3cd044e9e9a2d93805314"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\PostContextMenu\\index.tsx": {
+    "mtime": 1775464291.039953,
+    "ast_hash": "48c52fa06ccfcff9a22009013621fbd9",
+    "semantic_hash": "48c52fa06ccfcff9a22009013621fbd9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\PostOptionsMenu\\index.tsx": {
+    "mtime": 1775464291.0409539,
+    "ast_hash": "6f61dc3e3c7ada6bea5ffc796206e030",
+    "semantic_hash": "6f61dc3e3c7ada6bea5ffc796206e030"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ProductInfoCard\\index.tsx": {
+    "mtime": 1775464291.0409539,
+    "ast_hash": "6e4658cd0faa2b8896d715d3a0d55e3a",
+    "semantic_hash": "6e4658cd0faa2b8896d715d3a0d55e3a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\SearchModal\\index.tsx": {
+    "mtime": 1775464291.0419545,
+    "ast_hash": "6f9ff43f66da06724bfb710c715164a7",
+    "semantic_hash": "6f9ff43f66da06724bfb710c715164a7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\SetPasswordScreen\\index.tsx": {
+    "mtime": 1775464291.042956,
+    "ast_hash": "56c2342b785f12a45e2aa26d493ebad4",
+    "semantic_hash": "56c2342b785f12a45e2aa26d493ebad4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\BadgeSkeleton.tsx": {
+    "mtime": 1775464291.042956,
+    "ast_hash": "ee9ba9b3ff0d05ecaf453cf82a478808",
+    "semantic_hash": "ee9ba9b3ff0d05ecaf453cf82a478808"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\CategorySkeleton.tsx": {
+    "mtime": 1775464291.0439615,
+    "ast_hash": "f600ee8d51784dc8818cef235634a240",
+    "semantic_hash": "f600ee8d51784dc8818cef235634a240"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\EventSkeleton.tsx": {
+    "mtime": 1775464291.0439615,
+    "ast_hash": "c1905304e843ee0f7e1ca8d3a88b0b7e",
+    "semantic_hash": "c1905304e843ee0f7e1ca8d3a88b0b7e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\EventsScreenSkeleton.tsx": {
+    "mtime": 1775464291.0449536,
+    "ast_hash": "16ffe8957079465ee3bc3c75acf69a8a",
+    "semantic_hash": "16ffe8957079465ee3bc3c75acf69a8a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\FeedSkeleton.tsx": {
+    "mtime": 1775464291.0449536,
+    "ast_hash": "7f86f2ff5afba83e597d020d473d6dcf",
+    "semantic_hash": "7f86f2ff5afba83e597d020d473d6dcf"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\index.ts": {
+    "mtime": 1775464291.0479543,
+    "ast_hash": "5ba09df1b1be090ad3df263467c959ea",
+    "semantic_hash": "5ba09df1b1be090ad3df263467c959ea"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\InventorySkeleton.tsx": {
+    "mtime": 1775464291.0459576,
+    "ast_hash": "7c648a02924671cb4ff9370721f777ee",
+    "semantic_hash": "7c648a02924671cb4ff9370721f777ee"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\LimitedTimeEventSkeleton.tsx": {
+    "mtime": 1775464291.0469556,
+    "ast_hash": "38f8d923e4bb52d435da19dde0a5db85",
+    "semantic_hash": "38f8d923e4bb52d435da19dde0a5db85"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\MessageSkeleton.tsx": {
+    "mtime": 1775464291.0469556,
+    "ast_hash": "025d061819c3e2f65ff3be48dccc2407",
+    "semantic_hash": "025d061819c3e2f65ff3be48dccc2407"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\NotificationSkeleton.tsx": {
+    "mtime": 1775464291.0469556,
+    "ast_hash": "67ca02920ed1eca600c2f264963c5cf1",
+    "semantic_hash": "67ca02920ed1eca600c2f264963c5cf1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\ProductSkeleton.tsx": {
+    "mtime": 1775464291.0469556,
+    "ast_hash": "c142a8cc98dfb8fda9d0b38f90edbb9a",
+    "semantic_hash": "c142a8cc98dfb8fda9d0b38f90edbb9a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\Skeletons\\SupportRequestSkeleton.tsx": {
+    "mtime": 1775464291.0479543,
+    "ast_hash": "d9ca2d430f80f2595faf30b5c505ac8a",
+    "semantic_hash": "d9ca2d430f80f2595faf30b5c505ac8a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\StarRating\\index.tsx": {
+    "mtime": 1775464291.0479543,
+    "ast_hash": "6471b739ef46ff5a92cb1059ce578d97",
+    "semantic_hash": "6471b739ef46ff5a92cb1059ce578d97"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ui\\index.ts": {
+    "mtime": 1768583127.1338873,
+    "ast_hash": "3bbd8c7e0e7a70c3999cb8c76ee70f8c",
+    "semantic_hash": "3bbd8c7e0e7a70c3999cb8c76ee70f8c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ui\\PinInput.tsx": {
+    "mtime": 1775464291.0519547,
+    "ast_hash": "99a176b5cd9f7fd41731748f066658ae",
+    "semantic_hash": "99a176b5cd9f7fd41731748f066658ae"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ui\\gluestack-ui-provider\\config.ts": {
+    "mtime": 1775464291.0519547,
+    "ast_hash": "7a324722759abd0c3354924c2633dcb8",
+    "semantic_hash": "7a324722759abd0c3354924c2633dcb8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ui\\gluestack-ui-provider\\index.tsx": {
+    "mtime": 1775464291.0519547,
+    "ast_hash": "82bd11597c01efee106e2cf626f4ba6d",
+    "semantic_hash": "82bd11597c01efee106e2cf626f4ba6d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ui\\gluestack-ui-provider\\index.web.tsx": {
+    "mtime": 1768583127.1328874,
+    "ast_hash": "c71627484fbb3f22e0fd6b3fec1b4cf5",
+    "semantic_hash": "c71627484fbb3f22e0fd6b3fec1b4cf5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\ui\\gluestack-ui-provider\\script.ts": {
+    "mtime": 1768583127.1338873,
+    "ast_hash": "4cba1d9f06bd0e04c7d20355c3b8a302",
+    "semantic_hash": "4cba1d9f06bd0e04c7d20355c3b8a302"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\components\\VerifyCodeScreen\\index.tsx": {
+    "mtime": 1775464291.0489533,
+    "ast_hash": "2d7f4cbceae3d319d1dea85537f9e6df",
+    "semantic_hash": "2d7f4cbceae3d319d1dea85537f9e6df"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\config\\api.config.ts": {
+    "mtime": 1775464291.0529554,
+    "ast_hash": "90df4bd897df604152eed4c7480b6f76",
+    "semantic_hash": "90df4bd897df604152eed4c7480b6f76"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\config\\auth0.config.ts": {
+    "mtime": 1768583127.1338873,
+    "ast_hash": "8b7c3c3361daf5c0876aa47d1df61e7e",
+    "semantic_hash": "8b7c3c3361daf5c0876aa47d1df61e7e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\config\\canny.config.ts": {
+    "mtime": 1775464291.0529554,
+    "ast_hash": "03bf07a15d70e2e116a988958434b2ff",
+    "semantic_hash": "03bf07a15d70e2e116a988958434b2ff"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\config\\figma-icons-mapping.ts": {
+    "mtime": 1775464291.0529554,
+    "ast_hash": "fcaab4bce4a39e79e82285d55cd304c0",
+    "semantic_hash": "fcaab4bce4a39e79e82285d55cd304c0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\config\\firebase.config.ts": {
+    "mtime": 1775464291.0539553,
+    "ast_hash": "998cd011689a249b582a8dbbc79b98f9",
+    "semantic_hash": "998cd011689a249b582a8dbbc79b98f9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\config\\imagePicker.config.ts": {
+    "mtime": 1775464291.0539553,
+    "ast_hash": "ea51014a8e5d2c2b7cb8e46b57f97284",
+    "semantic_hash": "ea51014a8e5d2c2b7cb8e46b57f97284"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\config\\notification.config.ts": {
+    "mtime": 1775464291.0539553,
+    "ast_hash": "a4aac0a203a9811953859e8211b594a3",
+    "semantic_hash": "a4aac0a203a9811953859e8211b594a3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\index.ts": {
+    "mtime": 1768583127.135887,
+    "ast_hash": "6982b756b2372a643e470b16b1cd1fd9",
+    "semantic_hash": "6982b756b2372a643e470b16b1cd1fd9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\navigation.tsx": {
+    "mtime": 1775464291.056955,
+    "ast_hash": "2148ff15bbefeff0b75f6ec077f84da5",
+    "semantic_hash": "2148ff15bbefeff0b75f6ec077f84da5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\types.ts": {
+    "mtime": 1775464291.0639524,
+    "ast_hash": "949d44a2a50d521bf512cec30c903797",
+    "semantic_hash": "949d44a2a50d521bf512cec30c903797"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\api\\authApi.ts": {
+    "mtime": 1775464291.0549557,
+    "ast_hash": "a123fc2423d94800627fc8247b22899b",
+    "semantic_hash": "a123fc2423d94800627fc8247b22899b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\api\\hooks.ts": {
+    "mtime": 1775464291.0549557,
+    "ast_hash": "0f54927c2a60ed0b4e01c2f3540a56a4",
+    "semantic_hash": "0f54927c2a60ed0b4e01c2f3540a56a4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\api\\index.ts": {
+    "mtime": 1775464291.0549557,
+    "ast_hash": "99d65819f4559ea9adc7e93831083ee5",
+    "semantic_hash": "99d65819f4559ea9adc7e93831083ee5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\components\\google-login-button.tsx": {
+    "mtime": 1775464291.055956,
+    "ast_hash": "a1aad24dde340db15b8f5a82acb69894",
+    "semantic_hash": "a1aad24dde340db15b8f5a82acb69894"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\ForgotPasswordScreen.tsx": {
+    "mtime": 1775464291.0589552,
+    "ast_hash": "ea52739e38bc95faa4fb5a117bca6d9b",
+    "semantic_hash": "ea52739e38bc95faa4fb5a117bca6d9b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\index.ts": {
+    "mtime": 1775464291.0629537,
+    "ast_hash": "4208ed4176a177105b4bbc0c82eaf929",
+    "semantic_hash": "4208ed4176a177105b4bbc0c82eaf929"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\LoginScreen.tsx": {
+    "mtime": 1775464291.0589552,
+    "ast_hash": "b75ee0913ea93db32aa17d36ac26f358",
+    "semantic_hash": "b75ee0913ea93db32aa17d36ac26f358"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\OnboardingScreen.tsx": {
+    "mtime": 1775464291.0599551,
+    "ast_hash": "3da32796aaa0464764aae8138b28a04e",
+    "semantic_hash": "3da32796aaa0464764aae8138b28a04e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\RegisterScreen.tsx": {
+    "mtime": 1775464291.0599551,
+    "ast_hash": "0e52a70aae376b6b6c7f39bc1174fcdb",
+    "semantic_hash": "0e52a70aae376b6b6c7f39bc1174fcdb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\ResetPasswordScreen.tsx": {
+    "mtime": 1775464291.060955,
+    "ast_hash": "5d7c48ef12007940675e4b9bbb887463",
+    "semantic_hash": "5d7c48ef12007940675e4b9bbb887463"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\SelectAvatarScreen.tsx": {
+    "mtime": 1775464291.060955,
+    "ast_hash": "dd31f764a312a2e813de7ef9978ebeb1",
+    "semantic_hash": "dd31f764a312a2e813de7ef9978ebeb1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\SelectCategoriesScreen.tsx": {
+    "mtime": 1775464291.060955,
+    "ast_hash": "18018495b42aea94502646d0d4e47e07",
+    "semantic_hash": "18018495b42aea94502646d0d4e47e07"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\SetupProfileScreen.tsx": {
+    "mtime": 1775464291.0619528,
+    "ast_hash": "0b2dd396e280ce87af20fa5914374590",
+    "semantic_hash": "0b2dd396e280ce87af20fa5914374590"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\VerifyCodeScreen.tsx": {
+    "mtime": 1775464291.0619528,
+    "ast_hash": "ce00339d61c08b146de20f348f853a1f",
+    "semantic_hash": "ce00339d61c08b146de20f348f853a1f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\auth\\screens\\WelcomeScreen.tsx": {
+    "mtime": 1775464291.0619528,
+    "ast_hash": "5329d86effe8296836a859655ca9c91f",
+    "semantic_hash": "5329d86effe8296836a859655ca9c91f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\bookmarks\\index.ts": {
+    "mtime": 1775464291.0659544,
+    "ast_hash": "6676ff541602bc70cb9e8ef1b3c9a942",
+    "semantic_hash": "6676ff541602bc70cb9e8ef1b3c9a942"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\bookmarks\\navigation.tsx": {
+    "mtime": 1775464291.0669563,
+    "ast_hash": "4c777266bf7457cd108b1e55d48f2d5f",
+    "semantic_hash": "4c777266bf7457cd108b1e55d48f2d5f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\bookmarks\\api\\bookmarksApi.ts": {
+    "mtime": 1775464291.0649545,
+    "ast_hash": "8b3870dc04d209b029d75e5e5d2f103e",
+    "semantic_hash": "8b3870dc04d209b029d75e5e5d2f103e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\bookmarks\\api\\hooks.ts": {
+    "mtime": 1775464291.0659544,
+    "ast_hash": "fa9b07f4b1d443c087dd57f94b6d7ad0",
+    "semantic_hash": "fa9b07f4b1d443c087dd57f94b6d7ad0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\bookmarks\\screens\\BookMarksScreen.tsx": {
+    "mtime": 1775464291.0679543,
+    "ast_hash": "46cacd0ebaf6e9e9b952d87e8a2ed933",
+    "semantic_hash": "46cacd0ebaf6e9e9b952d87e8a2ed933"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\BrandNavigator.tsx": {
+    "mtime": 1775464291.0679543,
+    "ast_hash": "d2e8ea2a66ee541b1317e43c134d153b",
+    "semantic_hash": "d2e8ea2a66ee541b1317e43c134d153b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\index.ts": {
+    "mtime": 1775464291.0769546,
+    "ast_hash": "1733b2122ef7403592e24b5aa0a66bec",
+    "semantic_hash": "1733b2122ef7403592e24b5aa0a66bec"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\navigation.tsx": {
+    "mtime": 1775464291.077955,
+    "ast_hash": "1f9c87d7785cbb9d5072e5a9a6de6dcc",
+    "semantic_hash": "1f9c87d7785cbb9d5072e5a9a6de6dcc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\NewsNavigator.tsx": {
+    "mtime": 1775464291.068955,
+    "ast_hash": "c43b1d15d51e0c5b630a050a5f2f0575",
+    "semantic_hash": "c43b1d15d51e0c5b630a050a5f2f0575"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\types.ts": {
+    "mtime": 1775464291.0889566,
+    "ast_hash": "bc9ce127cd53ab74e5152504ba54d12d",
+    "semantic_hash": "bc9ce127cd53ab74e5152504ba54d12d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\api\\brandApi.ts": {
+    "mtime": 1775464291.068955,
+    "ast_hash": "a69d3705d84f26b3ddf20db707a02ec2",
+    "semantic_hash": "a69d3705d84f26b3ddf20db707a02ec2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\api\\catalogApi.ts": {
+    "mtime": 1775464291.0699556,
+    "ast_hash": "bf1747c16b43e78923f358245fd0a392",
+    "semantic_hash": "bf1747c16b43e78923f358245fd0a392"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\api\\hooks.ts": {
+    "mtime": 1775464291.0699556,
+    "ast_hash": "bb8f7af6358b5c6d33719c68c93a9555",
+    "semantic_hash": "bb8f7af6358b5c6d33719c68c93a9555"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\api\\index.ts": {
+    "mtime": 1775464291.0709553,
+    "ast_hash": "136178258d915792a51827c90e909246",
+    "semantic_hash": "136178258d915792a51827c90e909246"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\ActionButtons\\index.tsx": {
+    "mtime": 1775464291.0709553,
+    "ast_hash": "6bce5544e0bcbaf89cc9270a82253f32",
+    "semantic_hash": "6bce5544e0bcbaf89cc9270a82253f32"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\BrandCard\\index.tsx": {
+    "mtime": 1775464291.0709553,
+    "ast_hash": "34ec3b7face9ace36fefca5f4710d441",
+    "semantic_hash": "34ec3b7face9ace36fefca5f4710d441"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\BrandInfoCard\\index.tsx": {
+    "mtime": 1775464291.0719554,
+    "ast_hash": "a42754ea24bc7d7cddd95bcf5def5da0",
+    "semantic_hash": "a42754ea24bc7d7cddd95bcf5def5da0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\BrandProductInfoCard\\index.tsx": {
+    "mtime": 1775464291.0719554,
+    "ast_hash": "e3f61fef34e5f82b4669a9e3655018f1",
+    "semantic_hash": "e3f61fef34e5f82b4669a9e3655018f1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\CatalogFilterChips\\index.tsx": {
+    "mtime": 1775464291.0729554,
+    "ast_hash": "a1af66c3f8343eb3af6f2ae6e3c90815",
+    "semantic_hash": "a1af66c3f8343eb3af6f2ae6e3c90815"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\CatalogFilterSheet\\index.tsx": {
+    "mtime": 1775464291.0729554,
+    "ast_hash": "44bd4a3bbf7a9d9c1c13c575c61030fa",
+    "semantic_hash": "44bd4a3bbf7a9d9c1c13c575c61030fa"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\CategoryCard\\index.tsx": {
+    "mtime": 1775464291.073961,
+    "ast_hash": "c680fbc517525351b860efbedee69022",
+    "semantic_hash": "c680fbc517525351b860efbedee69022"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\EventCard\\index.tsx": {
+    "mtime": 1775464291.073961,
+    "ast_hash": "317bc1433bab458d0c06201789098962",
+    "semantic_hash": "317bc1433bab458d0c06201789098962"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\FilterTabs\\index.tsx": {
+    "mtime": 1775464291.0749564,
+    "ast_hash": "4023df117764442a03dd8556247ba1ef",
+    "semantic_hash": "4023df117764442a03dd8556247ba1ef"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\NewsCard\\index.tsx": {
+    "mtime": 1775464291.0759552,
+    "ast_hash": "bb57e7ea1e99bae2d67cdee46c1df7af",
+    "semantic_hash": "bb57e7ea1e99bae2d67cdee46c1df7af"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\PointsHistoryCard\\index.tsx": {
+    "mtime": 1775464291.0759552,
+    "ast_hash": "83c10c3413c8b292b542554a46663dfa",
+    "semantic_hash": "83c10c3413c8b292b542554a46663dfa"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\components\\SurveyCard\\index.tsx": {
+    "mtime": 1775464291.0759552,
+    "ast_hash": "fdb13b221a849d038358999af9378283",
+    "semantic_hash": "fdb13b221a849d038358999af9378283"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\hooks\\useProductSearchSuggestions.ts": {
+    "mtime": 1775464291.0769546,
+    "ast_hash": "7db92993dbef04a408894cc4ecfdb1b2",
+    "semantic_hash": "7db92993dbef04a408894cc4ecfdb1b2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandDetailScreen.tsx": {
+    "mtime": 1775464291.0789535,
+    "ast_hash": "ebcdaf0ed5f4e1e107630c8d60e37699",
+    "semantic_hash": "ebcdaf0ed5f4e1e107630c8d60e37699"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandEventDetail.tsx": {
+    "mtime": 1775464291.0789535,
+    "ast_hash": "8cb992de15bb9ac26f66612c36d483fb",
+    "semantic_hash": "8cb992de15bb9ac26f66612c36d483fb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandEventsDetailScreen.tsx": {
+    "mtime": 1775464291.080959,
+    "ast_hash": "abaee8c73295c40f279981406f7f694c",
+    "semantic_hash": "abaee8c73295c40f279981406f7f694c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandEventsScreen.tsx": {
+    "mtime": 1775464291.080959,
+    "ast_hash": "3000b016022d8e675b83416d0751b318",
+    "semantic_hash": "3000b016022d8e675b83416d0751b318"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandHistoryScreen.tsx": {
+    "mtime": 1775464291.080959,
+    "ast_hash": "31735b8b246d069a7bf214a39f0b2da2",
+    "semantic_hash": "31735b8b246d069a7bf214a39f0b2da2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandPostListScreen.tsx": {
+    "mtime": 1775464291.0819552,
+    "ast_hash": "9ab5e72ecfc5da65c0060133919b4fe4",
+    "semantic_hash": "9ab5e72ecfc5da65c0060133919b4fe4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandProductBookScreen.tsx": {
+    "mtime": 1775464291.0819552,
+    "ast_hash": "de64ee9cf8e4722639fbd05d1d96d3c3",
+    "semantic_hash": "de64ee9cf8e4722639fbd05d1d96d3c3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandProductDetailScreen.tsx": {
+    "mtime": 1775464291.0829566,
+    "ast_hash": "e5b3875ca5cf0ec90e6b9006212982e5",
+    "semantic_hash": "e5b3875ca5cf0ec90e6b9006212982e5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandScreen.tsx": {
+    "mtime": 1775464291.0829566,
+    "ast_hash": "060f2d0ddd8ac7eef6bb429d82853a38",
+    "semantic_hash": "060f2d0ddd8ac7eef6bb429d82853a38"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\BrandSurveyListScreen.tsx": {
+    "mtime": 1775464291.0829566,
+    "ast_hash": "8a54513f0f48bc1dac28e7f023e3df62",
+    "semantic_hash": "8a54513f0f48bc1dac28e7f023e3df62"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\CatalogScreen.tsx": {
+    "mtime": 1780401342.9921987,
+    "ast_hash": "2adbd4f671d58277a110b9a30dfae76a",
+    "semantic_hash": "2adbd4f671d58277a110b9a30dfae76a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\NewsDetailScreen.tsx": {
+    "mtime": 1775464291.0839524,
+    "ast_hash": "ba2d215a5338d717ed05f69b71aa146e",
+    "semantic_hash": "ba2d215a5338d717ed05f69b71aa146e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\ProductCatalogScreen.tsx": {
+    "mtime": 1775464291.084954,
+    "ast_hash": "046fa3813452d3ec2acdba4e3efdb223",
+    "semantic_hash": "046fa3813452d3ec2acdba4e3efdb223"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\ProductCatalogWrapper.tsx": {
+    "mtime": 1775464291.084954,
+    "ast_hash": "8c3d431d06c19bb873d4b49963d98b68",
+    "semantic_hash": "8c3d431d06c19bb873d4b49963d98b68"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\SurveyParticipationScreen.tsx": {
+    "mtime": 1775464291.084954,
+    "ast_hash": "4f2a9f5f45fd74145a5abcfcb1fa5842",
+    "semantic_hash": "4f2a9f5f45fd74145a5abcfcb1fa5842"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\screens\\SurveyScreen.tsx": {
+    "mtime": 1775464291.085953,
+    "ast_hash": "21a49122dd0b2bfd57ab8654bd60fe5e",
+    "semantic_hash": "21a49122dd0b2bfd57ab8654bd60fe5e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\store\\catalogNavigationStore.ts": {
+    "mtime": 1775464291.085953,
+    "ast_hash": "9de95aed26e49288978aa2d545862b06",
+    "semantic_hash": "9de95aed26e49288978aa2d545862b06"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\store\\catalogSelectModeStore.ts": {
+    "mtime": 1775464291.085953,
+    "ast_hash": "30bf7e1c3bff361824ef1065532e9f21",
+    "semantic_hash": "30bf7e1c3bff361824ef1065532e9f21"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\store\\catalogStoreSyncManager.ts": {
+    "mtime": 1775464291.0869758,
+    "ast_hash": "b15b4c9135a5d6480fd348353e76ab1d",
+    "semantic_hash": "b15b4c9135a5d6480fd348353e76ab1d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\store\\catalogUIStore.ts": {
+    "mtime": 1775464291.0869758,
+    "ast_hash": "224c47dfb4ccbd5b5998d5f319584107",
+    "semantic_hash": "224c47dfb4ccbd5b5998d5f319584107"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\catalog\\store\\useAutoSyncCatalogState.ts": {
+    "mtime": 1775464291.087955,
+    "ast_hash": "70ec8356c5f43fb93f0fa7264f865517",
+    "semantic_hash": "70ec8356c5f43fb93f0fa7264f865517"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\EventNavigator.tsx": {
+    "mtime": 1775464291.0889566,
+    "ast_hash": "e4d49a192e14645b4f98bcedb70ff14f",
+    "semantic_hash": "e4d49a192e14645b4f98bcedb70ff14f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\index.ts": {
+    "mtime": 1775464291.1019533,
+    "ast_hash": "af3c16284326bddbb0f62429908c83fe",
+    "semantic_hash": "af3c16284326bddbb0f62429908c83fe"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\navigation.tsx": {
+    "mtime": 1775464291.1029606,
+    "ast_hash": "4809661190b894586862f7073e6f4474",
+    "semantic_hash": "4809661190b894586862f7073e6f4474"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\types.ts": {
+    "mtime": 1775464291.1079564,
+    "ast_hash": "771f1d43b02917c81f8fc3842a867459",
+    "semantic_hash": "771f1d43b02917c81f8fc3842a867459"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\api\\communityEventsApi.ts": {
+    "mtime": 1775464291.0899544,
+    "ast_hash": "402950357ede9588a01a9bae765f528e",
+    "semantic_hash": "402950357ede9588a01a9bae765f528e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\api\\hooks.ts": {
+    "mtime": 1775464291.0909557,
+    "ast_hash": "62ee3c76fdc2f3dd8bd63dedcb26bd6b",
+    "semantic_hash": "62ee3c76fdc2f3dd8bd63dedcb26bd6b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\api\\medusaApi.ts": {
+    "mtime": 1775464291.0909557,
+    "ast_hash": "0d3e3e176367ec2a04c31639d20d120a",
+    "semantic_hash": "0d3e3e176367ec2a04c31639d20d120a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\api\\surveyApi.ts": {
+    "mtime": 1775464291.0909557,
+    "ast_hash": "8c3b9a80b193cbfe4c0983cd22082b03",
+    "semantic_hash": "8c3b9a80b193cbfe4c0983cd22082b03"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\AchievementFilter\\index.tsx": {
+    "mtime": 1775464291.091956,
+    "ast_hash": "4d2cd2251d43a8207c68ed9b5d4484a7",
+    "semantic_hash": "4d2cd2251d43a8207c68ed9b5d4484a7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\BadgeBottomSheet\\index.tsx": {
+    "mtime": 1775464291.091956,
+    "ast_hash": "46a66f9bcf2358df889195271354e628",
+    "semantic_hash": "46a66f9bcf2358df889195271354e628"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\BadgeCard\\index.tsx": {
+    "mtime": 1775464291.0929544,
+    "ast_hash": "bd9e8dd77911f3c3980ce0cf13fa4701",
+    "semantic_hash": "bd9e8dd77911f3c3980ce0cf13fa4701"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\BadgeDetailModal\\index.tsx": {
+    "mtime": 1775464291.0929544,
+    "ast_hash": "9dd5b647ddb52e7367bd0b607d22d612",
+    "semantic_hash": "9dd5b647ddb52e7367bd0b607d22d612"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\CategoryCard\\index.tsx": {
+    "mtime": 1775464291.0939546,
+    "ast_hash": "f020d50a2ad6f01e046a3c43c6e6967e",
+    "semantic_hash": "f020d50a2ad6f01e046a3c43c6e6967e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\CollectionCard\\index.tsx": {
+    "mtime": 1775464291.0949543,
+    "ast_hash": "84fc9068fd9b9d6b478ec8eb46041db6",
+    "semantic_hash": "84fc9068fd9b9d6b478ec8eb46041db6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\CollectionCardModal\\index.tsx": {
+    "mtime": 1775464291.0959723,
+    "ast_hash": "5c586592510bca0817c5279d28851801",
+    "semantic_hash": "5c586592510bca0817c5279d28851801"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\CollectionsBottomSheet\\index.tsx": {
+    "mtime": 1775464291.0969548,
+    "ast_hash": "2af4e24da3026b89ce0f3fe2ffcf7d1e",
+    "semantic_hash": "2af4e24da3026b89ce0f3fe2ffcf7d1e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\CreateEventPostBottomSheet\\index.tsx": {
+    "mtime": 1775464291.0979538,
+    "ast_hash": "f84687894cd94f6df13553a26d2a98c7",
+    "semantic_hash": "f84687894cd94f6df13553a26d2a98c7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\EventsTabs\\index.tsx": {
+    "mtime": 1775464291.0979538,
+    "ast_hash": "1554e3585ec71a48a2a10e4c575a9181",
+    "semantic_hash": "1554e3585ec71a48a2a10e4c575a9181"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\FilterBottomSheet\\index.tsx": {
+    "mtime": 1775464291.0979538,
+    "ast_hash": "ac79f7ae217e6ec111229ecc32bc1c34",
+    "semantic_hash": "ac79f7ae217e6ec111229ecc32bc1c34"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\LimitedTimeEventCard\\index.tsx": {
+    "mtime": 1775464291.0989547,
+    "ast_hash": "f2d388c325e3e43358761ce54b27584b",
+    "semantic_hash": "f2d388c325e3e43358761ce54b27584b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\RoastProductInfoCard\\index.tsx": {
+    "mtime": 1775464291.0989547,
+    "ast_hash": "88c47ab35b29b275e6392d78b6c50f00",
+    "semantic_hash": "88c47ab35b29b275e6392d78b6c50f00"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\SelectedProductCard\\index.tsx": {
+    "mtime": 1775464291.099953,
+    "ast_hash": "b5e9d580c9cb90cff7917a517e150107",
+    "semantic_hash": "b5e9d580c9cb90cff7917a517e150107"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\TabContents\\AchievementTab.tsx": {
+    "mtime": 1775464291.1009555,
+    "ast_hash": "e087493cebdea14679e3380507184749",
+    "semantic_hash": "e087493cebdea14679e3380507184749"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\TabContents\\CollectionsTab.tsx": {
+    "mtime": 1775464291.1009555,
+    "ast_hash": "a9ff1fe7d0605e0a639c9b0a6c1bc20b",
+    "semantic_hash": "a9ff1fe7d0605e0a639c9b0a6c1bc20b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\TabContents\\CommunityTab.tsx": {
+    "mtime": 1775464291.1009555,
+    "ast_hash": "615d05d88f41b82a4f4312512874c1d9",
+    "semantic_hash": "615d05d88f41b82a4f4312512874c1d9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\components\\TabContents\\index.ts": {
+    "mtime": 1775464291.1019533,
+    "ast_hash": "80cedd06079e509b184c65400fd2c407",
+    "semantic_hash": "80cedd06079e509b184c65400fd2c407"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\screens\\CollectionDetailScreen.tsx": {
+    "mtime": 1775464291.1039557,
+    "ast_hash": "444d53546ca4b5866cce01189fc60851",
+    "semantic_hash": "444d53546ca4b5866cce01189fc60851"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\screens\\EventCreatePost.tsx": {
+    "mtime": 1775464291.1049564,
+    "ast_hash": "2c5c87cb5af1891fcfb4cc0068b47cd6",
+    "semantic_hash": "2c5c87cb5af1891fcfb4cc0068b47cd6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\screens\\EventDetailScreen.tsx": {
+    "mtime": 1775464291.1049564,
+    "ast_hash": "024bde86ef4e006394b60ba7c5461314",
+    "semantic_hash": "024bde86ef4e006394b60ba7c5461314"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\screens\\EventsScreen.tsx": {
+    "mtime": 1775464291.1049564,
+    "ast_hash": "4bd5a6f10e287bfec6e94d8c98266a7c",
+    "semantic_hash": "4bd5a6f10e287bfec6e94d8c98266a7c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\screens\\index.ts": {
+    "mtime": 1775464291.1069565,
+    "ast_hash": "875e92166a9707ee301bbca44237e75e",
+    "semantic_hash": "875e92166a9707ee301bbca44237e75e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\screens\\RewardsBadgesScreen.tsx": {
+    "mtime": 1775464291.1059618,
+    "ast_hash": "df1f0ce10dc4d1143a2de4ca0ef5d124",
+    "semantic_hash": "df1f0ce10dc4d1143a2de4ca0ef5d124"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\screens\\SurveyScreen.tsx": {
+    "mtime": 1775464291.1059618,
+    "ast_hash": "1f62fd2abbd1ad65c344e2fe8ea48911",
+    "semantic_hash": "1f62fd2abbd1ad65c344e2fe8ea48911"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\types\\collection.types.ts": {
+    "mtime": 1775464291.1089847,
+    "ast_hash": "65f3acb2b32b40ae102b7e5765631731",
+    "semantic_hash": "65f3acb2b32b40ae102b7e5765631731"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\types\\gamification.types.ts": {
+    "mtime": 1775464291.1089847,
+    "ast_hash": "cc7ff972cc34737f8fb7717cd122c59c",
+    "semantic_hash": "cc7ff972cc34737f8fb7717cd122c59c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\types\\medusa.types.ts": {
+    "mtime": 1775464291.1099544,
+    "ast_hash": "1bf2d83704d5691f9ceea7cfb8079546",
+    "semantic_hash": "1bf2d83704d5691f9ceea7cfb8079546"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\events\\types\\survey.types.ts": {
+    "mtime": 1775464291.1099544,
+    "ast_hash": "1be8520e1066d7618442142b029308a2",
+    "semantic_hash": "1be8520e1066d7618442142b029308a2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\expert\\api\\expertApi.ts": {
+    "mtime": 1775464291.1109598,
+    "ast_hash": "8799e3bf0fc6c1d0cda1b87147b45117",
+    "semantic_hash": "8799e3bf0fc6c1d0cda1b87147b45117"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\expert\\api\\hooks.ts": {
+    "mtime": 1775464291.1109598,
+    "ast_hash": "72f47509ed98753704c5775f278a5f9f",
+    "semantic_hash": "72f47509ed98753704c5775f278a5f9f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\expert\\api\\index.ts": {
+    "mtime": 1775464291.1119573,
+    "ast_hash": "342988e956ee0600a63eebd61bbdd20f",
+    "semantic_hash": "342988e956ee0600a63eebd61bbdd20f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\index.ts": {
+    "mtime": 1768583127.164785,
+    "ast_hash": "4c517d1ca0eb6f3684f6b6fb297e534d",
+    "semantic_hash": "4c517d1ca0eb6f3684f6b6fb297e534d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\navigation.tsx": {
+    "mtime": 1768583127.164785,
+    "ast_hash": "eadf8729b9f1a670bc976861f6a23dcc",
+    "semantic_hash": "eadf8729b9f1a670bc976861f6a23dcc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\types.ts": {
+    "mtime": 1775464291.1173615,
+    "ast_hash": "9ab5c68374c3f0b6073d333719945ff8",
+    "semantic_hash": "9ab5c68374c3f0b6073d333719945ff8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\api\\exploreApi.ts": {
+    "mtime": 1775464291.1119573,
+    "ast_hash": "73a8115bba1f0b781e3be13b96faf27b",
+    "semantic_hash": "73a8115bba1f0b781e3be13b96faf27b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\api\\hooks.ts": {
+    "mtime": 1775464291.1129553,
+    "ast_hash": "44a160dce778c30f7e0f053e1575ee75",
+    "semantic_hash": "44a160dce778c30f7e0f053e1575ee75"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\components\\index.ts": {
+    "mtime": 1775464291.1153495,
+    "ast_hash": "66edcfaa9dfc451ec8c3d47c9d016715",
+    "semantic_hash": "66edcfaa9dfc451ec8c3d47c9d016715"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\components\\BrandCard\\index.tsx": {
+    "mtime": 1775464291.1129553,
+    "ast_hash": "9335d0141d1d29946f1cb7b90ac9baf9",
+    "semantic_hash": "9335d0141d1d29946f1cb7b90ac9baf9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\components\\ProductCard\\index.tsx": {
+    "mtime": 1775464291.1129553,
+    "ast_hash": "7d989146e7986de916d3630228ff979a",
+    "semantic_hash": "7d989146e7986de916d3630228ff979a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\components\\TabContents\\index.ts": {
+    "mtime": 1775464291.1153495,
+    "ast_hash": "e4e6ea3c1965affc2fdc89269a1ba1ca",
+    "semantic_hash": "e4e6ea3c1965affc2fdc89269a1ba1ca"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\components\\TabContents\\HottestTab\\index.tsx": {
+    "mtime": 1775464291.1139557,
+    "ast_hash": "c0f7912284930e0073ca2d02ca914d30",
+    "semantic_hash": "c0f7912284930e0073ca2d02ca914d30"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\components\\TabContents\\NewsTab\\index.tsx": {
+    "mtime": 1775464291.1153495,
+    "ast_hash": "75534d1ba61faae07869a2815f9d91af",
+    "semantic_hash": "75534d1ba61faae07869a2815f9d91af"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\hooks\\useExploreSearchSuggestions.ts": {
+    "mtime": 1775464291.11636,
+    "ast_hash": "af6f8fb45b1a4f45d1239e5808328487",
+    "semantic_hash": "af6f8fb45b1a4f45d1239e5808328487"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\screens\\ExploreScreen.tsx": {
+    "mtime": 1780401425.7878084,
+    "ast_hash": "deb605a9e92f9945a32fb224502169dd",
+    "semantic_hash": "deb605a9e92f9945a32fb224502169dd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\screens\\index.ts": {
+    "mtime": 1768583127.165786,
+    "ast_hash": "53339ebd6fe599e85a12ad9c1ff47e1d",
+    "semantic_hash": "53339ebd6fe599e85a12ad9c1ff47e1d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\explore\\store\\searchHistoryStore.ts": {
+    "mtime": 1775464291.1173615,
+    "ast_hash": "9ddd867d241911914f7f23d26ea18667",
+    "semantic_hash": "9ddd867d241911914f7f23d26ea18667"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\index.ts": {
+    "mtime": 1768583127.167785,
+    "ast_hash": "e8c4f5b78ea50bdd5713ee7edf23f1d9",
+    "semantic_hash": "e8c4f5b78ea50bdd5713ee7edf23f1d9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\navigation.tsx": {
+    "mtime": 1775464291.1223633,
+    "ast_hash": "5df08aefebb8b7e01df68b4c296863c1",
+    "semantic_hash": "5df08aefebb8b7e01df68b4c296863c1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\types.ts": {
+    "mtime": 1768583127.1687849,
+    "ast_hash": "2274d645e743ff80145bd1deae8b07ac",
+    "semantic_hash": "2274d645e743ff80145bd1deae8b07ac"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\api\\feedApi.ts": {
+    "mtime": 1775464291.118358,
+    "ast_hash": "1ce6b8f1eda9b232777e6a848f4ad830",
+    "semantic_hash": "1ce6b8f1eda9b232777e6a848f4ad830"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\api\\hooks.ts": {
+    "mtime": 1775464291.118358,
+    "ast_hash": "985a7fd0cd4cb6a489e7f172da46286b",
+    "semantic_hash": "985a7fd0cd4cb6a489e7f172da46286b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\components\\FeedFilterChips.tsx": {
+    "mtime": 1775464291.1193595,
+    "ast_hash": "689770fd9e7a4267e56d47d8ebd1910d",
+    "semantic_hash": "689770fd9e7a4267e56d47d8ebd1910d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\components\\FeedFilterSheet.tsx": {
+    "mtime": 1775464291.1193595,
+    "ast_hash": "a6e1adb0f3322035cc12cc9cbf61c4f6",
+    "semantic_hash": "a6e1adb0f3322035cc12cc9cbf61c4f6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\components\\FilterButtons.tsx": {
+    "mtime": 1775464291.121357,
+    "ast_hash": "445435a14abf77657141496412ffb1b4",
+    "semantic_hash": "445435a14abf77657141496412ffb1b4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\components\\FilterFeed.tsx": {
+    "mtime": 1775464291.121357,
+    "ast_hash": "8574c74e73edadb609cefa11596ce0a6",
+    "semantic_hash": "8574c74e73edadb609cefa11596ce0a6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\components\\AssetAccessCard\\index.tsx": {
+    "mtime": 1775464291.118358,
+    "ast_hash": "038f42826a968cafb2ee7bdb7294a61c",
+    "semantic_hash": "038f42826a968cafb2ee7bdb7294a61c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\components\\FilterBar\\FilterBarReanimated.tsx": {
+    "mtime": 1775464291.1193595,
+    "ast_hash": "c82552f8e60b03e793b3ab8ed1b7c31f",
+    "semantic_hash": "c82552f8e60b03e793b3ab8ed1b7c31f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\components\\FilterBar\\index.tsx": {
+    "mtime": 1775464291.120357,
+    "ast_hash": "c137af7697e812802de82b1775295b87",
+    "semantic_hash": "c137af7697e812802de82b1775295b87"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\context\\FeedListContext.tsx": {
+    "mtime": 1775464291.1223633,
+    "ast_hash": "ecb986f8e2e219250152a8c767bc0190",
+    "semantic_hash": "ecb986f8e2e219250152a8c767bc0190"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\screens\\FeedScreen.tsx": {
+    "mtime": 1780401315.1879034,
+    "ast_hash": "491af1f46b3d793efdd5636b648cf328",
+    "semantic_hash": "491af1f46b3d793efdd5636b648cf328"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\feed\\screens\\index.ts": {
+    "mtime": 1768583127.1687849,
+    "ast_hash": "1329a7486784953f297624a502faeb11",
+    "semantic_hash": "1329a7486784953f297624a502faeb11"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\types.ts": {
+    "mtime": 1775464291.1546824,
+    "ast_hash": "6196c29a78edae06210169ddba50c5a4",
+    "semantic_hash": "6196c29a78edae06210169ddba50c5a4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\api\\hooks.ts": {
+    "mtime": 1775464291.1253633,
+    "ast_hash": "0a321ef111f13c7885d03c0e2fddbf11",
+    "semantic_hash": "0a321ef111f13c7885d03c0e2fddbf11"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\api\\messagesApi.ts": {
+    "mtime": 1775464291.1253633,
+    "ast_hash": "b303edcc26411cdd37b092913105ca6e",
+    "semantic_hash": "b303edcc26411cdd37b092913105ca6e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\SendTipsBottomSheet.tsx": {
+    "mtime": 1775464291.1453798,
+    "ast_hash": "8b97a6e58987445e4697bbb8d809a2fa",
+    "semantic_hash": "8b97a6e58987445e4697bbb8d809a2fa"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\CloseSupportRequestModal\\index.tsx": {
+    "mtime": 1775464291.1263576,
+    "ast_hash": "2878c9e5d659e75ab0be14e84fec9a47",
+    "semantic_hash": "2878c9e5d659e75ab0be14e84fec9a47"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageCard\\index.tsx": {
+    "mtime": 1775464291.127359,
+    "ast_hash": "592561dbc70b52c5b0f127c3aa75ff68",
+    "semantic_hash": "592561dbc70b52c5b0f127c3aa75ff68"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageCard\\MessageCardRow.tsx": {
+    "mtime": 1775464291.1263576,
+    "ast_hash": "2bdab5df27e2756694fe2152b5ddada6",
+    "semantic_hash": "2bdab5df27e2756694fe2152b5ddada6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageDetailActionButtons\\index.tsx": {
+    "mtime": 1775464291.127359,
+    "ast_hash": "598919489c69d702252a00963790b3e7",
+    "semantic_hash": "598919489c69d702252a00963790b3e7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageDetailHeader\\index.tsx": {
+    "mtime": 1775464291.1283574,
+    "ast_hash": "78f2a07779003f497f2d2eeda577a471",
+    "semantic_hash": "78f2a07779003f497f2d2eeda577a471"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageInput\\index.tsx": {
+    "mtime": 1775464291.1293592,
+    "ast_hash": "c2ed9b2b9bfab89301f80937ee1c17d6",
+    "semantic_hash": "c2ed9b2b9bfab89301f80937ee1c17d6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\DateSeparator.tsx": {
+    "mtime": 1775464291.1333587,
+    "ast_hash": "4140918881f79767321a0c8308fa468d",
+    "semantic_hash": "4140918881f79767321a0c8308fa468d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\ImageMessage.tsx": {
+    "mtime": 1775464291.1343632,
+    "ast_hash": "4d79c38abe7e3bfdbb6e7cbebed34657",
+    "semantic_hash": "4d79c38abe7e3bfdbb6e7cbebed34657"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\index.tsx": {
+    "mtime": 1775464291.1433563,
+    "ast_hash": "4964f9f9b9f3acae429ef62d1dad2bc9",
+    "semantic_hash": "4964f9f9b9f3acae429ef62d1dad2bc9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\MessageBubble.tsx": {
+    "mtime": 1775464291.1343632,
+    "ast_hash": "0e5bbcd04438fdf20c565ebc8cf06f0f",
+    "semantic_hash": "0e5bbcd04438fdf20c565ebc8cf06f0f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\SharedPostMessage.tsx": {
+    "mtime": 1775464291.1353602,
+    "ast_hash": "03f2477e69cb24dbe94fcb25a2afbb0b",
+    "semantic_hash": "03f2477e69cb24dbe94fcb25a2afbb0b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\SupportRequestMessage.tsx": {
+    "mtime": 1775464291.1353602,
+    "ast_hash": "e1a99ddb4777a70b1bf2238f83e6e11b",
+    "semantic_hash": "e1a99ddb4777a70b1bf2238f83e6e11b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\TipsMessage.tsx": {
+    "mtime": 1775464291.138356,
+    "ast_hash": "e5cb05fd3c05f26cb7531b20b3c248d0",
+    "semantic_hash": "e5cb05fd3c05f26cb7531b20b3c248d0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\types.ts": {
+    "mtime": 1775464291.1433563,
+    "ast_hash": "f41ec92a3df10aea2b5ecfea1e8bd14e",
+    "semantic_hash": "f41ec92a3df10aea2b5ecfea1e8bd14e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessageItem\\WhatsAppContextMenu.tsx": {
+    "mtime": 1775464291.1413758,
+    "ast_hash": "58511f8dc8bb8ced65b45378b5d322cd",
+    "semantic_hash": "58511f8dc8bb8ced65b45378b5d322cd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\MessagesFilterGroup\\index.tsx": {
+    "mtime": 1775464291.1443548,
+    "ast_hash": "8b471f62f8cb637e8b6f36d896c3f016",
+    "semantic_hash": "8b471f62f8cb637e8b6f36d896c3f016"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\OneOnOneSupportBottomSheet\\index.tsx": {
+    "mtime": 1775464291.1443548,
+    "ast_hash": "9d695b5809ada482719b1aa816eea60b",
+    "semantic_hash": "9d695b5809ada482719b1aa816eea60b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\OneOnOneSupportRequestModal\\index.tsx": {
+    "mtime": 1775464291.1453798,
+    "ast_hash": "63979582100602c26404720d482377c9",
+    "semantic_hash": "63979582100602c26404720d482377c9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\SendTipsBottomSheet\\index.tsx": {
+    "mtime": 1775464291.1463575,
+    "ast_hash": "ffa0daa31b77173cc708f76d5d86b20f",
+    "semantic_hash": "ffa0daa31b77173cc708f76d5d86b20f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\StarRating\\index.tsx": {
+    "mtime": 1775464291.1463575,
+    "ast_hash": "edb3c9b962a90bc96c6e49e63dc98329",
+    "semantic_hash": "edb3c9b962a90bc96c6e49e63dc98329"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\SupportChatParticipants\\index.tsx": {
+    "mtime": 1775464291.1463575,
+    "ast_hash": "a8fde9e6a6f920b33b5e172650fe38cc",
+    "semantic_hash": "a8fde9e6a6f920b33b5e172650fe38cc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\SupportMessageDetailActionButtons\\index.tsx": {
+    "mtime": 1775464291.1463575,
+    "ast_hash": "6539196b5acb3b162cc92f19b59493d9",
+    "semantic_hash": "6539196b5acb3b162cc92f19b59493d9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\SupportRequestCard\\index.tsx": {
+    "mtime": 1775464291.1473558,
+    "ast_hash": "67d83cc27e9d518cb9844047bbbc144e",
+    "semantic_hash": "67d83cc27e9d518cb9844047bbbc144e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\SupportRequestFilterGroup\\index.tsx": {
+    "mtime": 1775464291.1473558,
+    "ast_hash": "f39c6b64f199e3c006d75d25ad0c1b20",
+    "semantic_hash": "f39c6b64f199e3c006d75d25ad0c1b20"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\components\\TipsSuccessModal\\index.tsx": {
+    "mtime": 1775464291.1473558,
+    "ast_hash": "bdeb99dab300fc3d81cb591d096723c2",
+    "semantic_hash": "bdeb99dab300fc3d81cb591d096723c2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\hooks\\useMessageHandlers.ts": {
+    "mtime": 1775464291.148358,
+    "ast_hash": "fb1e293a781997682f90e316b115ac35",
+    "semantic_hash": "fb1e293a781997682f90e316b115ac35"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\navigation\\index.tsx": {
+    "mtime": 1775464291.148358,
+    "ast_hash": "1f4f6942cce292b305ba4dbc71fbf81a",
+    "semantic_hash": "1f4f6942cce292b305ba4dbc71fbf81a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\screens\\InboxScreen.tsx": {
+    "mtime": 1775464291.1493578,
+    "ast_hash": "64049bdbdd59e0bb5ef0b75d5555006b",
+    "semantic_hash": "64049bdbdd59e0bb5ef0b75d5555006b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\screens\\MessageDetail.tsx": {
+    "mtime": 1775464291.150359,
+    "ast_hash": "2ccb649417c27fdd123f5f015f2a1bcb",
+    "semantic_hash": "2ccb649417c27fdd123f5f015f2a1bcb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\screens\\MessagesScreen.tsx": {
+    "mtime": 1775464291.1513581,
+    "ast_hash": "93041653cb4742e4a3b29d0a29c048d9",
+    "semantic_hash": "93041653cb4742e4a3b29d0a29c048d9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\screens\\SupportMessageDetail.tsx": {
+    "mtime": 1775464291.1523623,
+    "ast_hash": "8333cfcb882b435ad2e804cddba010f6",
+    "semantic_hash": "8333cfcb882b435ad2e804cddba010f6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\screens\\SupportRequestsScreen.tsx": {
+    "mtime": 1775464291.1523623,
+    "ast_hash": "bb7e08b12218556c854b238b7d49014e",
+    "semantic_hash": "bb7e08b12218556c854b238b7d49014e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\store\\typingStore.ts": {
+    "mtime": 1775464291.1533604,
+    "ast_hash": "4ee90baa837b7ab787d49ca55d32b23b",
+    "semantic_hash": "4ee90baa837b7ab787d49ca55d32b23b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\inbox\\utils\\messageHelpers.ts": {
+    "mtime": 1775464291.1556911,
+    "ast_hash": "7097d0484a1ac0f2c474027359335910",
+    "semantic_hash": "7097d0484a1ac0f2c474027359335910"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\interactions\\types.ts": {
+    "mtime": 1775464291.1569457,
+    "ast_hash": "cbb30cdd5ebff902dc9f07b0b475a59f",
+    "semantic_hash": "cbb30cdd5ebff902dc9f07b0b475a59f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\interactions\\api\\hooks.ts": {
+    "mtime": 1775464291.1556911,
+    "ast_hash": "e3be3dd475f5585818ca63ec6dc69378",
+    "semantic_hash": "e3be3dd475f5585818ca63ec6dc69378"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\interactions\\api\\interactionsApi.ts": {
+    "mtime": 1775464291.1569457,
+    "ast_hash": "83565bb2762a962c129c988ec4a7595c",
+    "semantic_hash": "83565bb2762a962c129c988ec4a7595c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\index.ts": {
+    "mtime": 1775464291.1623702,
+    "ast_hash": "b89bfa33e28b90d9689ed3165598ae03",
+    "semantic_hash": "b89bfa33e28b90d9689ed3165598ae03"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\navigation.tsx": {
+    "mtime": 1775464291.1623702,
+    "ast_hash": "f20b1ed14812a424db1b1bc499004bba",
+    "semantic_hash": "f20b1ed14812a424db1b1bc499004bba"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\types.ts": {
+    "mtime": 1775464291.1657746,
+    "ast_hash": "6aace07ae9dbb850b4d58d4dd9dfcfe3",
+    "semantic_hash": "6aace07ae9dbb850b4d58d4dd9dfcfe3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\api\\hooks.ts": {
+    "mtime": 1775464291.157953,
+    "ast_hash": "64a489cdbe8c6655d4ea106f10481012",
+    "semantic_hash": "64a489cdbe8c6655d4ea106f10481012"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\api\\marketplaceApi.ts": {
+    "mtime": 1775464291.157953,
+    "ast_hash": "3fed621a8207056e63d62a83fbc0ce7c",
+    "semantic_hash": "3fed621a8207056e63d62a83fbc0ce7c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\FloatingActionButton\\index.tsx": {
+    "mtime": 1775464291.159018,
+    "ast_hash": "cd4196295cb7e6017cc7b8be3a7f8038",
+    "semantic_hash": "cd4196295cb7e6017cc7b8be3a7f8038"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\NFTCard\\index.tsx": {
+    "mtime": 1775464291.159018,
+    "ast_hash": "955b64948afacf12d06f8efa7e69f82b",
+    "semantic_hash": "955b64948afacf12d06f8efa7e69f82b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\NFTFilterBottomSheet\\index.tsx": {
+    "mtime": 1775464291.1600256,
+    "ast_hash": "85f62b4ca870b024ed9bf4e855dc2059",
+    "semantic_hash": "85f62b4ca870b024ed9bf4e855dc2059"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\NFTListingSuccessBottomSheet\\index.tsx": {
+    "mtime": 1775464291.1600256,
+    "ast_hash": "1c703ff06f3c73ddc213b331bb552653",
+    "semantic_hash": "1c703ff06f3c73ddc213b331bb552653"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\NFTOptionsMenu\\index.tsx": {
+    "mtime": 1775464291.1600256,
+    "ast_hash": "c4f38bd7523c2e65b3b6ea020847aed9",
+    "semantic_hash": "c4f38bd7523c2e65b3b6ea020847aed9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\NFTPurchaseSuccessBottomSheet\\index.tsx": {
+    "mtime": 1775464291.161361,
+    "ast_hash": "23be15349ba00424d8e202489e6f22f7",
+    "semantic_hash": "23be15349ba00424d8e202489e6f22f7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\SearchFilter\\index.tsx": {
+    "mtime": 1775464291.161361,
+    "ast_hash": "12e01a31999ff12cfbfbb4e7fe268e75",
+    "semantic_hash": "12e01a31999ff12cfbfbb4e7fe268e75"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\SimpleLineChart\\index.tsx": {
+    "mtime": 1775464291.1623702,
+    "ast_hash": "9c2ad4e9ec30dc0df5f807113f611825",
+    "semantic_hash": "9c2ad4e9ec30dc0df5f807113f611825"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\components\\UserNFTCard\\index.tsx": {
+    "mtime": 1775464291.1623702,
+    "ast_hash": "09a8a6c4ec98338360863e188120eeaa",
+    "semantic_hash": "09a8a6c4ec98338360863e188120eeaa"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\screens\\MarketPlaceScreen.tsx": {
+    "mtime": 1775464291.16337,
+    "ast_hash": "ddf4fce55a9db13b6f01cc0ff1c1b0a5",
+    "semantic_hash": "ddf4fce55a9db13b6f01cc0ff1c1b0a5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\screens\\MarketPlaceScreen.web.tsx": {
+    "mtime": 1775464291.16337,
+    "ast_hash": "75509a9c03599f679352957e86ce4634",
+    "semantic_hash": "75509a9c03599f679352957e86ce4634"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\screens\\NFTDetailScreen.tsx": {
+    "mtime": 1775464291.1643794,
+    "ast_hash": "4e994e7256ffed9e802d04e74bbd9dbd",
+    "semantic_hash": "4e994e7256ffed9e802d04e74bbd9dbd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\screens\\NFTSellScreen.tsx": {
+    "mtime": 1775464291.1643794,
+    "ast_hash": "4121dded1a614f8b32cc103669cb7fe3",
+    "semantic_hash": "4121dded1a614f8b32cc103669cb7fe3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\marketplace\\screens\\SelectNFTScreen.tsx": {
+    "mtime": 1775464291.1657746,
+    "ast_hash": "5b20c58a39d224429a502c7ec9993652",
+    "semantic_hash": "5b20c58a39d224429a502c7ec9993652"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\navigation.tsx": {
+    "mtime": 1775464291.1677933,
+    "ast_hash": "c6581a5b231444945387e62e5d2c08bc",
+    "semantic_hash": "c6581a5b231444945387e62e5d2c08bc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\components\\OTAUpdateCard\\index.tsx": {
+    "mtime": 1775464291.1677933,
+    "ast_hash": "3a7e5c642276c8cd1b1587f773e9373d",
+    "semantic_hash": "3a7e5c642276c8cd1b1587f773e9373d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\screens\\index.ts": {
+    "mtime": 1775464291.1677933,
+    "ast_hash": "9210af9232b53966ac73bf7234d9a588",
+    "semantic_hash": "9210af9232b53966ac73bf7234d9a588"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\screens\\MoreSchoiseScreen.tsx": {
+    "mtime": 1775464291.1677933,
+    "ast_hash": "1c9f8c08bd0be7d953dcd0cb63fb5483",
+    "semantic_hash": "1c9f8c08bd0be7d953dcd0cb63fb5483"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\slice\\settingsStore.ts": {
+    "mtime": 1775464291.168801,
+    "ast_hash": "26b389c79d13cd02ba46bb7a2d7d06b1",
+    "semantic_hash": "26b389c79d13cd02ba46bb7a2d7d06b1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\tabs\\Keyboard.tsx": {
+    "mtime": 1775464291.1698034,
+    "ast_hash": "cf356147b61458b95b1fdd6cc3482447",
+    "semantic_hash": "cf356147b61458b95b1fdd6cc3482447"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\tabs\\MediaTab.tsx": {
+    "mtime": 1775464291.1698034,
+    "ast_hash": "46c89ee7f05885289acd52765c1f4adb",
+    "semantic_hash": "46c89ee7f05885289acd52765c1f4adb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\tabs\\NotificationTab.tsx": {
+    "mtime": 1775464291.1698034,
+    "ast_hash": "f1348868211e0c5937ea76a49a8351b9",
+    "semantic_hash": "f1348868211e0c5937ea76a49a8351b9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\moreSchoise\\tabs\\SettingsTab.tsx": {
+    "mtime": 1775464291.1708016,
+    "ast_hash": "2c3c400468ec11817d8e563f94cbdeed",
+    "semantic_hash": "2c3c400468ec11817d8e563f94cbdeed"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\index.ts": {
+    "mtime": 1775464291.173802,
+    "ast_hash": "260f0dfc2dbb30fde3835ce634a95096",
+    "semantic_hash": "260f0dfc2dbb30fde3835ce634a95096"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\navigation.tsx": {
+    "mtime": 1775464291.173802,
+    "ast_hash": "3c324683acf3d8ebf8259aaa1b71c075",
+    "semantic_hash": "3c324683acf3d8ebf8259aaa1b71c075"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\api\\hooks.ts": {
+    "mtime": 1775464291.1718054,
+    "ast_hash": "6bf94507a61cd8ee91fd508c18ac51f5",
+    "semantic_hash": "6bf94507a61cd8ee91fd508c18ac51f5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\api\\index.ts": {
+    "mtime": 1775464291.1718054,
+    "ast_hash": "6b98eec93c32b8b30b11549f75129af3",
+    "semantic_hash": "6b98eec93c32b8b30b11549f75129af3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\api\\notificationsApi.ts": {
+    "mtime": 1775464291.1718054,
+    "ast_hash": "53dd7eab0d5299656bd2407b04a1dffb",
+    "semantic_hash": "53dd7eab0d5299656bd2407b04a1dffb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\api\\types.ts": {
+    "mtime": 1775464291.172802,
+    "ast_hash": "9ed711436e52b2c8d13e692f17cef3af",
+    "semantic_hash": "9ed711436e52b2c8d13e692f17cef3af"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\components\\LikedUsersBottomSheet.tsx": {
+    "mtime": 1775464291.172802,
+    "ast_hash": "d37b859968a2241aa053ae6ba66c7188",
+    "semantic_hash": "d37b859968a2241aa053ae6ba66c7188"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\components\\NotificationCard.tsx": {
+    "mtime": 1775464291.173802,
+    "ast_hash": "373ed77dccf3e60442bb14c9c8bf66a3",
+    "semantic_hash": "373ed77dccf3e60442bb14c9c8bf66a3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\screens\\NotificationsScreen.tsx": {
+    "mtime": 1775464291.1748002,
+    "ast_hash": "84ff0b83b1f716a767013c153ee3543b",
+    "semantic_hash": "84ff0b83b1f716a767013c153ee3543b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\navigation.tsx": {
+    "mtime": 1775464291.1908047,
+    "ast_hash": "24d6ecc942ba674bb6b34a8ff2051c90",
+    "semantic_hash": "24d6ecc942ba674bb6b34a8ff2051c90"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\types.ts": {
+    "mtime": 1775464291.1998017,
+    "ast_hash": "c5af8a5ca16f7ebfff654a10f8603f47",
+    "semantic_hash": "c5af8a5ca16f7ebfff654a10f8603f47"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\api\\hooks.ts": {
+    "mtime": 1775464291.1758,
+    "ast_hash": "560ef754e47435bb4cce1213598d94c2",
+    "semantic_hash": "560ef754e47435bb4cce1213598d94c2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\api\\postApi.ts": {
+    "mtime": 1775464291.1758,
+    "ast_hash": "4a40602ea7e5ae7cccf5a37ba605f079",
+    "semantic_hash": "4a40602ea7e5ae7cccf5a37ba605f079"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\BoostOptionCard\\index.tsx": {
+    "mtime": 1775464291.176803,
+    "ast_hash": "cb40d42b44c0497acf0883aa3e5c9b04",
+    "semantic_hash": "cb40d42b44c0497acf0883aa3e5c9b04"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\CameraScreen\\index.tsx": {
+    "mtime": 1775464291.176803,
+    "ast_hash": "ad23d4ca4ef17fd215f4a52a0cc4e2de",
+    "semantic_hash": "ad23d4ca4ef17fd215f4a52a0cc4e2de"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\CommentBottomSheet\\index.tsx": {
+    "mtime": 1775464291.176803,
+    "ast_hash": "6d334cbf37a48a92be0bdaaa4c2729cd",
+    "semantic_hash": "6d334cbf37a48a92be0bdaaa4c2729cd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\CreateButton\\index.tsx": {
+    "mtime": 1775464291.1788068,
+    "ast_hash": "c51702f650fe6f8248352296d8d5a980",
+    "semantic_hash": "c51702f650fe6f8248352296d8d5a980"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\CreateExperienceSteps\\OptionSelectBottomSheet.tsx": {
+    "mtime": 1775464291.1788068,
+    "ast_hash": "de42eef40bf33ee8d5f0d5b4310307d9",
+    "semantic_hash": "de42eef40bf33ee8d5f0d5b4310307d9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\CreateExperienceSteps\\SelectProduct.tsx": {
+    "mtime": 1775464291.1798034,
+    "ast_hash": "012110bcc5a71a2a9fe83606611d8c20",
+    "semantic_hash": "012110bcc5a71a2a9fe83606611d8c20"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\CreateExperienceSteps\\StepOneScreen.tsx": {
+    "mtime": 1775464291.1808007,
+    "ast_hash": "6ae9e59be9d077aab85936ed4df9fcdb",
+    "semantic_hash": "6ae9e59be9d077aab85936ed4df9fcdb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\CreateExperienceSteps\\StepThreeScreen.tsx": {
+    "mtime": 1775464291.1808007,
+    "ast_hash": "c336a6e1b95f6146613aa7678f4449bd",
+    "semantic_hash": "c336a6e1b95f6146613aa7678f4449bd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\CreateExperienceSteps\\StepTwoScreen.tsx": {
+    "mtime": 1775464291.181799,
+    "ast_hash": "0a639f47d259d7fa46257304a998ea8b",
+    "semantic_hash": "0a639f47d259d7fa46257304a998ea8b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\DashedProductCard\\index.tsx": {
+    "mtime": 1775464291.1828065,
+    "ast_hash": "89d53d9440bd233d5d0472ce857d6f8d",
+    "semantic_hash": "89d53d9440bd233d5d0472ce857d6f8d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\ExperiencePostCardDetail\\index.tsx": {
+    "mtime": 1775464291.1828065,
+    "ast_hash": "f7aa97b414c284e1a35d3a93c758b752",
+    "semantic_hash": "f7aa97b414c284e1a35d3a93c758b752"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\FilterSortBottomSheet\\index.tsx": {
+    "mtime": 1775464291.1838017,
+    "ast_hash": "c6b7273700ce9fe9051f200ad72c0fa8",
+    "semantic_hash": "c6b7273700ce9fe9051f200ad72c0fa8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\FormFields\\ControlledImagePicker.tsx": {
+    "mtime": 1775464291.1838017,
+    "ast_hash": "be2cf58d8724bf3070b4eb665bac5c00",
+    "semantic_hash": "be2cf58d8724bf3070b4eb665bac5c00"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\FormFields\\ControlledSelect.tsx": {
+    "mtime": 1775464291.1838017,
+    "ast_hash": "a9e4cc40a7c3bcbee94bea58253c6bba",
+    "semantic_hash": "a9e4cc40a7c3bcbee94bea58253c6bba"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\FormFields\\ControlledStarRating.tsx": {
+    "mtime": 1775464291.1848032,
+    "ast_hash": "3a5e6bf455fff40d4e29bbe813b958e7",
+    "semantic_hash": "3a5e6bf455fff40d4e29bbe813b958e7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\FormFields\\ControlledTextarea.tsx": {
+    "mtime": 1775464291.1848032,
+    "ast_hash": "c2e8225901a1e476e674a858e30146c6",
+    "semantic_hash": "c2e8225901a1e476e674a858e30146c6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\PostDetailCard\\index.tsx": {
+    "mtime": 1775464291.1848032,
+    "ast_hash": "024c9f4dfb132ca195e56e2bd0cab341",
+    "semantic_hash": "024c9f4dfb132ca195e56e2bd0cab341"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\ProductBenchmarkCard\\index.tsx": {
+    "mtime": 1775464291.1858006,
+    "ast_hash": "24e821100408b81505d51f3b9cd1d504",
+    "semantic_hash": "24e821100408b81505d51f3b9cd1d504"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\QuestionPostCardDetail\\index.tsx": {
+    "mtime": 1775464291.1858006,
+    "ast_hash": "7fefeeb1d4fcea7e4d1b886c5e37d4e6",
+    "semantic_hash": "7fefeeb1d4fcea7e4d1b886c5e37d4e6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\ShareBottomSheet\\index.tsx": {
+    "mtime": 1775464291.1858006,
+    "ast_hash": "dcb02f53b8f71fcccdf4fe1c6999b9e2",
+    "semantic_hash": "dcb02f53b8f71fcccdf4fe1c6999b9e2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\ShareToTrustedBottomSheet\\index.tsx": {
+    "mtime": 1775464291.1868005,
+    "ast_hash": "69c752fbc022a4d13dbda47719d07453",
+    "semantic_hash": "69c752fbc022a4d13dbda47719d07453"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\TipsAndTricksPostCardDetail\\index.tsx": {
+    "mtime": 1775464291.1868005,
+    "ast_hash": "ecdc962b63d98b87d4d36e91cc4c3dee",
+    "semantic_hash": "ecdc962b63d98b87d4d36e91cc4c3dee"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\components\\UpdatePostCardDetail\\index.tsx": {
+    "mtime": 1775464291.187803,
+    "ast_hash": "503c58920eb94be1eede4e1909ed1fca",
+    "semantic_hash": "503c58920eb94be1eede4e1909ed1fca"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\constants\\benefitCategories.ts": {
+    "mtime": 1775464291.187803,
+    "ast_hash": "cfc103d52a92d4847dae5075ef7a1c34",
+    "semantic_hash": "cfc103d52a92d4847dae5075ef7a1c34"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\hooks\\useBenchmarkPostForm.ts": {
+    "mtime": 1775464291.187803,
+    "ast_hash": "ab0ff458387f2be7e36df6da479f0617",
+    "semantic_hash": "ab0ff458387f2be7e36df6da479f0617"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\hooks\\useExperiencePostForm.ts": {
+    "mtime": 1775464291.187803,
+    "ast_hash": "d89c15abd6814400c0d23ff7cf9d3365",
+    "semantic_hash": "d89c15abd6814400c0d23ff7cf9d3365"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\hooks\\useInventoryProductCheck.ts": {
+    "mtime": 1775464291.1887991,
+    "ast_hash": "85f14f308ac0c89cd11fe24c90926b7f",
+    "semantic_hash": "85f14f308ac0c89cd11fe24c90926b7f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\hooks\\usePostForm.ts": {
+    "mtime": 1775464291.1887991,
+    "ast_hash": "eda738608e7adbfa27ba405ba2606911",
+    "semantic_hash": "eda738608e7adbfa27ba405ba2606911"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\hooks\\useQuestionPostForm.ts": {
+    "mtime": 1775464291.1887991,
+    "ast_hash": "e6cead9ee250212020cfa3cb4ae16ff3",
+    "semantic_hash": "e6cead9ee250212020cfa3cb4ae16ff3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\hooks\\useSyncInventoryToStore.ts": {
+    "mtime": 1775464291.1898,
+    "ast_hash": "a1f09483b7c7e59c6652681908bc6773",
+    "semantic_hash": "a1f09483b7c7e59c6652681908bc6773"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\hooks\\useTipsAndTrickPostForm.ts": {
+    "mtime": 1775464291.1898,
+    "ast_hash": "7e0221206652b3f9a202a8b84bd8c39c",
+    "semantic_hash": "7e0221206652b3f9a202a8b84bd8c39c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\hooks\\useUpdatePostForm.ts": {
+    "mtime": 1775464291.1908047,
+    "ast_hash": "f3153c3f7523cb8becf824d4b3647d94",
+    "semantic_hash": "f3153c3f7523cb8becf824d4b3647d94"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\schemas\\benchmarkPostSchema.ts": {
+    "mtime": 1775464291.1918015,
+    "ast_hash": "3b07edec10f7e958b8c14646dc48f07e",
+    "semantic_hash": "3b07edec10f7e958b8c14646dc48f07e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\schemas\\experiencePostSchema.ts": {
+    "mtime": 1775464291.1918015,
+    "ast_hash": "3b5b8e854a24e30465a4adafacbd9af9",
+    "semantic_hash": "3b5b8e854a24e30465a4adafacbd9af9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\schemas\\postSchema.ts": {
+    "mtime": 1775464291.1928024,
+    "ast_hash": "97116f1feffcff5ff6dd2b2d57be9225",
+    "semantic_hash": "97116f1feffcff5ff6dd2b2d57be9225"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\schemas\\questionPostSchema.ts": {
+    "mtime": 1775464291.1928024,
+    "ast_hash": "288424da4fb01e439101c67ba79bf099",
+    "semantic_hash": "288424da4fb01e439101c67ba79bf099"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\schemas\\tipsAndTrickPostSchema.ts": {
+    "mtime": 1775464291.1928024,
+    "ast_hash": "b522961ba25dbc4ae0a39e5a14b14b9d",
+    "semantic_hash": "b522961ba25dbc4ae0a39e5a14b14b9d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\schemas\\updatePostSchema.ts": {
+    "mtime": 1775464291.1938012,
+    "ast_hash": "172f138cf0d85f1bc8a373a9e693d869",
+    "semantic_hash": "172f138cf0d85f1bc8a373a9e693d869"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\CreateBenchmarkPostScreen.tsx": {
+    "mtime": 1775464291.194802,
+    "ast_hash": "8e4e017cf93894da3fd5c0f99a631e58",
+    "semantic_hash": "8e4e017cf93894da3fd5c0f99a631e58"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\CreateExperiencePostScreen.tsx": {
+    "mtime": 1775464291.194802,
+    "ast_hash": "2d38c15db2b4fad7a679a7f469072d07",
+    "semantic_hash": "2d38c15db2b4fad7a679a7f469072d07"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\CreatePostScreen.tsx": {
+    "mtime": 1775464291.1958005,
+    "ast_hash": "d7d34a05c584b8549a60ee979dedfdc9",
+    "semantic_hash": "d7d34a05c584b8549a60ee979dedfdc9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\CreateQuestionPostScreen.tsx": {
+    "mtime": 1775464291.1958005,
+    "ast_hash": "eebf25ba5d7a5dce1bb3e1ad80539e87",
+    "semantic_hash": "eebf25ba5d7a5dce1bb3e1ad80539e87"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\CreateTipsAndTrickPostScreen.tsx": {
+    "mtime": 1775464291.1968017,
+    "ast_hash": "667879f2023dabd8e819def5bdd69cec",
+    "semantic_hash": "667879f2023dabd8e819def5bdd69cec"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\CreateUpdatePostScreen.tsx": {
+    "mtime": 1775464291.1968017,
+    "ast_hash": "2a1aad9cc12939a10627a77bd0ed2272",
+    "semantic_hash": "2a1aad9cc12939a10627a77bd0ed2272"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\index.tsx": {
+    "mtime": 1775464291.1988018,
+    "ast_hash": "ce5b7ba98ad315ef724c602dc5a1513d",
+    "semantic_hash": "ce5b7ba98ad315ef724c602dc5a1513d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\PostDetailScreen.tsx": {
+    "mtime": 1775464291.1978018,
+    "ast_hash": "14c98496f226993a01bec895146213dc",
+    "semantic_hash": "14c98496f226993a01bec895146213dc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\PostsScreen.tsx": {
+    "mtime": 1775464291.1988018,
+    "ast_hash": "c6d2aabae2eb401d7dca5a01c7c08da6",
+    "semantic_hash": "c6d2aabae2eb401d7dca5a01c7c08da6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\screens\\SelectCompareProductScreen.tsx": {
+    "mtime": 1775464291.1988018,
+    "ast_hash": "3c0699be133a364cde446f84a8128ad4",
+    "semantic_hash": "3c0699be133a364cde446f84a8128ad4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\store\\createPostFlowStore.ts": {
+    "mtime": 1775464291.1998017,
+    "ast_hash": "7b468af7974f85858b27ad5fe6bf8b2e",
+    "semantic_hash": "7b468af7974f85858b27ad5fe6bf8b2e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\utils\\inventoryDecision.ts": {
+    "mtime": 1775464291.1998017,
+    "ast_hash": "d83298aac72b212ac31ee2a2132dfac0",
+    "semantic_hash": "d83298aac72b212ac31ee2a2132dfac0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\post\\utils\\postTypeMapping.ts": {
+    "mtime": 1775464291.2008033,
+    "ast_hash": "5fe00b920b24cfb66a154f0b9365fcf5",
+    "semantic_hash": "5fe00b920b24cfb66a154f0b9365fcf5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\index.ts": {
+    "mtime": 1768583127.1998081,
+    "ast_hash": "7ba35864086db8fee25ab7be997ea176",
+    "semantic_hash": "7ba35864086db8fee25ab7be997ea176"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\navigation.tsx": {
+    "mtime": 1775464291.2178125,
+    "ast_hash": "fb496a03391abb91f17dd420fe200c34",
+    "semantic_hash": "fb496a03391abb91f17dd420fe200c34"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\types.ts": {
+    "mtime": 1775464291.223804,
+    "ast_hash": "dfc4bf93a94692ad44948dee58ef4a95",
+    "semantic_hash": "dfc4bf93a94692ad44948dee58ef4a95"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\api\\hooks.ts": {
+    "mtime": 1775464291.2018018,
+    "ast_hash": "bc415dbbea755922ed826bc8a0dcc68b",
+    "semantic_hash": "bc415dbbea755922ed826bc8a0dcc68b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\api\\index.tsx": {
+    "mtime": 1775464291.2028172,
+    "ast_hash": "eda5f078cfece6d11484d92e2a0a7870",
+    "semantic_hash": "eda5f078cfece6d11484d92e2a0a7870"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\api\\profileApi.ts": {
+    "mtime": 1775464291.2038019,
+    "ast_hash": "a92b8e81e5e080a2791f63160934797f",
+    "semantic_hash": "a92b8e81e5e080a2791f63160934797f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\api\\userInventoriesApi.tsx": {
+    "mtime": 1768583127.194808,
+    "ast_hash": "64e56d99458a2559ac3a7aff8565cb3c",
+    "semantic_hash": "64e56d99458a2559ac3a7aff8565cb3c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\AnimatedTabBar.tsx": {
+    "mtime": 1775464291.2048016,
+    "ast_hash": "c19443402e9e86f9be32ad2297c5ccd7",
+    "semantic_hash": "c19443402e9e86f9be32ad2297c5ccd7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\AutoScrollProfileTabs.tsx": {
+    "mtime": 1775464291.2058015,
+    "ast_hash": "b004a07d5c964b9d59f5d922463abeb9",
+    "semantic_hash": "b004a07d5c964b9d59f5d922463abeb9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\DynamicPostFeed.tsx": {
+    "mtime": 1775464291.2078,
+    "ast_hash": "73afc7151bcb78e1851806d069c86db1",
+    "semantic_hash": "73afc7151bcb78e1851806d069c86db1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\SendTipsModal.tsx": {
+    "mtime": 1775464291.2107997,
+    "ast_hash": "797967acf75b58d088f0bd1b224aab5d",
+    "semantic_hash": "797967acf75b58d088f0bd1b224aab5d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\BadgeCard\\index.tsx": {
+    "mtime": 1775464291.2058015,
+    "ast_hash": "2d305f7574c6f40232d23e2e41d1aa30",
+    "semantic_hash": "2d305f7574c6f40232d23e2e41d1aa30"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\BadgeDetail\\index.tsx": {
+    "mtime": 1775464291.2068002,
+    "ast_hash": "6d6451ece5a953bf0a4c9b500dc1eba4",
+    "semantic_hash": "6d6451ece5a953bf0a4c9b500dc1eba4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\BadgeDetailModal\\index.tsx": {
+    "mtime": 1775464291.2068002,
+    "ast_hash": "7b991e538035d026c219ab037a3b2e0b",
+    "semantic_hash": "7b991e538035d026c219ab037a3b2e0b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\CollectionTabs\\index.tsx": {
+    "mtime": 1775464291.2078,
+    "ast_hash": "50ae97c3ebdfd33b6c75b77a14e161c1",
+    "semantic_hash": "50ae97c3ebdfd33b6c75b77a14e161c1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\InventoryCard\\index.tsx": {
+    "mtime": 1775464291.2087994,
+    "ast_hash": "9d88e8a529a78cfaeae9565febc816cb",
+    "semantic_hash": "9d88e8a529a78cfaeae9565febc816cb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\ProfileBadgeBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2087994,
+    "ast_hash": "2f874659df2e35c664c7eae31311c066",
+    "semantic_hash": "2f874659df2e35c664c7eae31311c066"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\ProfileCard\\index.tsx": {
+    "mtime": 1775464291.2098057,
+    "ast_hash": "01038ad293259ba38b38aeefc4004afc",
+    "semantic_hash": "01038ad293259ba38b38aeefc4004afc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\RemoveFromTrustlistContextMenu\\index.tsx": {
+    "mtime": 1775464291.2107997,
+    "ast_hash": "186a2079eb4913bba01f7edbb91f2df5",
+    "semantic_hash": "186a2079eb4913bba01f7edbb91f2df5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\SuggestedUserCard\\index.tsx": {
+    "mtime": 1775464291.2118013,
+    "ast_hash": "474fafdb6ee8f82cc94235e69f3fe7f1",
+    "semantic_hash": "474fafdb6ee8f82cc94235e69f3fe7f1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\SuggestionCard\\index.tsx": {
+    "mtime": 1775464291.2118013,
+    "ast_hash": "58ef965d8f80c4eafad829fcb994ff20",
+    "semantic_hash": "58ef965d8f80c4eafad829fcb994ff20"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabContents\\BenchmarksTab.tsx": {
+    "mtime": 1775464291.2128007,
+    "ast_hash": "e86091aba9b44667f2826aa45fed43c4",
+    "semantic_hash": "e86091aba9b44667f2826aa45fed43c4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabContents\\ExperienceTab.tsx": {
+    "mtime": 1775464291.2128007,
+    "ast_hash": "58d5fe9bfb63021c18781c6fb35963ba",
+    "semantic_hash": "58d5fe9bfb63021c18781c6fb35963ba"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabContents\\FeedTab.tsx": {
+    "mtime": 1775464291.213803,
+    "ast_hash": "3f15bcaa0e9aaafcd58102b0b44b0672",
+    "semantic_hash": "3f15bcaa0e9aaafcd58102b0b44b0672"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabContents\\index.ts": {
+    "mtime": 1775464291.2157998,
+    "ast_hash": "146c74b6e32eb33d53eb8b54a24d7e8c",
+    "semantic_hash": "146c74b6e32eb33d53eb8b54a24d7e8c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabContents\\LadderTab.tsx": {
+    "mtime": 1775464291.213803,
+    "ast_hash": "8b12cec65d47e6c05aa4d1c2f49815a2",
+    "semantic_hash": "8b12cec65d47e6c05aa4d1c2f49815a2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabContents\\RepliesTab.tsx": {
+    "mtime": 1775464291.2147994,
+    "ast_hash": "29703f346e74ea779be8032599204c94",
+    "semantic_hash": "29703f346e74ea779be8032599204c94"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabContents\\TipsTab.tsx": {
+    "mtime": 1775464291.2147994,
+    "ast_hash": "7bd2d872d1a86482810c20a2f9d1d174",
+    "semantic_hash": "7bd2d872d1a86482810c20a2f9d1d174"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabsPage\\AchievementBadgesTab.tsx": {
+    "mtime": 1775464291.2157998,
+    "ast_hash": "d3aafa32fbcb9a732f315f20801fa781",
+    "semantic_hash": "d3aafa32fbcb9a732f315f20801fa781"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TabsPage\\BridgeBadgesTab.tsx": {
+    "mtime": 1775464291.2168016,
+    "ast_hash": "60d541608c8a23247e6e0532801ad009",
+    "semantic_hash": "60d541608c8a23247e6e0532801ad009"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\components\\TrustUserCard\\index.tsx": {
+    "mtime": 1775464291.2178125,
+    "ast_hash": "859197de472dfa1a4c50b219cbfb08c1",
+    "semantic_hash": "859197de472dfa1a4c50b219cbfb08c1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\CollectionsScreen.tsx": {
+    "mtime": 1775464291.2188034,
+    "ast_hash": "a21d2a6e5d9e43672b5fd63b7a11db4a",
+    "semantic_hash": "a21d2a6e5d9e43672b5fd63b7a11db4a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\EditHighlightBadgesScreen.tsx": {
+    "mtime": 1775464291.2188034,
+    "ast_hash": "24ec281892402f04c3e15c98ce4a58e3",
+    "semantic_hash": "24ec281892402f04c3e15c98ce4a58e3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\index.ts": {
+    "mtime": 1775464291.223804,
+    "ast_hash": "434bb294fc54d2cdf8f3da2c5a619a87",
+    "semantic_hash": "434bb294fc54d2cdf8f3da2c5a619a87"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\InventoryDetailScreen.tsx": {
+    "mtime": 1775464291.2198033,
+    "ast_hash": "774fee4e85f3d5328846be162c941862",
+    "semantic_hash": "774fee4e85f3d5328846be162c941862"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\InventoryScreen.tsx": {
+    "mtime": 1775464291.2208033,
+    "ast_hash": "047ac2dd85f1285367536d4b54b8aa99",
+    "semantic_hash": "047ac2dd85f1285367536d4b54b8aa99"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\ProfileEditScreen.tsx": {
+    "mtime": 1775464291.2208033,
+    "ast_hash": "6fbc1967a03a3638dce1673836971572",
+    "semantic_hash": "6fbc1967a03a3638dce1673836971572"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\ProfileScreen.tsx": {
+    "mtime": 1775464291.222805,
+    "ast_hash": "6fa0bad181a7ed78513cc5a6560c19bc",
+    "semantic_hash": "6fa0bad181a7ed78513cc5a6560c19bc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\SuggestedUsersScreen.tsx": {
+    "mtime": 1775464291.222805,
+    "ast_hash": "158a0ed4507028954ce230d493f1e709",
+    "semantic_hash": "158a0ed4507028954ce230d493f1e709"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\screens\\Trust_TrusterListScreen.tsx": {
+    "mtime": 1775464291.223804,
+    "ast_hash": "4cbbc81c54a1a11584716c3dae578b87",
+    "semantic_hash": "4cbbc81c54a1a11584716c3dae578b87"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\slice\\index.tsx": {
+    "mtime": 1768583127.202462,
+    "ast_hash": "807024e2b170ec5504df0008af4558dc",
+    "semantic_hash": "807024e2b170ec5504df0008af4558dc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\slice\\userInventoriesStore.tsx": {
+    "mtime": 1768583127.202462,
+    "ast_hash": "d2c46c6a8902ff1d737d9ec972fbf548",
+    "semantic_hash": "d2c46c6a8902ff1d737d9ec972fbf548"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\profile\\slice\\userProfileFlowStore.tsx": {
+    "mtime": 1768583127.202462,
+    "ast_hash": "f602e8a02cfc537e49f12ddcd6b22c89",
+    "semantic_hash": "f602e8a02cfc537e49f12ddcd6b22c89"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\search\\api\\hooks.ts": {
+    "mtime": 1775464291.2248206,
+    "ast_hash": "07839e89834b9e687105ce84d07e9b67",
+    "semantic_hash": "07839e89834b9e687105ce84d07e9b67"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\search\\api\\index.ts": {
+    "mtime": 1775464291.2248206,
+    "ast_hash": "da49808df1001acd7866983d097ff6f3",
+    "semantic_hash": "da49808df1001acd7866983d097ff6f3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\search\\api\\searchApi.ts": {
+    "mtime": 1775464291.2248206,
+    "ast_hash": "b265371cad8afaea29089f6f47ad65bf",
+    "semantic_hash": "b265371cad8afaea29089f6f47ad65bf"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\index.ts": {
+    "mtime": 1768583127.2069664,
+    "ast_hash": "8e66b3f774eab6df1a19969e41636c76",
+    "semantic_hash": "8e66b3f774eab6df1a19969e41636c76"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\navigation.tsx": {
+    "mtime": 1775464291.2348008,
+    "ast_hash": "3abe0ca19f853a4e666134ba954c7d34",
+    "semantic_hash": "3abe0ca19f853a4e666134ba954c7d34"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\types.ts": {
+    "mtime": 1775464291.2438045,
+    "ast_hash": "cc3fc7cfcc1052e026f43b0b40063735",
+    "semantic_hash": "cc3fc7cfcc1052e026f43b0b40063735"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\changePasswordApi.ts": {
+    "mtime": 1775464291.2258008,
+    "ast_hash": "42cf7a19a65261033c0240406bd59aef",
+    "semantic_hash": "42cf7a19a65261033c0240406bd59aef"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\devicesApi.ts": {
+    "mtime": 1775464291.2258008,
+    "ast_hash": "2836ab1fdd88b70994687b146967a37b",
+    "semantic_hash": "2836ab1fdd88b70994687b146967a37b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\hooks.ts": {
+    "mtime": 1775464291.2258008,
+    "ast_hash": "92bfcca6ee62e9a7c1511e5b9fcefb8c",
+    "semantic_hash": "92bfcca6ee62e9a7c1511e5b9fcefb8c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\index.ts": {
+    "mtime": 1775464291.2268019,
+    "ast_hash": "c9a8092d4c94b01dfc00a1ac4f38cb49",
+    "semantic_hash": "c9a8092d4c94b01dfc00a1ac4f38cb49"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\notificationsApi.ts": {
+    "mtime": 1775464291.2268019,
+    "ast_hash": "8810aedb985a7004a9775aa0eaffd4c0",
+    "semantic_hash": "8810aedb985a7004a9775aa0eaffd4c0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\paymentApi.ts": {
+    "mtime": 1775464291.2268019,
+    "ast_hash": "77fb4ea6559c3c17c9e8a11cf9d4bc8d",
+    "semantic_hash": "77fb4ea6559c3c17c9e8a11cf9d4bc8d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\privacyApi.ts": {
+    "mtime": 1775464291.2278018,
+    "ast_hash": "8d1a799add1f7e881a8a4ee88b80f5be",
+    "semantic_hash": "8d1a799add1f7e881a8a4ee88b80f5be"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\subscriptionApi.ts": {
+    "mtime": 1775464291.2278018,
+    "ast_hash": "48ec69cd805cae248c6cc2e9b71df65d",
+    "semantic_hash": "48ec69cd805cae248c6cc2e9b71df65d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\api\\supportSessionPriceApi.ts": {
+    "mtime": 1775464291.2278018,
+    "ast_hash": "94986c8104575e24c2328db957b5f88e",
+    "semantic_hash": "94986c8104575e24c2328db957b5f88e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\LanguageBottomSheet.tsx": {
+    "mtime": 1775464291.229802,
+    "ast_hash": "af47e9f51197c3bf6d16987c63847242",
+    "semantic_hash": "af47e9f51197c3bf6d16987c63847242"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\AddPaymentMethodBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2288015,
+    "ast_hash": "9b92ed374bddabea8728a53b4040f037",
+    "semantic_hash": "9b92ed374bddabea8728a53b4040f037"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\BillingHistoryEntry\\index.tsx": {
+    "mtime": 1775464291.2288015,
+    "ast_hash": "e6959fe3296359ae3850b8bcbc5cb2db",
+    "semantic_hash": "e6959fe3296359ae3850b8bcbc5cb2db"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\ChangePasswordBottomSheet\\index.tsx": {
+    "mtime": 1775464291.229802,
+    "ast_hash": "9df5ac6abbc176e09a27663b9da9ead5",
+    "semantic_hash": "9df5ac6abbc176e09a27663b9da9ead5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\LinkedPaymentMethod\\index.tsx": {
+    "mtime": 1775464291.2308016,
+    "ast_hash": "04742ae7ba3f0833388571992e3083ba",
+    "semantic_hash": "04742ae7ba3f0833388571992e3083ba"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\OTAUpdateCard\\index.tsx": {
+    "mtime": 1775464291.2308016,
+    "ast_hash": "3a7e5c642276c8cd1b1587f773e9373d",
+    "semantic_hash": "3a7e5c642276c8cd1b1587f773e9373d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\SavedCard\\index.tsx": {
+    "mtime": 1775464291.2318182,
+    "ast_hash": "27f50122e0f406fac3f1d29e8661e7a9",
+    "semantic_hash": "27f50122e0f406fac3f1d29e8661e7a9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\Tabs\\index.tsx": {
+    "mtime": 1775464291.2328007,
+    "ast_hash": "945567349490680c284d15893ea7957f",
+    "semantic_hash": "945567349490680c284d15893ea7957f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\components\\YourDevicesBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2328007,
+    "ast_hash": "d8b5e1888b83197512c023a4e5071f48",
+    "semantic_hash": "d8b5e1888b83197512c023a4e5071f48"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\hooks\\useNotificationSettingsCheck.ts": {
+    "mtime": 1775464291.2338016,
+    "ast_hash": "df0bdd3161e16f41747ad098c1d0cc0e",
+    "semantic_hash": "df0bdd3161e16f41747ad098c1d0cc0e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\CannyWebViewScreen.tsx": {
+    "mtime": 1775464291.235801,
+    "ast_hash": "de2c54f4fda190363fd508b51ff1f0db",
+    "semantic_hash": "de2c54f4fda190363fd508b51ff1f0db"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\ChangePasswordScreen.tsx": {
+    "mtime": 1775464291.2368014,
+    "ast_hash": "a7c2dc49ed6f90a419ede3561bb67164",
+    "semantic_hash": "a7c2dc49ed6f90a419ede3561bb67164"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\ForgotPasswordScreen.tsx": {
+    "mtime": 1775464291.2368014,
+    "ast_hash": "b68453e09e3854c89818256387f082c5",
+    "semantic_hash": "b68453e09e3854c89818256387f082c5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\GoogleAuthenticatorSetupScreen.tsx": {
+    "mtime": 1775464291.2368014,
+    "ast_hash": "fdbcb7cafe2efd1e5e32c260a7c84960",
+    "semantic_hash": "fdbcb7cafe2efd1e5e32c260a7c84960"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\GoogleAuthenticatorVerifyScreen.tsx": {
+    "mtime": 1775464291.2368014,
+    "ast_hash": "b2d91b7c981f27f39b9e4c930e43a0a3",
+    "semantic_hash": "b2d91b7c981f27f39b9e4c930e43a0a3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\index.ts": {
+    "mtime": 1775464291.2418017,
+    "ast_hash": "3885aa649da9c3d2ed92fd578e0600f6",
+    "semantic_hash": "3885aa649da9c3d2ed92fd578e0600f6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\NotificationSettingsScreen.tsx": {
+    "mtime": 1775464291.2378016,
+    "ast_hash": "ea405f789172aad4a35035c96e6a4ca3",
+    "semantic_hash": "ea405f789172aad4a35035c96e6a4ca3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\PaymentAndSubscriptionScreen.tsx": {
+    "mtime": 1775464291.2378016,
+    "ast_hash": "8cdf734af75ec079bb7bac2664002b35",
+    "semantic_hash": "8cdf734af75ec079bb7bac2664002b35"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\PrivacySettingsScreen.tsx": {
+    "mtime": 1775464291.2398007,
+    "ast_hash": "27954fd4301fd40d28e5d787c95c2deb",
+    "semantic_hash": "27954fd4301fd40d28e5d787c95c2deb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\SettingsScreen.tsx": {
+    "mtime": 1775464291.2408018,
+    "ast_hash": "047edcd587e7f19fd92e45faa904a369",
+    "semantic_hash": "047edcd587e7f19fd92e45faa904a369"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\SMSVerificationScreen.tsx": {
+    "mtime": 1775464291.2398007,
+    "ast_hash": "877a2c90bd8a677b8312d624834a4c99",
+    "semantic_hash": "877a2c90bd8a677b8312d624834a4c99"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\SMSVerifyCodeScreen.tsx": {
+    "mtime": 1775464291.2408018,
+    "ast_hash": "a95c617269f20fb3bc30bb8a271dcef7",
+    "semantic_hash": "a95c617269f20fb3bc30bb8a271dcef7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\SupportSettingsScreen.tsx": {
+    "mtime": 1775464291.2408018,
+    "ast_hash": "eab53c527fe58ea3e733e642b861ed65",
+    "semantic_hash": "eab53c527fe58ea3e733e642b861ed65"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\TwoFactorAuthScreen.tsx": {
+    "mtime": 1775464291.2418017,
+    "ast_hash": "f9471c4e08f65eebbc7e9bc9ceeab47b",
+    "semantic_hash": "f9471c4e08f65eebbc7e9bc9ceeab47b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\PaymentAndSubscriptionTabsScreen\\index.ts": {
+    "mtime": 1775464291.2398007,
+    "ast_hash": "412599ebdaea2d7fcfeb275af733bd59",
+    "semantic_hash": "412599ebdaea2d7fcfeb275af733bd59"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\PaymentAndSubscriptionTabsScreen\\PaymentTab.tsx": {
+    "mtime": 1775464291.2378016,
+    "ast_hash": "4fb1711e716209684e3d2a51dee45234",
+    "semantic_hash": "4fb1711e716209684e3d2a51dee45234"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\PaymentAndSubscriptionTabsScreen\\SubscriptionTab.tsx": {
+    "mtime": 1775464291.2388384,
+    "ast_hash": "ba0d1f660b20a6c892c9c401479ec1f4",
+    "semantic_hash": "ba0d1f660b20a6c892c9c401479ec1f4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\tabs\\Keyboard.tsx": {
+    "mtime": 1775464291.2418017,
+    "ast_hash": "4af49d464a1e28e3690c7a2dc8e71cc0",
+    "semantic_hash": "4af49d464a1e28e3690c7a2dc8e71cc0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\tabs\\MediaTab.tsx": {
+    "mtime": 1775464291.242802,
+    "ast_hash": "cc14d464bd8bb7c7ba2b671e1d3ae1a9",
+    "semantic_hash": "cc14d464bd8bb7c7ba2b671e1d3ae1a9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\tabs\\NotificationTab.tsx": {
+    "mtime": 1775464291.242802,
+    "ast_hash": "28a82f79e493a3eed0faa3bf7d109b50",
+    "semantic_hash": "28a82f79e493a3eed0faa3bf7d109b50"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\screens\\tabs\\SettingsTab.tsx": {
+    "mtime": 1775464291.2438045,
+    "ast_hash": "9cb4d57540c3dd3c1ca631aa3e28b681",
+    "semantic_hash": "9cb4d57540c3dd3c1ca631aa3e28b681"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\slice\\settingsStore.ts": {
+    "mtime": 1768583127.2109702,
+    "ast_hash": "349d46f101cd3de9871b0e4d1a844413",
+    "semantic_hash": "349d46f101cd3de9871b0e4d1a844413"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\settings\\utils\\notificationSettingsCheck.ts": {
+    "mtime": 1775464291.2438045,
+    "ast_hash": "fce7a1a983364889b8321ab9e71730d0",
+    "semantic_hash": "fce7a1a983364889b8321ab9e71730d0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\socket-test\\SocketTestScreen.tsx": {
+    "mtime": 1775464291.2448068,
+    "ast_hash": "e8e118c5a2b9c9dc24177d420ed7f8f6",
+    "semantic_hash": "e8e118c5a2b9c9dc24177d420ed7f8f6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\index.ts": {
+    "mtime": 1775464291.2578027,
+    "ast_hash": "e97e090cdfd374f8a28964bdd3bba282",
+    "semantic_hash": "e97e090cdfd374f8a28964bdd3bba282"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\navigation.tsx": {
+    "mtime": 1775464291.2578027,
+    "ast_hash": "016efc198f2fb82a3e22c94247802613",
+    "semantic_hash": "016efc198f2fb82a3e22c94247802613"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\api\\hooks.ts": {
+    "mtime": 1775464291.2448068,
+    "ast_hash": "3f66f67eb7b8aaa041ce24003ea2f800",
+    "semantic_hash": "3f66f67eb7b8aaa041ce24003ea2f800"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\api\\index.ts": {
+    "mtime": 1775464291.245804,
+    "ast_hash": "d89b210c20bcb8c4bd1ad6c55a231c0f",
+    "semantic_hash": "d89b210c20bcb8c4bd1ad6c55a231c0f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\api\\walletApi.ts": {
+    "mtime": 1775464291.245804,
+    "ast_hash": "e041f6f921ff946abad1f16b987f474e",
+    "semantic_hash": "e041f6f921ff946abad1f16b987f474e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\ClaimBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2467997,
+    "ast_hash": "938eddaaee58655ded0bf80087280248",
+    "semantic_hash": "938eddaaee58655ded0bf80087280248"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\HistoryCard\\index.tsx": {
+    "mtime": 1775464291.2467997,
+    "ast_hash": "5e0d4968123f9d833769659d9173bbb7",
+    "semantic_hash": "5e0d4968123f9d833769659d9173bbb7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\NFTFilterBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2478087,
+    "ast_hash": "660d521d5d0fe18179700d0ec37ee2b6",
+    "semantic_hash": "660d521d5d0fe18179700d0ec37ee2b6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\NFTSortBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2478087,
+    "ast_hash": "dfbd440548a13e4aa39628f6c885fdfc",
+    "semantic_hash": "dfbd440548a13e4aa39628f6c885fdfc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\NftTransferBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2488039,
+    "ast_hash": "3eeb1160b42375824007e2f0bad4c6c5",
+    "semantic_hash": "3eeb1160b42375824007e2f0bad4c6c5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\NftTransferUserBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2498024,
+    "ast_hash": "a75d63d39a09c0eea1b8442b8943ab59",
+    "semantic_hash": "a75d63d39a09c0eea1b8442b8943ab59"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\ReceiveBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2498024,
+    "ast_hash": "540e50f15e38c163c7d9e2d5ee038909",
+    "semantic_hash": "540e50f15e38c163c7d9e2d5ee038909"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\RewardCard\\index.tsx": {
+    "mtime": 1775464291.2508068,
+    "ast_hash": "752610ee677ac077027ba26389646213",
+    "semantic_hash": "752610ee677ac077027ba26389646213"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\SelectFriendBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2508068,
+    "ast_hash": "7c616f04483bf5d3e17f6cb9745a57b4",
+    "semantic_hash": "7c616f04483bf5d3e17f6cb9745a57b4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\SendBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2518058,
+    "ast_hash": "366c6c516ab1cd93ab571d4cef862d40",
+    "semantic_hash": "366c6c516ab1cd93ab571d4cef862d40"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\SendFriendBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2518058,
+    "ast_hash": "e92b0948e336df3f3163113dbf4e49e0",
+    "semantic_hash": "e92b0948e336df3f3163113dbf4e49e0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\SuccessBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2528062,
+    "ast_hash": "421ef0cd4f9e58aeb49dcc7095bd1922",
+    "semantic_hash": "421ef0cd4f9e58aeb49dcc7095bd1922"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\SwapBottomSheet\\index.tsx": {
+    "mtime": 1775464291.253802,
+    "ast_hash": "5f650e6916fb47667d9d988adff1864f",
+    "semantic_hash": "5f650e6916fb47667d9d988adff1864f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\TransactionFilterBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2548044,
+    "ast_hash": "dd8029d98fce58e6f66ed4bf37118b8b",
+    "semantic_hash": "dd8029d98fce58e6f66ed4bf37118b8b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\TransactionPeriodBottomSheet\\index.tsx": {
+    "mtime": 1775464291.2568045,
+    "ast_hash": "e69c7764933129929f311b79caca662e",
+    "semantic_hash": "e69c7764933129929f311b79caca662e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\components\\WalletCardInfo\\index.tsx": {
+    "mtime": 1775464291.2568045,
+    "ast_hash": "a23c7fde60d355d829083a5d129a8785",
+    "semantic_hash": "a23c7fde60d355d829083a5d129a8785"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\screens\\NftAssetDetailScreen.tsx": {
+    "mtime": 1775464291.2578027,
+    "ast_hash": "e957db53a4b882f86da6ec0ee4602b35",
+    "semantic_hash": "e957db53a4b882f86da6ec0ee4602b35"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\screens\\NftAssetsScreen.tsx": {
+    "mtime": 1775464291.2588031,
+    "ast_hash": "367c4219dd91a559e231bb3eff4638b9",
+    "semantic_hash": "367c4219dd91a559e231bb3eff4638b9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\screens\\NftTransferScreen.tsx": {
+    "mtime": 1775464291.2588031,
+    "ast_hash": "c1563010e20f5d8c53406af4e295c2ef",
+    "semantic_hash": "c1563010e20f5d8c53406af4e295c2ef"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\screens\\SwapScreen.tsx": {
+    "mtime": 1775464291.259802,
+    "ast_hash": "1191c48678adb565e2e1a6efff8fe16d",
+    "semantic_hash": "1191c48678adb565e2e1a6efff8fe16d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\screens\\WalletConnection.tsx": {
+    "mtime": 1775464291.259802,
+    "ast_hash": "7816497e54b4bcf64bdd137dcedfa2b5",
+    "semantic_hash": "7816497e54b4bcf64bdd137dcedfa2b5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\screens\\WalletScreen.tsx": {
+    "mtime": 1775464291.260813,
+    "ast_hash": "37097a1d18c072f3cb905ff413222f45",
+    "semantic_hash": "37097a1d18c072f3cb905ff413222f45"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\wallet\\store\\nft-transfer-flow-store.ts": {
+    "mtime": 1775464291.261804,
+    "ast_hash": "b345d2ac0db918486565d1eba3110435",
+    "semantic_hash": "b345d2ac0db918486565d1eba3110435"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useApi.ts": {
+    "mtime": 1775464291.261804,
+    "ast_hash": "b64f03ad8ab8bd9f22fb43f0391e5816",
+    "semantic_hash": "b64f03ad8ab8bd9f22fb43f0391e5816"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useAuthStatus.ts": {
+    "mtime": 1775464291.2628026,
+    "ast_hash": "670043897aadb91f5797450d9f2d7ec9",
+    "semantic_hash": "670043897aadb91f5797450d9f2d7ec9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useColorMode.ts": {
+    "mtime": 1775464291.2628026,
+    "ast_hash": "21749f3947d33e010815b7ea178fc91d",
+    "semantic_hash": "21749f3947d33e010815b7ea178fc91d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useDeviceLocale.ts": {
+    "mtime": 1775464291.2628026,
+    "ast_hash": "2c834490b94fb85ecedadb934ab6e52b",
+    "semantic_hash": "2c834490b94fb85ecedadb934ab6e52b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useDrawerGestureEnabled.ts": {
+    "mtime": 1775464291.263803,
+    "ast_hash": "fddb3697d5795776b888049cf9226914",
+    "semantic_hash": "fddb3697d5795776b888049cf9226914"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useFullScreenImage.ts": {
+    "mtime": 1775464291.263803,
+    "ast_hash": "cbfdde73e776181d053c438eaeea139b",
+    "semantic_hash": "cbfdde73e776181d053c438eaeea139b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useGlobalBottomSheet.ts": {
+    "mtime": 1775464291.263803,
+    "ast_hash": "5bee21d19da891b4e460feea93288c9a",
+    "semantic_hash": "5bee21d19da891b4e460feea93288c9a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useKeyboard.ts": {
+    "mtime": 1775464291.263803,
+    "ast_hash": "5398103e21e3a41883bf8c0bfa1f6f6a",
+    "semantic_hash": "5398103e21e3a41883bf8c0bfa1f6f6a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useKeyboardAwareBottomSheet.ts": {
+    "mtime": 1775464291.263803,
+    "ast_hash": "4a6b52b1faad8690fa251831aeac80f8",
+    "semantic_hash": "4a6b52b1faad8690fa251831aeac80f8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useNotification.ts": {
+    "mtime": 1768583127.218035,
+    "ast_hash": "ca200eb42c43ae7d80f19246d00d4e51",
+    "semantic_hash": "ca200eb42c43ae7d80f19246d00d4e51"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\usePostTranslation.ts": {
+    "mtime": 1775464291.2648013,
+    "ast_hash": "2499af04d4c9e7e07afa81f7df284508",
+    "semantic_hash": "2499af04d4c9e7e07afa81f7df284508"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useTransactionStatus.ts": {
+    "mtime": 1775464291.2648013,
+    "ast_hash": "3d5aee845c3856ab506f70ee8d3dfd96",
+    "semantic_hash": "3d5aee845c3856ab506f70ee8d3dfd96"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\hooks\\useTranslation.ts": {
+    "mtime": 1775464291.2648013,
+    "ast_hash": "3eafae921b3f4b92e409f9d57676ecf8",
+    "semantic_hash": "3eafae921b3f4b92e409f9d57676ecf8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\i18n\\index.ts": {
+    "mtime": 1775464291.2658012,
+    "ast_hash": "65ca3c067f1ff29aa19331defdb2e774",
+    "semantic_hash": "65ca3c067f1ff29aa19331defdb2e774"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\i18n\\languages.ts": {
+    "mtime": 1775464291.2658012,
+    "ast_hash": "56b70a304efcf6ba1b817f1276b42267",
+    "semantic_hash": "56b70a304efcf6ba1b817f1276b42267"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\i18n\\types.ts": {
+    "mtime": 1775464291.2658012,
+    "ast_hash": "cb2929e6c62d76113bda34e01dd6a4fc",
+    "semantic_hash": "cb2929e6c62d76113bda34e01dd6a4fc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\auth.json": {
+    "mtime": 1775464291.2668016,
+    "ast_hash": "7944ae8bd909ed4c448d46bb0935d919",
+    "semantic_hash": "7944ae8bd909ed4c448d46bb0935d919"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\catalog.json": {
+    "mtime": 1775464291.2668016,
+    "ast_hash": "28ccbb439199ba526255d15f002abaf6",
+    "semantic_hash": "28ccbb439199ba526255d15f002abaf6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\common.json": {
+    "mtime": 1780401193.2429652,
+    "ast_hash": "8b5d392a6549ad03292a838eb60100a2",
+    "semantic_hash": "8b5d392a6549ad03292a838eb60100a2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\events.json": {
+    "mtime": 1775464291.2678154,
+    "ast_hash": "ddf75dfd4b5199e247cc33e3f74ac0a4",
+    "semantic_hash": "ddf75dfd4b5199e247cc33e3f74ac0a4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\explore.json": {
+    "mtime": 1780401363.7147565,
+    "ast_hash": "bd9af76d97182b4ce49eb41e56dcaaaf",
+    "semantic_hash": "bd9af76d97182b4ce49eb41e56dcaaaf"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\feed.json": {
+    "mtime": 1780401979.2524574,
+    "ast_hash": "f2f5fbb078ea58e47147eeb9021d9728",
+    "semantic_hash": "f2f5fbb078ea58e47147eeb9021d9728"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\inbox.json": {
+    "mtime": 1775464291.2698028,
+    "ast_hash": "8a08f27d8094662e2cb65a187a8cbaf7",
+    "semantic_hash": "8a08f27d8094662e2cb65a187a8cbaf7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\marketplace.json": {
+    "mtime": 1775464291.2698028,
+    "ast_hash": "4091afc2b5834069c3db2e65c0100d3b",
+    "semantic_hash": "4091afc2b5834069c3db2e65c0100d3b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\notifications.json": {
+    "mtime": 1775464291.2698028,
+    "ast_hash": "7d4bf88d84cd530ff17a4b69a122b88d",
+    "semantic_hash": "7d4bf88d84cd530ff17a4b69a122b88d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\post.json": {
+    "mtime": 1775464291.2708015,
+    "ast_hash": "521d2ee1ba86669d90963998178da65d",
+    "semantic_hash": "521d2ee1ba86669d90963998178da65d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\profile.json": {
+    "mtime": 1775464291.2708015,
+    "ast_hash": "c941ce8a2198893a310160ef80de9fda",
+    "semantic_hash": "c941ce8a2198893a310160ef80de9fda"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\settings.json": {
+    "mtime": 1775464291.271808,
+    "ast_hash": "6043d2c97695380dd1ae1c1d58dcc178",
+    "semantic_hash": "6043d2c97695380dd1ae1c1d58dcc178"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\en\\wallet.json": {
+    "mtime": 1775464291.271808,
+    "ast_hash": "59b16a513e999a22a1aba29c51d655a1",
+    "semantic_hash": "59b16a513e999a22a1aba29c51d655a1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\auth.json": {
+    "mtime": 1775464291.271808,
+    "ast_hash": "cb36eb18da3cc8dfcf6e3893c601f48c",
+    "semantic_hash": "cb36eb18da3cc8dfcf6e3893c601f48c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\catalog.json": {
+    "mtime": 1775464291.2728064,
+    "ast_hash": "67ec60ffce7332d44baf18560b8cf29c",
+    "semantic_hash": "67ec60ffce7332d44baf18560b8cf29c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\common.json": {
+    "mtime": 1780401188.1629355,
+    "ast_hash": "89970edbd39c4c50a2ba8242bcbdd2b5",
+    "semantic_hash": "89970edbd39c4c50a2ba8242bcbdd2b5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\events.json": {
+    "mtime": 1775464291.2728064,
+    "ast_hash": "1769c7f8fe5e2cbbca12ef5011301b9a",
+    "semantic_hash": "1769c7f8fe5e2cbbca12ef5011301b9a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\explore.json": {
+    "mtime": 1780401354.5855966,
+    "ast_hash": "ba1477259a3e0303f29455633c9d44d4",
+    "semantic_hash": "ba1477259a3e0303f29455633c9d44d4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\feed.json": {
+    "mtime": 1780401966.7269843,
+    "ast_hash": "961e0064dd53393b5f8368fc58122bce",
+    "semantic_hash": "961e0064dd53393b5f8368fc58122bce"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\inbox.json": {
+    "mtime": 1775464291.2748048,
+    "ast_hash": "90e07dee95431b969e99a03e200e6d6b",
+    "semantic_hash": "90e07dee95431b969e99a03e200e6d6b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\marketplace.json": {
+    "mtime": 1775464291.2758012,
+    "ast_hash": "e4509e8ca5b68b1dbf593adf9060780e",
+    "semantic_hash": "e4509e8ca5b68b1dbf593adf9060780e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\notifications.json": {
+    "mtime": 1775464291.2758012,
+    "ast_hash": "a87d042327c6ca80bd7484fdd9893aa7",
+    "semantic_hash": "a87d042327c6ca80bd7484fdd9893aa7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\post.json": {
+    "mtime": 1775464291.2768035,
+    "ast_hash": "ff7390c4d591fae5dac392f0c5f1bc45",
+    "semantic_hash": "ff7390c4d591fae5dac392f0c5f1bc45"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\profile.json": {
+    "mtime": 1775464291.2768035,
+    "ast_hash": "2b640316f3d04fc85488013f15ad1109",
+    "semantic_hash": "2b640316f3d04fc85488013f15ad1109"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\settings.json": {
+    "mtime": 1775464291.2768035,
+    "ast_hash": "3fcddb3af4d35cbb3c6ed6fb0ef516af",
+    "semantic_hash": "3fcddb3af4d35cbb3c6ed6fb0ef516af"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\locales\\tr\\wallet.json": {
+    "mtime": 1775464291.2778032,
+    "ast_hash": "ed0236d7da85d7d0df8a2086c80cbafa",
+    "semantic_hash": "ed0236d7da85d7d0df8a2086c80cbafa"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\auth\\categorys\\index.ts": {
+    "mtime": 1775464291.2778032,
+    "ast_hash": "ec771436f2f27366aefc45aa4f864050",
+    "semantic_hash": "ec771436f2f27366aefc45aa4f864050"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\bridge\\index.ts": {
+    "mtime": 1775464291.278802,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\bridge\\brandProducts\\index.ts": {
+    "mtime": 1775464291.278802,
+    "ast_hash": "8708c06c18a7e03425dd8bafc18731a5",
+    "semantic_hash": "8708c06c18a7e03425dd8bafc18731a5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\bridge\\bridgeCards\\index.ts": {
+    "mtime": 1775464291.278802,
+    "ast_hash": "c2cfa96bb4e536f12eead658322fa93c",
+    "semantic_hash": "c2cfa96bb4e536f12eead658322fa93c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandCatalog\\index.ts": {
+    "mtime": 1775464291.2798002,
+    "ast_hash": "1eb7d1c97cddd8ee14f75de18aea4d9a",
+    "semantic_hash": "1eb7d1c97cddd8ee14f75de18aea4d9a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandCatalog\\types.ts": {
+    "mtime": 1775464291.2798002,
+    "ast_hash": "8d155429bb4e9721820e2b6b12d75fd7",
+    "semantic_hash": "8d155429bb4e9721820e2b6b12d75fd7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProduct\\index.ts": {
+    "mtime": 1775464291.2808006,
+    "ast_hash": "67cdc69565f88955e255ca605f457250",
+    "semantic_hash": "67cdc69565f88955e255ca605f457250"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProduct\\types.ts": {
+    "mtime": 1775464291.2808006,
+    "ast_hash": "914f7bb3ae11e1a8a4b527b8b3e3c572",
+    "semantic_hash": "914f7bb3ae11e1a8a4b527b8b3e3c572"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\benchmark.ts": {
+    "mtime": 1775464291.2808006,
+    "ast_hash": "e77d2cb0d96f7e0053e5f8088d931b9a",
+    "semantic_hash": "e77d2cb0d96f7e0053e5f8088d931b9a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\benchmarkTypes.ts": {
+    "mtime": 1775464291.2818024,
+    "ast_hash": "662adf985e282d95d7f0a616295e9744",
+    "semantic_hash": "662adf985e282d95d7f0a616295e9744"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\experiencePosts.ts": {
+    "mtime": 1775464291.2818024,
+    "ast_hash": "0ad01b011224aca07c620f44092d9907",
+    "semantic_hash": "0ad01b011224aca07c620f44092d9907"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\index.ts": {
+    "mtime": 1775464291.2828102,
+    "ast_hash": "dc5cc05bb25ba227af7514512730ac3b",
+    "semantic_hash": "dc5cc05bb25ba227af7514512730ac3b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\news.ts": {
+    "mtime": 1775464291.2828102,
+    "ast_hash": "e7eede9e61fddc0268eb67344464be3d",
+    "semantic_hash": "e7eede9e61fddc0268eb67344464be3d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\newsDetail.ts": {
+    "mtime": 1775464291.2828102,
+    "ast_hash": "bee2177d88fb7f1eb81bc88ebc292b36",
+    "semantic_hash": "bee2177d88fb7f1eb81bc88ebc292b36"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\newsDetailTypes.ts": {
+    "mtime": 1775464291.2838,
+    "ast_hash": "be6c113fc98631bc7a2f7695f5cde1f5",
+    "semantic_hash": "be6c113fc98631bc7a2f7695f5cde1f5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\newsTypes.ts": {
+    "mtime": 1775464291.2838,
+    "ast_hash": "9c2a335b1425aa5f969d8ec8d99a93f3",
+    "semantic_hash": "9c2a335b1425aa5f969d8ec8d99a93f3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\posts.ts": {
+    "mtime": 1775464291.2838,
+    "ast_hash": "f7fa328cc4c1abda8ce7909bc6978454",
+    "semantic_hash": "f7fa328cc4c1abda8ce7909bc6978454"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandProductDetail\\types.ts": {
+    "mtime": 1775464291.2838,
+    "ast_hash": "5c658da1a4eed829afafa03fd38a0334",
+    "semantic_hash": "5c658da1a4eed829afafa03fd38a0334"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandSurveys\\index.ts": {
+    "mtime": 1775464291.2848003,
+    "ast_hash": "1f6553f6c2230d4368ade68e6ae98eba",
+    "semantic_hash": "1f6553f6c2230d4368ade68e6ae98eba"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\brandSurveys\\types.ts": {
+    "mtime": 1775464291.285798,
+    "ast_hash": "3c3f6bea31d311680608fc5c070d1cc0",
+    "semantic_hash": "3c3f6bea31d311680608fc5c070d1cc0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\productCatalog\\index.ts": {
+    "mtime": 1775464291.285798,
+    "ast_hash": "56db80849b315a3d36460f3890a07840",
+    "semantic_hash": "56db80849b315a3d36460f3890a07840"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\catalog\\productCatalog\\types.ts": {
+    "mtime": 1775464291.285798,
+    "ast_hash": "86f31d2c70380bc36925537e14320fd6",
+    "semantic_hash": "86f31d2c70380bc36925537e14320fd6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\common\\index.tsx": {
+    "mtime": 1775464291.2868001,
+    "ast_hash": "eec63fac49beaf0b84bf13b551c045bd",
+    "semantic_hash": "eec63fac49beaf0b84bf13b551c045bd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\common\\reviewCardImage\\index.ts": {
+    "mtime": 1775464291.2868001,
+    "ast_hash": "c372dd5616c9bde55ec7fea87147147d",
+    "semantic_hash": "c372dd5616c9bde55ec7fea87147147d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\common\\UserProfile\\index.ts": {
+    "mtime": 1775464291.2868001,
+    "ast_hash": "2a2ff11294415779746ed580eb432338",
+    "semantic_hash": "2a2ff11294415779746ed580eb432338"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\common\\UserProfile\\types.ts": {
+    "mtime": 1775464291.2868001,
+    "ast_hash": "a122a32f5b6674d3db2c663179f201fb",
+    "semantic_hash": "a122a32f5b6674d3db2c663179f201fb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\events\\communityEvents\\index.ts": {
+    "mtime": 1775464291.2877984,
+    "ast_hash": "c25eaa2932f413d1cfb16a7cdf75debe",
+    "semantic_hash": "c25eaa2932f413d1cfb16a7cdf75debe"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\events\\communityEvents\\types.ts": {
+    "mtime": 1775464291.2877984,
+    "ast_hash": "9d547d03e592a92009363ff0758862a6",
+    "semantic_hash": "9d547d03e592a92009363ff0758862a6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\feed\\index.ts": {
+    "mtime": 1775464291.2888007,
+    "ast_hash": "63aeb449593a973dd460767ce8efa1cc",
+    "semantic_hash": "63aeb449593a973dd460767ce8efa1cc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\feed\\types.ts": {
+    "mtime": 1775464291.2888007,
+    "ast_hash": "faf0eec782be498a82d27f49ab862801",
+    "semantic_hash": "faf0eec782be498a82d27f49ab862801"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\inbox\\messages\\index.ts": {
+    "mtime": 1775464291.2898152,
+    "ast_hash": "de683a1aee9923093088ea06b18d0a10",
+    "semantic_hash": "de683a1aee9923093088ea06b18d0a10"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\inbox\\messages\\types.ts": {
+    "mtime": 1775464291.2898152,
+    "ast_hash": "768088b6cc4f5c6e002f07a626392065",
+    "semantic_hash": "768088b6cc4f5c6e002f07a626392065"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\inbox\\SupportRequests\\index.ts": {
+    "mtime": 1775464291.2888007,
+    "ast_hash": "fc1a3fe54330eaa5f4691b890b864872",
+    "semantic_hash": "fc1a3fe54330eaa5f4691b890b864872"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\inbox\\SupportRequests\\types.ts": {
+    "mtime": 1775464291.2898152,
+    "ast_hash": "00673d579907df36a55e90c76ce85f31",
+    "semantic_hash": "00673d579907df36a55e90c76ce85f31"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\inventory\\index.ts": {
+    "mtime": 1775464291.2908037,
+    "ast_hash": "0e11872876ea65c44d0f004ab3a75e04",
+    "semantic_hash": "0e11872876ea65c44d0f004ab3a75e04"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\inventory\\types.ts": {
+    "mtime": 1775464291.2908037,
+    "ast_hash": "00f540d76e52d9ebad20ff708b7ffb0b",
+    "semantic_hash": "00f540d76e52d9ebad20ff708b7ffb0b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\marketplace\\NFTList\\index.ts": {
+    "mtime": 1775464291.2908037,
+    "ast_hash": "0e29ddaa24cdb91bcebfcb35143f309b",
+    "semantic_hash": "0e29ddaa24cdb91bcebfcb35143f309b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\marketplace\\NFTList\\types.ts": {
+    "mtime": 1775464291.2917986,
+    "ast_hash": "a7bec387ad45f1ad2ba8b5bb86c47e2e",
+    "semantic_hash": "a7bec387ad45f1ad2ba8b5bb86c47e2e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\marketplace\\SellList\\index.ts": {
+    "mtime": 1775464291.2917986,
+    "ast_hash": "bf6534921acb5f70c0eefecdad3d90a5",
+    "semantic_hash": "bf6534921acb5f70c0eefecdad3d90a5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\marketplace\\SellList\\types.ts": {
+    "mtime": 1775464291.2917986,
+    "ast_hash": "70e379fdeb3ecb2bda211dccdb2c50da",
+    "semantic_hash": "70e379fdeb3ecb2bda211dccdb2c50da"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\notifications\\index.ts": {
+    "mtime": 1775464291.2917986,
+    "ast_hash": "abf47e605ad41dcf713e0c7cb9cd3a0a",
+    "semantic_hash": "abf47e605ad41dcf713e0c7cb9cd3a0a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\notifications\\types.ts": {
+    "mtime": 1775464291.2928,
+    "ast_hash": "89a384d5ada4449ea6d7928dc62d157d",
+    "semantic_hash": "89a384d5ada4449ea6d7928dc62d157d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\index.tsx": {
+    "mtime": 1775464291.2947996,
+    "ast_hash": "d1bdb487148887c6047205c0532469f4",
+    "semantic_hash": "d1bdb487148887c6047205c0532469f4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\badges\\index.ts": {
+    "mtime": 1775464291.2928,
+    "ast_hash": "f41f394407417ae5c224200924f21e79",
+    "semantic_hash": "f41f394407417ae5c224200924f21e79"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\badges\\types.ts": {
+    "mtime": 1775464291.2928,
+    "ast_hash": "1111f0b3d2239ed8ae59f797e1a9f15c",
+    "semantic_hash": "1111f0b3d2239ed8ae59f797e1a9f15c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\benchmark\\index.ts": {
+    "mtime": 1775464291.2937984,
+    "ast_hash": "14165c3fecb67d4b7aff2e67523f8ff1",
+    "semantic_hash": "14165c3fecb67d4b7aff2e67523f8ff1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\benchmark\\types.ts": {
+    "mtime": 1775464291.2937984,
+    "ast_hash": "5e19ddce21eb48bdd49f873688998538",
+    "semantic_hash": "5e19ddce21eb48bdd49f873688998538"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\collections\\index.ts": {
+    "mtime": 1775464291.2937984,
+    "ast_hash": "9ee8a15e67a1d35c57f85e296423ade8",
+    "semantic_hash": "9ee8a15e67a1d35c57f85e296423ade8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\collections\\types.ts": {
+    "mtime": 1775464291.2937984,
+    "ast_hash": "78834af2b1386951c2b75effef28d8d5",
+    "semantic_hash": "78834af2b1386951c2b75effef28d8d5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\feed\\index.ts": {
+    "mtime": 1775464291.2937984,
+    "ast_hash": "50fdb92936c61b9da7daf7ddf7aa91dd",
+    "semantic_hash": "50fdb92936c61b9da7daf7ddf7aa91dd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\feed\\types.ts": {
+    "mtime": 1775464291.2947996,
+    "ast_hash": "4de93f5b1812b1db022b8fa0fe199bfd",
+    "semantic_hash": "4de93f5b1812b1db022b8fa0fe199bfd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\ladders\\index.ts": {
+    "mtime": 1775464291.2947996,
+    "ast_hash": "91722283c20ea8e6038acce7499f7b42",
+    "semantic_hash": "91722283c20ea8e6038acce7499f7b42"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\ladders\\types.ts": {
+    "mtime": 1775464291.2947996,
+    "ast_hash": "80b55acce5ab8381c80db24e7a2e5ff7",
+    "semantic_hash": "80b55acce5ab8381c80db24e7a2e5ff7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\laddersDetail\\index.ts": {
+    "mtime": 1775464291.2957985,
+    "ast_hash": "bbe9d5ad16df959ee1ca35f7372d3084",
+    "semantic_hash": "bbe9d5ad16df959ee1ca35f7372d3084"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\laddersDetail\\types.ts": {
+    "mtime": 1775464291.296804,
+    "ast_hash": "8e238db31db6ec7aeb014d6bb0d6ef5c",
+    "semantic_hash": "8e238db31db6ec7aeb014d6bb0d6ef5c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\posts\\index.ts": {
+    "mtime": 1775464291.2978008,
+    "ast_hash": "0ab499feeaf8d904ed2ebe0dc01b17d0",
+    "semantic_hash": "0ab499feeaf8d904ed2ebe0dc01b17d0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\posts\\types.ts": {
+    "mtime": 1775464291.2978008,
+    "ast_hash": "afa218e7dfc8eab23e8de33f0b267295",
+    "semantic_hash": "afa218e7dfc8eab23e8de33f0b267295"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\questions\\index.ts": {
+    "mtime": 1775464291.2978008,
+    "ast_hash": "ab18e42755c216f4dcddeda8503d318e",
+    "semantic_hash": "ab18e42755c216f4dcddeda8503d318e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\questions\\types.ts": {
+    "mtime": 1775464291.2988021,
+    "ast_hash": "f865c6f8d5ac8e4b752e36e2bb2fecbc",
+    "semantic_hash": "f865c6f8d5ac8e4b752e36e2bb2fecbc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\tipsAndTricks\\index.ts": {
+    "mtime": 1775464291.2988021,
+    "ast_hash": "d9626c8f9300d522a4f658a67c9292db",
+    "semantic_hash": "d9626c8f9300d522a4f658a67c9292db"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\tipsAndTricks\\types.ts": {
+    "mtime": 1775464291.2988021,
+    "ast_hash": "af6867c177a0d4a1ef0329669e09896c",
+    "semantic_hash": "af6867c177a0d4a1ef0329669e09896c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\trustTrusterList\\index.tsx": {
+    "mtime": 1775464291.2998013,
+    "ast_hash": "8089b2a2987083e822d132263553f50c",
+    "semantic_hash": "8089b2a2987083e822d132263553f50c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\trustTrusterList\\trusterUsers.ts": {
+    "mtime": 1775464291.2998013,
+    "ast_hash": "66e21be324cf9caf38c5377928ce9c35",
+    "semantic_hash": "66e21be324cf9caf38c5377928ce9c35"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\trustTrusterList\\trustUsers.ts": {
+    "mtime": 1775464291.2998013,
+    "ast_hash": "53f74b5b3443788c0adac5a6674c1caa",
+    "semantic_hash": "53f74b5b3443788c0adac5a6674c1caa"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\trustTrusterList\\types.ts": {
+    "mtime": 1775464291.2998013,
+    "ast_hash": "fd8769bad6072a67611eb6d00130d7a3",
+    "semantic_hash": "fd8769bad6072a67611eb6d00130d7a3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\userCardData\\index.ts": {
+    "mtime": 1775464291.3008013,
+    "ast_hash": "8807cdee997b4b05b3ffa6da204344d6",
+    "semantic_hash": "8807cdee997b4b05b3ffa6da204344d6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\userCardData\\index.tsx": {
+    "mtime": 1775464291.3008013,
+    "ast_hash": "55a7819fe49ea2cff49002dde874f672",
+    "semantic_hash": "55a7819fe49ea2cff49002dde874f672"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\userCardData\\types.ts": {
+    "mtime": 1775464291.3008013,
+    "ast_hash": "c7c26497a5a52a472ac96892cec85459",
+    "semantic_hash": "c7c26497a5a52a472ac96892cec85459"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\wishlist\\index.tsx": {
+    "mtime": 1775464291.3008013,
+    "ast_hash": "0e360cbe92218933c3fc11455ed54c5c",
+    "semantic_hash": "0e360cbe92218933c3fc11455ed54c5c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\profile\\wishlist\\wishlistDetail.ts": {
+    "mtime": 1775464291.3018014,
+    "ast_hash": "415bcb1d3826d2f4fe95cf039af2719d",
+    "semantic_hash": "415bcb1d3826d2f4fe95cf039af2719d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\mock\\wallet\\transactionData.ts": {
+    "mtime": 1775464291.3018014,
+    "ast_hash": "fd4da74ed286195edda7b1f0ef73f9ef",
+    "semantic_hash": "fd4da74ed286195edda7b1f0ef73f9ef"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\DrawerNavigator.tsx": {
+    "mtime": 1775464291.3018014,
+    "ast_hash": "d9c2479f5ba7407132c929fd4abe2a1d",
+    "semantic_hash": "d9c2479f5ba7407132c929fd4abe2a1d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\index.tsx": {
+    "mtime": 1775464291.3038015,
+    "ast_hash": "d0d27cde9b40a527d52d9f517a33acd1",
+    "semantic_hash": "d0d27cde9b40a527d52d9f517a33acd1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\linking.config.ts": {
+    "mtime": 1775464291.3048003,
+    "ast_hash": "7a2e88e12a884c39f0d9e716d7434a74",
+    "semantic_hash": "7a2e88e12a884c39f0d9e716d7434a74"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\navigation.types.ts": {
+    "mtime": 1775464291.3048003,
+    "ast_hash": "43c9754f074b23cc7fbb8b66c735f7ca",
+    "semantic_hash": "43c9754f074b23cc7fbb8b66c735f7ca"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\stack.tsx": {
+    "mtime": 1775464291.3058002,
+    "ast_hash": "e2934c787c1d7165d43b335347ffc342",
+    "semantic_hash": "e2934c787c1d7165d43b335347ffc342"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\TabNavigator.tsx": {
+    "mtime": 1780401465.5670133,
+    "ast_hash": "e31a3c3606a9ad9351820b576240db7d",
+    "semantic_hash": "e31a3c3606a9ad9351820b576240db7d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\constants\\rootRoutes.ts": {
+    "mtime": 1775464291.302804,
+    "ast_hash": "55dd7688be8d5b5330a5d8c70c63749d",
+    "semantic_hash": "55dd7688be8d5b5330a5d8c70c63749d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\constants\\tabRoutes.ts": {
+    "mtime": 1775464291.302804,
+    "ast_hash": "94518b4e81dea9ac1b46bfbd0300c1a5",
+    "semantic_hash": "94518b4e81dea9ac1b46bfbd0300c1a5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\rules\\freezeRules.ts": {
+    "mtime": 1775464291.3048003,
+    "ast_hash": "b6d85fa733e17b7328348e523244f20e",
+    "semantic_hash": "b6d85fa733e17b7328348e523244f20e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\stacks\\RootNavigator.tsx": {
+    "mtime": 1775464291.3058002,
+    "ast_hash": "d06b803ec74df2e08184a005c915e5f2",
+    "semantic_hash": "d06b803ec74df2e08184a005c915e5f2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\types\\drawer.types.ts": {
+    "mtime": 1775464291.3058002,
+    "ast_hash": "78ebed8d45c75ce2e74247350201c7a6",
+    "semantic_hash": "78ebed8d45c75ce2e74247350201c7a6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\types\\main.types.ts": {
+    "mtime": 1775464291.3058002,
+    "ast_hash": "dfaf4880f09ca716112f6d07705982df",
+    "semantic_hash": "dfaf4880f09ca716112f6d07705982df"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\types\\root.types.ts": {
+    "mtime": 1775464291.306801,
+    "ast_hash": "96b1e8dfc0c093812ef75ba95d3c373e",
+    "semantic_hash": "96b1e8dfc0c093812ef75ba95d3c373e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\navigation\\types\\tab.types.ts": {
+    "mtime": 1780401472.039662,
+    "ast_hash": "1f52d2081700b00f4f0c3bba27575056",
+    "semantic_hash": "1f52d2081700b00f4f0c3bba27575056"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\AppStateProvider.tsx": {
+    "mtime": 1775464291.306801,
+    "ast_hash": "2c5a85602bd3c775cc1742981e26b123",
+    "semantic_hash": "2c5a85602bd3c775cc1742981e26b123"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\AuthProvider.tsx": {
+    "mtime": 1775464291.306801,
+    "ast_hash": "163b69b730c80c3afbde2b5ce099395b",
+    "semantic_hash": "163b69b730c80c3afbde2b5ce099395b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\ComposedProviders.tsx": {
+    "mtime": 1775464291.3078005,
+    "ast_hash": "82255c4638cbd7be2be646b0b65e5881",
+    "semantic_hash": "82255c4638cbd7be2be646b0b65e5881"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\GlobalBottomSheetProvider.tsx": {
+    "mtime": 1775464291.3078005,
+    "ast_hash": "32739375eaee62764d81149e79deb2c3",
+    "semantic_hash": "32739375eaee62764d81149e79deb2c3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\KeyboardProvider.tsx": {
+    "mtime": 1775464291.3078005,
+    "ast_hash": "649cd2997522c29c0c233adbaa168383",
+    "semantic_hash": "649cd2997522c29c0c233adbaa168383"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\LocalizationProvider.tsx": {
+    "mtime": 1775464291.3078005,
+    "ast_hash": "2181d340f687765005dd50f570856a65",
+    "semantic_hash": "2181d340f687765005dd50f570856a65"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\NavigationProvider.tsx": {
+    "mtime": 1775464291.3087997,
+    "ast_hash": "38bfcb06ecca9c5f26fe27b7c03bedac",
+    "semantic_hash": "38bfcb06ecca9c5f26fe27b7c03bedac"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\NotificationProvider.tsx": {
+    "mtime": 1775464291.3098001,
+    "ast_hash": "cc2f27de6ec8f78b1557eb67e99ab31d",
+    "semantic_hash": "cc2f27de6ec8f78b1557eb67e99ab31d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\QueryProvider.tsx": {
+    "mtime": 1775464291.3098001,
+    "ast_hash": "afdecdadc9d3a8c0e92dff5d2f418a2e",
+    "semantic_hash": "afdecdadc9d3a8c0e92dff5d2f418a2e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\ScrollProvider.tsx": {
+    "mtime": 1775464291.3108,
+    "ast_hash": "4f8d7c59fdc4fca032b5413f3387dda4",
+    "semantic_hash": "4f8d7c59fdc4fca032b5413f3387dda4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\providers\\SocketProvider.tsx": {
+    "mtime": 1775464291.3117986,
+    "ast_hash": "ccc1bbe5b64857f068a7df2c6f4423f5",
+    "semantic_hash": "ccc1bbe5b64857f068a7df2c6f4423f5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\screens\\ProductSelectScreen.tsx": {
+    "mtime": 1775464291.3128,
+    "ast_hash": "e67eb75a2fe8b8ac95841ab74c85d7ea",
+    "semantic_hash": "e67eb75a2fe8b8ac95841ab74c85d7ea"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ApiService\\index.ts": {
+    "mtime": 1775464291.3138,
+    "ast_hash": "059ca87a60f96fc8bf012ce4b1b270bd",
+    "semantic_hash": "059ca87a60f96fc8bf012ce4b1b270bd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ApiService\\interceptors.ts": {
+    "mtime": 1775464291.3138,
+    "ast_hash": "9b9f434a0bc7a41f65d4c0b7edf5bef6",
+    "semantic_hash": "9b9f434a0bc7a41f65d4c0b7edf5bef6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ApiService\\types.ts": {
+    "mtime": 1775464291.3147998,
+    "ast_hash": "5f0f901587b57a3bbe8593ad71807cb8",
+    "semantic_hash": "5f0f901587b57a3bbe8593ad71807cb8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ApiService\\hooks\\useApiInterceptors.ts": {
+    "mtime": 1768583127.2361479,
+    "ast_hash": "2604461cb958672ee509fadf6470a849",
+    "semantic_hash": "2604461cb958672ee509fadf6470a849"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\Auth0Service\\index.ts": {
+    "mtime": 1768583127.2371476,
+    "ast_hash": "f8fcf0fb644c6edce35c53e8d23db126",
+    "semantic_hash": "f8fcf0fb644c6edce35c53e8d23db126"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\Auth0Service\\types.ts": {
+    "mtime": 1768583127.2371476,
+    "ast_hash": "f82dca74e007192cccdd4acc5eb69fd9",
+    "semantic_hash": "f82dca74e007192cccdd4acc5eb69fd9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\Auth0Service\\hooks\\useAuth0Service.ts": {
+    "mtime": 1768583127.2371476,
+    "ast_hash": "379613e91fa6e7efc035f1cd8cd6b686",
+    "semantic_hash": "379613e91fa6e7efc035f1cd8cd6b686"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\DeepLinkService\\index.ts": {
+    "mtime": 1775464291.3158019,
+    "ast_hash": "70c0428bfc078f8d2722ca8938d0bbe3",
+    "semantic_hash": "70c0428bfc078f8d2722ca8938d0bbe3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\DeepLinkService\\types.ts": {
+    "mtime": 1775464291.3158019,
+    "ast_hash": "2229e5bc099bfa5194c0191033deef18",
+    "semantic_hash": "2229e5bc099bfa5194c0191033deef18"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\EventService\\index.ts": {
+    "mtime": 1775464291.3168035,
+    "ast_hash": "f77a21be458d4e70eea8812d6fcd1f47",
+    "semantic_hash": "f77a21be458d4e70eea8812d6fcd1f47"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoImagePickerService\\index.ts": {
+    "mtime": 1775464291.3178017,
+    "ast_hash": "0d53a435d6317a0ac784fb3eece69036",
+    "semantic_hash": "0d53a435d6317a0ac784fb3eece69036"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoImagePickerService\\types.ts": {
+    "mtime": 1775464291.3178017,
+    "ast_hash": "8e7ced9f85b30583034030059d0f6c97",
+    "semantic_hash": "8e7ced9f85b30583034030059d0f6c97"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoImagePickerService\\hooks\\useImagePicker.ts": {
+    "mtime": 1768583127.238148,
+    "ast_hash": "a25c4e254e9d3dfa52317ec69cde63f2",
+    "semantic_hash": "a25c4e254e9d3dfa52317ec69cde63f2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\index.ts": {
+    "mtime": 1775464291.3218012,
+    "ast_hash": "55756d7b2f72ed592cac6ed1735f5323",
+    "semantic_hash": "55756d7b2f72ed592cac6ed1735f5323"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\types.ts": {
+    "mtime": 1775464291.3228016,
+    "ast_hash": "fe0ea22f53b477c837b5f395f32e3a72",
+    "semantic_hash": "fe0ea22f53b477c837b5f395f32e3a72"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\config\\default-categories.ts": {
+    "mtime": 1775464291.319801,
+    "ast_hash": "80e6d82199df678b721b637cc8d05779",
+    "semantic_hash": "80e6d82199df678b721b637cc8d05779"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\config\\default-channels.ts": {
+    "mtime": 1775464291.319801,
+    "ast_hash": "0d9869437788368942349e68ffbbadce",
+    "semantic_hash": "0d9869437788368942349e68ffbbadce"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\core\\index.ts": {
+    "mtime": 1775464291.319801,
+    "ast_hash": "736c91f72e2f9ba1a7c2c698dc650cd2",
+    "semantic_hash": "736c91f72e2f9ba1a7c2c698dc650cd2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\core\\notification-handlers.ts": {
+    "mtime": 1775464291.320802,
+    "ast_hash": "c876518e59d0e845b86b3cd58aeea783",
+    "semantic_hash": "c876518e59d0e845b86b3cd58aeea783"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\core\\notification-manager.ts": {
+    "mtime": 1775464291.320802,
+    "ast_hash": "77798d9a566123b6b82f092add337987",
+    "semantic_hash": "77798d9a566123b6b82f092add337987"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\core\\notification-service.ts": {
+    "mtime": 1775464291.320802,
+    "ast_hash": "d8191baa7f49bfa6b72612041db8eb62",
+    "semantic_hash": "d8191baa7f49bfa6b72612041db8eb62"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\hooks\\index.ts": {
+    "mtime": 1775464291.320802,
+    "ast_hash": "77b630867c181fba08560185d9d6772b",
+    "semantic_hash": "77b630867c181fba08560185d9d6772b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\hooks\\useNotificationHandlers.ts": {
+    "mtime": 1775464291.3218012,
+    "ast_hash": "685e66ebadd4f7e1d3b04c7c3a6efd92",
+    "semantic_hash": "685e66ebadd4f7e1d3b04c7c3a6efd92"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\hooks\\useNotificationSetup.ts": {
+    "mtime": 1775464291.3218012,
+    "ast_hash": "5e82cba8506cf566afba2e1c9d0ee574",
+    "semantic_hash": "5e82cba8506cf566afba2e1c9d0ee574"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\utils\\background-task.ts": {
+    "mtime": 1775464291.3228016,
+    "ast_hash": "457596d3043398702f99e7a9d6eaaf74",
+    "semantic_hash": "457596d3043398702f99e7a9d6eaaf74"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\utils\\index.ts": {
+    "mtime": 1775464291.3228016,
+    "ast_hash": "cc1483606de957d01aaa22cb0bab2e0a",
+    "semantic_hash": "cc1483606de957d01aaa22cb0bab2e0a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\utils\\navigation.ts": {
+    "mtime": 1775464291.3238015,
+    "ast_hash": "30381f3673be6cce908ea106a5e393ed",
+    "semantic_hash": "30381f3673be6cce908ea106a5e393ed"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\utils\\scheduling.ts": {
+    "mtime": 1775464291.3238015,
+    "ast_hash": "026d1891e00d30a8f354133f02261cf3",
+    "semantic_hash": "026d1891e00d30a8f354133f02261cf3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\GoogleService\\index.ts": {
+    "mtime": 1775464291.3238015,
+    "ast_hash": "eddf15be954e6b2984b807c8431f3f8a",
+    "semantic_hash": "eddf15be954e6b2984b807c8431f3f8a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\GoogleService\\types.ts": {
+    "mtime": 1775464291.3238015,
+    "ast_hash": "1284f6abd3348d410b22d194b863b67f",
+    "semantic_hash": "1284f6abd3348d410b22d194b863b67f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ImageCacheService\\index.ts": {
+    "mtime": 1775464291.3248014,
+    "ast_hash": "d2f6f1942f7c1d3f86cde631d6697a00",
+    "semantic_hash": "d2f6f1942f7c1d3f86cde631d6697a00"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\LocalNotificationScheduler\\index.ts": {
+    "mtime": 1775464291.3248014,
+    "ast_hash": "11dd1fbe3b0b4d5523ab221db20b28d9",
+    "semantic_hash": "11dd1fbe3b0b4d5523ab221db20b28d9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\LocalNotificationScheduler\\types.ts": {
+    "mtime": 1775464291.3258152,
+    "ast_hash": "92d40b43c58148d62a15e44e8331bdf2",
+    "semantic_hash": "92d40b43c58148d62a15e44e8331bdf2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\LoginCredentialsService\\index.ts": {
+    "mtime": 1775464291.3258152,
+    "ast_hash": "e634ea2fcc047aac8356877953555124",
+    "semantic_hash": "e634ea2fcc047aac8356877953555124"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\MediaService\\index.ts": {
+    "mtime": 1775464291.3268018,
+    "ast_hash": "8bb36195bc71039c5fc941851c5f22ce",
+    "semantic_hash": "8bb36195bc71039c5fc941851c5f22ce"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\MediaService\\types.ts": {
+    "mtime": 1775464291.3278017,
+    "ast_hash": "dd95c8258d11cb470df9ea6a1032fff2",
+    "semantic_hash": "dd95c8258d11cb470df9ea6a1032fff2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\MessageQueueService\\index.ts": {
+    "mtime": 1775464291.3278017,
+    "ast_hash": "e52a44839ec5ead5e678dbb18cbc74dd",
+    "semantic_hash": "e52a44839ec5ead5e678dbb18cbc74dd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\MessageService\\index.ts": {
+    "mtime": 1775464291.3288004,
+    "ast_hash": "a66c0eeb788ec6f8845e6d7d4da9d5e2",
+    "semantic_hash": "a66c0eeb788ec6f8845e6d7d4da9d5e2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NavigationService\\index.ts": {
+    "mtime": 1775464291.3298016,
+    "ast_hash": "71c17f20a26500511e18d6b2e8597934",
+    "semantic_hash": "71c17f20a26500511e18d6b2e8597934"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NavigationService\\logger.ts": {
+    "mtime": 1775464291.3298016,
+    "ast_hash": "91d41964c91e85004009f011fef17bdb",
+    "semantic_hash": "91d41964c91e85004009f011fef17bdb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NavigationService\\routeMap.ts": {
+    "mtime": 1780401478.3441331,
+    "ast_hash": "036600b05023cecf738a2629c6e8a1d8",
+    "semantic_hash": "036600b05023cecf738a2629c6e8a1d8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NavigationService\\types.ts": {
+    "mtime": 1775464291.3318024,
+    "ast_hash": "890b391d5b3c8499fef1f0626acf6ef8",
+    "semantic_hash": "890b391d5b3c8499fef1f0626acf6ef8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationAnalytics\\index.ts": {
+    "mtime": 1775464291.332803,
+    "ast_hash": "6b0c5ab4e45df534481621e5dfb74f5c",
+    "semantic_hash": "6b0c5ab4e45df534481621e5dfb74f5c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationAnalytics\\types.ts": {
+    "mtime": 1775464291.3338032,
+    "ast_hash": "2ed4e357e46fb06ae8bbfeab4d5fc26d",
+    "semantic_hash": "2ed4e357e46fb06ae8bbfeab4d5fc26d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationAssetCache\\index.ts": {
+    "mtime": 1775464291.3338032,
+    "ast_hash": "7ca455cd3d3e24279c7e21f4a6970366",
+    "semantic_hash": "7ca455cd3d3e24279c7e21f4a6970366"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationEventService\\index.ts": {
+    "mtime": 1775464291.334801,
+    "ast_hash": "7882d3c85d78b3de090f8d3a297980c9",
+    "semantic_hash": "7882d3c85d78b3de090f8d3a297980c9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationEventService\\types.ts": {
+    "mtime": 1775464291.334801,
+    "ast_hash": "28ff9deda8852bc62bec1b1a582376b6",
+    "semantic_hash": "28ff9deda8852bc62bec1b1a582376b6"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationGroupingService\\index.ts": {
+    "mtime": 1775464291.3358004,
+    "ast_hash": "1af08f5726bfada882665acdd368864f",
+    "semantic_hash": "1af08f5726bfada882665acdd368864f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationGroupingService\\types.ts": {
+    "mtime": 1775464291.3358004,
+    "ast_hash": "c57edfdee575d1119c9ecf5100e9e53a",
+    "semantic_hash": "c57edfdee575d1119c9ecf5100e9e53a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationNavigationService\\navigationMap.ts": {
+    "mtime": 1775464291.3368025,
+    "ast_hash": "382cf56f998949b26ddfe2380d97063c",
+    "semantic_hash": "382cf56f998949b26ddfe2380d97063c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationService\\index.ts": {
+    "mtime": 1775464291.3368025,
+    "ast_hash": "277b9222999423026232886ec568cba3",
+    "semantic_hash": "277b9222999423026232886ec568cba3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationStateSync\\index.ts": {
+    "mtime": 1775464291.3378024,
+    "ast_hash": "25198d6c917722834754b14466cd0ad8",
+    "semantic_hash": "25198d6c917722834754b14466cd0ad8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\NotificationStateSync\\types.ts": {
+    "mtime": 1775464291.3378024,
+    "ast_hash": "bb4361bd61e52251897dd8894d9dd4f7",
+    "semantic_hash": "bb4361bd61e52251897dd8894d9dd4f7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\OTAService\\index.ts": {
+    "mtime": 1768583127.2456532,
+    "ast_hash": "03adda2a3ac7088c38ab9192c39d19ab",
+    "semantic_hash": "03adda2a3ac7088c38ab9192c39d19ab"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\OTAService\\types.ts": {
+    "mtime": 1768583127.2456532,
+    "ast_hash": "2de433cb3e5079fdc7650c87d467d354",
+    "semantic_hash": "2de433cb3e5079fdc7650c87d467d354"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ScrollRegistry\\index.ts": {
+    "mtime": 1775464291.3378024,
+    "ast_hash": "312d3958495793a7c40f11645ab40d11",
+    "semantic_hash": "312d3958495793a7c40f11645ab40d11"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\SocketService\\index.ts": {
+    "mtime": 1775464291.3388007,
+    "ast_hash": "47eeca89d738254806dc2b4f1c541356",
+    "semantic_hash": "47eeca89d738254806dc2b4f1c541356"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\SocketService\\types.ts": {
+    "mtime": 1775464291.3388007,
+    "ast_hash": "8a3d4dc97fde079ad9761ab37d021bd0",
+    "semantic_hash": "8a3d4dc97fde079ad9761ab37d021bd0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\TokenService\\index.ts": {
+    "mtime": 1775464291.3388007,
+    "ast_hash": "40444f4d8bc65e36c58db837ec00ef2f",
+    "semantic_hash": "40444f4d8bc65e36c58db837ec00ef2f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\TokenService\\types.ts": {
+    "mtime": 1775464291.3388007,
+    "ast_hash": "b287c8da35fa41269f77b640b1fe4784",
+    "semantic_hash": "b287c8da35fa41269f77b640b1fe4784"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\TranslationCacheService\\index.ts": {
+    "mtime": 1775464291.3398032,
+    "ast_hash": "2b4f0d5ad3ba7fd1e4b937738422229f",
+    "semantic_hash": "2b4f0d5ad3ba7fd1e4b937738422229f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\TranslationService\\index.ts": {
+    "mtime": 1775464291.3398032,
+    "ast_hash": "b101b3d1972a43d1adf1a71ae461bdc2",
+    "semantic_hash": "b101b3d1972a43d1adf1a71ae461bdc2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\TranslationService\\types.ts": {
+    "mtime": 1775464291.340799,
+    "ast_hash": "6ffb6abda72f8b7ec485c595a9627440",
+    "semantic_hash": "6ffb6abda72f8b7ec485c595a9627440"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\WalletService\\index.ts": {
+    "mtime": 1775464291.340799,
+    "ast_hash": "7f2a952cbc39366b6b6973dc43ede9a8",
+    "semantic_hash": "7f2a952cbc39366b6b6973dc43ede9a8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\store\\appStore.ts": {
+    "mtime": 1775464291.340799,
+    "ast_hash": "d6330363c0d925bc2c12f6fb704fd82e",
+    "semantic_hash": "d6330363c0d925bc2c12f6fb704fd82e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\store\\drawerStore.ts": {
+    "mtime": 1775464291.3417997,
+    "ast_hash": "4df1799777b67d68764cf8416a3c0827",
+    "semantic_hash": "4df1799777b67d68764cf8416a3c0827"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\store\\index.ts": {
+    "mtime": 1775464291.3417997,
+    "ast_hash": "2f0a25fc6c1f0de81da6c824e1992850",
+    "semantic_hash": "2f0a25fc6c1f0de81da6c824e1992850"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\store\\navigationUIStore.ts": {
+    "mtime": 1775464291.3428001,
+    "ast_hash": "15c3a907a1c7dba12e3603b7c7c403d2",
+    "semantic_hash": "15c3a907a1c7dba12e3603b7c7c403d2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\store\\notificationStore.ts": {
+    "mtime": 1775464291.3428001,
+    "ast_hash": "9a2d07c4451a64b201eb992dac1d5770",
+    "semantic_hash": "9a2d07c4451a64b201eb992dac1d5770"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\api.ts": {
+    "mtime": 1768583127.249257,
+    "ast_hash": "1be8fffba59a3a5a473fada3b828038a",
+    "semantic_hash": "1be8fffba59a3a5a473fada3b828038a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\auth.ts": {
+    "mtime": 1768583127.249257,
+    "ast_hash": "92156e290c8332c6d980ddc750c210ac",
+    "semantic_hash": "92156e290c8332c6d980ddc750c210ac"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\BenchmarkCard.ts": {
+    "mtime": 1775464291.343801,
+    "ast_hash": "1ae545b4ea40b7cb0a68ef5e007f2e89",
+    "semantic_hash": "1ae545b4ea40b7cb0a68ef5e007f2e89"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\breadcrumb.ts": {
+    "mtime": 1775464291.3487997,
+    "ast_hash": "01b3fe2a5ac94314445ac6cb755932ad",
+    "semantic_hash": "01b3fe2a5ac94314445ac6cb755932ad"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\common.ts": {
+    "mtime": 1775464291.3497982,
+    "ast_hash": "69df9c0f81a01c6532cfa71ef982c82c",
+    "semantic_hash": "69df9c0f81a01c6532cfa71ef982c82c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\EventCard.ts": {
+    "mtime": 1775464291.3448038,
+    "ast_hash": "54758c9db3b5d0408b99931b0db442c1",
+    "semantic_hash": "54758c9db3b5d0408b99931b0db442c1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\ExperienceCard.ts": {
+    "mtime": 1775464291.3458004,
+    "ast_hash": "ef1e04ac870ae84e153bbd5ab7d374a3",
+    "semantic_hash": "ef1e04ac870ae84e153bbd5ab7d374a3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\gluestack-ui.d.ts": {
+    "mtime": 1775464291.350801,
+    "ast_hash": "5f7d93f369cb5d21c25692ffce8f5969",
+    "semantic_hash": "5f7d93f369cb5d21c25692ffce8f5969"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\index.ts": {
+    "mtime": 1775464291.3517995,
+    "ast_hash": "db8cd23665a40408d25dc86e07533b34",
+    "semantic_hash": "db8cd23665a40408d25dc86e07533b34"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\navigation.ts": {
+    "mtime": 1768583127.250256,
+    "ast_hash": "e34397b3aa846d97935a12f7b6abbd6b",
+    "semantic_hash": "e34397b3aa846d97935a12f7b6abbd6b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\notification.ts": {
+    "mtime": 1775464291.3517995,
+    "ast_hash": "c0715339177e71d716d355dda5de7b07",
+    "semantic_hash": "c0715339177e71d716d355dda5de7b07"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\PostCard.ts": {
+    "mtime": 1775464291.3468006,
+    "ast_hash": "5aba0792c4835762b5660d96544fdd3b",
+    "semantic_hash": "5aba0792c4835762b5660d96544fdd3b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\QuestionCard.ts": {
+    "mtime": 1775464291.3468006,
+    "ast_hash": "6b2e9e2123d3f03959fd3c342eaea41b",
+    "semantic_hash": "6b2e9e2123d3f03959fd3c342eaea41b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\TipsAndTricksCard.ts": {
+    "mtime": 1775464291.3477988,
+    "ast_hash": "7065d86f18381673fb49166b7b8e31cc",
+    "semantic_hash": "7065d86f18381673fb49166b7b8e31cc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\translation.ts": {
+    "mtime": 1775464291.352804,
+    "ast_hash": "f8bca6dea9771ce37158ff8256249189",
+    "semantic_hash": "f8bca6dea9771ce37158ff8256249189"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\types\\UpdateCard.ts": {
+    "mtime": 1775464291.3487997,
+    "ast_hash": "f39a1c33faf48b70a2333fd5ab2fce9d",
+    "semantic_hash": "f39a1c33faf48b70a2333fd5ab2fce9d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\utils\\featherToHeroicons.ts": {
+    "mtime": 1775464291.3538024,
+    "ast_hash": "664a4ade1c0c278ae56e1819b8f2cf0d",
+    "semantic_hash": "664a4ade1c0c278ae56e1819b8f2cf0d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\utils\\iconMapper.ts": {
+    "mtime": 1775464291.3538024,
+    "ast_hash": "30250791638fe8da2c5e0185544d6c01",
+    "semantic_hash": "30250791638fe8da2c5e0185544d6c01"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\utils\\index.tsx": {
+    "mtime": 1775464291.3548257,
+    "ast_hash": "f3122ddb34f3087626672056f12d7bb4",
+    "semantic_hash": "f3122ddb34f3087626672056f12d7bb4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\utils\\notificationGrouping.ts": {
+    "mtime": 1775464291.3568044,
+    "ast_hash": "a3553993542a3870ce5644f4b2a0f958",
+    "semantic_hash": "a3553993542a3870ce5644f4b2a0f958"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\utils\\transaction-errors.ts": {
+    "mtime": 1775464291.3568044,
+    "ast_hash": "2b14ffa4dd1225eea26b5346d59f4c5d",
+    "semantic_hash": "2b14ffa4dd1225eea26b5346d59f4c5d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\utils\\navigation\\backStackOptimization.ts": {
+    "mtime": 1775464291.355803,
+    "ast_hash": "f1db92fe0ad06a2087e4576135526b30",
+    "semantic_hash": "f1db92fe0ad06a2087e4576135526b30"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\utils\\navigation\\sharedScreenNavigation.ts": {
+    "mtime": 1775464291.355803,
+    "ast_hash": "d759e3d4e42a1fe49ded8c676ed34287",
+    "semantic_hash": "d759e3d4e42a1fe49ded8c676ed34287"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\ADVANCED_NOTIFICATION_ARCHITECTURE.md": {
+    "mtime": 1775464290.887954,
+    "ast_hash": "e5409afbf96deba5657c5560bdd8f180",
+    "semantic_hash": "e5409afbf96deba5657c5560bdd8f180"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\ANIMATION_PERFORMANCE_OPTIMIZATION.md": {
+    "mtime": 1775464290.887954,
+    "ast_hash": "2fdcf142e6e5be7c162517dc115e7821",
+    "semantic_hash": "2fdcf142e6e5be7c162517dc115e7821"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\API_ENDPOINT_ANALYSIS.md": {
+    "mtime": 1775464290.887954,
+    "ast_hash": "e54d687fe941db07e682c9804ad0e5cd",
+    "semantic_hash": "e54d687fe941db07e682c9804ad0e5cd"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\ARCHITECTURE_COMPARISON.md": {
+    "mtime": 1775464290.8889525,
+    "ast_hash": "b730428da61cc551f11fa99cb68a0147",
+    "semantic_hash": "b730428da61cc551f11fa99cb68a0147"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\ARCHITECTURE_FIXES_IMPLEMENTATION.md": {
+    "mtime": 1775464290.8889525,
+    "ast_hash": "247f76efcf1da8d55d1345f2e1e29f8a",
+    "semantic_hash": "247f76efcf1da8d55d1345f2e1e29f8a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\AUTH_SETTINGS_ONBOARD_DURUM.md": {
+    "mtime": 1775464290.8889525,
+    "ast_hash": "f68e16c42445bf33bcb4b5f4f47d077a",
+    "semantic_hash": "f68e16c42445bf33bcb4b5f4f47d077a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\backend-mapping-after-recent-changes.md": {
+    "mtime": 1775464290.9209704,
+    "ast_hash": "c1ffe57336a81a80c8baace0fe32e505",
+    "semantic_hash": "c1ffe57336a81a80c8baace0fe32e505"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\backend-pagination-issues-analysis.md": {
+    "mtime": 1775464290.9219525,
+    "ast_hash": "370d57e6f8429c6af412681302875690",
+    "semantic_hash": "370d57e6f8429c6af412681302875690"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\BACKEND_GEREKSINIMLERI_DM_THREAD.md": {
+    "mtime": 1775464290.8899536,
+    "ast_hash": "ec175ecd7461222b664a5a1be5d2fee8",
+    "semantic_hash": "ec175ecd7461222b664a5a1be5d2fee8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\BACKEND_MESSAGING_IMPLEMENTATION.md": {
+    "mtime": 1775464290.8899536,
+    "ast_hash": "6d474b39d8b563fb41843fd4a1af11c5",
+    "semantic_hash": "6d474b39d8b563fb41843fd4a1af11c5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\BACKEND_REQUEST_TYPES.md": {
+    "mtime": 1775464290.890953,
+    "ast_hash": "a10e35618bcf2d4bfc8a241008b06f05",
+    "semantic_hash": "a10e35618bcf2d4bfc8a241008b06f05"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\BACKEND_REVIZYONLARI_GUNCELLEMELER.md": {
+    "mtime": 1775464290.890953,
+    "ast_hash": "6d9e8adbd998f33f3c8ecc94392a8c46",
+    "semantic_hash": "6d9e8adbd998f33f3c8ecc94392a8c46"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\backend_search-endpoints.md": {
+    "mtime": 1775464290.9229546,
+    "ast_hash": "6ae1bca251e34e58156d0326e419e357",
+    "semantic_hash": "6ae1bca251e34e58156d0326e419e357"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\bottom-sheet-global-management-proposal.md": {
+    "mtime": 1775464290.9229546,
+    "ast_hash": "74c71cd02e24754371a83b3812ac961b",
+    "semantic_hash": "74c71cd02e24754371a83b3812ac961b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\bottom-sheet-migration-list.md": {
+    "mtime": 1775464290.9229546,
+    "ast_hash": "6ea7738b653c3751a51774b9c26f222d",
+    "semantic_hash": "6ea7738b653c3751a51774b9c26f222d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\BRAND_CATALOG_CATEGORY_API.md": {
+    "mtime": 1775464290.890953,
+    "ast_hash": "9c9d90ce55618b9d7dbf72ac699e1bd7",
+    "semantic_hash": "9c9d90ce55618b9d7dbf72ac699e1bd7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\CACHE_INVALIDATION_STRATEGY.md": {
+    "mtime": 1775464290.8919542,
+    "ast_hash": "32b20c8c3870312e85113a41c047359e",
+    "semantic_hash": "32b20c8c3870312e85113a41c047359e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\CACHING_STRATEGY.md": {
+    "mtime": 1775464290.8919542,
+    "ast_hash": "edd0bf54f77eb2191ed4167da781c469",
+    "semantic_hash": "edd0bf54f77eb2191ed4167da781c469"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\CATALOG_CONTEXT_QUICK_START.md": {
+    "mtime": 1775464290.8919542,
+    "ast_hash": "206109cca3c2ff32cf48c2043d5a7f5c",
+    "semantic_hash": "206109cca3c2ff32cf48c2043d5a7f5c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\CATEGORY_NAVIGATION_FLOW.md": {
+    "mtime": 1775464290.8929536,
+    "ast_hash": "02be40018ab327b44d96af7742248a6e",
+    "semantic_hash": "02be40018ab327b44d96af7742248a6e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\CENTRAL_NOTIFICATION_ROUTING_ENGINE.md": {
+    "mtime": 1775464290.8929536,
+    "ast_hash": "f253a60de7a77dd7df33823ab0a44a36",
+    "semantic_hash": "f253a60de7a77dd7df33823ab0a44a36"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\collections-api-spec.md": {
+    "mtime": 1775464290.9239538,
+    "ast_hash": "0e493fb3dca0fa01a3fe77335d498d64",
+    "semantic_hash": "0e493fb3dca0fa01a3fe77335d498d64"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\COLLECTIONS_API_ENDPOINTS.md": {
+    "mtime": 1775464290.893954,
+    "ast_hash": "d70ac9c25092abc1eb96cfe9dad63e88",
+    "semantic_hash": "d70ac9c25092abc1eb96cfe9dad63e88"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\COMMIT_ANALYSIS_REPORT.md": {
+    "mtime": 1775464290.893954,
+    "ast_hash": "3c30891d9f5f750042a34719ff49ae10",
+    "semantic_hash": "3c30891d9f5f750042a34719ff49ae10"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\COMPLETE_API_DOCUMENTATION.md": {
+    "mtime": 1775464290.894955,
+    "ast_hash": "42beec674887825a566ce4849ba7b362",
+    "semantic_hash": "42beec674887825a566ce4849ba7b362"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\CONTEXT_MENU_ARCHITECTURE.md": {
+    "mtime": 1775464290.894955,
+    "ast_hash": "aa58a550835dae60c3ba18221ac51606",
+    "semantic_hash": "aa58a550835dae60c3ba18221ac51606"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\CustomDropdown.md": {
+    "mtime": 1775464290.8959525,
+    "ast_hash": "58133a98ab24d25baa796f9333378cfc",
+    "semantic_hash": "58133a98ab24d25baa796f9333378cfc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\DESIGN_SYSTEM_REFACTORING_PLAN.md": {
+    "mtime": 1775464290.897969,
+    "ast_hash": "961c764d858237138dd791c5ee31dba0",
+    "semantic_hash": "961c764d858237138dd791c5ee31dba0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\DETACHED_BOTTOM_SHEET_IMPLEMENTATION.md": {
+    "mtime": 1775464290.8989537,
+    "ast_hash": "50d263faffd0c77629d884165c7e9bd4",
+    "semantic_hash": "50d263faffd0c77629d884165c7e9bd4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\DM_THREAD.md": {
+    "mtime": 1775464290.8989537,
+    "ast_hash": "c16796975e6f85af281f055f6ce8c3ca",
+    "semantic_hash": "c16796975e6f85af281f055f6ce8c3ca"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\DM_THREAD_UYUMLULUK_ANALIZI.md": {
+    "mtime": 1775464290.8989537,
+    "ast_hash": "2c4fbb87592a9bda59de03ffbc5cb7ff",
+    "semantic_hash": "2c4fbb87592a9bda59de03ffbc5cb7ff"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\EKSIK_ENDPOINTLER_EKRAN_BAZLI.md": {
+    "mtime": 1775464290.899954,
+    "ast_hash": "07826c3138563c7a1771764e854b2c78",
+    "semantic_hash": "07826c3138563c7a1771764e854b2c78"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\ENDPOINT_DURUM_RAPORU.md": {
+    "mtime": 1775464290.899954,
+    "ast_hash": "0b9e3efb7338a4f9dd75ba47fdef58e0",
+    "semantic_hash": "0b9e3efb7338a4f9dd75ba47fdef58e0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\EXPERIENCE_SNIPPET_RENAME.md": {
+    "mtime": 1775464290.899954,
+    "ast_hash": "3d6c8558c6841e25a38f83c17b62228b",
+    "semantic_hash": "3d6c8558c6841e25a38f83c17b62228b"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\EXPO_GO_PUSH_NOTIFICATIONS.md": {
+    "mtime": 1775464290.9009552,
+    "ast_hash": "9034b1d7767d64c09f6c9e759266d4e4",
+    "semantic_hash": "9034b1d7767d64c09f6c9e759266d4e4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FEED_FILTERS_STATUS.md": {
+    "mtime": 1775464290.9009552,
+    "ast_hash": "68cf1143f0ef3e5bc8a184173f769f5f",
+    "semantic_hash": "68cf1143f0ef3e5bc8a184173f769f5f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FIGMA_ICONS_MIGRATION.md": {
+    "mtime": 1775464290.9009552,
+    "ast_hash": "f69a4efe5ce92942b38c858e774808d0",
+    "semantic_hash": "f69a4efe5ce92942b38c858e774808d0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FilterBottomSheet.md": {
+    "mtime": 1775464290.9039803,
+    "ast_hash": "f0ffd2149838397f10b67563bff84270",
+    "semantic_hash": "f0ffd2149838397f10b67563bff84270"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FIREBASE_AUTH_SETUP.md": {
+    "mtime": 1775464290.9009552,
+    "ast_hash": "04a090958b00a82306aed8fbf5999a74",
+    "semantic_hash": "04a090958b00a82306aed8fbf5999a74"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FIREBASE_SETUP_2026.md": {
+    "mtime": 1775464290.901955,
+    "ast_hash": "e44d0cfd2661fe06040c2d92ac287448",
+    "semantic_hash": "e44d0cfd2661fe06040c2d92ac287448"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\flatlist-best-practices.md": {
+    "mtime": 1775464290.9239538,
+    "ast_hash": "c69932ac7c3b9a7b9850cbdb2a6bf5f9",
+    "semantic_hash": "c69932ac7c3b9a7b9850cbdb2a6bf5f9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FOR_EACH_HATA_ANALIZI_VE_COZUM.md": {
+    "mtime": 1775464290.901955,
+    "ast_hash": "68312d7129885aa8c96f7a0d6b95b531",
+    "semantic_hash": "68312d7129885aa8c96f7a0d6b95b531"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FRONTEND_API_ENDPOINTS.md": {
+    "mtime": 1775464290.902955,
+    "ast_hash": "95e5818fa816405b95850e7d6a4ba631",
+    "semantic_hash": "95e5818fa816405b95850e7d6a4ba631"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FRONTEND_NOTIFICATION_INTEGRATION.md": {
+    "mtime": 1775464290.902955,
+    "ast_hash": "bd1760b0440b0b494cdd775e8a5e164f",
+    "semantic_hash": "bd1760b0440b0b494cdd775e8a5e164f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\FRONTEND_SOCKET_CONFIGURATION.md": {
+    "mtime": 1775464290.9039803,
+    "ast_hash": "6896feb39dda8ede797e9c96efc6ac21",
+    "semantic_hash": "6896feb39dda8ede797e9c96efc6ac21"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\global-bottom-sheet-implementation-strategy.md": {
+    "mtime": 1775464290.9239538,
+    "ast_hash": "7d6d0c4c79ff89cd392e05f8a91eaa9d",
+    "semantic_hash": "7d6d0c4c79ff89cd392e05f8a91eaa9d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\GLUESTACK_PROVIDER_FIX.md": {
+    "mtime": 1775464290.904954,
+    "ast_hash": "f5430393b77aefdda875e55b22816c96",
+    "semantic_hash": "f5430393b77aefdda875e55b22816c96"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\GOOGLE_AUTH_IOS_FIX.md": {
+    "mtime": 1775464290.904954,
+    "ast_hash": "03332ac0195f12ddcb999bf8ea600474",
+    "semantic_hash": "03332ac0195f12ddcb999bf8ea600474"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\GOOGLE_AUTH_QUICK_START.md": {
+    "mtime": 1775464290.904954,
+    "ast_hash": "101063628e91ee22e346ff73db43f21d",
+    "semantic_hash": "101063628e91ee22e346ff73db43f21d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\GOOGLE_AUTH_TOKEN_MANAGEMENT.md": {
+    "mtime": 1775464290.905954,
+    "ast_hash": "9df258b9ba3e5c7be5b0c9a570dc2d3e",
+    "semantic_hash": "9df258b9ba3e5c7be5b0c9a570dc2d3e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\HEADER_RENDER_DELAY_ANALYSIS.md": {
+    "mtime": 1775464290.905954,
+    "ast_hash": "4d46e50df97b9a4011e08f7698ad829d",
+    "semantic_hash": "4d46e50df97b9a4011e08f7698ad829d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\HEADER_RENDER_PERFORMANCE_ANALYSIS.md": {
+    "mtime": 1775464290.905954,
+    "ast_hash": "8ef6996bcafe946cdffa1279a236c0ab",
+    "semantic_hash": "8ef6996bcafe946cdffa1279a236c0ab"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\HERMES_CRASH_ANALYSIS.md": {
+    "mtime": 1775464290.906955,
+    "ast_hash": "952989d926863e5a5ff3b44e79867ed0",
+    "semantic_hash": "952989d926863e5a5ff3b44e79867ed0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\HERMES_CRASH_FIXES_APPLIED.md": {
+    "mtime": 1775464290.906955,
+    "ast_hash": "2ac69758bcdbf1c7d6ee3f9a22556e8c",
+    "semantic_hash": "2ac69758bcdbf1c7d6ee3f9a22556e8c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\HYBRID_NOTIFICATION_SOCKET_ARCHITECTURE.md": {
+    "mtime": 1775464290.906955,
+    "ast_hash": "b7e56ca59b906913e84bc74065152aa0",
+    "semantic_hash": "b7e56ca59b906913e84bc74065152aa0"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\IMAGE_CACHING_GUIDE.md": {
+    "mtime": 1775464290.906955,
+    "ast_hash": "36447c86d027a08449c279c9e130aad4",
+    "semantic_hash": "36447c86d027a08449c279c9e130aad4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\INBOX_ENDPOINTS.md": {
+    "mtime": 1775464290.9079552,
+    "ast_hash": "e1c86fa7ed2a3550bea5199d6ff6e935",
+    "semantic_hash": "e1c86fa7ed2a3550bea5199d6ff6e935"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\INTERACTIONS_API_DOCUMENTATION.md": {
+    "mtime": 1775464290.9079552,
+    "ast_hash": "e7657a46d5ac171b8187a2bc89484176",
+    "semantic_hash": "e7657a46d5ac171b8187a2bc89484176"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\IOS_BUILD_AND_TEST.md": {
+    "mtime": 1775464290.9089556,
+    "ast_hash": "c59f399450ace2998e79535df68a35c8",
+    "semantic_hash": "c59f399450ace2998e79535df68a35c8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\MOBILE_API_COMPATIBILITY.md": {
+    "mtime": 1775464290.9089556,
+    "ast_hash": "eb49ceb3f7f90c06c9cd834f34c70706",
+    "semantic_hash": "eb49ceb3f7f90c06c9cd834f34c70706"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\MOBIL_TARAFTA_BEKLENEN_AMABACKENDDEN_EKSIK_HATALI_ENDPOINTLER.md": {
+    "mtime": 1775464290.9089556,
+    "ast_hash": "21fd5c1a8e145083f5f2844e068f2e9a",
+    "semantic_hash": "21fd5c1a8e145083f5f2844e068f2e9a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\NAVIGATION_ARCHITECTURE_FLOW.md": {
+    "mtime": 1775464290.9089556,
+    "ast_hash": "07d8ad5c1eee1e3f42d2572a5d6db815",
+    "semantic_hash": "07d8ad5c1eee1e3f42d2572a5d6db815"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\NAVIGATION_ROOT_ARCHITECTURE.md": {
+    "mtime": 1775464290.9099524,
+    "ast_hash": "67578b8e5bf354b44fcf6e39efd098ad",
+    "semantic_hash": "67578b8e5bf354b44fcf6e39efd098ad"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\NotificationResponse.md": {
+    "mtime": 1775464290.911953,
+    "ast_hash": "5d326b56beee8f305a2f724bfeab126a",
+    "semantic_hash": "5d326b56beee8f305a2f724bfeab126a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\NOTIFICATION_NAVIGATION.md": {
+    "mtime": 1775464290.9099524,
+    "ast_hash": "8c0df82570b8d6c7ff91e03f967cdfe7",
+    "semantic_hash": "8c0df82570b8d6c7ff91e03f967cdfe7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\NOTIFICATION_RESPONSE_FORMATS.md": {
+    "mtime": 1775464290.9099524,
+    "ast_hash": "c9ca1b6dc179b4301b289a0e4fe4af4f",
+    "semantic_hash": "c9ca1b6dc179b4301b289a0e4fe4af4f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\NOTIFICATION_SOUNDS_SETUP.md": {
+    "mtime": 1775464290.910953,
+    "ast_hash": "732ac875afc059b17e69c20580df64dc",
+    "semantic_hash": "732ac875afc059b17e69c20580df64dc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\NOTIFICATION_SYSTEM_IMPLEMENTATION.md": {
+    "mtime": 1775464290.910953,
+    "ast_hash": "18be75bf6175e75cc4f627c5b3eb877a",
+    "semantic_hash": "18be75bf6175e75cc4f627c5b3eb877a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\NOTIFICATION_TESTING_GUIDE.md": {
+    "mtime": 1775464290.910953,
+    "ast_hash": "402729dc9fa6f79e49a8af815537f58d",
+    "semantic_hash": "402729dc9fa6f79e49a8af815537f58d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\PERFORMANCE_ANALYSIS_STATE_CLEANUP.md": {
+    "mtime": 1775464290.911953,
+    "ast_hash": "bcde0cc5b696f2f47f729886f99abe09",
+    "semantic_hash": "bcde0cc5b696f2f47f729886f99abe09"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\POST_API_SPECIFICATION.md": {
+    "mtime": 1775464290.9129536,
+    "ast_hash": "0c4b35d9a6f7758ff6b1a80d5567c01d",
+    "semantic_hash": "0c4b35d9a6f7758ff6b1a80d5567c01d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\POST_TYPE_FILTER_ANALYSIS.md": {
+    "mtime": 1775464290.9129536,
+    "ast_hash": "5455a70c80779bc03e58c3963f5bbe74",
+    "semantic_hash": "5455a70c80779bc03e58c3963f5bbe74"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\profile-tabs-backend-requirements.md": {
+    "mtime": 1775464290.9249556,
+    "ast_hash": "e519e1ccb38d429f3380d1cb19b93874",
+    "semantic_hash": "e519e1ccb38d429f3380d1cb19b93874"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\profile-tabs-render-optimization.md": {
+    "mtime": 1775464290.9249556,
+    "ast_hash": "693de3e1f1504756c80132603a1dcaa8",
+    "semantic_hash": "693de3e1f1504756c80132603a1dcaa8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\PROFILE_AUTO_SCROLL_FEED_GUIDE.md": {
+    "mtime": 1775464290.9129536,
+    "ast_hash": "409a69f226d202c6ef33ef01d5300bd1",
+    "semantic_hash": "409a69f226d202c6ef33ef01d5300bd1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\PROFILE_SCROLL_REFACTOR_PLAN.md": {
+    "mtime": 1775464290.913954,
+    "ast_hash": "8c43faae4a73119e0cbd80cabbd9b72c",
+    "semantic_hash": "8c43faae4a73119e0cbd80cabbd9b72c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\react-hook-form-integration-analysis.md": {
+    "mtime": 1775464290.925954,
+    "ast_hash": "557aadd34c6ce340f38e972b4ab02df4",
+    "semantic_hash": "557aadd34c6ce340f38e972b4ab02df4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\REACT_QUERY_CACHING_IMPLEMENTATION.md": {
+    "mtime": 1775464290.913954,
+    "ast_hash": "f09f1bc0c9933445c1d00b215a51c1b7",
+    "semantic_hash": "f09f1bc0c9933445c1d00b215a51c1b7"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\REACT_QUERY_RERENDER_ANALYSIS.md": {
+    "mtime": 1775464290.913954,
+    "ast_hash": "8f3f3a96ae88713dc17398ae0cdb3c37",
+    "semantic_hash": "8f3f3a96ae88713dc17398ae0cdb3c37"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\REWARD_CLAIM-GUIDLINE.md": {
+    "mtime": 1775464290.914954,
+    "ast_hash": "614c76d12e663b1ec8dcdcbf889a08a9",
+    "semantic_hash": "614c76d12e663b1ec8dcdcbf889a08a9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\RNCVIEWPAGER_FIX.md": {
+    "mtime": 1775464290.914954,
+    "ast_hash": "6c853823e16741cae83d02ef3b2f5bd5",
+    "semantic_hash": "6c853823e16741cae83d02ef3b2f5bd5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\ROOT_TO_CONTEXT_ACCESS_ANALYSIS.md": {
+    "mtime": 1775464290.914954,
+    "ast_hash": "ab612ed65d04997ffe57057fd2d03bbe",
+    "semantic_hash": "ab612ed65d04997ffe57057fd2d03bbe"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\screen-endpoint-map.md": {
+    "mtime": 1775464290.925954,
+    "ast_hash": "79d6b5b212df046863c36f69b499fb5a",
+    "semantic_hash": "79d6b5b212df046863c36f69b499fb5a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\SCROLL_SNAP_IMPLEMENTATION_SUMMARY.md": {
+    "mtime": 1775464290.9159546,
+    "ast_hash": "3c5972d57075e134425bc99f62ac610a",
+    "semantic_hash": "3c5972d57075e134425bc99f62ac610a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\SEARCH_BARS_AUDIT.md": {
+    "mtime": 1775464290.9159546,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\SETTINGS_API_STATUS.md": {
+    "mtime": 1775464290.9169545,
+    "ast_hash": "e724f6a854ad965bdd68be94e0707c5a",
+    "semantic_hash": "e724f6a854ad965bdd68be94e0707c5a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\smoothBottomSheet.md": {
+    "mtime": 1775464290.925954,
+    "ast_hash": "e7d2993d6efee4c2cc71a2b7987dfc12",
+    "semantic_hash": "e7d2993d6efee4c2cc71a2b7987dfc12"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\SOCKET_ANALYSIS_INBOX.md": {
+    "mtime": 1775464290.9169545,
+    "ast_hash": "0e3ee3c4c7e0f77e0d054425bcd1cf44",
+    "semantic_hash": "0e3ee3c4c7e0f77e0d054425bcd1cf44"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\SOCKET_SETUP_REQUIREMENTS.md": {
+    "mtime": 1775464290.9169545,
+    "ast_hash": "230ce9aec16a664f33fbadefcecc8b6a",
+    "semantic_hash": "230ce9aec16a664f33fbadefcecc8b6a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\TAB_SWIPING_IMPLEMENTATION.md": {
+    "mtime": 1775464290.9169545,
+    "ast_hash": "b1c1758d84f7f402b3e36c2be09f3179",
+    "semantic_hash": "b1c1758d84f7f402b3e36c2be09f3179"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\TOP_SHEET.md": {
+    "mtime": 1775464290.9179547,
+    "ast_hash": "d38a99f2d5c8cc4c58b829480a122277",
+    "semantic_hash": "d38a99f2d5c8cc4c58b829480a122277"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\TRANSLATION_IMPLEMENTATION_SUMMARY.md": {
+    "mtime": 1775464290.9179547,
+    "ast_hash": "4da13fb71b913c7c650b6b0018603cc1",
+    "semantic_hash": "4da13fb71b913c7c650b6b0018603cc1"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\users_endpoint.md": {
+    "mtime": 1775464290.926954,
+    "ast_hash": "21b4e90cc465f8be8505cb37944c079c",
+    "semantic_hash": "21b4e90cc465f8be8505cb37944c079c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\WALLET_IMPLEMENTATION_REPORT.md": {
+    "mtime": 1775464290.9189546,
+    "ast_hash": "e27ac8c441f98d9ca2db5b3761ffdbf8",
+    "semantic_hash": "e27ac8c441f98d9ca2db5b3761ffdbf8"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\WARNINGS_ANALYSIS_AND_FIXES.md": {
+    "mtime": 1775464290.9189546,
+    "ast_hash": "9db6894db7075a5a2791877835cbd178",
+    "semantic_hash": "9db6894db7075a5a2791877835cbd178"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\WHATSAPP_CONTEXT_MENU_IMPLEMENTATION.md": {
+    "mtime": 1775464290.9189546,
+    "ast_hash": "d8b0cb579fcbd297f6a9174d89b1c323",
+    "semantic_hash": "d8b0cb579fcbd297f6a9174d89b1c323"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\YENI_EKLENEN_ENDPOINTLER.md": {
+    "mtime": 1775464290.9199548,
+    "ast_hash": "0f696e5619da51b93156f94d7a4d5cd9",
+    "semantic_hash": "0f696e5619da51b93156f94d7a4d5cd9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\docs\\YENI_ENDPOINTLER_REQUEST_RESPONSE.md": {
+    "mtime": 1775464290.9199548,
+    "ast_hash": "506f01d1964544e69bb5371df29aeca9",
+    "semantic_hash": "506f01d1964544e69bb5371df29aeca9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\features\\notifications\\api\\OPTIMIZE_FORMAT.md": {
+    "mtime": 1775464291.1708016,
+    "ast_hash": "cae06c02828a2019e84f4a14becc0402",
+    "semantic_hash": "cae06c02828a2019e84f4a14becc0402"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\ARCHITECTURE.md": {
+    "mtime": 1775464291.3188128,
+    "ast_hash": "e23fe850e77358c2278f8b0ab273ca7f",
+    "semantic_hash": "e23fe850e77358c2278f8b0ab273ca7f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\services\\ExpoNotificationService\\README.md": {
+    "mtime": 1775464291.3188128,
+    "ast_hash": "06617af0b6ef3eb6c21e95d0e5106086",
+    "semantic_hash": "06617af0b6ef3eb6c21e95d0e5106086"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-1.png": {
+    "mtime": 1775464290.9379547,
+    "ast_hash": "2aaa3262a6ca18e6bb6c235232b283f4",
+    "semantic_hash": "2aaa3262a6ca18e6bb6c235232b283f4"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-10.png": {
+    "mtime": 1775464290.938955,
+    "ast_hash": "610403200d53d845226743d19ce4fa00",
+    "semantic_hash": "610403200d53d845226743d19ce4fa00"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-11.png": {
+    "mtime": 1775464290.938955,
+    "ast_hash": "39f0c3ba186fdca9e69ff3f827df3c20",
+    "semantic_hash": "39f0c3ba186fdca9e69ff3f827df3c20"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-12.png": {
+    "mtime": 1775464290.938955,
+    "ast_hash": "b3decbcad788bcfbfa66ff59aedbb595",
+    "semantic_hash": "b3decbcad788bcfbfa66ff59aedbb595"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-2.png": {
+    "mtime": 1775464290.938955,
+    "ast_hash": "f4f7563eb74c7ece63b075b5898fc05c",
+    "semantic_hash": "f4f7563eb74c7ece63b075b5898fc05c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-3.png": {
+    "mtime": 1775464290.939956,
+    "ast_hash": "acfc24a4a9963f48af2374da897d3051",
+    "semantic_hash": "acfc24a4a9963f48af2374da897d3051"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-4.png": {
+    "mtime": 1775464290.939956,
+    "ast_hash": "d9fa0deea6e6972171c41e53e49babba",
+    "semantic_hash": "d9fa0deea6e6972171c41e53e49babba"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-5.png": {
+    "mtime": 1775464290.9409559,
+    "ast_hash": "14313b5bd82e4a1cd65ef840db257c96",
+    "semantic_hash": "14313b5bd82e4a1cd65ef840db257c96"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-6.png": {
+    "mtime": 1775464290.9409559,
+    "ast_hash": "d5aa6d352b09d429373e624adad02ab5",
+    "semantic_hash": "d5aa6d352b09d429373e624adad02ab5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-7.png": {
+    "mtime": 1775464290.9409559,
+    "ast_hash": "269145df11c83d9ffda748f722136d83",
+    "semantic_hash": "269145df11c83d9ffda748f722136d83"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-8.png": {
+    "mtime": 1775464290.941956,
+    "ast_hash": "cc14b0e0804e0d4558cf24a0022ff5b5",
+    "semantic_hash": "cc14b0e0804e0d4558cf24a0022ff5b5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Avatars\\avatar-9.png": {
+    "mtime": 1775464290.941956,
+    "ast_hash": "b79ae77842b750e28610d088cff7d454",
+    "semantic_hash": "b79ae77842b750e28610d088cff7d454"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-11-Crimson-Roast.png": {
+    "mtime": 1775464290.943956,
+    "ast_hash": "4055a99fa7793ddedb93b849a703082e",
+    "semantic_hash": "4055a99fa7793ddedb93b849a703082e"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-12-Golden-Pick.png": {
+    "mtime": 1775464290.9449556,
+    "ast_hash": "70c4e0ddd7117e76b6a9cefef839c76c",
+    "semantic_hash": "70c4e0ddd7117e76b6a9cefef839c76c"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-13-Trendsetter.png": {
+    "mtime": 1775464290.9459548,
+    "ast_hash": "f647a4a062c8addf8982dabd3b2ca7a2",
+    "semantic_hash": "f647a4a062c8addf8982dabd3b2ca7a2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-14-Web3-Architect.png": {
+    "mtime": 1775464290.9469557,
+    "ast_hash": "2672aad949b819fc52dbb47201aa189d",
+    "semantic_hash": "2672aad949b819fc52dbb47201aa189d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-15-Deal-Maven.png": {
+    "mtime": 1775464290.947955,
+    "ast_hash": "4552d8be6a76355af63e3474e8dd76cb",
+    "semantic_hash": "4552d8be6a76355af63e3474e8dd76cb"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-16-Ladder-Vanguard.png": {
+    "mtime": 1775464290.9489546,
+    "ast_hash": "ebab9039f3fa87288170bc1bcc9102d2",
+    "semantic_hash": "ebab9039f3fa87288170bc1bcc9102d2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-17-Top-Picks.png": {
+    "mtime": 1775464290.9519546,
+    "ast_hash": "e33e043fac9557fa3063a4d6011b3ac2",
+    "semantic_hash": "e33e043fac9557fa3063a4d6011b3ac2"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-18-Product-Roast.png": {
+    "mtime": 1775464290.9529538,
+    "ast_hash": "1ce5c37ff120b91b96aa98400d0814cc",
+    "semantic_hash": "1ce5c37ff120b91b96aa98400d0814cc"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-19-Ladder-Ranker.png": {
+    "mtime": 1775464290.9549797,
+    "ast_hash": "a9d83169221ed763f59e3fe9c3f1038d",
+    "semantic_hash": "a9d83169221ed763f59e3fe9c3f1038d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-20-Genesis-Member.png": {
+    "mtime": 1775464290.9589527,
+    "ast_hash": "c02b19378f7754969f201a7cd4af83f3",
+    "semantic_hash": "c02b19378f7754969f201a7cd4af83f3"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-21-Outdoor-Explorer.png": {
+    "mtime": 1775464290.9599528,
+    "ast_hash": "d5142c1d08c05c0d5821ca805df50044",
+    "semantic_hash": "d5142c1d08c05c0d5821ca805df50044"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Badges\\badge-22-Critical-Review.png": {
+    "mtime": 1775464290.9629533,
+    "ast_hash": "70ff4f15af9269645700b4cdbef31b7a",
+    "semantic_hash": "70ff4f15af9269645700b4cdbef31b7a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Drawer Premium Selling Banner\\getpremium.png": {
+    "mtime": 1775464290.9639633,
+    "ast_hash": "781b76ebdca9c2e7d3b36891f2908829",
+    "semantic_hash": "781b76ebdca9c2e7d3b36891f2908829"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Explore Banners\\explore1-essentials.jpg": {
+    "mtime": 1775464291.0109546,
+    "ast_hash": "01923dade6014d0d6582a1652306f903",
+    "semantic_hash": "01923dade6014d0d6582a1652306f903"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Explore Banners\\explore2-belgradwalk.jpg": {
+    "mtime": 1775464291.0119562,
+    "ast_hash": "b15f8c1a9841b8e6f5cf3e5bfb5fab37",
+    "semantic_hash": "b15f8c1a9841b8e6f5cf3e5bfb5fab37"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Explore Banners\\explore3-framebyframe.jpg": {
+    "mtime": 1775464291.0129547,
+    "ast_hash": "19fe942bddee02eae986f07174617a4a",
+    "semantic_hash": "19fe942bddee02eae986f07174617a4a"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Explore Banners\\Tipbox-explorebanners.png": {
+    "mtime": 1775464291.0089533,
+    "ast_hash": "54271b5a62f6193c8a6c2d052e50d00f",
+    "semantic_hash": "54271b5a62f6193c8a6c2d052e50d00f"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Explore Banners\\Tipbox-explorebanners2.png": {
+    "mtime": 1775464291.009953,
+    "ast_hash": "3e39e71c1d5f4e42b588cac26c6a8aa5",
+    "semantic_hash": "3e39e71c1d5f4e42b588cac26c6a8aa5"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Onboarding\\onboarding0.png": {
+    "mtime": 1775464291.0139554,
+    "ast_hash": "b28c6ac0ae6092647feec54da4864417",
+    "semantic_hash": "b28c6ac0ae6092647feec54da4864417"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Onboarding\\onboarding1.png": {
+    "mtime": 1775464291.0149653,
+    "ast_hash": "c0dc26f75f46cc04e3183d44ce147b5d",
+    "semantic_hash": "c0dc26f75f46cc04e3183d44ce147b5d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Onboarding\\onboarding2.png": {
+    "mtime": 1775464291.015955,
+    "ast_hash": "cd5477427f8dcff2adb4cb994878cf48",
+    "semantic_hash": "cd5477427f8dcff2adb4cb994878cf48"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Onboarding\\onboarding3.png": {
+    "mtime": 1775464291.0169542,
+    "ast_hash": "5011f9c62ab3d96ecb4351d5707116ff",
+    "semantic_hash": "5011f9c62ab3d96ecb4351d5707116ff"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Onboarding\\onboarding4.png": {
+    "mtime": 1775464291.0169542,
+    "ast_hash": "16e264e62899791681ab0f0e9267b17d",
+    "semantic_hash": "16e264e62899791681ab0f0e9267b17d"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Prime Pass\\primepass-comingsoon.png": {
+    "mtime": 1775464291.020954,
+    "ast_hash": "63bb19ed4f6464b65ccc3bd153d34ba9",
+    "semantic_hash": "63bb19ed4f6464b65ccc3bd153d34ba9"
+  },
+  "D:\\tipbox-app\\tipbox-app\\src\\Expert Now Video\\expertnow-comingsoon.mp4": {
+    "mtime": 1775464291.0079525,
+    "ast_hash": "cc4baa7835ce1190fd5acfa2e7263bbf",
+    "semantic_hash": "cc4baa7835ce1190fd5acfa2e7263bbf"
+  }
+}
