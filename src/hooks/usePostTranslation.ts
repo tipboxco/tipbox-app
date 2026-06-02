@@ -7,12 +7,14 @@ import { TranslationCacheService } from '../services/TranslationCacheService';
 interface UsePostTranslationParams {
   postId: string;
   originalContent: string;
+  postLanguage?: string;
   enabled?: boolean;
 }
 
 export const usePostTranslation = ({
   postId,
   originalContent,
+  postLanguage,
   enabled = true,
 }: UsePostTranslationParams) => {
   const { i18n } = useTranslation();
@@ -25,7 +27,15 @@ export const usePostTranslation = ({
     return i18n.language?.startsWith('tr') ? 'tr' : 'en';
   }, [i18n.language]);
 
-  const shouldTranslate = enabled;
+  // Show translate button only when post language differs from user's language.
+  // If postLanguage is not provided, show the button (backward compat).
+  const shouldTranslate = useMemo(() => {
+    if (!enabled) return false;
+    if (!postLanguage) return true;
+    const postLang = postLanguage.toLowerCase().slice(0, 2);
+    const userLang = targetLanguage.toLowerCase().slice(0, 2);
+    return postLang !== userLang;
+  }, [enabled, postLanguage, targetLanguage]);
 
   const {
     data: translatedContent,
