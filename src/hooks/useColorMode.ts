@@ -1,27 +1,32 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { Appearance } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 
-type ColorMode = 'light' | 'dark';
-
 interface ColorModeContextType {
-  colorMode: ColorMode;
+  colorMode: 'light' | 'dark';
   toggleColorMode: () => void;
 }
 
 export const useColorMode = (): ColorModeContextType => {
-  // FIX: Zustand selector'larını ayrı ayrı kullan - obje döndürmek yerine
-  // Bu sayede her selector sadece kendi değerini subscribe eder
-  const colorMode = useAppStore((state) => state.colorMode);
+  const storedMode = useAppStore((state) => state.colorMode);
   const toggleColorMode = useAppStore((state) => state.toggleColorMode);
 
-  // FIX: useMemo ile obje referansını stabilize et - React.memo ile uyumluluk için
-  // CRITICAL FIX: toggleColorMode Zustand fonksiyonu zaten stabil, dependency'den çıkarıldı
-  // Sadece colorMode değiştiğinde yeni obje döndür
-  return useMemo(
-    () => ({
-      colorMode,
-      toggleColorMode,
-    }),
-    [colorMode] // toggleColorMode dependency'den çıkarıldı - Zustand fonksiyonları stabil
+  const [systemScheme, setSystemScheme] = useState<'light' | 'dark'>(
+    () => (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light')
   );
-}; 
+
+  useEffect(() => {
+    if (storedMode !== 'system') return;
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemScheme(colorScheme === 'dark' ? 'dark' : 'light');
+    });
+    return () => subscription.remove();
+  }, [storedMode]);
+
+  const colorMode = useMemo((): 'light' | 'dark' => {
+    if (storedMode === 'system') return systemScheme;
+    return storedMode as 'light' | 'dark';
+  }, [storedMode, systemScheme]);
+
+  return useMemo(() => ({ colorMode, toggleColorMode }), [colorMode]);
+};

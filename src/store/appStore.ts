@@ -54,7 +54,7 @@ const debouncedStorage = new DebouncedAsyncStorage();
 // Socket bağlantısı adım adım test edilecek
 
 // Types
-type ColorMode = 'light' | 'dark';
+type ColorMode = 'light' | 'dark' | 'system';
 
 interface User {
   id: string;
@@ -361,7 +361,7 @@ export const useAppStore = create<AppState>()(
         // Theme Actions
         toggleColorMode: () =>
           set((state) => ({
-            colorMode: state.colorMode === 'light' ? 'dark' : 'light',
+            colorMode: state.colorMode === 'light' ? 'dark' : state.colorMode === 'dark' ? 'system' : 'light',
           })),
         
         setColorMode: (mode: ColorMode) => set({ colorMode: mode }),
