@@ -4,7 +4,7 @@ import { Image, ImageContentFit, ImageTransition } from 'expo-image';
 import { ImageSourcePropType, StyleProp, ImageStyle } from 'react-native';
 import { toImageSource } from '@/src/utils';
 import LottieView from 'lottie-react-native';
-import { CubeIcon } from 'react-native-heroicons/outline';
+import { ImageIcon } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 export interface CachedImageProps {
@@ -12,6 +12,7 @@ export interface CachedImageProps {
   style?: StyleProp<ImageStyle>;
   contentFit?: ImageContentFit;
   placeholder?: string | number | ImageSourcePropType;
+  blurhash?: string;
   transition?: ImageTransition;
   cachePolicy?: 'none' | 'disk' | 'memory' | 'memory-disk';
   priority?: 'low' | 'normal' | 'high';
@@ -19,7 +20,6 @@ export interface CachedImageProps {
   onLoadStart?: () => void;
   onLoadEnd?: () => void;
   onError?: (error: Error) => void;
-  // Gluestack UI uyumluluğu için
   alt?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center' | 'repeat';
@@ -30,6 +30,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
   style,
   contentFit = 'cover',
   placeholder,
+  blurhash,
   transition,
   cachePolicy = 'memory-disk',
   priority = 'normal',
@@ -92,7 +93,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
       }
     }, 200);
 
-    // 2s timeout: Lottie yerine CubeIcon göster
+    // 2s timeout: Lottie yerine ImageIcon göster
     timeoutTimerRef.current = setTimeout(() => {
       if (!isLoadedRef.current) {
         setLoadingTimeout(true);
@@ -118,7 +119,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
     ? Math.min(Number(containerWidth) * 0.35, Number(containerHeight) * 0.35)
     : 32;
 
-  // Source yoksa: placeholder veya CubeIcon
+  // Source yoksa: placeholder veya ImageIcon
   if (!imageSource) {
     if (placeholder) {
       const placeholderSource = toImageSource(placeholder);
@@ -148,7 +149,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
             }
           ]}
         >
-          <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
+          <ImageIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
         </View>
       </View>
     );
@@ -166,6 +167,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
           cachePolicy={cachePolicy}
           priority={priority}
           recyclingKey={recyclingKey}
+          {...(blurhash && !placeholder ? { placeholder: { blurhash } } : {})}
           onLoadStart={() => {
             onLoadStart?.();
           }}
@@ -223,11 +225,11 @@ export const CachedImage: React.FC<CachedImageProps> = ({
                   cachePolicy={cachePolicy}
                 />
               ) : (
-                <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
+                <ImageIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
               );
             })()
           ) : (
-            <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
+            <ImageIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
           )}
         </View>
       )}
@@ -256,7 +258,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
                   }
                 ]}
               >
-                <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
+                <ImageIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
               </View>
             );
           })()
@@ -272,12 +274,16 @@ export const CachedImage: React.FC<CachedImageProps> = ({
               }
             ]}
           >
-            <CubeIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
+            <ImageIcon size={iconSize} color={isDark ? '#555555' : '#CCCCCC'} strokeWidth={1.5} />
           </View>
         )
       )}
     </View>
   );
+};
+
+export const prefetchImages = (urls: string[]) => {
+  Image.prefetch(urls);
 };
 
 export default CachedImage;
