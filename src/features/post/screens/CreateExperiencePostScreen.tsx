@@ -17,6 +17,7 @@ import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateExperiencePost, useSplitExperience, useGetExperienceOptions } from '../api/hooks';
 import { useAddInventoryItem, useInventory } from '@/src/features/profile/api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useDraftStore } from '@/src/store/draftStore';
 import { useInventoryProductCheck } from '../hooks/useInventoryProductCheck';
 import { useSyncInventoryToStore } from '../hooks/useSyncInventoryToStore';
 import { getInventoryDecision } from '../utils/inventoryDecision';
@@ -73,6 +74,7 @@ export const CreateExperiencePostScreen = () => {
     const addInventoryItemMutation = useAddInventoryItem();
     const { user } = useAppStore();
     const queryClient = useQueryClient();
+    const saveDraft = useDraftStore((s) => s.saveDraft);
 
     // Experience options (duration, location, purpose) from API
     const { data: experienceOptions } = useGetExperienceOptions();
@@ -716,14 +718,35 @@ export const CreateExperiencePostScreen = () => {
             const errorCode = error?.response?.data?.code;
             const errorMessage = error?.response?.data?.message;
 
-            // Envanter kontrolü hatası - "I Owned" için ürün envanterde olmalı
             if (errorMessage?.includes('envanterinizde bulunmuyor') ||
                 errorCode === 'PRODUCT_NOT_IN_INVENTORY') {
+                const formData = getValues();
+                const selectedProduct = formData.selectedProduct;
+                if (selectedProduct) {
+                    saveDraft({
+                        type: 'experience',
+                        experienceOption: experienceOption,
+                        productId: selectedProduct.id,
+                        productName: selectedProduct.name,
+                        productSubName: selectedProduct.brand,
+                        productImage: selectedProduct.image,
+                        content: formData.productExperienceText || formData.priceExperienceText || '',
+                    });
+                }
                 showCustomToast(toast, {
-                    title: t('create.experience.inventory.productNotInInventory.title'),
-                    description: t('create.experience.inventory.productNotInInventory.description'),
-                    action: 'error',
+                    title: 'Taslağa Kaydedildi',
+                    description: 'Ürün envanterinizde yok. Taslak kaydedildi, önce ürünü envanterinize ekleyin.',
+                    action: 'info',
                 });
+                navigation.dispatch(
+                    CommonActions.navigate({
+                        name: 'Main',
+                        params: {
+                            screen: 'ExploreStack',
+                            params: { screen: 'CatalogScreen' },
+                        },
+                    })
+                );
                 return;
             }
 

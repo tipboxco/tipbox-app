@@ -9,9 +9,10 @@ interface CommentBottomSheetProps {
   postId: string;
   onCommentSubmit: (comment: string) => void;
   isSubmitting?: boolean;
-  autoFocus?: boolean; // Otomatik focus için prop
-  onInputPress?: () => void; // Input'a tıklandığında çağrılacak callback
-  initialText?: string; // Başlangıç metni
+  autoFocus?: boolean;
+  onInputPress?: () => void;
+  initialText?: string;
+  replyTo?: { username: string; onCancel: () => void };
 }
 
 export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
@@ -21,6 +22,7 @@ export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
   autoFocus = true, // Varsayılan olarak true
   onInputPress,
   initialText = '',
+  replyTo,
 }) => {
   const { t } = useTranslation('post');
   const { colorMode } = useColorMode();
@@ -65,6 +67,23 @@ export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
 
   return (
     <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+      {replyTo && (
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingVertical: 6,
+          paddingHorizontal: 4,
+          marginBottom: 6,
+        }}>
+          <Text style={{ fontSize: 12, color: isDark ? '#888' : '#666' }}>
+            @{replyTo.username} adlı kullanıcıya yanıt
+          </Text>
+          <Pressable onPress={replyTo.onCancel} hitSlop={8}>
+            <Feather name="x" size={14} color={isDark ? '#888' : '#666'} />
+          </Pressable>
+        </View>
+      )}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <TextInput
           ref={inputRef}
