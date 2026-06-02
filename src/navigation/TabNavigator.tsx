@@ -469,6 +469,7 @@ export const TabNavigator = () => {
   const handleExploreTabPress = createTabPressHandler('ExploreStack');
   const handleEventsTabPress = createTabPressHandler('EventsStack');
   const handleWalletTabPress = createTabPressHandler('WalletStack');
+  const handleNotificationsTabPress = createTabPressHandler('NotificationStack');
 
   // PERFORMANCE FIX: Inbox tab press handler
   // Inbox'a ilk kez girildiğinde mesajları yükle (lazy loading)
@@ -485,16 +486,6 @@ export const TabNavigator = () => {
     // Lazy loading
     handleInboxTabPress();
   }, [createTabPressHandler, handleInboxTabPress]);
-
-  // PERFORMANCE FIX: Inbox tab press handler
-  // Inbox'a ilk kez girildiğinde mesajları yükle (lazy loading)
-  const handleInboxTabPress = useCallback(() => {
-    if (!hasVisitedInbox) {
-      setHasVisitedInbox(true);
-    }
-    // Stack reset'i generic handler ile yapılıyor
-  }, [hasVisitedInbox]);
-
 
   // ARCHITECTURE FIX: Edge-to-Edge Design Pattern
   // Manual inset management for full-bleed design with controlled background colors
@@ -550,10 +541,24 @@ export const TabNavigator = () => {
             }}
           />
           <Tab.Screen
+            name="WalletStack"
+            component={WalletNavigator}
+            listeners={{
+              tabPress: handleWalletTabPress,
+            }}
+          />
+          <Tab.Screen
             name="EventsStack"
             component={EventsNavigator}
             listeners={{
               tabPress: handleEventsTabPress,
+            }}
+          />
+          <Tab.Screen
+            name="InboxStack"
+            component={InboxNavigator}
+            listeners={{
+              tabPress: handleInboxTabPressWithReset,
             }}
           />
           <Tab.Screen
@@ -562,12 +567,8 @@ export const TabNavigator = () => {
             listeners={{
               tabPress: handleNotificationsTabPress,
             }}
-          />
-          <Tab.Screen
-            name="InboxStack"
-            component={InboxNavigator}
-            listeners={{
-              tabPress: handleInboxTabPressWithReset,
+            options={{
+              tabBarButton: () => null,
             }}
           />
         </Tab.Navigator>

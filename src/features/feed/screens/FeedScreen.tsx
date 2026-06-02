@@ -18,6 +18,7 @@ import { SearchModal } from '@/src/components/SearchModal';
 import { AssetAccessCard } from '../components/AssetAccessCard';
 import { FeedTabList } from '../components/FeedTabList';
 import { useAppStore } from '@/src/store/appStore';
+import { useNotificationStore } from '@/src/store/notificationStore';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import type { FeedFilterParams } from '../api/feedApi';
 
@@ -41,6 +42,7 @@ const FeedScreenInner: React.FC = () => {
   const navigation = useNavigation<FeedScreenNavigationProp>();
   const { user } = useAppStore();
   const { t } = useTranslation('feed');
+  const unreadCount = useNotificationStore((s) => s.unreadCountCache ?? 0);
 
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -48,6 +50,10 @@ const FeedScreenInner: React.FC = () => {
 
   const pagerRef = useRef<PagerView>(null);
   const tabScrollRef = useRef<ScrollView>(null);
+
+  const handleNotificationBellPress = useCallback(() => {
+    (navigation as any).navigate('NotificationStack');
+  }, [navigation]);
 
   const handleTabChange = useCallback((tab: 'wallet' | 'inventory') => {
     if (tab === 'wallet') {
@@ -82,6 +88,9 @@ const FeedScreenInner: React.FC = () => {
           logo={require('@/assets/tipbox-nobg.png')}
           leftAction="menu"
           onSearchPress={() => setIsSearchVisible(true)}
+          showNotificationBell
+          onNotificationBellPress={handleNotificationBellPress}
+          notificationBadgeCount={unreadCount}
         />
 
         <View style={{ flexShrink: 0 }}>
