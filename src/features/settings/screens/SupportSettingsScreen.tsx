@@ -203,7 +203,7 @@ export const SupportSettingsScreen = () => {
                   bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                   borderRadius={10}
                   borderWidth={1}
-                  borderColor="#B9B9B9"
+                  borderColor={isDark ? '#555555' : '#B9B9B9'}
                   flexDirection="row"
                   alignItems="center"
                   justifyContent="space-between"
@@ -222,7 +222,7 @@ export const SupportSettingsScreen = () => {
                         fontWeight="$bold"
                         textAlign="left"
                         placeholder="50"
-                        placeholderTextColor="#B9B9B9"
+                        placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                       />
                     </Input>
                   </Box>

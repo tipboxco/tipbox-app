@@ -137,10 +137,10 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                 {/* Price and Shopping Experience Card */}
                 <Box mx="$4">
                     <Box
-                        bg="#FDFDFD"
+                        bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                         $dark-bg="$backgroundDark800"
                         borderWidth={1}
-                        borderColor="#E9E9E9"
+                        borderColor={isDark ? '#333333' : '#E9E9E9'}
                         $dark-borderColor="$borderDark600"
                         borderRadius={10}
                         overflow="hidden"
@@ -210,10 +210,10 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                 {/* Product and Usage Experience Card */}
                 <Box mx="$4">
                     <Box
-                        bg="#FDFDFD"
+                        bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                         $dark-bg="$backgroundDark800"
                         borderWidth={1}
-                        borderColor="#E9E9E9"
+                        borderColor={isDark ? '#333333' : '#E9E9E9'}
                         $dark-borderColor="$borderDark600"
                         borderRadius={10}
                         overflow="hidden"
@@ -289,7 +289,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     key={index}
                                     bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
                                     borderWidth={1}
-                                    borderColor="#EFEFEF"
+                                    borderColor={isDark ? '#333333' : '#EFEFEF'}
                                     $dark-borderColor="$borderDark600"
                                     borderRadius={10}
                                     px={12}

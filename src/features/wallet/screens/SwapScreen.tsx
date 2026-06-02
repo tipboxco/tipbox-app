@@ -140,7 +140,7 @@ export const SwapScreen: React.FC = () => {
               w={146}
               h={146}
               rounded={5}
-              bg="#D9D9D9"
+              bg={isDark ? '#444444' : '#D9D9D9'}
               $dark-bg="$backgroundDark700"
               alignItems="center"
               justifyContent="center"
@@ -160,7 +160,7 @@ export const SwapScreen: React.FC = () => {
             bg="$backgroundLight0"
             $dark-bg="$backgroundDark800"
             borderWidth={1}
-            borderColor="#E9E9E9"
+            borderColor={isDark ? '#333333' : '#E9E9E9'}
             $dark-borderColor="$borderDark600"
             rounded={5}
             p="$4"
@@ -216,7 +216,7 @@ export const SwapScreen: React.FC = () => {
                 setPayAmount('');
                 setReceiveAmount('');
               }}
-              bg="#F5F5F5"
+              bg={isDark ? '#2A2A2A' : '#F5F5F5'}
               $dark-bg="$backgroundDark700"
               rounded={8}
               py="$3"
@@ -364,7 +364,7 @@ export const SwapScreen: React.FC = () => {
                 bg="$backgroundLight0"
                 $dark-bg="$backgroundDark800"
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 $dark-borderColor="$borderDark600"
                 rounded={5}
                 p="$3"
@@ -384,7 +384,7 @@ export const SwapScreen: React.FC = () => {
                           onChangeText={handleAmountChange}
                           keyboardType="decimal-pad"
                           placeholder={t('swapScreen.placeholders.amount')}
-                          placeholderTextColor="#DDDDDD"
+                          placeholderTextColor={isDark ? '#555555' : '#DDDDDD'}
                           fontSize={38}
                           fontWeight="$bold"
                           color={payAmount ? "$textLight900" : "#DDDDDD"}
@@ -399,7 +399,7 @@ export const SwapScreen: React.FC = () => {
                         bg="#EDEDEC"
                         $dark-bg="$backgroundDark700"
                         borderWidth={1}
-                        borderColor="#B5B5B5"
+                        borderColor={isDark ? '#555555' : '#B5B5B5'}
                         $dark-borderColor="$borderDark600"
                         rounded={20}
                         px="$4"
@@ -411,7 +411,7 @@ export const SwapScreen: React.FC = () => {
                           w={28}
                           h={28}
                           rounded="$full"
-                          bg="#D9D9D9"
+                          bg={isDark ? '#444444' : '#D9D9D9'}
                           $dark-bg="$backgroundDark600"
                           alignItems="center"
                           justifyContent="center"
@@ -444,7 +444,7 @@ export const SwapScreen: React.FC = () => {
                 bg="$backgroundLight0"
                 $dark-bg="$backgroundDark800"
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 $dark-borderColor="$borderDark600"
                 rounded={5}
                 p="$3"
@@ -468,8 +468,7 @@ export const SwapScreen: React.FC = () => {
                       bg="#EDEDEC"
                       $dark-bg="$backgroundDark700"
                       borderWidth={1}
-                      borderColor="#B5B5B5"
-                      $dark-borderColor="$borderDark600"
+                      borderColor={isDark ? '#555555' : '#B5B5B5'}
                       rounded={20}
                       px="$4"
                       py="$2"
@@ -480,8 +479,7 @@ export const SwapScreen: React.FC = () => {
                         w={28}
                         h={28}
                         rounded="$full"
-                        bg="#D9D9D9"
-                        $dark-bg="$backgroundDark600"
+                        bg={isDark ? '#444444' : '#D9D9D9'}
                         alignItems="center"
                         justifyContent="center"
                       >
@@ -548,7 +546,7 @@ export const SwapScreen: React.FC = () => {
                   bg="$backgroundLight0"
                   $dark-bg="$backgroundDark800"
                   borderWidth={1}
-                  borderColor="#E9E9E9"
+                  borderColor={isDark ? '#333333' : '#E9E9E9'}
                   $dark-borderColor="$borderDark600"
                   rounded={5}
                   w={82}
@@ -566,7 +564,7 @@ export const SwapScreen: React.FC = () => {
                 bg="$backgroundLight0"
                 $dark-bg="$backgroundDark800"
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 $dark-borderColor="$borderDark600"
                 rounded={5}
                 w={82}
@@ -588,7 +586,7 @@ export const SwapScreen: React.FC = () => {
                 bg="$backgroundLight0"
                 $dark-bg="$backgroundDark800"
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 $dark-borderColor="$borderDark600"
                 rounded={5}
                 p="$4"

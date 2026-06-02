@@ -248,7 +248,7 @@ export const ShareToTrustedBottomSheet: React.FC<ShareToTrustedBottomSheetProps>
           alignItems="center"
           bg={searchBarBg}
           borderWidth={1}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           borderRadius={20}
           px={14}
           space="sm"

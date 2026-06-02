@@ -64,7 +64,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                     bg="$backgroundLight0"
                     $dark-bg="$backgroundDark800"
                     borderWidth={1}
-                    borderColor="#E9E9E9"
+                    borderColor={isDark ? '#333333' : '#E9E9E9'}
                     $dark-borderColor="$borderDark600"
                     rounded={5}
                 >
@@ -161,8 +161,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                         // TODO: Open explorer link
                         console.log('View on Explorer pressed');
                     }}
-                    bg="#F5F5F5"
-                    $dark-bg="#F5F5F5"
+                    bg={isDark ? '#2A2A2A' : '#F5F5F5'}
                     rounded={8}
                     py="$3"
                     flex={1}

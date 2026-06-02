@@ -196,7 +196,7 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
             alignItems="center"
             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
             borderWidth={1}
-            borderColor="#E9E9E9"
+            borderColor={isDark ? '#333333' : '#E9E9E9'}
             borderRadius={23}
             px={12}
             space="sm"
@@ -206,7 +206,7 @@ export const NftTransferBottomSheet = forwardRef<NftTransferBottomSheetHandle, N
             <Input flex={1} borderWidth={0} bg="transparent">
               <InputField
                 placeholder={t('nftTransfer.searchPlaceholder')}
-                placeholderTextColor="#B9B9B9"
+                placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                 color={isDark ? '#fff' : '#000'}
                 fontSize={11}
                 value={searchQuery}

@@ -72,6 +72,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
           </Text>
           <Pressable onPress={onClose}>
             <XMarkIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+
           </Pressable>
         </HStack>
 

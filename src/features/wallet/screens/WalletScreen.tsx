@@ -805,7 +805,7 @@ export const WalletScreen: React.FC = () => {
         <HStack 
           ref={tabContainerRef}
           borderBottomWidth={1} 
-          borderColor="#E9E9E9" 
+          borderColor={isDark ? '#333333' : '#E9E9E9'} 
           p={0} 
           m={0}
           position="relative"
@@ -1254,7 +1254,7 @@ export const WalletScreen: React.FC = () => {
                       bg="$backgroundLight0"
                       $dark-bg="$backgroundDark800"
                       borderWidth={1}
-                      borderColor="#EFEFEF"
+                      borderColor={isDark ? '#333333' : '#EFEFEF'}
                       $dark-borderColor="$borderDark600"
                       rounded={20}
                       px="$4"
@@ -1273,7 +1273,7 @@ export const WalletScreen: React.FC = () => {
                       bg="$backgroundLight0"
                       $dark-bg="$backgroundDark800"
                       borderWidth={1}
-                      borderColor="#EFEFEF"
+                      borderColor={isDark ? '#333333' : '#EFEFEF'}
                       $dark-borderColor="$borderDark600"
                       rounded={20}
                       px="$4"
@@ -1324,7 +1324,7 @@ export const WalletScreen: React.FC = () => {
                                 bg="$backgroundLight0"
                                 $dark-bg="$backgroundDark800"
                                 borderWidth={1}
-                                borderColor="#E9E9E9"
+                                borderColor={isDark ? '#333333' : '#E9E9E9'}
                                 $dark-borderColor="$borderDark600"
                                 rounded={5}
                                 overflow="hidden"

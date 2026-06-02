@@ -77,7 +77,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           </Text>
           <Box
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={10}
             px="$4"
             py="$1"
@@ -86,7 +86,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             <Input borderWidth={0} bg="transparent">
               <InputField
                 placeholder="****************"
-                placeholderTextColor="#B9B9B9"
+                placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 secureTextEntry
@@ -126,7 +126,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
       {/* Divider */}
       <Box
         height={1}
-        bg="#D9D9D9"
+        bg={isDark ? '#444444' : '#D9D9D9'}
         mb="$4"
       />
 
@@ -142,7 +142,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           </Text>
           <Box
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={10}
             px="$4"
             py="$1"
@@ -151,7 +151,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             <Input borderWidth={0} bg="transparent">
               <InputField
                 placeholder="****************"
-                placeholderTextColor="#B9B9B9"
+                placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
@@ -172,7 +172,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           </Text>
           <Box
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={10}
             px="$4"
             py="$1"
@@ -181,7 +181,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             <Input borderWidth={0} bg="transparent">
               <InputField
                 placeholder="****************"
-                placeholderTextColor="#B9B9B9"
+                placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry

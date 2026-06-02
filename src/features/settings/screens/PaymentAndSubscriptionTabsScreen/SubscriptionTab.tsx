@@ -99,7 +99,7 @@ export const SubscriptionTab: React.FC = () => {
           <Box
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={10}
             p="$4"
           >
@@ -129,7 +129,7 @@ export const SubscriptionTab: React.FC = () => {
                   py="$2"
                   variant="outline"
                   onPress={handleManage}
-                  borderColor="#B9B9B9"
+                  borderColor={isDark ? '#555555' : '#B9B9B9'}
                   bg="transparent"
                   ml="$3"
                 >
@@ -160,7 +160,7 @@ export const SubscriptionTab: React.FC = () => {
           <Box
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={10}
             p="$4"
           >
@@ -202,7 +202,7 @@ export const SubscriptionTab: React.FC = () => {
           <Box
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={10}
             p="$4"
             flexDirection="row"

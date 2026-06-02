@@ -458,6 +458,16 @@ export const PostsScreen = () => {
           title: t('screens.posts.errors.notInInventory'),
           description: t('screens.posts.errors.notInInventoryDesc'),
           action: 'error',
+          duration: 5000,
+          actionLabel: t('catalog:actions.addToInventory'),
+          onAction: () => {
+            dismissBottomSheet();
+            navigation.navigate('CreateExperiencePostScreen', {
+              product: selectedProductPayload,
+              fromInventory: false,
+              experienceOption: 'own',
+            });
+          },
         });
         return; // Keep bottom sheet open; toast shows above it
       }
@@ -1345,7 +1355,7 @@ export const PostsScreen = () => {
         <Box
           borderRadius={5}
           borderWidth={1}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           px={12}
           py={8}
         >

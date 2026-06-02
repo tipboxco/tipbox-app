@@ -29,7 +29,7 @@ export const LinkedPaymentMethod: React.FC<LinkedPaymentMethodProps> = ({ data, 
         <Box
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={10}
             p="$4"
         >
@@ -71,7 +71,7 @@ export const LinkedPaymentMethod: React.FC<LinkedPaymentMethodProps> = ({ data, 
                     py="$2"
                     variant="outline"
                     onPress={onViewPress}
-                    borderColor="#B9B9B9"
+                    borderColor={isDark ? '#555555' : '#B9B9B9'}
                     bg="transparent"
                 >
                     <ButtonText

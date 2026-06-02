@@ -121,7 +121,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
         width={40}
         height={40}
         borderRadius={20}
-        bg="#D9D9D9"
+        bg={isDark ? '#444444' : '#D9D9D9'}
         alignItems="center"
         justifyContent="center"
         mr="$3"
@@ -174,7 +174,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
       {/* Active Badge or More Options - Right side */}
       {device.isActive ? (
         <Box
-          bg="#EFEFEF"
+          bg={isDark ? '#333333' : '#EFEFEF'}
           borderRadius={5}
           px="$3"
           py="$1"
@@ -183,7 +183,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
           <Text
             fontSize={9}
             fontWeight="$medium"
-            color="#000000"
+            color={isDark ? '#FFFFFF' : '#000000'}
           >
             Active
           </Text>
@@ -198,7 +198,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
             width={24}
             height={24}
             borderRadius={12}
-            bg="#D9D9D9"
+            bg={isDark ? '#444444' : '#D9D9D9'}
             alignItems="center"
             justifyContent="center"
             opacity={deleteMutation.isPending ? 0.5 : 1}

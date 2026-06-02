@@ -538,7 +538,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         bg="$backgroundLight0"
         $dark-bg="$backgroundDark800"
         borderWidth={1}
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
         $dark-borderColor="$borderDark600"
         rounded={10}
         p="$4"
@@ -562,7 +562,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             <Input flex={1} variant="outline" borderWidth={0}>
               <InputField
                 placeholder={t('sendBottomSheet.walletAddress.walletAddress')}
-                placeholderTextColor="#D9D9D9"
+                placeholderTextColor={isDark ? '#555555' : '#D9D9D9'}
                 value={walletAddress}
                 onChangeText={setWalletAddress}
                 fontSize={13}
@@ -660,7 +660,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           bg="$backgroundLight0"
           $dark-bg="$backgroundDark800"
           borderWidth={1}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           $dark-borderColor="$borderDark600"
           rounded={10}
           p="$4"
@@ -802,7 +802,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           bg="$backgroundLight0"
           $dark-bg="$backgroundDark800"
           borderWidth={1}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           $dark-borderColor="$borderDark600"
           rounded={10}
           p="$4"
@@ -861,7 +861,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           bg="$backgroundLight0"
           $dark-bg="$backgroundDark800"
           borderWidth={1}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           $dark-borderColor="$borderDark600"
           rounded={10}
           p="$4"
@@ -968,7 +968,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                 ]}
                 textAlign="center"
                 placeholder={isSwapped ? "200" : "20.000"}
-                placeholderTextColor="#DDDDDD"
+                placeholderTextColor={isDark ? '#555555' : '#DDDDDD'}
                 autoFocus={false}
               />
             </HStack>
@@ -982,11 +982,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         </Box>
         {/* Display Value Button - Centered */}
         <Pressable
-          bg="#DDDDDD"
-          $dark-bg="#DDDDDD"
+          bg={isDark ? '#444444' : '#DDDDDD'}
           borderWidth={1}
-          borderColor="#808080"
-          $dark-borderColor="#808080"
+          borderColor={isDark ? '#555555' : '#808080'}
           rounded={10}
           px="$5"
           py="$2"
@@ -996,7 +994,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           alignItems="center"
           justifyContent="center"
         >
-          <Text fontSize={12} fontWeight="$bold" color="#000000" $dark-color="#000000">
+          <Text fontSize={12} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
             {amount ? getDisplayValue() : (isSwapped ? '$0' : '0 TIPS')}
           </Text>
         </Pressable>
@@ -1019,7 +1017,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           bg="#EDEDEC"
           $dark-bg="$backgroundDark700"
           borderWidth={1}
-          borderColor="#B5B5B5"
+          borderColor={isDark ? '#555555' : '#B5B5B5'}
           $dark-borderColor="$borderDark600"
           rounded={5}
           px="$5"
@@ -1215,11 +1213,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           {transactionDetails.tipsAmount.toLocaleString()} TIPS
         </Text>
         <Pressable
-          bg="#DDDDDD"
-          $dark-bg="#DDDDDD"
+          bg={isDark ? '#444444' : '#DDDDDD'}
           borderWidth={1}
-          borderColor="#808080"
-          $dark-borderColor="#808080"
+          borderColor={isDark ? '#555555' : '#808080'}
           rounded={10}
           px="$5"
           py="$2"
@@ -1229,7 +1225,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           alignItems="center"
           justifyContent="center"
         >
-          <Text fontSize={12} fontWeight="$bold" color="#000000" $dark-color="#000000">
+          <Text fontSize={12} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
             ${transactionDetails.usdAmount}
           </Text>
         </Pressable>
@@ -1356,7 +1352,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       </HStack>
 
       {/* Divider */}
-      <Box h={1} bg="#D9D9D9" my="$2" />
+      <Box h={1} bg={isDark ? '#333333' : '#D9D9D9'} my="$2" />
 
       {/* Transaction Details */}
       <VStack space="sm">

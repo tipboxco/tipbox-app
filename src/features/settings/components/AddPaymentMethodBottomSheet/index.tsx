@@ -150,7 +150,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         <Box
                             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                             borderWidth={1}
-                            borderColor="#B9B9B9"
+                            borderColor={isDark ? '#555555' : '#B9B9B9'}
                             borderRadius={10}
                             p="$4"
                         >
@@ -182,7 +182,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         <Box
                             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                             borderWidth={1}
-                            borderColor="#B9B9B9"
+                            borderColor={isDark ? '#555555' : '#B9B9B9'}
                             borderRadius={10}
                             p="$4"
                         >
@@ -262,7 +262,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         </Text>
                         <Box
                             borderWidth={1}
-                            borderColor="#B9B9B9"
+                            borderColor={isDark ? '#555555' : '#B9B9B9'}
                             borderRadius={10}
                             px="$4"
                             py="$2"
@@ -271,7 +271,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             <Input borderWidth={0} bg="transparent">
                                 <InputField
                                     placeholder={t('paymentMethod.placeholders.nameOnCard')}
-                                    placeholderTextColor="#B9B9B9"
+                                    placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                                     value={nameOnCard}
                                     onChangeText={setNameOnCard}
                                     color={isDark ? '#FFFFFF' : '#000000'}
@@ -292,7 +292,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         </Text>
                         <Box
                             borderWidth={1}
-                            borderColor="#B9B9B9"
+                            borderColor={isDark ? '#555555' : '#B9B9B9'}
                             borderRadius={10}
                             px="$4"
                             py="$2"
@@ -301,7 +301,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             <Input borderWidth={0} bg="transparent">
                                 <InputField
                                     placeholder={t('paymentMethod.placeholders.cardNumber')}
-                                    placeholderTextColor="#B9B9B9"
+                                    placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                                     value={cardNumber ? maskCardNumber(cardNumber) : ''}
                                     onChangeText={handleCardNumberChange}
                                     color={isDark ? '#FFFFFF' : '#000000'}
@@ -325,7 +325,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             </Text>
                             <Box
                                 borderWidth={1}
-                                borderColor="#B9B9B9"
+                                borderColor={isDark ? '#555555' : '#B9B9B9'}
                                 borderRadius={10}
                                 px="$4"
                                 py="$2"
@@ -334,7 +334,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                 <Input borderWidth={0} bg="transparent">
                                     <InputField
                                         placeholder={t('paymentMethod.placeholders.expirationDate')}
-                                        placeholderTextColor="#B9B9B9"
+                                        placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                                         value={expirationDate}
                                         onChangeText={handleExpirationDateChange}
                                         color={isDark ? '#FFFFFF' : '#000000'}
@@ -356,7 +356,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             </Text>
                             <Box
                                 borderWidth={1}
-                                borderColor="#B9B9B9"
+                                borderColor={isDark ? '#555555' : '#B9B9B9'}
                                 borderRadius={10}
                                 px="$4"
                                 py="$2"
@@ -365,7 +365,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                 <Input borderWidth={0} bg="transparent">
                                     <InputField
                                         placeholder={t('paymentMethod.placeholders.cvv')}
-                                        placeholderTextColor="#B9B9B9"
+                                        placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                                         value={securityCode}
                                         onChangeText={setSecurityCode}
                                         color={isDark ? '#FFFFFF' : '#000000'}
@@ -390,7 +390,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         </Text>
                         <Box
                             borderWidth={1}
-                            borderColor="#B9B9B9"
+                            borderColor={isDark ? '#555555' : '#B9B9B9'}
                             borderRadius={10}
                             px="$4"
                             py="$2"
@@ -399,7 +399,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             <Input borderWidth={0} bg="transparent">
                                 <InputField
                                     placeholder={t('paymentMethod.placeholders.cardName')}
-                                    placeholderTextColor="#B9B9B9"
+                                    placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                                     value={cardName}
                                     onChangeText={setCardName}
                                     color={isDark ? '#FFFFFF' : '#000000'}

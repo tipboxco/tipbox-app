@@ -107,7 +107,7 @@ export const SMSVerificationScreen = () => {
             {/* Country Code */}
             <Box
               borderWidth={1}
-              borderColor="#B9B9B9"
+              borderColor={isDark ? '#555555' : '#B9B9B9'}
               borderRadius={10}
               px="$3"
               py="$1"
@@ -130,7 +130,7 @@ export const SMSVerificationScreen = () => {
             {/* Phone Number */}
             <Box
               borderWidth={1}
-              borderColor="#B9B9B9"
+              borderColor={isDark ? '#555555' : '#B9B9B9'}
               borderRadius={10}
               px="$4"
               py="$1"
@@ -139,7 +139,7 @@ export const SMSVerificationScreen = () => {
               <Input borderWidth={0} bg="transparent">
                 <InputField
                   placeholder={t('smsVerification.phonePlaceholder')}
-                  placeholderTextColor="#B9B9B9"
+                  placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                   value={phoneNumber}
                   onChangeText={(text) => {
                     // Format phone number: remove non-digits, add spaces

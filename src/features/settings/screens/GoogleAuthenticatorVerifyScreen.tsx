@@ -115,7 +115,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           {/* Code Input */}
           <Box
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={10}
             px="$4"
             py="$1"
@@ -124,7 +124,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
             <Input borderWidth={0} bg="transparent">
               <InputField
                 placeholder={t('googleAuthVerify.placeholder')}
-                placeholderTextColor="#B9B9B9"
+                placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                 value={code}
                 onChangeText={(text) => {
                   // Sadece rakamları kabul et ve max 6 karakter

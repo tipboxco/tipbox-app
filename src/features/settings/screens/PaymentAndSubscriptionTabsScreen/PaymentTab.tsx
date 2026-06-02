@@ -245,7 +245,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
               <Box
                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                 borderWidth={1}
-                borderColor="#B9B9B9"
+                borderColor={isDark ? '#555555' : '#B9B9B9'}
                 borderRadius={20}
                 px="$3"
                 py="$2"
@@ -312,13 +312,13 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
             <Input
               size="md"
               borderWidth={1}
-              borderColor="#B9B9B9"
+              borderColor={isDark ? '#555555' : '#B9B9B9'}
               borderRadius={8}
               bg={isDark ? '#2A2A2A' : '#F5F5F5'}
             >
               <InputField
                 placeholder={t('tabs.paymentTab.cardNamePlaceholder')}
-                placeholderTextColor="#B9B9B9"
+                placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                 value={editCardAlias}
                 onChangeText={setEditCardAlias}
                 color={isDark ? '#FFFFFF' : '#000000'}

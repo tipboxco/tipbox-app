@@ -150,7 +150,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
             </Text>
             <Pressable
               onPress={() => refetch()}
-              bg="#F5F5F5"
+              bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
               $dark-bg="$backgroundDark700"
               rounded={8}
               px="$4"

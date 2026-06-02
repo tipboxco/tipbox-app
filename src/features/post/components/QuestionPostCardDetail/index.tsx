@@ -179,7 +179,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
+            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={toImageSource(data.user.avatar)!}
@@ -215,7 +215,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
             {/* Product */}
             {
                 data.category && data.category.product ? (
-                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.PRODUCT}
@@ -225,7 +225,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         />
                     </Box>
                 ) : data.category ? (
-                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.SUB_CATEGORY}
@@ -414,7 +414,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                 px={12}
                 py={10}
                 borderBottomWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 justifyContent="space-between"
             >
                 <HStack>

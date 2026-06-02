@@ -127,7 +127,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
 
             {/* Header */}
             {data.user && (
-                <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
+                <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                     <HStack alignItems="center" space="xs">
                         <Image
                             source={toImageSource(data.user?.avatar)!}
@@ -167,7 +167,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
 
             {/* Product */}
             {data.product && (
-                <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                     <ProductInfoCard
                         size="small"
                         type={ProductInfoType.PRODUCT}
@@ -290,7 +290,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                                 py={6}
                                 bg={isDark ? 'rgba(255,255,255,0.15)' : '#FFFFFF'}
                                 borderWidth={1}
-                                borderColor="#E9E9E9"
+                                borderColor={isDark ? '#333333' : '#E9E9E9'}
                             >
                                 <Text
                                     color={isDark ? '#FFFFFF' : '#000000'}
@@ -313,7 +313,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
 
             {/* Stats */}
             {data.stats && (
-                <HStack px={12} py={8}borderBottomWidth={1} borderColor="#E9E9E9">
+                <HStack px={12} py={8}borderBottomWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                     <Pressable onPress={handleLike}>
                         <HStack mr={10} alignItems="center">
                             {isLiked ? (

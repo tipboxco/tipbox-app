@@ -4,6 +4,7 @@ import {
   CreditCardIcon,
   DocumentDuplicateIcon,
 } from 'react-native-heroicons/outline';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface WalletCardInfoProps {
   name?: string;
@@ -29,6 +30,8 @@ export const WalletCardInfo: React.FC<WalletCardInfoProps> = ({
   address = 'F4184fc596......0e9831e9e16',
   onCopyPress,
 }) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
   // Kısaltılmış adresi memoize et
   const truncatedAddress = useMemo(() => truncateAddress(address), [address]);
   return (
@@ -52,7 +55,7 @@ export const WalletCardInfo: React.FC<WalletCardInfoProps> = ({
           alignItems="center"
           justifyContent="center"
         >
-          <CreditCardIcon width={24} height={24} color="#000000" />
+          <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Box>
         <VStack flex={1}>
           <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
@@ -66,7 +69,7 @@ export const WalletCardInfo: React.FC<WalletCardInfoProps> = ({
         
         {/* Kopyalama Butonu - Sağa yaslanmış ve büyük */}
             <Pressable onPress={onCopyPress}>
-          <DocumentDuplicateIcon width={20} height={20} color="#000000" />
+          <DocumentDuplicateIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
             </Pressable>
       </HStack>
     </Box>

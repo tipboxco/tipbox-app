@@ -122,8 +122,8 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
                           h={20}
                           rounded="$full"
                           borderWidth={2}
-                          borderColor="#000000"
-                          bg="#FFFFFF"
+                          borderColor={isDark ? '#FFFFFF' : '#000000'}
+                          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                           alignItems="center"
                           justifyContent="center"
                         >
@@ -131,7 +131,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
                             w={8}
                             h={8}
                             rounded="$full"
-                            bg="#000000"
+                            bg={isDark ? '#FFFFFF' : '#000000'}
                           />
                         </Box>
                       ) : (
@@ -185,8 +185,8 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
                           h={20}
                           rounded="$full"
                           borderWidth={2}
-                          borderColor="#000000"
-                          bg="#FFFFFF"
+                          borderColor={isDark ? '#FFFFFF' : '#000000'}
+                          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                           alignItems="center"
                           justifyContent="center"
                         >
@@ -194,7 +194,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
                             w={8}
                             h={8}
                             rounded="$full"
-                            bg="#000000"
+                            bg={isDark ? '#FFFFFF' : '#000000'}
                           />
                         </Box>
                       ) : (

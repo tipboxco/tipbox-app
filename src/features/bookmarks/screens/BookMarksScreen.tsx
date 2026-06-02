@@ -260,7 +260,7 @@ const BookMarksScreen = () => {
       {/* Top inset view - Status bar için beyaz arka plan */}
       <Box 
         height={insets.top} 
-        bg="#FFFFFF"
+        bg={isDark ? '#0A0A0A' : '#FFFFFF'}
         position="absolute"
         top={0}
         left={0}
@@ -319,7 +319,7 @@ const BookMarksScreen = () => {
       {/* Bottom inset view - Device router için beyaz arka plan */}
       <Box 
         height={insets.bottom} 
-        bg="#FFFFFF"
+        bg={isDark ? '#0A0A0A' : '#FFFFFF'}
         position="absolute"
         bottom={0}
         left={0}

@@ -55,7 +55,7 @@ export const NftTransferUserBottomSheet: React.FC<NftTransferUserBottomSheetProp
         alignItems="center"
         bg={isDark ? '#1A1A1A' : '#FDFDFD'}
         borderWidth={1}
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
         borderRadius={23}
         px={12}
         space="sm"

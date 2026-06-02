@@ -202,7 +202,7 @@ export const ChangePasswordScreen = () => {
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
                   placeholder={t('changePassword.placeholder')}
-                  placeholderTextColor="#B9B9B9"
+                  placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                   value={currentPassword}
                   onChangeText={(text) => {
                     setCurrentPassword(text);
@@ -261,7 +261,7 @@ export const ChangePasswordScreen = () => {
           {/* Divider */}
           <Box
             height={1}
-            bg="#D9D9D9"
+            bg={isDark ? '#444444' : '#D9D9D9'}
             my="$2"
           />
 
@@ -285,7 +285,7 @@ export const ChangePasswordScreen = () => {
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
                   placeholder={t('changePassword.placeholder')}
-                  placeholderTextColor="#B9B9B9"
+                  placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                   value={newPassword}
                   onChangeText={(text) => {
                     setNewPassword(text);
@@ -343,7 +343,7 @@ export const ChangePasswordScreen = () => {
               <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
                   placeholder={t('changePassword.placeholder')}
-                  placeholderTextColor="#B9B9B9"
+                  placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);

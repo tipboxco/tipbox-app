@@ -148,7 +148,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
             <VStack bg={isDark ? '#000' : '#FFF'}>
               <HStack
                 borderBottomWidth={1}
-                borderColor="#ECECEC"
+                borderColor={isDark ? '#333333' : '#ECECEC'}
                 p={0}
                 m={0}
                 position="relative"

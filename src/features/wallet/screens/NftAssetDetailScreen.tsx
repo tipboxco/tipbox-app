@@ -73,7 +73,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                         bg="$backgroundLight0"
                         $dark-bg="$backgroundDark800"
                         borderWidth={1}
-                        borderColor="#E9E9E9"
+                        borderColor={isDark ? '#333333' : '#E9E9E9'}
                         $dark-borderColor="$borderDark600"
                         rounded={20}
                         overflow="hidden"
@@ -130,7 +130,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             bg="$backgroundLight0"
                             $dark-bg="$backgroundDark800"
                             borderWidth={1}
-                            borderColor="#E9E9E9"
+                            borderColor={isDark ? '#333333' : '#E9E9E9'}
                             $dark-borderColor="$borderDark600"
                             rounded={5}
                             flex={1}
@@ -201,7 +201,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                         bg="$backgroundLight0"
                         $dark-bg="$backgroundDark800"
                         borderWidth={1}
-                        borderColor="#E9E9E9"
+                        borderColor={isDark ? '#333333' : '#E9E9E9'}
                         $dark-borderColor="$borderDark600"
                         rounded={5}
                     >

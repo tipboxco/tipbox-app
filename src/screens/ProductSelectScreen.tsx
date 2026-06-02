@@ -563,7 +563,7 @@ export const ProductSelectScreen: React.FC = () => {
   const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
       <Box flex={1} bg={backgroundColor}>
         <Header
           title={t('productSelect.title')}
@@ -581,7 +581,7 @@ export const ProductSelectScreen: React.FC = () => {
             alignItems="center"
             bg={isDark ? '#2A2A2A' : '#F2F2F2'}
             borderWidth={1}
-            borderColor="#E9E9E9"
+            borderColor={isDark ? '#333333' : '#E9E9E9'}
             borderRadius={20}
             px={14}
             space="sm"

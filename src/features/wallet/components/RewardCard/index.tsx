@@ -56,7 +56,7 @@ export const RewardCard: React.FC<RewardCardProps> = ({
       bg="$backgroundLight0"
       $dark-bg="$backgroundDark800"
       borderWidth={1}
-      borderColor="#E9E9E9"
+      borderColor={isDark ? '#333333' : '#E9E9E9'}
       $dark-borderColor="$borderDark600"
       rounded={5}
       overflow="hidden"
@@ -70,7 +70,7 @@ export const RewardCard: React.FC<RewardCardProps> = ({
                 w={42}
                 h={42}
                 rounded={6}
-                bg="#D9D9D9"
+                bg={isDark ? '#444444' : '#D9D9D9'}
                 $dark-bg="$backgroundDark700"
               />
               <VStack>

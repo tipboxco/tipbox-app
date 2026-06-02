@@ -166,7 +166,7 @@ export const PrivacySettingsScreen = () => {
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
             borderRadius={10}
             borderWidth={1}
-            borderColor="#B9B9B9"
+            borderColor={isDark ? '#555555' : '#B9B9B9'}
             px="$4"
             py="$3"
             flexDirection="row"

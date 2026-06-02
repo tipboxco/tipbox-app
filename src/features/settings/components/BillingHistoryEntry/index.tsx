@@ -40,7 +40,7 @@ export const BillingHistoryEntry: React.FC<BillingHistoryEntryProps> = ({ data, 
       <Box
         bg={isDark ? '#1A1A1A' : '#FFFFFF'}
         borderWidth={1}
-        borderColor="#B9B9B9"
+        borderColor={isDark ? '#555555' : '#B9B9B9'}
         borderRadius={10}
         p="$4"
         mb="$3"

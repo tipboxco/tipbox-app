@@ -102,7 +102,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                     <Box
                         bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
                         borderWidth={1}
-                        borderColor="#E9E9E9"
+                        borderColor={isDark ? '#333333' : '#E9E9E9'}
                         $dark-borderColor="$borderDark600"
                         borderRadius={5}
                         overflow="hidden"
@@ -161,7 +161,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                                     key={index}
                                     bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
                                     borderWidth={1}
-                                    borderColor="#EFEFEF"
+                                    borderColor={isDark ? '#333333' : '#EFEFEF'}
                                     $dark-borderColor="$borderDark600"
                                     borderRadius={10}
                                     px={12}

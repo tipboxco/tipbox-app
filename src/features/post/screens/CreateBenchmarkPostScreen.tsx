@@ -516,7 +516,7 @@ const ProductBenchmarkField: React.FC<{ onShowSelectModal: () => void }> = ({ on
               <Box
                 flex={1}
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 borderRadius={10}
                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                 alignItems="center"

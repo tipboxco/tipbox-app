@@ -111,7 +111,7 @@ export const NftAssetsScreen: React.FC = () => {
           </Pressable>
         </HStack>
         {/* Divider under tabs */}
-        <Box h={2} bg="#ECECEC" />
+        <Box h={2} bg={isDark ? '#333333' : '#ECECEC'} />
       </VStack>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -131,7 +131,7 @@ export const NftAssetsScreen: React.FC = () => {
                   bg="$backgroundLight0"
                   $dark-bg="$backgroundDark800"
                   borderWidth={1}
-                  borderColor="#EFEFEF"
+                  borderColor={isDark ? '#333333' : '#EFEFEF'}
                   $dark-borderColor="$borderDark600"
                   rounded={20}
                   px="$3"
@@ -149,7 +149,7 @@ export const NftAssetsScreen: React.FC = () => {
                   bg="$backgroundLight0"
                   $dark-bg="$backgroundDark800"
                   borderWidth={1}
-                  borderColor="#EFEFEF"
+                  borderColor={isDark ? '#333333' : '#EFEFEF'}
                   $dark-borderColor="$borderDark600"
                   rounded={20}
                   px="$3"
@@ -200,7 +200,7 @@ export const NftAssetsScreen: React.FC = () => {
                             bg="$backgroundLight0"
                             $dark-bg="$backgroundDark800"
                             borderWidth={1}
-                            borderColor="#E9E9E9"
+                            borderColor={isDark ? '#333333' : '#E9E9E9'}
                             $dark-borderColor="$borderDark600"
                             rounded={5}
                             overflow="hidden"

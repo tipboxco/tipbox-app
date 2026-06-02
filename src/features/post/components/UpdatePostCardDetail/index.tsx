@@ -214,7 +214,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         borderWidth={1} 
         borderTopRightRadius={5} 
         borderTopLeftRadius={5} 
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
       >
         <HStack alignItems="center" space="xs">
           <Image
@@ -277,6 +277,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               top: menuPosition.top,
               left: menuPosition.left,
               backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              borderColor: isDark ? '#333333' : '#E9E9E9',
               zIndex: 1,
               elevation: 10,
             },
@@ -298,7 +299,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
       </Modal>
 
       {/* Badges */}
-      <HStack px='$3' py={10} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
+      <HStack px='$3' py={10} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
         <Box
           borderWidth={1}
           borderColor="#9672FA"
@@ -325,7 +326,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
       </HStack>
 
       {/* Content */}
-      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" space="sm">
+      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="sm">
         {/* Original Content */}
         <Text
           color={isDark ? '$textDark50' : '#000'}
@@ -352,7 +353,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
 
       {/* Translate Button */}
       {shouldTranslate && (
-        <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
           <Pressable onPress={toggleTranslation}>
             <HStack alignItems="center" space="xs">
               <Image
@@ -389,7 +390,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
 
       {/* Images - Update post'un kendi görselleri (related post'tan bağımsız her zaman göster) */}
       {data.images && data.images.length > 0 && (
-        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
           <CardImageCarousel images={data.images} isDetailMode={true} />
         </VStack>
       )}
@@ -403,7 +404,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         borderBottomWidth={1}
         borderBottomRightRadius={5}
         borderBottomLeftRadius={5}
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
         justifyContent="space-between"
       >
         <HStack>
@@ -464,7 +465,7 @@ const detailStyles = StyleSheet.create({
     maxHeight: 320,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E9E9E9',
+    borderColor: '#E9E9E9', // overridden inline with isDark
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
