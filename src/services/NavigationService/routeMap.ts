@@ -28,7 +28,7 @@ export const FEATURE_ROUTE_MAP: FeatureRouteMap = {
   CATALOG: {
     root: 'App',
     tabContainer: 'MainTabs',
-    tab: 'CatalogStack',
+    tab: 'ExploreStack',
   },
   EVENTS: {
     root: 'App',

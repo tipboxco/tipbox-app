@@ -13,13 +13,10 @@ import Animated, {
   interpolate,
   runOnJS,
 } from 'react-native-reanimated';
-import { NotificationBadge } from '@/src/components/NotificationBadge';
 import { MessageBadge } from '@/src/components/MessageBadge';
-import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/notifications/api/hooks';
 import { useMessages } from '@/src/features/inbox/api/hooks';
-import { useNavigation, useNavigationState, CommonActions } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
-import { useNotificationStore } from '@/src/store/notificationStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
 // freezeOnBlur is now set globally in screenOptions for all tabs
@@ -28,24 +25,22 @@ import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 // Heroicons imports
 import {
   HomeIcon as HomeIconSolid,
-  Squares2X2Icon as Squares2X2IconSolid,
   CalendarIcon as CalendarIconSolid,
-  BellIcon as BellIconSolid,
   InboxIcon as InboxIconSolid,
+  WalletIcon as WalletIconSolid,
 } from 'react-native-heroicons/solid';
 import {
   HomeIcon as HomeIconOutline,
-  Squares2X2Icon as Squares2X2IconOutline,
   CalendarIcon as CalendarIconOutline,
-  BellIcon as BellIconOutline,
   InboxIcon as InboxIconOutline,
+  WalletIcon as WalletIconOutline,
 } from 'react-native-heroicons/outline';
 // Ionicons for Explore tab (Heroicons doesn't have binoculars)
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
-import { CatalogNavigator } from '@/src/features/catalog/navigation';
+import { WalletNavigator } from '@/src/features/wallet/navigation';
 import { EventsNavigator } from '@/src/features/events/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { InboxNavigator } from '@/src/features/inbox/navigation';
@@ -288,46 +283,6 @@ export const TabNavigator = () => {
   // Global navigation UI state'ten tab bar visibility'yi al
   const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
   
-  // PERFORMANCE FIX: Unread notification count - badge için
-  // Sadece authenticated ve auth ready ise çalıştır
-  const shouldFetchNotifications = isAuthenticated && isAuthReady;
-  const { data: unreadCountData } = useUnreadCount(shouldFetchNotifications);
-  
-  // Zustand store'dan optimistic count'u al (realtime update için)
-  const storeUnreadCount = useNotificationStore((state) => state.unreadCountCache);
-  
-  // ÖNEMLİ: Store count ile API count'u karşılaştır, daha büyük olanı kullan
-  // Bu sayede hem optimistic update hem de API sync doğru çalışır
-  const unreadCount = useMemo(() => {
-    const apiCount = unreadCountData?.data?.count ?? unreadCountData?.count ?? 0;
-
-    if (__DEV__) {
-      console.log('[TabNavigator] 🔔 Badge count calculation:', {
-        storeUnreadCount,
-        apiCount,
-        rawData: unreadCountData,
-      });
-    }
-
-    // Store count null ise API count'u kullan
-    if (storeUnreadCount === null) {
-      return apiCount;
-    }
-
-    // Store count ile API count'u karşılaştır, daha büyük olanı kullan
-    // Bu sayede:
-    // - Yeni bildirim geldiğinde store count daha büyük olur (optimistic update)
-    // - API sync olduğunda API count daha büyük olabilir (başka cihazdan bildirim)
-    // - Her iki durumda da doğru count gösterilir
-    const finalCount = Math.max(storeUnreadCount, apiCount);
-
-    if (__DEV__ && finalCount > 0) {
-      console.log('[TabNavigator] 🔴 Badge should show:', finalCount);
-    }
-
-    return finalCount;
-  }, [storeUnreadCount, unreadCountData?.data?.count, unreadCountData?.count]);
-  
   // PERFORMANCE FIX: Unread messages - inbox badge için
   // Sadece authenticated ve auth ready ise çalıştır
   // CRITICAL OPTIMIZATION: Inbox'a girilmeden mesajları yükleme (lazy loading)
@@ -340,9 +295,6 @@ export const TabNavigator = () => {
     return messages.some((message) => message.isUnread || message.unreadCount > 0);
   }, [messages]);
   
-  // Mark all as read mutation - bildirim ikonuna tıklandığında
-  const markAllAsReadMutation = useMarkAllNotificationsAsRead();
-
   // Debug: Android'de insets.bottom değerini logla (sadece ilk render'da)
   useMemo(() => {
     if (Platform.OS === 'android') {
@@ -415,14 +367,11 @@ export const TabNavigator = () => {
         // Ionicons stroke Heroicons'a göre daha kalın - boyutu küçülterek görsel ağırlığı eşitle
         return <Ionicons name={focused ? 'binoculars' : 'binoculars-outline'} size={iconSize * 0.85} color={color} />;
 
-      case 'CatalogStack':
-        IconComponent = focused ? Squares2X2IconSolid : Squares2X2IconOutline;
+      case 'WalletStack':
+        IconComponent = focused ? WalletIconSolid : WalletIconOutline;
         break;
       case 'EventsStack':
         IconComponent = focused ? CalendarIconSolid : CalendarIconOutline;
-        break;
-      case 'NotificationStack':
-        IconComponent = focused ? BellIconSolid : BellIconOutline;
         break;
       case 'InboxStack':
         IconComponent = focused ? InboxIconSolid : InboxIconOutline;
@@ -431,16 +380,6 @@ export const TabNavigator = () => {
 
     if (!IconComponent) {
       return null;
-    }
-
-    // Notification icon için badge ekle
-    if (route.name === 'NotificationStack') {
-      return (
-        <View style={{ position: 'relative' }}>
-          <IconComponent {...iconProps} />
-          <NotificationBadge count={unreadCount} />
-        </View>
-      );
     }
 
     // Inbox icon için badge ekle (sadece nokta, count yok)
@@ -454,7 +393,7 @@ export const TabNavigator = () => {
     }
 
     return <IconComponent {...iconProps} />;
-  }, [unreadCount, hasUnreadMessages]);
+  }, [hasUnreadMessages]);
 
 
   // PERFORMANCE FIX: Timeout ref for cleanup on unmount
@@ -528,20 +467,17 @@ export const TabNavigator = () => {
 
   // Diğer tab'lar için press handler'lar
   const handleExploreTabPress = createTabPressHandler('ExploreStack');
-  const handleCatalogTabPress = createTabPressHandler('CatalogStack');
   const handleEventsTabPress = createTabPressHandler('EventsStack');
-  const handleNotificationsTabPress = useCallback(() => {
-    // Stack reset
-    createTabPressHandler('NotificationStack')();
-    // Bildirim ikonuna tıklandığında tüm bildirimleri read olarak işaretle
-    if (unreadCount > 0) {
-      markAllAsReadMutation.mutate(undefined, {
-        onSuccess: () => {
-          console.log('[TabNavigator] ✅ All notifications marked as read');
-        },
-      });
+  const handleWalletTabPress = createTabPressHandler('WalletStack');
+
+  // PERFORMANCE FIX: Inbox tab press handler
+  // Inbox'a ilk kez girildiğinde mesajları yükle (lazy loading)
+  const handleInboxTabPress = useCallback(() => {
+    if (!hasVisitedInbox) {
+      setHasVisitedInbox(true);
     }
-  }, [unreadCount, markAllAsReadMutation, createTabPressHandler]);
+    // Stack reset'i generic handler ile yapılıyor
+  }, [hasVisitedInbox]);
 
   const handleInboxTabPressWithReset = useCallback(() => {
     // Stack reset
@@ -611,13 +547,6 @@ export const TabNavigator = () => {
             component={ExploreNavigator}
             listeners={{
               tabPress: handleExploreTabPress,
-            }}
-          />
-          <Tab.Screen
-            name="CatalogStack"
-            component={CatalogNavigator}
-            listeners={{
-              tabPress: handleCatalogTabPress,
             }}
           />
           <Tab.Screen

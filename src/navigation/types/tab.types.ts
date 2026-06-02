@@ -11,7 +11,7 @@ import { EventsStackParamList } from '@/src/features/events/navigation';
 export type TabParamList = {
   FeedStack: undefined;
   ExploreStack: undefined;
-  CatalogStack: undefined;
+  WalletStack: undefined;
   EventsStack: NavigatorScreenParams<EventsStackParamList>;
   NotificationStack: undefined;
   InboxStack: undefined;
