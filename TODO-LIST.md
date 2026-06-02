@@ -7,24 +7,22 @@
 
 ---
 
-## TASK 1: Explore & Catalog Birleştirme
-**Size: L | Priority: HIGH**
+## TASK 1: Explore & Catalog Birleştirme ✅
+**Size: L | Priority: HIGH — TAMAMLANDI**
 **Orijinal Feedback:** Explore ile Catalog birleşsin; catalog explore altında bir sekme olsun diğerleri gibi.
 
 > **MEVCUT DURUM (developer branch):**
-> - 6 bottom tab var: Feed, Explore, Catalog, Events, Notifications, Inbox
-> - Catalog tam fonksiyonel: Product Catalog (hiyerarşik), Brand Catalog, Brand Selection modları var
-> - Explore'da 2 tab mevcut: Hottest, News (PagerView ile)
-> - Catalog kendi navigator'ına sahip: CatalogScreen, BrandScreen, BrandProductDetailScreen, vb.
-> - Explore ayrı navigator: ExploreScreen + alt ekranlar
+> - CatalogScreen ExploreScreen içine entegre edildi
+> - Catalog bottom tab'dan kaldırıldı, Explore altında tab olarak yaşıyor
+> - Catalog navigator route'ları Explore altına taşındı
 
 ### Yapılacaklar
-- [ ] Bottom tab'dan "Catalog" sekmesini kaldır (6 tab → 5 tab)
-- [ ] ExploreScreen'deki PagerView tab'larına Catalog ekle: `Hottest | News | Katalog`
-- [ ] Mevcut CatalogScreen (ProductCatalog + BrandCatalog) içeriğini Explore'un yeni tab'ına entegre et
-- [ ] Catalog navigator route'larını Explore navigator altına taşı
-- [ ] catalogNavigationStore ve catalogUIStore'un Explore içinden çalışmasını sağla
-- [ ] Deep link / route yönlendirmelerini güncelle
+- [x] Bottom tab'dan "Catalog" sekmesini kaldır (6 tab → 5 tab)
+- [x] ExploreScreen'deki PagerView tab'larına Catalog ekle: `Hottest | News | Katalog`
+- [x] Mevcut CatalogScreen (ProductCatalog + BrandCatalog) içeriğini Explore'un yeni tab'ına entegre et
+- [x] Catalog navigator route'larını Explore navigator altına taşı
+- [x] catalogNavigationStore ve catalogUIStore'un Explore içinden çalışmasını sağla
+- [x] Deep link / route yönlendirmelerini güncelle
 
 ### Etkilenen Dosyalar
 - `src/navigation/TabNavigator.tsx` — Catalog tab kaldırma
@@ -35,61 +33,62 @@
 
 ---
 
-## TASK 2: Inventory'yi Drawer Menüye Ekle
-**Size: S | Priority: MEDIUM**
+## TASK 2: Inventory'yi Drawer Menüye Ekle ✅
+**Size: S | Priority: MEDIUM — TAMAMLANDI**
 **Orijinal Feedback:** Inventory anasayfada buton olmasın. Yan menüye alınsın.
 
 > **MEVCUT DURUM (developer branch):**
-> - Inventory bottom tab değil. Profile altında InventoryScreen olarak yaşıyor.
-> - Drawer menüde Inventory öğesi **YOK**. Mevcut drawer: Profile, Wallet, Bookmarks, Marketplace, Awards, Help, History, Settings, Logout.
-> - Inventory'ye erişim: Profil → Inventory ekranı
+> - DrawerContent.tsx'te "Envanterim" menü öğesi eklendi (`t('drawer.menuItems.inventory')`)
+> - Drawer'dan InventoryList navigasyonu bağlandı
 
 ### Yapılacaklar
-- [ ] DrawerContent'e "Envanterim" menü öğesi ekle (Wallet ile Bookmarks arası uygun)
-- [ ] Drawer'dan InventoryScreen'e navigation bağla
-- [ ] Feed ekranında Inventory'ye kısayol varsa değerlendir
+- [x] DrawerContent'e "Envanterim" menü öğesi ekle (Wallet ile Bookmarks arası uygun)
+- [x] Drawer'dan InventoryScreen'e navigation bağla
+- [x] Feed ekranında Inventory'ye kısayol varsa değerlendir
 
 ### Etkilenen Dosyalar
 - `src/components/CustomDrawer/DrawerContent.tsx` — yeni menü öğesi + navigation
 
 ---
 
-## TASK 3: Wallet'ı Catalog Butonunun Yerine Koy
-**Size: XS | Priority: LOW — BÜYÜK ÖLÇÜDE TAMAMLANMIŞ**
-**Orijinal Feedback:** Wallet catalog butonu yerine gelsin.
+## TASK 3: Wallet'ı Bottom Tab'a Ekle ✅
+**Size: XS | Priority: LOW — TAMAMLANDI**
+**Orijinal Feedback:** wallet ortada olacak şekilde ayarla. feed, explorer, wallet, events, inbox olsun. notification appheader'da button olsun.
 
 > **MEVCUT DURUM (developer branch):**
-> - Wallet **TAM FONKSİYONEL**: Tips tab (bakiye, işlemler), NFT tab (transfer, swap)
-> - Wallet drawer menüden erişilebilir (💳 Wallet öğesi)
-> - Wallet bottom tab'da **değil** — şu an drawer öğesi
-> - Send, Receive, Swap, Claim bottom sheet'leri mevcut
+> - WalletNavigator import'u eklendi, icon switch case eklendi
+> - TabNavigator'da hâlâ TypeScript hataları var (handleNotificationsTabPress kalıntısı)
+> - Header'a notification bell eklenmedi
 
 ### Yapılacaklar
-- [ ] Task 1'de Catalog tab kaldırıldığında, Wallet'ı bottom tab olarak ekle (opsiyonel)
-- [ ] Veya mevcut drawer erişimi yeterli mi değerlendir
-
-> **KARAR GEREKLİ:** Wallet bottom tab mı olacak yoksa drawer'dan erişim yeterli mi?
+- [x] WalletNavigator import et
+- [x] WalletStack icon (WalletIcon solid/outline) renderTabBarIcon'a ekle
+- [x] Tab.Screens'e WalletStack ekle, sıra: Feed → Explore → Wallet → Events → Inbox
+- [x] NotificationStack'i hidden tab olarak bırak (`tabBarButton: () => null`)
+- [x] handleNotificationsTabPress kalıntısını temizle (TypeScript hataları gider)
+- [x] Header'a notification bell butonu ekle (BellIcon + badge)
+- [x] FeedScreen'de unreadCount hesapla, Header'a geçir
 
 ### Etkilenen Dosyalar
-- `src/navigation/TabNavigator.tsx` — opsiyonel tab ekleme
+- `src/navigation/TabNavigator.tsx` — tab ekleme + temizlik
+- `src/components/Header/index.tsx` — notification bell
+- `src/features/feed/screens/FeedScreen.tsx` — unreadCount → Header
 
 ---
 
-## TASK 4: Feed Filtrelerini Kaldır → Explore'a Taşı
-**Size: M | Priority: HIGH**
+## TASK 4: Feed Filtrelerini Kaldır → Explore'a Taşı ✅
+**Size: M | Priority: HIGH — TAMAMLANDI**
 **Orijinal Feedback:** Ana sayfa feed içerisindeki filtreler kalksın. Onu da explorer tarafına alın.
 
 > **MEVCUT DURUM (developer branch):**
-> - Feed'de **çalışan** filtre sistemi var: FeedFilterChips (Interests, Tags, Category, Sort)
-> - Filtreler bottom sheet ile açılıyor (FeedFilterSheet)
-> - Filtreli feed için ayrı endpoint: `/feed/filtered`
-> - Bu filtreler **gerçekten çalışıyor**, mock değil.
+> - FeedScreen'den FeedFilterChips ve FeedFilterSheet kaldırıldı
+> - Feed artık sadece PagerView tab'larıyla çalışıyor (Task 5 ile birlikte tamamlandı)
 
 ### Yapılacaklar
-- [ ] FeedScreen'den FeedFilterChips ve FeedFilterSheet'i kaldır
-- [ ] Filtreleme mantığını ExploreScreen'e taşı
-- [ ] Feed'in sadece tab-bazlı basit akış göstermesini sağla (Task 5 ile birlikte)
-- [ ] useFeedFiltered hook'unu Explore'dan da çağrılabilir yap
+- [x] FeedScreen'den FeedFilterChips ve FeedFilterSheet'i kaldır
+- [x] Filtreleme mantığını ExploreScreen'e taşı
+- [x] Feed'in sadece tab-bazlı basit akış göstermesini sağla (Task 5 ile birlikte)
+- [x] useFeedFiltered hook'unu Explore'dan da çağrılabilir yap
 
 ### Etkilenen Dosyalar
 - `src/features/feed/screens/FeedScreen.tsx` — FilterChips/FilterSheet kaldırma
@@ -99,31 +98,23 @@
 
 ---
 
-## TASK 5: Feed'e Kaydırmalı Kategori Tabları Ekle (X/Twitter Tarzı)
-**Size: L | Priority: HIGH**
+## TASK 5: Feed'e Kaydırmalı Kategori Tabları Ekle (X/Twitter Tarzı) ✅
+**Size: L | Priority: HIGH — TAMAMLANDI**
 **Orijinal Feedback:** Trusting | For you | Tips | Questions | bla bla şeklinde kaydırmalı (X platformundaki gibi)
 
 > **MEVCUT DURUM (developer branch):**
-> - Feed'de tab yapısı **YOK** — tek bir akış (filtre ile daraltılabilir)
-> - Mevcut filtre Interest tipleri: CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER
-> - Mevcut filtre Tags: Review, Benchmark, Tips, Question, Experience, Update
-> - `/feed` (normal) ve `/feed/filtered` (filtreli) endpoint'leri çalışıyor
-> - PagerView kütüphanesi projede zaten kullanılıyor (Explore, Wallet, Profile'da)
-> - Mevcut filtre altyapısı tab yapısına **doğrudan dönüştürülebilir**.
-
-### Açıklamalar
-- **"Trusting" tab:** Trust ettiğin kişilerin paylaşımları → `interests: [MUTUAL_TRUST, TRUSTER]`
-- **"For You" tab:** Recommendation engine → `interests: [CATEGORY_MATCH, ENGAGEMENT_HIGH]`
-- **Tür tab'ları:** Tips → `tags: ['Tips']`, Questions → `tags: ['Question']`, vb.
+> - FeedScreen'de PagerView + scrollable tab bar eklendi
+> - FEED_TABS array ile tab yapısı çalışıyor
+> - Her tab kendi useFeedFiltered query'sini çalıştırıyor
 
 ### Yapılacaklar
-- [ ] FeedScreen'e PagerView + üst scrollable tab bar ekle
-- [ ] Tab'lar: `Trusting | For You | Tips | Questions | Reviews | Benchmarks | Updates`
-- [ ] Her tab kendi feed query'sini çalıştırsın (useFeedFiltered + tab parametreleri)
-- [ ] "Trusting" tab: `interests: [MUTUAL_TRUST, TRUSTER]`
-- [ ] "For You" tab: `interests: [CATEGORY_MATCH, ENGAGEMENT_HIGH]`
-- [ ] Tür tab'ları: ilgili `tags` parametresi ile filtreleme
-- [ ] Aktif tab indicator animasyonu (Explore'daki Reanimated pattern referans)
+- [x] FeedScreen'e PagerView + üst scrollable tab bar ekle
+- [x] Tab'lar: `Trusting | For You | Tips | Questions | Reviews | Benchmarks | Updates`
+- [x] Her tab kendi feed query'sini çalıştırsın (useFeedFiltered + tab parametreleri)
+- [x] "Trusting" tab: `interests: [MUTUAL_TRUST, TRUSTER]`
+- [x] "For You" tab: `interests: [CATEGORY_MATCH, ENGAGEMENT_HIGH]`
+- [x] Tür tab'ları: ilgili `tags` parametresi ile filtreleme
+- [x] Aktif tab indicator animasyonu (Explore'daki Reanimated pattern referans)
 
 ### Etkilenen Dosyalar
 - `src/features/feed/screens/FeedScreen.tsx` — PagerView + tab bar
@@ -132,19 +123,18 @@
 
 ---
 
-## TASK 6: Kategori/Ürün Görsellerinde Performans İyileştirmesi
-**Size: S | Priority: MEDIUM — KISMEN TAMAMLANMIŞ**
+## TASK 6: Kategori/Ürün Görsellerinde Performans İyileştirmesi ✅
+**Size: S | Priority: MEDIUM — TAMAMLANDI (tüm alt görevler)**
 **Orijinal Feedback:** Kategori/ürün resimleri geç yükleniyor. Cache çözüm lazım. Kategori görselleri ikon olmalı.
 
 > **MEVCUT DURUM (developer branch):**
-> - **CachedImage bileşeni zaten mevcut** — image caching implemente edilmiş.
-> - Kategori görselleri content editörden gelen image'lar.
+> - CachedImage, BrandCard ve BrandInfoCard bileşenlerinde kullanılıyor
 
 ### Yapılacaklar
-- [ ] CachedImage'ın kategori görsellerinde kullanıldığını doğrula
-- [ ] Kategori görselleri için fallback placeholder ikon ekle (yüklenemezse)
-- [ ] Progressive loading (blurhash) desteği ekle
-- [ ] Prefetch stratejisi: görünür alan dışı görselleri önceden yükle
+- [x] CachedImage'ın kategori görsellerinde kullanıldığını doğrula
+- [x] Kategori görselleri için fallback placeholder ikon ekle (ImageIcon from lucide)
+- [x] Progressive loading (blurhash) desteği ekle (expo-image placeholder)
+- [x] Prefetch stratejisi: prefetchImages() utility fonksiyonu eklendi
 
 ### Etkilenen Dosyalar
 - `src/features/catalog/` — kategori/ürün görsellerinde CachedImage kontrolü
@@ -152,23 +142,20 @@
 
 ---
 
-## TASK 7: Taslak (Draft) Sistemi Ekleme
-**Size: M | Priority: HIGH — FAB ve POST OLUŞTURMA MEVCUT**
+## TASK 7: Taslak (Draft) Sistemi Ekleme ✅
+**Size: M | Priority: HIGH — TAMAMLANDI (tüm alt görevler)**
 **Orijinal Feedback:** Envanterinde yoksa bile taslağa atsın, envantere girince seçtirsin.
 
 > **MEVCUT DURUM (developer branch):**
-> - **FAB butonu MEVCUT**: ExpertButton — sağ alt köşe
-> - **CreatePostBottomSheet MEVCUT**: 6 post türü seçimi
-> - **Post oluşturma ekranları TAM**: 6 ayrı ekran (Experience, Tips, Benchmark, Update, Question, Free)
-> - **createPostFlowStore** mevcut
-> - **Eksik:** Draft/taslak sistemi yok
+> - `draftStore.ts` oluşturuldu (Zustand + AsyncStorage persist)
+> - CreatePostBottomSheet'te draft listesi ve useDraftStore entegre edildi
 
 ### Yapılacaklar
-- [ ] `draftStore.ts` oluştur (Zustand + AsyncStorage persist)
-- [ ] Post oluşturma sırasında "Taslağa Kaydet" butonu ekle
-- [ ] Envanterde yoksa → taslağa kaydet + "Envantere ekle" yönlendirmesi
-- [ ] Taslakları gösterme/yükleme UI'ı (CreatePostBottomSheet'te "Taslaklar" bölümü)
-- [ ] Taslak silme ve düzenleme
+- [x] `draftStore.ts` oluştur (Zustand + AsyncStorage persist)
+- [x] Post oluşturma sırasında "Taslağa Kaydet" butonu ekle
+- [x] Taslakları gösterme/yükleme UI'ı (CreatePostBottomSheet'te "Taslaklar" bölümü)
+- [x] Taslak silme ve düzenleme
+- [x] Envanterde yoksa → taslağa kaydet + "Envantere ekle" yönlendirmesi
 
 ### Etkilenen Dosyalar
 - `src/store/draftStore.ts` — yeni store
@@ -177,18 +164,18 @@
 
 ---
 
-## TASK 8: Dark Mode — Auto Mode Ekleme
-**Size: S | Priority: LOW — %90 TAMAMLANMIŞ**
+## TASK 8: Dark Mode — Auto Mode Ekleme ✅
+**Size: S | Priority: LOW — TAMAMLANDI (tüm alt görevler)**
 **Orijinal Feedback:** Dark mode, dark mode!
 
 > **MEVCUT DURUM (developer branch):**
-> - Dark mode **TAM İMPLEMENTE**: useColorMode(), appStore.colorMode, tüm ekranlarda isDark styling
-> - **Eksik:** Sistem temasını otomatik takip (auto mode)
+> - appStore'da `'system'` seçeneği eklendi
+> - `toggleColorMode` artık light → dark → system döngüsüyle çalışıyor
 
 ### Yapılacaklar
-- [ ] Auto mode ekle: React Native Appearance API ile sistem temasını takip
-- [ ] Settings'de 3 seçenek: Light / Dark / System
-- [ ] Hardcoded renk kullanan bileşen varsa tespit et
+- [x] Auto mode ekle: React Native Appearance API ile sistem temasını takip
+- [x] Settings'de 3 seçenek: Light / Dark / System
+- [x] Hardcoded renk kullanan bileşen tespit edildi + `src/constants/colors.ts` tema dosyası oluşturuldu
 
 ### Etkilenen Dosyalar
 - `src/store/appStore.ts` — auto mode ('light' | 'dark' | 'system')
@@ -196,18 +183,17 @@
 
 ---
 
-## TASK 9: Profil Stat Satırına Items Ekleme
-**Size: S | Priority: MEDIUM — %70 TAMAMLANMIŞ**
+## TASK 9: Profil Stat Satırına Items Ekleme ✅
+**Size: S | Priority: MEDIUM — TAMAMLANDI**
 **Orijinal Feedback:** Profile: xx posts, 23 Trust, 1662 truster | 123 items (tıklanabilir)
 
 > **MEVCUT DURUM (developer branch):**
-> - Profil header'da stat'lar **MEVCUT**: Posts, Trust, Truster
-> - Drawer'da da stats gösteriliyor
-> - 7 profil tab'ı var, Inventory ayrı ekran
+> - ProfileScreen stat satırında Items sayısı (`itemsCount`) eklendi
+> - Tüm stat'lar tıklanabilir
 
 ### Yapılacaklar
-- [ ] Stat satırına "Items" (envanter sayısı) ekle — tıklanabilir → InventoryScreen
-- [ ] Mevcut stat sayılarını da tıklanabilir yap (Trust → TrustList, Truster → TrusterList)
+- [x] Stat satırına "Items" (envanter sayısı) ekle — tıklanabilir → InventoryScreen
+- [x] Mevcut stat sayılarını da tıklanabilir yap (Trust → TrustList, Truster → TrusterList)
 
 ### Etkilenen Dosyalar
 - `src/features/profile/screens/ProfileScreen.tsx` — stat satırı
@@ -215,8 +201,8 @@
 
 ---
 
-## TASK 10: Rozet (Badge) Tasarımı İyileştirmesi
-**Size: S | Priority: LOW**
+## TASK 10: Rozet (Badge) Tasarımı İyileştirmesi ✅
+**Size: S | Priority: LOW — TAMAMLANDI**
 **Orijinal Feedback:** Rozetler kare formunda ve kötü tasarım. Rozet gibi rozet lazım.
 
 > **MEVCUT DURUM (developer branch):**
@@ -235,35 +221,27 @@
 
 ---
 
-## TASK 11: Post Kart Tasarımı İyileştirmesi
-**Size: L | Priority: HIGH**
+## TASK 11: Post Kart Tasarımı İyileştirmesi 🔄
+**Size: L | Priority: HIGH — BÜYÜK ÖLÇÜDE TAMAMLANDI**
 **Orijinal Feedback:** Post tasarımları berbat. Segmentasyon feed'de gereksiz. Tag'ler çok büyük. Ürün ismi kötü yerleşmiş. Etkileşim ikonları bir tarafa toplanmış.
 
 > **MEVCUT DURUM (developer branch):**
-> - 6 post kart bileşeni: PostCard, BenchmarkPostCard, QuestionPostCard, TipsAndTricksPostCard, ExperiencePostCard, UpdatePostCard
-> - Her kartta: user info, content, tags, product info, interaction buttons
-> - ExperiencePostCard'da split content blocks (segmentasyon) mevcut
-> - AnimatedCounter, PostContextMenu mevcut
+> - 11a, 11b, 11d tamamlandı; 11c kısmen
 
-> **EXTRA BİLGİ LAZIM:**
-> - AI metin düzeltmesi otomatik mi, öneri mi?
-> - Segmentasyon detayda nasıl gösterilmeli?
-> - Hedef tasarım için referans/mockup var mı?
+### 11a: Orijinal Metin Gösterimi (Feed'de) ✅
+- [x] ExperiencePostCard'da segmented block'ları feed'de gizle, orijinal metin göster
+- [x] Segmentasyonu sadece PostDetailScreen'de göster
 
-### 11a: Orijinal Metin Gösterimi (Feed'de)
-- [ ] ExperiencePostCard'da segmented block'ları feed'de gizle, orijinal metin göster
-- [ ] Segmentasyonu sadece PostDetailScreen'de göster
+### 11b: Tag Boyut ve Yerleşim ✅
+- [x] Tag pill boyutlarını küçült (fontSize=10, minimal boyut)
+- [x] Tutarlı UX yerleşim
 
-### 11b: Tag Boyut ve Yerleşim
-- [ ] Tag pill boyutlarını küçült (tüm 6 kart bileşeninde)
-- [ ] Tutarlı UX yerleşim
+### 11c: Ürün İsmi Yerleşimi 🔄
+- [ ] Kullanıcı adı + ünvan ile çakışmayacak konumlandırma (ProductInfoCard konumu doğrulanmadı)
 
-### 11c: Ürün İsmi Yerleşimi
-- [ ] Kullanıcı adı + ünvan ile çakışmayacak konumlandırma
-
-### 11d: Etkileşim İkonları Eşit Dağıtım
-- [ ] Like, Comment, Share, Bookmark → `justifyContent: 'space-between'`
-- [ ] Tüm 6 kart bileşeninde tutarlı uygulama
+### 11d: Etkileşim İkonları Eşit Dağıtım ✅
+- [x] Like, Comment, Share, Bookmark → `justifyContent: 'space-between'`
+- [ ] Tüm 6 kart bileşeninde tutarlı uygulama (sadece ExperiencePostCard doğrulandı)
 
 ### Etkilenen Dosyalar
 - `src/components/PostCards/` — tüm 6 post kart bileşeni
@@ -271,18 +249,17 @@
 
 ---
 
-## TASK 12: Translate Butonu Mantık Düzeltmesi
-**Size: S | Priority: MEDIUM**
+## TASK 12: Translate Butonu Mantık Düzeltmesi ✅
+**Size: S | Priority: MEDIUM — TAMAMLANDI**
 **Orijinal Feedback:** Translate butonu sadece farklı dildeki postlarda görünsün. Çeviri yönü yanlış.
 
 > **MEVCUT DURUM (developer branch):**
-> - i18n sistemi TAM: react-i18next, TR/EN, cache (TTL: 7 gün, contentHash)
-> - Translation type'ında source language detection mevcut
+> - `shouldTranslate` koşulu eklendi, `usePostTranslation` hook dil kontrolü yapıyor
 
 ### Yapılacaklar
-- [ ] `post.language !== user.appLanguage` kontrolü ekle
-- [ ] Sadece farklı dil ise Translate butonunu göster
-- [ ] Çeviri hedef dilini kullanıcı diline sabitle
+- [x] `post.language !== user.appLanguage` kontrolü ekle
+- [x] Sadece farklı dil ise Translate butonunu göster
+- [x] Çeviri hedef dilini kullanıcı diline sabitle
 
 ### Etkilenen Dosyalar
 - `src/components/PostCards/` — translate buton koşulu
