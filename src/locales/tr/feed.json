@@ -35,6 +35,15 @@
     "wallet": "Cüzdan",
     "inventory": "Envanter"
   },
+  "tabs": {
+    "trusting": "Güvenilen",
+    "forYou": "Senin İçin",
+    "tips": "İpuçları",
+    "questions": "Sorular",
+    "reviews": "İncelemeler",
+    "benchmarks": "Karşılaştırma",
+    "updates": "Güncellemeler"
+  },
   "expertNow": "Şimdi Uzman Ol",
   "filterButtons": {
     "interests": "İlgi Alanları",

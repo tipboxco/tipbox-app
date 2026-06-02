@@ -35,6 +35,15 @@
     "wallet": "Wallet",
     "inventory": "Inventory"
   },
+  "tabs": {
+    "trusting": "Trusting",
+    "forYou": "For You",
+    "tips": "Tips",
+    "questions": "Questions",
+    "reviews": "Reviews",
+    "benchmarks": "Benchmarks",
+    "updates": "Updates"
+  },
   "expertNow": "Expert Now",
   "filterButtons": {
     "interests": "Interests",
