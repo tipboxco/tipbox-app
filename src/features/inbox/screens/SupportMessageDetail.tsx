@@ -230,7 +230,10 @@ const SupportMessageDetailScreen: React.FC = () => {
     fromUserId?: string;
     toUserId?: string;
   }>({});
-  
+
+  // Permission: sadece isteği gönderen kişi (fromUserId) kapatabilir ve puanlama yapabilir
+  const isRequester = !!user?.id && !!supportRequestUserIds.fromUserId && user.id === supportRequestUserIds.fromUserId;
+
   // ✅ FIX: Backend'den gelen güncel kullanıcı bilgilerini sakla (header için)
   const [participantInfo, setParticipantInfo] = useState<{
     expertName?: string;
@@ -2178,8 +2181,8 @@ const SupportMessageDetailScreen: React.FC = () => {
       )}
 
       {/* Action Buttons - Klavye ve input üstünde görünmeli */}
-      {/* Active: Close + Report buttons | Awaiting (other party closed): Finalize + Report buttons */}
-      {(params.status === 'active' || (params.status === 'awaiting_completion' && !closedByCurrentUser)) && threadId && (
+      {/* Active: sadece requester kapatabilir | Awaiting (requester kapattı): responder finalize eder */}
+      {((params.status === 'active' && isRequester) || (params.status === 'awaiting_completion' && !closedByCurrentUser)) && threadId && (
         <Box
           position="absolute"
           bottom={isKeyboardVisible
