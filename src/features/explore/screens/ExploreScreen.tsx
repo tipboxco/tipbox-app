@@ -31,6 +31,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { HottestTab, NewsTab } from '../components';
+import { CatalogScreen } from '@/src/features/catalog/screens/CatalogScreen';
 import { useMarketplaceBanners } from '../api/hooks';
 import type { MarketplaceBanner } from '../types';
 import type { ExploreStackParamList } from '../navigation';
@@ -294,11 +295,11 @@ const ExploreScreen: React.FC = () => {
     openDrawer();
   }, [navigation, openDrawer]);
   
-  // 🎯 CORE: Shared progress value (0 = Hottest, 1 = News)
+  // 🎯 CORE: Shared progress value (0 = Hottest, 1 = News, 2 = Catalog)
   const progress = useSharedValue(0);
-  
+
   // Tab state - currentPage'e göre hesaplanıyor
-  const activeCategory: 'hottest' | 'news' = currentPage === 0 ? 'hottest' : 'news';
+  const activeCategory: 'hottest' | 'news' | 'catalog' = currentPage === 0 ? 'hottest' : currentPage === 1 ? 'news' : 'catalog';
 
   const bottomInset = useSafeAreaValues('bottom');
   const [searchBarHeight, setSearchBarHeight] = useState(0);
@@ -427,25 +428,11 @@ const ExploreScreen: React.FC = () => {
   }, []);
 
   const handleSeeAllBrands = useCallback(() => {
-    console.log('[ExploreScreen] handleSeeAllBrands called');
-    try {
-      // Catalog tab'ına Brand listesine git
-      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'brands' });
-      console.log('[ExploreScreen] ✅ Navigated to CatalogScreen with view: brands');
-    } catch (error) {
-      console.error('[ExploreScreen] ❌ Error navigating to CatalogScreen:', error);
-    }
+    pagerRef.current?.setPage(2);
   }, []);
 
   const handleSeeAllProducts = useCallback(() => {
-    console.log('[ExploreScreen] handleSeeAllProducts called');
-    try {
-      // Catalog tab'ına Product listesine git
-      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'products' });
-      console.log('[ExploreScreen] ✅ Navigated to CatalogScreen with view: products');
-    } catch (error) {
-      console.error('[ExploreScreen] ❌ Error navigating to CatalogScreen:', error);
-    }
+    pagerRef.current?.setPage(2);
   }, []);
 
   // Item Press Handlers - Navigation
@@ -527,36 +514,32 @@ const ExploreScreen: React.FC = () => {
     [progress]
   );
 
-  // Tab 1 (Hottest) label color animation
+  // Tab label color animations (3 tabs)
   const tab1Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(
-      progress.value,
-      [0, 1],
-      [activeColor, inactiveColor]
-    );
+    const color = interpolateColor(progress.value, [0, 1, 2], [activeColor, inactiveColor, inactiveColor]);
     return { color };
   });
 
-  // Tab 2 (News) label color animation
   const tab2Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(
-      progress.value,
-      [0, 1],
-      [inactiveColor, activeColor]
-    );
+    const color = interpolateColor(progress.value, [0, 1, 2], [inactiveColor, activeColor, inactiveColor]);
     return { color };
   });
 
-  // Indicator position animation
-  const tabWidth = tabContainerWidth / 2 || 0;
-  const indicatorWidth = tabWidth * 0.8; // Tab genişliğinin %80'i
+  const tab3Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(progress.value, [0, 1, 2], [inactiveColor, inactiveColor, activeColor]);
+    return { color };
+  });
+
+  // Indicator position animation (3 tabs)
+  const tabWidth = tabContainerWidth / 3 || 0;
+  const indicatorWidth = tabWidth * 0.7;
   const indicatorStyle = useAnimatedStyle(() => {
-    // Indicator'ı tab genişliğine göre translate et
-    // Her tab'in ortasına yerleştirmek için: tabWidth * progress + (tabWidth - indicatorWidth) / 2
     const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
     return {
       transform: [{ translateX }],
@@ -627,7 +610,7 @@ const ExploreScreen: React.FC = () => {
               alignItems="center"
               bg={isDark ? '#2A2A2A' : '#F2F2F2'}
               borderWidth={1}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               borderRadius={20}
               px={14}
               space="sm"
@@ -660,7 +643,7 @@ const ExploreScreen: React.FC = () => {
             <HStack
               ref={tabContainerRef}
               borderBottomWidth={1}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               p={0}
               m={0}
               position="relative"
@@ -709,6 +692,28 @@ const ExploreScreen: React.FC = () => {
                     ]}
                   >
                     {t('tabs.news')}
+                  </Animated.Text>
+                </VStack>
+              </Pressable>
+
+              {/* Katalog Tab Label */}
+              <Pressable
+                flex={1}
+                onPress={() => handleTabPress(2)}
+                alignItems="center"
+                pb={8}
+              >
+                <VStack alignItems="center" space="xs">
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                      },
+                      tab3Style,
+                    ]}
+                  >
+                    {t('tabs.catalog')}
                   </Animated.Text>
                 </VStack>
               </Pressable>
@@ -773,7 +778,6 @@ const ExploreScreen: React.FC = () => {
                 onSeeAllBrands={handleSeeAllBrands}
                 onSeeAllProducts={handleSeeAllProducts}
                 headerComponent={
-                  /* Marketplace Banners Carousel - Scrollable */
                   !isLoadingBanners ? (
                     <Box
                       mb="$4"
@@ -784,6 +788,11 @@ const ExploreScreen: React.FC = () => {
                   ) : null
                 }
               />
+            </Box>
+
+            {/* Katalog Tab */}
+            <Box key="2" flex={1}>
+              <CatalogScreen embedded />
             </Box>
           </AnimatedPagerView>
         </VStack>

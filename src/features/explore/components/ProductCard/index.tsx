@@ -33,7 +33,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ data, onPress }) => {
             <Box
                 bg={isDark ? '#1A1A1A' : '#FFF'}
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 borderRadius={10}
                 width={CARD_WIDTH}
                 overflow="hidden"
