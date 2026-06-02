@@ -9,28 +9,67 @@ interface BadgeCardProps {
   onPress?: () => void;
 }
 
+const TIER_RING_COLORS: Record<string, string> = {
+  bronze: '#CD7F32',
+  silver: '#C0C0C0',
+  gold: '#FFD700',
+};
+
+const TIER_GLOW_COLORS: Record<string, string> = {
+  bronze: 'rgba(205,127,50,0.35)',
+  silver: 'rgba(192,192,192,0.35)',
+  gold: 'rgba(255,215,0,0.4)',
+};
+
 export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const isUnlocked = data.isUnlocked ?? false;
+  const tier = data.tier;
 
-  const ringColor = isUnlocked ? '#BBFF4E' : (isDark ? '#333333' : '#D1D5DB');
-  const glowColor = isUnlocked ? 'rgba(187,255,78,0.3)' : 'transparent';
+  const ringColor = !isUnlocked
+    ? (isDark ? '#333333' : '#D1D5DB')
+    : tier
+      ? TIER_RING_COLORS[tier]
+      : '#BBFF4E';
+
+  const glowColor = !isUnlocked
+    ? 'transparent'
+    : tier
+      ? TIER_GLOW_COLORS[tier]
+      : 'rgba(187,255,78,0.3)';
+
+  const isGold = isUnlocked && tier === 'gold';
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.pressable}>
       <VStack alignItems="center" space="xs">
-        {/* Circular badge */}
-        <View style={[styles.ringOuter, { borderColor: ringColor, shadowColor: glowColor, opacity: isUnlocked ? 1 : 0.45 }]}>
-          <View style={[styles.ringInner, { backgroundColor: isDark ? '#1A1A1A' : '#F3F4F6' }]}>
-            <Image
-              source={data.image || require('@/assets/defaultImages/default-badge.png')}
-              alt={data.title}
-              style={styles.badgeImage}
-              resizeMode="contain"
-            />
+        {/* Circular badge — gold gets a double ring */}
+        {isGold ? (
+          <View style={[styles.ringOuterGold, { borderColor: '#FFD700', shadowColor: glowColor, opacity: 1 }]}>
+            <View style={[styles.ringOuter, { borderColor: ringColor, shadowColor: 'transparent', opacity: 1, elevation: 0, marginBottom: 0 }]}>
+              <View style={[styles.ringInner, { backgroundColor: isDark ? '#1A1A1A' : '#F3F4F6' }]}>
+                <Image
+                  source={data.image || require('@/assets/defaultImages/default-badge.png')}
+                  alt={data.title}
+                  style={styles.badgeImage}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={[styles.ringOuter, { borderColor: ringColor, shadowColor: glowColor, opacity: isUnlocked ? 1 : 0.45 }]}>
+            <View style={[styles.ringInner, { backgroundColor: isDark ? '#1A1A1A' : '#F3F4F6' }]}>
+              <Image
+                source={data.image || require('@/assets/defaultImages/default-badge.png')}
+                alt={data.title}
+                style={styles.badgeImage}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
+        )}
 
         {/* Title */}
         <Text
@@ -76,6 +115,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 4,
+  },
+  ringOuterGold: {
+    width: 98,
+    height: 98,
+    borderRadius: 49,
+    borderWidth: 2,
+    padding: 2,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   ringOuter: {
     width: 90,

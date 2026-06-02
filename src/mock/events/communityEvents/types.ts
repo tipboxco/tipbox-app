@@ -34,6 +34,7 @@ export interface SeeAllReward {
   isUnlocked: boolean;
   completed?: number;
   task?: number;
+  tier?: 'bronze' | 'silver' | 'gold';
 }
 
 export interface EventFeedCard {
