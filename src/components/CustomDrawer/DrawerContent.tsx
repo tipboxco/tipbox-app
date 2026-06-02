@@ -21,6 +21,7 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   UserCircleIcon,
   CreditCardIcon,
+  ArchiveBoxIcon,
   BookmarkIcon,
   ShoppingBagIcon,
   TrophyIcon,
@@ -298,6 +299,15 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     });
   }, [handleCloseDrawer]);
 
+  const handleNavigateToInventory = useCallback(() => {
+    if (!user?.id) return;
+    handleCloseDrawer();
+    navigationService.navigate('Profile', {
+      screen: 'InventoryList',
+      params: { userId: user.id },
+    });
+  }, [handleCloseDrawer, user?.id]);
+
   const handleNavigateToBookmarks = useCallback(() => {
     handleCloseDrawer();
     navigationService.navigate('Bookmarks', undefined);
@@ -468,6 +478,12 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       onPress: handleNavigateToWallet,
     },
     {
+      id: 'inventory',
+      icon: ArchiveBoxIcon,
+      label: t('drawer.menuItems.inventory'),
+      onPress: handleNavigateToInventory,
+    },
+    {
       id: 'bookmarks',
       icon: BookmarkIcon,
       label: t('drawer.menuItems.bookmarks'),
@@ -502,6 +518,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     t,
     handleNavigateToProfile,
     handleNavigateToWallet,
+    handleNavigateToInventory,
     handleNavigateToBookmarks,
     handleNavigateToMarketplace,
     handleNavigateToSettings,
