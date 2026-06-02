@@ -89,7 +89,7 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
                     <Feather
                         name="gift"
                         size={16}
-                        color="#000000"
+                        color={isDark ? '#FFFFFF' : '#000000'}
                     />
                     <Text
                         color={isDark ? '#FFFFFF' : '#000000'}

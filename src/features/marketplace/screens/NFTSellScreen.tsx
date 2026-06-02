@@ -267,8 +267,8 @@ export const NFTSellScreen = () => {
   // Loading state
   if (isLoading) {
     return (
-      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-        <Box flex={1} bg="#FFFFFF">
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+        <Box flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
           <Header
             title={t('screens.nftSell.title')}
             showBackButton={true}
@@ -285,8 +285,8 @@ export const NFTSellScreen = () => {
   // Error state
   if (error || !nftInfo) {
     return (
-      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-        <Box flex={1} bg="#FFFFFF">
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+        <Box flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
           <Header
             title={t('screens.nftSell.title')}
             showBackButton={true}
@@ -303,8 +303,8 @@ export const NFTSellScreen = () => {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <Box flex={1} bg="#FFFFFF">
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+      <Box flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
         <Header
           title={t('screens.nftSell.title')}
           showBackButton={true}

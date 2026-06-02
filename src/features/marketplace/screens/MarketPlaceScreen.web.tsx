@@ -310,8 +310,8 @@ const MarketPlaceScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <VStack flex={1} bg="#FFFFFF">
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+      <VStack flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
         {/* Header */}
         <Header
           title="Marketplace"
@@ -320,15 +320,15 @@ const MarketPlaceScreen = () => {
         />
 
         {/* Tabs */}
-        <VStack pt={0} pb="$0" bg="#FFFFFF">
+        <VStack pt={0} pb="$0" bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
           <HStack 
             ref={tabContainerRef}
             borderBottomWidth={1} 
-            borderColor="#E9E9E9" 
+            borderColor={isDark ? '#333333' : '#E9E9E9'} 
             p={0} 
             m={0}
             position="relative"
-            bg="#FFFFFF"
+            bg={isDark ? '#0A0A0A' : '#FFFFFF'}
             onLayout={(event) => {
               const width = event.nativeEvent.layout.width;
               setTabContainerWidth(width);
@@ -398,7 +398,7 @@ const MarketPlaceScreen = () => {
         </VStack>
 
         {/* Search Filter */}
-        <VStack px={16} py={8} bg="#FFFFFF">
+        <VStack px={16} py={8} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
           <SearchFilter searchQuery={searchQuery} onSearchChange={setSearchQuery} />
         </VStack>
 
@@ -413,10 +413,10 @@ const MarketPlaceScreen = () => {
           overScrollMode="never"
         >
           {/* All NFT's Tab */}
-          <Box key="0" flex={1} bg="#FFFFFF">
+          <Box key="0" flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
             {isLoadingAll && !Array.isArray(allData) && !allData?.[0] ? (
-              <Box flex={1} justifyContent="center" alignItems="center" bg="#FFFFFF">
-                <ActivityIndicator size="large" color="#000000" />
+              <Box flex={1} justifyContent="center" alignItems="center" bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
+                <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               </Box>
             ) : errorAll ? (
               <Box flex={1} justifyContent="center" alignItems="center" px="$4">
@@ -459,10 +459,10 @@ const MarketPlaceScreen = () => {
           </Box>
 
           {/* My Listings Tab */}
-          <Box key="1" flex={1} bg="#FFFFFF">
+          <Box key="1" flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
             {isLoadingMy ? (
-              <Box flex={1} justifyContent="center" alignItems="center" bg="#FFFFFF">
-                <ActivityIndicator size="large" color="#000000" />
+              <Box flex={1} justifyContent="center" alignItems="center" bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
+                <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               </Box>
             ) : errorMy ? (
               <Box flex={1} justifyContent="center" alignItems="center" px="$4">

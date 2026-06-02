@@ -192,7 +192,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               {t('supportChat.requestAmount')}
             </Text>
             <Text
-              color="#000000"
+              color={isDark ? '#FFFFFF' : '#000000'}
               fontSize={16}
               fontWeight="$bold"
             >
@@ -212,7 +212,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               {t('supportChat.totalTips')}
             </Text>
             <Text
-              color="#000000"
+              color={isDark ? '#FFFFFF' : '#000000'}
               fontSize={16}
               fontWeight="$bold"
             >
@@ -232,7 +232,7 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
               {t('supportChat.tipsAmount')}
             </Text>
             <Text
-              color="#000000"
+              color={isDark ? '#FFFFFF' : '#000000'}
               fontSize={16}
               fontWeight="$bold"
             >

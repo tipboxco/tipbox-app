@@ -42,14 +42,14 @@ export const TipsMessage: React.FC<TipsMessageProps> = ({
         >
           <HStack space="xs" alignItems="center" justifyContent="center">
             <Text
-              color="#000000"
+              color={isDark ? '#FFFFFF' : '#000000'}
               fontSize={18}
               fontWeight="$bold"
             >
               +
             </Text>
             <Text
-              color="#000000"
+              color={isDark ? '#FFFFFF' : '#000000'}
               fontSize={15}
               fontWeight="$bold"
             >

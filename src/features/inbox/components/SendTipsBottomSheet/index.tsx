@@ -373,7 +373,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     <InputField
                                         ref={amountInputRef}
                                         placeholder={t('sendTips.amountPlaceholder')}
-                                        placeholderTextColor="#B8B8B8"
+                                        placeholderTextColor={isDark ? '#666666' : '#B8B8B8'}
                                         color={isDark ? '#FFFFFF' : '#000000'}
                                         fontSize={38}
                                         fontWeight="$bold"

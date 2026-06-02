@@ -370,8 +370,8 @@ const NFTDetailScreen = () => {
     // Loading state
     if (isLoading) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-                <Box flex={1} bg="#FFFFFF">
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+                <Box flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
                     <Header
                         title={t('screens.nftDetail.title')}
                         showBackButton={true}
@@ -388,8 +388,8 @@ const NFTDetailScreen = () => {
     // Error state
     if (error || !nftDetail) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-                <Box flex={1} bg="#FFFFFF">
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+                <Box flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
                     <Header
                         title={t('screens.nftDetail.title')}
                         showBackButton={true}
@@ -406,8 +406,8 @@ const NFTDetailScreen = () => {
     }
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-            <Box flex={1} bg="#FFFFFF">
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+            <Box flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
                 <Header
                     title={t('screens.nftDetail.title')}
                     showBackButton={true}

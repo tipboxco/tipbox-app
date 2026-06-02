@@ -423,7 +423,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                 >
                                     <InputField
                                         placeholder={t('support.placeholders.amount')}
-                                        placeholderTextColor="#B8B8B8"
+                                        placeholderTextColor={isDark ? '#666666' : '#B8B8B8'}
                                         color={isDark ? '#FFFFFF' : '#000000'}
                                         fontSize={28}
                                         fontWeight="$bold"

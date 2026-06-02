@@ -11,6 +11,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import StarRating from '../StarRating';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface CloseSupportRequestModalProps {
   isVisible: boolean;
@@ -34,6 +35,8 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
   isFinalize = false, // ✅ FIX: Default false (close modal)
 }) => {
   const { t } = useTranslation('inbox');
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
   const [rating, setRating] = useState(0);
 
   const handleConfirm = () => {
@@ -58,7 +61,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
       <TouchableWithoutFeedback onPress={handleClose}>
         <View style={styles.backdrop}>
           <TouchableWithoutFeedback>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }]}>
               <VStack px={24} py={16} space="md" style={styles.modalBody}>
                 {/* User Profile Section */}
                 <VStack space="sm" alignItems="center">
@@ -79,7 +82,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                   <Text
                     fontSize={18}
                     fontWeight="$bold"
-                    color="#000000"
+                    color={isDark ? '#FFFFFF' : '#000000'}
                     textAlign="center"
                   >
                     {userName}
@@ -116,7 +119,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                   <Text
                     fontSize={15}
                     fontWeight="$semibold"
-                    color="#000000"
+                    color={isDark ? '#FFFFFF' : '#000000'}
                     textAlign="center"
                     mt="$1"
                   >
@@ -180,7 +183,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                           <Feather
                             name="flag"
                             size={20}
-                            color="#000000"
+                            color={isDark ? '#FFFFFF' : '#000000'}
                           />
                         </Box>
                       </Pressable>
@@ -200,7 +203,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                       <Text
                         fontSize={15}
                         fontWeight="$semibold"
-                        color="#000000"
+                        color={isDark ? '#FFFFFF' : '#000000'}
                       >
                         {t('closeSupportModal.cancel')}
                       </Text>
@@ -224,7 +227,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     maxWidth: '90%',
     minWidth: 280,

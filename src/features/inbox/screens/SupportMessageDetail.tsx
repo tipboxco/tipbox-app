@@ -2349,7 +2349,7 @@ const SupportMessageDetailScreen: React.FC = () => {
           }}>
             <TouchableWithoutFeedback>
               <View style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF',
                 borderRadius: 24,
                 maxWidth: '90%',
                 minWidth: 280,
@@ -2391,7 +2391,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                     <Text
                       fontSize={18}
                       fontWeight="$bold"
-                      color="#000000"
+                      color={isDark ? '#FFFFFF' : '#000000'}
                       textAlign="center"
                     >
                       {(() => {
@@ -2451,7 +2451,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         <Text
                           fontSize={15}
                           fontWeight="$semibold"
-                          color="#000000"
+                          color={isDark ? '#FFFFFF' : '#000000'}
                           textAlign="center"
                           mt="$1"
                         >
@@ -2481,7 +2481,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         <Text
                           fontSize={15}
                           fontWeight="$semibold"
-                          color="#000000"
+                          color={isDark ? '#FFFFFF' : '#000000'}
                           textAlign="center"
                           mt="$1"
                         >
@@ -2554,7 +2554,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                           <Feather
                             name="flag"
                             size={20}
-                            color="#000000"
+                            color={isDark ? '#FFFFFF' : '#000000'}
                           />
                         </Box>
                       </Pressable>
@@ -2573,7 +2573,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                         <Text
                           fontSize={15}
                           fontWeight="$semibold"
-                          color="#000000"
+                          color={isDark ? '#FFFFFF' : '#000000'}
                         >
                           {t('supportMessageDetail.buttons.cancel')}
                         </Text>
@@ -2664,7 +2664,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                     <Text
                       fontSize={18}
                       fontWeight="$bold"
-                      color="#000000"
+                      color={isDark ? '#FFFFFF' : '#000000'}
                       textAlign="center"
                     >
                       {(() => {

@@ -168,7 +168,7 @@ const InboxScreen: React.FC = () => {
               alignItems="center"
               bg={isDark ? '#2A2A2A' : '#F2F2F2'}
               borderWidth={1}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               borderRadius={20}
               px={14}
               space="sm"
@@ -196,7 +196,7 @@ const InboxScreen: React.FC = () => {
             <HStack
               ref={tabContainerRef}
               borderBottomWidth={1}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               p={0}
               m={0}
               position="relative"

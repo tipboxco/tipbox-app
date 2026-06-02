@@ -41,7 +41,7 @@ export const SupportRequestFilterGroup: React.FC<SupportRequestFilterGroupProps>
             <Box
               bg={activeFilter === filter.id ? '#F1F1F1' : 'transparent'}
               borderWidth={1}
-              borderColor="#EFEFEF"
+              borderColor={isDark ? '#333333' : '#EFEFEF'}
               borderRadius={10}
               px="$3"
               py="$1"
@@ -50,7 +50,7 @@ export const SupportRequestFilterGroup: React.FC<SupportRequestFilterGroupProps>
               alignItems="center"
             >
               <Text
-                color="#000000"
+                color={isDark ? '#FFFFFF' : '#000000'}
                 fontSize="$xs"
                 fontWeight="$semibold"
                 textAlign="center"

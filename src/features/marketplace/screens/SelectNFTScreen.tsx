@@ -157,8 +157,8 @@ const SelectNFTScreen = () => {
   }, [selectedNFTs]);
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <VStack flex={1} bg="#FFFFFF">
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF' }}>
+      <VStack flex={1} bg={isDark ? '#0A0A0A' : '#FFFFFF'}>
         {/* Header */}
         <Header
           title={t('screens.selectNFT.title')}
