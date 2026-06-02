@@ -331,7 +331,7 @@ const CollectionDetailScreen: React.FC = () => {
         style={[styles.container, { backgroundColor: isDark ? '#000' : '#FFF' }]}
         edges={['top']}
       >
-        <View style={[styles.header, { backgroundColor: isDark ? '#000' : '#FFF' }]}>
+        <View style={[styles.header, { backgroundColor: isDark ? '#000' : '#FFF', borderBottomColor: isDark ? '#2A2A2A' : '#E9E9E9' }]}>
           <Pressable
             onPress={handleGoBack}
             style={styles.backButton}
@@ -365,7 +365,7 @@ const CollectionDetailScreen: React.FC = () => {
       <View
         style={[
           styles.header,
-          { backgroundColor: isDark ? '#000' : '#FFF' },
+          { backgroundColor: isDark ? '#000' : '#FFF', borderBottomColor: isDark ? '#2A2A2A' : '#E9E9E9' },
         ]}
       >
         <Pressable

@@ -105,7 +105,7 @@ const BrandProductBookScreen: React.FC = () => {
             <Box
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 borderRadius={10}
                 width={cardWidth}
                 height={imageSize + 80} // Square image + text + stats space

@@ -33,7 +33,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
       <Box
         bg={isDark ? '#1A1A1A' : '#FDFDFD'}
         borderWidth={1}
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
         borderRadius={10}
         p="$3"
         overflow="hidden"
@@ -72,9 +72,9 @@ const NewsCard: React.FC<NewsCardProps> = ({
           >
             {/* Source and Date */}
             <HStack alignItems="center" space="xs" flexShrink={0}>
-              <BookOpenIcon width={12} height={12} color="#B9B9B9" />
+              <BookOpenIcon width={12} height={12} color={isDark ? '#777777' : '#B9B9B9'} />
               <Text
-                color="#B9B9B9"
+                color={isDark ? '#777777' : '#B9B9B9'}
                 fontSize="$2xs"
                 fontWeight="$medium"
                 numberOfLines={1}
@@ -120,7 +120,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
             justifyContent="center"
             flexShrink={0}
           >
-            <ChevronRightIcon width={24} height={24} color="#B9B9B9" />
+            <ChevronRightIcon width={24} height={24} color={isDark ? '#777777' : '#B9B9B9'} />
           </Box>
         </HStack>
       </Box>

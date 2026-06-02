@@ -61,7 +61,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
       <Box
         bg={isDark ? '#1A1A1A' : '#FDFDFD'}
         borderWidth={1}
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
         borderRadius={10}
         p="$3"
         mb="$3"
@@ -112,9 +112,9 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
 
             {/* Date Range */}
             <HStack alignItems="center" space="xs">
-              <CalendarIcon width={12} height={12} color="#B9B9B9" />
+              <CalendarIcon width={12} height={12} color={isDark ? '#777777' : '#B9B9B9'} />
               <Text
-                color="#B9B9B9"
+                color={isDark ? '#777777' : '#B9B9B9'}
                 fontSize={9}
                 fontWeight="$medium"
               >

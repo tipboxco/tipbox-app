@@ -37,15 +37,15 @@ const RadioCircle: React.FC<{ selected: boolean; isDark: boolean }> = ({ selecte
       styles.radio,
       {
         borderColor: selected
-          ? isDark ? '#000000' : '#6B7040'
+          ? isDark ? '#FFFFFF' : '#6B7040'
           : isDark ? '#555' : '#D1D1D1',
         backgroundColor: selected
-          ? isDark ? '#000000' : '#6B7040'
+          ? isDark ? '#FFFFFF' : '#6B7040'
           : 'transparent',
       },
     ]}
   >
-    {selected && <View style={styles.radioInner} />}
+    {selected && <View style={[styles.radioInner, isDark && { backgroundColor: '#000000' }]} />}
   </View>
 );
 

@@ -71,7 +71,11 @@ const initialState: CatalogScreenState = {
   breadcrumbItems: [],
 };
 
-const CatalogScreenComponent = () => {
+interface CatalogScreenProps {
+  embedded?: boolean;
+}
+
+const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
   const { colorMode } = useColorMode();
   // PERFORMANCE FIX: Memoize isDark to prevent unnecessary re-renders
   const isDark = useMemo(() => colorMode === 'dark', [colorMode]);
@@ -840,12 +844,14 @@ const CatalogScreenComponent = () => {
   const backgroundColor = useMemo(() => isDark ? '#1A1A1A' : '#FAFAFA', [isDark]);
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+    <SafeAreaView edges={embedded ? [] : ['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={backgroundColor}>
-        <Header
-          title={getTitle()}
-          leftAction="menu"
-        />
+        {!embedded && (
+          <Header
+            title={getTitle()}
+            leftAction="menu"
+          />
+        )}
 
         {/* Search Bar - Only for brand-catalog mode */}
         {currentMode === 'brand-catalog' && (
@@ -859,7 +865,7 @@ const CatalogScreenComponent = () => {
               alignItems="center"
               bg={isDark ? '#2A2A2A' : '#F2F2F2'}
               borderWidth={1}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               borderRadius={20}
               px={14}
               space="sm"
@@ -954,3 +960,4 @@ const CatalogScreenComponent = () => {
 
 // PERFORMANCE FIX: Memoize CatalogScreen to prevent unnecessary re-renders during tab transitions
 export const CatalogScreen = React.memo(CatalogScreenComponent);
+export type { CatalogScreenProps };

@@ -828,7 +828,7 @@ const BrandDetailScreen: React.FC = () => {
                                 flex={1}
                                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                                 borderWidth={1}
-                                borderColor="#E9E9E9"
+                                borderColor={isDark ? '#333333' : '#E9E9E9'}
                                 borderRadius={10}
                                 p="$3"
                             >
@@ -866,7 +866,7 @@ const BrandDetailScreen: React.FC = () => {
                                     <Button
                                         bg="rgba(215, 215, 215, 0.8)"
                                         borderWidth={1}
-                                        borderColor="#ADADAD"
+                                        borderColor={isDark ? '#666666' : '#ADADAD'}
                                         borderRadius={10}
                                         alignSelf="flex-start"
                                         px="$3"
@@ -896,7 +896,7 @@ const BrandDetailScreen: React.FC = () => {
                                 flex={1}
                                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                                 borderWidth={1}
-                                borderColor="#E9E9E9"
+                                borderColor={isDark ? '#333333' : '#E9E9E9'}
                                 borderRadius={10}
                                 p="$3"
                             >
@@ -934,7 +934,7 @@ const BrandDetailScreen: React.FC = () => {
                                     <Button
                                         bg="rgba(215, 215, 215, 0.8)"
                                         borderWidth={1}
-                                        borderColor="#ADADAD"
+                                        borderColor={isDark ? '#666666' : '#ADADAD'}
                                         borderRadius={10}
                                         alignSelf="flex-start"
                                         px="$3"

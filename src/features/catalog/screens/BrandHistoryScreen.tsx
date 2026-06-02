@@ -135,7 +135,7 @@ const BrandHistoryScreen: React.FC = () => {
   const tabInactiveColor = isDark ? '#9D9D9D' : '#9D9D9D';
 
   const renderTabBar = () => (
-    <HStack borderBottomWidth={1} borderColor="#E9E9E9" px="$4" mb="$2">
+    <HStack borderBottomWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} px="$4" mb="$2">
       {TAB_KEYS.map((tab, index) => (
         <Pressable
           key={tab}

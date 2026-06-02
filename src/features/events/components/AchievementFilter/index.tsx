@@ -33,7 +33,7 @@ export const AchievementFilter: React.FC<AchievementFilterProps> = ({
           <Box
             bg={activeFilter === filter ? 'rgba(229, 229, 229, 0.8)' : 'rgba(255, 255, 255, 0.8)'}
             borderWidth={1}
-            borderColor="#EFEFEF"
+            borderColor={isDark ? '#333333' : '#EFEFEF'}
             borderRadius={10}
             px='$4'
             py="$2"

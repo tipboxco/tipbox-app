@@ -123,7 +123,7 @@ const SurveyScreen: React.FC = () => {
                 minW="45%"
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 borderRadius={10}
                 p="$4"
                 alignItems="center"
@@ -220,7 +220,7 @@ const SurveyScreen: React.FC = () => {
 
         {/* Tab Bar */}
         <VStack pt='$4' bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-          <HStack borderBottomWidth={1} borderColor="#E9E9E9">
+          <HStack borderBottomWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
             {mock_survey_tabs.map((tab) => (
               <Pressable
                 key={tab.id}
@@ -259,13 +259,13 @@ const SurveyScreen: React.FC = () => {
             onPress={() => brandId && navigation.navigate('BrandHistoryScreen', { brandId })}
             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
             borderWidth={1}
-            borderColor="#E9E9E9"
+            borderColor={isDark ? '#333333' : '#E9E9E9'}
             borderRadius={10}
             p="$3"
             flexDirection="row"
             alignItems="center"
           >
-            <Box w={52} h={52} borderRadius={26} bg="#DDDDDD" overflow="hidden" alignItems="center" justifyContent="center">
+            <Box w={52} h={52} borderRadius={26} bg={isDark ? '#444444' : '#DDDDDD'} overflow="hidden" alignItems="center" justifyContent="center">
               <Image
                 source={require('@/assets/avatar/default-useravatar.png')}
                 alt="User"

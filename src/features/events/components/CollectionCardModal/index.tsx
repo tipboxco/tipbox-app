@@ -221,6 +221,7 @@ const CollectionCardModal: React.FC<CollectionCardModalProps> = ({
                   onPress={handleSetReminder}
                   style={[
                     styles.reminderButtonTop,
+                    { borderColor: isDark ? '#444444' : '#E9E9E9' },
                     badgeReminderMutation.isPending && { opacity: 0.6 },
                   ]}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

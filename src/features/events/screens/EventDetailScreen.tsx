@@ -1036,7 +1036,7 @@ const EventDetailScreen: React.FC = () => {
                         <Box
                             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                             borderWidth={1}
-                            borderColor="#E9E9E9"
+                            borderColor={isDark ? '#333333' : '#E9E9E9'}
                             borderRadius={5}
                             px="$3"
                             py="$4"
@@ -1049,7 +1049,7 @@ const EventDetailScreen: React.FC = () => {
                                         height={40}
                                         borderRadius={20}
                                         borderWidth={1}
-                                        borderColor="#D9D9D9"
+                                        borderColor={isDark ? '#444444' : '#D9D9D9'}
                                         alignItems="center"
                                         justifyContent="center"
                                     >
@@ -1086,7 +1086,7 @@ const EventDetailScreen: React.FC = () => {
                                         height={40}
                                         borderRadius={20}
                                         borderWidth={1}
-                                        borderColor="#D9D9D9"
+                                        borderColor={isDark ? '#444444' : '#D9D9D9'}
                                         alignItems="center"
                                         justifyContent="center"
                                     >
@@ -1117,7 +1117,7 @@ const EventDetailScreen: React.FC = () => {
                                         height={40}
                                         borderRadius={20}
                                         borderWidth={1}
-                                        borderColor="#D9D9D9"
+                                        borderColor={isDark ? '#444444' : '#D9D9D9'}
                                         alignItems="center"
                                         justifyContent="center"
                                     >
@@ -1186,7 +1186,7 @@ const EventDetailScreen: React.FC = () => {
                                                 <Box
                                                     bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                                                     borderWidth={1}
-                                                    borderColor="#E9E9E9"
+                                                    borderColor={isDark ? '#333333' : '#E9E9E9'}
                                                     borderRadius={5}
                                                     alignItems="center"
                                                     justifyContent="center"
@@ -1265,7 +1265,7 @@ const EventDetailScreen: React.FC = () => {
                                         <Box
                                             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                                             borderWidth={1}
-                                            borderColor="#E9E9E9"
+                                            borderColor={isDark ? '#333333' : '#E9E9E9'}
                                             borderRadius={8}
                                             px="$3"
                                             py="$3"

@@ -1,6 +1,6 @@
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
-import { VStack, Text, Image, Box } from '@gluestack-ui/themed';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { VStack, Text, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 
@@ -12,63 +12,100 @@ interface BadgeCardProps {
 export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const isUnlocked = data.isUnlocked ?? false;
+
+  const ringColor = isUnlocked ? '#BBFF4E' : (isDark ? '#333333' : '#D1D5DB');
+  const glowColor = isUnlocked ? 'rgba(187,255,78,0.3)' : 'transparent';
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <Box
-        bg={isDark ? '$backgroundDark800' : '$white'}
-        borderWidth={1}
-        borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
-        borderRadius={10}
-        w="100%"
-        overflow="hidden"
-        py="$4"
-        px="$3"
-      >
-        <Image
-          source={data.image || require('@/assets/defaultImages/default-badge.png')}
-          alt={data.title}
-          h={150}
-          w={150}
-          resizeMode="contain"
-          alignSelf="center"
-        />
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.pressable}>
+      <VStack alignItems="center" space="xs">
+        {/* Circular badge */}
+        <View style={[styles.ringOuter, { borderColor: ringColor, shadowColor: glowColor, opacity: isUnlocked ? 1 : 0.45 }]}>
+          <View style={[styles.ringInner, { backgroundColor: isDark ? '#1A1A1A' : '#F3F4F6' }]}>
+            <Image
+              source={data.image || require('@/assets/defaultImages/default-badge.png')}
+              alt={data.title}
+              style={styles.badgeImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
 
-        <VStack space="xs" mt="$3" alignItems="center">
-          <Text
-            color={isDark ? '$textDark50' : '#000'}
-            fontSize={14}
-            numberOfLines={2}
-            fontWeight="$bold"
-            textAlign="center"
-          >
-            {data.title}
-          </Text>
+        {/* Title */}
+        <Text
+          color={isDark ? (isUnlocked ? '#FFFFFF' : '#666666') : (isUnlocked ? '#111111' : '#9CA3AF')}
+          fontSize={12}
+          fontWeight="$bold"
+          textAlign="center"
+          numberOfLines={2}
+          maxWidth={90}
+        >
+          {data.title}
+        </Text>
 
+        {/* Description */}
+        {data.description ? (
           <Text
-            color={isDark ? '$textDark400' : '#575757'}
-            fontSize={11}
-            lineHeight={14}
+            color={isDark ? '#888888' : '#6B7280'}
+            fontSize={10}
+            lineHeight={13}
             textAlign="center"
             numberOfLines={2}
+            maxWidth={90}
           >
             {data.description}
           </Text>
+        ) : null}
 
-          {data.category ? (
-            <Text
-              color={isDark ? '$textDark400' : '#797979'}
-              fontSize={12}
-              textAlign="center"
-              mt="$2"
-            >
-              {data.category}
+        {/* Unlocked indicator */}
+        {isUnlocked && (
+          <View style={styles.unlockedPill}>
+            <Text fontSize={9} fontWeight="$bold" color="#000000">
+              ✓
             </Text>
-          ) : null}
-        </VStack>
-      </Box>
+          </View>
+        )}
+      </VStack>
     </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  pressable: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  ringOuter: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    padding: 3,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 6,
+  },
+  ringInner: {
+    flex: 1,
+    borderRadius: 45,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeImage: {
+    width: 70,
+    height: 70,
+  },
+  unlockedPill: {
+    backgroundColor: '#BBFF4E',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+});
 
 export default BadgeCard;

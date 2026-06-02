@@ -23,7 +23,7 @@ export const RoastProductInfoCard: React.FC<RoastProductInfoCardProps> = ({
     <Box
       bg={isDark ? '#1A1A1A' : '#FDFDFD'}
       borderWidth={1}
-      borderColor="#E9E9E9"
+      borderColor={isDark ? '#333333' : '#E9E9E9'}
       borderRadius={5}
       px="$4"
       py="$3"

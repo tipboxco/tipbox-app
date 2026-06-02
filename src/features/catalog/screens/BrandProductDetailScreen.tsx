@@ -455,7 +455,7 @@ const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, is
         <HStack
           ref={tabContainerRef}
           borderBottomWidth={1}
-          borderColor="#E9E9E9"
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
           p={0}
           mb="$2"
           position="relative"
@@ -880,7 +880,7 @@ const BrandProductDetailScreen: React.FC = () => {
             <Box
               bg={isDark ? '#1A1A1A' : '#FDFDFD'}
               borderWidth={1}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               borderRadius={10}
               px="$2.5"
               py="$2"

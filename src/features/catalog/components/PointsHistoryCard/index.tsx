@@ -21,7 +21,7 @@ const PointsHistoryCard: React.FC<PointsHistoryCardProps> = ({ item }) => {
     <Box
       bg={isDark ? '#1A1A1A' : '#FDFDFD'}
       borderWidth={1}
-      borderColor="#E9E9E9"
+      borderColor={isDark ? '#333333' : '#E9E9E9'}
       borderRadius={5}
       p="$3"
     >
@@ -30,7 +30,7 @@ const PointsHistoryCard: React.FC<PointsHistoryCardProps> = ({ item }) => {
         <Box
           width={32}
           height={32}
-          bg="#D9D9D9"
+          bg={isDark ? '#444444' : '#D9D9D9'}
           borderRadius={6}
           alignItems="center"
           justifyContent="center"

@@ -18,7 +18,7 @@ export const BrandCard: React.FC<BrandCardProps> = ({ brand, onPress }) => {
       onPress={onPress}
       bg={isDark ? '#1A1A1A' : '#FDFDFD'}
       borderWidth={1}
-      borderColor="#E9E9E9"
+      borderColor={isDark ? '#333333' : '#E9E9E9'}
       borderRadius={10}
       p="$3"
       flex={1}

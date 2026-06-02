@@ -56,7 +56,7 @@ const BrandEventsDetailScreen: React.FC = () => {
     if (isJoined) {
       return {
         bg: 'rgba(215, 215, 215, 0.8)',
-        borderColor: '#ADADAD',
+        borderColor: isDark ? '#555555' : '#ADADAD',
         textColor: '#000000',
         text: t('brandEventDetail.joined'),
                     icon: 'check' as const, // CheckIcon kullanılacak
@@ -93,7 +93,7 @@ const BrandEventsDetailScreen: React.FC = () => {
           <Box
             width={36}
             height={36}
-            bg="#B9B9B9"
+            bg={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={4}
             alignItems="center"
             justifyContent="center"
@@ -119,7 +119,7 @@ const BrandEventsDetailScreen: React.FC = () => {
             <Box
               width="100%"
               height={6}
-              bg="#EBEBEB"
+              bg={isDark ? '#333333' : '#EBEBEB'}
               borderRadius={10}
               overflow="hidden"
             >
@@ -177,7 +177,7 @@ const BrandEventsDetailScreen: React.FC = () => {
             <Box
               bg={isDark ? '#1A1A1A' : '#FDFDFD'}
               borderWidth={1}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               borderRadius={10}
               overflow="hidden"
             >
@@ -254,7 +254,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                 <Box
                   bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                   borderTopWidth={1}
-                  borderColor="#E9E9E9"
+                  borderColor={isDark ? '#333333' : '#E9E9E9'}
                   p="$3"
                 >
                   <Text
@@ -283,7 +283,7 @@ const BrandEventsDetailScreen: React.FC = () => {
               flex={1}
               bg={isDark ? '#1A1A1A' : '#FDFDFD'}
               borderWidth={1}
-              borderColor="#E9E9E9"
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
               borderRadius={10}
               p="$3"
             >
@@ -291,14 +291,14 @@ const BrandEventsDetailScreen: React.FC = () => {
                 <Box
                   width={28}
                   height={28}
-                  bg="#FFFFFF"
+                  bg={isDark ? '#2A2A2A' : '#FFFFFF'}
                   borderWidth={1}
-                  borderColor="#B9B9B9"
+                  borderColor={isDark ? '#555555' : '#B9B9B9'}
                   borderRadius={20}
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <PresentationChartBarIcon width={16} height={16} color="#B9B9B9" />
+                  <PresentationChartBarIcon width={16} height={16} color={isDark ? '#777777' : '#B9B9B9'} />
                 </Box>
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
@@ -312,7 +312,7 @@ const BrandEventsDetailScreen: React.FC = () => {
               <Box
                 width="100%"
                 height={1}
-                bg="#E9E9E9"
+                bg={isDark ? '#333333' : '#E9E9E9'}
                 mb="$2"
               />
 
@@ -330,7 +330,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                         : 0}
                   </Text>
                   <Text
-                    color="#B9B9B9"
+                    color={isDark ? '#777777' : '#B9B9B9'}
                     fontSize={10}
                     fontWeight="$medium"
                   >
@@ -346,7 +346,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                 flex={1}
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 borderRadius={10}
                 p="$3"
               >
@@ -354,14 +354,14 @@ const BrandEventsDetailScreen: React.FC = () => {
                   <Box
                     width={28}
                     height={28}
-                    bg="#FFFFFF"
+                    bg={isDark ? '#2A2A2A' : '#FFFFFF'}
                     borderWidth={1}
-                    borderColor="#B9B9B9"
+                    borderColor={isDark ? '#555555' : '#B9B9B9'}
                     borderRadius={20}
                     alignItems="center"
                     justifyContent="center"
                   >
-                    <GiftIcon width={16} height={16} color="#B9B9B9" />
+                    <GiftIcon width={16} height={16} color={isDark ? '#777777' : '#B9B9B9'} />
                   </Box>
                   <Text
                     color={isDark ? '#FFFFFF' : '#000000'}
@@ -375,7 +375,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                 <Box
                   width="100%"
                   height={1}
-                  bg="#E9E9E9"
+                  bg={isDark ? '#333333' : '#E9E9E9'}
                   mb="$2"
                 />
 

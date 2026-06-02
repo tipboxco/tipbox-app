@@ -244,7 +244,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                     {MAIN_CATEGORIES.map((option) => (
                       <Pressable
                         key={option.value}
-                        style={styles.optionItem}
+                        style={[styles.optionItem, { borderBottomColor: isDark ? '#3A3A3A' : '#E9E9E9' }]}
                         onPress={() => {
                           setMainCategory(option.value);
                           setShowMainDropdown(false);
@@ -307,7 +307,7 @@ const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                     {SUB_CATEGORIES.map((option) => (
                       <Pressable
                         key={option.value}
-                        style={styles.optionItem}
+                        style={[styles.optionItem, { borderBottomColor: isDark ? '#3A3A3A' : '#E9E9E9' }]}
                         onPress={() => {
                           setSubCategory(option.value);
                           setShowSubDropdown(false);

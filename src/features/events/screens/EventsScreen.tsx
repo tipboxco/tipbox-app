@@ -283,16 +283,16 @@ const EventsScreen: React.FC = () => {
         <View style={styles.contentContainer}>
           {/* Search Bar - Above tabs */}
           <View style={[styles.searchContainer, { backgroundColor }]}>
-            <View style={[styles.searchBar, { backgroundColor: isDark ? '#2A2A2A' : '#F2F2F2' }]}>
+            <View style={[styles.searchBar, { backgroundColor: isDark ? '#2A2A2A' : '#F2F2F2', borderColor: isDark ? '#444444' : '#E9E9E9' }]}>
               <Feather
                 name="search"
                 size={24}
-                color="rgba(60, 60, 67, 0.6)"
+                color={isDark ? 'rgba(200, 200, 200, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
               />
               <TextInput
-                style={[styles.searchInput, { color: '#000' }]}
+                style={[styles.searchInput, { color: isDark ? '#FFFFFF' : '#000000' }]}
                 placeholder={activeTab === 'community' ? t('search.events') : t('search.collections')}
-                placeholderTextColor="#B9B9B9"
+                placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -320,7 +320,7 @@ const EventsScreen: React.FC = () => {
           <View style={[styles.tabHeader, { backgroundColor: tabHeaderBgColor }]}>
             <View
               ref={tabContainerRef}
-              style={styles.tabContainer}
+              style={[styles.tabContainer, { borderBottomColor: isDark ? '#333333' : '#E9E9E9' }]}
               onLayout={(event) => {
                 const width = event.nativeEvent.layout.width;
                 setTabContainerWidth(width);

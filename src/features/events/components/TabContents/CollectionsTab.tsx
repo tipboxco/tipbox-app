@@ -284,13 +284,13 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
               style={[
                 styles.filterChip,
                 {
-                  backgroundColor: isActive ? '#F1F1F1' : 'transparent',
-                  borderColor: '#EFEFEF',
+                  backgroundColor: isActive ? (isDark ? '#333333' : '#F1F1F1') : 'transparent',
+                  borderColor: isDark ? '#444444' : '#EFEFEF',
                 },
               ]}
               onPress={() => handleStatusPress(sf.key)}
             >
-              <Text style={styles.filterChipText}>
+              <Text style={[styles.filterChipText, isDark && { color: '#FFFFFF' }]}>
                 {sf.label}
               </Text>
             </Pressable>
@@ -318,13 +318,13 @@ const CollectionsTab: React.FC<CollectionsTabProps> = ({
               style={[
                 styles.filterChip,
                 {
-                  backgroundColor: isActive ? '#F1F1F1' : 'transparent',
-                  borderColor: '#EFEFEF',
+                  backgroundColor: isActive ? (isDark ? '#333333' : '#F1F1F1') : 'transparent',
+                  borderColor: isDark ? '#444444' : '#EFEFEF',
                 },
               ]}
               onPress={() => handleCategoryPress(cat.id)}
             >
-              <Text style={styles.filterChipText}>
+              <Text style={[styles.filterChipText, isDark && { color: '#FFFFFF' }]}>
                 {cat.name}
               </Text>
             </Pressable>

@@ -7,6 +7,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { CheckIcon } from 'react-native-heroicons/solid';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { useColorMode } from '@/src/hooks/useColorMode';
 import type { CatalogFilterId, CatalogFilterParams } from '../CatalogFilterChips';
 
 export const TAG_OPTIONS = [
@@ -39,6 +40,8 @@ export const CatalogFilterSheet: React.FC<CatalogFilterSheetProps> = React.memo(
   onClose,
 }) => {
   const { t } = useTranslation('catalog');
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
   const [localFilters, setLocalFilters] = useState<CatalogFilterParams>(filters);
 
   useEffect(() => {
@@ -119,7 +122,7 @@ export const CatalogFilterSheet: React.FC<CatalogFilterSheetProps> = React.memo(
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#000000' }]}>{title}</Text>
 
       <View style={styles.list}>
         {options.map((option, index) => {
@@ -131,10 +134,10 @@ export const CatalogFilterSheet: React.FC<CatalogFilterSheetProps> = React.memo(
               style={[
                 styles.row,
                 selected && styles.rowSelected,
-                index < options.length - 1 && styles.rowBorder,
+                index < options.length - 1 && [styles.rowBorder, { borderBottomColor: isDark ? '#333333' : '#F0F0F0' }],
               ]}
             >
-              <Text style={[styles.rowText, selected && styles.rowTextSelected]}>
+              <Text style={[styles.rowText, { color: isDark ? '#CCCCCC' : '#333333' }, selected && styles.rowTextSelected, selected && { color: isDark ? '#FFFFFF' : '#000000' }]}>
                 {t(option.labelKey)}
               </Text>
               {selected && (
@@ -146,8 +149,8 @@ export const CatalogFilterSheet: React.FC<CatalogFilterSheetProps> = React.memo(
       </View>
 
       <View style={styles.actions}>
-        <Pressable onPress={handleClear} style={styles.clearButton}>
-          <Text style={styles.clearButtonText}>{t('brandProductDetail.filters.clear')}</Text>
+        <Pressable onPress={handleClear} style={[styles.clearButton, { borderColor: isDark ? '#333333' : '#E9E9E9' }]}>
+          <Text style={[styles.clearButtonText, { color: isDark ? '#AAAAAA' : '#666666' }]}>{t('brandProductDetail.filters.clear')}</Text>
         </Pressable>
         <Pressable onPress={handleApply} style={styles.applyButton}>
           <Text style={styles.applyButtonText}>{t('brandProductDetail.filters.apply')}</Text>

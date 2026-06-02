@@ -61,7 +61,7 @@ const BrandEventDetail: React.FC = () => {
         key={requirement.id}
         bg={isDark ? '#1A1A1A' : '#FDFDFD'}
         borderWidth={1}
-        borderColor="#E9E9E9"
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
         borderRadius={10}
         p="$3"
         mb="$2"
@@ -71,7 +71,7 @@ const BrandEventDetail: React.FC = () => {
           <Box
             width={36}
             height={36}
-            bg="#B9B9B9"
+            bg={isDark ? '#555555' : '#B9B9B9'}
             borderRadius={4}
             alignItems="center"
             justifyContent="center"
@@ -91,7 +91,7 @@ const BrandEventDetail: React.FC = () => {
             <Box
               width="100%"
               height={6}
-              bg="#EBEBEB"
+              bg={isDark ? '#333333' : '#EBEBEB'}
               borderRadius={10}
               overflow="hidden"
             >
@@ -165,7 +165,7 @@ const BrandEventDetail: React.FC = () => {
               <Box
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                 borderWidth={1}
-                borderColor="#E9E9E9"
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
                 borderRadius={10}
                 overflow="hidden"
               >
@@ -210,7 +210,7 @@ const BrandEventDetail: React.FC = () => {
                     disabled={isJoining || eventDetail.isJoined}
                     bg={eventDetail.isJoined ? 'rgba(215, 215, 215, 0.8)' : '#E8FF6B'}
                     borderWidth={1}
-                    borderColor={eventDetail.isJoined ? '#ADADAD' : '#D8FF08'}
+                    borderColor={eventDetail.isJoined ? (isDark ? '#666666' : '#ADADAD') : '#D8FF08'}
                     borderRadius={5}
                     px="$5"
                     py="$1.5"
@@ -239,7 +239,7 @@ const BrandEventDetail: React.FC = () => {
                   <Box
                     bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                     borderTopWidth={1}
-                    borderColor="#E9E9E9"
+                    borderColor={isDark ? '#333333' : '#E9E9E9'}
                     p="$3"
                   >
                     <Text
@@ -268,7 +268,7 @@ const BrandEventDetail: React.FC = () => {
                   flex={1}
                   bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                   borderWidth={1}
-                  borderColor="#E9E9E9"
+                  borderColor={isDark ? '#333333' : '#E9E9E9'}
                   borderRadius={10}
                   p="$3"
                 >
@@ -276,14 +276,14 @@ const BrandEventDetail: React.FC = () => {
                     <Box
                       width={28}
                       height={28}
-                      bg="#FFFFFF"
+                      bg={isDark ? '#2A2A2A' : '#FFFFFF'}
                       borderWidth={1}
-                      borderColor="#B9B9B9"
+                      borderColor={isDark ? '#555555' : '#B9B9B9'}
                       borderRadius={20}
                       alignItems="center"
                       justifyContent="center"
                     >
-                      <UsersIcon width={16} height={16} color="#B9B9B9" />
+                      <UsersIcon width={16} height={16} color={isDark ? '#777777' : '#B9B9B9'} />
                     </Box>
                     <Text
                       color={isDark ? '#FFFFFF' : '#000000'}
@@ -297,7 +297,7 @@ const BrandEventDetail: React.FC = () => {
                   <Box
                     width="100%"
                     height={1}
-                    bg="#E9E9E9"
+                    bg={isDark ? '#333333' : '#E9E9E9'}
                     mb="$2"
                   />
 
@@ -319,7 +319,7 @@ const BrandEventDetail: React.FC = () => {
                       </Text>
                     </HStack>
                     <Text
-                      color="#B9B9B9"
+                      color={isDark ? '#777777' : '#B9B9B9'}
                       fontSize={10}
                       fontWeight="$medium"
                     >
@@ -334,7 +334,7 @@ const BrandEventDetail: React.FC = () => {
                     flex={1}
                     bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                     borderWidth={1}
-                    borderColor="#E9E9E9"
+                    borderColor={isDark ? '#333333' : '#E9E9E9'}
                     borderRadius={10}
                     p="$3"
                   >
@@ -342,14 +342,14 @@ const BrandEventDetail: React.FC = () => {
                       <Box
                         width={28}
                         height={28}
-                        bg="#FFFFFF"
+                        bg={isDark ? '#2A2A2A' : '#FFFFFF'}
                         borderWidth={1}
-                        borderColor="#B9B9B9"
+                        borderColor={isDark ? '#555555' : '#B9B9B9'}
                         borderRadius={20}
                         alignItems="center"
                         justifyContent="center"
                       >
-                        <TrophyIcon width={16} height={16} color="#B9B9B9" />
+                        <TrophyIcon width={16} height={16} color={isDark ? '#777777' : '#B9B9B9'} />
                       </Box>
                       <Text
                         color={isDark ? '#FFFFFF' : '#000000'}
@@ -363,7 +363,7 @@ const BrandEventDetail: React.FC = () => {
                     <Box
                       width="100%"
                       height={1}
-                      bg="#E9E9E9"
+                      bg={isDark ? '#333333' : '#E9E9E9'}
                       mb="$2"
                     />
 

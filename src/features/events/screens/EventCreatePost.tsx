@@ -861,7 +861,7 @@ const EventCreatePost: React.FC = () => {
                             position="absolute"
                             bottom={8}
                             right={12}
-                            color="#CCCCCC"
+                            color={isDark ? '#666666' : '#CCCCCC'}
                             fontSize={12}
                         >
                             {content.length}/2000
@@ -882,7 +882,7 @@ const EventCreatePost: React.FC = () => {
                                 <Box
                                     bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
                                     borderWidth={1}
-                                    borderColor="#E9E9E9"
+                                    borderColor={isDark ? '#333333' : '#E9E9E9'}
                                     borderTopLeftRadius={10}
                                     borderTopRightRadius={10}
                                     borderBottomLeftRadius={showProductStatusDropdown ? 0 : 10}
@@ -915,7 +915,7 @@ const EventCreatePost: React.FC = () => {
                                         <Feather
                                             name={showProductStatusDropdown ? 'chevron-up' : 'chevron-down'}
                                             size={20}
-                                            color="#000000"
+                                            color={isDark ? '#FFFFFF' : '#000000'}
                                         />
                                     </HStack>
                                 </Box>
@@ -925,7 +925,7 @@ const EventCreatePost: React.FC = () => {
                                 <Box
                                     bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
                                     borderWidth={1}
-                                    borderColor="#E9E9E9"
+                                    borderColor={isDark ? '#333333' : '#E9E9E9'}
                                     borderTopWidth={0}
                                     borderTopLeftRadius={0}
                                     borderTopRightRadius={0}
@@ -1026,7 +1026,7 @@ const EventCreatePost: React.FC = () => {
                                         height={64}
                                         bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
                                         borderWidth={1}
-                                        borderColor="#9E9E9E"
+                                        borderColor={isDark ? '#555555' : '#9E9E9E'}
                                         borderStyle="dashed"
                                         borderRadius={5}
                                         justifyContent="center"

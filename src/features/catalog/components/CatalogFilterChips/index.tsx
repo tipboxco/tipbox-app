@@ -7,6 +7,7 @@ import React, { useCallback } from 'react';
 import { ScrollView, Pressable, View, Text, StyleSheet } from 'react-native';
 import { ChevronDownIcon, XMarkIcon } from 'react-native-heroicons/outline';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 export type CatalogFilterId = 'tag' | 'sort';
 
@@ -43,6 +44,8 @@ export const CatalogFilterChips: React.FC<CatalogFilterChipsProps> = React.memo(
   onClearAll,
 }) => {
   const { t } = useTranslation('catalog');
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
 
   const hasAnyActiveFilter = !!(
     (filters.tag && filters.tag !== 'all') ||
@@ -75,9 +78,20 @@ export const CatalogFilterChips: React.FC<CatalogFilterChipsProps> = React.memo(
         contentContainerStyle={styles.scrollContent}
       >
         {hasAnyActiveFilter && (
-          <Pressable onPress={onClearAll} style={styles.clearAllChip}>
-            <XMarkIcon width={12} height={12} color="#000000" />
-            <Text style={styles.clearAllText}>{t('brandProductDetail.filterButtons.clearAll')}</Text>
+          <Pressable
+            onPress={onClearAll}
+            style={[
+              styles.clearAllChip,
+              {
+                backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
+                borderColor: isDark ? '#444444' : '#E9E9E9',
+              },
+            ]}
+          >
+            <XMarkIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text style={[styles.clearAllText, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+              {t('brandProductDetail.filterButtons.clearAll')}
+            </Text>
           </Pressable>
         )}
         {FILTER_BUTTONS.map((button) => {
@@ -90,13 +104,22 @@ export const CatalogFilterChips: React.FC<CatalogFilterChipsProps> = React.memo(
               onPress={() => handlePress(button.id)}
               style={[
                 styles.chip,
-                isActive ? styles.chipActive : styles.chipInactive,
+                isActive
+                  ? styles.chipActive
+                  : [styles.chipInactive, {
+                      backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                      borderColor: isDark ? '#444444' : '#E9E9E9',
+                    }],
               ]}
             >
-              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+              <Text style={[
+                styles.chipText,
+                { color: isActive ? '#000000' : (isDark ? '#FFFFFF' : '#000000') },
+                isActive && styles.chipTextActive,
+              ]}>
                 {getChipLabel(button.id)}
               </Text>
-              <ChevronDownIcon width={9} height={9} color="#000000" />
+              <ChevronDownIcon width={9} height={9} color={isActive ? '#000000' : (isDark ? '#FFFFFF' : '#000000')} />
             </Pressable>
           );
         })}
