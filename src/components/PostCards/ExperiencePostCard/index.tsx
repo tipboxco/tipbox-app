@@ -883,58 +883,60 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
       {showActions && (
         <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={5} borderBottomLeftRadius={5} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center"
         >
-          <Pressable onPress={handleLike}>
-          <HStack alignItems="center">
-              {isLiked ? (
-                <HeartIconSolid width={24} height={24} color="#FF3040" />
-              ) : (
-                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              )}
-              <AnimatedCounter
-                value={likesCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
+          <HStack flex={1} justifyContent="space-between" alignItems="center">
+            <Pressable onPress={handleLike}>
+              <HStack alignItems="center">
+                {isLiked ? (
+                  <HeartIconSolid width={24} height={24} color="#FF3040" />
+                ) : (
+                  <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                )}
+                <AnimatedCounter
+                  value={likesCount}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={10}
+                  ml={4}
+                />
+              </HStack>
+            </Pressable>
+            <Pressable onPress={handleComment}>
+              <HStack alignItems="center">
+                <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                <AnimatedCounter
+                  value={commentsCount}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={10}
+                  ml={4}
+                />
+              </HStack>
+            </Pressable>
+            <Pressable onPress={handleShare}>
+              <HStack alignItems="center">
+                <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                <AnimatedCounter
+                  value={sharesCount}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={10}
+                  ml={4}
+                />
+              </HStack>
+            </Pressable>
+            <Pressable onPress={handleBookmark}>
+              <HStack alignItems="center">
+                {isBookmarked ? (
+                  <BookmarkIconSolid width={24} height={24} color="#829905" />
+                ) : (
+                  <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                )}
+                <AnimatedCounter
+                  value={bookmarksCount}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={10}
+                  ml={4}
+                />
+              </HStack>
+            </Pressable>
           </HStack>
-          </Pressable>
-          <Pressable onPress={handleComment}>
-          <HStack alignItems="center">
-            <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              <AnimatedCounter
-                value={commentsCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
-          </HStack>
-          </Pressable>
-          <Pressable onPress={handleShare}>
-          <HStack alignItems="center">
-            <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              <AnimatedCounter
-                value={sharesCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
-          </HStack>
-          </Pressable>
-          <Pressable onPress={handleBookmark}>
-          <HStack alignItems="center">
-              {isBookmarked ? (
-                <BookmarkIconSolid width={24} height={24} color="#829905" />
-              ) : (
-                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              )}
-              <AnimatedCounter
-                value={bookmarksCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
-          </HStack>
-          </Pressable>
         </HStack>
       )}
     </View>
