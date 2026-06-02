@@ -4,7 +4,7 @@ import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { useTranslation } from 'react-i18next';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CachedImage } from '@/src/components/CachedImage';
-import { TrashIcon, HeartIcon, PencilIcon } from 'react-native-heroicons/outline';
+import { TrashIcon, HeartIcon, PencilIcon, ArrowUturnLeftIcon } from 'react-native-heroicons/outline';
 import { HeartIcon as HeartIconSolid } from 'react-native-heroicons/solid';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -34,6 +34,10 @@ export interface CommentsCardProps {
   onLike?: (commentId: string, postId: string) => void;
   onUnlike?: (commentId: string, postId: string) => void;
   onEdit?: (commentId: string, postId: string, newContent: string) => void;
+  replyContext?: {
+    userName: string;
+    onPress?: () => void;
+  };
 }
 
 const CommentsCardInner: React.FC<CommentsCardProps> = ({
@@ -52,6 +56,7 @@ const CommentsCardInner: React.FC<CommentsCardProps> = ({
   onLike,
   onUnlike,
   onEdit,
+  replyContext,
 }) => {
   const { t } = useTranslation('common');
   const { colorMode } = useColorMode();
@@ -224,9 +229,23 @@ const CommentsCardInner: React.FC<CommentsCardProps> = ({
         styles.container,
         {
           backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF',
+          borderBottomColor: isDark ? '#2A2A2A' : '#E9E9E9',
         }
       ]}
     >
+        {/* Reply context header */}
+        {replyContext && (
+          <Pressable
+            onPress={replyContext.onPress}
+            disabled={!replyContext.onPress}
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 4 }}
+          >
+            <ArrowUturnLeftIcon width={10} height={10} color={isDark ? '#666666' : '#AAAAAA'} />
+            <Text color={isDark ? '#666666' : '#AAAAAA'} fontSize={10} fontWeight="$medium">
+              {t('comments.replyTo', { name: replyContext.userName })}
+            </Text>
+          </Pressable>
+        )}
         <HStack alignItems="flex-start" space="sm">
         {/* Avatar */}
         <CachedImage
@@ -256,7 +275,7 @@ const CommentsCardInner: React.FC<CommentsCardProps> = ({
                   {userName}
                 </Text>
                 <Text
-                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  color={isDark ? '#AAAAAA' : '#8C8C8C'}
                   fontSize="$xs"
                   fontWeight="$medium"
                 >
@@ -264,7 +283,7 @@ const CommentsCardInner: React.FC<CommentsCardProps> = ({
                 </Text>
               </HStack>
               <Text
-                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                color={isDark ? '#AAAAAA' : '#8C8C8C'}
                 fontSize="$xs"
                 fontWeight="$medium"
                 numberOfLines={1}
@@ -282,7 +301,7 @@ const CommentsCardInner: React.FC<CommentsCardProps> = ({
                 {userName}
               </Text>
               <Text
-                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                color={isDark ? '#AAAAAA' : '#8C8C8C'}
                 fontSize="$xs"
                 fontWeight="$medium"
               >
@@ -343,7 +362,7 @@ const CommentsCardInner: React.FC<CommentsCardProps> = ({
                     }}
                   >
                     <Text
-                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                      color={isDark ? '#AAAAAA' : '#8C8C8C'}
                       fontSize={11}
                       fontWeight="$medium"
                     >
@@ -399,7 +418,7 @@ const CommentsCardInner: React.FC<CommentsCardProps> = ({
                 {isLiked ? (
                   <HeartIconSolid width={18} height={18} color="#FF3040" />
                 ) : (
-                  <HeartIcon width={18} height={18} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
+                  <HeartIcon width={18} height={18} color={isDark ? '#AAAAAA' : '#8C8C8C'} />
                 )}
                 <Text
                   color={isLiked ? '#FF3040' : (isDark ? '#8C8C8C' : '#8C8C8C')}

@@ -483,6 +483,7 @@ export const PostDetailScreen = () => {
         likesCount: number;
         isLiked: boolean;
         createdAt: string;
+        parentUserName?: string;
     };
 
     const flattenedComments = useMemo(() => {
@@ -520,6 +521,7 @@ export const PostDetailScreen = () => {
             });
 
             if (item.replies && item.replies.length > 0) {
+                const parentUserName = item.user.name || 'Anonymous';
                 item.replies.forEach((reply) => {
                     flat.push({
                         id: reply.id,
@@ -533,6 +535,7 @@ export const PostDetailScreen = () => {
                         likesCount: reply.likesCount || 0,
                         isLiked: reply.isLiked ?? false,
                         createdAt: reply.createdAt,
+                        parentUserName,
                     });
                 });
             }
@@ -720,6 +723,7 @@ export const PostDetailScreen = () => {
             onLike={handleLikeComment}
             onUnlike={handleUnlikeComment}
             onEdit={handleEditComment}
+            replyContext={item.parentUserName ? { userName: item.parentUserName } : undefined}
         />
     ), [currentUserId, postId, handleDeleteComment, handleLikeComment, handleUnlikeComment, handleEditComment]);
 
