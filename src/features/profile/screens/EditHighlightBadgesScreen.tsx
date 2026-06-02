@@ -264,12 +264,14 @@ const EditHighlightBadgesScreen: React.FC = () => {
                 ]}
               >
                 <View style={[styles.badgeImageContainer, { backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5' }]}>
-                  <Image
-                    source={badge.icon}
-                    alt={badge.title}
-                    style={styles.badgeImage}
-                    resizeMode="contain"
-                  />
+                  <View style={[styles.badgeImageCircleWrapper, { backgroundColor: isDark ? '#262626' : '#EBEBEB' }]}>
+                    <Image
+                      source={badge.icon}
+                      alt={badge.title}
+                      style={styles.badgeImage}
+                      resizeMode="contain"
+                    />
+                  </View>
                   {selected && (
                     <View style={[styles.checkBadge, { backgroundColor: '#C8E600' }]}>
                       <CheckIcon width={10} height={10} color="#000000" />
@@ -552,6 +554,15 @@ const styles = StyleSheet.create({
   badgeImageContainer: {
     width: '100%',
     aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+  },
+  badgeImageCircleWrapper: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 999,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
