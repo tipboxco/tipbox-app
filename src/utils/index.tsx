@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
+import { useAuth } from '@/src/providers/AuthProvider';
 
 /**
  * Default user avatar image
@@ -221,8 +222,13 @@ export const formatRelativeTime = (timestamp: string, locale?: string): string =
 export const useCurrentUserIdOrLogout = (): string | undefined => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, logout } = useAppStore();
+  const { isAuthReady } = useAuth();
 
   useEffect(() => {
+    // Wait until AuthProvider has finished initializing before deciding to logout.
+    // During Zustand rehydration (first ~100–3000ms), user is transiently null
+    // even for authenticated sessions — logging out here would kill a valid session.
+    if (!isAuthReady) return;
     if (!user) {
       (async () => {
         try {
@@ -237,7 +243,7 @@ export const useCurrentUserIdOrLogout = (): string | undefined => {
         }
       })();
     }
-  }, [user, logout, navigation]);
+  }, [user, logout, navigation, isAuthReady]);
 
   return user?.id;
 };

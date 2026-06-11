@@ -348,21 +348,22 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           }
           return client(originalRequest);
-        } catch (refreshError) {
-          // ARCHITECTURE FIX: Lazy import to break circular dependency
-          // Refresh başarısız, tüm token'ları temizle ve logout yap
+        } catch (refreshError: any) {
           processQueue(refreshError as AxiosError, null);
-          clearTokenCache(); // PERFORMANCE FIX: Clear cache on refresh failure
+          clearTokenCache();
           await TokenService.clearTokens();
-          
-          // CRITICAL: Logout'u await etmeden çağır (sonsuz döngü önleme)
-          // Logout fonksiyonu zaten state'i güncelliyor, burada sadece tetikliyoruz
-          const { useAppStore } = require('../../store/appStore');
-          // Logout'u arka planda çağır (await etme - sonsuz döngü riski)
-          useAppStore.getState().logout().catch((error: any) => {
-            console.error('[interceptors] Logout error (silent):', error);
-          });
-          
+
+          // "No refresh token available" means the user was never authenticated
+          // (e.g. a background query fired before auth initialized on startup).
+          // Calling logout() in that case would wipe a valid in-flight session.
+          const hadNoToken = refreshError?.message === 'No refresh token available';
+          if (!hadNoToken) {
+            const { useAppStore } = require('../../store/appStore');
+            useAppStore.getState().logout().catch((error: any) => {
+              console.error('[interceptors] Logout error (silent):', error);
+            });
+          }
+
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
