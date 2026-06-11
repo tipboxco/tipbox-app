@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getCatalogContextPosts, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getCatalogContextPosts, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, searchCatalogSubCategories, searchCatalogProductGroups, getPopularSubCategories, getPopularProductGroups, type CatalogPaginationResponse } from './catalogApi';
 import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandHistoryFeed, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand, getSurveyQuestions, submitSurveyAnswer } from './brandApi';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse, SurveyQuestionsResponse } from '../types';
 
@@ -52,6 +52,18 @@ export const catalogKeys = {
   // Global Brand Search
   globalBrandSearch: (search: string, cursor?: string, limit?: number) =>
     [...catalogKeys.all, 'globalBrandSearch', search, cursor, limit] as const,
+  // Subcategory Search
+  subCategorySearch: (q: string | undefined, limit?: number) =>
+    [...catalogKeys.all, 'subCategorySearch', q, limit] as const,
+  // Product Group Search
+  productGroupSearch: (q: string | undefined, limit?: number) =>
+    [...catalogKeys.all, 'productGroupSearch', q, limit] as const,
+  // Popular Subcategories
+  popularSubCategories: (limit?: number) =>
+    [...catalogKeys.all, 'popularSubCategories', limit] as const,
+  // Popular Product Groups
+  popularProductGroups: (limit?: number) =>
+    [...catalogKeys.all, 'popularProductGroups', limit] as const,
 };
 
 /**
@@ -1766,5 +1778,99 @@ export const useBrandProductNews = (
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
     refetchOnWindowFocus: false, // Window focus'ta fetch etme
+  });
+};
+
+/**
+ * Subcategory Search infinite query hook
+ * İsim bazlı subcategory araması
+ *
+ * @param query - Arama terimi (undefined veya boş ise disabled)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ */
+export const useSubCategorySearch = (query: string | undefined, limit: number = 20) => {
+  const hasQuery = !!query && query.trim().length > 0;
+  return useInfiniteQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
+    queryKey: hasQuery
+      ? catalogKeys.subCategorySearch(query, limit)
+      : ['catalog', 'subCategorySearch', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return searchCatalogSubCategories(query ?? '', cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) return undefined;
+      return lastPage.pagination?.cursor;
+    },
+    enabled: hasQuery,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    retry: 0,
+  });
+};
+
+/**
+ * Product Group Search infinite query hook
+ * İsim bazlı product group araması
+ *
+ * @param query - Arama terimi (undefined veya boş ise disabled)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ */
+export const useProductGroupSearch = (query: string | undefined, limit: number = 20) => {
+  const hasQuery = !!query && query.trim().length > 0;
+  return useInfiniteQuery<CatalogPaginationResponse<CatalogProductGroup>, Error>({
+    queryKey: hasQuery
+      ? catalogKeys.productGroupSearch(query, limit)
+      : ['catalog', 'productGroupSearch', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return searchCatalogProductGroups(query ?? '', cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) return undefined;
+      return lastPage.pagination?.cursor;
+    },
+    enabled: hasQuery,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    retry: 0,
+  });
+};
+
+/**
+ * Popular Subcategories query hook
+ * En fazla post içeren subcategoryleri getirir
+ *
+ * @param limit - Döndürülecek item sayısı (default: 10)
+ */
+export const usePopularSubCategories = (limit: number = 10) => {
+  return useQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
+    queryKey: catalogKeys.popularSubCategories(limit),
+    queryFn: () => getPopularSubCategories(limit),
+    staleTime: 24 * 60 * 60 * 1000,
+    gcTime: 7 * 24 * 60 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * Popular Product Groups query hook
+ * En fazla post içeren product group'ları getirir
+ *
+ * @param limit - Döndürülecek item sayısı (default: 10)
+ */
+export const usePopularProductGroups = (limit: number = 10) => {
+  return useQuery<CatalogPaginationResponse<CatalogProductGroup>, Error>({
+    queryKey: catalogKeys.popularProductGroups(limit),
+    queryFn: () => getPopularProductGroups(limit),
+    staleTime: 24 * 60 * 60 * 1000,
+    gcTime: 7 * 24 * 60 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };

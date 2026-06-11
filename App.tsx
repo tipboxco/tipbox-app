@@ -19,6 +19,7 @@ import { GluestackProvider } from '@/src/components/ui';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import Navigation from '@/src/navigation';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { colors, getColor } from '@/src/constants/colors';
 import { QueryProvider } from '@/src/providers/QueryProvider';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { AppProviders } from '@/src/providers/ComposedProviders';
@@ -64,7 +65,7 @@ const AppInner = () => {
   // PERFORMANCE FIX: Memoize navigation bar style object
   const navigationBarStyle = useMemo(
     () => ({
-      backgroundColor: isDark ? '#000000' : '#ffffff',
+      backgroundColor: getColor(colors.background.primary, isDark),
       buttonStyle: isDark ? 'light' as const : 'dark' as const,
     }),
     [isDark]
@@ -108,7 +109,7 @@ const AppInner = () => {
   // Bu sayede gesture handler hatası çözülür
   // CRITICAL ORDER: GluestackProvider -> PortalProvider -> BottomSheetModalProvider -> NavigationContainer -> GlobalBottomSheetProvider
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: getColor(colors.background.primary, isDark) }}>
       <GluestackProvider>
         <PortalProvider>
           <BottomSheetModalProvider>

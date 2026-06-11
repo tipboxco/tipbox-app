@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updateTokenCache(accessToken);
           
           // Eğer user bilgileri AsyncStorage'da varsa (persist'ten gelmiş), authenticated yap
-          if (appState.user && appState.user.id) {
+          if (appState.user && appState.user.id && appState.user.id.length > 0) {
             useAppStore.setState({
               isAuthenticated: true,
               accessToken: accessToken,

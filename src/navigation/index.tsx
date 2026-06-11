@@ -1,16 +1,37 @@
 import React, { useEffect, useRef } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { NavigationProvider, useNavigationRef } from '@/src/providers/NavigationProvider';
 import { RootNavigator } from './stacks/RootNavigator';
 import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
 import { StatusBar } from 'expo-status-bar';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { colors, getColor } from '@/src/constants/colors';
 import { ScrollProvider } from '@/src/providers/ScrollProvider';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { GlobalBottomSheet } from '@/src/components/GlobalBottomSheet';
+
+const LightNavigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: colors.background.primary.light,
+    card: colors.tabBar.background.light,
+    border: colors.border.primary.light,
+  },
+};
+
+const DarkNavigationTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: colors.background.primary.dark,
+    card: colors.tabBar.background.dark,
+    border: colors.border.primary.dark,
+  },
+};
 // Drawer artık React Navigation DrawerNavigator içinde
 // FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için
 
@@ -119,9 +140,9 @@ const NavigationInner = () => {
     <>
       {/* FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için */}
       {/* Drawer SafeAreaView'lerin dışında kalır ve tam ekranı kaplar */}
-      <StatusBar 
-        style={isDark ? 'light' : 'dark'} 
-        backgroundColor={isDark ? '#000000' : '#FFFFFF'}
+      <StatusBar
+        style={isDark ? 'light' : 'dark'}
+        backgroundColor={getColor(colors.background.primary, isDark)}
         translucent={true}
       />
       {/* CRITICAL FIX: Provider hierarchy - NavigationContainer içinde */}
@@ -129,6 +150,7 @@ const NavigationInner = () => {
       <ScrollProvider>
         <NavigationContainer
           ref={navigationRef}
+          theme={isDark ? DarkNavigationTheme : LightNavigationTheme}
           onReady={() => {
             // ARCHITECTURE FIX: Event-driven navigation ready handling
             // Navigation ready olduğunda pending navigation queue'yu consume et

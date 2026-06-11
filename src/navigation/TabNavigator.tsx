@@ -3,6 +3,7 @@ import { Platform, View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps, BottomTabBar } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { colors, getColor } from '@/src/constants/colors';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -153,7 +154,7 @@ const CustomTabBar = (props: BottomTabBarProps) => {
     
     return {
       opacity: overlayOpacity,
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      backgroundColor: getColor(colors.tabBar.glassOverlay, isDark),
     };
   });
   
@@ -166,7 +167,7 @@ const CustomTabBar = (props: BottomTabBarProps) => {
   const tabBarHeight = Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding;
   
   // Liquid Glass için base tint color
-  const baseTintColor = isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.5)';
+  const baseTintColor = getColor(colors.tabBar.glassTint, isDark);
   
   // Tab bar container style - yuvarlatılmış üst köşeler (su damlası efekti)
   const containerStyle = {
@@ -254,7 +255,7 @@ const CustomTabBar = (props: BottomTabBarProps) => {
           style={[
             props.style,
             {
-              backgroundColor: isDark ? '#000000' : '#FAFAFA',
+              backgroundColor: getColor(colors.tabBar.background, isDark),
               borderTopWidth: 0,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
@@ -324,9 +325,9 @@ export const TabNavigator = () => {
     }
     
     // Liquid Glass kullanılıyorsa backgroundColor transparent yap
-    const backgroundColor = isGlassAvailable 
-      ? 'transparent' 
-      : (isDark ? '#000000' : '#FAFAFA');
+    const backgroundColor = isGlassAvailable
+      ? 'transparent'
+      : getColor(colors.tabBar.background, isDark);
     
     return {
       backgroundColor,
@@ -508,8 +509,8 @@ export const TabNavigator = () => {
   // ARCHITECTURE FIX: Edge-to-Edge Design Pattern
   // Manual inset management for full-bleed design with controlled background colors
   // Drawer can extend full height without SafeAreaView constraints
-  const backgroundColor = isDark ? '#000000' : '#FFFFFF';
-  const bottomBarColor = isDark ? '#1A1A1A' : '#FAFAFA';
+  const backgroundColor = getColor(colors.background.primary, isDark);
+  const bottomBarColor = getColor(colors.tabBar.safeAreaBackground, isDark);
 
   return (
     <View style={{ flex: 1, backgroundColor }}>
@@ -538,8 +539,8 @@ export const TabNavigator = () => {
             unmountOnBlur: false,
             headerShown: false,
             tabBarIcon: ({ focused, color, size }) => renderTabBarIcon({ route, focused, color, size }),
-            tabBarActiveTintColor: '#758600',
-            tabBarInactiveTintColor: isDark ? '#FFFFFF' : '#000000',
+            tabBarActiveTintColor: colors.tabBar.active,
+            tabBarInactiveTintColor: getColor(colors.tabBar.inactive, isDark),
             tabBarShowLabel: false,
             tabBarStyle,
           })}

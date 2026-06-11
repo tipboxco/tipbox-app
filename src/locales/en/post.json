@@ -501,5 +501,14 @@
     "message": "Are you sure you want to block this user? Blocked users cannot interact with you.",
     "cancel": "Cancel",
     "block": "Block"
+  },
+  "categorySearch": {
+    "title": "Create a Post",
+    "placeholder": "Search a Subcategory or Product Group",
+    "noResults": "No results found",
+    "subcategory": "Subcategory",
+    "productGroup": "Product Group",
+    "popularSubcategories": "Popular Subcategories",
+    "popularProductGroups": "Popular Product Groups"
   }
 }

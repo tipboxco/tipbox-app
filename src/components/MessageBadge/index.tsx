@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { colors, getColor } from '@/src/constants/colors';
 
 /**
  * Message Badge Component
@@ -32,9 +33,9 @@ export const MessageBadge: React.FC<MessageBadgeProps> = ({
       width={size}
       height={size}
       borderRadius={size / 2}
-      bg="#FF3B30" // iOS red badge color
+      bg={colors.status.error}
       borderWidth={2}
-      borderColor={isDark ? '#000000' : '#FAFAFA'}
+      borderColor={getColor(colors.tabBar.background, isDark)}
     />
   );
 };

@@ -105,7 +105,7 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
   
   const initialModeFromRoute = routeView === 'brands' ? 'brand-catalog' : routeView === 'products' ? 'product' : undefined;
   const initialModeFromStore = lastCatalogType === 'brand' ? 'brand-catalog' : 'product';
-  const initialMode = initialModeFromRoute ?? initialModeFromStore;
+  const initialMode = embedded ? 'product' : (initialModeFromRoute ?? initialModeFromStore);
   
   // Route params'tan gelen index'leri store'a kaydet
   // CRITICAL FIX: setBrandCatalogState, setProductCatalogState removed from dependencies
@@ -611,9 +611,15 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
   const handleCreatePost = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view
     setBottomSheetKey(prev => prev + 1);
-    
+
     // PERFORMANCE FIX: Get store state directly instead of subscribing
     const storeState = useCatalogUIStore.getState();
+
+    // No category context yet — guide user to search for a subcategory/product group
+    if (storeState.currentView === 'categories') {
+      navigationService.navigate(ROOT_ROUTES.POST, { screen: 'CategorySearch' });
+      return;
+    }
     
     // Determine stage for bottom sheet
     // Priority: Product > ProductGroup > SubCategory
@@ -864,6 +870,7 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
             onCategoryNavigate={embedded ? handleCategoryNavigate : undefined}
             onSubCategoryNavigate={embedded ? handleSubCategoryNavigate : undefined}
             onProductGroupNavigate={embedded ? handleProductGroupNavigate : undefined}
+            hideSearch={embedded}
             initialView={productCatalogState.currentView}
             initialSelectedCategoryId={routeProductCategoryId || productCatalogState.selectedCategoryId}
             initialSelectedSubCategoryId={routeProductSubCategoryId || productCatalogState.selectedSubCategoryId}
@@ -964,8 +971,8 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
         {renderContent()}
       </Box>
 
-      {/* Floating Action Button - Hide when in select mode (e.g., from EventCreatePost) */}
-      {!route.params?.selectMode && !route.params?.returnScreen && (
+      {/* Floating Action Button - Hide when embedded (Explore tab) or in select mode */}
+      {!embedded && !route.params?.selectMode && !route.params?.returnScreen && (
         <Pressable
           position="absolute"
           bottom={Platform.OS === 'ios' ? 34 + 28 : 45 + 28}

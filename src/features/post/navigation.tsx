@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectCompareProductScreen } from './screens';
+import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectCompareProductScreen, CategorySearchScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
@@ -82,6 +82,7 @@ export type PostStackParamList = {
     initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any; productGroupId?: string };
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
   };
+  CategorySearch: undefined;
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();
@@ -214,6 +215,10 @@ export const PostNavigator = () => {
       <Stack.Screen
         name="SelectCompareProductScreen"
         component={SelectCompareProductScreen}
+      />
+      <Stack.Screen
+        name="CategorySearch"
+        component={CategorySearchScreen}
       />
     </Stack.Navigator>
   );

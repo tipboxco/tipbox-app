@@ -5,7 +5,6 @@ import { Search } from 'lucide-react-native';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import CategoryCard from '../components/CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
-import ActionButtons from '../components/ActionButtons';
 import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
@@ -57,6 +56,8 @@ interface ProductCatalogScreenProps {
    * back button replaces breadcrumb-based navigation.
    */
   hideBreadcrumb?: boolean;
+  /** When true, hides the search bar. Use in embedded contexts where search is not needed. */
+  hideSearch?: boolean;
   // Initial state props (from navigation store)
   initialView?: 'categories' | 'subcategories' | 'productgroups' | 'products';
   initialSelectedCategoryId?: string;
@@ -76,6 +77,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   onSubCategoryNavigate,
   onProductGroupNavigate,
   hideBreadcrumb = false,
+  hideSearch = false,
   initialView,
   initialSelectedCategoryId,
   initialSelectedSubCategoryId,
@@ -1569,7 +1571,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     <Box flex={1}>
 
       {/* Search Bar - Fixed at top */}
-      <VStack
+      {!hideSearch && <VStack
         space="md"
         pt="$3"
         pb="$4"
@@ -1619,7 +1621,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             </Input>
           </HStack>
         )}
-      </VStack>
+      </VStack>}
 
       {/* Breadcrumb — detail ekranlarında gizlenir; navigasyon stack geri butonuyla yapılır */}
       {!hideBreadcrumb && (
@@ -1627,16 +1629,6 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           items={breadcrumbItems}
           onItemPress={handleBreadcrumbPress}
           rootLabel={t('productCatalog.categories')}
-        />
-      )}
-
-      {/* Action Buttons - Show for productgroups and products (after subcategory is selected) */}
-      {/* Hidden in picker/select mode (onProductSelect or selectMode set) */}
-      {(viewState === 'productgroups' || viewState === 'products') && !onProductSelect && !selectMode && (
-        <ActionButtons
-          onShowPosts={handleShowPosts}
-          onCreatePost={handleCreatePost}
-          categoryName={breadcrumbItems.length > 0 ? breadcrumbItems[breadcrumbItems.length - 1]?.name : undefined}
         />
       )}
 

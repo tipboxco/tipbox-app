@@ -89,7 +89,7 @@ export const LoginScreen = () => {
           email,
           password,
         });
-        if(result.success) {
+        if(result.token && result.id) {
           // Console'da response'u göster (sadece development modunda)
           if (__DEV__) {
             console.log('[LoginScreen] ✅ Login successful:', {
@@ -127,7 +127,6 @@ export const LoginScreen = () => {
         else {
           showCustomToast(toast, {
             title: t('toasts.loginFailed'),
-            description: result.message,
             action: 'error',
             duration: 4000,
           });

@@ -1004,6 +1004,146 @@ export const searchGlobalProducts = async (
 };
 
 /**
+ * Search Subcategories endpoint function
+ * İsim bazlı subcategory araması
+ *
+ * @param q - Arama terimi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns CatalogPaginationResponse<CatalogSubCategory>
+ */
+export const searchCatalogSubCategories = async (
+  q: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<CatalogPaginationResponse<CatalogSubCategory>> => {
+  const params = new URLSearchParams();
+  if (q && q.trim().length > 0) {
+    params.append('q', q.trim());
+  }
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogSubCategory>>(
+      `/catalog/subcategories/search?${params.toString()}`
+    );
+    return {
+      items: Array.isArray(response.data?.items) ? response.data.items : [],
+      pagination: response.data?.pagination || { hasMore: false, limit },
+    };
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { status?: number; data?: unknown } };
+    if (axiosError.response?.status === 404) {
+      return { items: [], pagination: { hasMore: false, limit } };
+    }
+    throw error;
+  }
+};
+
+/**
+ * Search Product Groups endpoint function
+ * İsim bazlı product group araması
+ *
+ * @param q - Arama terimi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns CatalogPaginationResponse<CatalogProductGroup>
+ */
+export const searchCatalogProductGroups = async (
+  q: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<CatalogPaginationResponse<CatalogProductGroup>> => {
+  const params = new URLSearchParams();
+  if (q && q.trim().length > 0) {
+    params.append('q', q.trim());
+  }
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogProductGroup>>(
+      `/catalog/product-groups/search?${params.toString()}`
+    );
+    return {
+      items: Array.isArray(response.data?.items) ? response.data.items : [],
+      pagination: response.data?.pagination || { hasMore: false, limit },
+    };
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { status?: number; data?: unknown } };
+    if (axiosError.response?.status === 404) {
+      return { items: [], pagination: { hasMore: false, limit } };
+    }
+    throw error;
+  }
+};
+
+/**
+ * Get Popular Subcategories endpoint function
+ * En fazla post içeren subcategoryleri getirir
+ *
+ * @param limit - Döndürülecek item sayısı (default: 10)
+ * @returns CatalogPaginationResponse<CatalogSubCategory>
+ */
+export const getPopularSubCategories = async (
+  limit: number = 10
+): Promise<CatalogPaginationResponse<CatalogSubCategory>> => {
+  const params = new URLSearchParams();
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogSubCategory>>(
+      `/catalog/subcategories/popular?${params.toString()}`
+    );
+    return {
+      items: Array.isArray(response.data?.items) ? response.data.items : [],
+      pagination: response.data?.pagination || { hasMore: false, limit },
+    };
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { status?: number; data?: unknown } };
+    if (axiosError.response?.status === 404) {
+      return { items: [], pagination: { hasMore: false, limit } };
+    }
+    throw error;
+  }
+};
+
+/**
+ * Get Popular Product Groups endpoint function
+ * En fazla post içeren product group'ları getirir
+ *
+ * @param limit - Döndürülecek item sayısı (default: 10)
+ * @returns CatalogPaginationResponse<CatalogProductGroup>
+ */
+export const getPopularProductGroups = async (
+  limit: number = 10
+): Promise<CatalogPaginationResponse<CatalogProductGroup>> => {
+  const params = new URLSearchParams();
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogProductGroup>>(
+      `/catalog/product-groups/popular?${params.toString()}`
+    );
+    return {
+      items: Array.isArray(response.data?.items) ? response.data.items : [],
+      pagination: response.data?.pagination || { hasMore: false, limit },
+    };
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { status?: number; data?: unknown } };
+    if (axiosError.response?.status === 404) {
+      return { items: [], pagination: { hasMore: false, limit } };
+    }
+    throw error;
+  }
+};
+
+/**
  * Get Product Posts endpoint function (Catalog API)
  * @deprecated Use getCatalogContextPosts instead - Smart endpoint automatically detects context type
  * 

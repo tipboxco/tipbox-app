@@ -193,48 +193,34 @@ export const useAppStore = create<AppState>()(
             // PERFORMANCE FIX: Update token cache for API interceptor
             updateTokenCache(userData.token);
             
-            // Wallet oluştur (eğer yoksa)
-            console.log('[AppStore] 📋 Wallet oluşturuluyor...');
-            try {
-              const walletStartTime = Date.now();
-              const wallet = await WalletService.createWallet(userData.id);
-              const walletTime = Date.now() - walletStartTime;
-              console.log('[AppStore] ✅ Wallet oluşturuldu');
-              console.log('[AppStore]    - Wallet ID:', wallet.walletId);
-              console.log('[AppStore]    - Wallet Identifier:', wallet.walletIdentifier);
-              console.log('[AppStore]    - Wallet Time:', walletTime, 'ms');
-              
-              // User bilgilerini ve wallet bilgilerini store'a kaydet
-              set({
-                user: {
-                  id: userData.id,
-                  fullName: userData.fullName,
-                  email: userData.email,
-                  avatar: userData.avatar,
-                },
-                accessToken: userData.token,
-                walletId: wallet.walletId,
-                walletIdentifier: wallet.walletIdentifier,
-                isAuthenticated: true,
-                isLoading: false,
-                error: null,
+            // User bilgilerini store'a kaydet — isAuthenticated burada set edilir
+            set({
+              user: {
+                id: userData.id,
+                fullName: userData.fullName,
+                email: userData.email,
+                avatar: userData.avatar,
+              },
+              accessToken: userData.token,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+
+            // Wallet oluşturma login akışını bloklamasın: fire-and-forget
+            // Bu çağrı başarısız olsa bile isAuthenticated değişmez
+            console.log('[AppStore] 📋 Wallet oluşturuluyor (arka planda)...');
+            WalletService.createWallet(userData.id)
+              .then((wallet) => {
+                console.log('[AppStore] ✅ Wallet oluşturuldu:', wallet.walletId);
+                set({
+                  walletId: wallet.walletId,
+                  walletIdentifier: wallet.walletIdentifier,
+                });
+              })
+              .catch((walletError) => {
+                console.warn('[AppStore] ⚠️ Wallet oluşturulamadı (login etkilenmez):', walletError?.message);
               });
-            } catch (walletError) {
-              console.error('[AppStore] ⚠️ Wallet oluşturulamadı, ama login devam ediyor:', walletError);
-              // Wallet oluşturulamazsa da login devam etsin
-              set({
-                user: {
-                  id: userData.id,
-                  fullName: userData.fullName,
-                  email: userData.email,
-                  avatar: userData.avatar,
-                },
-                accessToken: userData.token,
-                isAuthenticated: true,
-                isLoading: false,
-                error: null,
-              });
-            }
             
             const loginTime = Date.now() - loginStartTime;
             console.log('[AppStore] ✅ Login işlemi tamamlandı');

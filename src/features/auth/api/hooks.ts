@@ -134,16 +134,15 @@ export const useVerifyEmail = () => {
     onSuccess: async (data) => {
       // Token'ı store'a kaydet
       if (data.token) {
-        // Eğer refreshToken varsa login fonksiyonunu kullan, yoksa sadece token'ı kaydet
+        // Eğer refreshToken varsa token'ları kaydet ve temp state kur
+        // login() çağırmıyoruz çünkü user bilgileri henüz yok (setupProfile'da gelecek)
         if (data.refreshToken) {
-          await useAppStore.getState().login({
-            id: '', // VerifyEmail'de user bilgisi yok, setupProfile'da alınacak
-            fullName: '',
-            email: '',
-            avatar: undefined,
-            token: data.token,
-            refreshToken: data.refreshToken,
-          });
+          await TokenService.setTokens(data.token, data.refreshToken);
+          updateTokenCache(data.token);
+          useAppStore.getState().setTempUser(
+            { id: '', name: '', email: '', isGuest: false },
+            data.token,
+          );
         } else {
           // Sadece access token varsa, TokenService ile kaydet
           await TokenService.setAccessToken(data.token);

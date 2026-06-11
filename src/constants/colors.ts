@@ -35,7 +35,11 @@ export const colors = {
   },
   tabBar: {
     active: '#758600',
+    inactive: { light: '#000000', dark: '#FFFFFF' },
     background: { light: '#FAFAFA', dark: '#000000' },
+    safeAreaBackground: { light: '#FAFAFA', dark: '#1A1A1A' },
+    glassTint: { light: 'rgba(255, 255, 255, 0.5)', dark: 'rgba(0, 0, 0, 0.3)' },
+    glassOverlay: { light: 'rgba(0, 0, 0, 0.05)', dark: 'rgba(255, 255, 255, 0.1)' },
   },
   placeholder: {
     background: { light: '#F5F5F5', dark: '#2A2A2A' },

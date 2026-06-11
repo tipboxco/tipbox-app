@@ -501,5 +501,14 @@
     "message": "Bu kullanıcıyı engellemek istediğinizden emin misiniz? Engellenen kullanıcılar sizinle etkileşime geçemez.",
     "cancel": "İptal",
     "block": "Engelle"
+  },
+  "categorySearch": {
+    "title": "Gönderi Yaz",
+    "placeholder": "Alt Kategori veya Ürün Grubu Ara",
+    "noResults": "Sonuç bulunamadı",
+    "subcategory": "Alt Kategori",
+    "productGroup": "Ürün Grubu",
+    "popularSubcategories": "Popüler Alt Kategoriler",
+    "popularProductGroups": "Popüler Ürün Grupları"
   }
 }

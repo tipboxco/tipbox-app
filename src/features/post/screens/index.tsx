@@ -7,3 +7,4 @@ export { CreateExperiencePostScreen } from './CreateExperiencePostScreen';
 export { CreateBenchmarkPostScreen } from './CreateBenchmarkPostScreen';
 export { CreateUpdatePostScreen } from './CreateUpdatePostScreen';
 export { SelectCompareProductScreen } from './SelectCompareProductScreen';
+export { CategorySearchScreen } from './CategorySearchScreen';
