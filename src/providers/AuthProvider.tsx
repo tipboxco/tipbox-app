@@ -62,33 +62,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
+        // Zustand persist, AsyncStorage'dan async olarak rehydrate olur.
+        // AuthProvider mount olduğunda bu işlem henüz tamamlanmamış olabilir.
+        // Rehydrate bitmeden okursak user: null gelir → token'lar yanlışlıkla silinir.
+        if (!useAppStore.persist?.hasHydrated?.()) {
+          await new Promise<void>((resolve) => {
+            const unsub = useAppStore.persist?.onFinishHydration?.(() => {
+              unsub?.();
+              resolve();
+            });
+            // Güvenlik için: 3 saniye içinde hydrate olmazsa devam et
+            setTimeout(resolve, 3000);
+          });
+        }
+
         // PERFORMANCE FIX: Parallel token reads instead of sequential
         // This reduces blocking time by ~50% (both reads happen simultaneously)
         const [accessToken, refreshToken] = await Promise.all([
           TokenService.getAccessToken(),
           TokenService.getRefreshToken(),
         ]);
-        
+
         // PERFORMANCE FIX: Initialize token cache for API interceptor
         // This avoids SecureStore reads on every API request
         await initializeTokenCache();
-        
-        // AppStore'dan mevcut state'i al
+
+        // AppStore'dan mevcut state'i al (rehydrate tamamlandıktan sonra)
         const appState = useAppStore.getState();
-        
+
+        console.log('[AuthProvider] 🔍 Auth state check:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          hasUser: !!appState.user,
+          userId: appState.user?.id || '(none)',
+          isAuthenticated: appState.isAuthenticated,
+        });
+
         // Token varsa ve user bilgileri de varsa, authenticated olarak işaretle
         if (accessToken && refreshToken) {
           // PERFORMANCE FIX: Update token cache
           updateTokenCache(accessToken);
-          
+
           // Eğer user bilgileri AsyncStorage'da varsa (persist'ten gelmiş), authenticated yap
           if (appState.user && appState.user.id && appState.user.id.length > 0) {
+            console.log('[AuthProvider] ✅ Oturum geri yüklendi:', appState.user.id);
             useAppStore.setState({
               isAuthenticated: true,
               accessToken: accessToken,
             });
           } else {
             // Token var ama user yok - token'ları temizle (güvenlik için)
+            console.warn('[AuthProvider] ⚠️ Token var ama user yok → token temizleniyor');
             await TokenService.clearTokens();
             clearTokenCache(); // PERFORMANCE FIX: Clear cache
             useAppStore.setState({
@@ -99,6 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         } else {
           // Token yoksa authenticated değil
+          console.log('[AuthProvider] ℹ️ Token yok → login ekranı');
           clearTokenCache(); // PERFORMANCE FIX: Clear cache
           useAppStore.setState({
             isAuthenticated: false,

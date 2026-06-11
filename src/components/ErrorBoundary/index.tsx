@@ -1,5 +1,21 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  useColorScheme,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Modül seviyesinde tutulan çarpışma sayacı.
+// Component remount'larında sıfırlanmaz; sonsuz döngüyü önlemek için kullanılır.
+let consecutiveCrashes = 0;
+const MAX_AUTO_CLEAR = 1; // İlk crash: otomatik temizle. Sonraki crash: manuel ekran göster.
 
 interface Props {
   children: ReactNode;
@@ -10,16 +26,11 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  isClearing: boolean;
+  // İlk crashte auto-clear devredeyse true → spinner gösterilir
+  autoClearing: boolean;
 }
 
-/**
- * Global Error Boundary Component
- * 
- * Catches JavaScript errors anywhere in the child component tree,
- * logs those errors, and displays a fallback UI instead of crashing.
- * 
- * PERFORMANCE FIX: Prevents app crashes and provides graceful error handling
- */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -27,138 +38,327 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
+      isClearing: false,
+      autoClearing: false,
     };
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    // Update state so the next render will show the fallback UI
-    return {
-      hasError: true,
-      error,
-    };
+    consecutiveCrashes += 1;
+    const autoClearing = consecutiveCrashes <= MAX_AUTO_CLEAR;
+    return { hasError: true, error, autoClearing };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to console
-    console.error('[ErrorBoundary] ❌ Error caught by boundary:', error);
-    console.error('[ErrorBoundary] Error Info:', errorInfo);
+    console.error('[ErrorBoundary] ❌ Hata yakalandı:', error);
+    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
+    this.setState({ errorInfo });
 
-    this.setState({
-      error,
-      errorInfo,
-    });
+    // Splash screen açık kalıyorsa kapat — recovery ekranı görünsün
+    SplashScreen.hideAsync().catch(() => {});
+
+    // İlk crashte storage otomatik temizlenir ve uygulama yeniden başlar.
+    // consecutiveCrashes > MAX_AUTO_CLEAR ise sonsuz döngü riski var, manuel ekran gösterilir.
+    if (consecutiveCrashes <= MAX_AUTO_CLEAR) {
+      this.runAutoClear();
+    }
   }
 
-  handleReset = () => {
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    });
+  runAutoClear = async () => {
+    try {
+      await Promise.allSettled([
+        AsyncStorage.clear(),
+        SecureStore.deleteItemAsync('access_token'),
+        SecureStore.deleteItemAsync('refresh_token'),
+      ]);
+    } catch (_) {
+      // Temizleme başarısız olsa da sıfırlamaya devam et
+    }
+    // Temizleme başarılı → crash sayacını sıfırla ve uygulamayı yeniden başlat
+    consecutiveCrashes = 0;
+    this.setState({ hasError: false, error: null, errorInfo: null, autoClearing: false });
+  };
+
+  handleManualReset = () => {
+    consecutiveCrashes = 0;
+    this.setState({ hasError: false, error: null, errorInfo: null, isClearing: false, autoClearing: false });
+  };
+
+  handleManualClearAndReset = async () => {
+    this.setState({ isClearing: true });
+    try {
+      await Promise.allSettled([
+        AsyncStorage.clear(),
+        SecureStore.deleteItemAsync('access_token'),
+        SecureStore.deleteItemAsync('refresh_token'),
+      ]);
+    } catch (_) {}
+    consecutiveCrashes = 0;
+    this.setState({ hasError: false, error: null, errorInfo: null, isClearing: false, autoClearing: false });
   };
 
   render() {
-    if (this.state.hasError) {
-      // Custom fallback UI
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      // Default fallback UI
-      return <ErrorFallback error={this.state.error} onReset={this.handleReset} />;
+    if (!this.state.hasError) {
+      return this.props.children;
     }
 
-    return this.props.children;
+    if (this.props.fallback) {
+      return this.props.fallback;
+    }
+
+    // İlk crash: otomatik temizleme spinner'ı
+    if (this.state.autoClearing) {
+      return (
+        <AutoClearScreen
+          error={this.state.error}
+          errorInfo={this.state.errorInfo}
+        />
+      );
+    }
+
+    // İkinci+ crash: kullanıcıya manuel seçenekler sun
+    return (
+      <ManualRecoveryScreen
+        error={this.state.error}
+        errorInfo={this.state.errorInfo}
+        isClearing={this.state.isClearing}
+        onReset={this.handleManualReset}
+        onClearAndReset={this.handleManualClearAndReset}
+      />
+    );
   }
 }
 
-/**
- * Default Error Fallback Component
- * CRITICAL FIX: Uses pure React Native components instead of Gluestack-UI
- * This prevents "StyledProvider not found" errors when ErrorBoundary catches errors
- */
-interface ErrorFallbackProps {
+// ─── Otomatik Temizleme Ekranı ───────────────────────────────────────────────
+
+interface AutoClearScreenProps {
   error: Error | null;
-  onReset: () => void;
+  errorInfo: ErrorInfo | null;
 }
 
-const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, onReset }) => {
+const AutoClearScreen: React.FC<AutoClearScreenProps> = ({ error, errorInfo }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const bg = isDark ? '#0F0F0F' : '#FFFFFF';
+  const textSecondary = isDark ? '#A0A0A0' : '#666666';
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#000000' }]}>
-          Bir Hata Oluştu
-        </Text>
-        <Text style={[styles.message, { color: isDark ? '#A0A0A0' : '#666666' }]}>
-          Üzgünüz, beklenmeyen bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı deneyin.
-        </Text>
-        {__DEV__ && error && (
-          <View style={[styles.errorBox, { backgroundColor: isDark ? '#1A1A1A' : '#F5F5F5' }]}>
-            <Text style={[styles.errorText, { color: isDark ? '#A0A0A0' : '#666666' }]}>
-              {error.toString()}
-            </Text>
-          </View>
-        )}
-        <TouchableOpacity
-          onPress={onReset}
-          style={styles.button}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.buttonText}>
-            Tekrar Dene
-          </Text>
-        </TouchableOpacity>
-      </View>
+    <View style={[styles.root, { backgroundColor: bg }]}>
+      <ActivityIndicator size="large" color="#BBFF4E" />
+      <Text style={[styles.recoveringText, { color: textSecondary }]}>
+        Kurtarılıyor...
+      </Text>
+      {__DEV__ && error && (
+        <View style={styles.devInline}>
+          <Text style={styles.devError}>{error.toString()}</Text>
+          {errorInfo?.componentStack ? (
+            <Text style={styles.devStack}>{errorInfo.componentStack.trim()}</Text>
+          ) : null}
+        </View>
+      )}
     </View>
   );
 };
 
+// ─── Manuel Kurtarma Ekranı ──────────────────────────────────────────────────
+
+interface ManualRecoveryScreenProps {
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
+  isClearing: boolean;
+  onReset: () => void;
+  onClearAndReset: () => void;
+}
+
+const ManualRecoveryScreen: React.FC<ManualRecoveryScreenProps> = ({
+  error,
+  errorInfo,
+  isClearing,
+  onReset,
+  onClearAndReset,
+}) => {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const bg = isDark ? '#0F0F0F' : '#FFFFFF';
+  const surface = isDark ? '#1A1A1A' : '#F5F5F5';
+  const textPrimary = isDark ? '#FFFFFF' : '#111111';
+  const textSecondary = isDark ? '#A0A0A0' : '#666666';
+  const border = isDark ? '#2A2A2A' : '#E5E5E5';
+
+  return (
+    <View style={[styles.root, { backgroundColor: bg }]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.iconWrap, { backgroundColor: surface, borderColor: border }]}>
+          <Text style={styles.iconText}>⚠️</Text>
+        </View>
+
+        <Text style={[styles.title, { color: textPrimary }]}>
+          Uygulama Başlatılamadı
+        </Text>
+        <Text style={[styles.body, { color: textSecondary }]}>
+          Otomatik kurtarma yeterli olmadı.{'\n'}
+          Aşağıdaki seçeneklerden birini deneyin.
+        </Text>
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            onPress={onReset}
+            style={[styles.btnSecondary, { borderColor: border }]}
+            activeOpacity={0.7}
+            disabled={isClearing}
+          >
+            <Text style={[styles.btnSecondaryText, { color: textPrimary }]}>
+              Tekrar Dene
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={onClearAndReset}
+            style={[styles.btnPrimary, isClearing && styles.btnDisabled]}
+            activeOpacity={0.8}
+            disabled={isClearing}
+          >
+            {isClearing ? (
+              <ActivityIndicator color="#000000" size="small" />
+            ) : (
+              <Text style={styles.btnPrimaryText}>Uygulamayı Sıfırla</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.hint, { color: textSecondary }]}>
+          Sıfırlama; oturum ve önbellek verilerini temizler.{'\n'}
+          Hesabınız silinmez.
+        </Text>
+
+        {__DEV__ && error && (
+          <View style={[styles.devBox, { backgroundColor: surface, borderColor: border }]}>
+            <Text style={[styles.devTitle, { color: textSecondary }]}>DEV — Hata Detayı</Text>
+            <Text style={[styles.devError, { color: '#FF6B6B' }]}>{error.toString()}</Text>
+            {errorInfo?.componentStack ? (
+              <Text style={[styles.devStack, { color: textSecondary }]}>
+                {errorInfo.componentStack.trim()}
+              </Text>
+            ) : null}
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+};
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
   },
-  content: {
+  recoveringText: {
+    marginTop: 16,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    maxWidth: 400,
+    paddingHorizontal: 24,
+    paddingVertical: 48,
+  },
+  iconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  iconText: {
+    fontSize: 32,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 12,
+    letterSpacing: -0.3,
   },
-  message: {
+  body: {
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
+    lineHeight: 22,
+    marginBottom: 32,
   },
-  errorBox: {
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 24,
-    maxWidth: '100%',
+  actions: {
+    width: '100%',
+    gap: 12,
+    marginBottom: 16,
   },
-  errorText: {
-    fontSize: 12,
-    fontFamily: 'monospace',
+  btnPrimary: {
+    backgroundColor: '#BBFF4E',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
   },
-  button: {
-    backgroundColor: '#E8FF6B',
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+  btnDisabled: {
+    opacity: 0.6,
   },
-  buttonText: {
+  btnPrimaryText: {
     color: '#000000',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
+  btnSecondary: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  btnSecondaryText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  hint: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 4,
+    marginBottom: 32,
+  },
+  devInline: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    width: '100%',
+  },
+  devBox: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 14,
+  },
+  devTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  devError: {
+    fontSize: 13,
+    fontFamily: 'monospace',
+    marginBottom: 8,
+  },
+  devStack: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    lineHeight: 16,
+  },
 });
-
