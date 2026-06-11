@@ -471,79 +471,8 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         </HStack>
       </VStack>
 
-      {/* Product */}
-      {!hideProduct && product && (
-        <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
-          <ProductInfoCard
-            size="small"
-            type={productInfoType}
-            image={toImageSource(product.image)}
-            title={product.name}
-            subName={product.subName}
-            isOwned={product.isOwned}
-            onPress={() => {
-              // Context'e göre PostsScreen'e navigate et
-              if (!product.id || !data.contextType) return;
-              
-              const stage = data.contextType === ProductInfoType.PRODUCT_GROUP 
-                ? 'ProductGroup' 
-                : data.contextType === ProductInfoType.SUB_CATEGORY
-                ? 'SubCategories'
-                : 'Product';
-              
-              navigationService.navigate(ROOT_ROUTES.POST, {
-                screen: 'PostsScreen',
-                params: {
-                  stage,
-                  name: product.name,
-                  productInfo: {
-                    image: toImageSource(product.image),
-                    title: product.name,
-                    subName: product.subName,
-                  },
-                  ...(data.contextType === ProductInfoType.PRODUCT && {
-                    selectedProduct: {
-                      id: product.id,
-                      name: product.name,
-                      description: product.subName,
-                      image: toImageSource(product.image),
-                    },
-                  }),
-                  contextType: data.contextType,
-                  contextId: product.id,
-                },
-              });
-            }}
-          />
-        </Box>
-      )}
-
-      {/* Badges */}
-      <HStack px={12} pb={8} pt={hideProduct ? 10 : 2} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
-        <Box
-          borderWidth={1}
-          borderColor="#9672FA"
-          bgColor="#571FDD"
-          borderRadius={20}
-          flexDirection="row"
-          justifyContent="center"
-          px={8}
-          py={3}
-        >
-          <InformationCircleIcon width={10} height={10} color={'#fff'} />
-          <Text
-            fontSize={9}
-            fontWeight="$bold"
-            ml={4}
-            color={'#fff'}
-          >
-            {t('card.badges.update')}
-          </Text>
-        </Box>
-      </HStack>
-
       {/* Content */}
-      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
+      <VStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
         <Pressable onPress={() => {
           if (isDetailMode) return; // Detay modunda navigation yapma
           // Navigate to PostDetailScreen
@@ -599,7 +528,6 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
       {/* Translated Content */}
       {showTranslation && translatedContent && (
         <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
-          <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
           <Text
             color={isDark ? '$textDark200' : '#666'}
             fontSize="$sm"
@@ -636,6 +564,74 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
           </Pressable>
         </Box>
       )}
+
+      {/* Product */}
+      {!hideProduct && product && (
+        <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
+          <ProductInfoCard
+            size="small"
+            type={productInfoType}
+            image={toImageSource(product.image)}
+            title={product.name}
+            subName={product.subName}
+            isOwned={product.isOwned}
+            onPress={() => {
+              if (!product.id || !data.contextType) return;
+              const stage = data.contextType === ProductInfoType.PRODUCT_GROUP
+                ? 'ProductGroup'
+                : data.contextType === ProductInfoType.SUB_CATEGORY
+                ? 'SubCategories'
+                : 'Product';
+              navigationService.navigate(ROOT_ROUTES.POST, {
+                screen: 'PostsScreen',
+                params: {
+                  stage,
+                  name: product.name,
+                  productInfo: {
+                    image: toImageSource(product.image),
+                    title: product.name,
+                    subName: product.subName,
+                  },
+                  ...(data.contextType === ProductInfoType.PRODUCT && {
+                    selectedProduct: {
+                      id: product.id,
+                      name: product.name,
+                      description: product.subName,
+                      image: toImageSource(product.image),
+                    },
+                  }),
+                  contextType: data.contextType,
+                  contextId: product.id,
+                },
+              });
+            }}
+          />
+        </Box>
+      )}
+
+      {/* Badges */}
+      <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
+        <Box
+          borderWidth={1}
+          borderColor="#9672FA"
+          bgColor="#571FDD"
+          borderRadius={20}
+          flexDirection="row"
+          justifyContent="center"
+          px={8}
+          py={3}
+        >
+          <InformationCircleIcon width={10} height={10} color={'#fff'} />
+          <Text
+            fontSize={9}
+            fontWeight="$bold"
+            ml={4}
+            color={'#fff'}
+          >
+            {t('card.badges.update')}
+          </Text>
+        </Box>
+      </HStack>
 
       {/* Images */}
       {(() => {
@@ -687,43 +683,45 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         justifyContent="space-between"
       >
         <HStack flex={1} justifyContent="space-between" alignItems="center">
-          <Pressable onPress={handleLike}>
-            <HStack alignItems="center">
-              {isLiked ? (
-                <HeartIconSolid width={24} height={24} color="#FF3040" />
-              ) : (
-                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              )}
-              <AnimatedCounter
-                value={likesCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
-            </HStack>
-          </Pressable>
-          <Pressable onPress={handleComment}>
-            <HStack alignItems="center">
-              <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              <AnimatedCounter
-                value={commentsCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
-            </HStack>
-          </Pressable>
-          <Pressable onPress={handleShare}>
-            <HStack alignItems="center">
-              <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              <AnimatedCounter
-                value={sharesCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
-            </HStack>
-          </Pressable>
+          <HStack alignItems="center" style={{ gap: 5 }}>
+            <Pressable onPress={handleLike}>
+              <HStack alignItems="center">
+                {isLiked ? (
+                  <HeartIconSolid width={24} height={24} color="#FF3040" />
+                ) : (
+                  <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                )}
+                <AnimatedCounter
+                  value={likesCount}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={10}
+                  ml={4}
+                />
+              </HStack>
+            </Pressable>
+            <Pressable onPress={handleComment}>
+              <HStack alignItems="center">
+                <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                <AnimatedCounter
+                  value={commentsCount}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={10}
+                  ml={4}
+                />
+              </HStack>
+            </Pressable>
+            <Pressable onPress={handleShare}>
+              <HStack alignItems="center">
+                <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                <AnimatedCounter
+                  value={sharesCount}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={10}
+                  ml={4}
+                />
+              </HStack>
+            </Pressable>
+          </HStack>
           <Pressable onPress={handleBookmark}>
             <HStack alignItems="center">
               {isBookmarked ? (

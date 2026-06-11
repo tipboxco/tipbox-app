@@ -47,6 +47,12 @@
     "categories": "Kategoriler",
     "noSearchResults": "\"{{query}}\" için sonuç bulunamadı"
   },
+  "catalogSearch": {
+    "searchPlaceholder": "{{context}} içinde ara...",
+    "searchHint": "{{context}} içinde ürün aramak için yazmaya başlayın",
+    "noResults": "\"{{query}}\" için sonuç bulunamadı",
+    "productGroupLabel": "{{name}} — ürün grubu"
+  },
   "productSelect": {
     "title": "Ürün Seç",
     "searchPlaceholder": "Ürün grubu seç veya ürün adı ara",

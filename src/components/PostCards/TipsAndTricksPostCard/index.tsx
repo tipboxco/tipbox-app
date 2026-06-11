@@ -542,130 +542,6 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 </HStack>
             </VStack>
 
-            {/* Product */}
-            {
-                !hideProduct && data.category && data.category.product ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
-                        <ProductInfoCard
-                            size="small"
-                            type={ProductInfoType.PRODUCT}
-                            image={toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png')}
-                            title={data.category.product.name}
-                            subName={data.category.product.subName}
-                            onPress={() => {
-                                // Product için PostsScreen'e navigate et
-                                if (!data.category?.product?.id) return;
-                                
-                                navigationService.navigate(ROOT_ROUTES.POST, {
-                                    screen: 'PostsScreen',
-                                    params: {
-                                        stage: 'Product',
-                                        name: data.category.product.name,
-                                        productInfo: {
-                                            image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
-                                            title: data.category.product.name,
-                                            subName: data.category.product.subName,
-                                        },
-                                        selectedProduct: {
-                                            id: data.category.product.id,
-                                            name: data.category.product.name,
-                                            description: data.category.product.subName,
-                                            image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
-                                        },
-                                        contextType: ProductInfoType.PRODUCT,
-                                        contextId: data.category.product.id,
-                                    },
-                                });
-                            }}
-                        />
-                    </Box>
-                ) : !hideProduct && data.category ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
-                        <ProductInfoCard
-                            size="small"
-                            type={ProductInfoType.SUB_CATEGORY}
-                            image={toImageSource(data.category.image) || require('@/assets/inventory/product_01.png')}
-                            title={data.category.name}
-                            subName={data.category.subCategory}
-                            onPress={() => {
-                                // SubCategory için PostsScreen'e navigate et
-                                if (!data.category?.id) return;
-                                
-                                navigationService.navigate(ROOT_ROUTES.POST, {
-                                    screen: 'PostsScreen',
-                                    params: {
-                                        stage: 'SubCategories',
-                                        name: data.category.name,
-                                        productInfo: {
-                                            image: toImageSource(data.category.image) || require('@/assets/inventory/product_01.png'),
-                                            title: data.category.name,
-                                            subName: data.category.subCategory,
-                                        },
-                                        contextType: ProductInfoType.SUB_CATEGORY,
-                                        contextId: data.category.id,
-                                    },
-                                });
-                            }}
-                        />
-                    </Box>
-                ) : null
-            }
-
-            {/* Badges */}
-            <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
-                <Box
-                    bg={isDark ? '$backgroundDark900' : '$white'}
-                    borderWidth={1}
-                    borderColor="#BAC4FF"
-                    bgColor='#3E57FFCC'
-                    borderRadius={20}
-                    px={8}
-                    py={3}
-                    flexDirection="row"
-                    alignItems="center"
-                >
-                    <InformationCircleIcon width={10} height={10} color={'#fff'} />
-                    <Text
-                        fontSize={9}
-                        fontWeight="$semibold"
-                        ml={4}
-                        color={'#fff'}
-                        numberOfLines={1}
-                    >
-                        {t('card.badges.tipsAndTricks')}
-                    </Text>
-                </Box>
-
-                {/* Benefit Category Badge with Icon */}
-                {data.benefitCategory && BENEFIT_CATEGORY_MAP[data.benefitCategory] && (
-                    <Box
-                        bg={isDark ? BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor + '20' : BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor}
-                        borderWidth={1}
-                        borderColor={BENEFIT_CATEGORY_MAP[data.benefitCategory].color + '40'}
-                        borderRadius={20}
-                        px={8}
-                        py={3}
-                        flexDirection="row"
-                        alignItems="center"
-                        justifyContent="center"
-                    >
-                        <Feather
-                            name={BENEFIT_CATEGORY_MAP[data.benefitCategory].icon}
-                            size={12}
-                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
-                        />
-                        <Text
-                            fontSize={9}
-                            fontWeight="$semibold"
-                            ml={4}
-                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
-                        >
-                            {t(BENEFIT_CATEGORY_MAP[data.benefitCategory].labelKey)}
-                        </Text>
-                    </Box>
-                )}
-            </HStack>
-
             {/* Content */}
             <Pressable onPress={() => {
                 if (isDetailMode) return; // Detay modunda navigation yapma
@@ -674,7 +550,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     params: { postData: data, type: 'tipsAndTricks' }
                 });
             }}>
-                <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
+                <VStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
                         fontSize="$sm"
@@ -689,7 +565,6 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
             {/* Translated Content */}
             {showTranslation && translatedContent && (
                 <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
-                    <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                     <Text
                         color={isDark ? '$textDark200' : '#666'}
                         fontSize="$sm"
@@ -727,6 +602,124 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 </Box>
             )}
 
+            {/* Product */}
+            {
+                !hideProduct && data.category && data.category.product ? (
+                    <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
+                        <ProductInfoCard
+                            size="small"
+                            type={ProductInfoType.PRODUCT}
+                            image={toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png')}
+                            title={data.category.product.name}
+                            subName={data.category.product.subName}
+                            onPress={() => {
+                                if (!data.category?.product?.id) return;
+                                navigationService.navigate(ROOT_ROUTES.POST, {
+                                    screen: 'PostsScreen',
+                                    params: {
+                                        stage: 'Product',
+                                        name: data.category.product.name,
+                                        productInfo: {
+                                            image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
+                                            title: data.category.product.name,
+                                            subName: data.category.product.subName,
+                                        },
+                                        selectedProduct: {
+                                            id: data.category.product.id,
+                                            name: data.category.product.name,
+                                            description: data.category.product.subName,
+                                            image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
+                                        },
+                                        contextType: ProductInfoType.PRODUCT,
+                                        contextId: data.category.product.id,
+                                    },
+                                });
+                            }}
+                        />
+                    </Box>
+                ) : !hideProduct && data.category ? (
+                    <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
+                        <ProductInfoCard
+                            size="small"
+                            type={ProductInfoType.SUB_CATEGORY}
+                            image={toImageSource(data.category.image) || require('@/assets/inventory/product_01.png')}
+                            title={data.category.name}
+                            subName={data.category.subCategory}
+                            onPress={() => {
+                                if (!data.category?.id) return;
+                                navigationService.navigate(ROOT_ROUTES.POST, {
+                                    screen: 'PostsScreen',
+                                    params: {
+                                        stage: 'SubCategories',
+                                        name: data.category.name,
+                                        productInfo: {
+                                            image: toImageSource(data.category.image) || require('@/assets/inventory/product_01.png'),
+                                            title: data.category.name,
+                                            subName: data.category.subCategory,
+                                        },
+                                        contextType: ProductInfoType.SUB_CATEGORY,
+                                        contextId: data.category.id,
+                                    },
+                                });
+                            }}
+                        />
+                    </Box>
+                ) : null
+            }
+
+            {/* Badges */}
+            <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
+                <Box
+                    bg={isDark ? '$backgroundDark900' : '$white'}
+                    borderWidth={1}
+                    borderColor="#BAC4FF"
+                    bgColor='#3E57FFCC'
+                    borderRadius={20}
+                    px={8}
+                    py={3}
+                    flexDirection="row"
+                    alignItems="center"
+                >
+                    <InformationCircleIcon width={10} height={10} color={'#fff'} />
+                    <Text
+                        fontSize={9}
+                        fontWeight="$semibold"
+                        ml={4}
+                        color={'#fff'}
+                        numberOfLines={1}
+                    >
+                        {t('card.badges.tipsAndTricks')}
+                    </Text>
+                </Box>
+                {data.benefitCategory && BENEFIT_CATEGORY_MAP[data.benefitCategory] && (
+                    <Box
+                        bg={isDark ? BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor + '20' : BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor}
+                        borderWidth={1}
+                        borderColor={BENEFIT_CATEGORY_MAP[data.benefitCategory].color + '40'}
+                        borderRadius={20}
+                        px={8}
+                        py={3}
+                        flexDirection="row"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <Feather
+                            name={BENEFIT_CATEGORY_MAP[data.benefitCategory].icon}
+                            size={12}
+                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
+                        />
+                        <Text
+                            fontSize={9}
+                            fontWeight="$semibold"
+                            ml={4}
+                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
+                        >
+                            {t(BENEFIT_CATEGORY_MAP[data.benefitCategory].labelKey)}
+                        </Text>
+                    </Box>
+                )}
+            </HStack>
+
             {/* Images */}
             {(() => {
                 const validImages = data.images?.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) || [];
@@ -761,6 +754,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 justifyContent="space-between"
             >
                 <HStack flex={1} justifyContent="space-between" alignItems="center">
+                    <HStack alignItems="center" style={{ gap: 5 }}>
                     <Pressable onPress={handleLike}>
                     <HStack alignItems="center">
                             {isLiked ? (
@@ -798,6 +792,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             />
                     </HStack>
                     </Pressable>
+                    </HStack>
                     <Pressable onPress={handleBookmark}>
                     <HStack alignItems="center">
                             {isBookmarked ? (

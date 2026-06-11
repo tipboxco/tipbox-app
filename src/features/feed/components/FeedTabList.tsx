@@ -322,7 +322,7 @@ const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey
       keyExtractor={keyExtractor}
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.1}
-      ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+      ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
       ListFooterComponent={renderFooter}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}

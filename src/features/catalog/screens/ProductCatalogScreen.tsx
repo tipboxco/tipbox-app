@@ -35,7 +35,7 @@ interface ProductCatalogScreenProps {
   onCreatePost?: () => void;
   onStateChange?: (data: {
     selectedProduct: any | null;
-    currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    viewState: 'categories' | 'subcategories' | 'productgroups' | 'products';
     selectedCategoryId?: string;
     selectedSubCategoryId?: string;
     selectedProductGroupId?: string;
@@ -46,6 +46,17 @@ interface ProductCatalogScreenProps {
   returnScreen?: string;
   /** Callback for product selection in picker mode */
   onProductSelect?: (product: CatalogProduct & { id: string; image: any; description?: string }) => void;
+  /** When provided, category press navigates to a new screen instead of drilling down in-place */
+  onCategoryNavigate?: (category: { id: string; name: string; image?: string }) => void;
+  /** When provided, subcategory press navigates to a new screen */
+  onSubCategoryNavigate?: (subCategory: { id: string; name: string; image?: string; categoryId?: string }) => void;
+  /** When provided, product group press navigates to a new screen */
+  onProductGroupNavigate?: (productGroup: { id: string; name: string; image?: string; subCategoryId?: string }) => void;
+  /**
+   * When true, hides the breadcrumb bar. Use in detail screens where the stack
+   * back button replaces breadcrumb-based navigation.
+   */
+  hideBreadcrumb?: boolean;
   // Initial state props (from navigation store)
   initialView?: 'categories' | 'subcategories' | 'productgroups' | 'products';
   initialSelectedCategoryId?: string;
@@ -61,6 +72,10 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   selectMode,
   returnScreen,
   onProductSelect,
+  onCategoryNavigate,
+  onSubCategoryNavigate,
+  onProductGroupNavigate,
+  hideBreadcrumb = false,
   initialView,
   initialSelectedCategoryId,
   initialSelectedSubCategoryId,
@@ -164,19 +179,11 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     }))
   );
   
-  // PERFORMANCE FIX: Use shallow selector for values
-  const {
-    selectedSubCategoryId,
-    selectedProductGroupId,
-    currentView,
-  } = useCatalogUIStore(
-    useShallow((state) => ({
-      selectedSubCategoryId: state.selectedSubCategoryId,
-      selectedProductGroupId: state.selectedProductGroupId,
-      currentView: state.currentView,
-    }))
-  );
-  
+  // Local state — her instance bağımsız (global store artık yalnızca yazma için kullanılır)
+  const [viewState, setViewState] = useState<'categories' | 'subcategories' | 'productgroups' | 'products'>(initialView ?? 'categories');
+  const [localSubCategoryId, setLocalSubCategoryId] = useState<string | undefined>(initialSelectedSubCategoryId);
+  const [localProductGroupId, setLocalProductGroupId] = useState<string | undefined>(initialSelectedProductGroupId);
+
   // ScrollView ref for scroll position control
   const scrollViewRef = useRef<any>(null);
 
@@ -195,27 +202,64 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       if (isInitialFocusRef.current) {
         isInitialFocusRef.current = false;
 
-        // If initial state was restored from store (FAB switch), preserve it
+        // If initial state was restored (detail screen), seed local state and optionally store
         const hasRestoredState = (initialBreadcrumbItems && initialBreadcrumbItems.length > 0) ||
           (initialView && initialView !== 'categories');
         if (hasRestoredState) {
+          // Always seed local state (render source of truth)
+          if (initialSelectedSubCategoryId) {
+            setLocalSubCategoryId(initialSelectedSubCategoryId);
+          }
+          if (initialSelectedProductGroupId) {
+            setLocalProductGroupId(initialSelectedProductGroupId);
+          }
+          if (initialView) {
+            setViewState(initialView);
+          }
+          // Seed store only in embedded (non-detail) mode — detail screens must not contaminate store
+          if (!hideBreadcrumb) {
+            if (initialSelectedSubCategoryId) {
+              setSelectedSubCategoryId(initialSelectedSubCategoryId);
+            }
+            if (initialSelectedProductGroupId) {
+              setSelectedProductGroupId(initialSelectedProductGroupId);
+            }
+            if (initialView) {
+              setCurrentView(initialView);
+            }
+          }
           return;
         }
 
         // Reset to root state - always start at "Categories"
         setBreadcrumbItems([]);
         setSelectedCategoryId(undefined);
-        setSelectedSubCategoryId(undefined);
-        setSelectedProductGroupId(undefined);
+        setLocalSubCategoryId(undefined);
+        setLocalProductGroupId(undefined);
+        setViewState('categories');
         setSelectedProductLocal(null);
-        setCurrentView('categories');
+        if (!hideBreadcrumb) {
+          setSelectedSubCategoryId(undefined);
+          setSelectedProductGroupId(undefined);
+          setCurrentView('categories');
+        }
 
         // Scroll to top
         scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+      } else if (initialView && initialView !== 'categories') {
+        // Re-focus — restore local state (and store for embedded mode)
+        setViewState(initialView);
+        setLocalSubCategoryId(initialSelectedSubCategoryId);
+        setLocalProductGroupId(initialSelectedProductGroupId ?? undefined);
+        if (!hideBreadcrumb) {
+          setCurrentView(initialView);
+          setSelectedSubCategoryId(initialSelectedSubCategoryId);
+          setSelectedProductGroupId(initialSelectedProductGroupId ?? undefined);
+        }
       }
-      // Don't reset the flag on cleanup - preserves state when navigating to PostsScreen and back
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView])
+    }, [initialView, initialSelectedSubCategoryId, initialSelectedProductGroupId, hideBreadcrumb,
+        setCurrentView, setSelectedSubCategoryId, setSelectedProductGroupId])
   );
 
   // Global bottom sheet hook - PERFORMANCE FIX: Direct access, no callback chain
@@ -273,7 +317,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     fetchNextPage: fetchNextProductGroupsPage,
     hasNextPage: hasNextProductGroupsPage,
     isFetchingNextPage: isFetchingNextProductGroupsPage,
-  } = useCatalogProductGroups(selectedSubCategoryId);
+  } = useCatalogProductGroups(localSubCategoryId);
   
   // Debounce search query for API calls
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -307,8 +351,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     hasNextPage: hasNextProductsPage,
     isFetchingNextPage: isFetchingNextProductsPage,
   } = useCatalogProducts(
-    selectedProductGroupId ?? undefined,
-    currentView === 'products' && debouncedSearchQuery ? debouncedSearchQuery : undefined
+    localProductGroupId ?? undefined,
+    viewState === 'products' && debouncedSearchQuery ? debouncedSearchQuery : undefined
   );
   
   // API'den gelen verileri formatla (InfiniteData yapısından flatten)
@@ -345,7 +389,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       if (__DEV__) {
         console.log('[ProductCatalogScreen] ⚠️ No product groups data:', {
           catalogProductGroupsData,
-          selectedSubCategoryId,
+          localSubCategoryId,
         });
       }
       return [];
@@ -361,12 +405,12 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
           name: item.name,
           subCategoryId: item.subCategoryId,
         })),
-        selectedSubCategoryId,
+        localSubCategoryId,
       });
     }
 
     return allItems;
-  }, [catalogProductGroupsData, selectedSubCategoryId]);
+  }, [catalogProductGroupsData, localSubCategoryId]);
 
   // İlk 3 kategorinin subcategories'ini prefetch et (kullanıcı deneyimini iyileştirmek için)
   useEffect(() => {
@@ -435,7 +479,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       if (__DEV__) {
         console.log('[ProductCatalogScreen] ⚠️ No product groups to format:', {
           catalogProductGroupsLength: catalogProductGroups?.length || 0,
-          selectedSubCategoryId,
+          localSubCategoryId,
         });
       }
       return [];
@@ -461,7 +505,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     }
     
     return formatted;
-  }, [catalogProductGroups, selectedSubCategoryId]);
+  }, [catalogProductGroups, localSubCategoryId]);
 
   // API'den gelen products'ı formatla - useMemo ile cache'le
   // useCatalogProducts InfiniteData döndürüyor, pages.flatMap kullanmalıyız
@@ -499,7 +543,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   // Only call onStateChange when values actually change
   const prevStateRef = useRef<{
     selectedProduct: any | null;
-    currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    viewState: 'categories' | 'subcategories' | 'productgroups' | 'products';
     selectedCategoryId?: string;
     selectedSubCategoryId?: string;
     selectedProductGroupId?: string;
@@ -510,10 +554,10 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   useEffect(() => {
     const currentState = {
       selectedProduct,
-      currentView,
+      viewState: viewState,
       selectedCategoryId,
-      selectedSubCategoryId,
-      selectedProductGroupId,
+      selectedSubCategoryId: localSubCategoryId,
+      selectedProductGroupId: localProductGroupId,
       breadcrumbItems,
     };
 
@@ -527,7 +571,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     const prev = prevStateRef.current;
     const hasChanged =
       prev.selectedProduct !== currentState.selectedProduct ||
-      prev.currentView !== currentState.currentView ||
+      prev.viewState !== currentState.viewState ||
       prev.selectedCategoryId !== currentState.selectedCategoryId ||
       prev.selectedSubCategoryId !== currentState.selectedSubCategoryId ||
       prev.selectedProductGroupId !== currentState.selectedProductGroupId ||
@@ -541,7 +585,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       prevStateRef.current = currentState;
       onStateChangeRef.current?.(currentState);
     }
-  }, [selectedProduct, currentView, selectedCategoryId, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems]);
+  }, [selectedProduct, viewState, selectedCategoryId, localSubCategoryId, localProductGroupId, breadcrumbItems]);
 
   // Ekrana geri dönüldüğünde product breadcrumb'ını temizle
   useFocusEffect(
@@ -560,6 +604,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   const resetToRoot = useCallback(() => {
     setBreadcrumbItems([]);
     setSelectedCategoryId(undefined);
+    setLocalSubCategoryId(undefined);
+    setLocalProductGroupId(undefined);
+    setViewState('categories');
     setSelectedSubCategoryId(undefined);
     setSelectedProductGroupId(undefined);
     setSelectedProductLocal(null);
@@ -570,10 +617,18 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView, setSelectedProductLocal]);
 
   const handleCategoryPress = (category: { id: string; name: string; image: any }) => {
+    if (onCategoryNavigate) {
+      onCategoryNavigate({ id: category.id, name: category.name, image: category.image });
+      return;
+    }
+
     // Seçili kategori ID'sini set et (subcategories API çağrısı için)
     setSelectedCategoryId(category.id);
-    setSelectedSubCategoryId(undefined); // Subcategory'yi temizle
-    setSelectedProductGroupId(undefined); // ProductGroup'u temizle
+    setLocalSubCategoryId(undefined);
+    setLocalProductGroupId(undefined);
+    setViewState('subcategories');
+    setSelectedSubCategoryId(undefined);
+    setSelectedProductGroupId(undefined);
     setSelectedProductLocal(null);
 
     setBreadcrumbItems([
@@ -591,6 +646,11 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   };
 
   const handleSubCategoryPress = (subCategory: CatalogSubCategory & { id: string; image: any }) => {
+    if (onSubCategoryNavigate) {
+      onSubCategoryNavigate({ id: subCategory.id, name: subCategory.name, image: subCategory.image, categoryId: subCategory.categoryId });
+      return;
+    }
+
     // Get the current category from breadcrumb
     const currentCategory = breadcrumbItems.find(item => item.type === 'category');
     const fallbackCategory =
@@ -607,9 +667,11 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         : null);
 
     // Seçili alt kategori ID'sini set et (product groups API çağrısı için)
+    setLocalSubCategoryId(subCategory.id);
+    setLocalProductGroupId(undefined);
     setSelectedSubCategoryId(subCategory.id);
-    setSelectedProductGroupId(undefined); // ProductGroup'u temizle
-    setSelectedProduct(undefined); // Product ID'yi de temizle (store'da yanlış ID kalmasın)
+    setSelectedProductGroupId(undefined);
+    setSelectedProduct(undefined);
     setSelectedProductLocal(null);
 
     // Product groups'u prefetch et (hızlı yükleme için)
@@ -626,6 +688,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         },
       ].filter(Boolean) as BreadcrumbItem[]
     );
+    setViewState('productgroups');
     setCurrentView('productgroups');
 
     // Scroll pozisyonunu sıfırla
@@ -633,7 +696,13 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   };
 
   const handleProductGroupPress = (productGroup: CatalogProductGroup & { id: string; image: any }) => {
+    if (onProductGroupNavigate) {
+      onProductGroupNavigate({ id: productGroup.id, name: productGroup.name, image: productGroup.image, subCategoryId: productGroup.subCategoryId });
+      return;
+    }
+
     // Seçili ürün grubu ID'sini set et (products API çağrısı için)
+    setLocalProductGroupId(productGroup.id);
     setSelectedProductGroupId(productGroup.id);
     setSelectedProductLocal(null);
 
@@ -655,6 +724,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         },
       ].filter(Boolean) as BreadcrumbItem[]
     );
+    setViewState('products');
     setCurrentView('products');
 
     // Scroll pozisyonunu sıfırla
@@ -825,12 +895,14 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
   if (item.type === 'category') {
     setBreadcrumbItems([item]);
     setSelectedCategoryId(item.id);
+    setLocalSubCategoryId(undefined);
+    setLocalProductGroupId(undefined);
+    setViewState('subcategories');
     setSelectedSubCategoryId(undefined);
     setSelectedProductGroupId(undefined);
     setSelectedProductLocal(null);
     setSelectedProduct(undefined);
     setCurrentView('subcategories');
-    // Scroll pozisyonunu sıfırla
     scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
     return;
   }
@@ -840,12 +912,14 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     const updated = [categoryItem, item].filter(Boolean) as BreadcrumbItem[];
     setBreadcrumbItems(updated);
     setSelectedCategoryId(categoryItem?.id);
+    setLocalSubCategoryId(item.id);
+    setLocalProductGroupId(undefined);
+    setViewState('productgroups');
     setSelectedSubCategoryId(item.id);
     setSelectedProductGroupId(undefined);
     setSelectedProductLocal(null);
     setSelectedProduct(undefined);
     setCurrentView('productgroups');
-    // Scroll pozisyonunu sıfırla
     scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
     return;
   }
@@ -856,33 +930,36 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     const updated = [categoryItem, subCategoryItem, item].filter(Boolean) as BreadcrumbItem[];
     setBreadcrumbItems(updated);
     setSelectedCategoryId(categoryItem?.id);
+    setLocalSubCategoryId(subCategoryItem?.id);
+    setLocalProductGroupId(item.id);
+    setViewState('products');
     setSelectedSubCategoryId(subCategoryItem?.id);
     setSelectedProductGroupId(item.id);
     setSelectedProductLocal(null);
     setSelectedProduct(undefined);
     setCurrentView('products');
-    // Scroll pozisyonunu sıfırla
     scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
     return;
   }
 
   if (item.type === 'product') {
-      const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
-      const subCategoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'subCategory');
-      const productGroupItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'productGroup');
-      const updated = [categoryItem, subCategoryItem, productGroupItem, item].filter(Boolean) as BreadcrumbItem[];
-      setBreadcrumbItems(updated);
-      setSelectedCategoryId(categoryItem?.id);
-      setSelectedSubCategoryId(subCategoryItem?.id);
-      setSelectedProductGroupId(productGroupItem?.id);
-      setSelectedProductLocal(item.data || null);
-      // Store'a product ID'yi kaydet
-      setSelectedProduct(item.data?.id);
-      setCurrentView('products');
-      // Scroll pozisyonunu sıfırla
-      scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
-    }
-  };
+    const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
+    const subCategoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'subCategory');
+    const productGroupItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'productGroup');
+    const updated = [categoryItem, subCategoryItem, productGroupItem, item].filter(Boolean) as BreadcrumbItem[];
+    setBreadcrumbItems(updated);
+    setSelectedCategoryId(categoryItem?.id);
+    setLocalSubCategoryId(subCategoryItem?.id);
+    setLocalProductGroupId(productGroupItem?.id);
+    setViewState('products');
+    setSelectedSubCategoryId(subCategoryItem?.id);
+    setSelectedProductGroupId(productGroupItem?.id);
+    setSelectedProductLocal(item.data || null);
+    setSelectedProduct(item.data?.id);
+    setCurrentView('products');
+    scrollViewRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+  }
+};
 
   const handleShowPosts = () => {
     // Determine current stage and name from breadcrumbItems (prioritize most specific item)
@@ -1007,8 +1084,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       // ContextType ve contextId'yi belirle
       // ÖNEMLİ: Store'dan ID'leri al, breadcrumb'tan değil (store daha güvenilir)
       const selectedProductId = useCatalogUIStore.getState().selectedProductId;
-      const currentSelectedSubCategoryId = useCatalogUIStore.getState().selectedSubCategoryId;
-      const currentSelectedProductGroupId = useCatalogUIStore.getState().selectedProductGroupId;
+      const currentSelectedSubCategoryId = localSubCategoryId;
+      const currentSelectedProductGroupId = localProductGroupId;
       
       let contextType: ProductInfoType | undefined;
       let contextId: string | undefined;
@@ -1080,8 +1157,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     let determinedContextId: string | undefined;
     let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
     
-    // Determine context based on current view and selection (from store)
-    if (selectedProductId && currentView === 'products') {
+    // Determine context based on current view and selection (local state)
+    if (selectedProductId && viewState === 'products') {
       determinedContextType = ProductInfoType.PRODUCT;
       determinedContextId = selectedProductId;
       if (selectedProduct) {
@@ -1091,34 +1168,30 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           subName: selectedProduct.description,
         };
       }
-    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+    } else if (localProductGroupId && (viewState === 'products' || viewState === 'productgroups')) {
       determinedContextType = ProductInfoType.PRODUCT_GROUP;
-      determinedContextId = selectedProductGroupId;
-      
-      // ProductGroup için image ve name bilgilerini al
-      const selectedProductGroup = currentProductGroups.find(pg => pg.id === selectedProductGroupId);
+      determinedContextId = localProductGroupId;
+
+      const selectedProductGroup = currentProductGroups.find(pg => pg.id === localProductGroupId);
       if (selectedProductGroup) {
-        // SubCategory bilgisini de al (subName için)
         const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
         const subCategoryName = subCategoryItem?.name || '';
-        
+
         productInfoSnapshot = {
           image: selectedProductGroup.image,
           title: selectedProductGroup.name,
           subName: subCategoryName,
         };
       }
-    } else if (selectedSubCategoryId) {
+    } else if (localSubCategoryId) {
       determinedContextType = ProductInfoType.SUB_CATEGORY;
-      determinedContextId = selectedSubCategoryId;
-      
-      // SubCategory için image ve name bilgilerini al
-      const selectedSubCategory = currentSubCategories.find(sc => sc.id === selectedSubCategoryId);
+      determinedContextId = localSubCategoryId;
+
+      const selectedSubCategory = currentSubCategories.find(sc => sc.id === localSubCategoryId);
       if (selectedSubCategory) {
-        // Category bilgisini de al (subName için)
         const categoryItem = breadcrumbItems.find(item => item.type === 'category');
         const categoryName = categoryItem?.name || '';
-        
+
         productInfoSnapshot = {
           image: selectedSubCategory.image,
           title: selectedSubCategory.name,
@@ -1183,8 +1256,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       let determinedContextId: string | undefined;
       let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
       
-      // Determine context based on current view and selection (from store)
-      if (selectedProductId && currentView === 'products') {
+      // Determine context based on current view and selection (local state)
+      if (selectedProductId && viewState === 'products') {
         determinedContextType = ProductInfoType.PRODUCT;
         determinedContextId = selectedProductId;
         if (selectedProduct) {
@@ -1194,74 +1267,60 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             subName: selectedProduct.description,
           };
         }
-      } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+      } else if (localProductGroupId && (viewState === 'products' || viewState === 'productgroups')) {
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
-        determinedContextId = selectedProductGroupId;
-        
-        // ProductGroup için image ve name bilgilerini al
-        const selectedProductGroup = currentProductGroups.find(pg => pg.id === selectedProductGroupId);
+        determinedContextId = localProductGroupId;
+
+        const selectedProductGroup = currentProductGroups.find(pg => pg.id === localProductGroupId);
         if (selectedProductGroup) {
-          // SubCategory bilgisini de al (subName için)
           const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
           const subCategoryName = subCategoryItem?.name || '';
-          
+
           productInfoSnapshot = {
             image: selectedProductGroup.image,
             title: selectedProductGroup.name,
             subName: subCategoryName,
           };
         }
-      } else if (selectedSubCategoryId && currentView !== 'categories') {
+      } else if (localSubCategoryId && viewState !== 'categories') {
         determinedContextType = ProductInfoType.SUB_CATEGORY;
-        determinedContextId = selectedSubCategoryId;
-        
-        // SubCategory için image ve name bilgilerini al
-        const selectedSubCategory = currentSubCategories.find(sc => sc.id === selectedSubCategoryId);
+        determinedContextId = localSubCategoryId;
+
+        const selectedSubCategory = currentSubCategories.find(sc => sc.id === localSubCategoryId);
         if (selectedSubCategory) {
-          // Category bilgisini de al (subName için)
           const categoryItem = breadcrumbItems.find(item => item.type === 'category');
           const categoryName = categoryItem?.name || '';
-          
+
           productInfoSnapshot = {
             image: selectedSubCategory.image,
             title: selectedSubCategory.name,
             subName: categoryName,
           };
         } else {
-          // FALLBACK: currentSubCategories'de bulunamadıysa breadcrumbItems'dan al
           const subCategoryBreadcrumb = breadcrumbItems.find(
-            item => item.type === 'subcategory' && item.id === selectedSubCategoryId
+            item => item.type === 'subcategory' && item.id === localSubCategoryId
           );
           const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
-          
+
           if (subCategoryBreadcrumb) {
             productInfoSnapshot = {
               image: subCategoryBreadcrumb.data?.image,
               title: subCategoryBreadcrumb.name,
               subName: categoryBreadcrumb?.name || '',
             };
-            console.log('[ProductCatalogScreen] ✅ SubCategory bilgisi breadcrumb\'dan alındı:', productInfoSnapshot);
           } else {
-            // Son fallback: Minimal bilgi ile devam et
-            console.warn('[ProductCatalogScreen] ⚠️ SubCategory detayları bulunamadı, minimal bilgi ile devam ediliyor');
             productInfoSnapshot = {
               image: undefined,
-              title: 'Selected Subcategory', // Placeholder
+              title: 'Selected Subcategory',
               subName: categoryBreadcrumb?.name || '',
             };
           }
         }
       }
-      
-      // Store'da ID yoksa veya category seviyesindeyse hata göster
+
+      // ID yoksa veya category seviyesindeyse hata göster
       if (!determinedContextType || !determinedContextId) {
-        console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId, 'Current view:', currentView);
-        console.error('[ProductCatalogScreen] ❌ Store state:', {
-          selectedProductId,
-          selectedSubCategoryId,
-          selectedProductGroupId,
-          currentView,
-        });
+        console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for tips. viewState:', viewState);
         showErrorToast(t('catalogScreen.error'), t('catalogScreen.pleaseSelectSubcategory'));
         return;
       }
@@ -1282,8 +1341,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       let determinedContextId: string | undefined;
       let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
       
-      // Determine context based on current view and selection (from store)
-      if (selectedProductId && currentView === 'products') {
+      // Determine context based on current view and selection (local state)
+      if (selectedProductId && viewState === 'products') {
         determinedContextType = ProductInfoType.PRODUCT;
         determinedContextId = selectedProductId;
         if (selectedProduct) {
@@ -1293,56 +1352,48 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             subName: selectedProduct.description,
           };
         }
-      } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+      } else if (localProductGroupId && (viewState === 'products' || viewState === 'productgroups')) {
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
-        determinedContextId = selectedProductGroupId;
-        
-        // ProductGroup için image ve name bilgilerini al
-        const selectedProductGroup = currentProductGroups.find(pg => pg.id === selectedProductGroupId);
+        determinedContextId = localProductGroupId;
+
+        const selectedProductGroup = currentProductGroups.find(pg => pg.id === localProductGroupId);
         if (selectedProductGroup) {
-          // SubCategory bilgisini de al (subName için)
           const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
           const subCategoryName = subCategoryItem?.name || '';
-          
+
           productInfoSnapshot = {
             image: selectedProductGroup.image,
             title: selectedProductGroup.name,
             subName: subCategoryName,
           };
         }
-      } else if (selectedSubCategoryId) {
+      } else if (localSubCategoryId) {
         determinedContextType = ProductInfoType.SUB_CATEGORY;
-        determinedContextId = selectedSubCategoryId;
-        
-        // SubCategory için image ve name bilgilerini al
-        const selectedSubCategory = currentSubCategories.find(sc => sc.id === selectedSubCategoryId);
+        determinedContextId = localSubCategoryId;
+
+        const selectedSubCategory = currentSubCategories.find(sc => sc.id === localSubCategoryId);
         if (selectedSubCategory) {
-          // Category bilgisini de al (subName için)
           const categoryItem = breadcrumbItems.find(item => item.type === 'category');
           const categoryName = categoryItem?.name || '';
-          
+
           productInfoSnapshot = {
             image: selectedSubCategory.image,
             title: selectedSubCategory.name,
             subName: categoryName,
           };
         } else {
-          // FALLBACK: currentSubCategories'de bulunamadıysa breadcrumbItems'dan al
           const subCategoryBreadcrumb = breadcrumbItems.find(
-            item => item.type === 'subcategory' && item.id === selectedSubCategoryId
+            item => item.type === 'subcategory' && item.id === localSubCategoryId
           );
           const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
-          
+
           if (subCategoryBreadcrumb) {
             productInfoSnapshot = {
               image: subCategoryBreadcrumb.data?.image,
               title: subCategoryBreadcrumb.name,
               subName: categoryBreadcrumb?.name || '',
             };
-            console.log('[ProductCatalogScreen] ✅ SubCategory bilgisi breadcrumb\'dan alındı:', productInfoSnapshot);
           } else {
-            // Son fallback: Minimal bilgi ile devam et
-            console.warn('[ProductCatalogScreen] ⚠️ SubCategory detayları bulunamadı, minimal bilgi ile devam ediliyor');
             productInfoSnapshot = {
               image: undefined,
               title: 'Selected Subcategory',
@@ -1351,10 +1402,9 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           }
         }
       }
-      
-      // Store'da ID yoksa hata göster
+
       if (!determinedContextType || !determinedContextId) {
-        console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
+        console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for question. viewState:', viewState);
         showErrorToast(t('catalogScreen.error'), t('catalogScreen.pleaseSelectSubcategory'));
         return;
       }
@@ -1413,7 +1463,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         },
       });
     }
-  }, [navigation, selectedProduct, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId, currentSubCategories, currentProductGroups, breadcrumbItems]);
+  }, [navigation, selectedProduct, closeBottomSheet, setFlowContext, viewState, localSubCategoryId, localProductGroupId, currentSubCategories, currentProductGroups, breadcrumbItems]);
 
   const handleCreatePost = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view
@@ -1424,18 +1474,18 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     let stageForBottomSheet: 'subcategories' | 'productgroups' | 'products' | undefined;
     const selectedProductId = useCatalogUIStore.getState().selectedProductId;
     
-    if (currentView === 'categories') {
+    if (viewState === 'categories') {
       stageForBottomSheet = undefined;
-    } else if (selectedProductId && currentView === 'products') {
+    } else if (selectedProductId && viewState === 'products') {
       stageForBottomSheet = 'products';
-    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+    } else if (localProductGroupId && (viewState === 'products' || viewState === 'productgroups')) {
       stageForBottomSheet = 'subcategories';
-    } else if (currentView === 'subcategories') {
+    } else if (viewState === 'subcategories') {
       stageForBottomSheet = 'subcategories';
-    } else if (currentView === 'productgroups') {
+    } else if (viewState === 'productgroups') {
       stageForBottomSheet = 'subcategories';
     } else {
-      stageForBottomSheet = currentView as 'subcategories' | 'products';
+      stageForBottomSheet = viewState as 'subcategories' | 'products';
     }
     
     // STABİL FIX: animateOnMount: true ile smooth açılış
@@ -1472,13 +1522,13 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         },
       }
     );
-  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect]);
+  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, viewState, selectedProduct, localProductGroupId, localSubCategoryId, bottomOffset, handlePostTypeSelect]);
 
   const getCurrentData = () => {
     // Categories, subcategories, productgroups: yerel filtre (API arama desteklemiyor)
     // Products: backend'e search parametresi gönderiliyor, ek client-side filtre yok
     const query = searchQuery.trim().toLowerCase();
-    switch (currentView) {
+    switch (viewState) {
       case 'categories':
         return query
           ? currentCategories.filter(category => category.name.toLowerCase().includes(query))
@@ -1504,49 +1554,85 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
   // PERFORMANCE FIX: Memoize background color to prevent re-renders
   const backgroundColor = useMemo(() => isDark ? '#1A1A1A' : '#FFFFFF', [isDark]);
 
+  // Detail screen mode: tapping search bar opens CatalogSearch screen
+  const handleSearchPress = useCallback(() => {
+    const lastItem = breadcrumbItems[breadcrumbItems.length - 1];
+    navigation.navigate('CatalogSearch' as any, {
+      contextLabel: lastItem?.name ?? '',
+      categoryId: initialSelectedCategoryId,
+      subCategoryId: localSubCategoryId,
+      productGroupId: localProductGroupId,
+    });
+  }, [navigation, breadcrumbItems, initialSelectedCategoryId, localSubCategoryId, localProductGroupId]);
+
   return (
     <Box flex={1}>
 
       {/* Search Bar - Fixed at top */}
       <VStack
         space="md"
+        pt="$3"
         pb="$4"
         px="$4"
         bg={backgroundColor}
       >
-        <HStack
-          alignItems="center"
-          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-          borderWidth={1}
-          borderColor={isDark ? '#333333' : '#E9E9E9'}
-          borderRadius={20}
-          px={14}
-          space="sm"
-        >
-          <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
-          <Input flex={1} borderWidth={0} bg="transparent">
-            <InputField
-              placeholder={t('productCatalog.searchPlaceholder')}
-              placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-              color={isDark ? '#000' : '#000'}
-              fontSize="$xs"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </Input>
-        </HStack>
+        {hideBreadcrumb ? (
+          /* Detail screen mode: tap navigates to CatalogSearch */
+          <Pressable onPress={handleSearchPress}>
+            <HStack
+              alignItems="center"
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+              borderWidth={1}
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
+              borderRadius={20}
+              px={14}
+              py="$2"
+              space="sm"
+            >
+              <Search size={24} color="rgba(60, 60, 67, 0.6)" />
+              <Text fontSize="$xs" color="#B9B9B9" flex={1}>
+                {t('productCatalog.searchPlaceholder')}
+              </Text>
+            </HStack>
+          </Pressable>
+        ) : (
+          /* Embedded mode: inline search */
+          <HStack
+            alignItems="center"
+            bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+            borderWidth={1}
+            borderColor={isDark ? '#333333' : '#E9E9E9'}
+            borderRadius={20}
+            px={14}
+            space="sm"
+          >
+            <Search size={24} color="rgba(60, 60, 67, 0.6)" />
+            <Input flex={1} borderWidth={0} bg="transparent">
+              <InputField
+                placeholder={t('productCatalog.searchPlaceholder')}
+                placeholderTextColor="#B9B9B9"
+                color={isDark ? '#000' : '#000'}
+                fontSize="$xs"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </Input>
+          </HStack>
+        )}
       </VStack>
 
-      {/* Breadcrumb */}
-      <Breadcrumb
-        items={breadcrumbItems}
-        onItemPress={handleBreadcrumbPress}
-        rootLabel={t('productCatalog.categories')}
-      />
+      {/* Breadcrumb — detail ekranlarında gizlenir; navigasyon stack geri butonuyla yapılır */}
+      {!hideBreadcrumb && (
+        <Breadcrumb
+          items={breadcrumbItems}
+          onItemPress={handleBreadcrumbPress}
+          rootLabel={t('productCatalog.categories')}
+        />
+      )}
 
       {/* Action Buttons - Show for productgroups and products (after subcategory is selected) */}
       {/* Hidden in picker/select mode (onProductSelect or selectMode set) */}
-      {(currentView === 'productgroups' || currentView === 'products') && !onProductSelect && !selectMode && (
+      {(viewState === 'productgroups' || viewState === 'products') && !onProductSelect && !selectMode && (
         <ActionButtons
           onShowPosts={handleShowPosts}
           onCreatePost={handleCreatePost}
@@ -1567,22 +1653,22 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           if (!isNearBottom) return;
 
           // Normal products view için infinite scroll
-          if (!showGlobalSearchResults && currentView === 'products' && hasNextProductsPage && !isFetchingNextProductsPage) {
+          if (!showGlobalSearchResults && viewState === 'products' && hasNextProductsPage && !isFetchingNextProductsPage) {
             fetchNextProductsPage();
           }
 
           // Product groups view için infinite scroll
-          if (!showGlobalSearchResults && currentView === 'productgroups' && hasNextProductGroupsPage && !isFetchingNextProductGroupsPage) {
+          if (!showGlobalSearchResults && viewState === 'productgroups' && hasNextProductGroupsPage && !isFetchingNextProductGroupsPage) {
             fetchNextProductGroupsPage();
           }
 
           // Categories view için infinite scroll
-          if (!showGlobalSearchResults && currentView === 'categories' && hasNextCategoriesPage && !isFetchingNextCategoriesPage) {
+          if (!showGlobalSearchResults && viewState === 'categories' && hasNextCategoriesPage && !isFetchingNextCategoriesPage) {
             fetchNextCategoriesPage();
           }
 
           // Subcategories view için infinite scroll
-          if (!showGlobalSearchResults && currentView === 'subcategories' && hasNextSubCategoriesPage && !isFetchingNextSubCategoriesPage) {
+          if (!showGlobalSearchResults && viewState === 'subcategories' && hasNextSubCategoriesPage && !isFetchingNextSubCategoriesPage) {
             fetchNextSubCategoriesPage();
           }
         }}
@@ -1656,11 +1742,11 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           ) : (
             <>
               {/* Loading skeleton */}
-              {(currentView === 'categories' && isLoadingCategories) ||
-              (currentView === 'subcategories' && isLoadingSubCategories) ||
-              (currentView === 'productgroups' && isLoadingProductGroups) ||
-              (currentView === 'products' && isLoadingProducts) ? (
-                currentView === 'products' ? (
+              {(viewState === 'categories' && isLoadingCategories) ||
+              (viewState === 'subcategories' && isLoadingSubCategories) ||
+              (viewState === 'productgroups' && isLoadingProductGroups) ||
+              (viewState === 'products' && isLoadingProducts) ? (
+                viewState === 'products' ? (
                   <ProductSkeleton count={9} />
                 ) : (
                   <CategorySkeleton count={9} />
@@ -1668,8 +1754,8 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
               ) : currentData.length > 0 ? (
                 <>
                   {/* currentData'yı gruplara böl - categories için 2'li, diğerleri için 3'lü */}
-                  {Array.from({ length: Math.ceil(currentData.length / (currentView === 'categories' ? 2 : 3)) }).map((_, rowIndex) => {
-                    const itemsPerRow = currentView === 'categories' ? 2 : 3;
+                  {Array.from({ length: Math.ceil(currentData.length / (viewState === 'categories' ? 2 : 3)) }).map((_, rowIndex) => {
+                    const itemsPerRow = viewState === 'categories' ? 2 : 3;
                     const startIndex = rowIndex * itemsPerRow;
                     const rowItems = currentData.slice(startIndex, startIndex + itemsPerRow);
                     // İlk 3 satır için high priority - ilk ekranda görünen tüm görseller
@@ -1687,7 +1773,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                           }
                           
                           // Render different components based on current view
-                          if (currentView === 'categories') {
+                          if (viewState === 'categories') {
                             return (
                               <CategoryCard
                                 key={currentItem.id}
@@ -1697,7 +1783,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                                 isLargeCard={true}
                               />
                             );
-                          } else if (currentView === 'subcategories') {
+                          } else if (viewState === 'subcategories') {
                             const subCategoryItem = currentItem as unknown as CatalogSubCategory & { id: string; image: any };
                             return (
                               <CategoryCard
@@ -1713,7 +1799,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                                 priority={priority}
                               />
                             );
-                          } else if (currentView === 'productgroups') {
+                          } else if (viewState === 'productgroups') {
                             const productGroupItem = currentItem as unknown as CatalogProductGroup & { id: string; image: any };
                             return (
                               <CategoryCard
@@ -1729,7 +1815,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                                 priority={priority}
                               />
                             );
-                          } else if (currentView === 'products') {
+                          } else if (viewState === 'products') {
                             const productItem = currentItem as unknown as CatalogProduct & { id: string; image: any };
                             return (
                               <CategoryCard
@@ -1754,28 +1840,28 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                   })}
 
                   {/* Load More Indicator - Normal products view için */}
-                  {!showGlobalSearchResults && currentView === 'products' && isFetchingNextProductsPage && (
+                  {!showGlobalSearchResults && viewState === 'products' && isFetchingNextProductsPage && (
                     <Box py="$4" alignItems="center">
                       <ProductSkeleton count={3} />
                     </Box>
                   )}
 
                   {/* Load More Indicator - Product groups view için */}
-                  {!showGlobalSearchResults && currentView === 'productgroups' && isFetchingNextProductGroupsPage && (
+                  {!showGlobalSearchResults && viewState === 'productgroups' && isFetchingNextProductGroupsPage && (
                     <Box py="$4" alignItems="center">
                       <CategorySkeleton count={3} />
                     </Box>
                   )}
 
                   {/* Load More Indicator - Categories view için */}
-                  {!showGlobalSearchResults && currentView === 'categories' && isFetchingNextCategoriesPage && (
+                  {!showGlobalSearchResults && viewState === 'categories' && isFetchingNextCategoriesPage && (
                     <Box py="$4" alignItems="center">
                       <CategorySkeleton count={3} />
                     </Box>
                   )}
 
                   {/* Load More Indicator - Subcategories view için */}
-                  {!showGlobalSearchResults && currentView === 'subcategories' && isFetchingNextSubCategoriesPage && (
+                  {!showGlobalSearchResults && viewState === 'subcategories' && isFetchingNextSubCategoriesPage && (
                     <Box py="$4" alignItems="center">
                       <CategorySkeleton count={3} />
                     </Box>

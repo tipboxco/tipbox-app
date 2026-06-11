@@ -80,6 +80,37 @@ export type RootStackParamList = {
   // ProductCatalog - Standalone product catalog screen (inventory FAB)
   ProductCatalog: undefined;
 
+  // CatalogCategory/SubCategory/ProductGroup — RootStack'te açılır (tab bar gizlenir)
+  CatalogCategory: {
+    categoryId: string;
+    categoryName: string;
+    categoryImage?: string;
+  };
+  CatalogSubCategory: {
+    categoryId: string;
+    categoryName: string;
+    subCategoryId: string;
+    subCategoryName: string;
+    subCategoryImage?: string;
+  };
+  CatalogProductGroup: {
+    categoryId: string;
+    categoryName: string;
+    subCategoryId: string;
+    subCategoryName: string;
+    productGroupId: string;
+    productGroupName: string;
+    productGroupImage?: string;
+  };
+
+  // CatalogSearch — context-aware catalog product search screen
+  CatalogSearch: {
+    contextLabel: string;
+    categoryId?: string;
+    subCategoryId?: string;
+    productGroupId?: string;
+  };
+
   // ProductSelect - Global product selection screen
   ProductSelect: {
     returnScreen?: string;

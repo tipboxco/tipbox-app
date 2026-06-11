@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "start": "expo start --dev-client",
+    "start": "expo start  -c",
     "start:dev": "copy .env.development .env && expo start",
     "start:test": "copy .env.test .env && expo start",
     "start:prod": "copy .env.production .env && expo start",

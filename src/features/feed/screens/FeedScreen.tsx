@@ -1,10 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { ScrollView, View, Pressable } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import { ScrollView, View, Pressable, Image } from 'react-native';
+import Animated from 'react-native-reanimated';
 import PagerView from 'react-native-pager-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/src/components/ui';
@@ -15,12 +11,12 @@ import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SearchModal } from '@/src/components/SearchModal';
-import { AssetAccessCard } from '../components/AssetAccessCard';
 import { FeedTabList } from '../components/FeedTabList';
-import { useAppStore } from '@/src/store/appStore';
-import { useNotificationStore } from '@/src/store/notificationStore';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import type { FeedFilterParams } from '../api/feedApi';
+import { CreateButton } from '@/src/features/post/components/CreateButton';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useBottomOffset } from '@/src/utils';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
@@ -40,9 +36,10 @@ const FeedScreenInner: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<FeedScreenNavigationProp>();
-  const { user } = useAppStore();
   const { t } = useTranslation('feed');
-  const unreadCount = useNotificationStore((s) => s.unreadCountCache ?? 0);
+
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding: 16 });
 
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -50,21 +47,6 @@ const FeedScreenInner: React.FC = () => {
 
   const pagerRef = useRef<PagerView>(null);
   const tabScrollRef = useRef<ScrollView>(null);
-
-  const handleNotificationBellPress = useCallback(() => {
-    (navigation as any).navigate('NotificationStack');
-  }, [navigation]);
-
-  const handleTabChange = useCallback((tab: 'wallet' | 'inventory') => {
-    if (tab === 'wallet') {
-      navigation.navigate('WalletScreen');
-    } else if (tab === 'inventory' && user?.id) {
-      (navigation as any).navigate('Profile', {
-        screen: 'InventoryList',
-        params: { userId: user.id },
-      });
-    }
-  }, [navigation, user?.id]);
 
   const handlePageSelected = useCallback((e: any) => {
     const page = e.nativeEvent.position;
@@ -78,7 +60,101 @@ const FeedScreenInner: React.FC = () => {
     tabScrollRef.current?.scrollTo({ x: index * 80, animated: true });
   }, []);
 
-  const backgroundColor = isDark ? '#000000' : '#F5F5F5';
+  const handleProductPost = useCallback(() => {
+    closeBottomSheet();
+    navigation.navigate('ProductCatalog');
+  }, [closeBottomSheet, navigation]);
+
+  const handleSubcategoryPost = useCallback(() => {
+    closeBottomSheet();
+    navigation.navigate('ProductCatalog');
+  }, [closeBottomSheet, navigation]);
+
+  const handleCreatePress = useCallback(() => {
+    const bg = isDark ? '#121212' : '#FDFDFB';
+    const textColor = isDark ? '#F5F5F5' : '#000000';
+    const subTextColor = isDark ? '#888888' : '#B9B9B9';
+    const borderColor = isDark ? '#333333' : '#E2E2E2';
+    const itemBg = isDark ? '#1A1A1A' : '#FFFFFF';
+
+    openBottomSheet(
+      <View style={{ backgroundColor: bg, width: '100%', paddingBottom: 16 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, alignItems: 'center' }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: textColor }}>Create Post</Text>
+        </View>
+
+        <View style={{ paddingHorizontal: 16, gap: 10 }}>
+          {/* Product Post */}
+          <Pressable
+            onPress={handleProductPost}
+            style={{
+              backgroundColor: itemBg,
+              borderWidth: 1,
+              borderColor,
+              borderRadius: 10,
+              paddingHorizontal: 13,
+              paddingVertical: 16,
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 12,
+            }}
+          >
+            <View style={{ width: 24, height: 24, borderWidth: 1, borderColor: isDark ? '#444444' : '#E8E8E8', borderStyle: 'dashed', borderRadius: 2, justifyContent: 'center', alignItems: 'center', backgroundColor: itemBg }}>
+              <Image source={require('@/assets/add_post.png')} style={{ width: 24, height: 24 }} resizeMode="contain" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: textColor, marginBottom: 3 }}>
+                Product Post
+              </Text>
+              <Text style={{ fontSize: 10, color: subTextColor, lineHeight: 14 }}>
+                Create an experience, question, tip, or benchmark post about the product itself.
+              </Text>
+            </View>
+          </Pressable>
+
+          {/* Subcategory & Product Group Post */}
+          <Pressable
+            onPress={handleSubcategoryPost}
+            style={{
+              backgroundColor: itemBg,
+              borderWidth: 1,
+              borderColor,
+              borderRadius: 10,
+              paddingHorizontal: 13,
+              paddingVertical: 16,
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 12,
+            }}
+          >
+            <View style={{ width: 24, height: 24, borderWidth: 1, borderColor: isDark ? '#444444' : '#E8E8E8', borderStyle: 'dashed', borderRadius: 2, justifyContent: 'center', alignItems: 'center', backgroundColor: itemBg }}>
+              <Image source={require('@/assets/add_post.png')} style={{ width: 24, height: 24 }} resizeMode="contain" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: textColor, marginBottom: 3 }}>
+                Subcategory & Product Group Post
+              </Text>
+              <Text style={{ fontSize: 10, color: subTextColor, lineHeight: 14 }}>
+                Create a general, tip, or question post about a Subcategory or Product Group.
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+      </View>,
+      {
+        enableDynamicSizing: false,
+        snapPoints: ['35%'],
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        animateOnMount: false,
+        paddingBottom: bottomOffset,
+      }
+    );
+  }, [openBottomSheet, isDark, bottomOffset, handleProductPost, handleSubcategoryPost]);
+
+  const backgroundColor = isDark ? '#000000' : '#FFFFFF';
   const tabBarBg = isDark ? '#000000' : '#FFFFFF';
 
   return (
@@ -88,14 +164,7 @@ const FeedScreenInner: React.FC = () => {
           logo={require('@/assets/tipbox-nobg.png')}
           leftAction="menu"
           onSearchPress={() => setIsSearchVisible(true)}
-          showNotificationBell
-          onNotificationBellPress={handleNotificationBellPress}
-          notificationBadgeCount={unreadCount}
         />
-
-        <View style={{ flexShrink: 0 }}>
-          <AssetAccessCard onTabChange={handleTabChange} />
-        </View>
 
         {/* Scrollable Tab Bar */}
         <View style={{ backgroundColor: tabBarBg, borderBottomWidth: 1, borderBottomColor: isDark ? '#333' : '#E9E9E9' }}>
@@ -158,6 +227,8 @@ const FeedScreenInner: React.FC = () => {
             </View>
           ))}
         </AnimatedPagerView>
+
+        <CreateButton onPress={handleCreatePress} />
 
         <SearchModal
           visible={isSearchVisible}

@@ -636,63 +636,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         </View>
       </Modal>
 
-      {/* Product */}
-      {
-        !hideProduct && data.contextData && (
-          <Box
-            px={12}
-            py={8}
-            borderRightWidth={1}
-            borderLeftWidth={1}
-            borderColor={isDark ? '#333333' : '#E9E9E9'}
-            borderTopWidth={1}
-            borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'}
-            bg={isDark ? '#0A0A0A' : '#FAFAFA'}
-            {...(!showHeader && { borderTopLeftRadius: 5, borderTopRightRadius: 5 })}
-          >
-            <VStack space="xs">
-              <ProductInfoCard
-                size="small"
-                type={ProductInfoType.PRODUCT}
-                image={toImageSource(data.contextData.image)}
-                title={data.contextData.name}
-                subName={data.contextData.subName && !/^Status:\s*(tested|own)$/i.test(String(data.contextData.subName)) ? data.contextData.subName : undefined}
-                ownershipLabel={data.contextData?.isOwned ? 'Owned' : 'Tried'}
-                onPress={() => {
-                // Product için PostsScreen'e navigate et
-                if (!data.contextData?.id) return;
-                
-                // Experience post'ları genelde Product context'inde olduğu için varsayılan olarak Product kullan
-                const contextType = data.contextType || ProductInfoType.PRODUCT;
-                
-                navigationService.navigate(ROOT_ROUTES.POST, {
-                  screen: 'PostsScreen',
-                  params: {
-                    stage: 'Product',
-                    name: data.contextData.name,
-                    productInfo: {
-                      image: toImageSource(data.contextData.image),
-                      title: data.contextData.name,
-                      subName: data.contextData.subName,
-                    },
-                    selectedProduct: {
-                      id: data.contextData.id,
-                      name: data.contextData.name,
-                      description: data.contextData.subName,
-                      image: toImageSource(data.contextData.image),
-                    },
-                    contextType,
-                    contextId: data.contextData.id,
-                  },
-                });
-              }}
-              />
-            </VStack>
-          </Box>
-        )
-      }
-
-
       {/* Content */}
       <Pressable onPress={() => {
         if (isDetailMode) return; // Detay modunda navigation yapma
@@ -708,10 +651,9 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         <VStack
           px={12}
           pb={8}
-          pt={hideProduct ? 8 : 0}
+          pt={8}
           borderRightWidth={1}
           borderLeftWidth={1}
-          borderBottomWidth={data.tags && data.tags.length > 0 ? 0 : 1}
           borderColor={isDark ? '#333333' : '#E9E9E9'}
           {...(!showHeader && !data.contextData && { borderTopWidth: 1, borderTopLeftRadius: 5, borderTopRightRadius: 5 })}
           {...(!data.tags || data.tags.length === 0) && !data.images && { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 }}
@@ -774,7 +716,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
       {/* Translated Content */}
       {showTranslation && translatedContent && (
         <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
-          <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
           <Text
             color={isDark ? '$textDark200' : '#666'}
             fontSize="$sm"
@@ -811,6 +752,57 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           </Pressable>
         </Box>
       )}
+
+      {/* Product */}
+      {
+        !hideProduct && data.contextData && (
+          <Box
+            px={12}
+            py={8}
+            borderRightWidth={1}
+            borderLeftWidth={1}
+            borderColor={isDark ? '#333333' : '#E9E9E9'}
+            borderTopWidth={1}
+            borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'}
+            bg={isDark ? '#0A0A0A' : '#FAFAFA'}
+          >
+            <VStack space="xs">
+              <ProductInfoCard
+                size="small"
+                type={ProductInfoType.PRODUCT}
+                image={toImageSource(data.contextData.image)}
+                title={data.contextData.name}
+                subName={data.contextData.subName && !/^Status:\s*(tested|own)$/i.test(String(data.contextData.subName)) ? data.contextData.subName : undefined}
+                ownershipLabel={data.contextData?.isOwned ? 'Owned' : 'Tried'}
+                onPress={() => {
+                  if (!data.contextData?.id) return;
+                  const contextType = data.contextType || ProductInfoType.PRODUCT;
+                  navigationService.navigate(ROOT_ROUTES.POST, {
+                    screen: 'PostsScreen',
+                    params: {
+                      stage: 'Product',
+                      name: data.contextData.name,
+                      productInfo: {
+                        image: toImageSource(data.contextData.image),
+                        title: data.contextData.name,
+                        subName: data.contextData.subName,
+                      },
+                      selectedProduct: {
+                        id: data.contextData.id,
+                        name: data.contextData.name,
+                        description: data.contextData.subName,
+                        image: toImageSource(data.contextData.image),
+                      },
+                      contextType,
+                      contextId: data.contextData.id,
+                    },
+                  });
+                }}
+              />
+            </VStack>
+          </Box>
+        )
+      }
 
       {/* Usage Context: Duration, Condition, Purpose - Owned/Tried sadece product (ProductInfoCard) içinde. */}
       {data.tags && data.tags.length > 0 && (
@@ -884,43 +876,45 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={5} borderBottomLeftRadius={5} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center"
         >
           <HStack flex={1} justifyContent="space-between" alignItems="center">
-            <Pressable onPress={handleLike}>
-              <HStack alignItems="center">
-                {isLiked ? (
-                  <HeartIconSolid width={24} height={24} color="#FF3040" />
-                ) : (
-                  <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                )}
-                <AnimatedCounter
-                  value={likesCount}
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize={10}
-                  ml={4}
-                />
-              </HStack>
-            </Pressable>
-            <Pressable onPress={handleComment}>
-              <HStack alignItems="center">
-                <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                <AnimatedCounter
-                  value={commentsCount}
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize={10}
-                  ml={4}
-                />
-              </HStack>
-            </Pressable>
-            <Pressable onPress={handleShare}>
-              <HStack alignItems="center">
-                <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                <AnimatedCounter
-                  value={sharesCount}
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize={10}
-                  ml={4}
-                />
-              </HStack>
-            </Pressable>
+            <HStack alignItems="center" style={{ gap: 5 }}>
+              <Pressable onPress={handleLike}>
+                <HStack alignItems="center">
+                  {isLiked ? (
+                    <HeartIconSolid width={24} height={24} color="#FF3040" />
+                  ) : (
+                    <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                  )}
+                  <AnimatedCounter
+                    value={likesCount}
+                    color={isDark ? '$textDark50' : '#000'}
+                    fontSize={10}
+                    ml={4}
+                  />
+                </HStack>
+              </Pressable>
+              <Pressable onPress={handleComment}>
+                <HStack alignItems="center">
+                  <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                  <AnimatedCounter
+                    value={commentsCount}
+                    color={isDark ? '$textDark50' : '#000'}
+                    fontSize={10}
+                    ml={4}
+                  />
+                </HStack>
+              </Pressable>
+              <Pressable onPress={handleShare}>
+                <HStack alignItems="center">
+                  <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                  <AnimatedCounter
+                    value={sharesCount}
+                    color={isDark ? '$textDark50' : '#000'}
+                    fontSize={10}
+                    ml={4}
+                  />
+                </HStack>
+              </Pressable>
+            </HStack>
             <Pressable onPress={handleBookmark}>
               <HStack alignItems="center">
                 {isBookmarked ? (

@@ -18,6 +18,7 @@ import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
+import type { ExploreStackParamList } from '@/src/features/explore/navigation';
 import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
@@ -25,7 +26,7 @@ import { useCatalogNavigationStore, catalogNavigationStore } from '../store/cata
 import { useBottomOffset } from '@/src/utils';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
-type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
+type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList & ExploreStackParamList> & {
   navigate: (name: any, params?: any) => void;
 };
 
@@ -239,6 +240,36 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
   const setSelectedProductGroup = useCatalogUIStore((state) => state.setSelectedProductGroup);
   const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
   
+
+  const handleCategoryNavigate = useCallback((category: { id: string; name: string; image?: string }) => {
+    navigation.navigate('CatalogCategory', {
+      categoryId: category.id,
+      categoryName: category.name,
+      categoryImage: category.image,
+    });
+  }, [navigation]);
+
+  const handleSubCategoryNavigate = useCallback((subCategory: { id: string; name: string; image?: string; categoryId?: string }) => {
+    navigation.navigate('CatalogSubCategory', {
+      categoryId: subCategory.categoryId ?? '',
+      categoryName: '',
+      subCategoryId: subCategory.id,
+      subCategoryName: subCategory.name,
+      subCategoryImage: subCategory.image,
+    });
+  }, [navigation]);
+
+  const handleProductGroupNavigate = useCallback((productGroup: { id: string; name: string; image?: string; subCategoryId?: string }) => {
+    navigation.navigate('CatalogProductGroup', {
+      categoryId: '',
+      categoryName: '',
+      subCategoryId: productGroup.subCategoryId ?? '',
+      subCategoryName: '',
+      productGroupId: productGroup.id,
+      productGroupName: productGroup.name,
+      productGroupImage: productGroup.image,
+    });
+  }, [navigation]);
 
   // CRITICAL FIX: Wrap in useCallback to prevent infinite loop
   // BrandScreen's useFocusEffect depends on this function
@@ -830,6 +861,9 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
             scrollViewPaddingBottom={paddingBottom}
             selectMode={route.params?.selectMode}
             returnScreen={route.params?.returnScreen}
+            onCategoryNavigate={embedded ? handleCategoryNavigate : undefined}
+            onSubCategoryNavigate={embedded ? handleSubCategoryNavigate : undefined}
+            onProductGroupNavigate={embedded ? handleProductGroupNavigate : undefined}
             initialView={productCatalogState.currentView}
             initialSelectedCategoryId={routeProductCategoryId || productCatalogState.selectedCategoryId}
             initialSelectedSubCategoryId={routeProductSubCategoryId || productCatalogState.selectedSubCategoryId}

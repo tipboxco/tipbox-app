@@ -14,6 +14,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { MessageBadge } from '@/src/components/MessageBadge';
+import { useNotificationStore } from '@/src/store/notificationStore';
 import { useMessages } from '@/src/features/inbox/api/hooks';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
@@ -28,12 +29,14 @@ import {
   CalendarIcon as CalendarIconSolid,
   InboxIcon as InboxIconSolid,
   WalletIcon as WalletIconSolid,
+  BellIcon as BellIconSolid,
 } from 'react-native-heroicons/solid';
 import {
   HomeIcon as HomeIconOutline,
   CalendarIcon as CalendarIconOutline,
   InboxIcon as InboxIconOutline,
   WalletIcon as WalletIconOutline,
+  BellIcon as BellIconOutline,
 } from 'react-native-heroicons/outline';
 // Ionicons for Explore tab (Heroicons doesn't have binoculars)
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -289,6 +292,8 @@ export const TabNavigator = () => {
   // Badge için inbox tab'ına en az bir kez girilmesi gerekiyor
   const [hasVisitedInbox, setHasVisitedInbox] = React.useState(false);
   const { data: messages } = useMessages(hasVisitedInbox);
+  const unreadNotificationCount = useNotificationStore((s) => s.unreadCountCache ?? 0);
+
   const hasUnreadMessages = useMemo(() => {
     // CRITICAL FIX: messages undefined veya array değilse false döndür
     if (!messages || !Array.isArray(messages) || messages.length === 0) return false;
@@ -373,6 +378,9 @@ export const TabNavigator = () => {
       case 'EventsStack':
         IconComponent = focused ? CalendarIconSolid : CalendarIconOutline;
         break;
+      case 'NotificationStack':
+        IconComponent = focused ? BellIconSolid : BellIconOutline;
+        break;
       case 'InboxStack':
         IconComponent = focused ? InboxIconSolid : InboxIconOutline;
         break;
@@ -380,6 +388,16 @@ export const TabNavigator = () => {
 
     if (!IconComponent) {
       return null;
+    }
+
+    // Notification icon için badge ekle
+    if (route.name === 'NotificationStack') {
+      return (
+        <View style={{ position: 'relative' }}>
+          <IconComponent {...iconProps} />
+          <MessageBadge hasUnread={unreadNotificationCount > 0} />
+        </View>
+      );
     }
 
     // Inbox icon için badge ekle (sadece nokta, count yok)
@@ -555,20 +573,17 @@ export const TabNavigator = () => {
             }}
           />
           <Tab.Screen
-            name="InboxStack"
-            component={InboxNavigator}
-            listeners={{
-              tabPress: handleInboxTabPressWithReset,
-            }}
-          />
-          <Tab.Screen
             name="NotificationStack"
             component={NotificationsNavigator}
             listeners={{
               tabPress: handleNotificationsTabPress,
             }}
-            options={{
-              tabBarButton: () => null,
+          />
+          <Tab.Screen
+            name="InboxStack"
+            component={InboxNavigator}
+            listeners={{
+              tabPress: handleInboxTabPressWithReset,
             }}
           />
         </Tab.Navigator>

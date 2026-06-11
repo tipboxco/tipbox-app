@@ -646,119 +646,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
         </HStack>
       </VStack>
 
-      {/* Product */}
-      {
-        !hideProduct && data.category && data.category.product ? (
-          <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
-            <ProductInfoCard
-              size="small"
-              type={ProductInfoType.PRODUCT}
-              image={toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png')}
-              title={data.category.product.name}
-              subName={data.category.product.subName}
-              onPress={() => {
-                // Product için PostsScreen'e navigate et
-                if (!data.category?.product?.id) return;
-                
-                navigationService.navigate(ROOT_ROUTES.POST, {
-                  screen: 'PostsScreen',
-                  params: {
-                    stage: 'Product',
-                    name: data.category.product.name,
-                    productInfo: {
-                      image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
-                      title: data.category.product.name,
-                      subName: data.category.product.subName,
-                    },
-                    selectedProduct: {
-                      id: data.category.product.id,
-                      name: data.category.product.name,
-                      description: data.category.product.subName,
-                      image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
-                    },
-                    contextType: ProductInfoType.PRODUCT,
-                    contextId: data.category.product.id,
-                  },
-                });
-              }}
-            />
-          </Box>
-        ) : !hideProduct && data.category ? (
-          <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
-            <ProductInfoCard
-              size="small"
-              type={ProductInfoType.SUB_CATEGORY}
-              image={toImageSource(data.category.image) || require('@/assets/inventory/product_01.png')}
-              title={data.category.name}
-              subName={data.category.subCategory}
-              onPress={() => {
-                // SubCategory için PostsScreen'e navigate et
-                if (!data.category?.id) return;
-                
-                navigationService.navigate(ROOT_ROUTES.POST, {
-                  screen: 'PostsScreen',
-                  params: {
-                    stage: 'SubCategories',
-                    name: data.category.name,
-                    productInfo: {
-                      image: toImageSource(data.category.image) || require('@/assets/inventory/product_01.png'),
-                      title: data.category.name,
-                      subName: data.category.subCategory,
-                    },
-                    contextType: ProductInfoType.SUB_CATEGORY,
-                    contextId: data.category.id,
-                  },
-                });
-              }}
-            />
-          </Box>
-        ) : null
-      }
-
-      {/* Badges */}
-      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} gap={8} alignItems="center">
-          <Box
-            borderWidth={1}
-            borderColor="#B8CC04"
-            bgColor="#758600"
-            borderRadius={20}
-            px={8}
-            py={3}
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="center"
-          >
-            <QuestionMarkCircleIcon width={10} height={10} color={'#fff'} />
-            <Text
-              fontSize={9}
-              fontWeight="$semibold"
-              ml={4}
-              color={'#fff'}
-            >
-              {t('card.badges.question')}
-            </Text>
-          </Box>
-
-          {isBoostActive && (
-            <Box
-              borderWidth={1}
-              borderColor="#EF4D81"
-              bgColor="#E0195B"
-              borderRadius={20}
-              px={8}
-              py={3}
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <RocketLaunchIcon width={10} height={10} color="#fff" />
-              <Text fontSize={9} fontWeight="$semibold" ml={4} color="#fff">
-                {t('card.badges.boosted')}
-              </Text>
-            </Box>
-          )}
-      </HStack>
-
       {/* Content - Boost Post sadece 3 nokta menüde (doğru tasarım: badge ile içerik arasında değil) */}
       <Pressable onPress={() => {
         if (isDetailMode) return; // Detay modunda navigation yapma
@@ -767,7 +654,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           params: { postData: data, type: 'question' }
         });
       }}>
-        <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
+        <VStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
           <Text
             color={isDark ? '$textDark50' : '#000'}
             fontSize="$sm"
@@ -782,7 +669,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       {/* Translated Content */}
       {showTranslation && translatedContent && (
         <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
-          <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
           <Text
             color={isDark ? '$textDark200' : '#666'}
             fontSize="$sm"
@@ -820,6 +706,114 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
         </Box>
       )}
 
+      {/* Product */}
+      {
+        !hideProduct && data.category && data.category.product ? (
+          <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} borderTopColor={isDark ? '#1A1A1A' : '#F0F0F0'} bg={isDark ? '#0A0A0A' : '#FAFAFA'}>
+            <ProductInfoCard
+              size="small"
+              type={ProductInfoType.PRODUCT}
+              image={toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png')}
+              title={data.category.product.name}
+              subName={data.category.product.subName}
+              onPress={() => {
+                if (!data.category?.product?.id) return;
+                navigationService.navigate(ROOT_ROUTES.POST, {
+                  screen: 'PostsScreen',
+                  params: {
+                    stage: 'Product',
+                    name: data.category.product.name,
+                    productInfo: {
+                      image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
+                      title: data.category.product.name,
+                      subName: data.category.product.subName,
+                    },
+                    selectedProduct: {
+                      id: data.category.product.id,
+                      name: data.category.product.name,
+                      description: data.category.product.subName,
+                      image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
+                    },
+                    contextType: ProductInfoType.PRODUCT,
+                    contextId: data.category.product.id,
+                  },
+                });
+              }}
+            />
+          </Box>
+        ) : !hideProduct && data.category ? (
+          <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
+            <ProductInfoCard
+              size="small"
+              type={ProductInfoType.SUB_CATEGORY}
+              image={toImageSource(data.category.image) || require('@/assets/inventory/product_01.png')}
+              title={data.category.name}
+              subName={data.category.subCategory}
+              onPress={() => {
+                if (!data.category?.id) return;
+                navigationService.navigate(ROOT_ROUTES.POST, {
+                  screen: 'PostsScreen',
+                  params: {
+                    stage: 'SubCategories',
+                    name: data.category.name,
+                    productInfo: {
+                      image: toImageSource(data.category.image) || require('@/assets/inventory/product_01.png'),
+                      title: data.category.name,
+                      subName: data.category.subCategory,
+                    },
+                    contextType: ProductInfoType.SUB_CATEGORY,
+                    contextId: data.category.id,
+                  },
+                });
+              }}
+            />
+          </Box>
+        ) : null
+      }
+
+      {/* Badges */}
+      <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} gap={8} alignItems="center">
+          <Box
+            borderWidth={1}
+            borderColor="#B8CC04"
+            bgColor="#758600"
+            borderRadius={20}
+            px={8}
+            py={3}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <QuestionMarkCircleIcon width={10} height={10} color={'#fff'} />
+            <Text
+              fontSize={9}
+              fontWeight="$semibold"
+              ml={4}
+              color={'#fff'}
+            >
+              {t('card.badges.question')}
+            </Text>
+          </Box>
+          {isBoostActive && (
+            <Box
+              borderWidth={1}
+              borderColor="#EF4D81"
+              bgColor="#E0195B"
+              borderRadius={20}
+              px={8}
+              py={3}
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <RocketLaunchIcon width={10} height={10} color="#fff" />
+              <Text fontSize={9} fontWeight="$semibold" ml={4} color="#fff">
+                {t('card.badges.boosted')}
+              </Text>
+            </Box>
+          )}
+      </HStack>
+
       {/* Images */}
       {(() => {
         const validImages = data.images?.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) || [];
@@ -854,6 +848,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
         justifyContent="space-between"
       >
         <HStack flex={1} justifyContent="space-between" alignItems="center">
+          <HStack alignItems="center" style={{ gap: 5 }}>
           <Pressable onPress={handleLike}>
           <HStack alignItems="center">
               {isLiked ? (
@@ -891,6 +886,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               />
             </HStack>
           </Pressable>
+          </HStack>
           <Pressable onPress={handleBookmark}>
           <HStack alignItems="center">
               {isBookmarked ? (

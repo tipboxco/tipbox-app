@@ -17,6 +17,10 @@ import MessageDetailScreen from '@/src/features/inbox/screens/MessageDetail';
 import SupportMessageDetailScreen from '@/src/features/inbox/screens/SupportMessageDetail';
 import { ProductSelectScreen } from '@/src/screens/ProductSelectScreen';
 import { ProductCatalogWrapper } from '@/src/features/catalog/screens/ProductCatalogWrapper';
+import { CategoryDetailScreen } from '@/src/features/catalog/screens/CategoryDetailScreen';
+import { SubCategoryDetailScreen } from '@/src/features/catalog/screens/SubCategoryDetailScreen';
+import { ProductGroupDetailScreen } from '@/src/features/catalog/screens/ProductGroupDetailScreen';
+import { CatalogSearchScreen } from '@/src/features/catalog/screens/CatalogSearchScreen';
 import CollectionDetailScreen from '@/src/features/events/screens/CollectionDetailScreen';
 import type { RootStackParamList } from '../types/root.types';
 
@@ -149,6 +153,22 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="ProductCatalog"
               component={ProductCatalogWrapper}
+            />
+            <RootStack.Screen
+              name="CatalogCategory"
+              component={CategoryDetailScreen}
+            />
+            <RootStack.Screen
+              name="CatalogSubCategory"
+              component={SubCategoryDetailScreen}
+            />
+            <RootStack.Screen
+              name="CatalogProductGroup"
+              component={ProductGroupDetailScreen}
+            />
+            <RootStack.Screen
+              name="CatalogSearch"
+              component={CatalogSearchScreen}
             />
           </RootStack.Group>
           

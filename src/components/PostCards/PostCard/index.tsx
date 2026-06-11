@@ -631,6 +631,26 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         </HStack>
       </VStack>
 
+      {/* Content */}
+      <Pressable onPress={() => {
+        if (isDetailMode) return; // Detay modunda navigation yapma
+        navigationService.navigate(ROOT_ROUTES.POST, {
+          screen: 'PostDetailScreen',
+          params: { postData: data, type: 'post' }
+        });
+      }}>
+        <VStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
+          <Text
+            color={isDark ? '$textDark50' : '#000'}
+            fontSize="$sm"
+            lineHeight={18}
+            numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
+          >
+            {data.content}
+          </Text>
+        </VStack>
+      </Pressable>
+
       {/* Product / Context Info */}
       {!hideProduct && isProductContext && data.contextData ? (
         (() => {
@@ -749,10 +769,10 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                     // Product için BrandProductDetailScreen'e navigate et
                     if (category.product?.id) {
                       navigationService.navigateNested(
-                        TAB_ROUTES.CATALOG, 
-                        'BrandProductDetailScreen' as any, 
-                        { 
-                        productId: category.product.id 
+                        TAB_ROUTES.CATALOG,
+                        'BrandProductDetailScreen' as any,
+                        {
+                        productId: category.product.id
                         }
                       );
                     }
@@ -781,30 +801,9 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         })()
       ) : null}
 
-      {/* Content */}
-      <Pressable onPress={() => {
-        if (isDetailMode) return; // Detay modunda navigation yapma
-        navigationService.navigate(ROOT_ROUTES.POST, {
-          screen: 'PostDetailScreen',
-          params: { postData: data, type: 'post' }
-        });
-      }}>
-        <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
-          <Text
-            color={isDark ? '$textDark50' : '#000'}
-            fontSize="$sm"
-            lineHeight={18}
-            numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
-          >
-            {data.content}
-          </Text>
-        </VStack>
-      </Pressable>
-
       {/* Translated Content */}
       {showTranslation && translatedContent && (
         <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
-          <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
           <Text
             color={isDark ? '$textDark200' : '#666'}
             fontSize="$sm"
@@ -864,19 +863,23 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
       })()}
 
       {/* Stats */}
-      <HStack
-        px={12}
-        py={8}
-        borderRightWidth={1}
-        borderLeftWidth={1}
-        borderBottomWidth={1}
-        borderBottomRightRadius={5}
-        borderBottomLeftRadius={5}
-        borderColor={isDark ? '#333333' : '#E9E9E9'}
-        justifyContent="space-between"
-        alignItems="center"
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderRightWidth: 1,
+          borderLeftWidth: 1,
+          borderBottomWidth: 1,
+          borderBottomRightRadius: 5,
+          borderBottomLeftRadius: 5,
+          borderColor: isDark ? '#333333' : '#E9E9E9',
+        }}
       >
-        <HStack flex={1} justifyContent="space-between" alignItems="center">
+        {/* Sol: Like, Comment, Send */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
           <Pressable onPress={handleLike}>
             <HStack alignItems="center">
               {isLiked ? (
@@ -914,6 +917,32 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               />
             </HStack>
           </Pressable>
+        </View>
+
+        {/* Sağ: Bookmark (+ Upvote varsa) */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {data.stats.upvotes !== undefined && (
+            <Pressable onPress={handleUpvote}>
+              <HStack alignItems="center" space="xs">
+                <AnimatedCounter
+                  value={upvotesCount}
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={10}
+                />
+                <Box
+                  bg={isUpvoted ? '#E8FF6B' : 'transparent'}
+                  borderRadius={20}
+                  p={4}
+                >
+                  <ArrowUpCircleIcon
+                    width={24}
+                    height={24}
+                    color={isUpvoted ? '#000000' : (isDark ? '#fff' : '#000')}
+                  />
+                </Box>
+              </HStack>
+            </Pressable>
+          )}
           <Pressable onPress={handleBookmark}>
             <HStack alignItems="center">
               {isBookmarked ? (
@@ -929,32 +958,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               />
             </HStack>
           </Pressable>
-        </HStack>
-
-        {/* Upvote button - Event posts için (en sağda) */}
-        {data.stats.upvotes !== undefined && (
-          <Pressable onPress={handleUpvote}>
-            <HStack alignItems="center" space="xs">
-              <AnimatedCounter
-                value={upvotesCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-              />
-              <Box
-                bg={isUpvoted ? '#E8FF6B' : 'transparent'}
-                borderRadius={20}
-                p={4}
-              >
-                <ArrowUpCircleIcon
-                  width={24}
-                  height={24}
-                  color={isUpvoted ? '#000000' : (isDark ? '#fff' : '#000')}
-                />
-              </Box>
-            </HStack>
-          </Pressable>
-        )}
-      </HStack>
+        </View>
+      </View>
 
       </View>
     </>

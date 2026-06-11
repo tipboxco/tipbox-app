@@ -630,7 +630,6 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     {/* Translated Content */}
                     {showTranslation && translatedContent && (
                         <VStack space="xs" mt="$2">
-                            <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                             <Text
                                 color={isDark ? '$textDark200' : '#666'}
                                 fontSize="$sm"
@@ -663,7 +662,6 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     {/* Translated Content (feed mode) */}
                     {showTranslation && translatedContent && (
                         <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
-                            <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                             <Text
                                 color={isDark ? '$textDark200' : '#666'}
                                 fontSize="$sm"
@@ -796,6 +794,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                 justifyContent="space-between"
             >
                 <HStack flex={1} justifyContent="space-between" alignItems="center">
+                    <HStack alignItems="center" style={{ gap: 5 }}>
                     <Pressable onPress={handleLike}>
                         <HStack alignItems="center">
                             {isLiked ? (
@@ -837,6 +836,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             />
                         </HStack>
                     </Pressable>
+                    </HStack>
                     <Pressable onPress={handleBookmark}>
                         <HStack alignItems="center">
                             {isBookmarked ? (
