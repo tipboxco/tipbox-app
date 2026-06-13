@@ -6,12 +6,9 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { colors, getColor } from '@/src/constants/colors';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
+import {
   useSharedValue,
-  useAnimatedStyle,
   withSpring,
-  withTiming,
-  interpolate,
   runOnJS,
 } from 'react-native-reanimated';
 import { MessageBadge } from '@/src/components/MessageBadge';
@@ -22,20 +19,17 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 
 // freezeOnBlur is now set globally in screenOptions for all tabs
 import { ScrollRegistry } from '@/src/services/ScrollRegistry';
-import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 // Heroicons imports
 import {
   HomeIcon as HomeIconSolid,
   CalendarIcon as CalendarIconSolid,
   InboxIcon as InboxIconSolid,
-  WalletIcon as WalletIconSolid,
   BellIcon as BellIconSolid,
 } from 'react-native-heroicons/solid';
 import {
   HomeIcon as HomeIconOutline,
   CalendarIcon as CalendarIconOutline,
   InboxIcon as InboxIconOutline,
-  WalletIcon as WalletIconOutline,
   BellIcon as BellIconOutline,
 } from 'react-native-heroicons/outline';
 // Ionicons for Explore tab (Heroicons doesn't have binoculars)
@@ -43,7 +37,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
-import { WalletNavigator } from '@/src/features/wallet/navigation';
 import { EventsNavigator } from '@/src/features/events/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { InboxNavigator } from '@/src/features/inbox/navigation';
@@ -63,15 +56,6 @@ const CustomTabBar = (props: BottomTabBarProps) => {
   const insets = useSafeAreaInsets();
   const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
   
-  // Liquid Glass availability check
-  const isGlassAvailable = useMemo(() => {
-    try {
-      return Platform.OS === 'ios' && isLiquidGlassAvailable();
-    } catch {
-      return false;
-    }
-  }, []);
-
   // Gesture animasyon değerleri
   const panX = useSharedValue(0);
   const isPressing = useSharedValue(false);
@@ -146,21 +130,6 @@ const CustomTabBar = (props: BottomTabBarProps) => {
     [tabWidth, tabCount, props.state.index, navigateToTab]
   );
   
-  // Animasyonlu overlay - sürüklerken glass efekti daha belirgin olur
-  const animatedOverlay = useAnimatedStyle(() => {
-    const intensity = isPressing.value 
-      ? Math.min(1, Math.abs(panX.value) / (tabWidth * 0.5))
-      : 0;
-    
-    // Sürüklerken overlay opacity artar (glass efekti daha belirgin)
-    const overlayOpacity = withTiming(intensity * 0.2, { duration: 100 });
-    
-    return {
-      opacity: overlayOpacity,
-      backgroundColor: getColor(colors.tabBar.glassOverlay, isDark),
-    };
-  });
-  
   // Tab bar gizliyse render etme (tüm hook'lardan sonra)
   if (!isTabBarVisible) {
     return null;
@@ -168,9 +137,6 @@ const CustomTabBar = (props: BottomTabBarProps) => {
   
   const androidBottomPadding = insets.bottom;
   const tabBarHeight = Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding;
-  
-  // Liquid Glass için base tint color
-  const baseTintColor = getColor(colors.tabBar.glassTint, isDark);
   
   // Tab bar container style - yuvarlatılmış üst köşeler (su damlası efekti)
   const containerStyle = {
@@ -197,59 +163,7 @@ const CustomTabBar = (props: BottomTabBarProps) => {
     }),
   };
   
-  // Liquid Glass kullanılabilirse GlassView ile sarmala
-  if (isGlassAvailable) {
-    return (
-      <GestureDetector gesture={panGesture}>
-        <GlassView
-          style={containerStyle}
-          glassEffectStyle="clear" // "clear" daha şeffaf ve su damlası gibi görünür
-          isInteractive={true} // Interactive yapıldı - dokunma efekti için
-          tintColor={baseTintColor}
-        >
-          <View style={{ flex: 1, position: 'relative' }}>
-            <BottomTabBar 
-              {...props} 
-              style={[
-                props.style,
-                {
-                  backgroundColor: 'transparent',
-                  borderTopWidth: 0,
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
-                  paddingTop: 8,
-                },
-              ]}
-              onLayout={(event) => {
-                const { width } = event.nativeEvent.layout;
-                if (width > 0) {
-                  setTabBarWidth(width);
-                }
-              }}
-            />
-            {/* Animasyonlu overlay - sürüklerken glass efekti daha belirgin */}
-            <Animated.View
-              style={[
-                {
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  borderRadius: 24,
-                  pointerEvents: 'none',
-                },
-                animatedOverlay,
-              ]}
-            />
-          </View>
-        </GlassView>
-      </GestureDetector>
-    );
-  }
-  
-  // Fallback: Normal tab bar (Android veya iOS'ta liquid glass mevcut değilse)
-  // Fallback'te de yuvarlatılmış köşeler ekle
+  // Normal tab bar - yuvarlatılmış köşeler (expo-glass-effect kaldırıldı)
   return (
     <GestureDetector gesture={panGesture}>
       <View style={containerStyle}>
@@ -305,15 +219,6 @@ export const TabNavigator = () => {
     }
   }, []);
 
-  // Liquid Glass availability check - TabNavigator içinde de kullanılıyor
-  const isGlassAvailable = useMemo(() => {
-    try {
-      return Platform.OS === 'ios' && isLiquidGlassAvailable();
-    } catch {
-      return false;
-    }
-  }, []);
-  
   // tabBarStyle'ı useMemo ile optimize et - sürekli re-render'ı önle
   // Tab bar visibility'ye göre display kontrolü yap
   // Liquid Glass kullanılıyorsa backgroundColor transparent olmalı
@@ -325,10 +230,7 @@ export const TabNavigator = () => {
       return { display: 'none' as const };
     }
     
-    // Liquid Glass kullanılıyorsa backgroundColor transparent yap
-    const backgroundColor = isGlassAvailable
-      ? 'transparent'
-      : getColor(colors.tabBar.background, isDark);
+    const backgroundColor = getColor(colors.tabBar.background, isDark);
     
     return {
       backgroundColor,
@@ -345,7 +247,7 @@ export const TabNavigator = () => {
       zIndex: 1000,
       overflow: 'hidden' as const, // Yuvarlatılmış köşeler için
     };
-  }, [insets.bottom, isTabBarVisible, isDark, isGlassAvailable]);
+  }, [insets.bottom, isTabBarVisible, isDark]);
 
   // PERFORMANCE FIX: Tab bar icon render fonksiyonunu useCallback ile memoize et
   // Her tab değişiminde tüm tab'lar için çalışmasını önler
@@ -374,9 +276,6 @@ export const TabNavigator = () => {
         // Ionicons stroke Heroicons'a göre daha kalın - boyutu küçülterek görsel ağırlığı eşitle
         return <Ionicons name={focused ? 'binoculars' : 'binoculars-outline'} size={iconSize * 0.85} color={color} />;
 
-      case 'WalletStack':
-        IconComponent = focused ? WalletIconSolid : WalletIconOutline;
-        break;
       case 'EventsStack':
         IconComponent = focused ? CalendarIconSolid : CalendarIconOutline;
         break;
@@ -488,7 +387,6 @@ export const TabNavigator = () => {
   // Diğer tab'lar için press handler'lar
   const handleExploreTabPress = createTabPressHandler('ExploreStack');
   const handleEventsTabPress = createTabPressHandler('EventsStack');
-  const handleWalletTabPress = createTabPressHandler('WalletStack');
   const handleNotificationsTabPress = createTabPressHandler('NotificationStack');
 
   // PERFORMANCE FIX: Inbox tab press handler
@@ -557,11 +455,6 @@ export const TabNavigator = () => {
             listeners={{ tabPress: handleExploreTabPress }}
           />
           <Tab.Screen
-            name="WalletStack"
-            component={WalletNavigator}
-            listeners={{ tabPress: handleWalletTabPress }}
-          />
-          <Tab.Screen
             name="EventsStack"
             component={EventsNavigator}
             listeners={{ tabPress: handleEventsTabPress }}
@@ -580,20 +473,17 @@ export const TabNavigator = () => {
       </View>
 
       {/* Alt Güvenli Alan - Home Indicator arkasını boyar (Tab Bar altı) */}
-      {/* Liquid Glass kullanıldığında bu alan transparent olmalı */}
-      {!isGlassAvailable && (
-        <View 
-          style={{ 
-            height: insets.bottom, 
-            backgroundColor: bottomBarColor,
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1,
-          }} 
-        />
-      )}
+      <View
+        style={{
+          height: insets.bottom,
+          backgroundColor: bottomBarColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }}
+      />
     </View>
   );
 };
