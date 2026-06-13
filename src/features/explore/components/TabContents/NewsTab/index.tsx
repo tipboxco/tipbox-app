@@ -122,7 +122,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       image: imageSource || defaultEventImage,
       dateRange: formatDateRange(event.startDate, event.endDate),
       interaction: event.interaction,
-      avatars: event.participants.map((p: any) => p.avatar),
+      avatars: (event.participants ?? []).map((p: any) => p.avatar),
       eventType: event.eventType || 'default',
     };
   };
@@ -131,7 +131,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   const events = useMemo(() => {
     if (!eventsData?.pages) return [];
     
-    const allItems = eventsData.pages.flatMap((page) => page.items);
+    const allItems = eventsData.pages.flatMap((page) => page?.items ?? []);
     
     // Remove duplicates by ID
     const uniqueItemsMap = new Map<string, any>();
@@ -178,7 +178,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   const brands = useMemo(() => {
     if (!brandsData?.pages) return [];
     
-    const allItems = brandsData.pages.flatMap((page) => page.items);
+    const allItems = brandsData.pages.flatMap((page) => page?.items ?? []);
     
     // Remove duplicates by ID
     const uniqueItemsMap = new Map<string, any>();
@@ -196,7 +196,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   const products = useMemo(() => {
     if (!productsData?.pages) return [];
     
-    const allItems = productsData.pages.flatMap((page) => page.items);
+    const allItems = productsData.pages.flatMap((page) => page?.items ?? []);
     
     // Remove duplicates by ID
     const uniqueItemsMap = new Map<string, any>();

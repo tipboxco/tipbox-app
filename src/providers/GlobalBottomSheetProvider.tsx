@@ -150,9 +150,3 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
     </GlobalBottomSheetContext.Provider>
   );
 };
-
-/**
- * ARCHITECTURE FIX: Context is now exported from context.ts
- * No need to export here to avoid circular dependency
- */
-

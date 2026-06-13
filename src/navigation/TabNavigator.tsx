@@ -18,9 +18,8 @@ import { MessageBadge } from '@/src/components/MessageBadge';
 import { useNotificationStore } from '@/src/store/notificationStore';
 import { useMessages } from '@/src/features/inbox/api/hooks';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import { useAppStore } from '@/src/store/appStore';
-import { useShallow } from 'zustand/react/shallow';
-import { useAuth } from '@/src/providers/AuthProvider';
+
+
 // freezeOnBlur is now set globally in screenOptions for all tabs
 import { ScrollRegistry } from '@/src/services/ScrollRegistry';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
@@ -66,9 +65,13 @@ const CustomTabBar = (props: BottomTabBarProps) => {
   
   // Liquid Glass availability check
   const isGlassAvailable = useMemo(() => {
-    return Platform.OS === 'ios' && isLiquidGlassAvailable();
+    try {
+      return Platform.OS === 'ios' && isLiquidGlassAvailable();
+    } catch {
+      return false;
+    }
   }, []);
-  
+
   // Gesture animasyon değerleri
   const panX = useSharedValue(0);
   const isPressing = useSharedValue(false);
@@ -279,18 +282,12 @@ export const TabNavigator = () => {
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  
-  // PERFORMANCE FIX: Zustand selector'ını shallow ile memoize et
-  const isAuthenticated = useAppStore(useShallow((state) => state.isAuthenticated));
-  const { isAuthReady } = useAuth();
-  
+
   // Global navigation UI state'ten tab bar visibility'yi al
   const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
-  
+
   // PERFORMANCE FIX: Unread messages - inbox badge için
-  // Sadece authenticated ve auth ready ise çalıştır
   // CRITICAL OPTIMIZATION: Inbox'a girilmeden mesajları yükleme (lazy loading)
-  // Badge için inbox tab'ına en az bir kez girilmesi gerekiyor
   const [hasVisitedInbox, setHasVisitedInbox] = React.useState(false);
   const { data: messages } = useMessages(hasVisitedInbox);
   const unreadNotificationCount = useNotificationStore((s) => s.unreadCountCache ?? 0);
@@ -310,7 +307,11 @@ export const TabNavigator = () => {
 
   // Liquid Glass availability check - TabNavigator içinde de kullanılıyor
   const isGlassAvailable = useMemo(() => {
-    return Platform.OS === 'ios' && isLiquidGlassAvailable();
+    try {
+      return Platform.OS === 'ios' && isLiquidGlassAvailable();
+    } catch {
+      return false;
+    }
   }, []);
   
   // tabBarStyle'ı useMemo ile optimize et - sürekli re-render'ı önle
@@ -548,44 +549,32 @@ export const TabNavigator = () => {
           <Tab.Screen
             name="FeedStack"
             component={FeedNavigator}
-            listeners={{
-              tabPress: handleFeedTabPress,
-            }}
+            listeners={{ tabPress: handleFeedTabPress }}
           />
           <Tab.Screen
             name="ExploreStack"
             component={ExploreNavigator}
-            listeners={{
-              tabPress: handleExploreTabPress,
-            }}
+            listeners={{ tabPress: handleExploreTabPress }}
           />
           <Tab.Screen
             name="WalletStack"
             component={WalletNavigator}
-            listeners={{
-              tabPress: handleWalletTabPress,
-            }}
+            listeners={{ tabPress: handleWalletTabPress }}
           />
           <Tab.Screen
             name="EventsStack"
             component={EventsNavigator}
-            listeners={{
-              tabPress: handleEventsTabPress,
-            }}
+            listeners={{ tabPress: handleEventsTabPress }}
           />
           <Tab.Screen
             name="NotificationStack"
             component={NotificationsNavigator}
-            listeners={{
-              tabPress: handleNotificationsTabPress,
-            }}
+            listeners={{ tabPress: handleNotificationsTabPress }}
           />
           <Tab.Screen
             name="InboxStack"
             component={InboxNavigator}
-            listeners={{
-              tabPress: handleInboxTabPressWithReset,
-            }}
+            listeners={{ tabPress: handleInboxTabPressWithReset }}
           />
         </Tab.Navigator>
       </View>

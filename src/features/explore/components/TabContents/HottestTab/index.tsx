@@ -139,7 +139,7 @@ const mapExperienceToCardData = (item: ExperiencePostApiItem & { type: 'experien
 const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
   const avatarSource = toImageSource(item.user.avatar)!;
 
-  const products: BenchmarkProduct[] = item.products.map((p) => ({
+  const products: BenchmarkProduct[] = (item.products ?? []).map((p) => ({
     id: p.id,
     name: p.name,
     subName: p.subName,

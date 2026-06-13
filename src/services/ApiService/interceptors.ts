@@ -252,6 +252,9 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
       };
 
       // 401 hatası ve daha önce retry edilmemişse
+      if (error.response?.status === 401) {
+        console.warn('🟡 [interceptor] 401 alındı:', originalRequest?.url, '| retry:', !!(originalRequest as any)?._retry);
+      }
       if (error.response?.status === 401 && !originalRequest._retry) {
         // Public endpoint'lerde refresh yapma
         const publicEndpoints = ['/auth/login', '/auth/register'];
@@ -357,6 +360,12 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           // (e.g. a background query fired before auth initialized on startup).
           // Calling logout() in that case would wipe a valid in-flight session.
           const hadNoToken = refreshError?.message === 'No refresh token available';
+          console.error('🔴 [interceptor] TOKEN REFRESH FAILED:', {
+            error: refreshError?.message,
+            status: refreshError?.response?.status,
+            originalUrl: originalRequest?.url,
+            hadNoToken,
+          });
           if (!hadNoToken) {
             const { useAppStore } = require('../../store/appStore');
             useAppStore.getState().logout().catch((error: any) => {

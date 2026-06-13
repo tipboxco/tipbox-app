@@ -1,7 +1,7 @@
 import React from 'react';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { config } from './config';
-import { useAppStore } from '@/src/store/appStore';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface GluestackProviderProps {
   children: React.ReactNode;
@@ -13,7 +13,9 @@ interface GluestackProviderProps {
 const GluestackProviderComponent: React.FC<GluestackProviderProps> = ({
   children
 }) => {
-  const colorMode = useAppStore((state) => state.colorMode);
+  // useColorMode resolves 'system' → actual 'light' | 'dark' via Appearance API
+  // GluestackUIProvider only accepts 'light' | 'dark', NOT 'system'
+  const { colorMode } = useColorMode();
 
   // PERFORMANCE FIX: Memoize children to prevent unnecessary re-renders
   const memoizedChildren = React.useMemo(() => children, [children]);

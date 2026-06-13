@@ -15,8 +15,8 @@ declare module '@env' {
   export const FIREBASE_MEASUREMENT_ID: string; // Analytics için opsiyonel
 
   // Canny Feedback (opsiyonel - yoksa default kullanılır)
-  export const CANNY_REDIRECT_HOST?: string;
-  export const CANNY_COMPANY_ID?: string;
-  export const CANNY_REDIRECT_TARGET?: string;
+  export const CANNY_REDIRECT_HOST: string | undefined;
+  export const CANNY_COMPANY_ID: string | undefined;
+  export const CANNY_REDIRECT_TARGET: string | undefined;
 }
 

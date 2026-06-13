@@ -260,6 +260,7 @@ export const useAppStore = create<AppState>()(
         },
         
         logout: async () => {
+          console.error('🔴 [appStore.logout] ÇAĞRILDI — çağıran: ', new Error().stack?.split('\n')[2]?.trim());
 
           try {
           } catch (error: any) {

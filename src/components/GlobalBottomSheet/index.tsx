@@ -16,21 +16,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboard } from '@/src/hooks/useKeyboard';
 
 /**
- * Global Bottom Sheet Component
- * DOĞRU MİMARİ: Sadece index ile kontrol, expand() YOK, close() YOK
- * STABİL FIX: index TEK SOURCE OF TRUTH, koşullu değiştirilmez
+ * Inner component — only mounts when content is truthy.
+ * Keeps all @gorhom/bottom-sheet hooks (useBottomSheetTimingConfigs) away from
+ * the null-content render path, preventing the Reanimated native crash.
  */
-export const GlobalBottomSheet: React.FC = () => {
+const GlobalBottomSheetInner: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
   const keyboardHeight = useKeyboard();
-  
-  const context = useContext(GlobalBottomSheetContext);
-  if (!context) {
-    throw new Error('GlobalBottomSheet must be used within GlobalBottomSheetProvider');
-  }
-  
+
+  const context = useContext(GlobalBottomSheetContext)!;
   const { state, closeBottomSheet } = context;
   const { content, index, options, openId } = state;
   
@@ -187,18 +183,9 @@ export const GlobalBottomSheet: React.FC = () => {
   // Padding bottom
   const paddingBottom = mergedOptions.paddingBottom ?? 0;
 
-  // animateOnMount true ise açılış/kapanış için aynı timing config (kapanış da animasyonlu olsun)
   // PERFORMANCE FIX: Duration'ı 300ms'den 180ms'ye düşür (daha hızlı açılış/kapanış)
   const timingConfigs = useBottomSheetTimingConfigs({ duration: 180 });
   const animationConfigs = mergedOptions.animateOnMount ? timingConfigs : undefined;
-
-  // Content yoksa render etme
-  if (!content) {
-    console.log('[GlobalBottomSheet] No content, not rendering');
-    return null;
-  }
-
-  console.log('[GlobalBottomSheet] Rendering with index:', index);
 
   // DOĞRU MİMARİ: Sadece index ile kontrol
   // enableDynamicSizing true ise snapPoints undefined olmalı
@@ -261,4 +248,23 @@ export const GlobalBottomSheet: React.FC = () => {
         )}
       </BottomSheet>
   );
+};
+
+/**
+ * Global Bottom Sheet Component
+ * Thin wrapper — checks content before rendering the inner component so that
+ * useBottomSheetTimingConfigs (a Reanimated worklet hook) is never called
+ * when there is no active sheet, avoiding the native crash.
+ */
+export const GlobalBottomSheet: React.FC = () => {
+  const context = useContext(GlobalBottomSheetContext);
+  if (!context) {
+    throw new Error('GlobalBottomSheet must be used within GlobalBottomSheetProvider');
+  }
+
+  if (!context.state.content) {
+    return null;
+  }
+
+  return <GlobalBottomSheetInner />;
 };

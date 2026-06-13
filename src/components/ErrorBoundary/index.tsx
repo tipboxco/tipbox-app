@@ -50,8 +50,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[ErrorBoundary] ❌ Hata yakalandı:', error);
-    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
+    // ─── CRASH REPORT ────────────────────────────────────────────────────────
+    console.error('╔══════════════════════════════════════════════════════════');
+    console.error('║ [ErrorBoundary] ❌ CRASH #' + consecutiveCrashes);
+    console.error('║ Hata tipi :', error.name);
+    console.error('║ Mesaj     :', error.message);
+    console.error('║ Stack     :', error.stack?.split('\n').slice(0, 5).join('\n             '));
+    console.error('║ Component :', errorInfo.componentStack?.trim().split('\n').slice(0, 8).join('\n             '));
+    console.error('╚══════════════════════════════════════════════════════════');
     this.setState({ errorInfo });
 
     // Splash screen açık kalıyorsa kapat — recovery ekranı görünsün
@@ -74,8 +80,14 @@ export class ErrorBoundary extends Component<Props, State> {
     } catch (_) {
       // Temizleme başarısız olsa da sıfırlamaya devam et
     }
-    // Temizleme başarılı → crash sayacını sıfırla ve uygulamayı yeniden başlat
-    consecutiveCrashes = 0;
+    // Reset in-memory auth state so the app shows login screen after recovery,
+    // not the authenticated tree (which would crash again immediately).
+    try {
+      const { useAppStore } = require('@/src/store/appStore');
+      useAppStore.setState({ isAuthenticated: false, user: null, accessToken: null });
+    } catch (_) {}
+    // NOTE: consecutiveCrashes is intentionally NOT reset here.
+    // Resetting it would cause the second crash to be treated as the "first" again → infinite loop.
     this.setState({ hasError: false, error: null, errorInfo: null, autoClearing: false });
   };
 
