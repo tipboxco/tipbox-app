@@ -11,6 +11,48 @@
     "noMedia": "Henüz medya yok",
     "noFeedContent": "Henüz akış içeriği bulunamadı."
   },
+  "emptyCta": {
+    "default": {
+      "title": "Henüz paylaşım yok",
+      "description": "Bu akışta gösterilecek bir içerik yok. İlk paylaşımı sen yap!",
+      "button": "Paylaşım Yap"
+    },
+    "trusting": {
+      "title": "Güvendiklerinden henüz paylaşım yok",
+      "description": "Güvendiğin kişiler paylaşım yaptığında burada görünecek. İlk adımı sen at.",
+      "button": "Paylaşım Yap"
+    },
+    "forYou": {
+      "title": "Sana özel içerik henüz yok",
+      "description": "İlgi alanlarına göre içerikler burada belirecek. İlk paylaşımı sen yap.",
+      "button": "Paylaşım Yap"
+    },
+    "tips": {
+      "title": "Henüz ipucu yok",
+      "description": "Bildiğin püf noktalarını paylaşarak ilk ipucunu sen ekle.",
+      "button": "İpucu Paylaş"
+    },
+    "questions": {
+      "title": "Henüz soru yok",
+      "description": "Merak ettiklerini sorarak ilk soruyu sen aç.",
+      "button": "Soru Sor"
+    },
+    "reviews": {
+      "title": "Henüz inceleme yok",
+      "description": "Deneyimlerini anlatarak ilk incelemeyi sen paylaş.",
+      "button": "İnceleme Yaz"
+    },
+    "benchmarks": {
+      "title": "Henüz karşılaştırma yok",
+      "description": "Ürünleri kıyaslayarak ilk karşılaştırmayı sen oluştur.",
+      "button": "Karşılaştırma Yap"
+    },
+    "updates": {
+      "title": "Henüz güncelleme yok",
+      "description": "Yeni gelişmeleri paylaşarak ilk güncellemeyi sen ekle.",
+      "button": "Güncelleme Paylaş"
+    }
+  },
   "actions": {
     "like": "Beğen",
     "comment": "Yorum",

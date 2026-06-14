@@ -6,6 +6,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductCatalogScreen } from './ProductCatalogScreen';
+import BrandFilterScroll from '../components/BrandFilterScroll';
+import { useCatalogBrandFilters } from '../api/hooks';
+import type { CatalogBrandFilter } from '../types';
 import type { RootStackParamList } from '@/src/navigation/types/root.types';
 
 type SubCategoryDetailRouteProp = RouteProp<RootStackParamList, 'CatalogSubCategory'>;
@@ -32,12 +35,29 @@ export const SubCategoryDetailScreen: React.FC = () => {
     });
   }, [navigation, categoryId, categoryName, subCategoryId, subCategoryName]);
 
+  // Alt kategori (ve tüm alt kategorilerine) ait marka filtresi
+  const { data: brandFilters, isLoading: isBrandFiltersLoading } = useCatalogBrandFilters(subCategoryId);
+
+  const handleBrandPress = useCallback((brand: CatalogBrandFilter) => {
+    navigation.navigate('CategoryBrandProducts', {
+      categoryId: subCategoryId,
+      brandId: brand.brandId,
+      brandName: brand.name,
+      categoryName: subCategoryName,
+    });
+  }, [navigation, subCategoryId, subCategoryName]);
+
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={backgroundColor}>
         <Header
           title={subCategoryName}
           leftAction="back"
+        />
+        <BrandFilterScroll
+          brands={brandFilters?.items ?? []}
+          onBrandPress={handleBrandPress}
+          isLoading={isBrandFiltersLoading}
         />
         <ProductCatalogScreen
           initialView="productgroups"

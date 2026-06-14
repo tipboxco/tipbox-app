@@ -14,6 +14,7 @@ import { ScrollRegistry } from '@/src/services/ScrollRegistry';
 import { useQueryClient } from '@tanstack/react-query';
 import { feedKeys } from '../api/hooks';
 import { FeedSkeleton } from '@/src/components/Skeletons';
+import { FeedEmptyCta } from './FeedEmptyCta';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
@@ -32,9 +33,11 @@ interface FeedTabListProps {
   filterParams?: FeedFilterParams;
   tabKey: string;
   enabled?: boolean;
+  /** Triggers the post-create flow when the feed is empty */
+  onCreatePress?: () => void;
 }
 
-const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey, enabled = true }) => {
+const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey, enabled = true, onCreatePress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { t } = useTranslation('feed');
@@ -309,9 +312,13 @@ const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey
 
   if (feedItems.length === 0) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
-        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">{t('emptyStates.noFeedContent')}</Text>
-      </View>
+      <FeedEmptyCta
+        tabKey={tabKey}
+        onCreatePress={onCreatePress ?? (() => {})}
+        refreshing={isRefetching}
+        onRefresh={handleRefresh}
+        bottomPadding={tabBarHeight}
+      />
     );
   }
 

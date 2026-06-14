@@ -504,10 +504,15 @@
   },
   "categorySearch": {
     "title": "Create a Post",
-    "placeholder": "Search a Subcategory or Product Group",
+    "placeholder": "Search products, subcategories or product groups",
     "noResults": "No results found",
     "subcategory": "Subcategory",
     "productGroup": "Product Group",
+    "product": "Product",
+    "tabSubcategories": "Subcategories",
+    "tabProductGroups": "Product Groups",
+    "tabProducts": "Products",
+    "noResultsInTab": "No results in this tab",
     "popularSubcategories": "Popular Subcategories",
     "popularProductGroups": "Popular Product Groups"
   }

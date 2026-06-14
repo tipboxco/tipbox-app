@@ -27,6 +27,10 @@ export const getNotificationSettings = async (): Promise<NotificationSetting[]> 
       } else if (Array.isArray(response.data.settings)) {
         // Wrapped in { settings: [...] }
         settingsArray = response.data.settings;
+      } else if (Array.isArray(response.data.channels)) {
+        // New backend shape: { channels: [{ notificationCode, value }], categories, global }
+        // The per-channel toggles live under `channels` and already match NotificationSetting.
+        settingsArray = response.data.channels;
       } else if (response.data.success && Array.isArray(response.data.data)) {
         // Wrapped in { success: true, data: [...] }
         settingsArray = response.data.data;

@@ -241,6 +241,11 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
   const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
   
 
+  // Drill-down navigation: her tıklamada Root'ta yeni ekran açılır (CatalogCategory → CatalogSubCategory → CatalogProductGroup)
+  // Explore tab'ındaki "doğru yaklaşım" ile aynı. Sadece picker modunda (event seçimi) devre dışı —
+  // o modda seçim aynı ekranda yapılmalı (onProductSelect leaf'te çalışsın diye).
+  const useDrillDownNavigation = !route.params?.selectMode && !route.params?.returnScreen;
+
   const handleCategoryNavigate = useCallback((category: { id: string; name: string; image?: string }) => {
     navigation.navigate('CatalogCategory', {
       categoryId: category.id,
@@ -867,9 +872,9 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
             scrollViewPaddingBottom={paddingBottom}
             selectMode={route.params?.selectMode}
             returnScreen={route.params?.returnScreen}
-            onCategoryNavigate={embedded ? handleCategoryNavigate : undefined}
-            onSubCategoryNavigate={embedded ? handleSubCategoryNavigate : undefined}
-            onProductGroupNavigate={embedded ? handleProductGroupNavigate : undefined}
+            onCategoryNavigate={useDrillDownNavigation ? handleCategoryNavigate : undefined}
+            onSubCategoryNavigate={useDrillDownNavigation ? handleSubCategoryNavigate : undefined}
+            onProductGroupNavigate={useDrillDownNavigation ? handleProductGroupNavigate : undefined}
             hideSearch={embedded}
             initialView={productCatalogState.currentView}
             initialSelectedCategoryId={routeProductCategoryId || productCatalogState.selectedCategoryId}

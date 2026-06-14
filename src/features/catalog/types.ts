@@ -110,6 +110,27 @@ export interface CatalogProduct {
 }
 
 /**
+ * Catalog Brand Filter - Bir kategori (ve alt kategorilerine) ait marka facet'i
+ * GET /catalog/categories/{categoryId}/brands endpoint'inden gelir.
+ * Listeleme sayfasındaki yatay marka filtresi (scroll-x) için kullanılır.
+ */
+export interface CatalogBrandFilter {
+  id: string; // Brand.id (UUID) — marka detay sayfasına (BrandDetailScreen) yönlendirmede kullanılır
+  brandId: string; // Markaya göre ürün filtrelerken kullanılan değer (Brand.externalId)
+  name: string;
+  image: string | null;
+  productCount: number;
+}
+
+/**
+ * Catalog Brand Filters Response
+ * GET /catalog/categories/{categoryId}/brands
+ */
+export interface CatalogBrandFiltersResponse {
+  items: CatalogBrandFilter[];
+}
+
+/**
  * Global Product Search - Product Group Item
  * /catalog/products/search endpoint'inden dönen product group bazında gruplanmış ürün bilgisi
  */

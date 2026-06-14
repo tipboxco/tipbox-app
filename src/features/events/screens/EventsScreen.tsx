@@ -129,7 +129,7 @@ const EventsScreen: React.FC = () => {
 
   // PERFORMANCE FIX: Background colors - direkt hesapla (useMemo overhead'i yok)
   const backgroundColor = isDark ? '#000000' : '#FFFFFF';
-  const tabHeaderBgColor = '#FFFFFF'; // Tab header her zaman beyaz
+  const tabHeaderBgColor = isDark ? '#000000' : '#FFFFFF'; // Tab header arka planı tema ile uyumlu
 
   // Memoize filter change handler to prevent AchievementTab re-renders
   const handleFilterChange = useCallback((filter: FilterOption) => {

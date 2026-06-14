@@ -29,6 +29,7 @@ export const ROOT_ROUTES = {
   COLLECTION_DETAIL: 'CollectionDetail',
   PRODUCT_SELECT: 'ProductSelect',
   PRODUCT_CATALOG: 'ProductCatalog',
+  SEARCH: 'Search',
 } as const;
 
 /**

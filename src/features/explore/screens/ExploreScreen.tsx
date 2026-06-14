@@ -24,14 +24,13 @@ import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { Feather } from '@expo/vector-icons';
-import { Bars3Icon, MapPinIcon } from 'react-native-heroicons/outline';
+import { Bars3Icon } from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { HottestTab, NewsTab } from '../components';
-import { CatalogScreen } from '@/src/features/catalog/screens/CatalogScreen';
 import { useMarketplaceBanners } from '../api/hooks';
 import type { MarketplaceBanner } from '../types';
 import type { ExploreStackParamList } from '../navigation';
@@ -514,37 +513,23 @@ const ExploreScreen: React.FC = () => {
     [progress]
   );
 
-  // Tab label color animations (3 tabs)
+  // Tab label color animations (2 tabs)
   const tab1Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(progress.value, [0, 1, 2, 3], [activeColor, inactiveColor, inactiveColor, inactiveColor]);
+    const color = interpolateColor(progress.value, [0, 1], [activeColor, inactiveColor]);
     return { color };
   });
 
   const tab2Style = useAnimatedStyle(() => {
     const activeColor = isDark ? '#FFFFFF' : '#000000';
     const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(progress.value, [0, 1, 2, 3], [inactiveColor, activeColor, inactiveColor, inactiveColor]);
+    const color = interpolateColor(progress.value, [0, 1], [inactiveColor, activeColor]);
     return { color };
   });
 
-  const tab3Style = useAnimatedStyle(() => {
-    const activeColor = isDark ? '#FFFFFF' : '#000000';
-    const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(progress.value, [0, 1, 2, 3], [inactiveColor, inactiveColor, activeColor, inactiveColor]);
-    return { color };
-  });
-
-  const tab4Style = useAnimatedStyle(() => {
-    const activeColor = isDark ? '#FFFFFF' : '#000000';
-    const inactiveColor = '#8C8C8C';
-    const color = interpolateColor(progress.value, [0, 1, 2, 3], [inactiveColor, inactiveColor, inactiveColor, activeColor]);
-    return { color };
-  });
-
-  // Indicator position animation (4 tabs)
-  const tabWidth = tabContainerWidth / 4 || 0;
+  // Indicator position animation (2 tabs)
+  const tabWidth = tabContainerWidth / 2 || 0;
   const indicatorWidth = tabWidth * 0.7;
   const indicatorStyle = useAnimatedStyle(() => {
     const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
@@ -640,6 +625,20 @@ const ExploreScreen: React.FC = () => {
             </HStack>
           </VStack>
 
+          {/* Banner Carousel (Slider) - Tab'ların dışında, sabit */}
+          {!isLoadingBanners && (
+            <Box
+              mb="$4"
+              onLayout={handleBannerLayout}
+            >
+              <BannerCarousel
+                banners={combinedBanners}
+                isDark={isDark}
+                onBannerPress={handleBannerPress}
+              />
+            </Box>
+          )}
+
           {/* Category Tabs - Fixed */}
           <VStack
             bg={tabHeaderBgColor}
@@ -703,50 +702,6 @@ const ExploreScreen: React.FC = () => {
                 </VStack>
               </Pressable>
 
-              {/* Katalog Tab Label */}
-              <Pressable
-                flex={1}
-                onPress={() => handleTabPress(2)}
-                alignItems="center"
-                pb={8}
-              >
-                <VStack alignItems="center" space="xs">
-                  <Animated.Text
-                    style={[
-                      {
-                        fontSize: 14,
-                        fontWeight: 'bold',
-                      },
-                      tab3Style,
-                    ]}
-                  >
-                    {t('tabs.catalog')}
-                  </Animated.Text>
-                </VStack>
-              </Pressable>
-
-              {/* Trendler Tab Label */}
-              <Pressable
-                flex={1}
-                onPress={() => handleTabPress(3)}
-                alignItems="center"
-                pb={8}
-              >
-                <VStack alignItems="center" space="xs">
-                  <Animated.Text
-                    style={[
-                      {
-                        fontSize: 14,
-                        fontWeight: 'bold',
-                      },
-                      tab4Style,
-                    ]}
-                  >
-                    {t('tabs.trends')}
-                  </Animated.Text>
-                </VStack>
-              </Pressable>
-
               {/* Animated Indicator */}
               {tabWidth > 0 && (
                 <Animated.View
@@ -776,23 +731,8 @@ const ExploreScreen: React.FC = () => {
           >
             {/* Hottest Tab */}
             <Box key="0" flex={1}>
-              <HottestTab 
+              <HottestTab
                 searchQuery={debouncedSearchQuery}
-                headerComponent={
-                  /* Marketplace Banners Carousel - Always show, use default if no banners */
-                  !isLoadingBanners ? (
-                    <Box
-                      mb="$4"
-                      onLayout={handleBannerLayout}
-                    >
-                      <BannerCarousel 
-                        banners={combinedBanners}
-                        isDark={isDark} 
-                        onBannerPress={handleBannerPress} 
-                      />
-                    </Box>
-                  ) : null
-                }
               />
             </Box>
 
@@ -806,46 +746,7 @@ const ExploreScreen: React.FC = () => {
                 onSeeAllEvents={handleSeeAllEvents}
                 onSeeAllBrands={handleSeeAllBrands}
                 onSeeAllProducts={handleSeeAllProducts}
-                headerComponent={
-                  !isLoadingBanners ? (
-                    <Box
-                      mb="$4"
-                      onLayout={handleBannerLayout}
-                    >
-                      <BannerCarousel banners={combinedBanners} isDark={isDark} onBannerPress={handleBannerPress} />
-                    </Box>
-                  ) : null
-                }
               />
-            </Box>
-
-            {/* Katalog Tab */}
-            <Box key="2" flex={1}>
-              <CatalogScreen embedded />
-            </Box>
-
-            {/* Trendler Tab */}
-            <Box key="3" flex={1}>
-              <VStack flex={1} justifyContent="center" alignItems="center" px="$8">
-                <MapPinIcon size={48} color={isDark ? '#555' : '#CCC'} />
-                <Text
-                  color={isDark ? '$textDark400' : '$textLight500'}
-                  fontSize="$md"
-                  fontWeight="$semibold"
-                  mt="$4"
-                  textAlign="center"
-                >
-                  {t('tabs.trendsComingSoon')}
-                </Text>
-                <Text
-                  color={isDark ? '$textDark500' : '$textLight400'}
-                  fontSize="$sm"
-                  mt="$1"
-                  textAlign="center"
-                >
-                  {t('tabs.trendsDescription')}
-                </Text>
-              </VStack>
             </Box>
           </AnimatedPagerView>
         </VStack>

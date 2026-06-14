@@ -1,9 +1,10 @@
 import { apiService } from '../../../services/ApiService';
-import type { 
-  CatalogCategory, 
-  CatalogSubCategory, 
-  CatalogProductGroup, 
+import type {
+  CatalogCategory,
+  CatalogSubCategory,
+  CatalogProductGroup,
   CatalogProduct,
+  CatalogBrandFiltersResponse,
   ProductDetail,
   ProductPostsResponse,
   ProductNewsResponse,
@@ -354,6 +355,112 @@ export const getCatalogProducts = async (
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Catalog Brand Filters endpoint function
+ * Bir kategori (ve tüm alt kategorilerine) ait marka facet listesini getirir.
+ * Listeleme sayfasındaki yatay marka filtresi (scroll-x) için kullanılır.
+ *
+ * @param categoryId - Kategori ID'si (ana, alt veya ürün grubu - herhangi bir seviye)
+ * @returns CatalogBrandFiltersResponse - Marka filtresi listesi
+ */
+export const getCatalogBrandFilters = async (
+  categoryId: string
+): Promise<CatalogBrandFiltersResponse> => {
+  try {
+    const response = await apiService.getClient().get<CatalogBrandFiltersResponse>(
+      `/catalog/categories/${categoryId}/brands`
+    );
+
+    if (response.data && typeof response.data === 'object' && 'items' in response.data) {
+      return response.data;
+    }
+
+    return { items: [] };
+  } catch (error: any) {
+    console.error('[getCatalogBrandFilters] API Error:', {
+      url: `/catalog/categories/${categoryId}/brands`,
+      status: error.response?.status,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Catalog Products By Category endpoint function
+ * Bir kategori (ve tüm alt kategorilerindeki) ürünleri listeler.
+ * Opsiyonel brandId ile markaya göre filtreler. Cursor-based pagination.
+ *
+ * @param categoryId - Kategori ID'si (ana, alt veya ürün grubu - herhangi bir seviye)
+ * @param brandId - Marka filtresi (opsiyonel, CatalogBrandFilter.brandId)
+ * @param search - Product adı, marka veya açıklamasında arama (opsiyonel)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 16)
+ * @returns CatalogPaginationResponse<CatalogProduct> - Ürün listesi ve pagination bilgisi
+ */
+export const getCatalogProductsByCategory = async (
+  categoryId: string,
+  brandId?: string,
+  search?: string,
+  cursor?: string,
+  limit: number = 16
+): Promise<CatalogPaginationResponse<CatalogProduct>> => {
+  const params = new URLSearchParams();
+
+  if (brandId && brandId.trim().length > 0) {
+    params.append('brandId', brandId.trim());
+  }
+
+  if (search && search.trim().length > 0) {
+    params.append('search', search.trim());
+  }
+
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogProduct> | CatalogProduct[]>(
+      `/catalog/categories/${categoryId}/products?${params.toString()}`
+    );
+
+    // Backend pagination destekliyorsa direkt döndür
+    if (response.data && typeof response.data === 'object' && 'items' in response.data && 'pagination' in response.data) {
+      return response.data as CatalogPaginationResponse<CatalogProduct>;
+    }
+
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    if (Array.isArray(response.data)) {
+      const items = response.data;
+      return {
+        items,
+        pagination: {
+          hasMore: items.length >= limit,
+          limit: limit,
+          cursor: items.length > 0 ? items[items.length - 1]?.productId : undefined,
+        },
+      };
+    }
+
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit: limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getCatalogProductsByCategory] API Error:', {
+      url: `/catalog/categories/${categoryId}/products`,
+      status: error.response?.status,
       message: error.message,
     });
     throw error;

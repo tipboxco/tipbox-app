@@ -1,8 +1,8 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getCatalogContextPosts, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, searchCatalogSubCategories, searchCatalogProductGroups, getPopularSubCategories, getPopularProductGroups, type CatalogPaginationResponse } from './catalogApi';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getCatalogBrandFilters, getCatalogProductsByCategory, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getCatalogContextPosts, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, searchCatalogSubCategories, searchCatalogProductGroups, getPopularSubCategories, getPopularProductGroups, type CatalogPaginationResponse } from './catalogApi';
 import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandHistoryFeed, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands, joinBrand, leaveBrand, getSurveyQuestions, submitSurveyAnswer } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse, SurveyQuestionsResponse } from '../types';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, CatalogBrandFiltersResponse, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFollowResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse, SurveyQuestionsResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -29,6 +29,11 @@ export const catalogKeys = {
   subCategories: (categoryId: string, cursor?: string, limit?: number) => [...catalogKeys.all, 'subCategories', categoryId, cursor, limit] as const,
   productGroups: (subCategoryId: string, cursor?: string, limit?: number) => [...catalogKeys.all, 'productGroups', subCategoryId, cursor, limit] as const,
   products: (productGroupId: string) => [...catalogKeys.all, 'products', productGroupId] as const,
+  // Marka filtresi (kategori facet'i) — yatay marka scroll'u
+  brandFilters: (categoryId: string) => [...catalogKeys.all, 'brandFilters', categoryId] as const,
+  // Kategoriye göre (marka filtreli) ürün listesi
+  productsByCategory: (categoryId: string, brandId?: string, search?: string, limit?: number) =>
+    [...catalogKeys.all, 'productsByCategory', categoryId, brandId, search, limit] as const,
   productDetail: (productId: string) => [...catalogKeys.all, 'productDetail', productId] as const,
   productPosts: (productId: string, type?: string, cursor?: string, limit?: number) => 
     [...catalogKeys.all, 'productPosts', productId, type, cursor, limit] as const,
@@ -316,9 +321,78 @@ export const useCatalogProducts = (
 };
 
 /**
+ * Catalog Brand Filters query hook
+ * Bir kategori (ve alt kategorilerine) ait marka facet listesini getirir.
+ * Listeleme sayfasındaki yatay marka filtresi (scroll-x) için kullanılır.
+ *
+ * @param categoryId - Kategori ID'si (undefined ise sorgu disabled)
+ */
+export const useCatalogBrandFilters = (categoryId: string | undefined) => {
+  return useQuery<CatalogBrandFiltersResponse, Error>({
+    queryKey: categoryId
+      ? catalogKeys.brandFilters(categoryId)
+      : ['catalog', 'brandFilters', 'disabled'],
+    queryFn: () => {
+      if (!categoryId) {
+        throw new Error('Category ID is required');
+      }
+      return getCatalogBrandFilters(categoryId);
+    },
+    enabled: !!categoryId,
+    staleTime: 30 * 60 * 1000, // 30 dakika — markalar nadir değişir
+    gcTime: 60 * 60 * 1000, // 1 saat
+  });
+};
+
+/**
+ * Catalog Products By Category infinite query hook
+ * Bir kategori (ve alt kategorilerindeki) ürünleri listeler, opsiyonel markaya göre filtreler.
+ *
+ * @param categoryId - Kategori ID'si (undefined ise sorgu disabled)
+ * @param brandId - Marka filtresi (opsiyonel)
+ * @param search - Arama (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 16)
+ */
+export const useCatalogProductsByCategory = (
+  categoryId: string | undefined,
+  brandId?: string,
+  search?: string,
+  limit: number = 16
+) => {
+  const hasSearchQuery = !!search && search.trim().length > 0;
+
+  return useInfiniteQuery<CatalogPaginationResponse<CatalogProduct>, Error>({
+    queryKey: categoryId
+      ? catalogKeys.productsByCategory(categoryId, brandId, search, limit)
+      : ['catalog', 'productsByCategory', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!categoryId) {
+        throw new Error('Category ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getCatalogProductsByCategory(categoryId, brandId, search, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: !!categoryId,
+    staleTime: hasSearchQuery ? 0 : 60 * 60 * 1000,
+    gcTime: hasSearchQuery ? 0 : 24 * 60 * 60 * 1000,
+    refetchOnMount: hasSearchQuery ? 'always' : false,
+    refetchOnWindowFocus: hasSearchQuery,
+    retry: hasSearchQuery ? 0 : 3,
+    retryDelay: hasSearchQuery ? undefined : (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+};
+
+/**
  * Global Product Search infinite query hook
  * Tüm product grupları arasında arama yapar ve sonuçları product group bazında gruplar
- * 
+ *
  * BACKEND ENDPOINT TALEBİ:
  * Bu hook, /catalog/products/search endpoint'ini kullanır.
  * Backend'de bu endpoint henüz mevcut olmayabilir.

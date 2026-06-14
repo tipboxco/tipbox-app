@@ -353,20 +353,36 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           return client(originalRequest);
         } catch (refreshError: any) {
           processQueue(refreshError as AxiosError, null);
-          clearTokenCache();
-          await TokenService.clearTokens();
 
           // "No refresh token available" means the user was never authenticated
           // (e.g. a background query fired before auth initialized on startup).
           // Calling logout() in that case would wipe a valid in-flight session.
           const hadNoToken = refreshError?.message === 'No refresh token available';
+
+          // Only treat the failure as terminal when the refresh itself is rejected
+          // by the auth server (401/403 → the refresh token is genuinely invalid/
+          // expired). Transient failures — network drops, timeouts, 5xx — must NOT
+          // clear tokens or log the user out, otherwise a brief connectivity blip
+          // silently kills a valid session.
+          const refreshStatus = refreshError?.response?.status;
+          const isAuthRejection = refreshStatus === 401 || refreshStatus === 403;
+
           console.error('🔴 [interceptor] TOKEN REFRESH FAILED:', {
             error: refreshError?.message,
-            status: refreshError?.response?.status,
+            status: refreshStatus,
             originalUrl: originalRequest?.url,
             hadNoToken,
+            isAuthRejection,
           });
-          if (!hadNoToken) {
+
+          // Preserve credentials on transient failures so a later request can
+          // retry the refresh. Only wipe them when the session is truly invalid.
+          if (hadNoToken || isAuthRejection) {
+            clearTokenCache();
+            await TokenService.clearTokens();
+          }
+
+          if (!hadNoToken && isAuthRejection) {
             const { useAppStore } = require('../../store/appStore');
             useAppStore.getState().logout().catch((error: any) => {
               console.error('[interceptors] Logout error (silent):', error);

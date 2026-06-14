@@ -20,7 +20,10 @@ import { ProductCatalogWrapper } from '@/src/features/catalog/screens/ProductCat
 import { CategoryDetailScreen } from '@/src/features/catalog/screens/CategoryDetailScreen';
 import { SubCategoryDetailScreen } from '@/src/features/catalog/screens/SubCategoryDetailScreen';
 import { ProductGroupDetailScreen } from '@/src/features/catalog/screens/ProductGroupDetailScreen';
+import { CategoryBrandProductsScreen } from '@/src/features/catalog/screens/CategoryBrandProductsScreen';
+import { CategoryBrandsScreen } from '@/src/features/catalog/screens/CategoryBrandsScreen';
 import { CatalogSearchScreen } from '@/src/features/catalog/screens/CatalogSearchScreen';
+import { SearchScreen } from '@/src/features/search/screens/SearchScreen';
 import CollectionDetailScreen from '@/src/features/events/screens/CollectionDetailScreen';
 import type { RootStackParamList } from '../types/root.types';
 
@@ -169,6 +172,18 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="CatalogSearch"
               component={CatalogSearchScreen}
+            />
+            <RootStack.Screen
+              name="CategoryBrandProducts"
+              component={CategoryBrandProductsScreen}
+            />
+            <RootStack.Screen
+              name="CatalogCategoryBrands"
+              component={CategoryBrandsScreen}
+            />
+            <RootStack.Screen
+              name="Search"
+              component={SearchScreen}
             />
           </RootStack.Group>
           

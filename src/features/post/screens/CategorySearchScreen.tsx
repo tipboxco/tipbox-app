@@ -1,37 +1,70 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import {
-  ScrollView,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Text,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { ScrollView, FlatList, View } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Box,
+  HStack,
+  VStack,
+  Text,
+  Pressable,
+  Input,
+  InputField,
+  Spinner,
+} from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { X, Search } from 'lucide-react-native';
+import { X, Search, ChevronRight } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import {
   useSubCategorySearch,
   useProductGroupSearch,
+  useGlobalProductSearch,
   usePopularSubCategories,
   usePopularProductGroups,
 } from '@/src/features/catalog/api/hooks';
 import { ProductInfoType } from '@/src/types/common';
-import type { CatalogSubCategory, CatalogProductGroup } from '@/src/features/catalog/types';
+import type { CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '@/src/features/catalog/types';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import type { PostStackParamList } from '../navigation';
 
 type CategorySearchNavigationProp = NativeStackNavigationProp<PostStackParamList>;
 
-type SearchResultItem =
-  | { kind: 'subcategory'; item: CatalogSubCategory }
-  | { kind: 'productGroup'; item: CatalogProductGroup };
+type SearchTabKey = 'subcategories' | 'productGroups' | 'products';
+
+/** Uniform row shape so every tab can share one renderer */
+type RowItem = { id: string; name: string; onPress: () => void };
+
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Renders text with every case-insensitive occurrence of `query` rendered in bold.
+ * Designed to be used as a child of a parent <Text>.
+ */
+const HighlightedText: React.FC<{ text: string; query: string; color: string }> = ({ text, query, color }) => {
+  const trimmed = query.trim();
+  if (!trimmed) return <>{text}</>;
+
+  const parts = text.split(new RegExp(`(${escapeRegExp(trimmed)})`, 'gi'));
+  const lowerQuery = trimmed.toLowerCase();
+
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.toLowerCase() === lowerQuery ? (
+          <Text key={`${part}-${index}`} fontWeight="$bold" color={color}>
+            {part}
+          </Text>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
 
 export const CategorySearchScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -42,6 +75,10 @@ export const CategorySearchScreen: React.FC = () => {
 
   const [inputValue, setInputValue] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const pagerRef = useRef<PagerView>(null);
+  const tabScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -52,21 +89,29 @@ export const CategorySearchScreen: React.FC = () => {
 
   const { data: subCatSearchData, isLoading: subCatSearchLoading } = useSubCategorySearch(debouncedQuery);
   const { data: pgSearchData, isLoading: pgSearchLoading } = useProductGroupSearch(debouncedQuery);
+  const { data: productSearchData, isLoading: productSearchLoading } = useGlobalProductSearch(debouncedQuery);
   const { data: popularSubCats, isLoading: popularSubCatsLoading } = usePopularSubCategories(10);
   const { data: popularPGs, isLoading: popularPGsLoading } = usePopularProductGroups(10);
 
   const isSearching = !!debouncedQuery && debouncedQuery.trim().length > 0;
-  const isSearchLoading = subCatSearchLoading || pgSearchLoading;
+  const isSearchLoading = subCatSearchLoading || pgSearchLoading || productSearchLoading;
 
-  const searchResults = useMemo<SearchResultItem[]>(() => {
+  // Per-type result lists — one tab each
+  const subCatResults = useMemo<CatalogSubCategory[]>(() => {
     if (!isSearching) return [];
-    const subCats = (subCatSearchData?.pages ?? []).flatMap((p) => p.items);
-    const pgs = (pgSearchData?.pages ?? []).flatMap((p) => p.items);
-    return [
-      ...subCats.map((item): SearchResultItem => ({ kind: 'subcategory', item })),
-      ...pgs.map((item): SearchResultItem => ({ kind: 'productGroup', item })),
-    ];
-  }, [isSearching, subCatSearchData, pgSearchData]);
+    return (subCatSearchData?.pages ?? []).flatMap((p) => p.items);
+  }, [isSearching, subCatSearchData]);
+
+  const pgResults = useMemo<CatalogProductGroup[]>(() => {
+    if (!isSearching) return [];
+    return (pgSearchData?.pages ?? []).flatMap((p) => p.items);
+  }, [isSearching, pgSearchData]);
+
+  const productResults = useMemo<CatalogProduct[]>(() => {
+    if (!isSearching) return [];
+    // Global product search groups results by product group; flatten to individual products.
+    return (productSearchData?.pages ?? []).flatMap((p) => p.items).flatMap((group) => group.products);
+  }, [isSearching, productSearchData]);
 
   const handleSelectSubCategory = useCallback(
     (item: CatalogSubCategory) => {
@@ -102,202 +147,331 @@ export const CategorySearchScreen: React.FC = () => {
     [setFlowContext]
   );
 
+  const handleSelectProduct = useCallback(
+    (item: CatalogProduct) => {
+      setFlowContext(ProductInfoType.PRODUCT, item.productId, {
+        title: item.name,
+        image: item.image,
+      });
+      navigationService.navigate(ROOT_ROUTES.POST, {
+        screen: 'CreatePostScreen',
+        params: {
+          contextType: ProductInfoType.PRODUCT,
+          contextId: item.productId,
+        },
+      });
+    },
+    [setFlowContext]
+  );
+
   const handleClose = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
 
-  const bgColor = isDark ? '#000000' : '#FFFFFF';
+  const handlePageSelected = useCallback((e: { nativeEvent: { position: number } }) => {
+    const page = e.nativeEvent.position;
+    setCurrentPage(page);
+    tabScrollRef.current?.scrollTo({ x: Math.max(0, page - 1) * 120, animated: true });
+  }, []);
+
+  const handleTabPress = useCallback((index: number) => {
+    pagerRef.current?.setPage(index);
+    setCurrentPage(index);
+    tabScrollRef.current?.scrollTo({ x: Math.max(0, index - 1) * 120, animated: true });
+  }, []);
+
+  // Theme colors — kept as explicit values to stay consistent with sibling catalog screens
+  const bgColor = isDark ? '#1A1A1A' : '#FAFAFA';
   const textColor = isDark ? '#FFFFFF' : '#111827';
   const subTextColor = isDark ? '#9CA3AF' : '#6B7280';
-  const inputBg = isDark ? '#1A1A1A' : '#F3F4F6';
-  const chipBg = isDark ? '#1A1A1A' : '#F9FAFB';
+  const inputBg = isDark ? '#2A2A2A' : '#F2F2F2';
+  const inputBorder = isDark ? '#333333' : '#E9E9E9';
+  const chipBg = isDark ? '#222222' : '#FFFFFF';
   const chipBorder = isDark ? '#374151' : '#E5E7EB';
   const sectionLabelColor = isDark ? '#D1D5DB' : '#374151';
-  const resultItemBg = isDark ? '#111111' : '#F9FAFB';
-  const badgeBg = isDark ? '#374151' : '#E5E7EB';
-  const badgeText = isDark ? '#9CA3AF' : '#6B7280';
+  const resultItemBg = isDark ? '#222222' : '#FFFFFF';
+  const resultItemBorder = isDark ? '#333333' : '#EFEFEF';
+  const tabInactiveColor = isDark ? '#8C8C8C' : '#8C8C8C';
+  const accentColor = isDark ? '#818CF8' : '#6366F1';
 
-  const renderSearchResult = useCallback(
-    ({ item: resultItem }: { item: SearchResultItem }) => {
-      const isSubCat = resultItem.kind === 'subcategory';
-      const name = isSubCat
-        ? (resultItem.item as CatalogSubCategory).name
-        : (resultItem.item as CatalogProductGroup).name;
-      const badgeLabel = isSubCat ? t('categorySearch.subcategory') : t('categorySearch.productGroup');
+  // Rows per tab, mapped to a uniform shape
+  const subCatRows = useMemo<RowItem[]>(
+    () =>
+      subCatResults.map((i) => ({
+        id: `sub-${i.subCategoryId}`,
+        name: i.name,
+        onPress: () => handleSelectSubCategory(i),
+      })),
+    [subCatResults, handleSelectSubCategory]
+  );
 
-      return (
-        <TouchableOpacity
-          onPress={() =>
-            isSubCat
-              ? handleSelectSubCategory(resultItem.item as CatalogSubCategory)
-              : handleSelectProductGroup(resultItem.item as CatalogProductGroup)
-          }
-          className="flex-row items-center justify-between px-4 py-3 mb-1 rounded-xl"
-          style={{ backgroundColor: resultItemBg }}
-          activeOpacity={0.7}
+  const pgRows = useMemo<RowItem[]>(
+    () =>
+      pgResults.map((i) => ({
+        id: `pg-${i.productGroupId}`,
+        name: i.name,
+        onPress: () => handleSelectProductGroup(i),
+      })),
+    [pgResults, handleSelectProductGroup]
+  );
+
+  const productRows = useMemo<RowItem[]>(
+    () =>
+      productResults.map((i) => ({
+        id: `prod-${i.productId}`,
+        name: i.name,
+        onPress: () => handleSelectProduct(i),
+      })),
+    [productResults, handleSelectProduct]
+  );
+
+  const tabPages: Array<{ key: SearchTabKey; label: string; rows: RowItem[] }> = [
+    { key: 'subcategories', label: t('categorySearch.tabSubcategories'), rows: subCatRows },
+    { key: 'productGroups', label: t('categorySearch.tabProductGroups'), rows: pgRows },
+    { key: 'products', label: t('categorySearch.tabProducts'), rows: productRows },
+  ];
+
+  const renderRow = useCallback(
+    ({ item }: { item: RowItem }) => (
+      <Pressable onPress={item.onPress} mb="$2">
+        <HStack
+          alignItems="center"
+          justifyContent="space-between"
+          bg={resultItemBg}
+          borderWidth={1}
+          borderColor={resultItemBorder}
+          borderRadius={12}
+          px="$4"
+          py="$3"
         >
-          <Text
-            className="flex-1 text-sm font-medium"
-            style={{ color: textColor }}
-            numberOfLines={1}
-          >
-            {name}
+          <Text flex={1} fontSize="$sm" fontWeight="$medium" color={textColor} numberOfLines={1}>
+            <HighlightedText text={item.name} query={debouncedQuery} color={textColor} />
           </Text>
-          <View
-            className="ml-3 px-2 py-0.5 rounded-md"
-            style={{ backgroundColor: badgeBg }}
-          >
-            <Text className="text-xs" style={{ color: badgeText }}>
-              {badgeLabel}
+          <ChevronRight size={18} color={subTextColor} />
+        </HStack>
+      </Pressable>
+    ),
+    [resultItemBg, resultItemBorder, textColor, subTextColor, debouncedQuery]
+  );
+
+  const renderPageContent = useCallback(
+    (rows: RowItem[]) => {
+      if (isSearchLoading) {
+        return (
+          <Box flex={1} alignItems="center" justifyContent="center">
+            <Spinner color={accentColor} />
+          </Box>
+        );
+      }
+      if (rows.length === 0) {
+        return (
+          <Box flex={1} alignItems="center" justifyContent="center" px="$8">
+            <Text fontSize="$sm" textAlign="center" color={subTextColor}>
+              {t('categorySearch.noResultsInTab')}
             </Text>
-          </View>
-        </TouchableOpacity>
+          </Box>
+        );
+      }
+      return (
+        <FlatList
+          data={rows}
+          keyExtractor={(item) => item.id}
+          renderItem={renderRow}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        />
       );
     },
-    [handleSelectSubCategory, handleSelectProductGroup, resultItemBg, textColor, badgeBg, badgeText, t]
+    [isSearchLoading, accentColor, subTextColor, renderRow, t]
   );
 
   const popularSubCatItems = popularSubCats?.items ?? [];
   const popularPGItems = popularPGs?.items ?? [];
 
+  const renderChips = (items: Array<{ id: string; name: string; onPress: () => void }>) => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+    >
+      {items.map((item) => (
+        <Pressable
+          key={item.id}
+          onPress={item.onPress}
+          bg={chipBg}
+          borderWidth={1}
+          borderColor={chipBorder}
+          borderRadius={999}
+          px="$4"
+          py="$2"
+        >
+          <Text fontSize="$sm" fontWeight="$medium" color={textColor}>
+            {item.name}
+          </Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: bgColor }} edges={['top', 'left', 'right']}>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3">
-        <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <X size={22} color={textColor} />
-        </TouchableOpacity>
-        <Text className="text-base font-semibold" style={{ color: textColor }}>
-          {t('categorySearch.title')}
-        </Text>
-        <View style={{ width: 22 }} />
-      </View>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: bgColor }}>
+      <Box flex={1}>
+        {/* Header — title centered; close icon absolutely positioned so it never shifts the title */}
+        <Box h={48} justifyContent="center" px="$4">
+          <Text textAlign="center" fontSize="$md" fontWeight="$semibold" color={textColor}>
+            {t('categorySearch.title')}
+          </Text>
+          <Pressable
+            position="absolute"
+            left={16}
+            top={0}
+            bottom={0}
+            justifyContent="center"
+            onPress={handleClose}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <X size={22} color={textColor} />
+          </Pressable>
+        </Box>
 
-      {/* Search Input */}
-      <View className="px-4 pb-3">
-        <View
-          className="flex-row items-center rounded-xl px-3 py-2.5"
-          style={{ backgroundColor: inputBg }}
-        >
-          <Search size={16} color={subTextColor} />
-          <TextInput
-            className="flex-1 ml-2 text-sm"
-            style={{ color: textColor }}
-            placeholder={t('categorySearch.placeholder')}
-            placeholderTextColor={subTextColor}
-            value={inputValue}
-            onChangeText={setInputValue}
-            autoFocus
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
-      </View>
+        {/* Search Input */}
+        <Box px="$4" pb="$3">
+          <HStack
+            alignItems="center"
+            bg={inputBg}
+            borderWidth={1}
+            borderColor={inputBorder}
+            borderRadius={12}
+            px={12}
+            space="sm"
+          >
+            <Search size={16} color={subTextColor} />
+            <Input flex={1} borderWidth={0} bg="transparent" h={40}>
+              <InputField
+                placeholder={t('categorySearch.placeholder')}
+                placeholderTextColor={subTextColor}
+                color={textColor}
+                fontSize="$sm"
+                value={inputValue}
+                onChangeText={setInputValue}
+                autoFocus
+                returnKeyType="search"
+              />
+            </Input>
+          </HStack>
+        </Box>
 
-      {/* Content */}
-      {isSearching ? (
-        /* Search Results */
-        isSearchLoading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={isDark ? '#818CF8' : '#6366F1'} />
-          </View>
-        ) : searchResults.length === 0 ? (
-          <View className="flex-1 items-center justify-center px-8">
-            <Text className="text-sm text-center" style={{ color: subTextColor }}>
-              {t('categorySearch.noResults')}
-            </Text>
-          </View>
+        {/* Content */}
+        {isSearching ? (
+          /* Swipeable tabbed search results (feed-style pager) */
+          <Box flex={1}>
+            {/* Tab bar with active underline (feed style) */}
+            <Box borderBottomWidth={1} borderColor={inputBorder}>
+              <ScrollView
+                ref={tabScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 4 }}
+              >
+                {tabPages.map((tab, index) => {
+                  const isActive = currentPage === index;
+                  return (
+                    <Pressable
+                      key={tab.key}
+                      onPress={() => handleTabPress(index)}
+                      px="$4"
+                      py="$2.5"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Text
+                        fontSize="$sm"
+                        fontWeight={isActive ? '$bold' : '$medium'}
+                        color={isActive ? textColor : tabInactiveColor}
+                      >
+                        {tab.label} ({tab.rows.length})
+                      </Text>
+                      {isActive && (
+                        <Box
+                          position="absolute"
+                          bottom={0}
+                          left={16}
+                          right={16}
+                          h={2}
+                          bg={accentColor}
+                          borderRadius={1}
+                        />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </Box>
+
+            {/* Swipeable pages — one per tab */}
+            <PagerView
+              ref={pagerRef}
+              style={{ flex: 1 }}
+              initialPage={0}
+              onPageSelected={handlePageSelected}
+            >
+              {tabPages.map((tab) => (
+                <View key={tab.key} style={{ flex: 1 }}>
+                  {renderPageContent(tab.rows)}
+                </View>
+              ))}
+            </PagerView>
+          </Box>
         ) : (
-          <FlatList
-            data={searchResults}
-            keyExtractor={(item) =>
-              item.kind === 'subcategory'
-                ? `sub-${item.item.subCategoryId}`
-                : `pg-${item.item.productGroupId}`
-            }
-            renderItem={renderSearchResult}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+          /* Popular Lists */
+          <ScrollView
+            contentContainerStyle={{ paddingTop: 8, paddingBottom: 32 }}
             keyboardShouldPersistTaps="handled"
-          />
-        )
-      ) : (
-        /* Popular Lists */
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 32 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Popular Subcategories */}
-          <View className="mb-6">
-            <Text
-              className="text-sm font-semibold px-4 mb-3"
-              style={{ color: sectionLabelColor }}
-            >
-              {t('categorySearch.popularSubcategories')}
-            </Text>
-            {popularSubCatsLoading ? (
-              <View className="px-4">
-                <ActivityIndicator color={isDark ? '#818CF8' : '#6366F1'} />
-              </View>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-              >
-                {popularSubCatItems.map((item) => (
-                  <TouchableOpacity
-                    key={item.subCategoryId}
-                    onPress={() => handleSelectSubCategory(item)}
-                    className="px-4 py-2 rounded-full border"
-                    style={{ backgroundColor: chipBg, borderColor: chipBorder }}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-sm font-medium" style={{ color: textColor }}>
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Popular Subcategories */}
+            <VStack mb="$6">
+              <Text px="$4" mb="$3" fontSize="$sm" fontWeight="$semibold" color={sectionLabelColor}>
+                {t('categorySearch.popularSubcategories')}
+              </Text>
+              {popularSubCatsLoading ? (
+                <Box px="$4">
+                  <Spinner color={accentColor} />
+                </Box>
+              ) : (
+                renderChips(
+                  popularSubCatItems.map((item) => ({
+                    id: item.subCategoryId,
+                    name: item.name,
+                    onPress: () => handleSelectSubCategory(item),
+                  }))
+                )
+              )}
+            </VStack>
 
-          {/* Popular Product Groups */}
-          <View>
-            <Text
-              className="text-sm font-semibold px-4 mb-3"
-              style={{ color: sectionLabelColor }}
-            >
-              {t('categorySearch.popularProductGroups')}
-            </Text>
-            {popularPGsLoading ? (
-              <View className="px-4">
-                <ActivityIndicator color={isDark ? '#818CF8' : '#6366F1'} />
-              </View>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-              >
-                {popularPGItems.map((item) => (
-                  <TouchableOpacity
-                    key={item.productGroupId}
-                    onPress={() => handleSelectProductGroup(item)}
-                    className="px-4 py-2 rounded-full border"
-                    style={{ backgroundColor: chipBg, borderColor: chipBorder }}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-sm font-medium" style={{ color: textColor }}>
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </ScrollView>
-      )}
+            {/* Popular Product Groups */}
+            <VStack>
+              <Text px="$4" mb="$3" fontSize="$sm" fontWeight="$semibold" color={sectionLabelColor}>
+                {t('categorySearch.popularProductGroups')}
+              </Text>
+              {popularPGsLoading ? (
+                <Box px="$4">
+                  <Spinner color={accentColor} />
+                </Box>
+              ) : (
+                renderChips(
+                  popularPGItems.map((item) => ({
+                    id: item.productGroupId,
+                    name: item.name,
+                    onPress: () => handleSelectProductGroup(item),
+                  }))
+                )
+              )}
+            </VStack>
+          </ScrollView>
+        )}
+      </Box>
     </SafeAreaView>
   );
 };

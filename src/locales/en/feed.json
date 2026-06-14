@@ -11,6 +11,48 @@
     "noMedia": "No media yet",
     "noFeedContent": "No feed content found yet."
   },
+  "emptyCta": {
+    "default": {
+      "title": "No posts yet",
+      "description": "There's no content in this feed yet. Be the first to share!",
+      "button": "Create Post"
+    },
+    "trusting": {
+      "title": "No posts from people you trust yet",
+      "description": "Posts from people you trust will appear here. Take the first step.",
+      "button": "Create Post"
+    },
+    "forYou": {
+      "title": "No personalized content yet",
+      "description": "Content based on your interests will show up here. Be the first to post.",
+      "button": "Create Post"
+    },
+    "tips": {
+      "title": "No tips yet",
+      "description": "Share what you know and add the first tip.",
+      "button": "Share a Tip"
+    },
+    "questions": {
+      "title": "No questions yet",
+      "description": "Ask what you're curious about and open the first question.",
+      "button": "Ask a Question"
+    },
+    "reviews": {
+      "title": "No reviews yet",
+      "description": "Tell us about your experience and share the first review.",
+      "button": "Write a Review"
+    },
+    "benchmarks": {
+      "title": "No benchmarks yet",
+      "description": "Compare products and create the first benchmark.",
+      "button": "Create Benchmark"
+    },
+    "updates": {
+      "title": "No updates yet",
+      "description": "Share what's new and add the first update.",
+      "button": "Share an Update"
+    }
+  },
   "actions": {
     "like": "Like",
     "comment": "Comment",

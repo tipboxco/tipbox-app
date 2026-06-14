@@ -111,6 +111,23 @@ export type RootStackParamList = {
     productGroupId?: string;
   };
 
+  // CategoryBrandProducts — bir markaya göre, kategori (ve alt kategorilerindeki) ürün listesi
+  CategoryBrandProducts: {
+    categoryId: string;
+    brandId: string;
+    brandName?: string;
+    categoryName?: string;
+  };
+
+  // CatalogCategoryBrands — bir kategorinin (ve alt kategorilerinin) tüm markalarının listesi
+  CatalogCategoryBrands: {
+    categoryId: string;
+    categoryName?: string;
+  };
+
+  // Search — global search screen (users, brands, products)
+  Search: undefined;
+
   // ProductSelect - Global product selection screen
   ProductSelect: {
     returnScreen?: string;

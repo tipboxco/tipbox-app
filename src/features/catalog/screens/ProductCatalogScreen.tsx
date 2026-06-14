@@ -1567,6 +1567,12 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     });
   }, [navigation, breadcrumbItems, initialSelectedCategoryId, localSubCategoryId, localProductGroupId]);
 
+  // Create-post mode: tapping search bar opens the dedicated CategorySearch page
+  // (popular subcategories/product groups + general product/subcategory/product-group search)
+  const handleOpenCategorySearch = useCallback(() => {
+    navigationService.navigate(ROOT_ROUTES.POST, { screen: 'CategorySearch' });
+  }, []);
+
   return (
     <Box flex={1}>
 
@@ -1597,8 +1603,27 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
               </Text>
             </HStack>
           </Pressable>
+        ) : (!selectMode && !onProductSelect) ? (
+          /* Create-post mode: tapping search opens the dedicated CategorySearch page */
+          <Pressable onPress={handleOpenCategorySearch}>
+            <HStack
+              alignItems="center"
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+              borderWidth={1}
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
+              borderRadius={20}
+              px={14}
+              py="$2"
+              space="sm"
+            >
+              <Search size={24} color="rgba(60, 60, 67, 0.6)" />
+              <Text fontSize="$xs" color="#B9B9B9" flex={1}>
+                {t('productCatalog.searchPlaceholder')}
+              </Text>
+            </HStack>
+          </Pressable>
         ) : (
-          /* Embedded mode: inline search */
+          /* Picker/select mode: inline search */
           <HStack
             alignItems="center"
             bg={isDark ? '#2A2A2A' : '#F2F2F2'}

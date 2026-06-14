@@ -302,7 +302,10 @@ const NotificationsScreenComponent: React.FC = () => {
     () => (isDark ? '$backgroundDark950' : '#FFFFFF'),
     [isDark]
   );
-  const tabHeaderBgColor = useMemo(() => '#FFFFFF', []); // Tab header her zaman beyaz
+  const tabHeaderBgColor = useMemo(
+    () => (isDark ? '$backgroundDark950' : '#FFFFFF'),
+    [isDark]
+  ); // Tab header arka planı tema ile uyumlu
 
   // 🎯 CORE: Shared progress value (0 = All, 1 = Replies, 2 = Trust, 3 = Tips)
   const progress = useSharedValue(0);
@@ -592,11 +595,11 @@ const NotificationsScreenComponent: React.FC = () => {
   // DESIGN: SupportRequestFilterGroup ile aynı tasarım
   // Active = açık gri arka plan, siyah text
   // Inactive = transparent arka plan, siyah text
-  const tabActiveBg = '#F1F1F1';
+  const tabActiveBg = isDark ? '#2A2A2A' : '#F1F1F1';
   const tabInactiveBg = 'transparent';
-  const tabActiveText = '#000000';
-  const tabInactiveText = '#000000';
-  const tabBorderColor = '#EFEFEF';
+  const tabActiveText = isDark ? '#FFFFFF' : '#000000';
+  const tabInactiveText = isDark ? '#FFFFFF' : '#000000';
+  const tabBorderColor = isDark ? '#2A2A2A' : '#EFEFEF';
 
   // Her tab için seçili mi (animasyonlu)
   const tab0Active = useAnimatedStyle(
@@ -607,7 +610,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabActiveBg, tabActiveBg, tabInactiveBg]
       ),
     }),
-    []
+    [tabActiveBg, tabInactiveBg]
   );
   const tab1Active = useAnimatedStyle(
     () => ({
@@ -617,7 +620,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveBg, tabActiveBg, tabInactiveBg]
       ),
     }),
-    []
+    [tabActiveBg, tabInactiveBg]
   );
   const tab2Active = useAnimatedStyle(
     () => ({
@@ -627,7 +630,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveBg, tabActiveBg, tabInactiveBg]
       ),
     }),
-    []
+    [tabActiveBg, tabInactiveBg]
   );
   const tab3Active = useAnimatedStyle(
     () => ({
@@ -637,7 +640,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveBg, tabActiveBg, tabActiveBg]
       ),
     }),
-    []
+    [tabActiveBg, tabInactiveBg]
   );
 
   const tab0TextStyle = useAnimatedStyle(
@@ -648,7 +651,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabActiveText, tabActiveText, tabInactiveText]
       ),
     }),
-    []
+    [tabActiveText, tabInactiveText]
   );
   const tab1TextStyle = useAnimatedStyle(
     () => ({
@@ -658,7 +661,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveText, tabActiveText, tabInactiveText]
       ),
     }),
-    []
+    [tabActiveText, tabInactiveText]
   );
   const tab2TextStyle = useAnimatedStyle(
     () => ({
@@ -668,7 +671,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveText, tabActiveText, tabInactiveText]
       ),
     }),
-    []
+    [tabActiveText, tabInactiveText]
   );
   const tab3TextStyle = useAnimatedStyle(
     () => ({
@@ -678,7 +681,7 @@ const NotificationsScreenComponent: React.FC = () => {
         [tabInactiveText, tabActiveText, tabActiveText]
       ),
     }),
-    []
+    [tabActiveText, tabInactiveText]
   );
 
   const getTabBgStyle = (index: number) => {

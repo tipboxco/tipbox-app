@@ -97,6 +97,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     isInitialized: false,
     permissionStatus: 'undetermined',
   });
+  // Socket bağlantı durumunu React state'inde takip et.
+  // Notification listener effect'i, socket henüz bağlı değilken çalışırsa
+  // bağlantı kurulduğunda tekrar çalışmalı (aksi halde listener hiç eklenmez).
+  const [isSocketReady, setIsSocketReady] = React.useState<boolean>(() =>
+    socketService.isConnected()
+  );
   
   // Unread count için query - badge sync için
   // Sadece authenticated olduğunda çalışır (logout durumunda API isteği yapılmaz)
@@ -259,6 +265,29 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       notificationStore.clearUnreadCountCache();
     }
   }, [isAuthenticated, isAuthReady, queryClient]);
+
+  // Socket connect/disconnect durumunu React state'ine yansıt.
+  // Bu sayede socket, notification listener effect'inden SONRA bağlandığında
+  // (startup race) listener effect'i isSocketReady değişimiyle tekrar çalışır.
+  useEffect(() => {
+    if (!isAuthenticated || !state.isInitialized) {
+      return;
+    }
+
+    const handleConnect = () => setIsSocketReady(true);
+    const handleDisconnect = () => setIsSocketReady(false);
+
+    // Mevcut durumu senkronize et (effect bağlandıktan sonra çalışmış olabilir)
+    setIsSocketReady(socketService.isConnected());
+
+    socketService.onConnected(handleConnect);
+    socketService.onDisconnected(handleDisconnect);
+
+    return () => {
+      socketService.off('connect', handleConnect);
+      socketService.off('disconnect', handleDisconnect);
+    };
+  }, [isAuthenticated, state.isInitialized]);
 
   // Socket.IO notification listener with Event-Driven Architecture
   useEffect(() => {
@@ -569,7 +598,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       socketService.off('notification', handleSocketNotification);
       socketService.off('new_message', handleNewMessage);
     };
-  }, [isAuthenticated, state.isInitialized, isForeground, queryClient]);
+  }, [isAuthenticated, state.isInitialized, isForeground, queryClient, isSocketReady]);
 
   // Expo Push notification handlers
   useEffect(() => {

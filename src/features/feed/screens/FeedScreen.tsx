@@ -10,7 +10,6 @@ import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { SearchModal } from '@/src/components/SearchModal';
 import { FeedTabList } from '../components/FeedTabList';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import type { FeedFilterParams } from '../api/feedApi';
@@ -41,7 +40,6 @@ const FeedScreenInner: React.FC = () => {
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding: 16 });
 
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [visitedTabs, setVisitedTabs] = useState<Set<number>>(new Set([0]));
 
@@ -163,7 +161,7 @@ const FeedScreenInner: React.FC = () => {
         <Header
           logo={require('@/assets/tipbox-nobg.png')}
           leftAction="menu"
-          onSearchPress={() => setIsSearchVisible(true)}
+          onSearchPress={() => navigation.navigate('Search')}
         />
 
         {/* Scrollable Tab Bar */}
@@ -223,17 +221,13 @@ const FeedScreenInner: React.FC = () => {
                 tabKey={tab.key}
                 filterParams={tab.filters}
                 enabled={visitedTabs.has(index)}
+                onCreatePress={handleCreatePress}
               />
             </View>
           ))}
         </AnimatedPagerView>
 
         <CreateButton onPress={handleCreatePress} />
-
-        <SearchModal
-          visible={isSearchVisible}
-          onClose={() => setIsSearchVisible(false)}
-        />
       </View>
     </SafeAreaView>
   );

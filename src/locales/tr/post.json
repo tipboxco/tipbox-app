@@ -504,10 +504,15 @@
   },
   "categorySearch": {
     "title": "Gönderi Yaz",
-    "placeholder": "Alt Kategori veya Ürün Grubu Ara",
+    "placeholder": "Ürün, alt kategori veya ürün grubu ara",
     "noResults": "Sonuç bulunamadı",
     "subcategory": "Alt Kategori",
     "productGroup": "Ürün Grubu",
+    "product": "Ürün",
+    "tabSubcategories": "Alt Kategoriler",
+    "tabProductGroups": "Ürün Grupları",
+    "tabProducts": "Ürünler",
+    "noResultsInTab": "Bu sekmede sonuç yok",
     "popularSubcategories": "Popüler Alt Kategoriler",
     "popularProductGroups": "Popüler Ürün Grupları"
   }
