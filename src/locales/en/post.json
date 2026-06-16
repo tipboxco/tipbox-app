@@ -4,10 +4,33 @@
       "title": "Write a Post",
       "share": "Share"
     },
+    "typeSelector": {
+      "general": "General",
+      "question": "Question",
+      "tipsAndTricks": "Tips & Tricks",
+      "experience": "Experience",
+      "benchmark": "Benchmark"
+    },
     "form": {
       "postDescription": "Post Description",
       "postPlaceholder": "Type your Post here...",
       "images": "Images"
+    },
+    "context": {
+      "product": "Product",
+      "category": "Category",
+      "selectProduct": "Select a product from inventory",
+      "selectCategory": "Select a category",
+      "remove": "Remove"
+    },
+    "productPicker": {
+      "title": "Select a Product",
+      "tabInventory": "My Inventory",
+      "tabCatalog": "Search Catalog",
+      "inventorySearch": "Search your inventory",
+      "catalogSearch": "Search products",
+      "emptyInventory": "No products in your inventory",
+      "noResults": "No results found"
     },
     "toast": {
       "limitExceeded": {
@@ -105,7 +128,8 @@
         "timeoutError": "AI processing timed out. Please try again or continue manually.",
         "structureError": "AI could not structure your experience. Please try again or continue manually.",
         "generalError": "An error occurred while processing the experience text. Please try again.",
-        "splitRequired": "Please use AI split first to structure your experience."
+        "splitRequired": "Please use AI split first to structure your experience.",
+        "analyze": "Analyze with AI"
       },
       "validation": {
         "productNotSelected": "Product not selected. Please select a product.",
@@ -118,6 +142,8 @@
         "contextMissing": "Context information not found. Please try again."
       },
       "inventory": {
+        "iOwn": "I Own It",
+        "iTried": "Tested",
         "alreadyInInventory": {
           "title": "Already in your inventory",
           "description": "This product is already in your inventory. You can still continue sharing your experience."
@@ -167,6 +193,7 @@
         "inventoryOrCatalog": "Inventory or Catalog"
       },
       "selectCompareProduct": "Select Product to Compare",
+      "whichBetter": "Which do you recommend?",
       "searchPlaceholder": "Search products...",
       "noProductsFound": "No products found matching your search.",
       "noProductsInGroup": "No products found in this group.",
@@ -514,6 +541,7 @@
     "tabProducts": "Products",
     "noResultsInTab": "No results in this tab",
     "popularSubcategories": "Popular Subcategories",
-    "popularProductGroups": "Popular Product Groups"
+    "popularProductGroups": "Popular Product Groups",
+    "selectThisCategory": "Select"
   }
 }

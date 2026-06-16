@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectCompareProductScreen, CategorySearchScreen } from './screens';
+import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectCompareProductScreen, CategorySearchScreen, ProductPickerScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
@@ -47,6 +47,8 @@ export type PostStackParamList = {
       title: string;
       subName?: string;
     };
+    /** Açılışta seçili gelecek paylaşım tipi (radio). Verilmezse 'general'. */
+    initialType?: 'general' | 'question' | 'tips';
   };
   CreateTipsAndTrickPostScreen: undefined;
   CreateQuestionPostScreen: undefined;
@@ -82,7 +84,11 @@ export type PostStackParamList = {
     initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any; productGroupId?: string };
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
   };
-  CategorySearch: undefined;
+  // returnTo: seçim yapılınca CreatePostScreen'e geri dön (forward navigasyon yerine).
+  // Twitter'da medya/konum ekleme gibi bir attach mekaniği için kullanılır.
+  CategorySearch: { returnTo?: 'CreatePostScreen' } | undefined;
+  // Ürün seçici (Envanter + Katalog sekmeleri). Seçim flow store'a yazılıp geri dönülür.
+  ProductPicker: { returnTo?: 'CreatePostScreen' } | undefined;
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();
@@ -219,6 +225,10 @@ export const PostNavigator = () => {
       <Stack.Screen
         name="CategorySearch"
         component={CategorySearchScreen}
+      />
+      <Stack.Screen
+        name="ProductPicker"
+        component={ProductPickerScreen}
       />
     </Stack.Navigator>
   );

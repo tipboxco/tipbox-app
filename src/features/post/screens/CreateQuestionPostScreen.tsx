@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, useToast, Switch, Divider } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import { InformationCircleIcon, ArrowTrendingUpIcon } from 'react-native-heroicons/outline';
-import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
+import { InformationCircleIcon } from 'react-native-heroicons/outline';
+import { FormProvider, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
@@ -13,6 +13,7 @@ import { ProductInfoType } from '@/src/types/common';
 import { useQuestionPostForm } from '../hooks/useQuestionPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
+import { BoostSwitchField } from '../components/BoostSwitchField';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateQuestionPost, useBoostPrice } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
@@ -32,120 +33,6 @@ import type { QuestionPostFormData } from '../schemas/questionPostSchema';
 // ProductInfo will be loaded from store
 
 type CreateQuestionPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-/** TIPS to USD display rate (e.g. 100 TIPS = $1) */
-const TIPS_TO_USD_RATE = 100;
-
-// Boost Switch Component with Controller + Available / Boost Price row
-const BoostSwitchField: React.FC<{
-  boostPrice?: number;
-  isLoadingPrice: boolean;
-  availableTips: number;
-}> = ({ boostPrice, isLoadingPrice, availableTips }) => {
-  const { t } = useTranslation('post');
-  const { control, watch } = useFormContext<QuestionPostFormData>();
-  const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
-  const greyLabel = isDark ? '$textDark400' : '#787878';
-  const greyValue = isDark ? '#A3A3A3' : '#A3A3A3';
-
-  return (
-    <Controller
-      name="boostEnabled"
-      control={control}
-      render={({ field: { onChange, value } }) => (
-        <Box
-          px={16}
-          py={12}
-          bg={isDark ? '$backgroundDark900' : '$white'}
-          borderRadius={12}
-          borderWidth={1}
-          borderColor={isDark ? '#333333' : '#E9E9E9'}
-        >
-          <HStack alignItems="center" justifyContent="space-between">
-            <Box
-              w={36}
-              h={36}
-              borderRadius={8}
-              bg={isDark ? '#333333' : '#E9E9E9'}
-              alignItems="center"
-              justifyContent="center"
-              mr={12}
-            >
-              <ArrowTrendingUpIcon
-                width={20}
-                height={20}
-                color={isDark ? '#A3A3A3' : '#787878'}
-              />
-            </Box>
-            <VStack flex={1} mr={12}>
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$sm"
-                fontWeight="$semibold"
-                mb={4}
-              >
-                {t('create.question.boost.title')}
-              </Text>
-              <Text
-                color={isDark ? '$textDark400' : '#787878'}
-                fontSize={11}
-                lineHeight={14}
-              >
-                {isLoadingPrice
-                  ? t('create.question.boost.calculating')
-                  : value
-                    ? (boostPrice != null ? t('create.question.boost.activeTips', { price: boostPrice }) : t('create.question.boost.active'))
-                    : t('create.question.boost.description')}
-              </Text>
-            </VStack>
-            <Switch
-              value={value}
-              onValueChange={onChange}
-              trackColor={{
-                false: isDark ? '#333333' : '#E9E9E9',
-                true: '#829905',
-              }}
-              thumbColor={value ? '#B8CC04' : (isDark ? '#666666' : '#FFFFFF')}
-              disabled={isLoadingPrice}
-            />
-          </HStack>
-
-          <Divider my={12} bg={isDark ? '#333333' : '#E9E9E9'} />
-
-          <HStack justifyContent="space-between" alignItems="flex-start">
-            <VStack alignItems="flex-start" flex={1}>
-              <Text color={greyLabel} fontSize={10} mb={4}>
-                {t('create.question.boost.available')}
-              </Text>
-              <Text color={greyValue} fontSize="$sm" fontWeight="$medium">
-                {Math.floor(availableTips)} TIPS
-              </Text>
-              <Text color={greyLabel} fontSize={10} mt={2}>
-                (${(availableTips / TIPS_TO_USD_RATE).toFixed(0)})
-              </Text>
-            </VStack>
-            <VStack alignItems="flex-end" flex={1}>
-              <Text color={greyLabel} fontSize={10} mb={4}>
-                {t('create.question.boost.boostPrice')}
-              </Text>
-              <Text
-                color={isLoadingPrice ? greyValue : '#829905'}
-                fontSize="$sm"
-                fontWeight="$semibold"
-              >
-                {isLoadingPrice ? '—' : `${Math.floor(boostPrice ?? 0)} TIPS`}
-              </Text>
-              <Text color={greyLabel} fontSize={10} mt={2}>
-                ({isLoadingPrice ? '—' : `$${((boostPrice ?? 0) / TIPS_TO_USD_RATE).toFixed(1)}`})
-              </Text>
-            </VStack>
-          </HStack>
-        </Box>
-      )}
-    />
-  );
-};
 
 export const CreateQuestionPostScreen = () => {
   const { t } = useTranslation('post');

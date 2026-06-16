@@ -8,3 +8,4 @@ export { CreateBenchmarkPostScreen } from './CreateBenchmarkPostScreen';
 export { CreateUpdatePostScreen } from './CreateUpdatePostScreen';
 export { SelectCompareProductScreen } from './SelectCompareProductScreen';
 export { CategorySearchScreen } from './CategorySearchScreen';
+export { ProductPickerScreen } from './ProductPickerScreen';

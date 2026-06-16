@@ -1,39 +1,179 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, useToast } from '@gluestack-ui/themed';
+import {
+  Box,
+  ScrollView,
+  VStack,
+  HStack,
+  Text,
+  Pressable,
+  useToast,
+} from '@gluestack-ui/themed';
+import { ChevronRight, XCircle, Info, PencilLine, HelpCircle, Lightbulb, Star, BarChart2 } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 import { showCustomToast } from '@/src/components/CustomToast';
-import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
-import { FormProvider, useFormContext } from 'react-hook-form';
+import {
+  useNavigation,
+  useRoute,
+  RouteProp,
+  CommonActions,
+} from '@react-navigation/native';
+import { FormProvider, Controller, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { Header } from '@/src/components/Header';
-import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { CachedImage } from '@/src/components/CachedImage';
 import { ProductInfoType } from '@/src/types/common';
-import { usePostForm } from '../hooks/usePostForm';
+import { useCategoryPostForm } from '../hooks/useCategoryPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
-import { useCreateFreePost } from '../api/hooks';
+import { PostTypeSelector, type PostTypeOption } from '../components/PostTypeSelector';
+import { BoostSwitchField } from '../components/BoostSwitchField';
+import { BenchmarkComposer, type BenchmarkComposerHandle, type BenchmarkSecondProduct } from '../components/BenchmarkComposer';
+import { ExperienceComposer, type ExperienceComposerHandle } from '../components/ExperienceComposer';
+import { ProductSelectInput } from '../components/ProductSelectInput';
+import { BENEFIT_CATEGORIES, type BenefitCategoryValue } from '../constants/benefitCategories';
+import {
+  useCreateFreePost,
+  useCreateQuestionPost,
+  useCreateTipsAndTricksPost,
+  useBoostPrice,
+  invalidateCatalogPosts,
+} from '../api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
-import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
+import { useWalletBalance } from '@/src/features/wallet/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys } from '@/src/features/profile/api/hooks';
-import { invalidateCatalogPosts } from '../api/hooks';
+import { navigateAfterPostCreate } from '../utils/navigateAfterPostCreate';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
-import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { CameraScreen } from '../components/CameraScreen';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 import * as ImageManipulator from 'expo-image-manipulator';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { PostStackParamList } from '../navigation';
-import type { PostFormData } from '../schemas/postSchema';
+import type { CategoryPostFormData, CategoryPostType } from '../schemas/categoryPostSchema';
 
-type CreatePostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type CreatePostScreenRouteProp = RouteProp<PostStackParamList, 'CreatePostScreen'>;
+type CreatePostScreenNavigationProp =
+  NativeStackNavigationProp<RootStackParamList>;
+type CreatePostScreenRouteProp = RouteProp<
+  PostStackParamList,
+  'CreatePostScreen'
+>;
+
+type ContextKind = 'product' | 'category';
+type ComposerType = 'general' | 'question' | 'tips' | 'experience' | 'benchmark';
+
+/** Bağlam türüne göre seçilebilen paylaşım tipleri */
+const CATEGORY_TYPE_OPTIONS: PostTypeOption[] = [
+  { value: 'general', labelKey: 'create.typeSelector.general', Icon: PencilLine },
+  { value: 'question', labelKey: 'create.typeSelector.question', Icon: HelpCircle },
+  { value: 'tips', labelKey: 'create.typeSelector.tipsAndTricks', Icon: Lightbulb },
+];
+const PRODUCT_TYPE_OPTIONS: PostTypeOption[] = [
+  { value: 'experience', labelKey: 'create.typeSelector.experience', Icon: Star },
+  { value: 'question', labelKey: 'create.typeSelector.question', Icon: HelpCircle },
+  { value: 'tips', labelKey: 'create.typeSelector.tipsAndTricks', Icon: Lightbulb },
+  { value: 'benchmark', labelKey: 'create.typeSelector.benchmark', Icon: BarChart2 },
+];
+const INLINE_TYPES: ComposerType[] = ['general', 'question', 'tips'];
+
+/** Tips & Tricks benefit kategori seçici (yalnızca 'tips' tipinde gösterilir) */
+const BenefitCategorySelectField: React.FC<{
+  showModal: boolean;
+  setShowModal: (show: boolean) => void;
+}> = ({ showModal, setShowModal }) => {
+  const { t } = useTranslation('post');
+  const { control, watch } = useFormContext<CategoryPostFormData>();
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const selectedCategory = watch('selectedCategory');
+
+  return (
+    <Controller
+      name='selectedCategory'
+      control={control}
+      render={({ field: { onChange }, fieldState: { error } }) => (
+        <VStack space='xs' position='relative'>
+          <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize='$sm' fontWeight='$semibold'>
+            {t('create.tipsAndTricks.labels.category')}
+          </Text>
+          <Pressable onPress={() => setShowModal(!showModal)}>
+            <Box
+              bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+              borderWidth={1}
+              borderColor={error ? '#CE4A4A' : '#E9E9E9'}
+              borderRadius={10}
+              height={44}
+              px={16}
+              justifyContent='center'
+            >
+              <HStack flex={1} alignItems='center' justifyContent='space-between'>
+                <Text
+                  color={selectedCategory ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
+                  fontSize='$sm'
+                  fontWeight='$medium'
+                  flex={1}
+                >
+                  {selectedCategory
+                    ? t(BENEFIT_CATEGORIES.find((cat) => cat.value === selectedCategory)?.labelKey ?? '')
+                    : t('create.tipsAndTricks.placeholders.categorySelect')}
+                </Text>
+                <Feather name={showModal ? 'chevron-up' : 'chevron-down'} size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+              </HStack>
+            </Box>
+          </Pressable>
+
+          {showModal && (
+            <Box
+              position='absolute'
+              top={58}
+              left={0}
+              right={0}
+              bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+              borderWidth={1}
+              borderColor={isDark ? '#333333' : '#E9E9E9'}
+              borderBottomLeftRadius={5}
+              borderBottomRightRadius={5}
+              zIndex={1000}
+              overflow='hidden'
+            >
+              <VStack>
+                {BENEFIT_CATEGORIES.map((category, index) => (
+                  <Box key={category.value}>
+                    {index > 0 && <Box height={1} bg='#E9E9E9' width='100%' />}
+                    <Pressable
+                      onPress={() => {
+                        onChange(category.value);
+                        setShowModal(false);
+                      }}
+                    >
+                      <HStack px='$3' py='$3' alignItems='center' space='sm'>
+                        <Feather name={category.icon} size={18} color={isDark ? '#FFFFFF' : '#2F2F2F'} />
+                        <Text color={isDark ? '$textDark50' : '#2F2F2F'} fontSize='$sm' fontWeight='$medium'>
+                          {t(category.labelKey)}
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                  </Box>
+                ))}
+              </VStack>
+            </Box>
+          )}
+          {error && (
+            <Text color='#CE4A4A' fontSize='$xs' px={2}>
+              {error.message}
+            </Text>
+          )}
+        </VStack>
+      )}
+    />
+  );
+};
 
 export const CreatePostScreen = () => {
   const { colorMode } = useColorMode();
@@ -41,61 +181,130 @@ export const CreatePostScreen = () => {
   const { t } = useTranslation('post');
   const navigation = useNavigation<CreatePostScreenNavigationProp>();
   const route = useRoute<CreatePostScreenRouteProp>();
-  const methods = usePostForm();
-  const { handleSubmit, formState, trigger, getValues, control } = methods;
-  const createPostMutation = useCreateFreePost();
+  const methods = useCategoryPostForm({ postType: (route.params?.initialType as CategoryPostType) ?? 'general' });
+  const { handleSubmit, formState, trigger, setValue } = methods;
+  const createFreePostMutation = useCreateFreePost();
+  const createQuestionPostMutation = useCreateQuestionPost();
+  const createTipsPostMutation = useCreateTipsAndTricksPost();
   const toast = useToast();
   const isSubmittingRef = useRef(false);
-  const { user } = useAppStore();
+  const { user, walletBalance: storeBalance } = useAppStore();
   const queryClient = useQueryClient();
   const [showCamera, setShowCamera] = useState(false);
   const [lastPhotoUri, setLastPhotoUri] = useState<string | null>(null);
-  
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  // Default: 'category' context seçili gelir
+  const [contextKind, setContextKind] = useState<ContextKind>('category');
+  // Seçili paylaşım tipi (kartlardan). Default kategori için 'general'.
+  const [composerType, setComposerType] = useState<ComposerType>(
+    (route.params?.initialType as ComposerType) ?? 'general',
+  );
+
+  // Benchmark inline composer kontrolü (kendi formu var; Header "Paylaş" buna delege olur)
+  const benchmarkRef = useRef<BenchmarkComposerHandle>(null);
+  const [benchmarkState, setBenchmarkState] = useState<{ canShare: boolean; isLoading: boolean; secondProduct: BenchmarkSecondProduct | null }>({
+    canShare: false,
+    isLoading: false,
+    secondProduct: null,
+  });
+  const handleBenchmarkStateChange = useCallback(
+    (s: { canShare: boolean; isLoading: boolean; secondProduct: BenchmarkSecondProduct | null }) => setBenchmarkState(s),
+    [],
+  );
+
+  // Experience inline composer kontrolü
+  const experienceRef = useRef<ExperienceComposerHandle>(null);
+  const [experienceState, setExperienceState] = useState<{ canShare: boolean; isLoading: boolean }>({
+    canShare: false,
+    isLoading: false,
+  });
+  const handleExperienceStateChange = useCallback(
+    (s: { canShare: boolean; isLoading: boolean }) => setExperienceState(s),
+    [],
+  );
+
+  // Boost (yalnızca question tipinde gösterilir; hook'lar koşulsuz çağrılır)
+  const { data: boostPriceData, isLoading: isLoadingBoostPrice, error: boostPriceError } = useBoostPrice();
+  const { data: walletBalance } = useWalletBalance();
+  const availableTips = storeBalance !== null && storeBalance !== undefined ? storeBalance : (walletBalance?.balance || 0);
+
   // Global navigation UI store'dan kamera state'ini yönet
-  const setCameraOpen = useNavigationUIStore((state) => state.setCameraOpen);
-  
-  // Kamera açık/kapalı durumunu global store'a bildir
+  const setCameraOpen = useNavigationUIStore(state => state.setCameraOpen);
   useEffect(() => {
     setCameraOpen(showCamera);
-    
-    // Cleanup: component unmount olduğunda kamera state'ini sıfırla
     return () => {
       setCameraOpen(false);
     };
   }, [showCamera, setCameraOpen]);
-  
-  // Context resolution: explicit priority order (flow store has TTL/expiration)
-  const contextType = useCreatePostFlowStore((state) => state.contextType);
-  const contextId = useCreatePostFlowStore((state) => state.contextId);
-  const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
-  const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
-  const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+
+  // Context resolution: flow store (valid) öncelikli, sonra route params
+  const contextType = useCreatePostFlowStore(state => state.contextType);
+  const contextId = useCreatePostFlowStore(state => state.contextId);
+  const productInfoSnapshot = useCreatePostFlowStore(state => state.productInfoSnapshot);
+  const isValidFlow = useCreatePostFlowStore(state => state.isValid());
+  const clearFlow = useCreatePostFlowStore(state => state.clearFlow);
 
   const routeParams = route.params || {};
-  const routeContextType = routeParams.contextType;
-  const routeContextId = routeParams.contextId;
-  const routeProductInfo = routeParams.productInfo;
+  const finalContextType = isValidFlow && contextType ? contextType : routeParams.contextType;
+  const finalContextId = isValidFlow && contextId ? contextId : routeParams.contextId;
+  const finalProductInfo = isValidFlow && productInfoSnapshot ? productInfoSnapshot : routeParams.productInfo;
 
-  // Priority 1: CreatePostFlowStore (valid and not expired). Priority 2: route params.
-  const finalContextType = isValidFlow && contextType ? contextType : routeContextType;
-  const finalContextId = isValidFlow && contextId ? contextId : routeContextId;
-  const finalProductInfo = isValidFlow && productInfoSnapshot ? productInfoSnapshot : routeProductInfo;
+  const typeOptions = contextKind === 'product' ? PRODUCT_TYPE_OPTIONS : CATEGORY_TYPE_OPTIONS;
 
-  const selectedProductId = useCatalogUIStore((state) => state.selectedProductId);
-  const selectedSubCategoryId = useCatalogUIStore((state) => state.selectedSubCategoryId);
-  const selectedProductGroupId = useCatalogUIStore((state) => state.selectedProductGroupId);
+  const handleOpenProductPicker = useCallback(() => {
+    navigationService.navigate(ROOT_ROUTES.POST, {
+      screen: 'ProductPicker',
+      params: { returnTo: 'CreatePostScreen' },
+    });
+  }, []);
 
-  // PERFORMANCE FIX: Debug log'ları kaldırıldı - production'da gereksiz re-render yaratıyordu
+  const handleOpenCategoryPicker = useCallback(() => {
+    navigationService.navigate(ROOT_ROUTES.POST, {
+      screen: 'CategorySearch',
+      params: { returnTo: 'CreatePostScreen' },
+    });
+  }, []);
+
+  const handleClearContext = useCallback(() => {
+    clearFlow();
+  }, [clearFlow]);
+
+  // Context türü değişince geçerli paylaşım tipini normalize et
+  const handleContextKindChange = (kind: ContextKind) => {
+    setContextKind(kind);
+    const def: ComposerType = kind === 'product' ? 'experience' : 'general';
+    setComposerType(def);
+    if (INLINE_TYPES.includes(def)) {
+      setValue('postType', def as CategoryPostType, { shouldValidate: true });
+    }
+  };
+
+  const handleTypeChange = (value: string) => {
+    const type = value as ComposerType;
+    setShowCategoryModal(false);
+    setComposerType(type);
+    if (INLINE_TYPES.includes(type)) {
+      setValue('postType', type as CategoryPostType, { shouldValidate: true });
+    }
+  };
+
+  // Picker'dan bağlam seçilip dönüldüğünde radio türünü ve composer tipini normalize et
+  useEffect(() => {
+    if (!finalContextType) return;
+    const kind: ContextKind = finalContextType === ProductInfoType.PRODUCT ? 'product' : 'category';
+    setContextKind(kind);
+    setComposerType(prev => {
+      const validValues = (kind === 'product' ? PRODUCT_TYPE_OPTIONS : CATEGORY_TYPE_OPTIONS).map(o => o.value);
+      return validValues.includes(prev) ? prev : ((kind === 'product' ? 'experience' : 'general') as ComposerType);
+    });
+  }, [finalContextType]);
 
   const handleBackPress = () => {
-    // Clear flow context on cancel/back
     clearFlow();
-    // Navigate back
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      // Fallback: Navigate to Catalog screen if can't go back
-      // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → CatalogStack → CatalogScreen
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -103,15 +312,7 @@ export const CreatePostScreen = () => {
             {
               name: 'App',
               state: {
-                routes: [
-                  {
-                    name: 'MainTabs',
-                    state: {
-                      routes: [{ name: 'CatalogStack' }],
-                      index: 0,
-                    },
-                  },
-                ],
+                routes: [{ name: 'MainTabs', state: { routes: [{ name: 'CatalogStack' }], index: 0 } }],
                 index: 0,
               },
             },
@@ -122,39 +323,31 @@ export const CreatePostScreen = () => {
   };
 
   const handleImagePicker = () => {
-    // Mevcut seçili image sayısını al
     const currentImages = methods.getValues('selectedImages') || [];
     const remainingSlots = 10 - currentImages.length;
-
     if (remainingSlots <= 0) {
-        showCustomToast(toast, {
-          title: t('create.toast.limitExceeded.title'),
-          description: t('create.toast.limitExceeded.description'),
-          action: 'error',
-        });
+      showCustomToast(toast, {
+        title: t('create.toast.limitExceeded.title'),
+        description: t('create.toast.limitExceeded.description'),
+        action: 'error',
+      });
       return;
     }
-
-    // Instagram tarzı: Custom kamera screen'ini aç
     setShowCamera(true);
   };
 
   const handlePhotoTaken = async (uri: string) => {
-    // Immediately show photo and close camera - no blocking
     const currentImages = methods.getValues('selectedImages') || [];
-    const newImages = [...currentImages, uri];
-    methods.setValue('selectedImages', newImages, { shouldValidate: false });
+    methods.setValue('selectedImages', [...currentImages, uri], { shouldValidate: false });
     setLastPhotoUri(uri);
     setShowCamera(false);
 
-    // Compress in background - replace raw image when done
     try {
       const compressedImage = await ImageManipulator.manipulateAsync(
         uri,
         [{ resize: { width: 1920 } }],
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
-
       const updatedImages = methods.getValues('selectedImages') || [];
       const index = updatedImages.indexOf(uri);
       if (index !== -1) {
@@ -164,186 +357,97 @@ export const CreatePostScreen = () => {
       }
     } catch (error) {
       console.error('[CreatePostScreen] Image compression error:', error);
-      // Keep original image on error - already added above
     }
   };
 
-  // PERFORMANCE FIX: getValues ile image'leri al - watch() yerine
-  // watch() her keystroke'da re-render yaratır
-  const displayLastPhotoUri = lastPhotoUri || (() => {
-    const imgs = methods.getValues('selectedImages') || [];
-    return imgs.length > 0 ? imgs[imgs.length - 1] : null;
-  })();
+  const displayLastPhotoUri =
+    lastPhotoUri ||
+    (() => {
+      const imgs = methods.getValues('selectedImages') || [];
+      return imgs.length > 0 ? imgs[imgs.length - 1] : null;
+    })();
 
   const handleCameraClose = () => {
     setShowCamera(false);
   };
 
-  const onSubmit = async (data: PostFormData) => {
-    // Context type ve ID'yi flow store'dan al (route params fallback)
+  const onSubmit = async (data: CategoryPostFormData) => {
+    if (isSubmittingRef.current) return;
     if (!finalContextType || !finalContextId) {
+      showCustomToast(toast, {
+        title: t('create.toast.error.title'),
+        description: t('create.toast.error.description'),
+        action: 'error',
+      });
       return;
     }
+    isSubmittingRef.current = true;
 
     const apiContextType = mapProductInfoTypeToContextType(finalContextType);
+    const images = data.selectedImages || [];
 
     try {
-      const response = await createPostMutation.mutateAsync({
-        contextType: apiContextType,
-        contextId: finalContextId,
-        description: data.postText,
-        images: data.selectedImages,
-      });
-      
-      // Başarılı toast göster
-      showCustomToast(toast, {
-        title: t('create.toast.postCreated.title'),
-        description: t('create.toast.postCreated.description'),
-        action: 'success',
-      });
+      let successTitle = t('create.toast.postCreated.title');
+      let successDescription = t('create.toast.postCreated.description');
 
-      // PERFORMANCE FIX: Optimistic update - query invalidation yerine cache'i direkt güncelle
-      // 6x API call yerine 0 API call (instant update)
+      if (data.postType === 'question') {
+        await createQuestionPostMutation.mutateAsync({
+          contextType: apiContextType,
+          contextId: finalContextId,
+          description: data.text,
+          boostEnabled: data.boostEnabled,
+          images,
+        });
+        successTitle = t('create.question.success.title');
+        successDescription = t('create.question.success.description');
+      } else if (data.postType === 'tips') {
+        await createTipsPostMutation.mutateAsync({
+          contextType: apiContextType,
+          contextId: finalContextId.trim(),
+          description: data.text,
+          benefitCategory: data.selectedCategory as BenefitCategoryValue,
+          images,
+        });
+        successTitle = t('create.tipsAndTricks.success.title');
+        successDescription = t('create.tipsAndTricks.success.description');
+      } else {
+        await createFreePostMutation.mutateAsync({
+          contextType: apiContextType,
+          contextId: finalContextId,
+          description: data.text,
+          images,
+        });
+      }
+
+      showCustomToast(toast, { title: successTitle, description: successDescription, action: 'success' });
+
       if (apiContextType && finalContextId) {
         invalidateCatalogPosts(queryClient, apiContextType, finalContextId);
       }
-
-      // PERFORMANCE FIX: Profile cache'ini invalidate et - ama refetch bekleme
-      // Background'da refetch olacak, UI anında devam edecek
       if (user?.id) {
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.userPosts(user.id),
-          refetchType: 'none', // Immediate refetch yapma, background'da yap
-        });
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.profile(user.id),
-          refetchType: 'none', // Immediate refetch yapma, background'da yap
-        });
+        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(user.id), refetchType: 'none' });
+        queryClient.invalidateQueries({ queryKey: profileKeys.profile(user.id), refetchType: 'none' });
       }
-      
-      // Save context info before clearing flow
+
       const savedContextType = finalContextType;
       const savedContextId = finalContextId;
       const savedProductInfo = finalProductInfo;
-      
-      // Clear flow context on successful submit
       clearFlow();
-      
-      // Navigate to PostsScreen if context is available
-      // CRITICAL: Clear navigation stack to prevent going back to create post screens
-      if (savedContextType && savedContextId && savedProductInfo) {
-        // Determine stage from contextType
-        let stage: 'SubCategories' | 'ProductGroup' | 'Product' = 'SubCategories';
-        switch (savedContextType) {
-          case ProductInfoType.PRODUCT:
-            stage = 'Product';
-            break;
-          case ProductInfoType.PRODUCT_GROUP:
-            stage = 'ProductGroup';
-            break;
-          case ProductInfoType.SUB_CATEGORY:
-            stage = 'SubCategories';
-            break;
-        }
-        
-        // Get current navigation state to preserve App state
-        const currentState = navigation.getState();
-        const appRoute = currentState?.routes?.find((route) => route.name === 'App');
-        
-        // Reset navigation stack and navigate to PostsScreen
-        // This clears all create post screens from the stack
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 1,
-            routes: [
-              {
-                name: 'App',
-                state: appRoute?.state,
-              },
-              {
-                name: ROOT_ROUTES.POST as any,
-                state: {
-                  routes: [
-                    {
-                      name: 'PostsScreen' as any,
-                      params: {
-                        stage,
-                        name: savedProductInfo.title,
-                        productInfo: savedProductInfo,
-                        contextType: savedContextType,
-                        contextId: savedContextId,
-                      },
-                    },
-                  ],
-                  index: 0,
-                },
-              },
-            ],
-          })
-        );
-      } else if (user?.id) {
-        // Fallback: ProfileScreen'e yönlendir
-        const currentState = navigation.getState();
-        const appRoute = currentState?.routes?.find((route) => route.name === 'App');
-        
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 1,
-            routes: [
-              {
-                name: 'App',
-                state: appRoute?.state,
-              },
-              {
-                name: 'Profile',
-                params: {
-                  screen: 'ProfileMain',
-                  params: { userId: user.id },
-                },
-              },
-            ],
-          })
-        );
-      } else {
-        // Fallback: Feed ekranına yönlendir
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'App',
-                state: {
-                  routes: [
-                    {
-                      name: 'MainTabs',
-                      state: {
-                        routes: [{ name: 'FeedScreen' }],
-                        index: 0,
-                      },
-                    },
-                  ],
-                  index: 0,
-                },
-              },
-            ],
-          })
-        );
-      }
+
+      navigateAfterPostCreate(navigation, {
+        contextType: savedContextType,
+        contextId: savedContextId,
+        productInfo: savedProductInfo,
+        userId: user?.id,
+      });
     } catch (error: any) {
       console.error('[CreatePostScreen] ❌ API Error:', error);
-      console.log('[CreatePostScreen] ====================================');
-      
-      // Hata toast göster
-      const errorMessage = error?.response?.data?.message ||
-                          error?.message ||
-                          t('create.toast.error.description');
-
+      const errorMessage = error?.response?.data?.message || error?.message || t('create.toast.error.description');
       showCustomToast(toast, {
         title: t('create.toast.error.title'),
         description: errorMessage,
         action: 'error',
       });
-      // TODO: Error handling UI göster
     } finally {
       isSubmittingRef.current = false;
     }
@@ -352,16 +456,29 @@ export const CreatePostScreen = () => {
   const handleSharePress = () => {
     Keyboard.dismiss();
 
-    // PERFORMANCE FIX: Manual validation sadece submit'te - her keystroke'da değil
-    trigger().then((isValid) => {
+    // Benchmark: inline composer'ın kendi submit'ini tetikle
+    if (composerType === 'benchmark') {
+      benchmarkRef.current?.submit();
+      return;
+    }
+
+    // Experience: inline composer'ın kendi submit'ini tetikle
+    if (composerType === 'experience') {
+      experienceRef.current?.submit();
+      return;
+    }
+
+    trigger().then(isValid => {
       if (isValid) {
         handleSubmit(onSubmit)();
       } else {
         const errors = formState.errors as Record<string, { message?: string } | undefined>;
-        const firstError = errors?.postText?.message
-          || errors?.selectedImages?.message
-          || (Object.values(errors).find((e) => e?.message) as { message?: string } | undefined)?.message
-          || t('create.toast.validation.description');
+        const firstError =
+          errors?.text?.message ||
+          errors?.selectedCategory?.message ||
+          errors?.selectedImages?.message ||
+          (Object.values(errors).find(e => e?.message) as { message?: string } | undefined)?.message ||
+          t('create.toast.validation.description');
         showCustomToast(toast, {
           title: t('create.toast.validation.title'),
           description: firstError,
@@ -372,9 +489,35 @@ export const CreatePostScreen = () => {
     });
   };
 
-  // Check if share button should be enabled (form is valid)
-  const isShareEnabled = formState.isValid;
-  const isShareLoading = createPostMutation.isPending;
+  const isInlineType = INLINE_TYPES.includes(composerType);
+  const isShareEnabled =
+    composerType === 'benchmark'
+      ? benchmarkState.canShare
+      : composerType === 'experience'
+        ? experienceState.canShare
+        : isInlineType
+          ? formState.isValid
+          : !!finalContextId;
+  const isShareLoading =
+    createFreePostMutation.isPending ||
+    createQuestionPostMutation.isPending ||
+    createTipsPostMutation.isPending ||
+    benchmarkState.isLoading ||
+    experienceState.isLoading;
+
+  // Tipe göre metin alanı etiket/placeholder
+  const textLabel =
+    composerType === 'question'
+      ? t('create.question.labels.description')
+      : composerType === 'tips'
+        ? t('create.tipsAndTricks.labels.description')
+        : t('create.form.postDescription');
+  const textPlaceholder =
+    composerType === 'question'
+      ? t('create.question.placeholders.description')
+      : composerType === 'tips'
+        ? t('create.tipsAndTricks.placeholders.description')
+        : t('create.form.postPlaceholder');
 
   return (
     <>
@@ -387,81 +530,211 @@ export const CreatePostScreen = () => {
       ) : (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
           <FormProvider {...methods}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        >
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
-          {/* Header */}
-          <Header
-            title={t('create.header.title')}
-            leftAction="cancel"
-            onLeftActionPress={handleBackPress}
-            rightButton={{
-              text: t('create.header.share'),
-              backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
-              borderWidth: 1,
-              borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
-              textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
-              fontSize: 11,
-              borderRadius: 25,
-              paddingX: 10,
-              paddingY: 10,
-              onPress: handleSharePress,
-              loading: isShareLoading,
-            }}
-          />
-
-          {/* Content */}
-          <ScrollView flex={1} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <VStack space="md" pb={100}>
-              {/* Product Info Card */}
-              {finalProductInfo && (
-                <Box px="$4" py="$2">
-                  <ProductInfoCard
-                    image={finalProductInfo.image}
-                    title={finalProductInfo.title}
-                    subName={finalProductInfo.subName}
-                    size="big"
-                    type={finalContextType || ProductInfoType.SUB_CATEGORY}
-                  />
-                </Box>
-              )}
-
-              {/* Post Description Section */}
-              <VStack px={16} space="xs">
-                <ControlledTextarea
-                  name="postText"
-                  placeholder={t('create.form.postPlaceholder')}
-                  maxLength={500}
-                  label={t('create.form.postDescription')}
-                />
-              </VStack>
-
-              {/* Images Section */}
-              <VStack px={16} space="xs">
-                <ControlledImagePicker
-                  name="selectedImages"
-                  label={t('create.form.images')}
-                  maxImages={10}
-                  onImagePicker={handleImagePicker}
-                  onRemoveImage={(index) => {
-                    const currentImages = methods.getValues('selectedImages') || [];
-                    const newImages = currentImages.filter((_: any, i: number) => i !== index);
-                    // PERFORMANCE FIX: shouldValidate: false - validation sadece submit'te
-                    methods.setValue('selectedImages', newImages, { shouldValidate: false });
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={{ flex: 1 }}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            >
+              <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+                {/* Header */}
+                <Header
+                  title={t('create.header.title')}
+                  leftAction='cancel'
+                  onLeftActionPress={handleBackPress}
+                  rightButton={{
+                    text: t('create.header.share'),
+                    backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
+                    borderWidth: 1,
+                    borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+                    textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
+                    fontSize: 11,
+                    borderRadius: 25,
+                    paddingX: 10,
+                    paddingY: 10,
+                    onPress: handleSharePress,
+                    loading: isShareLoading,
                   }}
                 />
-              </VStack>
-            </VStack>
-          </ScrollView>
-        </Box>
-        </KeyboardAvoidingView>
-      </FormProvider>
-    </SafeAreaView>
+
+                {/* Content */}
+                <ScrollView
+                  flex={1}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps='handled'
+                  onScrollBeginDrag={() => setShowCategoryModal(false)}
+                >
+                  <VStack space='md' pt={12} pb={100}>
+                    {/* 1) Bağlam türü: Ürün / Kategori radio (default: Kategori) */}
+                    <VStack px={16} space='sm'>
+                      <HStack space='xl'>
+                        {[
+                          { kind: 'category' as const, label: t('create.context.category', 'Kategori') },
+                          { kind: 'product' as const, label: t('create.context.product', 'Ürün') },
+                        ].map(({ kind, label }) => {
+                          const selected = contextKind === kind;
+                          return (
+                            <Pressable
+                              key={kind}
+                              onPress={() => handleContextKindChange(kind)}
+                              accessibilityRole='radio'
+                              accessibilityState={{ selected }}
+                            >
+                              <HStack space='sm' alignItems='center'>
+                                <Box
+                                  width={20}
+                                  height={20}
+                                  borderRadius={10}
+                                  borderWidth={2}
+                                  borderColor={selected ? '#6366F1' : isDark ? '#555555' : '#C4C4C4'}
+                                  justifyContent='center'
+                                  alignItems='center'
+                                >
+                                  {selected && <Box width={10} height={10} borderRadius={5} bg='#6366F1' />}
+                                </Box>
+                                <Text color={isDark ? '#FFFFFF' : '#111111'} fontSize='$sm' fontWeight='$medium'>
+                                  {label}
+                                </Text>
+                              </HStack>
+                            </Pressable>
+                          );
+                        })}
+                      </HStack>
+
+                      {/* 1. ürün/kategori seçim input'u (paylaşılan component) */}
+                      <ProductSelectInput
+                        value={
+                          finalProductInfo
+                            ? { image: finalProductInfo.image, title: finalProductInfo.title, subName: finalProductInfo.subName }
+                            : null
+                        }
+                        placeholder={
+                          contextKind === 'product'
+                            ? t('create.context.selectProduct', 'Envanterden ürün seç')
+                            : t('create.context.selectCategory', 'Kategori seç')
+                        }
+                        onPress={contextKind === 'product' ? handleOpenProductPicker : handleOpenCategoryPicker}
+                        onClear={handleClearContext}
+                      />
+
+                      {/* 2. ürün seçim input'u — yalnızca benchmark + ürün bağlamında, 1.'in hemen altında (AYNI component) */}
+                      {composerType === 'benchmark' && contextKind === 'product' && (
+                        <ProductSelectInput
+                          value={benchmarkState.secondProduct}
+                          placeholder={t('create.benchmark.selectCompareProduct')}
+                          onPress={() => benchmarkRef.current?.openSecondProductPicker()}
+                          onClear={() => benchmarkRef.current?.clearSecondProduct()}
+                        />
+                      )}
+                    </VStack>
+
+                    {/* 2) Paylaşım tipi seçici — bağlam türüne göre (kategori: 3, ürün: 4) */}
+                    <PostTypeSelector options={typeOptions} value={composerType} onChange={handleTypeChange} />
+
+                    {/* 3) Tipe özel alanlar */}
+                    {isInlineType ? (
+                      <>
+                        {/* Açıklama */}
+                        <VStack px={16} space='xs'>
+                          <ControlledTextarea
+                            name='text'
+                            placeholder={textPlaceholder}
+                            maxLength={500}
+                            label={textLabel}
+                          />
+                        </VStack>
+
+                        {/* Tips → benefit kategori */}
+                        {composerType === 'tips' && (
+                          <VStack px={16} space='xs'>
+                            <BenefitCategorySelectField showModal={showCategoryModal} setShowModal={setShowCategoryModal} />
+                          </VStack>
+                        )}
+
+                        {/* Görseller */}
+                        <VStack px={16} space='xs'>
+                          <ControlledImagePicker
+                            name='selectedImages'
+                            label={t('create.form.images')}
+                            maxImages={10}
+                            onImagePicker={handleImagePicker}
+                            onRemoveImage={index => {
+                              const currentImages = methods.getValues('selectedImages') || [];
+                              const newImages = currentImages.filter((_: any, i: number) => i !== index);
+                              methods.setValue('selectedImages', newImages, { shouldValidate: false });
+                            }}
+                          />
+                        </VStack>
+
+                        {/* Question → boost */}
+                        {composerType === 'question' && (
+                          <VStack px={16} space='xs'>
+                            <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize='$sm' fontWeight='$bold' mb={8}>
+                              {t('create.question.labels.boostSection')}
+                            </Text>
+
+                            {boostPriceError ? (
+                              <Box py='$4' alignItems='center'>
+                                <Text color={isDark ? '$red500' : '#EF4444'} fontSize='$sm'>
+                                  {t('create.question.boost.errorLoading')}
+                                </Text>
+                              </Box>
+                            ) : (
+                              <BoostSwitchField
+                                boostPrice={boostPriceData?.price}
+                                isLoadingPrice={isLoadingBoostPrice}
+                                availableTips={availableTips}
+                              />
+                            )}
+
+                            <HStack alignItems='center' space='xs' mt={12}>
+                              <Info size={18} color={isDark ? '#FFFFFF' : '#A3A3A3'} />
+                              <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize='$sm' fontWeight='$medium'>
+                                {t('create.question.boost.tipsAvailable', { tips: Math.floor(availableTips) })}
+                              </Text>
+                            </HStack>
+                          </VStack>
+                        )}
+                      </>
+                    ) : composerType === 'benchmark' ? (
+                      // Benchmark → inline kompakt composer (kendi formu + ikinci ürün bottom-sheet)
+                      <BenchmarkComposer
+                        ref={benchmarkRef}
+                        productContext={
+                          finalContextId
+                            ? {
+                                id: finalContextId,
+                                name: finalProductInfo?.title ?? '',
+                                subName: finalProductInfo?.subName,
+                                image: finalProductInfo?.image,
+                              }
+                            : null
+                        }
+                        onStateChange={handleBenchmarkStateChange}
+                      />
+                    ) : (
+                      // Experience → inline kompakt composer (durum + süre/konum/amaç + metin + AI analiz + puanlama)
+                      <ExperienceComposer
+                        ref={experienceRef}
+                        productContext={
+                          finalContextId
+                            ? {
+                                id: finalContextId,
+                                name: finalProductInfo?.title ?? '',
+                                subName: finalProductInfo?.subName,
+                                image: finalProductInfo?.image,
+                              }
+                            : null
+                        }
+                        onStateChange={handleExperienceStateChange}
+                      />
+                    )}
+                  </VStack>
+                </ScrollView>
+              </Box>
+            </KeyboardAvoidingView>
+          </FormProvider>
+        </SafeAreaView>
       )}
     </>
   );
 };
-

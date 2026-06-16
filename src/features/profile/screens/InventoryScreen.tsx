@@ -21,6 +21,8 @@ import { InventorySkeleton } from '@/src/components/Skeletons';
 import { Alert } from 'react-native';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
+import { ProductInfoType } from '@/src/types/common';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 6;
@@ -76,8 +78,8 @@ const InventoryScreen = () => {
   const currentUserId = user?.id;
   
   // Create Button'u sadece kendi envanteri ise göster
-  // EventCreatePost'tan geliyorsa (selectMode === 'event') Create butonunu gizle
-  const showCreateButton = currentUserId === userId && selectMode !== 'event';
+  // Seçim modunda (event/post) Create butonunu gizle
+  const showCreateButton = currentUserId === userId && !selectMode;
 
   // Get user profile to display name in header
   const { data: userProfile } = useUserProfile(userId);
@@ -285,6 +287,21 @@ const InventoryScreen = () => {
               onMenuToggle={(isOpen) => handleMenuToggle(item.id, isOpen)}
               isDeleting={deletingItemId === item.id}
               onPress={() => {
+                // Post oluşturma akışı: seçilen ürünü flow store'a yaz ve CreatePostScreen'e geri dön
+                // (Twitter'da medya ekleme gibi attach mekaniği — forward navigasyon yok)
+                if (selectMode === 'post' && returnScreen === 'CreatePostScreen') {
+                  useCreatePostFlowStore.getState().setFlowContext(
+                    ProductInfoType.PRODUCT,
+                    item.productId,
+                    {
+                      image: item.image,
+                      title: item.brand?.name ?? '',
+                      subName: item.brand?.name,
+                    }
+                  );
+                  navigation.goBack();
+                  return;
+                }
                 // If selectMode is 'event', navigate back to EventCreatePost with product
                 if (selectMode === 'event' && returnScreen === 'EventCreatePost') {
                   // Get current EventCreatePost route params to preserve eventId

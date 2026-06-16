@@ -4,10 +4,33 @@
       "title": "Gönderi Yaz",
       "share": "Paylaş"
     },
+    "typeSelector": {
+      "general": "Genel",
+      "question": "Soru",
+      "tipsAndTricks": "İpuçları & Püf Noktaları",
+      "experience": "Deneyim",
+      "benchmark": "Benchmark"
+    },
     "form": {
       "postDescription": "Gönderi Açıklaması",
       "postPlaceholder": "Gönderinizi buraya yazın...",
       "images": "Görseller"
+    },
+    "context": {
+      "product": "Ürün",
+      "category": "Kategori",
+      "selectProduct": "Envanterden ürün seç",
+      "selectCategory": "Kategori seç",
+      "remove": "Kaldır"
+    },
+    "productPicker": {
+      "title": "Ürün Seç",
+      "tabInventory": "Envanterim",
+      "tabCatalog": "Katalogdan Ara",
+      "inventorySearch": "Envanterinde ara",
+      "catalogSearch": "Ürün ara",
+      "emptyInventory": "Envanterinde ürün yok",
+      "noResults": "Sonuç bulunamadı"
     },
     "toast": {
       "limitExceeded": {
@@ -105,7 +128,8 @@
         "timeoutError": "Yapay zeka işlemi zaman aşımına uğradı. Lütfen tekrar deneyin veya manuel olarak devam edin.",
         "structureError": "Yapay zeka deneyiminizi yapılandıramadı. Lütfen tekrar deneyin veya manuel olarak devam edin.",
         "generalError": "Deneyim metni işlenirken bir hata oluştu. Lütfen tekrar deneyin.",
-        "splitRequired": "Lütfen önce deneyiminizi yapılandırmak için yapay zeka bölme özelliğini kullanın."
+        "splitRequired": "Lütfen önce deneyiminizi yapılandırmak için yapay zeka bölme özelliğini kullanın.",
+        "analyze": "AI ile analiz et"
       },
       "validation": {
         "productNotSelected": "Ürün seçilmedi. Lütfen bir ürün seçin.",
@@ -118,6 +142,8 @@
         "contextMissing": "Bağlam bilgisi bulunamadı. Lütfen tekrar deneyin."
       },
       "inventory": {
+        "iOwn": "Sahibim",
+        "iTried": "Test Ettim",
         "alreadyInInventory": {
           "title": "Zaten envanterinizde",
           "description": "Bu ürün zaten envanterinizde. Deneyiminizi paylaşmaya devam edebilirsiniz."
@@ -167,6 +193,7 @@
         "inventoryOrCatalog": "Envanter veya Katalog"
       },
       "selectCompareProduct": "Karşılaştırılacak Ürünü Seçin",
+      "whichBetter": "Hangisini öneriyorsun?",
       "searchPlaceholder": "Ürün ara...",
       "noProductsFound": "Aramanıza uygun ürün bulunamadı.",
       "noProductsInGroup": "Bu grupta ürün bulunamadı.",
@@ -514,6 +541,7 @@
     "tabProducts": "Ürünler",
     "noResultsInTab": "Bu sekmede sonuç yok",
     "popularSubcategories": "Popüler Alt Kategoriler",
-    "popularProductGroups": "Popüler Ürün Grupları"
+    "popularProductGroups": "Popüler Ürün Grupları",
+    "selectThisCategory": "Bunu seç"
   }
 }

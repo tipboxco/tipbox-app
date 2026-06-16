@@ -2,7 +2,8 @@ import React, { useCallback, useMemo } from 'react';
 import { FlatList, ListRenderItem } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Spinner } from '@gluestack-ui/themed';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '@/src/components/Header';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useTranslation } from '@/src/hooks/useTranslation';
@@ -15,6 +16,7 @@ import type { CatalogBrandFilter, BrandCardModel } from '../types';
 import type { RootStackParamList } from '@/src/navigation/types/root.types';
 
 type CategoryBrandsRouteProp = RouteProp<RootStackParamList, 'CatalogCategoryBrands'>;
+type CategoryBrandsNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 /**
  * Bir kategorinin (ve tüm alt kategorilerinin) tüm markalarını listeler.
@@ -27,6 +29,7 @@ export const CategoryBrandsScreen: React.FC = () => {
   const isDark = useMemo(() => colorMode === 'dark', [colorMode]);
   const { t } = useTranslation('catalog');
   const route = useRoute<CategoryBrandsRouteProp>();
+  const navigation = useNavigation<CategoryBrandsNavigationProp>();
   const { categoryId, categoryName } = route.params;
 
   const backgroundColor = useMemo(() => (isDark ? '#1A1A1A' : '#FAFAFA'), [isDark]);
@@ -35,17 +38,29 @@ export const CategoryBrandsScreen: React.FC = () => {
 
   const brands = useMemo<CatalogBrandFilter[]>(() => data?.items ?? [], [data]);
 
+  // Markaya tıklanınca markanın kendi detay sayfasına git.
+  // Fallback: yeni Brand UUID (id) alanı deploy edilmemişse, mevcut CategoryBrandProducts
+  // akışına (brandId === externalId) düş.
   const handleBrandPress = useCallback((brand: CatalogBrandFilter) => {
-    navigationService.navigate(ROOT_ROUTES.BRAND, {
-      screen: 'BrandDetailScreen',
-      params: { brandId: brand.id },
+    if (brand.id) {
+      navigationService.navigate(ROOT_ROUTES.BRAND as any, {
+        screen: 'BrandDetailScreen',
+        params: { brandId: brand.id },
+      });
+      return;
+    }
+    navigation.navigate('CategoryBrandProducts', {
+      categoryId,
+      brandId: brand.brandId,
+      brandName: brand.name,
+      categoryName,
     });
-  }, []);
+  }, [navigation, categoryId, categoryName]);
 
   const renderBrand: ListRenderItem<CatalogBrandFilter> = useCallback(
     ({ item }) => {
       const brandCard: BrandCardModel = {
-        id: item.id,
+        id: item.id ?? item.brandId,
         name: item.name,
         description: '',
         followers: '',
@@ -76,7 +91,7 @@ export const CategoryBrandsScreen: React.FC = () => {
         ) : (
           <FlatList
             data={brands}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id ?? item.brandId}
             renderItem={renderBrand}
             numColumns={3}
             columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}

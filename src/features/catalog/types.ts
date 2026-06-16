@@ -86,6 +86,7 @@ export interface CatalogSubCategory {
   name: string;
   image: string | null; // Dokümana göre null olabilir
   categoryId: string;
+  categoryName?: string; // Üst kategori adı (breadcrumb için; arama sonuçlarında gelir)
 }
 
 /**
@@ -96,6 +97,8 @@ export interface CatalogProductGroup {
   name: string;
   image: string | null; // Dokümana göre null olabilir
   subCategoryId: string;
+  subCategoryName?: string; // Üst alt-kategori adı (breadcrumb için)
+  categoryName?: string; // Kök kategori adı (breadcrumb için)
 }
 
 /**
@@ -115,7 +118,10 @@ export interface CatalogProduct {
  * Listeleme sayfasındaki yatay marka filtresi (scroll-x) için kullanılır.
  */
 export interface CatalogBrandFilter {
-  id: string; // Brand.id (UUID) — marka detay sayfasına (BrandDetailScreen) yönlendirmede kullanılır
+  // Brand.id (UUID) — marka detay sayfasına (BrandDetailScreen) yönlendirmede kullanılır.
+  // Opsiyonel: yeni 'id' alanı henüz deploy edilmemiş olabilir; yoksa brandId (externalId) ile
+  // mevcut CategoryBrandProducts akışına fallback yapılır.
+  id?: string;
   brandId: string; // Markaya göre ürün filtrelerken kullanılan değer (Brand.externalId)
   name: string;
   image: string | null;

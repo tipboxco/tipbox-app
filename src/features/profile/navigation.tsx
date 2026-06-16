@@ -18,7 +18,7 @@ export type ProfileStackParamList = {
   ProfileMain: { userId?: string } | undefined;
   ProfileEdit: undefined;
   EditHighlightBadges: { initialBadgeIds?: string[] } | undefined;
-  InventoryList: { userId: string; selectMode?: 'event'; returnScreen?: string };
+  InventoryList: { userId: string; selectMode?: 'event' | 'post'; returnScreen?: string };
   InventoryDetail: { itemId: string; userId: string };
   Collections: undefined;
   TrustList: { userId: string; initialTab?: 'trust' | 'truster' };

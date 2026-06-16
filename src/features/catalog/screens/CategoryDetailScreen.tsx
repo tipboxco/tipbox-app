@@ -38,13 +38,24 @@ export const CategoryDetailScreen: React.FC = () => {
   // "Tümünü gör" yalnızca gösterilmeyen marka varsa anlamlı
   const hasMoreBrands = allBrands.length > POPULAR_BRANDS_LIMIT;
 
-  // Markaya tıklanınca markanın kendi detay sayfasına git
+  // Markaya tıklanınca markanın kendi detay sayfasına git.
+  // Fallback: yeni Brand UUID (id) alanı deploy edilmemişse, mevcut CategoryBrandProducts
+  // akışına (brandId === externalId) düş — böylece marka tıklaması yine de çalışır.
   const handleBrandPress = useCallback((brand: CatalogBrandFilter) => {
-    navigationService.navigate(ROOT_ROUTES.BRAND, {
-      screen: 'BrandDetailScreen',
-      params: { brandId: brand.id },
+    if (brand.id) {
+      navigationService.navigate(ROOT_ROUTES.BRAND as any, {
+        screen: 'BrandDetailScreen',
+        params: { brandId: brand.id },
+      });
+      return;
+    }
+    navigation.navigate('CategoryBrandProducts', {
+      categoryId,
+      brandId: brand.brandId,
+      brandName: brand.name,
+      categoryName,
     });
-  }, []);
+  }, [navigation, categoryId, categoryName]);
 
   // "Tümünü gör" — o kategorinin tüm markalarını listeleyen sayfaya git
   const handleSeeAllBrands = useCallback(() => {

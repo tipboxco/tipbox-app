@@ -383,12 +383,16 @@ export const getCatalogBrandFilters = async (
 
     return { items: [] };
   } catch (error: any) {
-    console.error('[getCatalogBrandFilters] API Error:', {
-      url: `/catalog/categories/${categoryId}/brands`,
-      status: error.response?.status,
-      message: error.message,
-    });
-    throw error;
+    // Fallback: bu endpoint henüz deploy edilmemiş olabilir (404) veya geçici hata.
+    // Sessiz/zarif degradasyon — marka çubuğu hiç gösterilmez, sayfa çalışmaya devam eder.
+    if (__DEV__) {
+      console.warn('[getCatalogBrandFilters] API unavailable, returning empty (fallback):', {
+        url: `/catalog/categories/${categoryId}/brands`,
+        status: error.response?.status,
+        message: error.message,
+      });
+    }
+    return { items: [] };
   }
 };
 
