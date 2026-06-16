@@ -88,7 +88,8 @@ export type PostStackParamList = {
   // Twitter'da medya/konum ekleme gibi bir attach mekaniği için kullanılır.
   CategorySearch: { returnTo?: 'CreatePostScreen' } | undefined;
   // Ürün seçici (Envanter + Katalog sekmeleri). Seçim flow store'a yazılıp geri dönülür.
-  ProductPicker: { returnTo?: 'CreatePostScreen' } | undefined;
+  // target: 'context' (1. ürün, varsayılan) | 'compare' (benchmark 2. ürün)
+  ProductPicker: { returnTo?: 'CreatePostScreen'; target?: 'context' | 'compare' } | undefined;
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();

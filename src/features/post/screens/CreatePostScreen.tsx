@@ -30,7 +30,7 @@ import { ControlledTextarea } from '../components/FormFields/ControlledTextarea'
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
 import { PostTypeSelector, type PostTypeOption } from '../components/PostTypeSelector';
 import { BoostSwitchField } from '../components/BoostSwitchField';
-import { BenchmarkComposer, type BenchmarkComposerHandle, type BenchmarkSecondProduct } from '../components/BenchmarkComposer';
+import { BenchmarkComposer, type BenchmarkComposerHandle } from '../components/BenchmarkComposer';
 import { ExperienceComposer, type ExperienceComposerHandle } from '../components/ExperienceComposer';
 import { ProductSelectInput } from '../components/ProductSelectInput';
 import { BENEFIT_CATEGORIES, type BenefitCategoryValue } from '../constants/benefitCategories';
@@ -203,13 +203,12 @@ export const CreatePostScreen = () => {
 
   // Benchmark inline composer kontrolü (kendi formu var; Header "Paylaş" buna delege olur)
   const benchmarkRef = useRef<BenchmarkComposerHandle>(null);
-  const [benchmarkState, setBenchmarkState] = useState<{ canShare: boolean; isLoading: boolean; secondProduct: BenchmarkSecondProduct | null }>({
+  const [benchmarkState, setBenchmarkState] = useState<{ canShare: boolean; isLoading: boolean }>({
     canShare: false,
     isLoading: false,
-    secondProduct: null,
   });
   const handleBenchmarkStateChange = useCallback(
-    (s: { canShare: boolean; isLoading: boolean; secondProduct: BenchmarkSecondProduct | null }) => setBenchmarkState(s),
+    (s: { canShare: boolean; isLoading: boolean }) => setBenchmarkState(s),
     [],
   );
 
@@ -244,6 +243,8 @@ export const CreatePostScreen = () => {
   const productInfoSnapshot = useCreatePostFlowStore(state => state.productInfoSnapshot);
   const isValidFlow = useCreatePostFlowStore(state => state.isValid());
   const clearFlow = useCreatePostFlowStore(state => state.clearFlow);
+  const compareProduct = useCreatePostFlowStore(state => state.compareProduct);
+  const setCompareProduct = useCreatePostFlowStore(state => state.setCompareProduct);
 
   const routeParams = route.params || {};
   const finalContextType = isValidFlow && contextType ? contextType : routeParams.contextType;
@@ -616,13 +617,23 @@ export const CreatePostScreen = () => {
                         onClear={handleClearContext}
                       />
 
-                      {/* 2. ürün seçim input'u — yalnızca benchmark + ürün bağlamında, 1.'in hemen altında (AYNI component) */}
+                      {/* 2. ürün seçim input'u — yalnızca benchmark + ürün bağlamında, 1.'in hemen altında.
+                          AYNI core ProductPicker ekranını çağırır (target='compare'). */}
                       {composerType === 'benchmark' && contextKind === 'product' && (
                         <ProductSelectInput
-                          value={benchmarkState.secondProduct}
+                          value={
+                            compareProduct
+                              ? { image: compareProduct.image, title: compareProduct.title, subName: compareProduct.subName }
+                              : null
+                          }
                           placeholder={t('create.benchmark.selectCompareProduct')}
-                          onPress={() => benchmarkRef.current?.openSecondProductPicker()}
-                          onClear={() => benchmarkRef.current?.clearSecondProduct()}
+                          onPress={() =>
+                            navigationService.navigate(ROOT_ROUTES.POST, {
+                              screen: 'ProductPicker',
+                              params: { returnTo: 'CreatePostScreen', target: 'compare' },
+                            })
+                          }
+                          onClear={() => setCompareProduct(null)}
                         />
                       )}
                     </VStack>

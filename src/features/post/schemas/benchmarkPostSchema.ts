@@ -7,7 +7,7 @@ const selectedProductSchema = z.object({
   subName: z.string().optional(),
   image: z.any(),
   isOwned: z.boolean().optional(),
-  productGroupId: z.string(), // Product group ID for benchmark filtering
+  productGroupId: z.string(), // Boş string de geçerli; submit payload'ında kullanılmaz (eski filtreleme içindi)
 });
 
 export const benchmarkPostSchema = z.object({

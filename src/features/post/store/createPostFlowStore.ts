@@ -12,6 +12,14 @@ interface ProductInfoSnapshot {
   subName?: string;
 }
 
+/** Benchmark karşılaştırma (2.) ürünü için ayrı slot */
+export interface CompareProduct {
+  productId: string;
+  image: any;
+  title: string;
+  subName?: string;
+}
+
 interface CreatePostFlowState {
   // Flow context - IDs preferred over full objects
   contextType: ProductInfoType | undefined;
@@ -19,6 +27,9 @@ interface CreatePostFlowState {
 
   // Minimal snapshot for UI display only (short-lived)
   productInfoSnapshot: ProductInfoSnapshot | undefined;
+
+  // Benchmark için 2. (karşılaştırma) ürün — ayrı slot, ana bağlamı ezmez
+  compareProduct: CompareProduct | undefined;
 
   // TTL for automatic cleanup (30 minutes)
   expiresAt: number | undefined;
@@ -32,6 +43,7 @@ interface CreatePostFlowState {
     contextId: string,
     productInfoSnapshot?: ProductInfoSnapshot
   ) => void;
+  setCompareProduct: (product: CompareProduct | null) => void;
   clearFlow: () => void;
 
   // Inventory management
@@ -55,6 +67,7 @@ export const useCreatePostFlowStore = create<CreatePostFlowState>()(
       contextType: undefined,
       contextId: undefined,
       productInfoSnapshot: undefined,
+      compareProduct: undefined,
       expiresAt: undefined,
       inventoryProductIds: new Set<string>(),
 
@@ -73,12 +86,18 @@ export const useCreatePostFlowStore = create<CreatePostFlowState>()(
         });
       },
 
+      // Set/clear the benchmark compare (2nd) product
+      setCompareProduct: (product: CompareProduct | null) => {
+        set({ compareProduct: product ?? undefined });
+      },
+
       // Clear flow context (called on cancel/submit/back)
       clearFlow: () => {
         set({
           contextType: undefined,
           contextId: undefined,
           productInfoSnapshot: undefined,
+          compareProduct: undefined,
           expiresAt: undefined,
         });
       },

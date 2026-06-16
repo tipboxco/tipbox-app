@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text } from '@gluestack-ui/themed';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { X } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -30,21 +30,34 @@ export const ProductPickerScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ProductPickerNavigationProp>();
+  const route = useRoute<RouteProp<PostStackParamList, 'ProductPicker'>>();
+  const target = route.params?.target ?? 'context';
   const { t } = useTranslation('post');
   const setFlowContext = useCreatePostFlowStore(state => state.setFlowContext);
+  const setCompareProduct = useCreatePostFlowStore(state => state.setCompareProduct);
 
   const [tabIndex, setTabIndex] = useState(0);
 
   const handleSelect = useCallback(
     (product: PickedProduct) => {
-      setFlowContext(ProductInfoType.PRODUCT, product.productId, {
-        image: product.image,
-        title: product.title,
-        subName: product.subName,
-      });
+      if (target === 'compare') {
+        // Benchmark 2. ürün — ana bağlamı ezmeden ayrı slot'a yaz
+        setCompareProduct({
+          productId: product.productId,
+          image: product.image,
+          title: product.title,
+          subName: product.subName,
+        });
+      } else {
+        setFlowContext(ProductInfoType.PRODUCT, product.productId, {
+          image: product.image,
+          title: product.title,
+          subName: product.subName,
+        });
+      }
       navigation.goBack();
     },
-    [setFlowContext, navigation]
+    [target, setFlowContext, setCompareProduct, navigation]
   );
 
   const tabs = useMemo(
