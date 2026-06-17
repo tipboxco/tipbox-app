@@ -24,6 +24,8 @@ import {
   useCatalogCategories,
   useCatalogSubCategories,
   useCatalogProductGroups,
+  usePopularSubCategories,
+  usePopularProductGroups,
 } from '@/src/features/catalog/api/hooks';
 import { ProductInfoType } from '@/src/types/common';
 import type {
@@ -183,6 +185,12 @@ export const CategorySearchScreen: React.FC = () => {
     browseDepth >= 2 ? currentSubCategory?.id : undefined,
     50
   );
+
+  // Popüler listeler (kök, arama yokken gösterilir)
+  const { data: popularSubCatsData } = usePopularSubCategories(10);
+  const { data: popularPGsData } = usePopularProductGroups(10);
+  const popularSubCatItems = popularSubCatsData?.items ?? [];
+  const popularPGItems = popularPGsData?.items ?? [];
 
   const isSearching = !!debouncedQuery && debouncedQuery.trim().length > 0;
   const isSearchLoading =
@@ -416,12 +424,13 @@ export const CategorySearchScreen: React.FC = () => {
   const subTextColor = isDark ? '#9CA3AF' : '#6B7280';
   const inputBg = isDark ? '#2A2A2A' : '#F2F2F2';
   const inputBorder = isDark ? '#333333' : '#E9E9E9';
-  const resultItemBg = isDark ? '#222222' : '#FFFFFF';
-  const resultItemBorder = isDark ? '#333333' : '#EFEFEF';
   const accentColor = isDark ? '#818CF8' : '#6366F1';
   // iOS inset-grouped liste renkleri
   const dividerColor = isDark ? '#333333' : '#E5E7EB';
   const thumbBg = isDark ? '#2A2A2A' : '#F1F1F1';
+  // Yatay pill (popüler ürün grupları) renkleri
+  const chipBg = isDark ? '#222222' : '#FFFFFF';
+  const chipBorder = isDark ? '#374151' : '#E5E7EB';
 
   // Gezgin satırı — iOS tarzı: thumbnail + başlık + (inişli ise) disclosure chevron'u.
   const renderBrowseRow = useCallback(
@@ -450,6 +459,173 @@ export const CategorySearchScreen: React.FC = () => {
     ),
     [handleBrowsePress, textColor, subTextColor, thumbBg]
   );
+
+  // Popüler bölüm (divide-y, arka plansız) — başlık + satırlar
+  const renderPopularGroup = useCallback(
+    (
+      titleKey: string,
+      rows: Array<{
+        key: string;
+        name: string;
+        image: string | null;
+        onPress: () => void;
+      }>
+    ) => {
+      if (rows.length === 0) return null;
+      return (
+        <VStack mb='$3'>
+          <Text
+            px='$4'
+            pt='$2'
+            pb='$1'
+            fontSize='$xs'
+            fontWeight='$semibold'
+            color={subTextColor}
+          >
+            {t(titleKey)}
+          </Text>
+          {rows.map((r, idx) => (
+            <React.Fragment key={r.key}>
+              {idx > 0 && (
+                <Box
+                  height={StyleSheet.hairlineWidth}
+                  bg={dividerColor}
+                  ml={68}
+                />
+              )}
+              <Pressable onPress={r.onPress}>
+                <HStack alignItems='center' px='$4' py='$3'>
+                  <CachedImage
+                    source={r.image}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      backgroundColor: thumbBg,
+                      marginRight: 12,
+                    }}
+                    contentFit='cover'
+                  />
+                  <Text
+                    flex={1}
+                    fontSize='$md'
+                    color={textColor}
+                    numberOfLines={1}
+                  >
+                    {r.name}
+                  </Text>
+                  <ChevronRight size={18} color={subTextColor} />
+                </HStack>
+              </Pressable>
+            </React.Fragment>
+          ))}
+        </VStack>
+      );
+    },
+    [t, subTextColor, dividerColor, thumbBg, textColor]
+  );
+
+  // Popüler ürün grupları — yatay scroll-x pill butonları (thumbnail'siz)
+  const renderPopularPills = useCallback(
+    (
+      titleKey: string,
+      rows: Array<{ key: string; name: string; onPress: () => void }>
+    ) => {
+      if (rows.length === 0) return null;
+      return (
+        <VStack mb='$3'>
+          <Text
+            px='$4'
+            pt='$2'
+            pb='$2'
+            fontSize='$xs'
+            fontWeight='$semibold'
+            color={subTextColor}
+          >
+            {t(titleKey)}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps='handled'
+            contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+          >
+            {rows.map(r => (
+              <Pressable
+                key={r.key}
+                onPress={r.onPress}
+                bg={chipBg}
+                borderWidth={1}
+                borderColor={chipBorder}
+                borderRadius={999}
+                px='$4'
+                py='$2'
+              >
+                <Text
+                  fontSize='$sm'
+                  fontWeight='$medium'
+                  color={textColor}
+                  numberOfLines={1}
+                >
+                  {r.name}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </VStack>
+      );
+    },
+    [t, subTextColor, chipBg, chipBorder, textColor]
+  );
+
+  // Gezgin listesi başlığı: kökte (arama yok) popüler bölümler + "Tüm Kategoriler" etiketi
+  const renderBrowseHeader = useCallback(() => {
+    if (browseDepth !== 0) return null;
+    if (popularSubCatItems.length === 0 && popularPGItems.length === 0) {
+      return null;
+    }
+    return (
+      <VStack>
+        {renderPopularGroup(
+          'categorySearch.popularSubcategories',
+          popularSubCatItems.map(i => ({
+            key: `psc-${i.subCategoryId}`,
+            name: i.name,
+            image: i.image,
+            onPress: () => handleSelectSubCategory(i),
+          }))
+        )}
+        {renderPopularPills(
+          'categorySearch.popularProductGroups',
+          popularPGItems.map(i => ({
+            key: `ppg-${i.productGroupId}`,
+            name: i.name,
+            onPress: () => handleSelectProductGroup(i),
+          }))
+        )}
+        <Text
+          px='$4'
+          pt='$2'
+          pb='$1'
+          fontSize='$xs'
+          fontWeight='$semibold'
+          color={subTextColor}
+        >
+          {t('categorySearch.allCategories')}
+        </Text>
+      </VStack>
+    );
+  }, [
+    browseDepth,
+    popularSubCatItems,
+    popularPGItems,
+    renderPopularGroup,
+    renderPopularPills,
+    handleSelectSubCategory,
+    handleSelectProductGroup,
+    t,
+    subTextColor,
+  ]);
 
   // Header durumları
   const showBack = !isSearching && browseDepth > 0;
@@ -516,18 +692,8 @@ export const CategorySearchScreen: React.FC = () => {
 
   const renderRow = useCallback(
     ({ item }: { item: RowItem }) => (
-      <Pressable onPress={item.onPress} mb='$2'>
-        <HStack
-          alignItems='center'
-          justifyContent='space-between'
-          bg={resultItemBg}
-          borderWidth={1}
-          borderColor={resultItemBorder}
-          borderRadius={12}
-          px='$4'
-          py='$3'
-          space='sm'
-        >
+      <Pressable onPress={item.onPress}>
+        <HStack alignItems='center' px='$4' py='$3' space='sm'>
           <VStack flex={1} space='xs'>
             <Text
               fontSize='$sm'
@@ -551,7 +717,7 @@ export const CategorySearchScreen: React.FC = () => {
         </HStack>
       </Pressable>
     ),
-    [resultItemBg, resultItemBorder, textColor, subTextColor, debouncedQuery]
+    [textColor, subTextColor, debouncedQuery]
   );
 
   return (
@@ -703,11 +869,14 @@ export const CategorySearchScreen: React.FC = () => {
               data={combinedRows}
               keyExtractor={item => item.id}
               renderItem={renderRow}
-              contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingTop: 12,
-                paddingBottom: 24,
-              }}
+              ItemSeparatorComponent={() => (
+                <Box
+                  height={StyleSheet.hairlineWidth}
+                  bg={dividerColor}
+                  ml={16}
+                />
+              )}
+              contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}
               keyboardShouldPersistTaps='handled'
               keyboardDismissMode='on-drag'
               showsVerticalScrollIndicator={false}
@@ -730,6 +899,7 @@ export const CategorySearchScreen: React.FC = () => {
             data={browseItems}
             keyExtractor={item => `${item.kind}-${item.id}`}
             renderItem={renderBrowseRow}
+            ListHeaderComponent={renderBrowseHeader}
             ItemSeparatorComponent={() => (
               <Box
                 height={StyleSheet.hairlineWidth}
@@ -737,14 +907,7 @@ export const CategorySearchScreen: React.FC = () => {
                 ml={68}
               />
             )}
-            contentContainerStyle={{
-              marginHorizontal: 16,
-              marginTop: 12,
-              marginBottom: 24,
-              backgroundColor: resultItemBg,
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}
+            contentContainerStyle={{ paddingTop: 4, paddingBottom: 24 }}
             keyboardShouldPersistTaps='handled'
             keyboardDismissMode='on-drag'
             showsVerticalScrollIndicator={false}

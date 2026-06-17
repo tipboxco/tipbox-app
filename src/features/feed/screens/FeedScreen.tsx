@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { ScrollView, View, Pressable } from 'react-native';
+import { ScrollView, View, Pressable, Image } from 'react-native';
 import Animated from 'react-native-reanimated';
 import PagerView from 'react-native-pager-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,19 +17,44 @@ import { CreateButton } from '@/src/features/post/components/CreateButton';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useBottomOffset } from '@/src/utils';
 
-type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
+type FeedScreenNavigationProp = NativeStackNavigationProp<
+  FeedStackParamList & RootStackParamList,
+  'FeedScreen'
+>;
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
-const FEED_TABS: Array<{ key: string; labelKey: string; filters?: FeedFilterParams }> = [
-  { key: 'trusting',   labelKey: 'tabs.trusting',   filters: { interests: ['MUTUAL_TRUST', 'TRUSTER'] } },
-  { key: 'forYou',     labelKey: 'tabs.forYou',     filters: { interests: ['CATEGORY_MATCH', 'ENGAGEMENT_HIGH'] } },
-  { key: 'tips',       labelKey: 'tabs.tips',       filters: { tags: ['Tips'] } },
-  { key: 'questions',  labelKey: 'tabs.questions',  filters: { tags: ['Question'] } },
-  { key: 'reviews',    labelKey: 'tabs.reviews',    filters: { tags: ['Review'] } },
-  { key: 'benchmarks', labelKey: 'tabs.benchmarks', filters: { tags: ['Benchmark'] } },
-  { key: 'updates',    labelKey: 'tabs.updates',    filters: { tags: ['Update'] } },
+const FEED_TABS: Array<{
+  key: string;
+  labelKey: string;
+  filters?: FeedFilterParams;
+}> = [
+  {
+    key: 'trusting',
+    labelKey: 'tabs.trusting',
+    filters: { interests: ['MUTUAL_TRUST', 'TRUSTER'] },
+  },
+  {
+    key: 'forYou',
+    labelKey: 'tabs.forYou',
+    filters: { interests: ['CATEGORY_MATCH', 'ENGAGEMENT_HIGH'] },
+  },
+  { key: 'tips', labelKey: 'tabs.tips', filters: { tags: ['Tips'] } },
+  {
+    key: 'questions',
+    labelKey: 'tabs.questions',
+    filters: { tags: ['Question'] },
+  },
+  { key: 'reviews', labelKey: 'tabs.reviews', filters: { tags: ['Review'] } },
+  {
+    key: 'benchmarks',
+    labelKey: 'tabs.benchmarks',
+    filters: { tags: ['Benchmark'] },
+  },
+  { key: 'updates', labelKey: 'tabs.updates', filters: { tags: ['Update'] } },
 ];
 
 const FeedScreenInner: React.FC = () => {
@@ -37,6 +62,11 @@ const FeedScreenInner: React.FC = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<FeedScreenNavigationProp>();
   const { t } = useTranslation('feed');
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const bottomOffset = useBottomOffset({
+    includeTabBar: true,
+    extraPadding: 16,
+  });
 
   const [currentPage, setCurrentPage] = useState(0);
   const [visitedTabs, setVisitedTabs] = useState<Set<number>>(new Set([0]));
@@ -47,38 +77,176 @@ const FeedScreenInner: React.FC = () => {
   const handlePageSelected = useCallback((e: any) => {
     const page = e.nativeEvent.position;
     setCurrentPage(page);
-    setVisitedTabs((prev) => new Set([...prev, page]));
+    setVisitedTabs(prev => new Set([...prev, page]));
   }, []);
 
   const handleTabPress = useCallback((index: number) => {
     pagerRef.current?.setPage(index);
-    setVisitedTabs((prev) => new Set([...prev, index]));
+    setVisitedTabs(prev => new Set([...prev, index]));
     tabScrollRef.current?.scrollTo({ x: index * 80, animated: true });
   }, []);
 
-  // "+" → doğrudan post oluşturma ekranına git. Ürün/kategori bağlamı CreatePostScreen
-  // içinde (medya ekleme gibi) opsiyonel olarak seçilir; burada bağlamı temizleyip taze başlatıyoruz.
+  // Seçilen bağlam türüyle (Ürün/Kategori) CreatePostScreen'i aç; ilgili radio seçili gelir.
+  const openCreatePost = useCallback(
+    (contextKind: 'product' | 'category') => {
+      closeBottomSheet();
+      useCreatePostFlowStore.getState().clearFlow();
+      navigationService.navigate(ROOT_ROUTES.POST as any, {
+        screen: 'CreatePostScreen',
+        params: { initialContextKind: contextKind },
+      });
+    },
+    [closeBottomSheet]
+  );
+
+  const handleProductPost = useCallback(
+    () => openCreatePost('product'),
+    [openCreatePost]
+  );
+  const handleCategoryPost = useCallback(
+    () => openCreatePost('category'),
+    [openCreatePost]
+  );
+
+  // "+" → iki seçenekli bottom sheet aç (Ürün Gönderisi / Kategori & Ürün Grubu Gönderisi).
   const handleCreatePress = useCallback(() => {
-    useCreatePostFlowStore.getState().clearFlow();
-    navigationService.navigate(ROOT_ROUTES.POST as any, {
-      screen: 'CreatePostScreen',
-    });
-  }, []);
+    const bg = isDark ? '#121212' : '#FDFDFB';
+    const textColor = isDark ? '#F5F5F5' : '#000000';
+    const subTextColor = isDark ? '#888888' : '#B9B9B9';
+    const borderColor = isDark ? '#333333' : '#E2E2E2';
+    const itemBg = isDark ? '#1A1A1A' : '#FFFFFF';
+    const iconBorder = isDark ? '#444444' : '#E8E8E8';
+
+    const Option = ({
+      onPress,
+      title,
+      description,
+    }: {
+      onPress: () => void;
+      title: string;
+      description: string;
+    }) => (
+      <Pressable
+        onPress={onPress}
+        style={{
+          backgroundColor: itemBg,
+          borderWidth: 1,
+          borderColor,
+          borderRadius: 10,
+          paddingHorizontal: 13,
+          paddingVertical: 16,
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: 12,
+        }}
+      >
+        <View
+          style={{
+            width: 24,
+            height: 24,
+            borderWidth: 1,
+            borderColor: iconBorder,
+            borderStyle: 'dashed',
+            borderRadius: 2,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: itemBg,
+          }}
+        >
+          <Image
+            source={require('@/assets/add_post.png')}
+            style={{ width: 24, height: 24 }}
+            resizeMode='contain'
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '600',
+              color: textColor,
+              marginBottom: 3,
+            }}
+          >
+            {title}
+          </Text>
+          <Text style={{ fontSize: 10, color: subTextColor, lineHeight: 14 }}>
+            {description}
+          </Text>
+        </View>
+      </Pressable>
+    );
+
+    openBottomSheet(
+      <View style={{ backgroundColor: bg, width: '100%', paddingBottom: 16 }}>
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 12,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 16, fontWeight: '700', color: textColor }}>
+            {t('createSheet.title')}
+          </Text>
+        </View>
+        <View style={{ paddingHorizontal: 16, gap: 10 }}>
+          <Option
+            onPress={handleProductPost}
+            title={t('createSheet.product.title')}
+            description={t('createSheet.product.description')}
+          />
+          <Option
+            onPress={handleCategoryPost}
+            title={t('createSheet.category.title')}
+            description={t('createSheet.category.description')}
+          />
+        </View>
+      </View>,
+      {
+        enableDynamicSizing: false,
+        snapPoints: ['35%'],
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        animateOnMount: false,
+        paddingBottom: bottomOffset,
+      }
+    );
+  }, [
+    openBottomSheet,
+    isDark,
+    bottomOffset,
+    t,
+    handleProductPost,
+    handleCategoryPost,
+  ]);
 
   const backgroundColor = isDark ? '#000000' : '#FFFFFF';
   const tabBarBg = isDark ? '#000000' : '#FFFFFF';
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+    <SafeAreaView
+      edges={['top', 'bottom', 'left', 'right']}
+      style={{ flex: 1 }}
+    >
       <View style={{ flex: 1, backgroundColor }}>
         <Header
           logo={require('@/assets/tipbox-nobg.png')}
-          leftAction="menu"
+          leftAction='menu'
           onSearchPress={() => navigation.navigate('Search')}
         />
 
         {/* Scrollable Tab Bar */}
-        <View style={{ backgroundColor: tabBarBg, borderBottomWidth: 1, borderBottomColor: isDark ? '#333' : '#E9E9E9' }}>
+        <View
+          style={{
+            backgroundColor: tabBarBg,
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? '#333' : '#E9E9E9',
+          }}
+        >
           <ScrollView
             ref={tabScrollRef}
             horizontal
@@ -91,13 +259,21 @@ const FeedScreenInner: React.FC = () => {
                 <Pressable
                   key={tab.key}
                   onPress={() => handleTabPress(index)}
-                  style={{ paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center' }}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    alignItems: 'center',
+                  }}
                 >
                   <Text
                     style={{
                       fontSize: 13,
                       fontWeight: isActive ? '700' : '500',
-                      color: isActive ? (isDark ? '#FFFFFF' : '#000000') : '#8C8C8C',
+                      color: isActive
+                        ? isDark
+                          ? '#FFFFFF'
+                          : '#000000'
+                        : '#8C8C8C',
                     }}
                   >
                     {t(tab.labelKey)}

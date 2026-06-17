@@ -1,4 +1,15 @@
 {
+  "createSheet": {
+    "title": "Create Post",
+    "product": {
+      "title": "Product Post",
+      "description": "Create an experience, question, tip, or benchmark post about the product itself."
+    },
+    "category": {
+      "title": "Subcategory & Product Group Post",
+      "description": "Create a general, tip, or question post about a Subcategory or Product Group."
+    }
+  },
   "filters": {
     "all": "All",
     "posts": "Posts",

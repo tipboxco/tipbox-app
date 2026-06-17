@@ -1,4 +1,15 @@
 {
+  "createSheet": {
+    "title": "Gönderi Oluştur",
+    "product": {
+      "title": "Ürün Gönderisi",
+      "description": "Ürünün kendisi hakkında deneyim, soru, ipucu veya benchmark gönderisi oluştur."
+    },
+    "category": {
+      "title": "Kategori & Ürün Grubu Gönderisi",
+      "description": "Bir alt kategori veya ürün grubu hakkında genel, ipucu veya soru gönderisi oluştur."
+    }
+  },
   "filters": {
     "all": "Tümü",
     "posts": "Gönderiler",

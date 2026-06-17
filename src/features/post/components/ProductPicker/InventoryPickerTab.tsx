@@ -24,10 +24,14 @@ export type PickedProduct = {
   title: string;
   image: string | null;
   subName?: string;
+  /** Ürünün ait olduğu ürün grubu (kategori) ID'si — benchmark 2. ürün filtresi için. */
+  productGroupId?: string;
 };
 
 type Props = {
   onSelect: (product: PickedProduct) => void;
+  /** Verilirse: yalnızca bu ürün grubuna ait envanter ürünleri gösterilir (benchmark karşılaştırma). */
+  restrictProductGroupId?: string;
 };
 
 /** "Unknown" değerlerini eleyerek marka + model başlığı kurar. */
@@ -42,7 +46,10 @@ const buildTitle = (item: InventoryItem): string =>
  * Envanter sekmesi — kullanıcının envanterindeki ürünleri listeler ve seçtirir.
  * Seçim, post bağlamı olarak üst ekrana iletilir.
  */
-export const InventoryPickerTab: React.FC<Props> = ({ onSelect }) => {
+export const InventoryPickerTab: React.FC<Props> = ({
+  onSelect,
+  restrictProductGroupId,
+}) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { t } = useTranslation('post');
@@ -71,15 +78,19 @@ export const InventoryPickerTab: React.FC<Props> = ({ onSelect }) => {
   }, [data]);
 
   const filtered = useMemo(() => {
+    // Benchmark karşılaştırma: yalnızca 1. ürünle aynı ürün grubundaki ürünler
+    const scoped = restrictProductGroupId
+      ? items.filter(i => i.productGroupId === restrictProductGroupId)
+      : items;
     const q = debouncedQuery.toLowerCase();
-    if (!q) return items;
-    return items.filter(
+    if (!q) return scoped;
+    return scoped.filter(
       i =>
         i.brand.name.toLowerCase().includes(q) ||
         i.brand.model.toLowerCase().includes(q) ||
         i.brand.specs.toLowerCase().includes(q)
     );
-  }, [items, debouncedQuery]);
+  }, [items, debouncedQuery, restrictProductGroupId]);
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -106,6 +117,7 @@ export const InventoryPickerTab: React.FC<Props> = ({ onSelect }) => {
               title,
               image: item.image,
               subName: item.brand?.model,
+              productGroupId: item.productGroupId,
             })
           }
         >

@@ -10,7 +10,16 @@ import {
   Pressable,
   useToast,
 } from '@gluestack-ui/themed';
-import { ChevronRight, XCircle, Info, PencilLine, HelpCircle, Lightbulb, Star, BarChart2 } from 'lucide-react-native';
+import {
+  ChevronRight,
+  XCircle,
+  Info,
+  PencilLine,
+  HelpCircle,
+  Lightbulb,
+  Star,
+  BarChart2,
+} from 'lucide-react-native';
 import { Feather } from '@expo/vector-icons';
 import { showCustomToast } from '@/src/components/CustomToast';
 import {
@@ -28,12 +37,24 @@ import { ProductInfoType } from '@/src/types/common';
 import { useCategoryPostForm } from '../hooks/useCategoryPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
-import { PostTypeSelector, type PostTypeOption } from '../components/PostTypeSelector';
+import {
+  PostTypeSelector,
+  type PostTypeOption,
+} from '../components/PostTypeSelector';
 import { BoostSwitchField } from '../components/BoostSwitchField';
-import { BenchmarkComposer, type BenchmarkComposerHandle } from '../components/BenchmarkComposer';
-import { ExperienceComposer, type ExperienceComposerHandle } from '../components/ExperienceComposer';
+import {
+  BenchmarkComposer,
+  type BenchmarkComposerHandle,
+} from '../components/BenchmarkComposer';
+import {
+  ExperienceComposer,
+  type ExperienceComposerHandle,
+} from '../components/ExperienceComposer';
 import { ProductSelectInput } from '../components/ProductSelectInput';
-import { BENEFIT_CATEGORIES, type BenefitCategoryValue } from '../constants/benefitCategories';
+import {
+  BENEFIT_CATEGORIES,
+  type BenefitCategoryValue,
+} from '../constants/benefitCategories';
 import {
   useCreateFreePost,
   useCreateQuestionPost,
@@ -56,7 +77,10 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { PostStackParamList } from '../navigation';
-import type { CategoryPostFormData, CategoryPostType } from '../schemas/categoryPostSchema';
+import type {
+  CategoryPostFormData,
+  CategoryPostType,
+} from '../schemas/categoryPostSchema';
 
 type CreatePostScreenNavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
@@ -66,19 +90,52 @@ type CreatePostScreenRouteProp = RouteProp<
 >;
 
 type ContextKind = 'product' | 'category';
-type ComposerType = 'general' | 'question' | 'tips' | 'experience' | 'benchmark';
+type ComposerType =
+  | 'general'
+  | 'question'
+  | 'tips'
+  | 'experience'
+  | 'benchmark';
 
 /** Bağlam türüne göre seçilebilen paylaşım tipleri */
 const CATEGORY_TYPE_OPTIONS: PostTypeOption[] = [
-  { value: 'general', labelKey: 'create.typeSelector.general', Icon: PencilLine },
-  { value: 'question', labelKey: 'create.typeSelector.question', Icon: HelpCircle },
-  { value: 'tips', labelKey: 'create.typeSelector.tipsAndTricks', Icon: Lightbulb },
+  {
+    value: 'general',
+    labelKey: 'create.typeSelector.general',
+    Icon: PencilLine,
+  },
+  {
+    value: 'question',
+    labelKey: 'create.typeSelector.question',
+    Icon: HelpCircle,
+  },
+  {
+    value: 'tips',
+    labelKey: 'create.typeSelector.tipsAndTricks',
+    Icon: Lightbulb,
+  },
 ];
 const PRODUCT_TYPE_OPTIONS: PostTypeOption[] = [
-  { value: 'experience', labelKey: 'create.typeSelector.experience', Icon: Star },
-  { value: 'question', labelKey: 'create.typeSelector.question', Icon: HelpCircle },
-  { value: 'tips', labelKey: 'create.typeSelector.tipsAndTricks', Icon: Lightbulb },
-  { value: 'benchmark', labelKey: 'create.typeSelector.benchmark', Icon: BarChart2 },
+  {
+    value: 'experience',
+    labelKey: 'create.typeSelector.experience',
+    Icon: Star,
+  },
+  {
+    value: 'question',
+    labelKey: 'create.typeSelector.question',
+    Icon: HelpCircle,
+  },
+  {
+    value: 'tips',
+    labelKey: 'create.typeSelector.tipsAndTricks',
+    Icon: Lightbulb,
+  },
+  {
+    value: 'benchmark',
+    labelKey: 'create.typeSelector.benchmark',
+    Icon: BarChart2,
+  },
 ];
 const INLINE_TYPES: ComposerType[] = ['general', 'question', 'tips'];
 
@@ -99,7 +156,11 @@ const BenefitCategorySelectField: React.FC<{
       control={control}
       render={({ field: { onChange }, fieldState: { error } }) => (
         <VStack space='xs' position='relative'>
-          <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize='$sm' fontWeight='$semibold'>
+          <Text
+            color={isDark ? '$textDark400' : '#A3A3A3'}
+            fontSize='$sm'
+            fontWeight='$semibold'
+          >
             {t('create.tipsAndTricks.labels.category')}
           </Text>
           <Pressable onPress={() => setShowModal(!showModal)}>
@@ -112,18 +173,38 @@ const BenefitCategorySelectField: React.FC<{
               px={16}
               justifyContent='center'
             >
-              <HStack flex={1} alignItems='center' justifyContent='space-between'>
+              <HStack
+                flex={1}
+                alignItems='center'
+                justifyContent='space-between'
+              >
                 <Text
-                  color={selectedCategory ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
+                  color={
+                    selectedCategory
+                      ? isDark
+                        ? '$textDark50'
+                        : '#000000'
+                      : isDark
+                        ? '#8C8C8C'
+                        : '#8C8C8C'
+                  }
                   fontSize='$sm'
                   fontWeight='$medium'
                   flex={1}
                 >
                   {selectedCategory
-                    ? t(BENEFIT_CATEGORIES.find((cat) => cat.value === selectedCategory)?.labelKey ?? '')
+                    ? t(
+                        BENEFIT_CATEGORIES.find(
+                          cat => cat.value === selectedCategory
+                        )?.labelKey ?? ''
+                      )
                     : t('create.tipsAndTricks.placeholders.categorySelect')}
                 </Text>
-                <Feather name={showModal ? 'chevron-up' : 'chevron-down'} size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                <Feather
+                  name={showModal ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                />
               </HStack>
             </Box>
           </Pressable>
@@ -153,8 +234,16 @@ const BenefitCategorySelectField: React.FC<{
                       }}
                     >
                       <HStack px='$3' py='$3' alignItems='center' space='sm'>
-                        <Feather name={category.icon} size={18} color={isDark ? '#FFFFFF' : '#2F2F2F'} />
-                        <Text color={isDark ? '$textDark50' : '#2F2F2F'} fontSize='$sm' fontWeight='$medium'>
+                        <Feather
+                          name={category.icon}
+                          size={18}
+                          color={isDark ? '#FFFFFF' : '#2F2F2F'}
+                        />
+                        <Text
+                          color={isDark ? '$textDark50' : '#2F2F2F'}
+                          fontSize='$sm'
+                          fontWeight='$medium'
+                        >
                           {t(category.labelKey)}
                         </Text>
                       </HStack>
@@ -181,7 +270,9 @@ export const CreatePostScreen = () => {
   const { t } = useTranslation('post');
   const navigation = useNavigation<CreatePostScreenNavigationProp>();
   const route = useRoute<CreatePostScreenRouteProp>();
-  const methods = useCategoryPostForm({ postType: (route.params?.initialType as CategoryPostType) ?? 'general' });
+  const methods = useCategoryPostForm({
+    postType: (route.params?.initialType as CategoryPostType) ?? 'general',
+  });
   const { handleSubmit, formState, trigger, setValue } = methods;
   const createFreePostMutation = useCreateFreePost();
   const createQuestionPostMutation = useCreateQuestionPost();
@@ -194,39 +285,57 @@ export const CreatePostScreen = () => {
   const [lastPhotoUri, setLastPhotoUri] = useState<string | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  // Default: 'category' context seçili gelir
-  const [contextKind, setContextKind] = useState<ContextKind>('category');
-  // Seçili paylaşım tipi (kartlardan). Default kategori için 'general'.
+  // Açılış bağlam türü: feed create bottom sheet'inden gelen initialContextKind, yoksa 'category'.
+  // Radio grubu gizli olduğundan bağlam türü bu değerle sabittir (picker seçimi normalize eder).
+  const initialContextKind: ContextKind =
+    route.params?.initialContextKind ?? 'category';
+  const [contextKind, setContextKind] =
+    useState<ContextKind>(initialContextKind);
+  // Seçili paylaşım tipi: verilen initialType, yoksa bağlam türüne göre varsayılan (ürün→experience, kategori→general)
   const [composerType, setComposerType] = useState<ComposerType>(
-    (route.params?.initialType as ComposerType) ?? 'general',
+    (route.params?.initialType as ComposerType) ??
+      (initialContextKind === 'product' ? 'experience' : 'general')
   );
 
   // Benchmark inline composer kontrolü (kendi formu var; Header "Paylaş" buna delege olur)
   const benchmarkRef = useRef<BenchmarkComposerHandle>(null);
-  const [benchmarkState, setBenchmarkState] = useState<{ canShare: boolean; isLoading: boolean }>({
+  const [benchmarkState, setBenchmarkState] = useState<{
+    canShare: boolean;
+    isLoading: boolean;
+  }>({
     canShare: false,
     isLoading: false,
   });
   const handleBenchmarkStateChange = useCallback(
     (s: { canShare: boolean; isLoading: boolean }) => setBenchmarkState(s),
-    [],
+    []
   );
 
   // Experience inline composer kontrolü
   const experienceRef = useRef<ExperienceComposerHandle>(null);
-  const [experienceState, setExperienceState] = useState<{ canShare: boolean; isLoading: boolean }>({
+  const [experienceState, setExperienceState] = useState<{
+    canShare: boolean;
+    isLoading: boolean;
+  }>({
     canShare: false,
     isLoading: false,
   });
   const handleExperienceStateChange = useCallback(
     (s: { canShare: boolean; isLoading: boolean }) => setExperienceState(s),
-    [],
+    []
   );
 
   // Boost (yalnızca question tipinde gösterilir; hook'lar koşulsuz çağrılır)
-  const { data: boostPriceData, isLoading: isLoadingBoostPrice, error: boostPriceError } = useBoostPrice();
+  const {
+    data: boostPriceData,
+    isLoading: isLoadingBoostPrice,
+    error: boostPriceError,
+  } = useBoostPrice();
   const { data: walletBalance } = useWalletBalance();
-  const availableTips = storeBalance !== null && storeBalance !== undefined ? storeBalance : (walletBalance?.balance || 0);
+  const availableTips =
+    storeBalance !== null && storeBalance !== undefined
+      ? storeBalance
+      : walletBalance?.balance || 0;
 
   // Global navigation UI store'dan kamera state'ini yönet
   const setCameraOpen = useNavigationUIStore(state => state.setCameraOpen);
@@ -240,18 +349,28 @@ export const CreatePostScreen = () => {
   // Context resolution: flow store (valid) öncelikli, sonra route params
   const contextType = useCreatePostFlowStore(state => state.contextType);
   const contextId = useCreatePostFlowStore(state => state.contextId);
-  const productInfoSnapshot = useCreatePostFlowStore(state => state.productInfoSnapshot);
+  const productInfoSnapshot = useCreatePostFlowStore(
+    state => state.productInfoSnapshot
+  );
   const isValidFlow = useCreatePostFlowStore(state => state.isValid());
   const clearFlow = useCreatePostFlowStore(state => state.clearFlow);
   const compareProduct = useCreatePostFlowStore(state => state.compareProduct);
-  const setCompareProduct = useCreatePostFlowStore(state => state.setCompareProduct);
+  const setCompareProduct = useCreatePostFlowStore(
+    state => state.setCompareProduct
+  );
 
   const routeParams = route.params || {};
-  const finalContextType = isValidFlow && contextType ? contextType : routeParams.contextType;
-  const finalContextId = isValidFlow && contextId ? contextId : routeParams.contextId;
-  const finalProductInfo = isValidFlow && productInfoSnapshot ? productInfoSnapshot : routeParams.productInfo;
+  const finalContextType =
+    isValidFlow && contextType ? contextType : routeParams.contextType;
+  const finalContextId =
+    isValidFlow && contextId ? contextId : routeParams.contextId;
+  const finalProductInfo =
+    isValidFlow && productInfoSnapshot
+      ? productInfoSnapshot
+      : routeParams.productInfo;
 
-  const typeOptions = contextKind === 'product' ? PRODUCT_TYPE_OPTIONS : CATEGORY_TYPE_OPTIONS;
+  const typeOptions =
+    contextKind === 'product' ? PRODUCT_TYPE_OPTIONS : CATEGORY_TYPE_OPTIONS;
 
   const handleOpenProductPicker = useCallback(() => {
     navigationService.navigate(ROOT_ROUTES.POST, {
@@ -271,16 +390,6 @@ export const CreatePostScreen = () => {
     clearFlow();
   }, [clearFlow]);
 
-  // Context türü değişince geçerli paylaşım tipini normalize et
-  const handleContextKindChange = (kind: ContextKind) => {
-    setContextKind(kind);
-    const def: ComposerType = kind === 'product' ? 'experience' : 'general';
-    setComposerType(def);
-    if (INLINE_TYPES.includes(def)) {
-      setValue('postType', def as CategoryPostType, { shouldValidate: true });
-    }
-  };
-
   const handleTypeChange = (value: string) => {
     const type = value as ComposerType;
     setShowCategoryModal(false);
@@ -293,11 +402,16 @@ export const CreatePostScreen = () => {
   // Picker'dan bağlam seçilip dönüldüğünde radio türünü ve composer tipini normalize et
   useEffect(() => {
     if (!finalContextType) return;
-    const kind: ContextKind = finalContextType === ProductInfoType.PRODUCT ? 'product' : 'category';
+    const kind: ContextKind =
+      finalContextType === ProductInfoType.PRODUCT ? 'product' : 'category';
     setContextKind(kind);
     setComposerType(prev => {
-      const validValues = (kind === 'product' ? PRODUCT_TYPE_OPTIONS : CATEGORY_TYPE_OPTIONS).map(o => o.value);
-      return validValues.includes(prev) ? prev : ((kind === 'product' ? 'experience' : 'general') as ComposerType);
+      const validValues = (
+        kind === 'product' ? PRODUCT_TYPE_OPTIONS : CATEGORY_TYPE_OPTIONS
+      ).map(o => o.value);
+      return validValues.includes(prev)
+        ? prev
+        : ((kind === 'product' ? 'experience' : 'general') as ComposerType);
     });
   }, [finalContextType]);
 
@@ -313,7 +427,12 @@ export const CreatePostScreen = () => {
             {
               name: 'App',
               state: {
-                routes: [{ name: 'MainTabs', state: { routes: [{ name: 'CatalogStack' }], index: 0 } }],
+                routes: [
+                  {
+                    name: 'MainTabs',
+                    state: { routes: [{ name: 'CatalogStack' }], index: 0 },
+                  },
+                ],
                 index: 0,
               },
             },
@@ -339,7 +458,9 @@ export const CreatePostScreen = () => {
 
   const handlePhotoTaken = async (uri: string) => {
     const currentImages = methods.getValues('selectedImages') || [];
-    methods.setValue('selectedImages', [...currentImages, uri], { shouldValidate: false });
+    methods.setValue('selectedImages', [...currentImages, uri], {
+      shouldValidate: false,
+    });
     setLastPhotoUri(uri);
     setShowCamera(false);
 
@@ -353,7 +474,9 @@ export const CreatePostScreen = () => {
       const index = updatedImages.indexOf(uri);
       if (index !== -1) {
         updatedImages[index] = compressedImage.uri;
-        methods.setValue('selectedImages', [...updatedImages], { shouldValidate: false });
+        methods.setValue('selectedImages', [...updatedImages], {
+          shouldValidate: false,
+        });
         setLastPhotoUri(compressedImage.uri);
       }
     } catch (error) {
@@ -420,14 +543,24 @@ export const CreatePostScreen = () => {
         });
       }
 
-      showCustomToast(toast, { title: successTitle, description: successDescription, action: 'success' });
+      showCustomToast(toast, {
+        title: successTitle,
+        description: successDescription,
+        action: 'success',
+      });
 
       if (apiContextType && finalContextId) {
         invalidateCatalogPosts(queryClient, apiContextType, finalContextId);
       }
       if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(user.id), refetchType: 'none' });
-        queryClient.invalidateQueries({ queryKey: profileKeys.profile(user.id), refetchType: 'none' });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.userPosts(user.id),
+          refetchType: 'none',
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+          refetchType: 'none',
+        });
       }
 
       const savedContextType = finalContextType;
@@ -443,7 +576,10 @@ export const CreatePostScreen = () => {
       });
     } catch (error: any) {
       console.error('[CreatePostScreen] ❌ API Error:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || t('create.toast.error.description');
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        t('create.toast.error.description');
       showCustomToast(toast, {
         title: t('create.toast.error.title'),
         description: errorMessage,
@@ -473,12 +609,19 @@ export const CreatePostScreen = () => {
       if (isValid) {
         handleSubmit(onSubmit)();
       } else {
-        const errors = formState.errors as Record<string, { message?: string } | undefined>;
+        const errors = formState.errors as Record<
+          string,
+          { message?: string } | undefined
+        >;
         const firstError =
           errors?.text?.message ||
           errors?.selectedCategory?.message ||
           errors?.selectedImages?.message ||
-          (Object.values(errors).find(e => e?.message) as { message?: string } | undefined)?.message ||
+          (
+            Object.values(errors).find(e => e?.message) as
+              | { message?: string }
+              | undefined
+          )?.message ||
           t('create.toast.validation.description');
         showCustomToast(toast, {
           title: t('create.toast.validation.title'),
@@ -529,7 +672,10 @@ export const CreatePostScreen = () => {
           lastPhotoUri={displayLastPhotoUri}
         />
       ) : (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <SafeAreaView
+          edges={['top', 'bottom', 'left', 'right']}
+          style={{ flex: 1 }}
+        >
           <FormProvider {...methods}>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -544,10 +690,13 @@ export const CreatePostScreen = () => {
                   onLeftActionPress={handleBackPress}
                   rightButton={{
                     text: t('create.header.share'),
-                    backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
+                    backgroundColor:
+                      isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
                     borderWidth: 1,
-                    borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
-                    textColor: isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
+                    borderColor:
+                      isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',
+                    textColor:
+                      isShareEnabled || isShareLoading ? '#111111' : '#B1B1B1',
                     fontSize: 11,
                     borderRadius: 25,
                     paddingX: 10,
@@ -565,81 +714,75 @@ export const CreatePostScreen = () => {
                   onScrollBeginDrag={() => setShowCategoryModal(false)}
                 >
                   <VStack space='md' pt={12} pb={100}>
-                    {/* 1) Bağlam türü: Ürün / Kategori radio (default: Kategori) */}
+                    {/* Bağlam türü (Ürün/Kategori) feed create bottom sheet'inde seçilir;
+                        burada radio gösterilmez, sadece seçim input'u gösterilir. */}
                     <VStack px={16} space='sm'>
-                      <HStack space='xl'>
-                        {[
-                          { kind: 'category' as const, label: t('create.context.category', 'Kategori') },
-                          { kind: 'product' as const, label: t('create.context.product', 'Ürün') },
-                        ].map(({ kind, label }) => {
-                          const selected = contextKind === kind;
-                          return (
-                            <Pressable
-                              key={kind}
-                              onPress={() => handleContextKindChange(kind)}
-                              accessibilityRole='radio'
-                              accessibilityState={{ selected }}
-                            >
-                              <HStack space='sm' alignItems='center'>
-                                <Box
-                                  width={20}
-                                  height={20}
-                                  borderRadius={10}
-                                  borderWidth={2}
-                                  borderColor={selected ? '#6366F1' : isDark ? '#555555' : '#C4C4C4'}
-                                  justifyContent='center'
-                                  alignItems='center'
-                                >
-                                  {selected && <Box width={10} height={10} borderRadius={5} bg='#6366F1' />}
-                                </Box>
-                                <Text color={isDark ? '#FFFFFF' : '#111111'} fontSize='$sm' fontWeight='$medium'>
-                                  {label}
-                                </Text>
-                              </HStack>
-                            </Pressable>
-                          );
-                        })}
-                      </HStack>
-
                       {/* 1. ürün/kategori seçim input'u (paylaşılan component) */}
                       <ProductSelectInput
                         value={
                           finalProductInfo
-                            ? { image: finalProductInfo.image, title: finalProductInfo.title, subName: finalProductInfo.subName }
+                            ? {
+                                image: finalProductInfo.image,
+                                title: finalProductInfo.title,
+                                subName: finalProductInfo.subName,
+                              }
                             : null
                         }
                         placeholder={
                           contextKind === 'product'
-                            ? t('create.context.selectProduct', 'Envanterden ürün seç')
+                            ? t(
+                                'create.context.selectProduct',
+                                'Envanterden ürün seç'
+                              )
                             : t('create.context.selectCategory', 'Kategori seç')
                         }
-                        onPress={contextKind === 'product' ? handleOpenProductPicker : handleOpenCategoryPicker}
+                        onPress={
+                          contextKind === 'product'
+                            ? handleOpenProductPicker
+                            : handleOpenCategoryPicker
+                        }
                         onClear={handleClearContext}
                       />
 
                       {/* 2. ürün seçim input'u — yalnızca benchmark + ürün bağlamında, 1.'in hemen altında.
                           AYNI core ProductPicker ekranını çağırır (target='compare'). */}
-                      {composerType === 'benchmark' && contextKind === 'product' && (
-                        <ProductSelectInput
-                          value={
-                            compareProduct
-                              ? { image: compareProduct.image, title: compareProduct.title, subName: compareProduct.subName }
-                              : null
-                          }
-                          placeholder={t('create.benchmark.selectCompareProduct')}
-                          onPress={() =>
-                            navigationService.navigate(ROOT_ROUTES.POST, {
-                              screen: 'ProductPicker',
-                              params: { returnTo: 'CreatePostScreen', target: 'compare' },
-                            })
-                          }
-                          onClear={() => setCompareProduct(null)}
-                        />
-                      )}
+                      {composerType === 'benchmark' &&
+                        contextKind === 'product' && (
+                          <ProductSelectInput
+                            value={
+                              compareProduct
+                                ? {
+                                    image: compareProduct.image,
+                                    title: compareProduct.title,
+                                    subName: compareProduct.subName,
+                                  }
+                                : null
+                            }
+                            placeholder={t(
+                              'create.benchmark.selectCompareProduct'
+                            )}
+                            onPress={() =>
+                              navigationService.navigate(ROOT_ROUTES.POST, {
+                                screen: 'ProductPicker',
+                                params: {
+                                  returnTo: 'CreatePostScreen',
+                                  target: 'compare',
+                                  // 2. ürün, 1. ürünün ürün grubuyla (kategori) sınırlandırılır
+                                  restrictProductGroupId: productInfoSnapshot?.productGroupId,
+                                },
+                              })
+                            }
+                            onClear={() => setCompareProduct(null)}
+                          />
+                        )}
                     </VStack>
 
                     {/* 2) Paylaşım tipi seçici — bağlam türüne göre (kategori: 3, ürün: 4) */}
-                    <PostTypeSelector options={typeOptions} value={composerType} onChange={handleTypeChange} />
+                    <PostTypeSelector
+                      options={typeOptions}
+                      value={composerType}
+                      onChange={handleTypeChange}
+                    />
 
                     {/* 3) Tipe özel alanlar */}
                     {isInlineType ? (
@@ -657,7 +800,10 @@ export const CreatePostScreen = () => {
                         {/* Tips → benefit kategori */}
                         {composerType === 'tips' && (
                           <VStack px={16} space='xs'>
-                            <BenefitCategorySelectField showModal={showCategoryModal} setShowModal={setShowCategoryModal} />
+                            <BenefitCategorySelectField
+                              showModal={showCategoryModal}
+                              setShowModal={setShowCategoryModal}
+                            />
                           </VStack>
                         )}
 
@@ -669,9 +815,14 @@ export const CreatePostScreen = () => {
                             maxImages={10}
                             onImagePicker={handleImagePicker}
                             onRemoveImage={index => {
-                              const currentImages = methods.getValues('selectedImages') || [];
-                              const newImages = currentImages.filter((_: any, i: number) => i !== index);
-                              methods.setValue('selectedImages', newImages, { shouldValidate: false });
+                              const currentImages =
+                                methods.getValues('selectedImages') || [];
+                              const newImages = currentImages.filter(
+                                (_: any, i: number) => i !== index
+                              );
+                              methods.setValue('selectedImages', newImages, {
+                                shouldValidate: false,
+                              });
                             }}
                           />
                         </VStack>
@@ -679,13 +830,21 @@ export const CreatePostScreen = () => {
                         {/* Question → boost */}
                         {composerType === 'question' && (
                           <VStack px={16} space='xs'>
-                            <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize='$sm' fontWeight='$bold' mb={8}>
+                            <Text
+                              color={isDark ? '$textDark400' : '#A3A3A3'}
+                              fontSize='$sm'
+                              fontWeight='$bold'
+                              mb={8}
+                            >
                               {t('create.question.labels.boostSection')}
                             </Text>
 
                             {boostPriceError ? (
                               <Box py='$4' alignItems='center'>
-                                <Text color={isDark ? '$red500' : '#EF4444'} fontSize='$sm'>
+                                <Text
+                                  color={isDark ? '$red500' : '#EF4444'}
+                                  fontSize='$sm'
+                                >
                                   {t('create.question.boost.errorLoading')}
                                 </Text>
                               </Box>
@@ -698,9 +857,18 @@ export const CreatePostScreen = () => {
                             )}
 
                             <HStack alignItems='center' space='xs' mt={12}>
-                              <Info size={18} color={isDark ? '#FFFFFF' : '#A3A3A3'} />
-                              <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize='$sm' fontWeight='$medium'>
-                                {t('create.question.boost.tipsAvailable', { tips: Math.floor(availableTips) })}
+                              <Info
+                                size={18}
+                                color={isDark ? '#FFFFFF' : '#A3A3A3'}
+                              />
+                              <Text
+                                color={isDark ? '$textDark400' : '#A3A3A3'}
+                                fontSize='$sm'
+                                fontWeight='$medium'
+                              >
+                                {t('create.question.boost.tipsAvailable', {
+                                  tips: Math.floor(availableTips),
+                                })}
                               </Text>
                             </HStack>
                           </VStack>

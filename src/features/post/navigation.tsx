@@ -49,6 +49,8 @@ export type PostStackParamList = {
     };
     /** Açılışta seçili gelecek paylaşım tipi (radio). Verilmezse 'general'. */
     initialType?: 'general' | 'question' | 'tips';
+    /** Açılışta seçili gelecek bağlam türü (Ürün/Kategori radio). Feed create bottom sheet'inden gelir. */
+    initialContextKind?: 'product' | 'category';
   };
   CreateTipsAndTrickPostScreen: undefined;
   CreateQuestionPostScreen: undefined;
@@ -89,7 +91,10 @@ export type PostStackParamList = {
   CategorySearch: { returnTo?: 'CreatePostScreen' } | undefined;
   // Ürün seçici (Envanter + Katalog sekmeleri). Seçim flow store'a yazılıp geri dönülür.
   // target: 'context' (1. ürün, varsayılan) | 'compare' (benchmark 2. ürün)
-  ProductPicker: { returnTo?: 'CreatePostScreen'; target?: 'context' | 'compare' } | undefined;
+  // restrictProductGroupId: verilirse yalnızca bu ürün grubundaki ürünler gösterilir (benchmark 2. ürün)
+  ProductPicker:
+    | { returnTo?: 'CreatePostScreen'; target?: 'context' | 'compare'; restrictProductGroupId?: string }
+    | undefined;
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();

@@ -10,6 +10,8 @@ interface ProductInfoSnapshot {
   image: any;
   title: string;
   subName?: string;
+  /** Ürünün ait olduğu ürün grubu (kategori) ID'si — benchmark 2. ürün filtresi için. */
+  productGroupId?: string;
 }
 
 /** Benchmark karşılaştırma (2.) ürünü için ayrı slot */

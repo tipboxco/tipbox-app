@@ -25,6 +25,8 @@ import type { PickedProduct } from './InventoryPickerTab';
 
 type Props = {
   onSelect: (product: PickedProduct) => void;
+  /** Verilirse: kategori drill-down yerine yalnızca bu ürün grubundaki ürünler listelenir (benchmark karşılaştırma). */
+  restrictProductGroupId?: string;
 };
 
 /** Gezgin yolundaki bir seviye (ana kategori / alt kategori / ürün grubu). */
@@ -46,7 +48,10 @@ type Row = {
  *  2) Arama boşsa: Ana kategori → Alt kategori → Ürün grubu → Ürün drill-down.
  * En alt katmandaki ürün seçilince post bağlamı olarak üst ekrana iletilir.
  */
-export const CatalogPickerTab: React.FC<Props> = ({ onSelect }) => {
+export const CatalogPickerTab: React.FC<Props> = ({
+  onSelect,
+  restrictProductGroupId,
+}) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { t } = useTranslation('post');
@@ -86,22 +91,47 @@ export const CatalogPickerTab: React.FC<Props> = ({ onSelect }) => {
     30
   );
 
+  // Benchmark karşılaştırma: drill-down yerine doğrudan 1. ürünün grubundaki ürünleri listele
+  // (arama kutusu bu grup içinde filtreler). restrictProductGroupId yoksa sorgu pasiftir.
+  const restricted = !!restrictProductGroupId;
+  const restrictedProducts = useCatalogProducts(
+    restrictProductGroupId,
+    isSearching ? debouncedQuery : undefined,
+    30
+  );
+
   const handleSelectProduct = useCallback(
     (p: {
       productId: string;
       name: string;
       image: string | null;
       subtitle?: string;
+      productGroupId?: string;
     }) => {
       onSelect({
         productId: p.productId,
         title: p.name,
         image: p.image,
         subName: p.subtitle,
+        productGroupId: p.productGroupId,
       });
     },
     [onSelect]
   );
+
+  // Kısıtlı (benchmark) modda gösterilen ürün satırları
+  const restrictedRows = useMemo<Row[]>(() => {
+    if (!restricted) return [];
+    return (restrictedProducts.data?.pages ?? [])
+      .flatMap(p => p.items)
+      .map<Row>(prod => ({
+        key: `prod-${prod.productId}`,
+        title: prod.name,
+        image: prod.image,
+        drill: false,
+        onPress: () => handleSelectProduct(prod),
+      }));
+  }, [restricted, restrictedProducts.data, handleSelectProduct]);
 
   // Arama sonucu ürün satırları (gruplu sonuç → düz ürün listesi + breadcrumb)
   const searchRows = useMemo<Row[]>(() => {
@@ -191,19 +221,33 @@ export const CatalogPickerTab: React.FC<Props> = ({ onSelect }) => {
     handleSelectProduct,
   ]);
 
-  const rows = isSearching ? searchRows : browseRows;
+  const rows = restricted
+    ? restrictedRows
+    : isSearching
+      ? searchRows
+      : browseRows;
 
-  const loading = isSearching
-    ? productSearch.isLoading
-    : depth === 0
-      ? categories.isLoading
-      : depth === 1
-        ? subCategories.isLoading
-        : depth === 2
-          ? productGroups.isLoading
-          : products.isLoading;
+  const loading = restricted
+    ? restrictedProducts.isLoading
+    : isSearching
+      ? productSearch.isLoading
+      : depth === 0
+        ? categories.isLoading
+        : depth === 1
+          ? subCategories.isLoading
+          : depth === 2
+            ? productGroups.isLoading
+            : products.isLoading;
 
   const handleEndReached = useCallback(() => {
+    if (restricted) {
+      if (
+        restrictedProducts.hasNextPage &&
+        !restrictedProducts.isFetchingNextPage
+      )
+        restrictedProducts.fetchNextPage();
+      return;
+    }
     if (isSearching) {
       if (productSearch.hasNextPage && !productSearch.isFetchingNextPage)
         productSearch.fetchNextPage();
@@ -219,6 +263,8 @@ export const CatalogPickerTab: React.FC<Props> = ({ onSelect }) => {
             : products;
     if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage();
   }, [
+    restricted,
+    restrictedProducts,
     isSearching,
     depth,
     categories,
@@ -300,8 +346,8 @@ export const CatalogPickerTab: React.FC<Props> = ({ onSelect }) => {
         </HStack>
       </Box>
 
-      {/* Breadcrumb / geri — yalnızca gezginde ve bir seviye içindeyken */}
-      {!isSearching && depth > 0 && (
+      {/* Breadcrumb / geri — yalnızca gezginde ve bir seviye içindeyken (kısıtlı modda drill yok) */}
+      {!restricted && !isSearching && depth > 0 && (
         <Pressable onPress={handleBack}>
           <HStack alignItems='center' px='$4' pb='$2' space='xs'>
             <ChevronLeft size={20} color={accentColor} />
