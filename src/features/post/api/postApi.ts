@@ -1,33 +1,41 @@
 import { apiService } from '@/src/services/ApiService';
-import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
+import type {
+  CreatePostRequest,
+  CreatePostResponse,
+  ApiContextType,
+} from '../types';
 
 /**
  * Boost Option - Question post için boost seçeneği
  */
 export interface BoostOption {
-  id: string;              // Boost option ID (UUID)
-  image: string;           // Boost option görseli
-  title: string;           // Boost option başlığı
-  description: string;      // Boost option açıklaması
-  amount: number;          // Boost miktarı (TIPS)
-  isPopular: boolean;      // Popüler boost option mu?
+  id: string; // Boost option ID (UUID)
+  image: string; // Boost option görseli
+  title: string; // Boost option başlığı
+  description: string; // Boost option açıklaması
+  amount: number; // Boost miktarı (TIPS)
+  isPopular: boolean; // Popüler boost option mu?
 }
 
 /**
  * Get Boost Options endpoint function
  * Question post için kullanılabilir boost option'ları getirir
- * 
+ *
  * @returns BoostOption[] - Boost option listesi
  */
 export const getBoostOptions = async (): Promise<BoostOption[]> => {
   try {
     console.log('[getBoostOptions] 📡 Fetching boost options...');
-    const response = await apiService.getClient().get<BoostOption[]>(
-      '/posts/boost-options'
-    );
+    const response = await apiService
+      .getClient()
+      .get<BoostOption[]>('/posts/boost-options');
     console.log('[getBoostOptions] ✅ Success:', {
       count: response.data.length,
-      options: response.data.map(opt => ({ id: opt.id, title: opt.title, amount: opt.amount })),
+      options: response.data.map(opt => ({
+        id: opt.id,
+        title: opt.title,
+        amount: opt.amount,
+      })),
     });
     return response.data;
   } catch (error: any) {
@@ -54,7 +62,7 @@ export const createFreePost = async (
   data: CreatePostRequest
 ): Promise<CreatePostResponse> => {
   const client = apiService.getClient();
-  
+
   console.log('[postApi] createFreePost - Input data:', {
     contextType: data.contextType,
     contextId: data.contextId,
@@ -62,24 +70,24 @@ export const createFreePost = async (
     images: data.images?.length || 0,
     eventId: data.eventId,
   });
-  
+
   // FormData oluştur (multipart/form-data için)
   const formData = new FormData();
   formData.append('contextType', data.contextType);
   formData.append('contextId', data.contextId);
   formData.append('description', data.description);
-  
+
   console.log('[postApi] createFreePost - FormData fields:', {
     contextType: data.contextType,
     contextId: data.contextId,
     description: data.description,
   });
-  
+
   // Event ID varsa ekle (event'e bağlı post için)
   if (data.eventId) {
     formData.append('eventId', data.eventId);
   }
-  
+
   // Images varsa ekle
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {
@@ -88,7 +96,7 @@ export const createFreePost = async (
       // Bu durumda varsayılan olarak JPEG kullan
       let fileExtension = 'jpg';
       let mimeType = 'image/jpeg';
-      
+
       // URI'den dosya uzantısını çıkar (eğer varsa)
       const uriLower = imageUri.toLowerCase();
       if (uriLower.includes('.')) {
@@ -103,7 +111,7 @@ export const createFreePost = async (
       }
       // iOS'ta ph:// veya assets-library:// URI'leri için varsayılan JPEG kullan
       // Expo Image Picker zaten görsel formatlarını destekliyor
-      
+
       formData.append('images', {
         uri: imageUri,
         type: mimeType,
@@ -111,7 +119,7 @@ export const createFreePost = async (
       } as any);
     });
   }
-  
+
   const response = await client.post<CreatePostResponse>(
     '/posts/free',
     formData,
@@ -121,9 +129,9 @@ export const createFreePost = async (
       },
     }
   );
-  
+
   console.log('[postApi] createFreePost - Backend Response:', response.data);
-  
+
   return response.data;
 };
 
@@ -138,6 +146,8 @@ export interface CreateBenchmarkPostRequest {
     productId: string;
     isSelected: boolean;
   }>;
+  /** Product id the author picked as the winner of the comparison */
+  choiceProductId?: string;
   images?: string[];
 }
 
@@ -161,15 +171,21 @@ export const createBenchmarkPost = async (
   formData.append('contextId', data.contextId);
   formData.append('description', data.description);
 
-  // Products array'ini JSON string olarak ekle (her iki üründe isSelected: true olmalı)
+  // Products array'ini JSON string olarak ekle.
+  // isSelected, kullanıcının kazanan seçimini yansıtır (yalnızca kazanan true).
   formData.append('products', JSON.stringify(data.products));
-  
+
+  // Kullanıcının kazanan ürün seçimini ayrı, açık alan olarak gönder
+  if (data.choiceProductId) {
+    formData.append('choiceProductId', data.choiceProductId);
+  }
+
   // Images varsa ekle
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {
       let fileExtension = 'jpg';
       let mimeType = 'image/jpeg';
-      
+
       const uriLower = imageUri.toLowerCase();
       if (uriLower.includes('.')) {
         const ext = imageUri.split('.').pop()?.toLowerCase();
@@ -181,7 +197,7 @@ export const createBenchmarkPost = async (
           mimeType = 'image/jpeg';
         }
       }
-      
+
       formData.append('images', {
         uri: imageUri,
         type: mimeType,
@@ -189,7 +205,7 @@ export const createBenchmarkPost = async (
       } as any);
     });
   }
-  
+
   const response = await client.post<CreatePostResponse>(
     '/posts/benchmark',
     formData,
@@ -199,7 +215,7 @@ export const createBenchmarkPost = async (
       },
     }
   );
-  
+
   return response.data;
 };
 
@@ -210,7 +226,11 @@ export interface CreateTipsAndTricksPostRequest {
   contextType: ApiContextType;
   contextId: string;
   description: string;
-  benefitCategory: 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result';
+  benefitCategory:
+    | 'time_saving'
+    | 'energy_efficiency'
+    | 'durability'
+    | 'better_result';
   images?: string[];
 }
 
@@ -227,7 +247,7 @@ export const createTipsAndTricksPost = async (
       console.error('[createTipsAndTricksPost] ❌ Empty contextId');
       throw new Error('contextId cannot be empty');
     }
-    
+
     console.log('[createTipsAndTricksPost] 📤 Request data:', {
       contextType: data.contextType,
       contextId: data.contextId,
@@ -237,20 +257,20 @@ export const createTipsAndTricksPost = async (
       benefitCategory: data.benefitCategory,
       imagesCount: data.images?.length || 0,
     });
-    
+
     const client = apiService.getClient();
-    
+
     const formData = new FormData();
     formData.append('contextType', data.contextType);
     formData.append('contextId', data.contextId);
     formData.append('description', data.description);
     formData.append('benefitCategory', data.benefitCategory);
-    
+
     if (data.images && data.images.length > 0) {
       data.images.forEach((imageUri, index) => {
         let fileExtension = 'jpg';
         let mimeType = 'image/jpeg';
-        
+
         const uriLower = imageUri.toLowerCase();
         if (uriLower.includes('.')) {
           const ext = imageUri.split('.').pop()?.toLowerCase();
@@ -262,7 +282,7 @@ export const createTipsAndTricksPost = async (
             mimeType = 'image/jpeg';
           }
         }
-        
+
         formData.append('images', {
           uri: imageUri,
           type: mimeType,
@@ -270,7 +290,7 @@ export const createTipsAndTricksPost = async (
         } as any);
       });
     }
-    
+
     console.log('[createTipsAndTricksPost] 📤 FormData prepared:', {
       hasContextType: !!formData.get('contextType'),
       hasContextId: !!formData.get('contextId'),
@@ -278,7 +298,7 @@ export const createTipsAndTricksPost = async (
       hasBenefitCategory: !!formData.get('benefitCategory'),
       imagesCount: data.images?.length || 0,
     });
-    
+
     const response = await client.post<CreatePostResponse>(
       '/posts/tips-and-tricks',
       formData,
@@ -288,8 +308,11 @@ export const createTipsAndTricksPost = async (
         },
       }
     );
-    
-    console.log('[createTipsAndTricksPost] ✅ Backend Response:', response.data);
+
+    console.log(
+      '[createTipsAndTricksPost] ✅ Backend Response:',
+      response.data
+    );
     console.log('[createTipsAndTricksPost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -312,9 +335,9 @@ export const createTipsAndTricksPost = async (
       errorMessage: error.message,
       errorStack: error.stack,
     };
-    
+
     console.error('[createTipsAndTricksPost] ❌ API Error:', errorDetails);
-    
+
     // Backend'den gelen detaylı hata mesajını logla
     if (error.response?.data) {
       console.error('[createTipsAndTricksPost] ❌ Backend Error Details:', {
@@ -324,7 +347,7 @@ export const createTipsAndTricksPost = async (
         data: error.response.data,
       });
     }
-    
+
     throw error;
   }
 };
@@ -355,20 +378,20 @@ export const createQuestionPost = async (
       boostEnabled: data.boostEnabled,
       imagesCount: data.images?.length || 0,
     });
-    
+
     const client = apiService.getClient();
-    
+
     const formData = new FormData();
     formData.append('contextType', data.contextType);
     formData.append('contextId', data.contextId);
     formData.append('description', data.description);
     formData.append('boostEnabled', String(data.boostEnabled)); // Boolean olarak gönder
-    
+
     if (data.images && data.images.length > 0) {
       data.images.forEach((imageUri, index) => {
         let fileExtension = 'jpg';
         let mimeType = 'image/jpeg';
-        
+
         const uriLower = imageUri.toLowerCase();
         if (uriLower.includes('.')) {
           const ext = imageUri.split('.').pop()?.toLowerCase();
@@ -380,7 +403,7 @@ export const createQuestionPost = async (
             mimeType = 'image/jpeg';
           }
         }
-        
+
         formData.append('images', {
           uri: imageUri,
           type: mimeType,
@@ -388,7 +411,7 @@ export const createQuestionPost = async (
         } as any);
       });
     }
-    
+
     console.log('[createQuestionPost] Request URL: POST /posts/question');
     console.log('[createQuestionPost] FormData fields:', {
       contextType: data.contextType,
@@ -397,7 +420,7 @@ export const createQuestionPost = async (
       boostEnabled: data.boostEnabled,
       imagesCount: data.images?.length || 0,
     });
-    
+
     const response = await client.post<CreatePostResponse>(
       '/posts/question',
       formData,
@@ -407,7 +430,7 @@ export const createQuestionPost = async (
         },
       }
     );
-    
+
     console.log('[createQuestionPost] ✅ Backend Response:', response.data);
     console.log('[createQuestionPost] ✅ Success:', response.data);
     return response.data;
@@ -470,46 +493,48 @@ export const createUpdatePost = async (
 
     // Backend sadece 'product' contextType kabul ediyor
     if (data.contextType !== 'product') {
-      console.warn(`[createUpdatePost] ⚠️ contextType '${data.contextType}' is not 'product', forcing to 'product'`);
+      console.warn(
+        `[createUpdatePost] ⚠️ contextType '${data.contextType}' is not 'product', forcing to 'product'`
+      );
     }
 
     const client = apiService.getClient();
-    
+
     const formData = new FormData();
     formData.append('contextType', 'product'); // Backend sadece 'product' kabul ediyor
     formData.append('contextId', data.contextId || ''); // Opsiyonel - backend experience post'tan alır
     formData.append('content', data.content); // "description" değil, "content"!
     formData.append('experiencePostId', data.experiencePostId); // ZORUNLU alan
-    
+
     if (data.eventId != null && data.eventId !== '') {
       formData.append('eventId', data.eventId);
     }
 
-  if (data.images && data.images.length > 0) {
-    data.images.forEach((imageUri, index) => {
-      let fileExtension = 'jpg';
-      let mimeType = 'image/jpeg';
-      
-      const uriLower = imageUri.toLowerCase();
-      if (uriLower.includes('.')) {
-        const ext = imageUri.split('.').pop()?.toLowerCase();
-        if (ext === 'png') {
-          fileExtension = 'png';
-          mimeType = 'image/png';
-        } else if (ext === 'jpg' || ext === 'jpeg') {
-          fileExtension = 'jpg';
-          mimeType = 'image/jpeg';
+    if (data.images && data.images.length > 0) {
+      data.images.forEach((imageUri, index) => {
+        let fileExtension = 'jpg';
+        let mimeType = 'image/jpeg';
+
+        const uriLower = imageUri.toLowerCase();
+        if (uriLower.includes('.')) {
+          const ext = imageUri.split('.').pop()?.toLowerCase();
+          if (ext === 'png') {
+            fileExtension = 'png';
+            mimeType = 'image/png';
+          } else if (ext === 'jpg' || ext === 'jpeg') {
+            fileExtension = 'jpg';
+            mimeType = 'image/jpeg';
+          }
         }
-      }
-      
-      formData.append('images', {
-        uri: imageUri,
-        type: mimeType,
-        name: `image_${index}.${fileExtension}`,
-      } as any);
-    });
-  }
-  
+
+        formData.append('images', {
+          uri: imageUri,
+          type: mimeType,
+          name: `image_${index}.${fileExtension}`,
+        } as any);
+      });
+    }
+
     console.log('[createUpdatePost] 📤 FormData prepared:', {
       hasContextType: !!formData.get('contextType'),
       hasContextId: !!formData.get('contextId'),
@@ -527,7 +552,7 @@ export const createUpdatePost = async (
         },
       }
     );
-    
+
     console.log('[createUpdatePost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -576,31 +601,34 @@ export interface ExperienceOptionsResponse {
  *
  * @returns ExperienceOptionsResponse - Seçenek listeleri
  */
-export const getExperienceOptions = async (): Promise<ExperienceOptionsResponse> => {
-  try {
-    const response = await apiService.getClient().get<ExperienceOptionsResponse>(
-      '/posts/experience/options'
-    );
-    return response.data;
-  } catch (error: any) {
-    const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
-    console.error('[getExperienceOptions] ❌ API Error:', {
-      url: '/posts/experience/options',
-      fullUrl: baseURL ? `${baseURL.replace(/\/$/, '')}/posts/experience/options` : undefined,
-      method: 'GET',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      code: error.code,
-      errno: error.errno,
-    });
-    if (__DEV__ && error) {
-      console.error('[getExperienceOptions] Full error:', error);
+export const getExperienceOptions =
+  async (): Promise<ExperienceOptionsResponse> => {
+    try {
+      const response = await apiService
+        .getClient()
+        .get<ExperienceOptionsResponse>('/posts/experience/options');
+      return response.data;
+    } catch (error: any) {
+      const baseURL = error.config?.baseURL ?? error.request?.config?.baseURL;
+      console.error('[getExperienceOptions] ❌ API Error:', {
+        url: '/posts/experience/options',
+        fullUrl: baseURL
+          ? `${baseURL.replace(/\/$/, '')}/posts/experience/options`
+          : undefined,
+        method: 'GET',
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+      });
+      if (__DEV__ && error) {
+        console.error('[getExperienceOptions] Full error:', error);
+      }
+      throw error;
     }
-    throw error;
-  }
-};
+  };
 
 /**
  * Create Experience Post Request Body
@@ -609,7 +637,9 @@ export interface CreateExperiencePostRequest {
   contextType: ApiContextType;
   contextId: string;
   productId?: string; // Required when contextType is sub_category or product_group
-  experienceSnippetId: string;
+  // Opsiyonel: AI split başarısızsa (Gemini rate limit) snippet olmadan, kullanıcının kendi
+  // metniyle (experience array) gönderi oluşturulur.
+  experienceSnippetId?: string;
   selectedDurationId: string;
   selectedLocationId: string;
   selectedPurposeId: string;
@@ -645,12 +675,17 @@ export const createExperiencePost = async (
       imagesCount: data.images?.length || 0,
     });
 
-    console.log('[createExperiencePost] 🚨 CRITICAL: Experience ratings in API layer:', {
-      priceRating: data.experience.find(e => e.type === 'price_and_shopping')?.rating,
-      productRating: data.experience.find(e => e.type === 'product_and_usage')?.rating,
-      fullExperienceArray: JSON.stringify(data.experience, null, 2),
-    });
-    
+    console.log(
+      '[createExperiencePost] 🚨 CRITICAL: Experience ratings in API layer:',
+      {
+        priceRating: data.experience.find(e => e.type === 'price_and_shopping')
+          ?.rating,
+        productRating: data.experience.find(e => e.type === 'product_and_usage')
+          ?.rating,
+        fullExperienceArray: JSON.stringify(data.experience, null, 2),
+      }
+    );
+
     // Zorunlu alan kontrolü
     if (!data.selectedDurationId || data.selectedDurationId.trim() === '') {
       throw new Error('selectedDurationId is required and cannot be empty');
@@ -661,7 +696,7 @@ export const createExperiencePost = async (
     if (!data.selectedPurposeId || data.selectedPurposeId.trim() === '') {
       throw new Error('selectedPurposeId is required and cannot be empty');
     }
-    
+
     const client = apiService.getClient();
     const hasImages = data.images && data.images.length > 0;
 
@@ -673,7 +708,9 @@ export const createExperiencePost = async (
         content: data.content,
         experience: data.experience,
         status: data.status,
-        experienceSnippetId: data.experienceSnippetId,
+        ...(data.experienceSnippetId
+          ? { experienceSnippetId: data.experienceSnippetId }
+          : {}),
         // productId - Required when contextType is sub_category or product_group
         ...(data.productId && { productId: data.productId }),
         // camelCase (spec)
@@ -688,15 +725,25 @@ export const createExperiencePost = async (
         duration: data.selectedDurationId,
         location: data.selectedLocationId,
         purpose: data.selectedPurposeId,
-        ...(data.eventId != null && data.eventId !== '' ? { eventId: data.eventId } : {}),
+        ...(data.eventId != null && data.eventId !== ''
+          ? { eventId: data.eventId }
+          : {}),
       };
-      console.log('[createExperiencePost] Request URL: POST /posts/experience (JSON)', {
-        ...body,
-        content: (body as { content?: string }).content?.substring(0, 50) + '...',
-      });
-      const response = await client.post<CreatePostResponse>('/posts/experience', body, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      console.log(
+        '[createExperiencePost] Request URL: POST /posts/experience (JSON)',
+        {
+          ...body,
+          content:
+            (body as { content?: string }).content?.substring(0, 50) + '...',
+        }
+      );
+      const response = await client.post<CreatePostResponse>(
+        '/posts/experience',
+        body,
+        {
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
       console.log('[createExperiencePost] ✅ Success:', response.data);
       return response.data;
     }
@@ -714,7 +761,9 @@ export const createExperiencePost = async (
     formData.append('selectedDurationId', data.selectedDurationId);
     formData.append('selectedLocationId', data.selectedLocationId);
     formData.append('selectedPurposeId', data.selectedPurposeId);
-    formData.append('experienceSnippetId', data.experienceSnippetId);
+    if (data.experienceSnippetId) {
+      formData.append('experienceSnippetId', data.experienceSnippetId);
+    }
     if (data.eventId != null && data.eventId !== '') {
       formData.append('eventId', data.eventId);
     }
@@ -745,17 +794,20 @@ export const createExperiencePost = async (
       }
     });
 
-    console.log('[createExperiencePost] Request URL: POST /posts/experience (FormData)', {
-      contextType: data.contextType,
-      contextId: data.contextId,
-      selectedDurationId: data.selectedDurationId,
-      selectedLocationId: data.selectedLocationId,
-      selectedPurposeId: data.selectedPurposeId,
-      content: data.content?.substring(0, 50) + '...',
-      experience: JSON.stringify(data.experience),
-      status: data.status,
-      imagesCount: data.images?.length || 0,
-    });
+    console.log(
+      '[createExperiencePost] Request URL: POST /posts/experience (FormData)',
+      {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        selectedDurationId: data.selectedDurationId,
+        selectedLocationId: data.selectedLocationId,
+        selectedPurposeId: data.selectedPurposeId,
+        content: data.content?.substring(0, 50) + '...',
+        experience: JSON.stringify(data.experience),
+        status: data.status,
+        imagesCount: data.images?.length || 0,
+      }
+    );
 
     const response = await client.post<CreatePostResponse>(
       '/posts/experience',
@@ -766,7 +818,7 @@ export const createExperiencePost = async (
         },
       }
     );
-    
+
     console.log('[createExperiencePost] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -832,7 +884,7 @@ export interface SplitExperienceResponse {
 /**
  * Split Experience endpoint function
  * Gemini AI ile deneyim metnini kategorilere ayırır
- * 
+ *
  * @param data - Split Experience request data
  * @returns SplitExperienceResponse - AI'dan dönen split edilmiş deneyim bilgileri
  */
@@ -840,18 +892,21 @@ export const splitExperience = async (
   data: SplitExperienceRequest
 ): Promise<SplitExperienceResponse> => {
   try {
-    console.log('[splitExperience] Request data:', JSON.stringify(data, null, 2));
-    console.log('[splitExperience] Request URL: POST /inventory/split-experience');
-    
-    // AI işlemleri için timeout'u 60 saniyeye çıkar (default: 10 saniye)
-    const response = await apiService.getClient().post<SplitExperienceResponse>(
-      '/inventory/split-experience',
-      data,
-      {
-        timeout: 60000, // 60 saniye - AI işlemleri daha uzun sürebilir
-      }
+    console.log(
+      '[splitExperience] Request data:',
+      JSON.stringify(data, null, 2)
     );
-    
+    console.log(
+      '[splitExperience] Request URL: POST /inventory/split-experience'
+    );
+
+    // AI işlemleri için timeout'u 60 saniyeye çıkar (default: 10 saniye)
+    const response = await apiService
+      .getClient()
+      .post<SplitExperienceResponse>('/inventory/split-experience', data, {
+        timeout: 60000, // 60 saniye - AI işlemleri daha uzun sürebilir
+      });
+
     console.log('[splitExperience] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
@@ -863,9 +918,10 @@ export const splitExperience = async (
       requestData: data,
       responseData: error.response?.data,
       errorMessage: error.message,
-      isTimeout: error.code === 'ECONNABORTED' || error.message?.includes('timeout'),
+      isTimeout:
+        error.code === 'ECONNABORTED' || error.message?.includes('timeout'),
     });
-    
+
     throw error;
   }
 };
@@ -891,9 +947,13 @@ export interface PostDetailResponse {
   isUpvoted?: boolean; // Event posts için upvote durumu
 }
 
-export const getPostDetail = async (postId: string): Promise<PostDetailResponse> => {
+export const getPostDetail = async (
+  postId: string
+): Promise<PostDetailResponse> => {
   try {
-    const response = await apiService.getClient().get<PostDetailResponse>(`/posts/${postId}`);
+    const response = await apiService
+      .getClient()
+      .get<PostDetailResponse>(`/posts/${postId}`);
     return response.data;
   } catch (error: any) {
     console.error('[getPostDetail] API Error:', {
@@ -931,10 +991,9 @@ export const updatePost = async (
   data: UpdatePostRequest
 ): Promise<UpdatePostResponse> => {
   try {
-    const response = await apiService.getClient().put<UpdatePostResponse>(
-      `/posts/${postId}`,
-      data
-    );
+    const response = await apiService
+      .getClient()
+      .put<UpdatePostResponse>(`/posts/${postId}`, data);
     return response.data;
   } catch (error: any) {
     console.error('[updatePost] API Error:', {
@@ -961,19 +1020,23 @@ export interface DeletePostResponse {
   message: string;
 }
 
-export const deletePost = async (postId: string): Promise<DeletePostResponse> => {
+export const deletePost = async (
+  postId: string
+): Promise<DeletePostResponse> => {
   console.log('[deletePost] 🗑️ Sending DELETE request to /posts/' + postId);
-  
+
   try {
-    const response = await apiService.getClient().delete<DeletePostResponse>(`/posts/${postId}`);
-    
+    const response = await apiService
+      .getClient()
+      .delete<DeletePostResponse>(`/posts/${postId}`);
+
     console.log('[deletePost] ✅ Post deleted successfully:', {
       postId,
       response: response.data,
       status: response.status,
       timestamp: new Date().toISOString(),
     });
-    
+
     return response.data;
   } catch (error: any) {
     console.error('[deletePost] ❌ API Error:', {
@@ -1037,9 +1100,9 @@ export const searchPosts = async (
     }
     params.append('limit', Math.min(limit, 50).toString());
 
-    const response = await apiService.getClient().get<SearchPostsResponse>(
-      `/posts/search?${params.toString()}`
-    );
+    const response = await apiService
+      .getClient()
+      .get<SearchPostsResponse>(`/posts/search?${params.toString()}`);
     return response.data;
   } catch (error: any) {
     console.error('[searchPosts] API Error:', {
@@ -1083,9 +1146,9 @@ const BOOST_PRICE_FALLBACK: GetBoostPriceResponse = {
  */
 export const getBoostPrice = async (): Promise<GetBoostPriceResponse> => {
   try {
-    const response = await apiService.getClient().get<GetBoostPriceResponse>(
-      '/posts/boost-price'
-    );
+    const response = await apiService
+      .getClient()
+      .get<GetBoostPriceResponse>('/posts/boost-price');
     return response.data;
   } catch (error: any) {
     const status = error.response?.status;
@@ -1093,7 +1156,9 @@ export const getBoostPrice = async (): Promise<GetBoostPriceResponse> => {
 
     if (status === 404 && message === 'Post not found') {
       // Backend'de route sırası: GET /posts/boost-price, GET /posts/:postId'den ÖNCE tanımlanmalı
-      console.warn('[getBoostPrice] ⚠️ 404 Post not found – using fallback. Ensure backend route GET /posts/boost-price is defined before GET /posts/:postId.');
+      console.warn(
+        '[getBoostPrice] ⚠️ 404 Post not found – using fallback. Ensure backend route GET /posts/boost-price is defined before GET /posts/:postId.'
+      );
       return BOOST_PRICE_FALLBACK;
     }
 
@@ -1137,10 +1202,11 @@ export const togglePostBoost = async (
       enabled: data.enabled,
     });
 
-    const response = await apiService.getClient().patch<ToggleBoostResponse>(
-      `/posts/${data.postId}/boost`,
-      { enabled: data.enabled }
-    );
+    const response = await apiService
+      .getClient()
+      .patch<ToggleBoostResponse>(`/posts/${data.postId}/boost`, {
+        enabled: data.enabled,
+      });
 
     console.log('[togglePostBoost] ✅ Success:', response.data);
     return response.data;
@@ -1157,4 +1223,3 @@ export const togglePostBoost = async (
     throw error;
   }
 };
-

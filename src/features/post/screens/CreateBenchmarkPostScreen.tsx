@@ -865,10 +865,16 @@ export const CreateBenchmarkPostScreen = () => {
       return;
     }
 
-    // products: backend en az 2 ürün ve ikisinde de isSelected: true istiyor
+    // Kullanıcının kazanan seçimi (sol = product1, sağ = product2)
+    const choiceProductId =
+      data.selectedChoice === 'product1'
+        ? data.selectedProduct1.id
+        : data.selectedProduct2.id;
+
+    // products: karşılaştırılan iki ürün; isSelected kazananı işaretler
     const products = [
-      { productId: data.selectedProduct1.id, isSelected: true },
-      { productId: data.selectedProduct2.id, isSelected: true },
+      { productId: data.selectedProduct1.id, isSelected: data.selectedChoice === 'product1' },
+      { productId: data.selectedProduct2.id, isSelected: data.selectedChoice === 'product2' },
     ];
 
     // contextType: "product" (küçük harf), contextId: ürün id'lerinden biri
@@ -878,6 +884,7 @@ export const CreateBenchmarkPostScreen = () => {
         contextId: data.selectedProduct1.id,
         description,
         products,
+        choiceProductId,
         images: data.selectedImages || [],
       });
       
@@ -1010,7 +1017,7 @@ export const CreateBenchmarkPostScreen = () => {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <FormProvider {...methods}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+        <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
           {/* Header */}
           <Header
             title={t('create.benchmark.header.title')}

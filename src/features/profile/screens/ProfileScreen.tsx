@@ -2006,7 +2006,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#F5F5F5'} width="100%">
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} width="100%">
       <StatusBar style="light" />
 
       {/* Single FlatList with touch-based swipe for tab switching */}
