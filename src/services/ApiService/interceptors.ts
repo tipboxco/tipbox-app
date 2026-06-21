@@ -359,30 +359,36 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           // Calling logout() in that case would wipe a valid in-flight session.
           const hadNoToken = refreshError?.message === 'No refresh token available';
 
-          // Only treat the failure as terminal when the refresh itself is rejected
-          // by the auth server (401/403 → the refresh token is genuinely invalid/
-          // expired). Transient failures — network drops, timeouts, 5xx — must NOT
-          // clear tokens or log the user out, otherwise a brief connectivity blip
+          // Treat the failure as terminal when the refresh endpoint returns a
+          // definite client-error response (any 4xx → the refresh token is
+          // invalid/expired, or the endpoint is gone). In all these cases the
+          // token will NOT become valid on retry, so the session is dead and the
+          // user must be sent back to the auth screen.
+          // Transient failures — network drops, timeouts, 5xx — must NOT clear
+          // tokens or log the user out, otherwise a brief connectivity blip
           // silently kills a valid session.
           const refreshStatus = refreshError?.response?.status;
-          const isAuthRejection = refreshStatus === 401 || refreshStatus === 403;
+          const isTerminalRejection =
+            typeof refreshStatus === 'number' && refreshStatus >= 400 && refreshStatus < 500;
 
           console.error('🔴 [interceptor] TOKEN REFRESH FAILED:', {
             error: refreshError?.message,
             status: refreshStatus,
             originalUrl: originalRequest?.url,
             hadNoToken,
-            isAuthRejection,
+            isTerminalRejection,
           });
 
           // Preserve credentials on transient failures so a later request can
           // retry the refresh. Only wipe them when the session is truly invalid.
-          if (hadNoToken || isAuthRejection) {
+          if (hadNoToken || isTerminalRejection) {
             clearTokenCache();
             await TokenService.clearTokens();
           }
 
-          if (!hadNoToken && isAuthRejection) {
+          // Session is dead → log out, which flips isAuthenticated to false and
+          // the navigator redirects the user to the auth/login screen.
+          if (!hadNoToken && isTerminalRejection) {
             const { useAppStore } = require('../../store/appStore');
             useAppStore.getState().logout().catch((error: any) => {
               console.error('[interceptors] Logout error (silent):', error);
