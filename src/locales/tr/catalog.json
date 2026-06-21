@@ -104,7 +104,12 @@
     "brandProductsBook": "Marka Ürün Kataloğu",
     "brandProductsBookDescription": "Marka Ürün Kataloğu hakkında kısa açıklama",
     "explore": "Keşfet",
-    "view": "Görüntüle"
+    "view": "Görüntüle",
+    "enableNotifications": "Bildirimleri aç",
+    "notInterested": "İlgilenmiyorum",
+    "shareMessage": "{{brandName}} markasını Tipbox'ta keşfet.",
+    "notificationsEnabled": "Bildirimler açıldı",
+    "markedNotInterested": "İlgilenmiyorum olarak işaretlendi"
   },
   "brandProductDetail": {
     "title": "Ürün Detayları",

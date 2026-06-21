@@ -887,7 +887,7 @@ const CatalogScreenComponent = ({ embedded = false }: CatalogScreenProps) => {
   };
 
   // PERFORMANCE FIX: Memoize background color to prevent re-renders
-  const backgroundColor = useMemo(() => isDark ? '#1A1A1A' : '#FAFAFA', [isDark]);
+  const backgroundColor = useMemo(() => isDark ? '#000000' : '#FFFFFF', [isDark]);
 
   return (
     <SafeAreaView edges={embedded ? [] : ['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>

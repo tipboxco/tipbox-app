@@ -563,7 +563,7 @@ export const CreateTipsAndTrickPostScreen = () => {
           style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'} position="relative">
+        <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'} position="relative">
           {/* Header */}
           <Header
             title={t('create.tipsAndTricks.header.title')}

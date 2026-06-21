@@ -37,6 +37,14 @@ import type { ExperiencePostFormData } from '../schemas/experiencePostSchema';
 type CreateExperiencePostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CreateExperiencePostScreenRouteProp = RouteProp<PostStackParamList, 'CreateExperiencePostScreen'>;
 
+/**
+ * AI (Gemini) split servisi kullanılamadığında (ör. rate limit/503 ya da geçersiz yanıt)
+ * kullanılan yerel sentinel. Bu durumda kullanıcının kendi metni deneyim segmenti olarak
+ * kabul edilir; 'Sahibim' + katalogdan ekleme akışı envantere ekleyerek post oluşturur
+ * (snippet gerektirmez). ExperienceComposer ile aynı davranış.
+ */
+const FALLBACK_SNIPPET_ID = 'local-fallback';
+
 export const CreateExperiencePostScreen = () => {
     const { t } = useTranslation('post');
     const { colorMode } = useColorMode();
@@ -192,6 +200,27 @@ export const CreateExperiencePostScreen = () => {
         }
     };
 
+    // AI split yapılamadığında (backend güncel değil veya Gemini rate limit/503/geçersiz yanıt)
+    // kullanıcının kendi metnini ürün deneyimi segmenti olarak kabul et; sentinel snippet ile
+    // Step 3 (puanlama) adımını aç ve akış devam etsin. ExperienceComposer ile aynı fallback.
+    const applyFallbackSplit = () => {
+        setValue('priceExperienceText', '');
+        setValue('priceRating', 0);
+        setValue('productExperienceText', (experienceText || '').trim());
+        setValue('productRating', 0);
+        setExperienceSnippetId(FALLBACK_SNIPPET_ID);
+        setIsSplitLoading(false);
+        setCurrentStep(3);
+        showCustomToast(toast, {
+            title: t('create.experience.ai.fallbackTitle', 'AI şu an kullanılamıyor'),
+            description: t(
+                'create.experience.ai.fallbackPrompt',
+                'Kendi yorumunuz kullanılacak. Lütfen yıldızlarla puanlayıp paylaşın.'
+            ),
+            action: 'success',
+        });
+    };
+
     const handleNextPress = async () => {
         if (currentStep === 0) {
             const isValid = await validateStep(0);
@@ -270,12 +299,8 @@ export const CreateExperiencePostScreen = () => {
                     const hasValidSnippetId =
                         typeof snippetId === 'string' && snippetId.trim().length > 0;
                     if (!hasValidSnippetId) {
-                        setIsSplitLoading(false);
-                        showCustomToast(toast, {
-                            title: t('create.common.errors.title'),
-                            description: t('create.experience.ai.structureError'),
-                            action: 'error',
-                        });
+                        // Geçersiz/boş snippet → fallback: kullanıcının kendi metnini kullan
+                        applyFallbackSplit();
                         return;
                     }
                     setExperienceSnippetId(snippetId);
@@ -284,30 +309,10 @@ export const CreateExperiencePostScreen = () => {
                     setIsSplitLoading(false);
                     setCurrentStep(3);
                 } catch (error: any) {
-                    console.error('[CreateExperiencePostScreen] ❌ Split experience error:', error);
-                    
-                    setIsSplitLoading(false);
-                    
-                    // Timeout kontrolü
-                    const isTimeout = error?.code === 'ECONNABORTED' || 
-                                    error?.message?.includes('timeout') ||
-                                    error?.message?.includes('exceeded');
-                    
-                    let errorMessage: string;
-                    if (isTimeout) {
-                        errorMessage = t('create.experience.ai.timeoutError');
-                    } else {
-                        errorMessage = error?.response?.data?.message ||
-                                       error?.response?.data?.error?.message ||
-                                       error?.message ||
-                                       t('create.experience.ai.generalError');
-                    }
-
-                    showCustomToast(toast, {
-                        title: t('create.common.errors.title'),
-                        description: errorMessage,
-                        action: 'error',
-                    });
+                    // AI servisi kullanılamıyor (ör. Gemini rate limit/503 ya da backend güncel değil)
+                    // → fallback: kullanıcının kendi metnini deneyim olarak kullan, akış devam etsin.
+                    console.error('[CreateExperiencePostScreen] ❌ Split experience error, applying fallback:', error);
+                    applyFallbackSplit();
                 }
             }
         }
@@ -545,6 +550,21 @@ export const CreateExperiencePostScreen = () => {
 
             // POST /inventory başarılıysa post zaten oluşturuldu, tekrar oluşturma
             if (!inventoryCreatedPost) {
+                // Fallback snippet yalnızca 'Sahibim' + yeni ürün (envantere ekleme) yolunda geçerlidir;
+                // bu yol AI gerektiren createExperiencePost'a düşerse (ör. ürün zaten envanterde) backend
+                // gerçek snippet ister. ExperienceComposer ile aynı davranış.
+                if (experienceSnippetId === FALLBACK_SNIPPET_ID) {
+                    showCustomToast(toast, {
+                        title: t('create.experience.ai.fallbackTitle', 'AI şu an kullanılamıyor'),
+                        description: t(
+                            'create.experience.ai.fallbackUnavailable',
+                            'Bu paylaşım için yapay zeka analizi gerekiyor. Lütfen biraz sonra tekrar deneyin.'
+                        ),
+                        action: 'error',
+                    });
+                    isSubmittingRef.current = false;
+                    return;
+                }
                 if (!experienceSnippetId || experienceSnippetId.trim() === '') {
                     showCustomToast(toast, {
                         title: t('create.common.errors.title'),
@@ -845,8 +865,13 @@ export const CreateExperiencePostScreen = () => {
     // Check if Share button should be enabled (Both ratings selected, both texts non-empty, and not editing)
     const priceExperienceText = watch('priceExperienceText');
     const productExperienceText = watch('productExperienceText');
-    const isShareEnabled = priceRating > 0 && productRating > 0
-        && !!priceExperienceText?.trim() && !!productExperienceText?.trim()
+    // Fallback (AI kullanılamadı) modunda kullanıcının metni yalnızca ürün segmentine yazılır;
+    // bu durumda sadece ürün puanı/metni zorunludur. Aksi halde her iki segment de gereklidir.
+    const isFallbackSplit = experienceSnippetId === FALLBACK_SNIPPET_ID;
+    const isShareEnabled = (isFallbackSplit
+        ? productRating > 0 && !!productExperienceText?.trim()
+        : priceRating > 0 && productRating > 0
+            && !!priceExperienceText?.trim() && !!productExperienceText?.trim())
         && editingField === null;
     
     // Submit sırasında butonu devre dışı bırak (çift tıklama engeli)
@@ -860,7 +885,7 @@ export const CreateExperiencePostScreen = () => {
     if (currentStep === 0) {
         return (
             <FormProvider {...methods}>
-                <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+                <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
                     <SelectProduct
                         onProductSelect={handleProductSelect}
                         selectedProduct={selectedProduct}
@@ -890,7 +915,7 @@ export const CreateExperiencePostScreen = () => {
         return (
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
                 <FormProvider {...methods}>
-                    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+                    <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
                         {/* Header */}
                         <Header
                             title={t('create.experience.header.title')}
@@ -977,7 +1002,7 @@ export const CreateExperiencePostScreen = () => {
         return (
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
                 <FormProvider {...methods}>
-                    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+                    <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
                         {/* Header */}
                         <Header
                             title={t('create.experience.header.title')}
@@ -1034,7 +1059,7 @@ export const CreateExperiencePostScreen = () => {
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
             <FormProvider {...methods}>
-                <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+                <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
                     {/* Header */}
                     <Header
                         title={t('create.experience.header.title')}

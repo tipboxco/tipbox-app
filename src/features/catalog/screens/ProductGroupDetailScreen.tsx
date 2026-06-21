@@ -19,7 +19,7 @@ export const ProductGroupDetailScreen: React.FC = () => {
     productGroupId, productGroupName, productGroupImage,
   } = route.params;
 
-  const backgroundColor = useMemo(() => isDark ? '#1A1A1A' : '#FAFAFA', [isDark]);
+  const backgroundColor = useMemo(() => isDark ? '#000000' : '#FFFFFF', [isDark]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>

@@ -13,14 +13,25 @@ interface PostTypeSelectorProps {
   options: PostTypeOption[];
   value: string;
   onChange: (value: string) => void;
+  /** Devre dışı (envanter gerektiren ama ürün envanterde olmayan) tip değerleri. */
+  disabledValues?: string[];
+  /** Devre dışı bir tipe dokunulduğunda (örn. kullanıcıyı bilgilendirmek için). */
+  onDisabledPress?: (value: string) => void;
 }
 
 /**
  * Paylaşım tipini seçtiren yatay radio kart grubu. Seçenekler dışarıdan verilir
  * (kategori bağlamında General/Question/Tips, ürün bağlamında
  * Experience/Question/Tips/Benchmark). Seçili kart yeşil kenarlık + yeşil içerik.
+ * disabledValues içindeki tipler soluk ve seçilemez görünür.
  */
-export const PostTypeSelector: React.FC<PostTypeSelectorProps> = ({ options, value, onChange }) => {
+export const PostTypeSelector: React.FC<PostTypeSelectorProps> = ({
+  options,
+  value,
+  onChange,
+  disabledValues,
+  onDisabledPress,
+}) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { t } = useTranslation('post');
@@ -31,30 +42,43 @@ export const PostTypeSelector: React.FC<PostTypeSelectorProps> = ({ options, val
   const inactiveBorder = isDark ? '#38383A' : '#E9E9E9';
 
   return (
-    <HStack space="sm" px={16}>
+    <HStack space='sm' px={16}>
       {options.map(({ value: optValue, labelKey, Icon }) => {
         const selected = value === optValue;
-        const color = selected ? activeColor : inactiveColor;
+        const disabled = disabledValues?.includes(optValue) ?? false;
+        const color = disabled
+          ? inactiveColor
+          : selected
+            ? activeColor
+            : inactiveColor;
         return (
           <Pressable
             key={optValue}
             flex={1}
-            onPress={() => onChange(optValue)}
-            accessibilityRole="radio"
-            accessibilityState={{ selected }}
+            onPress={() =>
+              disabled ? onDisabledPress?.(optValue) : onChange(optValue)
+            }
+            accessibilityRole='radio'
+            accessibilityState={{ selected, disabled }}
           >
             <VStack
               bg={cardBg}
-              borderWidth={selected ? 1.5 : 1}
-              borderColor={selected ? activeColor : inactiveBorder}
+              borderWidth={selected && !disabled ? 1.5 : 1}
+              borderColor={selected && !disabled ? activeColor : inactiveBorder}
               borderRadius={10}
               py={12}
               px={4}
-              space="xs"
-              alignItems="center"
+              space='xs'
+              alignItems='center'
+              opacity={disabled ? 0.4 : 1}
             >
               <Icon size={22} color={color} />
-              <Text fontSize={11} fontWeight={selected ? '$semibold' : '$medium'} color={color} textAlign="center">
+              <Text
+                fontSize={11}
+                fontWeight={selected ? '$semibold' : '$medium'}
+                color={color}
+                textAlign='center'
+              >
                 {t(labelKey)}
               </Text>
             </VStack>

@@ -14,7 +14,6 @@ import { UserItem, BrandItem, ProductItem } from '@/src/features/search/componen
 import type { SearchProduct } from '@/src/features/search/api/searchApi';
 import { toImageSource } from '@/src/utils';
 import { navigationService } from '@/src/services/NavigationService';
-import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { ProductInfoType } from '@/src/types/common';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -113,18 +112,21 @@ export const SearchScreen: React.FC = () => {
     setCurrentPage(e.nativeEvent.position);
   }, []);
 
-  // Navigation handlers
-  const handleUserPress = useCallback(
-    (userId: string) => {
-      if (!userId) return;
-      navigation.navigate('Profile', { screen: 'ProfileMain', params: { userId } } as any);
-    },
-    [navigation]
-  );
+  // Navigation handlers — tümü root seviyesinde (tab içinde değil) yeni sayfa olarak açılır
+  const handleUserPress = useCallback((userId: string) => {
+    if (!userId) return;
+    navigationService.navigate(ROOT_ROUTES.PROFILE, {
+      screen: 'ProfileMain',
+      params: { userId },
+    });
+  }, []);
 
   const handleBrandPress = useCallback((brandId: string) => {
     if (!brandId) return;
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandPostListScreen' as any, { brandId });
+    navigationService.navigate(ROOT_ROUTES.BRAND, {
+      screen: 'BrandDetailScreen',
+      params: { brandId },
+    });
   }, []);
 
   const handleProductPress = useCallback((product: SearchProduct) => {

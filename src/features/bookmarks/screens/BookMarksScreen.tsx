@@ -254,7 +254,7 @@ const BookMarksScreen = () => {
   };
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#F5F5F5'}>
+    <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
       <StatusBar style="dark" backgroundColor="#FFFFFF" translucent={true} />
       
       {/* Top inset view - Status bar için beyaz arka plan */}

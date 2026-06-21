@@ -204,6 +204,7 @@ export interface BrandCatalogResponse {
   name: string;
   description: string | null;
   bannerImage: string | null;
+  logo?: string | null; // Marka logosu (dairesel) - API gönderirse kullanılır
   followers: number;
   isJoined: boolean;
 }

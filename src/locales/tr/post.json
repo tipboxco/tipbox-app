@@ -2,7 +2,8 @@
   "create": {
     "header": {
       "title": "Gönderi Yaz",
-      "share": "Paylaş"
+      "share": "Paylaş",
+      "continue": "Devam Et"
     },
     "typeSelector": {
       "general": "Genel",
@@ -48,7 +49,23 @@
       "validation": {
         "title": "Doğrulama",
         "description": "Lütfen gönderinizi kontrol edip tekrar deneyin."
+      },
+      "inventoryRequired": {
+        "title": "Ürün envanterinizde değil",
+        "description": "Bu paylaşım tipi için ürün envanterinizde olmalı. Önce 'Deneyim → Sahibim' ile ekleyebilirsiniz."
       }
+    },
+    "inventoryCta": {
+      "title": "Ürün envanterinde değil",
+      "description": "Soru, ipucu veya karşılaştırma paylaşmak için önce ürünü envanterine ekle.",
+      "action": "Ekle"
+    },
+    "paywall": {
+      "title": "Yetersiz TIPS Bakiyesi",
+      "description": "Bu işlem için yeterli TIPS bakiyen yok. Devam etmek için bakiyeni yükle.",
+      "descriptionDetailed": "Bu işlem için {{required}} TIPS gerekiyor; mevcut bakiyen {{available}} TIPS. Devam etmek için bakiyeni yükle.",
+      "goToWallet": "Cüzdana Git",
+      "cancel": "Vazgeç"
     },
     "experience": {
       "header": {
@@ -129,7 +146,20 @@
         "structureError": "Yapay zeka deneyiminizi yapılandıramadı. Lütfen tekrar deneyin veya manuel olarak devam edin.",
         "generalError": "Deneyim metni işlenirken bir hata oluştu. Lütfen tekrar deneyin.",
         "splitRequired": "Lütfen önce deneyiminizi yapılandırmak için yapay zeka bölme özelliğini kullanın.",
-        "analyze": "AI ile analiz et"
+        "analyze": "AI ile analiz et",
+        "ratePromptTitle": "Puanlama gerekli",
+        "ratePrompt": "Deneyiminiz hazır. Lütfen yıldızlarla puanlayıp paylaşın.",
+        "fallbackTitle": "AI şu an kullanılamıyor",
+        "fallbackPrompt": "Kendi yorumunuz kullanılacak. Lütfen yıldızlarla puanlayıp paylaşın.",
+        "fallbackUnavailable": "Bu paylaşım için yapay zeka analizi gerekiyor. Lütfen biraz sonra tekrar deneyin."
+      },
+      "editStep": "‹ Düzenle",
+      "rateStepTitle": "Deneyimini puanla",
+      "discard": {
+        "title": "Çıkmak istediğine emin misin?",
+        "message": "Bu sayfadaki tüm değişiklikler kaybedilecek.",
+        "cancel": "Vazgeç",
+        "confirm": "Çık"
       },
       "validation": {
         "productNotSelected": "Ürün seçilmedi. Lütfen bir ürün seçin.",
@@ -488,12 +518,19 @@
       "question": "Soru",
       "boosted": "Öne Çıkan",
       "tipsAndTricks": "İpuçları ve Püf Noktaları",
-      "update": "Güncelleme"
+      "update": "Güncelleme",
+      "post": "Gönderi",
+      "benchmark": "Karşılaştırma",
+      "experience": "Deneyim"
     },
     "translate": {
       "translating": "Çeviriliyor...",
       "hideTranslation": "Çeviriyi Gizle",
       "translate": "Çevir"
+    },
+    "segmentToggle": {
+      "original": "Orijinal",
+      "segmented": "Segmentli (AI)"
     },
     "boost": {
       "success": "Başarılı",

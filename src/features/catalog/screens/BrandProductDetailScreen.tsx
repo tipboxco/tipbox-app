@@ -888,7 +888,7 @@ const BrandProductDetailScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
-      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '#F5F5F5'}>
+      <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
         {/* Header */}
         <Header
           title={t('brandProductDetail.title')}

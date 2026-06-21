@@ -13,6 +13,7 @@ import {
   UserIcon,
   FlagIcon,
   ArrowUpCircleIcon,
+  ChatBubbleBottomCenterTextIcon,
 } from 'react-native-heroicons/outline';
 import {
   HeartIcon as HeartIconSolid,
@@ -630,6 +631,31 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           </Modal>
         </HStack>
       </VStack>
+
+      {/* Badges */}
+      <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} gap={8} alignItems="center">
+        <Box
+          borderWidth={1}
+          borderColor="#9BA3B5"
+          bgColor="#5B6577"
+          borderRadius={20}
+          px={8}
+          py={3}
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <ChatBubbleBottomCenterTextIcon width={12} height={12} color={'#fff'} />
+          <Text
+            fontSize={11}
+            fontWeight="$semibold"
+            ml={4}
+            color={'#fff'}
+          >
+            {t('card.badges.post')}
+          </Text>
+        </Box>
+      </HStack>
 
       {/* Content */}
       <Pressable onPress={() => {

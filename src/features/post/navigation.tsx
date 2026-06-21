@@ -1,6 +1,19 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen, SelectCompareProductScreen, CategorySearchScreen, ProductPickerScreen } from './screens';
+import {
+  PostDetailScreen,
+  PostsScreen,
+  CreatePostScreen,
+  CreateTipsAndTrickPostScreen,
+  CreateQuestionPostScreen,
+  CreateExperiencePostScreen,
+  CreateBenchmarkPostScreen,
+  CreateUpdatePostScreen,
+  SelectCompareProductScreen,
+  CategorySearchScreen,
+  ProductPickerScreen,
+  ExperienceRatingScreen,
+} from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
@@ -12,11 +25,17 @@ import type { ImageSourcePropType } from 'react-native';
 
 // Post Stack için type tanımlaması
 export type PostStackParamList = {
-  PostDetailScreen: { 
-    postData?: any; 
+  PostDetailScreen: {
+    postData?: any;
     postId?: string; // Deep link veya notification'dan gelen postId
-    type?: 'post' | 'tipsAndTricks' | 'question' | 'benchmark' | 'experience' | 'update'; 
-    showRelatedPost?: boolean; 
+    type?:
+      | 'post'
+      | 'tipsAndTricks'
+      | 'question'
+      | 'benchmark'
+      | 'experience'
+      | 'update';
+    showRelatedPost?: boolean;
     relatedPostData?: any;
     commentId?: string; // Notification'dan gelen commentId (yorumu highlight etmek için)
   };
@@ -54,19 +73,52 @@ export type PostStackParamList = {
   };
   CreateTipsAndTrickPostScreen: undefined;
   CreateQuestionPostScreen: undefined;
-  CreateExperiencePostScreen: { product?: { id: string; name: string; description?: string; image: any; brand?: string }; fromInventory?: boolean; experienceOption?: 'own' | 'tried' };
+  CreateExperiencePostScreen: {
+    product?: {
+      id: string;
+      name: string;
+      description?: string;
+      image: any;
+      brand?: string;
+    };
+    fromInventory?: boolean;
+    experienceOption?: 'own' | 'tried';
+  };
   CreateBenchmarkPostScreen: {
-    product?: { id: string; name: string; description?: string; image: any; productGroupId?: string };
-    selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any; productGroupId?: string };
+    product?: {
+      id: string;
+      name: string;
+      description?: string;
+      image: any;
+      productGroupId?: string;
+    };
+    selectedProduct?: {
+      id: string;
+      name: string;
+      brand?: string;
+      description?: string;
+      image: any;
+      productGroupId?: string;
+    };
     selectedProductField?: 'selectedProduct1' | 'selectedProduct2';
   };
-  CreateUpdatePostScreen: { 
-    product?: { id: string; name: string; description?: string; image: any; brand?: string }; 
+  CreateUpdatePostScreen: {
+    product?: {
+      id: string;
+      name: string;
+      description?: string;
+      image: any;
+      brand?: string;
+    };
     postId?: string; // Update modu için (mevcut update post'u düzenleme)
     experiencePostId?: string; // Experience post ID (update oluştururken bağlanacak experience post)
     experiencePost?: {
       id: string;
-      content: Array<{ tag: { icon: string; title: string }; text: string; rating: boolean[] }>;
+      content: Array<{
+        tag: { icon: string; title: string };
+        text: string;
+        rating: boolean[];
+      }>;
       images?: ImageSourcePropType[];
       product: { id: string; name: string; subName: string; image: any };
     };
@@ -74,16 +126,35 @@ export type PostStackParamList = {
   AddProductFromInventory: {
     returnScreen: 'CreateBenchmarkPostScreen';
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
-    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any };
+    initialProduct?: {
+      id: string;
+      name: string;
+      brand?: string;
+      subName?: string;
+      image: any;
+    };
   };
   AddProductFromCatalog: {
     returnScreen: 'CreateBenchmarkPostScreen';
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
-    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any };
+    initialProduct?: {
+      id: string;
+      name: string;
+      brand?: string;
+      subName?: string;
+      image: any;
+    };
   };
   SelectCompareProductScreen: {
     productGroupId?: string; // Optional - filter varsa kullanılır
-    initialProduct?: { id: string; name: string; brand?: string; subName?: string; image: any; productGroupId?: string };
+    initialProduct?: {
+      id: string;
+      name: string;
+      brand?: string;
+      subName?: string;
+      image: any;
+      productGroupId?: string;
+    };
     selectedProductField: 'selectedProduct1' | 'selectedProduct2';
   };
   // returnTo: seçim yapılınca CreatePostScreen'e geri dön (forward navigasyon yerine).
@@ -93,8 +164,31 @@ export type PostStackParamList = {
   // target: 'context' (1. ürün, varsayılan) | 'compare' (benchmark 2. ürün)
   // restrictProductGroupId: verilirse yalnızca bu ürün grubundaki ürünler gösterilir (benchmark 2. ürün)
   ProductPicker:
-    | { returnTo?: 'CreatePostScreen'; target?: 'context' | 'compare'; restrictProductGroupId?: string }
+    | {
+        returnTo?: 'CreatePostScreen';
+        target?: 'context' | 'compare';
+        restrictProductGroupId?: string;
+      }
     | undefined;
+  // Deneyim puanlama (AI split) ekranı — CreatePostScreen'de "Devam Et" ile açılır.
+  ExperienceRating: {
+    draft: {
+      productId: string;
+      productTitle: string;
+      productImage?: any;
+      productSubName?: string;
+      experienceOption: 'own' | 'tried';
+      step1Duration: string;
+      selectedCondition: string;
+      selectedFrequency: string;
+      experienceText: string;
+      selectedImages: string[];
+      // Split rate ekranında çalıştığından bunlar opsiyoneldir.
+      experienceSnippetId?: string;
+      priceExperienceText?: string;
+      productExperienceText?: string;
+    };
+  };
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();
@@ -102,23 +196,28 @@ const Stack = createNativeStackNavigator<PostStackParamList>();
 // Wrapper component for AddProductFromInventory navigation screen
 const AddProductFromInventoryScreen: React.FC = () => {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<PostStackParamList, 'AddProductFromInventory'>>();
-  const { returnScreen, selectedProductField, initialProduct } = route.params || {};
+  const route =
+    useRoute<RouteProp<PostStackParamList, 'AddProductFromInventory'>>();
+  const { returnScreen, selectedProductField, initialProduct } =
+    route.params || {};
 
   const handleProductSelect = (product: InventoryItem) => {
     // Navigate back to CreateBenchmarkPostScreen with selected product and preserve initial product
-    navigation.navigate(returnScreen as any, {
-      product: initialProduct,
-      selectedProduct: {
-        id: product.productId || product.id,
-        name: product.brand?.model || product.brand?.name || 'Unknown',
-        brand: product.brand?.name,
-        description: product.brand?.specs || '',
-        image: product.image,
-        productGroupId: product.productGroupId, // Include productGroupId for filtering
-      },
-      selectedProductField,
-    } as any);
+    navigation.navigate(
+      returnScreen as any,
+      {
+        product: initialProduct,
+        selectedProduct: {
+          id: product.productId || product.id,
+          name: product.brand?.model || product.brand?.name || 'Unknown',
+          brand: product.brand?.name,
+          description: product.brand?.specs || '',
+          image: product.image,
+          productGroupId: product.productGroupId, // Include productGroupId for filtering
+        },
+        selectedProductField,
+      } as any
+    );
   };
 
   const handleClose = () => {
@@ -136,27 +235,33 @@ const AddProductFromInventoryScreen: React.FC = () => {
 // Wrapper component for AddProductFromCatalog navigation screen
 const AddProductFromCatalogScreen: React.FC = () => {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<PostStackParamList, 'AddProductFromCatalog'>>();
-  const { returnScreen, selectedProductField, initialProduct } = route.params || {};
+  const route =
+    useRoute<RouteProp<PostStackParamList, 'AddProductFromCatalog'>>();
+  const { returnScreen, selectedProductField, initialProduct } =
+    route.params || {};
 
   const handleProductSelect = (product: Product) => {
     const nameParts = product.name.split(' ');
     const brand = nameParts.length > 1 ? nameParts[0] : undefined;
-    const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
+    const productName =
+      nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
 
     // Navigate back to CreateBenchmarkPostScreen with selected product and preserve initial product
-    navigation.navigate(returnScreen as any, {
-      product: initialProduct,
-      selectedProduct: {
-        id: product.id,
-        name: productName,
-        brand: brand,
-        description: product.description || '',
-        image: product.image,
-        productGroupId: product.productGroupId, // Include productGroupId for filtering
-      },
-      selectedProductField,
-    } as any);
+    navigation.navigate(
+      returnScreen as any,
+      {
+        product: initialProduct,
+        selectedProduct: {
+          id: product.id,
+          name: productName,
+          brand: brand,
+          description: product.description || '',
+          image: product.image,
+          productGroupId: product.productGroupId, // Include productGroupId for filtering
+        },
+        selectedProductField,
+      } as any
+    );
   };
 
   const handleClose = () => {
@@ -184,57 +289,46 @@ export const PostNavigator = () => {
         },
       }}
     >
+      <Stack.Screen name='PostDetailScreen' component={PostDetailScreen} />
+      <Stack.Screen name='PostsScreen' component={PostsScreen} />
+      <Stack.Screen name='CreatePostScreen' component={CreatePostScreen} />
       <Stack.Screen
-        name="PostDetailScreen"
-        component={PostDetailScreen}
-      />
-      <Stack.Screen
-        name="PostsScreen"
-        component={PostsScreen}
-      />
-      <Stack.Screen
-        name="CreatePostScreen"
-        component={CreatePostScreen}
-      />
-      <Stack.Screen
-        name="CreateTipsAndTrickPostScreen"
+        name='CreateTipsAndTrickPostScreen'
         component={CreateTipsAndTrickPostScreen}
       />
       <Stack.Screen
-        name="CreateQuestionPostScreen"
+        name='CreateQuestionPostScreen'
         component={CreateQuestionPostScreen}
       />
       <Stack.Screen
-        name="CreateExperiencePostScreen"
+        name='CreateExperiencePostScreen'
         component={CreateExperiencePostScreen}
       />
       <Stack.Screen
-        name="CreateBenchmarkPostScreen"
+        name='CreateBenchmarkPostScreen'
         component={CreateBenchmarkPostScreen}
       />
       <Stack.Screen
-        name="CreateUpdatePostScreen"
+        name='CreateUpdatePostScreen'
         component={CreateUpdatePostScreen}
       />
       <Stack.Screen
-        name="AddProductFromInventory"
+        name='AddProductFromInventory'
         component={AddProductFromInventoryScreen}
       />
       <Stack.Screen
-        name="AddProductFromCatalog"
+        name='AddProductFromCatalog'
         component={AddProductFromCatalogScreen}
       />
       <Stack.Screen
-        name="SelectCompareProductScreen"
+        name='SelectCompareProductScreen'
         component={SelectCompareProductScreen}
       />
+      <Stack.Screen name='CategorySearch' component={CategorySearchScreen} />
+      <Stack.Screen name='ProductPicker' component={ProductPickerScreen} />
       <Stack.Screen
-        name="CategorySearch"
-        component={CategorySearchScreen}
-      />
-      <Stack.Screen
-        name="ProductPicker"
-        component={ProductPickerScreen}
+        name='ExperienceRating'
+        component={ExperienceRatingScreen}
       />
     </Stack.Navigator>
   );

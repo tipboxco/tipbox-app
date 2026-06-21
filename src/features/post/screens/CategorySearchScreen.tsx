@@ -419,7 +419,7 @@ export const CategorySearchScreen: React.FC = () => {
   ]);
 
   // Theme colors — kept as explicit values to stay consistent with sibling catalog screens
-  const bgColor = isDark ? '#1A1A1A' : '#FAFAFA';
+  const bgColor = isDark ? '#1A1A1A' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#111827';
   const subTextColor = isDark ? '#9CA3AF' : '#6B7280';
   const inputBg = isDark ? '#2A2A2A' : '#F2F2F2';

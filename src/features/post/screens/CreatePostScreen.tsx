@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -64,6 +70,10 @@ import {
 } from '../api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useSyncInventoryToStore } from '../hooks/useSyncInventoryToStore';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { isInsufficientBalanceError, parseTipsBalance } from '../utils/paywall';
+import { InsufficientBalanceSheet } from '../components/InsufficientBalanceSheet';
 import { useWalletBalance } from '@/src/features/wallet/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
@@ -278,6 +288,7 @@ export const CreatePostScreen = () => {
   const createQuestionPostMutation = useCreateQuestionPost();
   const createTipsPostMutation = useCreateTipsAndTricksPost();
   const toast = useToast();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const isSubmittingRef = useRef(false);
   const { user, walletBalance: storeBalance } = useAppStore();
   const queryClient = useQueryClient();
@@ -316,12 +327,21 @@ export const CreatePostScreen = () => {
   const [experienceState, setExperienceState] = useState<{
     canShare: boolean;
     isLoading: boolean;
+    readyToPost: boolean;
+    step: 'form' | 'rate';
   }>({
     canShare: false,
     isLoading: false,
+    readyToPost: false,
+    step: 'form',
   });
   const handleExperienceStateChange = useCallback(
-    (s: { canShare: boolean; isLoading: boolean }) => setExperienceState(s),
+    (s: {
+      canShare: boolean;
+      isLoading: boolean;
+      readyToPost: boolean;
+      step: 'form' | 'rate';
+    }) => setExperienceState(s),
     []
   );
 
@@ -358,6 +378,11 @@ export const CreatePostScreen = () => {
   const setCompareProduct = useCreatePostFlowStore(
     state => state.setCompareProduct
   );
+  const isProductInInventory = useCreatePostFlowStore(
+    state => state.isProductInInventory
+  );
+  // Envanter ürün ID'lerini store'a senkronla (disabled tip mantığı için gerekli)
+  useSyncInventoryToStore();
 
   const routeParams = route.params || {};
   const finalContextType =
@@ -368,6 +393,37 @@ export const CreatePostScreen = () => {
     isValidFlow && productInfoSnapshot
       ? productInfoSnapshot
       : routeParams.productInfo;
+
+  // Ürün bağlamında, seçili ürün envanterde mi? Envanter gerektiren tipler buna göre kilitlenir.
+  const selectedProductInInventory =
+    finalContextType === ProductInfoType.PRODUCT && !!finalContextId
+      ? isProductInInventory(finalContextId)
+      : false;
+  // 'experience' (Sahibim) ürünü envantere ekleyen yol olduğundan her zaman açık;
+  // question/tips/benchmark ürün envanterde değilse devre dışı.
+  const disabledTypeValues = useMemo<string[]>(() => {
+    if (contextKind !== 'product' || selectedProductInInventory) return [];
+    return ['question', 'tips', 'benchmark'];
+  }, [contextKind, selectedProductInInventory]);
+
+  // Seçili tip devre dışı kaldıysa (ör. ürün envanterde değil) 'experience'a düş.
+  useEffect(() => {
+    if (disabledTypeValues.includes(composerType)) {
+      setComposerType('experience');
+    }
+  }, [disabledTypeValues, composerType]);
+
+  // Ürün envanterde değilse: alert yerine kullanıcıyı 'Deneyim' (Sahibim) akışına yönlendir —
+  // ekleme yolu budur. Hem devre dışı tipe dokunma hem de CTA banner bu aksiyonu kullanır.
+  const handleAddToInventoryCta = useCallback(() => {
+    setComposerType('experience');
+  }, []);
+  // Ürün bağlamı + seçili ürün + envanterde değil → envantere ekleme CTA banner'ı göster
+  const showInventoryCta = disabledTypeValues.length > 0 && !!finalContextId;
+  // Experience 'rate' (AI split puanlama) adımında ekranda yalnızca split bölümü görünsün:
+  // üst bağlam seçici + tip seçici + CTA gizlenir.
+  const hideContextUi =
+    composerType === 'experience' && experienceState.step === 'rate';
 
   const typeOptions =
     contextKind === 'product' ? PRODUCT_TYPE_OPTIONS : CATEGORY_TYPE_OPTIONS;
@@ -389,6 +445,32 @@ export const CreatePostScreen = () => {
   const handleClearContext = useCallback(() => {
     clearFlow();
   }, [clearFlow]);
+
+  // Paywall: yetersiz TIPS bakiyesi hatasında toast yerine cüzdana yönlendiren bottom sheet aç.
+  const showInsufficientBalancePaywall = useCallback(
+    (error: unknown) => {
+      const { available, required } = parseTipsBalance(error);
+      openBottomSheet(
+        <InsufficientBalanceSheet
+          available={available}
+          required={required}
+          onGoToWallet={() => {
+            closeBottomSheet();
+            navigationService.navigate(ROOT_ROUTES.WALLET, {
+              screen: 'WalletScreen',
+            });
+          }}
+          onCancel={closeBottomSheet}
+        />,
+        {
+          enableDynamicSizing: false,
+          snapPoints: ['45%'],
+          enablePanDownToClose: true,
+        }
+      );
+    },
+    [openBottomSheet, closeBottomSheet]
+  );
 
   const handleTypeChange = (value: string) => {
     const type = value as ComposerType;
@@ -576,7 +658,13 @@ export const CreatePostScreen = () => {
       });
     } catch (error: any) {
       console.error('[CreatePostScreen] ❌ API Error:', error);
+      // Yetersiz TIPS bakiyesi (paywall): hata toast'ı yerine cüzdana yönlendiren sheet aç.
+      if (isInsufficientBalanceError(error)) {
+        showInsufficientBalancePaywall(error);
+        return;
+      }
       const errorMessage =
+        error?.response?.data?.error?.message ||
         error?.response?.data?.message ||
         error?.message ||
         t('create.toast.error.description');
@@ -682,14 +770,18 @@ export const CreatePostScreen = () => {
               style={{ flex: 1 }}
               keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
-              <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+              <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
                 {/* Header */}
                 <Header
                   title={t('create.header.title')}
                   leftAction='cancel'
                   onLeftActionPress={handleBackPress}
                   rightButton={{
-                    text: t('create.header.share'),
+                    text:
+                      composerType === 'experience' &&
+                      !experienceState.readyToPost
+                        ? t('create.header.continue', 'Devam Et')
+                        : t('create.header.share'),
                     backgroundColor:
                       isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
                     borderWidth: 1,
@@ -715,74 +807,135 @@ export const CreatePostScreen = () => {
                 >
                   <VStack space='md' pt={12} pb={100}>
                     {/* Bağlam türü (Ürün/Kategori) feed create bottom sheet'inde seçilir;
-                        burada radio gösterilmez, sadece seçim input'u gösterilir. */}
-                    <VStack px={16} space='sm'>
-                      {/* 1. ürün/kategori seçim input'u (paylaşılan component) */}
-                      <ProductSelectInput
-                        value={
-                          finalProductInfo
-                            ? {
-                                image: finalProductInfo.image,
-                                title: finalProductInfo.title,
-                                subName: finalProductInfo.subName,
-                              }
-                            : null
-                        }
-                        placeholder={
-                          contextKind === 'product'
-                            ? t(
-                                'create.context.selectProduct',
-                                'Envanterden ürün seç'
-                              )
-                            : t('create.context.selectCategory', 'Kategori seç')
-                        }
-                        onPress={
-                          contextKind === 'product'
-                            ? handleOpenProductPicker
-                            : handleOpenCategoryPicker
-                        }
-                        onClear={handleClearContext}
-                      />
+                        burada radio gösterilmez, sadece seçim input'u gösterilir.
+                        Experience 'rate' adımında üst seçiciler gizlenir (sadece split görünür). */}
+                    {!hideContextUi && (
+                      <VStack px={16} space='sm'>
+                        {/* 1. ürün/kategori seçim input'u (paylaşılan component) */}
+                        <ProductSelectInput
+                          value={
+                            finalProductInfo
+                              ? {
+                                  image: finalProductInfo.image,
+                                  title: finalProductInfo.title,
+                                  subName: finalProductInfo.subName,
+                                }
+                              : null
+                          }
+                          placeholder={
+                            contextKind === 'product'
+                              ? t(
+                                  'create.context.selectProduct',
+                                  'Envanterden ürün seç'
+                                )
+                              : t(
+                                  'create.context.selectCategory',
+                                  'Kategori seç'
+                                )
+                          }
+                          onPress={
+                            contextKind === 'product'
+                              ? handleOpenProductPicker
+                              : handleOpenCategoryPicker
+                          }
+                          onClear={handleClearContext}
+                        />
 
-                      {/* 2. ürün seçim input'u — yalnızca benchmark + ürün bağlamında, 1.'in hemen altında.
+                        {/* 2. ürün seçim input'u — yalnızca benchmark + ürün bağlamında, 1.'in hemen altında.
                           AYNI core ProductPicker ekranını çağırır (target='compare'). */}
-                      {composerType === 'benchmark' &&
-                        contextKind === 'product' && (
-                          <ProductSelectInput
-                            value={
-                              compareProduct
-                                ? {
-                                    image: compareProduct.image,
-                                    title: compareProduct.title,
-                                    subName: compareProduct.subName,
-                                  }
-                                : null
-                            }
-                            placeholder={t(
-                              'create.benchmark.selectCompareProduct'
-                            )}
-                            onPress={() =>
-                              navigationService.navigate(ROOT_ROUTES.POST, {
-                                screen: 'ProductPicker',
-                                params: {
-                                  returnTo: 'CreatePostScreen',
-                                  target: 'compare',
-                                  // 2. ürün, 1. ürünün ürün grubuyla (kategori) sınırlandırılır
-                                  restrictProductGroupId: productInfoSnapshot?.productGroupId,
-                                },
-                              })
-                            }
-                            onClear={() => setCompareProduct(null)}
-                          />
-                        )}
-                    </VStack>
+                        {composerType === 'benchmark' &&
+                          contextKind === 'product' && (
+                            <ProductSelectInput
+                              value={
+                                compareProduct
+                                  ? {
+                                      image: compareProduct.image,
+                                      title: compareProduct.title,
+                                      subName: compareProduct.subName,
+                                    }
+                                  : null
+                              }
+                              placeholder={t(
+                                'create.benchmark.selectCompareProduct'
+                              )}
+                              onPress={() =>
+                                navigationService.navigate(ROOT_ROUTES.POST, {
+                                  screen: 'ProductPicker',
+                                  params: {
+                                    returnTo: 'CreatePostScreen',
+                                    target: 'compare',
+                                    // 2. ürün, 1. ürünün ürün grubuyla (kategori) sınırlandırılır
+                                    restrictProductGroupId:
+                                      productInfoSnapshot?.productGroupId,
+                                  },
+                                })
+                              }
+                              onClear={() => setCompareProduct(null)}
+                            />
+                          )}
+                      </VStack>
+                    )}
 
                     {/* 2) Paylaşım tipi seçici — bağlam türüne göre (kategori: 3, ürün: 4) */}
-                    <PostTypeSelector
-                      options={typeOptions}
-                      value={composerType}
-                      onChange={handleTypeChange}
-                    />
+                    {!hideContextUi && (
+                      <PostTypeSelector
+                        options={typeOptions}
+                        value={composerType}
+                        onChange={handleTypeChange}
+                        disabledValues={disabledTypeValues}
+                        onDisabledPress={handleAddToInventoryCta}
+                      />
+                    )}
+
+                    {/* Envantere ekleme CTA — ürün envanterde değilken (alert yerine inline yönlendirme) */}
+                    {!hideContextUi && showInventoryCta && (
+                      <Pressable px={16} onPress={handleAddToInventoryCta}>
+                        <HStack
+                          alignItems='center'
+                          space='sm'
+                          bg={isDark ? '#2A2A2A' : '#FFFFFF'}
+                          borderWidth={1}
+                          borderColor={isDark ? '#333333' : '#E9E9E9'}
+                          borderRadius={10}
+                          px={12}
+                          py={12}
+                        >
+                          <Info size={20} color='#829905' />
+                          <VStack flex={1} space='xs'>
+                            <Text
+                              fontSize='$sm'
+                              fontWeight='$semibold'
+                              color={isDark ? '#FFFFFF' : '#111111'}
+                            >
+                              {t(
+                                'create.inventoryCta.title',
+                                'Ürün envanterinde değil'
+                              )}
+                            </Text>
+                            <Text
+                              fontSize='$xs'
+                              color={isDark ? '#9CA3AF' : '#6B7280'}
+                            >
+                              {t(
+                                'create.inventoryCta.description',
+                                'Soru, ipucu veya karşılaştırma paylaşmak için önce ürünü envanterine ekle.'
+                              )}
+                            </Text>
+                          </VStack>
+                          {composerType !== 'experience' && (
+                            <Box bg='#D0F205' borderRadius={20} px={12} py={8}>
+                              <Text
+                                fontSize='$xs'
+                                fontWeight='$semibold'
+                                color='#111111'
+                              >
+                                {t('create.inventoryCta.action', 'Ekle')}
+                              </Text>
+                            </Box>
+                          )}
+                        </HStack>
+                      </Pressable>
+                    )}
 
                     {/* 3) Tipe özel alanlar */}
                     {isInlineType ? (

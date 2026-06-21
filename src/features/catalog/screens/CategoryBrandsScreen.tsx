@@ -32,7 +32,7 @@ export const CategoryBrandsScreen: React.FC = () => {
   const navigation = useNavigation<CategoryBrandsNavigationProp>();
   const { categoryId, categoryName } = route.params;
 
-  const backgroundColor = useMemo(() => (isDark ? '#1A1A1A' : '#FAFAFA'), [isDark]);
+  const backgroundColor = useMemo(() => (isDark ? '#000000' : '#FFFFFF'), [isDark]);
 
   const { data, isLoading } = useCatalogBrandFilters(categoryId);
 

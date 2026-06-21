@@ -2,7 +2,8 @@
   "create": {
     "header": {
       "title": "Write a Post",
-      "share": "Share"
+      "share": "Share",
+      "continue": "Continue"
     },
     "typeSelector": {
       "general": "General",
@@ -48,7 +49,23 @@
       "validation": {
         "title": "Validation",
         "description": "Please check your post and try again."
+      },
+      "inventoryRequired": {
+        "title": "Product not in your inventory",
+        "description": "This post type requires the product to be in your inventory. You can add it first via 'Experience → I Own It'."
       }
+    },
+    "inventoryCta": {
+      "title": "Product not in your inventory",
+      "description": "To share a question, tip, or benchmark, add the product to your inventory first.",
+      "action": "Add"
+    },
+    "paywall": {
+      "title": "Insufficient TIPS Balance",
+      "description": "You don't have enough TIPS for this action. Top up your balance to continue.",
+      "descriptionDetailed": "This action requires {{required}} TIPS; your balance is {{available}} TIPS. Top up to continue.",
+      "goToWallet": "Go to Wallet",
+      "cancel": "Cancel"
     },
     "experience": {
       "header": {
@@ -129,7 +146,20 @@
         "structureError": "AI could not structure your experience. Please try again or continue manually.",
         "generalError": "An error occurred while processing the experience text. Please try again.",
         "splitRequired": "Please use AI split first to structure your experience.",
-        "analyze": "Analyze with AI"
+        "analyze": "Analyze with AI",
+        "ratePromptTitle": "Rating required",
+        "ratePrompt": "Your experience is ready. Please rate it with stars and share.",
+        "fallbackTitle": "AI is currently unavailable",
+        "fallbackPrompt": "Your own comment will be used. Please rate it with stars and share.",
+        "fallbackUnavailable": "This post requires AI analysis. Please try again shortly."
+      },
+      "editStep": "‹ Edit",
+      "rateStepTitle": "Rate your experience",
+      "discard": {
+        "title": "Are you sure you want to leave?",
+        "message": "All changes on this page will be lost.",
+        "cancel": "Cancel",
+        "confirm": "Leave"
       },
       "validation": {
         "productNotSelected": "Product not selected. Please select a product.",
@@ -488,12 +518,19 @@
       "question": "Question",
       "boosted": "Boosted",
       "tipsAndTricks": "Tips & Tricks",
-      "update": "Update"
+      "update": "Update",
+      "post": "Post",
+      "benchmark": "Benchmark",
+      "experience": "Experience"
     },
     "translate": {
       "translating": "Translating...",
       "hideTranslation": "Hide Translation",
       "translate": "Translate"
+    },
+    "segmentToggle": {
+      "original": "Original",
+      "segmented": "Segmented (AI)"
     },
     "boost": {
       "success": "Success",

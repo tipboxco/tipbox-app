@@ -414,7 +414,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   };
 
   return (
-    <Box flex={1} bg={isDark ? '#1A1A1A' : '#FAFAFA'}>
+    <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
       {/* Optional Header (for standalone BrandScreen usage) */}
       {showHeader && (
         <Header

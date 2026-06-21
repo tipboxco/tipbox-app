@@ -41,7 +41,7 @@ export const SetPasswordScreen = ({
   return (
     <Box
       flex={1}
-      bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+      bg={isDark ? '#000000' : '#FFFFFF'}
     >
       <Header
         title={headerTitle}

@@ -17,6 +17,7 @@ import {
   UserIcon,
   FlagIcon,
   ArrowUpCircleIcon,
+  SparklesIcon,
 } from 'react-native-heroicons/outline';
 import {
   StarIcon as StarIconSolid,
@@ -64,6 +65,10 @@ interface PostCardProps {
   showHeader?: boolean;
   /** Hide action bar (like, comment, share, bookmark). Used when card is embedded as "Related Post" in update detail. */
   showActions?: boolean;
+  /** Show the "Original / Segmented (AI)" view toggle below the profile header (post detail only). */
+  showSegmentToggle?: boolean;
+  /** Called when the user switches between Original (false) and Segmented/AI (true) view. */
+  onSegmentedChange?: (segmented: boolean) => void;
 }
 
 // Map known content tag titles to translation keys
@@ -72,7 +77,7 @@ const CONTENT_TAG_TITLE_KEYS: Record<string, string> = {
   'Product and Usage Experience': 'post:create.experience.step3.productAndUsage',
 };
 
-export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress, showHeader = true, showActions = true }: PostCardProps) => {
+export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false, onCardPress, showHeader = true, showActions = true, showSegmentToggle = false, onSegmentedChange }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const { t, i18n } = useTranslation();
   const isDark = colorMode === 'dark';
@@ -512,6 +517,85 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         </VStack>
       )}
 
+      {/* Badges */}
+      {showHeader && (
+        <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} gap={8} alignItems="center">
+          <Box
+            borderWidth={1}
+            borderColor="#F0A85A"
+            bgColor="#D97915"
+            borderRadius={20}
+            px={8}
+            py={3}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <SparklesIcon width={12} height={12} color={'#fff'} />
+            <Text
+              fontSize={11}
+              fontWeight="$semibold"
+              ml={4}
+              color={'#fff'}
+            >
+              {t('post:card.badges.experience')}
+            </Text>
+          </Box>
+        </HStack>
+      )}
+
+      {/* Segmented view toggle: Orijinal / Segmentli (AI) — profil bilgisinin hemen altında */}
+      {showSegmentToggle && (
+        <Box
+          px={12}
+          py={8}
+          borderRightWidth={1}
+          borderLeftWidth={1}
+          borderColor={isDark ? '#333333' : '#E9E9E9'}
+        >
+          <HStack
+            bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+            borderRadius="$full"
+            p={3}
+            space="xs"
+          >
+            {([
+              { segmented: false, label: t('post:card.segmentToggle.original') },
+              { segmented: true, label: t('post:card.segmentToggle.segmented') },
+            ] as const).map(({ segmented, label }) => {
+              const selected = isDetailMode === segmented;
+              return (
+                <Pressable
+                  key={String(segmented)}
+                  flex={1}
+                  onPress={() => onSegmentedChange?.(segmented)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                >
+                  <Box
+                    h={36}
+                    borderRadius="$full"
+                    alignItems="center"
+                    justifyContent="center"
+                    bg={selected ? (isDark ? '#2A2E15' : '#EDF2C9') : 'transparent'}
+                    borderWidth={selected ? 1.5 : 0}
+                    borderColor={selected ? '#B8CC04' : 'transparent'}
+                  >
+                    <Text
+                      fontSize="$sm"
+                      fontWeight="$semibold"
+                      color={selected ? '#758600' : '#9D9D9D'}
+                    >
+                      {label}
+                    </Text>
+                  </Box>
+                </Pressable>
+              );
+            })}
+          </HStack>
+        </Box>
+      )}
+
       {/* Menu Modal */}
       <Modal
         visible={isMenuOpen}
@@ -713,8 +797,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         </VStack>
       </Pressable>
 
-      {/* Translated Content */}
-      {showTranslation && translatedContent && (
+      {/* Translated Content — segment (AI) modunda gizli, yalnızca orijinal içerikte görünür */}
+      {!isDetailMode && showTranslation && translatedContent && (
         <VStack px={12} pb={4} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} space="xs">
           <Text
             color={isDark ? '$textDark200' : '#666'}
@@ -726,8 +810,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         </VStack>
       )}
 
-      {/* Translate Button */}
-      {shouldTranslate && (
+      {/* Translate Button — segment (AI) modunda gizli, yalnızca orijinal içerikte görünür */}
+      {!isDetailMode && shouldTranslate && (
         <Box pb="$2" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
           <Pressable onPress={toggleTranslation}>
             <HStack alignItems="center" space="xs">

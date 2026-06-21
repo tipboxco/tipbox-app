@@ -18,7 +18,7 @@ export const CategoryDetailScreen: React.FC = () => {
   const navigation = useNavigation<CategoryDetailNavigationProp>();
   const { categoryId, categoryName, categoryImage } = route.params;
 
-  const backgroundColor = useMemo(() => isDark ? '#1A1A1A' : '#FAFAFA', [isDark]);
+  const backgroundColor = useMemo(() => isDark ? '#000000' : '#FFFFFF', [isDark]);
 
   const handleSubCategoryNavigate = useCallback((subCategory: { id: string; name: string; image?: string }) => {
     navigation.navigate('CatalogSubCategory', {

@@ -229,6 +229,7 @@ const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey
   const renderFeedItem = useCallback(({ item }: { item: FeedApiItem }) => {
     if (!item || !item.data || !item.data.id) return null;
     const itemId = item.data.id;
+    const card = (() => {
     switch (item.type) {
       case CardType.EXPERIENCE:
       case 'experience':
@@ -263,6 +264,11 @@ const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey
       default:
         return null;
     }
+    })();
+    // Yatay boşluk artık liste container'ında (margin gibi) değil, her item view'ında padding olarak
+    // uygulanıyor — feed detaydaki kartın padding'li View ile sarılması ile aynı yaklaşım.
+    if (!card) return null;
+    return <View style={{ paddingHorizontal: 16 }}>{card}</View>;
   }, []);
 
   const handleLoadMore = useCallback(() => {
@@ -298,7 +304,7 @@ const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey
     return `${tabKey}-feed-item-${index}`;
   }, [tabKey]);
 
-  const contentContainerStyle = useMemo(() => ({ paddingHorizontal: 16, paddingTop: 8, paddingBottom: tabBarHeight }), [tabBarHeight]);
+  const contentContainerStyle = useMemo(() => ({ paddingTop: 8, paddingBottom: tabBarHeight }), [tabBarHeight]);
 
   if (isLoading && feedItems.length === 0) return <FeedSkeleton count={5} />;
 

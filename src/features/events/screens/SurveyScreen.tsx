@@ -178,7 +178,7 @@ const SurveyScreen: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FAFAFA' }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
         <SurveyHeader title={title} isDark={isDark} onBack={() => navigation.goBack()} />
         <Box flex={1} alignItems="center" justifyContent="center">
           <ActivityIndicator size="large" color={isDark ? '#C2E607' : '#C2E607'} />
@@ -193,7 +193,7 @@ const SurveyScreen: React.FC = () => {
   // Error state
   if (error || !surveyData || questions.length === 0) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FAFAFA' }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
         <SurveyHeader title={title} isDark={isDark} onBack={() => navigation.goBack()} />
         <Box flex={1} alignItems="center" justifyContent="center" px="$4">
           <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={16} textAlign="center">
@@ -207,7 +207,7 @@ const SurveyScreen: React.FC = () => {
   // Success state
   if (showSuccess && result) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FAFAFA' }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
         <SurveyHeader title={title} isDark={isDark} onBack={() => navigation.goBack()} />
         <Box flex={1} alignItems="center" justifyContent="center" px="$6">
           <CheckCircleSolidIcon width={64} height={64} color="#4ADE80" />
@@ -289,7 +289,7 @@ const SurveyScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FAFAFA' }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
       {/* Header */}
       <SurveyHeader title={title} isDark={isDark} onBack={() => navigation.goBack()} />
 

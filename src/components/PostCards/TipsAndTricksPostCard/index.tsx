@@ -542,6 +542,59 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 </HStack>
             </VStack>
 
+            {/* Badges */}
+            <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
+                <Box
+                    bg={isDark ? '$backgroundDark900' : '$white'}
+                    borderWidth={1}
+                    borderColor="#BAC4FF"
+                    bgColor='#3E57FFCC'
+                    borderRadius={20}
+                    px={8}
+                    py={3}
+                    flexDirection="row"
+                    alignItems="center"
+                >
+                    <InformationCircleIcon width={12} height={12} color={'#fff'} />
+                    <Text
+                        fontSize={11}
+                        fontWeight="$semibold"
+                        ml={4}
+                        color={'#fff'}
+                        numberOfLines={1}
+                    >
+                        {t('card.badges.tipsAndTricks')}
+                    </Text>
+                </Box>
+                {data.benefitCategory && BENEFIT_CATEGORY_MAP[data.benefitCategory] && (
+                    <Box
+                        bg={isDark ? BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor + '20' : BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor}
+                        borderWidth={1}
+                        borderColor={BENEFIT_CATEGORY_MAP[data.benefitCategory].color + '40'}
+                        borderRadius={20}
+                        px={8}
+                        py={3}
+                        flexDirection="row"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <Feather
+                            name={BENEFIT_CATEGORY_MAP[data.benefitCategory].icon}
+                            size={14}
+                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
+                        />
+                        <Text
+                            fontSize={11}
+                            fontWeight="$semibold"
+                            ml={4}
+                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
+                        >
+                            {t(BENEFIT_CATEGORY_MAP[data.benefitCategory].labelKey)}
+                        </Text>
+                    </Box>
+                )}
+            </HStack>
+
             {/* Content */}
             <Pressable onPress={() => {
                 if (isDetailMode) return; // Detay modunda navigation yapma
@@ -666,59 +719,6 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     </Box>
                 ) : null
             }
-
-            {/* Badges */}
-            <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
-                <Box
-                    bg={isDark ? '$backgroundDark900' : '$white'}
-                    borderWidth={1}
-                    borderColor="#BAC4FF"
-                    bgColor='#3E57FFCC'
-                    borderRadius={20}
-                    px={8}
-                    py={3}
-                    flexDirection="row"
-                    alignItems="center"
-                >
-                    <InformationCircleIcon width={10} height={10} color={'#fff'} />
-                    <Text
-                        fontSize={9}
-                        fontWeight="$semibold"
-                        ml={4}
-                        color={'#fff'}
-                        numberOfLines={1}
-                    >
-                        {t('card.badges.tipsAndTricks')}
-                    </Text>
-                </Box>
-                {data.benefitCategory && BENEFIT_CATEGORY_MAP[data.benefitCategory] && (
-                    <Box
-                        bg={isDark ? BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor + '20' : BENEFIT_CATEGORY_MAP[data.benefitCategory].bgColor}
-                        borderWidth={1}
-                        borderColor={BENEFIT_CATEGORY_MAP[data.benefitCategory].color + '40'}
-                        borderRadius={20}
-                        px={8}
-                        py={3}
-                        flexDirection="row"
-                        alignItems="center"
-                        justifyContent="center"
-                    >
-                        <Feather
-                            name={BENEFIT_CATEGORY_MAP[data.benefitCategory].icon}
-                            size={12}
-                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
-                        />
-                        <Text
-                            fontSize={9}
-                            fontWeight="$semibold"
-                            ml={4}
-                            color={BENEFIT_CATEGORY_MAP[data.benefitCategory].color}
-                        >
-                            {t(BENEFIT_CATEGORY_MAP[data.benefitCategory].labelKey)}
-                        </Text>
-                    </Box>
-                )}
-            </HStack>
 
             {/* Images */}
             {(() => {

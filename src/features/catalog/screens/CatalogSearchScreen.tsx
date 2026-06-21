@@ -37,7 +37,7 @@ export const CatalogSearchScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
 
-  const backgroundColor = useMemo(() => isDark ? '#1A1A1A' : '#FAFAFA', [isDark]);
+  const backgroundColor = useMemo(() => isDark ? '#000000' : '#FFFFFF', [isDark]);
   const inputBg = useMemo(() => isDark ? '#2A2A2A' : '#F2F2F2', [isDark]);
   const inputBorder = useMemo(() => isDark ? '#333333' : '#E9E9E9', [isDark]);
 

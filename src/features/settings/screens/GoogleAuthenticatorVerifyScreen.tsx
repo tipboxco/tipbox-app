@@ -86,7 +86,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box
         flex={1}
-        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+        bg={isDark ? '$backgroundDark950' : '#FFFFFF'}
       >
         <Header
           title={t('googleAuthVerify.headerTitle')}

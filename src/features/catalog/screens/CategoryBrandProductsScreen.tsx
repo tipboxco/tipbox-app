@@ -31,7 +31,7 @@ export const CategoryBrandProductsScreen: React.FC = () => {
 
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
 
-  const backgroundColor = useMemo(() => (isDark ? '#1A1A1A' : '#FAFAFA'), [isDark]);
+  const backgroundColor = useMemo(() => (isDark ? '#000000' : '#FFFFFF'), [isDark]);
 
   const {
     data,

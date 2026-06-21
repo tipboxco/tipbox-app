@@ -646,6 +646,49 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
         </HStack>
       </VStack>
 
+      {/* Badges */}
+      <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} gap={8} alignItems="center">
+          <Box
+            borderWidth={1}
+            borderColor="#B8CC04"
+            bgColor="#758600"
+            borderRadius={20}
+            px={8}
+            py={3}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <QuestionMarkCircleIcon width={12} height={12} color={'#fff'} />
+            <Text
+              fontSize={11}
+              fontWeight="$semibold"
+              ml={4}
+              color={'#fff'}
+            >
+              {t('card.badges.question')}
+            </Text>
+          </Box>
+          {isBoostActive && (
+            <Box
+              borderWidth={1}
+              borderColor="#EF4D81"
+              bgColor="#E0195B"
+              borderRadius={20}
+              px={8}
+              py={3}
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <RocketLaunchIcon width={12} height={12} color="#fff" />
+              <Text fontSize={11} fontWeight="$semibold" ml={4} color="#fff">
+                {t('card.badges.boosted')}
+              </Text>
+            </Box>
+          )}
+      </HStack>
+
       {/* Content - Boost Post sadece 3 nokta menüde (doğru tasarım: badge ile içerik arasında değil) */}
       <Pressable onPress={() => {
         if (isDetailMode) return; // Detay modunda navigation yapma
@@ -770,49 +813,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           </Box>
         ) : null
       }
-
-      {/* Badges */}
-      <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} gap={8} alignItems="center">
-          <Box
-            borderWidth={1}
-            borderColor="#B8CC04"
-            bgColor="#758600"
-            borderRadius={20}
-            px={8}
-            py={3}
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="center"
-          >
-            <QuestionMarkCircleIcon width={10} height={10} color={'#fff'} />
-            <Text
-              fontSize={9}
-              fontWeight="$semibold"
-              ml={4}
-              color={'#fff'}
-            >
-              {t('card.badges.question')}
-            </Text>
-          </Box>
-          {isBoostActive && (
-            <Box
-              borderWidth={1}
-              borderColor="#EF4D81"
-              bgColor="#E0195B"
-              borderRadius={20}
-              px={8}
-              py={3}
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <RocketLaunchIcon width={10} height={10} color="#fff" />
-              <Text fontSize={9} fontWeight="$semibold" ml={4} color="#fff">
-                {t('card.badges.boosted')}
-              </Text>
-            </Box>
-          )}
-      </HStack>
 
       {/* Images */}
       {(() => {

@@ -471,6 +471,30 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         </HStack>
       </VStack>
 
+      {/* Badges */}
+      <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
+        <Box
+          borderWidth={1}
+          borderColor="#9672FA"
+          bgColor="#571FDD"
+          borderRadius={20}
+          flexDirection="row"
+          justifyContent="center"
+          px={8}
+          py={3}
+        >
+          <InformationCircleIcon width={12} height={12} color={'#fff'} />
+          <Text
+            fontSize={11}
+            fontWeight="$bold"
+            ml={4}
+            color={'#fff'}
+          >
+            {t('card.badges.update')}
+          </Text>
+        </Box>
+      </HStack>
+
       {/* Content */}
       <VStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
         <Pressable onPress={() => {
@@ -608,30 +632,6 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
           />
         </Box>
       )}
-
-      {/* Badges */}
-      <HStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'} justifyContent="space-between" alignItems="center">
-        <Box
-          borderWidth={1}
-          borderColor="#9672FA"
-          bgColor="#571FDD"
-          borderRadius={20}
-          flexDirection="row"
-          justifyContent="center"
-          px={8}
-          py={3}
-        >
-          <InformationCircleIcon width={10} height={10} color={'#fff'} />
-          <Text
-            fontSize={9}
-            fontWeight="$bold"
-            ml={4}
-            color={'#fff'}
-          >
-            {t('card.badges.update')}
-          </Text>
-        </Box>
-      </HStack>
 
       {/* Images */}
       {(() => {

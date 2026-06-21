@@ -9,3 +9,4 @@ export { CreateUpdatePostScreen } from './CreateUpdatePostScreen';
 export { SelectCompareProductScreen } from './SelectCompareProductScreen';
 export { CategorySearchScreen } from './CategorySearchScreen';
 export { ProductPickerScreen } from './ProductPickerScreen';
+export { ExperienceRatingScreen } from './ExperienceRatingScreen';

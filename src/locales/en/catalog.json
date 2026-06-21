@@ -98,7 +98,12 @@
     "brandProductsBook": "Brand Products Book",
     "brandProductsBookDescription": "A brief description about Brand Products Book",
     "explore": "Explore",
-    "view": "View"
+    "view": "View",
+    "enableNotifications": "Enable notifications",
+    "notInterested": "Not interested",
+    "shareMessage": "Discover {{brandName}} on Tipbox.",
+    "notificationsEnabled": "Notifications enabled",
+    "markedNotInterested": "Marked as not interested"
   },
   "brandProductDetail": {
     "title": "Product Details",

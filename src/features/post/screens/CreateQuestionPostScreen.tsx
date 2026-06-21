@@ -420,7 +420,7 @@ export const CreateQuestionPostScreen = () => {
           style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+        <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
           {/* Header */}
           <Header
             title={t('create.question.header.title')}

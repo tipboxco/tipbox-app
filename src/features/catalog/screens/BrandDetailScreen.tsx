@@ -69,7 +69,6 @@ const BrandDetailScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
     const bottomInset = insets.bottom;
     const { t } = useTranslation('catalog');
-    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
     // Route params'dan brandId'yi güvenli şekilde al
     const brandId = route.params?.brandId;
@@ -114,50 +113,6 @@ const BrandDetailScreen: React.FC = () => {
             joinBrandMutation.mutate(brandId);
         }
     }, [brandId, brandCatalog?.isJoined, isJoinLeavePending, joinBrandMutation, leaveBrandMutation]);
-
-    // Sayfayı paylaş (sağ üstteki share ikonu)
-    const handleSharePress = useCallback(async () => {
-        if (!brandCatalog) return;
-        try {
-            await Share.share({
-                message: t('brandDetail.shareMessage', { brandName: brandCatalog.name }),
-                url: `tipboxapp://brand/${brandCatalog.brandId}`,
-            });
-        } catch (error) {
-            console.error('[BrandDetailScreen] Share error:', error);
-        }
-    }, [brandCatalog, t]);
-
-    // ••• menüsü - bildirim ayarı popover'ı
-    const handleOptionsPress = useCallback(() => {
-        openBottomSheet(
-            <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} pb={20} pt={8}>
-                <Pressable
-                    onPress={closeBottomSheet}
-                    px={20}
-                    py={16}
-                    borderBottomWidth={1}
-                    borderColor={isDark ? '#333333' : '#E9E9E9'}
-                >
-                    <HStack alignItems="center" space="md">
-                        <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$md" fontWeight="$medium">
-                            {t('brandDetail.enableNotifications')}
-                        </Text>
-                    </HStack>
-                </Pressable>
-                <Pressable onPress={closeBottomSheet} px={20} py={16}>
-                    <HStack alignItems="center" space="md">
-                        <NoSymbolIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$md" fontWeight="$medium">
-                            {t('brandDetail.notInterested')}
-                        </Text>
-                    </HStack>
-                </Pressable>
-            </VStack>,
-            { snapPoints: [180], enableDynamicSizing: false }
-        );
-    }, [openBottomSheet, closeBottomSheet, isDark, t]);
 
     // Map BrandFeedPost to PostCardData (Post type için)
     const mapBrandPostToPostCardData = useCallback((post: BrandFeedPost): PostCardData => {
@@ -631,9 +586,7 @@ const BrandDetailScreen: React.FC = () => {
     }
 
     // Marka logosu - API logo gönderirse görseli, yoksa marka adının baş harfini gösterir
-    // Not: logo alanı API response'ta opsiyonel; tip güncellemesinden bağımsız güvenli erişim
-    const brandLogo = (brandCatalog as { logo?: string | null }).logo;
-    const logoSource = brandLogo ? toImageSource(brandLogo) : null;
+    const logoSource = brandCatalog.logo ? toImageSource(brandCatalog.logo) : null;
     const renderBrandLogo = (size: number) =>
         logoSource ? (
             <Image
@@ -788,7 +741,6 @@ const BrandDetailScreen: React.FC = () => {
                             </Pressable>
 
                             <Pressable
-                                onPress={handleSharePress}
                                 width={36}
                                 height={36}
                                 borderRadius={18}
@@ -889,7 +841,6 @@ const BrandDetailScreen: React.FC = () => {
 
                         {/* More (•••) */}
                         <Pressable
-                            onPress={handleOptionsPress}
                             width={36}
                             height={36}
                             borderRadius={18}
@@ -902,17 +853,15 @@ const BrandDetailScreen: React.FC = () => {
                         </Pressable>
                     </HStack>
 
-                    {/* Brand Description - sadece açıklama varsa göster */}
-                    {!!brandCatalog.description && (
-                        <Text
-                            color={isDark ? '#FFFFFF' : '#343434'}
-                            fontSize="$xs"
-                            lineHeight="$sm"
-                            mb="$4"
-                        >
-                            {brandCatalog.description}
-                        </Text>
-                    )}
+                    {/* Brand Description */}
+                    <Text
+                        color={isDark ? '#FFFFFF' : '#343434'}
+                        fontSize="$2xs"
+                        lineHeight="$sm"
+                        mb="$4"
+                    >
+                        {brandCatalog.description}
+                    </Text>
 
                     {/* Browse Section */}
                     <VStack space="xs" mb="$3">
@@ -938,27 +887,18 @@ const BrandDetailScreen: React.FC = () => {
                                 p="$3"
                             >
                                 <VStack space="sm" flex={1}>
-                                    {/* Icon - #7C8A00 dairesel arka fon */}
-                                    <Box
-                                        width={44}
-                                        height={44}
-                                        borderRadius={22}
-                                        bg="#7C8A00"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                    >
-                                        <Image
-                                            source={require('@/assets/catalog/lego.png')}
-                                            alt="Surveys & Gamification"
-                                            width={24}
-                                            height={24}
-                                        />
-                                    </Box>
+                                    {/* Icon */}
+                                    <Image
+                                        source={require('@/assets/catalog/lego.png')}
+                                        alt="Surveys & Gamification"
+                                        width={24}
+                                        height={24}
+                                    />
 
                                     {/* Title */}
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#000000'}
-                                        fontSize={15}
+                                        fontSize="$sm"
                                         fontWeight="$bold"
                                         textAlign="left"
                                     >
@@ -978,10 +918,8 @@ const BrandDetailScreen: React.FC = () => {
 
                                     {/* Button */}
                                     <Button
-                                        bg="rgba(215, 215, 215, 0.8)"
-                                        borderWidth={1}
-                                        borderColor={isDark ? '#666666' : '#ADADAD'}
-                                        borderRadius={10}
+                                        bg="#C2E607"
+                                        borderRadius={12}
                                         alignSelf="flex-start"
                                         px="$3"
                                         height={24}
@@ -1015,27 +953,18 @@ const BrandDetailScreen: React.FC = () => {
                                 p="$3"
                             >
                                 <VStack space="sm" flex={1}>
-                                    {/* Icon - #7C8A00 dairesel arka fon */}
-                                    <Box
-                                        width={44}
-                                        height={44}
-                                        borderRadius={22}
-                                        bg="#7C8A00"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                    >
-                                        <Image
-                                            source={require('@/assets/catalog/book.png')}
-                                            alt="Brand Products Book"
-                                            width={24}
-                                            height={24}
-                                        />
-                                    </Box>
+                                    {/* Icon */}
+                                    <Image
+                                        source={require('@/assets/catalog/book.png')}
+                                        alt="Brand Products Book"
+                                        width={24}
+                                        height={24}
+                                    />
 
                                     {/* Title */}
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#000000'}
-                                        fontSize={15}
+                                        fontSize="$sm"
                                         fontWeight="$bold"
                                         textAlign="left"
                                     >
@@ -1055,10 +984,8 @@ const BrandDetailScreen: React.FC = () => {
 
                                     {/* Button */}
                                     <Button
-                                        bg="rgba(215, 215, 215, 0.8)"
-                                        borderWidth={1}
-                                        borderColor={isDark ? '#666666' : '#ADADAD'}
-                                        borderRadius={10}
+                                        bg="#C2E607"
+                                        borderRadius={12}
                                         alignSelf="flex-start"
                                         px="$3"
                                         height={24}
