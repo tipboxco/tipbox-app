@@ -153,7 +153,15 @@
     "productReview": "Product and Usage Experience",
     "noReviews": "There are no reviews for this product yet.",
     "errorLoading": "An error occurred while loading product information.",
-    "notFound": "Product not found."
+    "notFound": "Product not found.",
+    "experienceTitle": "Your Experience",
+    "updateExperience": "Update Experience",
+    "shareProduct": "Share",
+    "deleteProduct": "Delete Product",
+    "deleteConfirmTitle": "Delete Product",
+    "deleteConfirmMessage": "Are you sure you want to remove this product from your inventory?",
+    "deleteSuccess": "Product removed from your inventory.",
+    "deleteError": "An error occurred while deleting the product."
   },
   "collections": {
     "title": "{{name}}'s Collections",

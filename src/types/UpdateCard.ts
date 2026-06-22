@@ -39,6 +39,13 @@ export interface UpdateApiItem {
     images: string[];
   };
   content: string;
+  // Update gönderisinin KENDİ AI-segmentli içeriği (varsa). "Orijinal" = content,
+  // "Segmentli (AI)" = experienceContent. Backend feed item'da döner.
+  experienceContent?: Array<{
+    title: string;
+    content: string;
+    rating: number;
+  }>;
   images: string[];
   // Interaction states
   isLiked?: boolean;
@@ -74,6 +81,13 @@ export interface UpdateCardData {
     isOwned: boolean;
   };
   content: string;
+  // Update gönderisinin KENDİ AI-segmentli içeriği (ham API şekli). UpdatePostCard
+  // bunu Orijinal/Segmentli(AI) toggle için kullanır. Yoksa toggle gösterilmez.
+  experienceContent?: Array<{
+    title: string;
+    content: string;
+    rating: number;
+  }>;
   images?: any[];
   relatedPost?: {
     id: string;

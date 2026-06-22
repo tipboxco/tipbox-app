@@ -1,7 +1,11 @@
 {
   "title": "Explore",
   "search": {
-    "placeholder": "Search posts, products, or brands"
+    "placeholder": "Search posts, products, or brands",
+    "hint": "Start typing to search for content",
+    "empty": "No results found",
+    "emptyHint": "No posts match \"{{query}}\"",
+    "error": "Something went wrong while searching. Please try again."
   },
   "tabs": {
     "hottest": "Hottest",

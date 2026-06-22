@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getHottest, getMarketplaceBanners, getExploreEvents, getNewBrands, getNewProducts } from './exploreApi';
+import { getHottest, getMarketplaceBanners, getExploreEvents, getNewBrands, getNewProducts, searchPosts } from './exploreApi';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import type { MarketplaceBanner, NewBrandsApiResponse, NewProductsApiResponse } from '../types';
 import type { EventsApiResponse } from '@/src/types/EventCard';
@@ -18,6 +18,8 @@ export const exploreKeys = {
     [...exploreKeys.all, 'brands', 'new', cursor, limit, search] as const,
   newProducts: (cursor?: string, limit?: number) =>
     [...exploreKeys.all, 'products', 'new', cursor, limit] as const,
+  searchPosts: (q?: string, limit?: number) =>
+    [...exploreKeys.all, 'search-posts', q, limit] as const,
 };
 
 /**
@@ -55,6 +57,44 @@ export const useHottest = (limit: number = 20, search?: string) => {
     retry: 1,
     // PERFORMANCE FIX: Sadece data, hasNextPage ve error değişikliklerinde render et
     // isFetchingNextPage değişiklikleri render tetiklemez
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
+  });
+};
+
+/**
+ * Search Posts infinite query hook
+ * Explore arama sayfası için paylaşılan postları metne göre arar (infinite scroll).
+ * Sorgu en az 2 karakter olduğunda etkinleşir.
+ *
+ * @param q - Aranacak metin (post başlığı/içeriği)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage } = useSearchPosts('iphone');
+ */
+export const useSearchPosts = (q: string, limit: number = 20) => {
+  const trimmed = q.trim();
+
+  return useInfiniteQuery<FeedApiResponse, Error>({
+    queryKey: exploreKeys.searchPosts(trimmed, limit),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return searchPosts(trimmed, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      return lastPage.pagination.cursor || lastPage.items[lastPage.items.length - 1].data.id;
+    },
+    enabled: trimmed.length >= 2,
+    staleTime: 2 * 60 * 1000, // 2 dakika - arama sonuçları kısa ömürlü
+    gcTime: 5 * 60 * 1000, // 5 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
     notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
   });
 };

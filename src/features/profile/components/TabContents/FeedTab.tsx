@@ -295,6 +295,7 @@ const mapUpdateToCardData = (post: ProfilePost & { relatedPost?: any }): UpdateC
         isOwned: productFromContext.isOwned ?? false,
       } : { id: '', name: '', subName: '', image: defaultPostImage, isOwned: false },
       content: typeof raw.content === 'string' ? raw.content : (Array.isArray(raw.content) ? (raw.content.map((c: any) => c?.content ?? '').join(' ')) : ''),
+      experienceContent: Array.isArray(raw.experienceContent) ? raw.experienceContent : undefined,
       images: Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter(Boolean) : [],
       relatedPost: undefined,
     };
@@ -328,6 +329,7 @@ const mapUpdateToCardData = (post: ProfilePost & { relatedPost?: any }): UpdateC
       isOwned: rp.product?.isOwned ?? false,
     },
     content: typeof raw.content === 'string' ? raw.content : (Array.isArray(raw.content) ? (raw.content.map((c: any) => c?.content ?? '').join(' ')) : ''),
+    experienceContent: Array.isArray(raw.experienceContent) ? raw.experienceContent : undefined,
     images: mappedImages,
     relatedPost: {
       id: rp.id ?? post.id,

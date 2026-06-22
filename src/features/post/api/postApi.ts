@@ -463,6 +463,14 @@ export interface CreateUpdatePostRequest {
   contextId: string;
   content: string;
   experiencePostId: string; // ZORUNLU - Update post sadece experience post'lara eklenir
+  // AI ile bölünmüş segmentli deneyim (opsiyonel). Experience akışıyla AYNI yapı:
+  // verilirse update gönderisi de segmentli (Orijinal/Segmentli AI) olarak saklanır.
+  experience?: Array<{
+    type: 'price_and_shopping' | 'product_and_usage';
+    content: string;
+    rating: number;
+  }>;
+  experienceSnippetId?: string; // AI split snippet ID (fallback'te gönderilmez)
   images?: string[];
   eventId?: string | null;
 }
@@ -505,6 +513,14 @@ export const createUpdatePost = async (
     formData.append('contextId', data.contextId || ''); // Opsiyonel - backend experience post'tan alır
     formData.append('content', data.content); // "description" değil, "content"!
     formData.append('experiencePostId', data.experiencePostId); // ZORUNLU alan
+
+    // AI ile bölünmüş segmentli deneyim (opsiyonel) — experience akışıyla aynı format
+    if (data.experience && data.experience.length > 0) {
+      formData.append('experience', JSON.stringify(data.experience));
+    }
+    if (data.experienceSnippetId) {
+      formData.append('experienceSnippetId', data.experienceSnippetId);
+    }
 
     if (data.eventId != null && data.eventId !== '') {
       formData.append('eventId', data.eventId);

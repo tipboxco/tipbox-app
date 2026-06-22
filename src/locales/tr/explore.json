@@ -1,7 +1,11 @@
 {
   "title": "Keşfet",
   "search": {
-    "placeholder": "Gönderi, ürün veya marka ara"
+    "placeholder": "Gönderi, ürün veya marka ara",
+    "hint": "Aramak istediğin içeriği yazmaya başla",
+    "empty": "Sonuç bulunamadı",
+    "emptyHint": "\"{{query}}\" ile eşleşen gönderi bulunamadı",
+    "error": "Arama sırasında bir hata oluştu. Lütfen tekrar deneyin."
   },
   "tabs": {
     "hottest": "En Popüler",

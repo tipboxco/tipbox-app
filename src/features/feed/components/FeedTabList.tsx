@@ -205,7 +205,7 @@ const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey
     else if (item.contextType === 'sub_category') productInfoType = ProductInfoType.SUB_CATEGORY;
     const mappedImages = Array.isArray(item.images) ? item.images.map((img) => toImageSource(img)).filter((i): i is NonNullable<typeof i> => !!i) : [];
     if (!item.relatedPost) {
-      return { id: item.id, user: { id: item.user.id, name: item.user.name, title: item.user.title, avatar: avatarSource }, stats: item.stats, createdAt: item.createdAt, contextType: productInfoType, product: { id: '', name: '', subName: '', image: require('@/assets/inventory/product_01.png'), isOwned: false }, content: item.content || '', images: mappedImages, relatedPost: undefined };
+      return { id: item.id, user: { id: item.user.id, name: item.user.name, title: item.user.title, avatar: avatarSource }, stats: item.stats, createdAt: item.createdAt, contextType: productInfoType, product: { id: '', name: '', subName: '', image: require('@/assets/inventory/product_01.png'), isOwned: false }, content: item.content || '', experienceContent: item.experienceContent, images: mappedImages, relatedPost: undefined };
     }
     const relatedPostContent = (item.relatedPost?.content && Array.isArray(item.relatedPost.content))
       ? item.relatedPost.content.filter((c) => c != null).map((c) => {
@@ -220,7 +220,7 @@ const FeedTabListComponent: React.FC<FeedTabListProps> = ({ filterParams, tabKey
       user: { id: item.user?.id || '', name: item.user?.name || '', title: item.user?.title || '', avatar: avatarSource },
       stats: item.stats, createdAt: item.createdAt, contextType: productInfoType,
       product: { id: item.relatedPost?.product?.id || '', name: item.relatedPost?.product?.name || '', subName: item.relatedPost?.product?.subName || '', image: toImageSource(item.relatedPost?.product?.image) || require('@/assets/inventory/product_01.png'), isOwned: item.relatedPost?.product?.isOwned || false },
-      content: item.content || '', images: mappedImages,
+      content: item.content || '', experienceContent: item.experienceContent, images: mappedImages,
       relatedPost: { id: item.relatedPost.id || '', product: { id: item.relatedPost.product?.id || '', name: item.relatedPost.product?.name || '', subName: item.relatedPost.product?.subName || '', image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'), isOwned: item.relatedPost.product?.isOwned || false }, content: relatedPostContent, tags: Array.isArray(item.relatedPost.tags) ? item.relatedPost.tags : [], images: Array.isArray(item.relatedPost.images) ? item.relatedPost.images.map((img) => toImageSource(img)).filter((i): i is NonNullable<typeof i> => !!i) : [] },
     };
   }, []);

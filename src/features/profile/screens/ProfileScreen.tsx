@@ -376,6 +376,7 @@ const mapUpdateToCardData = (item: any): UpdateCardData => {
       contextType: productInfoType,
       product: productFromContext ? productForCard(productFromContext) : { id: '', name: '', subName: '', image: defaultPostImage, isOwned: false },
       content: typeof item.content === 'string' ? item.content : '',
+      experienceContent: Array.isArray(item.experienceContent) ? item.experienceContent : undefined,
       images: Array.isArray(item.images) ? item.images.map((img: any) => toImageSource(img)).filter(Boolean) : [],
       relatedPost: undefined,
     };
@@ -407,6 +408,7 @@ const mapUpdateToCardData = (item: any): UpdateCardData => {
     contextType: productInfoType,
     product: productForCard(rp.product ?? productFromContext),
     content: typeof item.content === 'string' ? item.content : '',
+    experienceContent: Array.isArray(item.experienceContent) ? item.experienceContent : undefined,
     images: mappedImages,
     relatedPost: {
       id: rp.id ?? item.id,

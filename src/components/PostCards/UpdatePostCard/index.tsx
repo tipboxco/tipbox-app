@@ -14,10 +14,13 @@ import {
   TrashIcon,
   UserIcon,
   FlagIcon,
+  TagIcon,
+  CubeIcon,
 } from 'react-native-heroicons/outline';
 import {
   HeartIcon as HeartIconSolid,
   BookmarkIcon as BookmarkIconSolid,
+  StarIcon as StarIconSolid,
 } from 'react-native-heroicons/solid';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
@@ -145,6 +148,15 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
       createdAt: new Date().toISOString(),
     };
   }, [data.relatedPost, relatedPostData, data.user, productInfoType]);
+
+  // Update gönderisinin KENDİ AI-segmentli içeriği (varsa). Orijinal/Segmentli(AI) toggle için.
+  const updateSegments = React.useMemo(() => {
+    const list = data.experienceContent;
+    if (!Array.isArray(list)) return [];
+    return list.filter((s) => s && (s.content?.trim()?.length ?? 0) > 0);
+  }, [data.experienceContent]);
+  const hasUpdateSegments = updateSegments.length > 0;
+  const [isUpdateSegmented, setIsUpdateSegmented] = useState(false);
 
   // Action handlers
   const handleLike = () => {
@@ -497,27 +509,121 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
 
       {/* Content */}
       <VStack px={12} pb={8} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor={isDark ? '#333333' : '#E9E9E9'}>
+        {/* Segmentli içerik varsa Orijinal / Segmentli (AI) toggle */}
+        {hasUpdateSegments && (
+          <HStack
+            bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+            borderRadius="$full"
+            p={3}
+            space="xs"
+            mb={8}
+          >
+            {([
+              { segmented: false, label: t('card.segmentToggle.original') },
+              { segmented: true, label: t('card.segmentToggle.segmented') },
+            ] as const).map(({ segmented, label }) => {
+              const selected = isUpdateSegmented === segmented;
+              return (
+                <Pressable
+                  key={String(segmented)}
+                  flex={1}
+                  onPress={() => setIsUpdateSegmented(segmented)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                >
+                  <Box
+                    h={36}
+                    borderRadius="$full"
+                    alignItems="center"
+                    justifyContent="center"
+                    bg={selected ? (isDark ? '#2A2E15' : '#EDF2C9') : 'transparent'}
+                    borderWidth={selected ? 1.5 : 0}
+                    borderColor={selected ? '#B8CC04' : 'transparent'}
+                  >
+                    <Text
+                      fontSize="$sm"
+                      fontWeight="$semibold"
+                      color={selected ? '#758600' : '#9D9D9D'}
+                    >
+                      {label}
+                    </Text>
+                  </Box>
+                </Pressable>
+              );
+            })}
+          </HStack>
+        )}
+
         <Pressable onPress={() => {
           if (isDetailMode) return; // Detay modunda navigation yapma
           // Navigate to PostDetailScreen
           navigationService.navigate(ROOT_ROUTES.POST, {
             screen: 'PostDetailScreen',
-            params: { 
-              postData: data, 
+            params: {
+              postData: data,
               type: 'update',
               showRelatedPost: true,
               relatedPostData: data.relatedPost,
             }
           });
         }}>
-          <Text
-            color={isDark ? '$textDark50' : '#000'}
-            fontSize="$sm"
-            lineHeight={18}
-            numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
-          >
-            {data.content}
-          </Text>
+          {hasUpdateSegments && isUpdateSegmented ? (
+            // Segmentli (AI) görünüm: ikon + başlık + metin + yıldızlar
+            <VStack space="md">
+              {updateSegments.map((seg, index) => {
+                const isProduct =
+                  seg.title?.toLowerCase().includes('product') ||
+                  seg.title?.toLowerCase().includes('usage');
+                const stars = seg.rating > 5 ? Math.round(seg.rating / 20) : seg.rating;
+                return (
+                  <VStack key={index} space="xs">
+                    <HStack space="sm" alignItems="center">
+                      {isProduct ? (
+                        <CubeIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                      ) : (
+                        <TagIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                      )}
+                      <Text
+                        color={isDark ? '$textDark50' : '#000'}
+                        fontSize="$sm"
+                        fontWeight="$bold"
+                      >
+                        {seg.title}
+                      </Text>
+                    </HStack>
+                    <Text
+                      color={isDark ? '$textDark50' : '#343434'}
+                      fontSize="$sm"
+                      lineHeight={18}
+                      ml={26}
+                    >
+                      {seg.content}
+                    </Text>
+                    <HStack ml={26} mt={4} space="xs">
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <StarIconSolid
+                          key={i}
+                          width={16}
+                          height={16}
+                          color={i < stars ? '#829905' : isDark ? '#7E7E7E' : '#D4D4D4'}
+                        />
+                      ))}
+                    </HStack>
+                  </VStack>
+                );
+              })}
+            </VStack>
+          ) : (
+            // Orijinal görünüm: kullanıcının yazdığı düz metin
+            <Text
+              color={isDark ? '$textDark50' : '#000'}
+              fontSize="$sm"
+              lineHeight={18}
+              numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
+            >
+              {data.content}
+            </Text>
+          )}
         </Pressable>
 
         {/* See Related Post Button - Sadece feed'de göster (detay ekranında showRelatedPost true olduğu için gerek yok) */}

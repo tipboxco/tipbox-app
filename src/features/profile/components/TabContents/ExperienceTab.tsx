@@ -38,6 +38,7 @@ function mapReviewToUpdateCardData(item: ProfileReview & { type: string; related
         isOwned: productFromContext.isOwned ?? false,
       } : { id: '', name: '', subName: '', image: defaultPostImage, isOwned: false },
       content: typeof raw.content === 'string' ? raw.content : '',
+      experienceContent: Array.isArray(raw.experienceContent) ? raw.experienceContent : undefined,
       images: Array.isArray(raw.images) ? raw.images.map((img: any) => toImageSource(img)).filter(Boolean) : [],
       relatedPost: undefined,
     };
@@ -75,6 +76,7 @@ function mapReviewToUpdateCardData(item: ProfileReview & { type: string; related
       isOwned: rp.product?.isOwned ?? false,
     },
     content: typeof raw.content === 'string' ? raw.content : '',
+    experienceContent: Array.isArray(raw.experienceContent) ? raw.experienceContent : undefined,
     images: mappedImages,
     relatedPost: {
       id: rp.id ?? item.id,
@@ -86,7 +88,7 @@ function mapReviewToUpdateCardData(item: ProfileReview & { type: string; related
   };
 }
 
-const mapExperienceToCardData = (item: ProfileReview): ExperiencePostCardData => {
+export const mapExperienceToCardData = (item: ProfileReview): ExperiencePostCardData => {
   const avatarSource = item.user?.avatar
     ? toImageSource(item.user.avatar)!
     : DEFAULT_USER_AVATAR;

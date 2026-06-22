@@ -540,6 +540,7 @@ const EventDetailScreen: React.FC = () => {
                     isOwned: false,
                 },
                 content: item.content || '',
+                experienceContent: item.experienceContent,
                 images,
                 relatedPost: undefined, // relatedPost olmadığında undefined döndür
             };
@@ -592,6 +593,7 @@ const EventDetailScreen: React.FC = () => {
                 isOwned: item.relatedPost?.product?.isOwned || false,
             },
             content: item.content || '',
+            experienceContent: item.experienceContent,
             images,
             relatedPost: item.relatedPost ? {
                 id: item.relatedPost.id || '',

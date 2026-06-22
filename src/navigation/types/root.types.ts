@@ -128,6 +128,9 @@ export type RootStackParamList = {
   // Search — global search screen (users, brands, products)
   Search: undefined;
 
+  // ExploreSearch — paylaşılan postlarda metin araması (tam sayfa)
+  ExploreSearch: undefined;
+
   // ProductSelect - Global product selection screen
   ProductSelect: {
     returnScreen?: string;

@@ -1050,6 +1050,7 @@ export const PostsScreen = () => {
           isOwned: false,
         },
         content: item.content || '',
+        experienceContent: item.experienceContent,
         images,
         relatedPost: undefined,
       };
@@ -1100,6 +1101,7 @@ export const PostsScreen = () => {
         isOwned: item.relatedPost?.product?.isOwned || false,
       },
       content: item.content || '',
+      experienceContent: item.experienceContent,
       images,
       relatedPost: item.relatedPost ? {
         id: item.relatedPost.id || '',

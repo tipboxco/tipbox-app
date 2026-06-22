@@ -38,11 +38,15 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
         const selectedImages = value || [];
         
         const handleRemove = (index: number) => {
-          const newImages = selectedImages.filter((_: any, i: number) => i !== index);
-          onChange(newImages);
+          // Çift silmeyi önle: parent bir onRemoveImage verdiyse alanı (aynı form
+          // field'ını) yalnızca o setValue ile günceller. Burada ayrıca onChange
+          // çağırmak diziyi iki kez filtreleyip birden fazla görselin silinmesine
+          // yol açıyordu. Parent yoksa Controller'ın kendi onChange'i kullanılır.
           if (onRemoveImage) {
             onRemoveImage(index);
+            return;
           }
+          onChange(selectedImages.filter((_: any, i: number) => i !== index));
         };
 
         return (
@@ -60,7 +64,7 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
               {/* Display selected images */}
               {selectedImages.map((imageUri: string, index: number) => (
                 <Box
-                  key={index}
+                  key={`${imageUri}-${index}`}
                   width={64}
                   height={64}
                   borderRadius={5}

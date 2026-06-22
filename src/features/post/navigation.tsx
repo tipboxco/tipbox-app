@@ -13,6 +13,7 @@ import {
   CategorySearchScreen,
   ProductPickerScreen,
   ExperienceRatingScreen,
+  UpdateRatingScreen,
 } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
@@ -189,6 +190,20 @@ export type PostStackParamList = {
       productExperienceText?: string;
     };
   };
+  // Update puanlama (AI split) ekranı — CreateUpdatePostScreen'de "Devam Et" ile açılır.
+  // Experience akışıyla aynı mantık: içerik → split (fallback) → segmentli puanlama → Paylaş.
+  UpdateRating: {
+    draft: {
+      experiencePostId: string;
+      contextId: string;
+      productId: string;
+      productTitle: string;
+      productImage?: any;
+      productSubName?: string;
+      content: string;
+      selectedImages: string[];
+    };
+  };
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();
@@ -330,6 +345,7 @@ export const PostNavigator = () => {
         name='ExperienceRating'
         component={ExperienceRatingScreen}
       />
+      <Stack.Screen name='UpdateRating' component={UpdateRatingScreen} />
     </Stack.Navigator>
   );
 };

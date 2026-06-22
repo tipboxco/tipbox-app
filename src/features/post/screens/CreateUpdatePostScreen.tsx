@@ -19,6 +19,8 @@ import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateUpdatePost, useUpdatePost, usePostDetail } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType, type ApiContextType } from '../types';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys, useUserReviews } from '@/src/features/profile/api/hooks';
@@ -108,6 +110,7 @@ export const CreateUpdatePostScreen = () => {
   const contextId = useCreatePostFlowStore((state) => state.contextId);
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+  const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
 
   // Experience update modunda flow store'da context yoksa product bilgisinden set et
   useEffect(() => {
@@ -225,6 +228,56 @@ export const CreateUpdatePostScreen = () => {
 
   const onSubmit = async (data: UpdatePostFormData) => {
     if (isSubmittingRef.current) return;
+
+    // YENİ update oluşturma (düzenleme değil): içerik girildi → "Devam Et" ile experience
+    // akışındaki gibi AI split/puanlama ekranına geç. Gönderi orada Paylaş ile oluşturulur.
+    if (!isUpdateMode && isExperienceUpdateMode && resolvedExperiencePostId) {
+      const productTitle =
+        experiencePost?.product?.name ||
+        autoDetectedExperience?.contextData?.name ||
+        product?.name ||
+        productInfoSnapshot?.title ||
+        '';
+      const productImage =
+        experiencePost?.product?.image ||
+        autoDetectedExperience?.contextData?.image ||
+        product?.image ||
+        productInfoSnapshot?.image;
+      const productSubName =
+        experiencePost?.product?.subName ||
+        autoDetectedExperience?.contextData?.subName ||
+        product?.description ||
+        productInfoSnapshot?.subName;
+      const resolvedProductId =
+        experiencePost?.product?.id ||
+        autoDetectedExperience?.contextData?.id ||
+        product?.id ||
+        contextId ||
+        '';
+      const effectiveContextId =
+        contextId ??
+        experiencePost?.product?.id ??
+        autoDetectedExperience?.contextData?.id ??
+        product?.id ??
+        '';
+      navigationService.navigate(ROOT_ROUTES.POST, {
+        screen: 'UpdateRating',
+        params: {
+          draft: {
+            experiencePostId: resolvedExperiencePostId,
+            contextId: effectiveContextId || '',
+            productId: resolvedProductId,
+            productTitle,
+            productImage,
+            productSubName,
+            content: data.description,
+            selectedImages: data.selectedImages || [],
+          },
+        },
+      });
+      return;
+    }
+
     isSubmittingRef.current = true;
     try {
     console.log('[CreateUpdatePostScreen] Form submitted:', data);
@@ -461,7 +514,9 @@ export const CreateUpdatePostScreen = () => {
             leftAction="cancel"
             onLeftActionPress={handleBackPress}
             rightButton={{
-              text: t('create.update.header.share'),
+              text: isUpdateMode
+                ? t('create.update.header.share')
+                : t('create.header.continue'),
               backgroundColor: isShareEnabled || isShareLoading ? '#D0F205' : '#EDEDED',
               borderWidth: 1,
               borderColor: isShareEnabled || isShareLoading ? '#B8CC04' : '#B1B1B1',

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,8 +15,6 @@ import {
   HStack,
   Text,
   Pressable,
-  Input,
-  InputField,
   Image
 } from '@gluestack-ui/themed';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -304,8 +302,6 @@ const ExploreScreen: React.FC = () => {
   const [searchBarHeight, setSearchBarHeight] = useState(0);
   const [bannerHeight, setBannerHeight] = useState(0);
   const [tabsHeight, setTabsHeight] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
   // PERFORMANCE FIX: Background colors - direkt hesapla (useMemo overhead'i yok)
   const backgroundColor = isDark ? '$backgroundDark950' : '#FFFFFF';
@@ -316,14 +312,6 @@ const ExploreScreen: React.FC = () => {
   const headerBgColor = isDark ? '#000000' : '#FFFFFF';
   const headerTextColor = isDark ? '#FFFFFF' : '#000000';
   const HEADER_MIN_HEIGHT = 56;
-
-  // Debounce search query for API calls
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery.trim());
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   // Marketplace Banners API hook
   const {
@@ -598,31 +586,31 @@ const ExploreScreen: React.FC = () => {
             bg={backgroundColor}
             onLayout={handleSearchBarLayout}
           >
-            <HStack
-              alignItems="center"
-              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-              borderWidth={1}
-              borderColor={isDark ? '#333333' : '#E9E9E9'}
-              borderRadius={20}
-              px={14}
-              space="sm"
+            {/* Arama çubuğu - tıklayınca ayrı arama sayfasını açar */}
+            <Pressable
+              onPress={() => navigationService.navigate(ROOT_ROUTES.EXPLORE_SEARCH)}
+              accessibilityRole="search"
             >
-              <Feather
-                name="search"
-                size={24}
-                color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-              />
-              <Input flex={1} borderWidth={0} bg="transparent">
-                <InputField
-                  placeholder={t('search.placeholder')}
-                  placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                  color={isDark ? '#000' : '#000'}
-                  fontSize="$xs"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
+              <HStack
+                alignItems="center"
+                bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                borderWidth={1}
+                borderColor={isDark ? '#333333' : '#E9E9E9'}
+                borderRadius={20}
+                px={14}
+                h={44}
+                space="sm"
+              >
+                <Feather
+                  name="search"
+                  size={24}
+                  color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
                 />
-              </Input>
-            </HStack>
+                <Text flex={1} fontSize="$xs" color={isDark ? '#B9B9B9' : '#B9B9B9'}>
+                  {t('search.placeholder')}
+                </Text>
+              </HStack>
+            </Pressable>
           </VStack>
 
           {/* Banner Carousel (Slider) - Tab'ların dışında, sabit */}
@@ -731,15 +719,12 @@ const ExploreScreen: React.FC = () => {
           >
             {/* Hottest Tab */}
             <Box key="0" flex={1}>
-              <HottestTab
-                searchQuery={debouncedSearchQuery}
-              />
+              <HottestTab />
             </Box>
 
             {/* News Tab */}
             <Box key="1" flex={1}>
               <NewsTab
-                searchQuery={debouncedSearchQuery}
                 onEventPress={handleEventPress}
                 onBrandPress={handleBrandPress}
                 onProductPress={handleProductPress}

@@ -212,7 +212,14 @@ const HeaderComponent = ({
     // 3 noktalı icon buton
     if (showThreeDots && onThreeDotsPress) {
       actions.push(
-        <Pressable key="three-dots" onPress={onThreeDotsPress} mr={showFilter || rightButton ? '$2' : '$0'}>
+        <Pressable
+          key="three-dots"
+          onPress={onThreeDotsPress}
+          mr={showFilter || rightButton ? '$2' : '$0'}
+          px="$2"
+          py="$2"
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
           <VStack space="xs" alignItems="center">
             <Box
               width={4}

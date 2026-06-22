@@ -59,6 +59,47 @@ export const getHottest = async (
 };
 
 /**
+ * Search Posts endpoint function
+ * Explore arama sayfası için paylaşılan postları metne göre arar (cursor pagination).
+ *
+ * @param q - Aranacak metin (post başlığı/içeriği)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns FeedApiResponse - Eşleşen postlar ve pagination bilgisi
+ */
+export const searchPosts = async (
+  q: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<FeedApiResponse> => {
+  const params = new URLSearchParams();
+  params.append('q', q);
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  const response = await apiService.getClient().get<FeedApiResponse>(
+    `/explore/search-posts?${params.toString()}`
+  );
+
+  const responseData = response.data;
+
+  // Items boşsa ve hasMore true ise pagination'ı durdur (defensive)
+  if (responseData.items.length === 0 && responseData.pagination.hasMore) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+
+  return responseData;
+};
+
+/**
  * Get Marketplace Banners endpoint function
  * Explore sayfasındaki marketplace banner'larını getirir
  *

@@ -153,7 +153,15 @@
     "productReview": "Ürün ve Kullanım Deneyimi",
     "noReviews": "Bu ürün için henüz değerlendirme bulunmamaktadır.",
     "errorLoading": "Ürün bilgileri yüklenirken bir hata oluştu.",
-    "notFound": "Ürün bulunamadı."
+    "notFound": "Ürün bulunamadı.",
+    "experienceTitle": "Deneyimin",
+    "updateExperience": "Deneyimi Güncelle",
+    "shareProduct": "Paylaş",
+    "deleteProduct": "Ürünü Sil",
+    "deleteConfirmTitle": "Ürünü Sil",
+    "deleteConfirmMessage": "Bu ürünü envanterinden kaldırmak istediğine emin misin?",
+    "deleteSuccess": "Ürün envanterinden kaldırıldı.",
+    "deleteError": "Ürün silinirken bir hata oluştu."
   },
   "collections": {
     "title": "{{name}} Koleksiyonları",

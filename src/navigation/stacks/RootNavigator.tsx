@@ -24,6 +24,7 @@ import { CategoryBrandProductsScreen } from '@/src/features/catalog/screens/Cate
 import { CategoryBrandsScreen } from '@/src/features/catalog/screens/CategoryBrandsScreen';
 import { CatalogSearchScreen } from '@/src/features/catalog/screens/CatalogSearchScreen';
 import { SearchScreen } from '@/src/features/search/screens/SearchScreen';
+import { ExploreSearchScreen } from '@/src/features/explore/screens';
 import CollectionDetailScreen from '@/src/features/events/screens/CollectionDetailScreen';
 import type { RootStackParamList } from '../types/root.types';
 
@@ -184,6 +185,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="Search"
               component={SearchScreen}
+            />
+            <RootStack.Screen
+              name="ExploreSearch"
+              component={ExploreSearchScreen}
             />
           </RootStack.Group>
           
