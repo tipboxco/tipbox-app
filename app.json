@@ -25,7 +25,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "20",
+      "buildNumber": "24",
       "bundleIdentifier": "app.tipbox.ios",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -41,7 +41,7 @@
           {
             "CFBundleURLSchemes": [
               "tipboxapp",
-              "com.googleusercontent.apps.886406936506-j4u0lsdg6gnn7ggv5mda80rothf5tqr4"
+              "com.googleusercontent.apps.897363420668-3uet75pba23fsem18q0nrr95d23kvt2k"
             ]
           }
         ],
