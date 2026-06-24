@@ -18,6 +18,7 @@ import {
 import {
   HeartIcon as HeartIconSolid,
   BookmarkIcon as BookmarkIconSolid,
+  CheckIcon as CheckIconSolid,
 } from 'react-native-heroicons/solid';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import { useNavigation } from '@react-navigation/native';
@@ -51,17 +52,19 @@ interface BenchmarkPostCardProps {
     isDetailMode?: boolean;
 }
 
-const ProductCard = ({ 
-    product, 
-    isDark, 
+const ProductCard = ({
+    product,
+    isChoice,
+    isDark,
     isDetailMode = false,
     isNameExpanded,
     isSubNameExpanded,
     onNameToggle,
     onSubNameToggle
-}: { 
-    product: BenchmarkProduct; 
-    isDark: boolean; 
+}: {
+    product: BenchmarkProduct;
+    isChoice: boolean;
+    isDark: boolean;
     isDetailMode?: boolean;
     isNameExpanded: boolean;
     isSubNameExpanded: boolean;
@@ -73,7 +76,30 @@ const ProductCard = ({
         : require('@/assets/inventory/product_01.png');
     
     return (
-    <HStack flex={1} borderWidth={1} borderColor={product.choice ? '#87BB33' : (isDark ? '#333333' : '#E9E9E9')} borderRadius={10} position="relative">
+    <HStack
+        flex={1}
+        borderWidth={isChoice ? 2 : 1}
+        borderColor={isChoice ? '#87BB33' : (isDark ? '#333333' : '#E9E9E9')}
+        borderRadius={10}
+        position="relative"
+        bg={isChoice ? (isDark ? 'rgba(135,187,51,0.14)' : 'rgba(135,187,51,0.10)') : undefined}
+    >
+        {isChoice && (
+            <Box
+                position="absolute"
+                top={6}
+                left={6}
+                zIndex={2}
+                width={20}
+                height={20}
+                borderRadius={100}
+                bg="#87BB33"
+                alignItems="center"
+                justifyContent="center"
+            >
+                <CheckIconSolid width={13} height={13} color="#FFFFFF" />
+            </Box>
+        )}
         <VStack padding={6} flex={1} >
             <Box position="relative" w={'$full'} justifyContent="center" alignItems="center" overflow='hidden' aspectRatio={1}>
                 <Image
@@ -137,7 +163,10 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const { t, i18n } = useTranslation('post');
     const targetUserId = data.user.id;
     const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
-    
+
+    // Eski postlarda (hiçbir üründe choice yoksa) ilk ürünü varsayılan tercih olarak göster.
+    const hasExplicitChoice = data.products?.some((p) => p.choice) ?? false;
+
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -734,9 +763,10 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         <HStack justifyContent="space-between" width="100%">
                             {data.products.map((product, index) => (
                                 <Box key={product.id} flex={1} mx={4}>
-                                    <ProductCard 
-                                        product={product} 
-                                        isDark={isDark} 
+                                    <ProductCard
+                                        product={product}
+                                        isChoice={product.choice || (!hasExplicitChoice && index === 0)}
+                                        isDark={isDark}
                                         isDetailMode={isDetailMode}
                                         isNameExpanded={isNameExpanded}
                                         isSubNameExpanded={isSubNameExpanded}
@@ -775,9 +805,10 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             <HStack justifyContent="space-between" width="100%">
                                 {data.products.map((product, index) => (
                                     <Box key={product.id} flex={1} mx={4}>
-                                        <ProductCard 
-                                            product={product} 
-                                            isDark={isDark} 
+                                        <ProductCard
+                                            product={product}
+                                            isChoice={product.choice || (!hasExplicitChoice && index === 0)}
+                                            isDark={isDark}
                                             isDetailMode={isDetailMode}
                                             isNameExpanded={isNameExpanded}
                                             isSubNameExpanded={isSubNameExpanded}
