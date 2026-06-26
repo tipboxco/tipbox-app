@@ -1,0 +1,95 @@
+# ==============================================================================
+# Bookmarks View - Happy Path
+# Precondition: User is authenticated and has bookmarked posts.
+# Flow: Open drawer → Navigate to Kaydedilenler → Verify list → Scroll →
+#       Tap post → Back → Verify empty state handling
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Bookmarks - View Saved Posts"
+tags:
+  - bookmarks
+  - happy-path
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# Wait for main screen
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin|Keşfet"
+    timeout: 15000
+
+# -----------------------------------------------
+# Step 2: Open drawer and navigate to Bookmarks
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Kaydedilenler"
+    label: "Tap Bookmarks menu item"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify BookmarksScreen loaded
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Kaydedilenler|Kayıtlı gönderi bulunamadı"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 4: If bookmarks exist, scroll the list
+# -----------------------------------------------
+- runFlow:
+    when:
+      notVisible: "Kayıtlı gönderi bulunamadı"
+    commands:
+      # Scroll down to see more bookmarks
+      - swipe:
+          direction: UP
+          duration: 400      - waitForAnimationToEnd
+
+      - swipe:
+          direction: UP
+          duration: 400      - waitForAnimationToEnd
+
+      # Scroll back up
+      - swipe:
+          direction: DOWN
+          duration: 400      - swipe:
+          direction: DOWN
+          duration: 400      - waitForAnimationToEnd
+
+      # Tap on first bookmark card to open post detail
+      - tapOn:
+          point: "50%,35%"
+          label: "Tap first bookmarked post"
+          optional: true
+      - waitForAnimationToEnd
+
+      # Navigate back to bookmarks
+      - back
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify back navigation works
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+# Should be back on previous screen
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin|Keşfet"
+    timeout: 10000

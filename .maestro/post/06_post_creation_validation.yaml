@@ -1,0 +1,371 @@
+# =============================================================================
+# POST-06: Post Creation Validation & Edge Cases
+# =============================================================================
+# Tests:
+#   1. Empty text field validation (submit without text)
+#   2. Missing product/context validation
+#   3. Tips post: missing benefit category validation
+#   4. Inventory-gated types: disabled state for non-inventory products
+#   5. Insufficient TIPS paywall for boosted question
+#
+# Precondition: User is authenticated.
+# Priority: HIGH
+# =============================================================================
+appId: app.tipbox.ios
+name: "Post - Post Creation Validation and Edge Cases"
+tags:
+  - post
+  - validation
+  - edge-cases
+  - paywall
+  - priority-high
+
+---
+
+# ---------------------------------------------------------
+# PHASE 0: Ensure app is launched and user is authenticated
+# ---------------------------------------------------------
+- runFlow: 00_sub_login_helper.yaml
+
+- waitForAnimationToEnd
+
+# =========================================================
+# TEST 1: Empty text field validation
+# Navigate to create post screen, try to submit without text.
+# =========================================================
+
+# Navigate to Catalog -> browse to a product -> PostsScreen -> FAB
+- tapOn:
+    point: "50%,97%"
+    label: "Tap Catalog tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Ürün Kataloğu"
+    timeout: 10000
+
+- tapOn:
+    point: "25%,42%"
+    label: "Tap first category"
+
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first subcategory"
+
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product group"
+
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+
+- tapOn:
+    point: "90%,90%"
+    label: "Tap Create FAB"
+
+- waitForAnimationToEnd
+
+# Select "Soru" type (Question - does not require inventory)
+- extendedWaitUntil:
+    visible:
+      text: "Soru"
+    timeout: 5000
+
+- tapOn:
+    text: "Soru"
+    label: "Select 'Soru' post type"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Gönderi Yaz"
+    timeout: 8000
+
+# Try to tap "Paylas" without entering any text
+# The button should be disabled (gray) when form is invalid.
+# Tap it anyway to verify nothing happens or validation fires.
+- tapOn:
+    text: "Paylaş"
+    label: "Tap 'Paylas' with empty form (should be disabled or show validation)"
+
+- waitForAnimationToEnd
+
+# Verify we are still on the CreatePostScreen (not navigated away)
+- assertVisible:
+    text: "Gönderi Yaz"
+    label: "Verify still on CreatePostScreen after empty submit attempt"
+
+# Verify we are still on the create post screen - form was not submitted
+- assertVisible:
+    text: "Sorunuzu buraya yazın..."
+    label: "Verify question placeholder is still visible (form not submitted)"
+
+# =========================================================
+# TEST 2: Inventory-gated types disabled for non-inventory products
+# When the selected product is NOT in the user's inventory,
+# question/tips/benchmark types should appear disabled (opacity 0.4)
+# and only experience (Sahibim) should be selectable.
+# =========================================================
+
+# Navigate back to try with a different flow.
+# Go back to the PostsScreen.
+- back
+- waitForAnimationToEnd
+
+# Tap Create FAB again
+- tapOn:
+    point: "90%,90%"
+    label: "Tap Create FAB again"
+
+- waitForAnimationToEnd
+
+# On the CreatePostBottomSheet / CreatePostScreen:
+# If the product is NOT in inventory, we should see the
+# "Urun envanterinde degil" CTA banner on the create screen.
+# The inventory CTA shows: "Soru, ipucu veya karsilastirma paylasmak icin
+# once urunu envanterine ekle."
+
+# Select "Deneyim" type (this is always available)
+- extendedWaitUntil:
+    visible:
+      text: "Deneyim"
+    timeout: 5000
+
+- tapOn:
+    text: "Deneyim"
+    label: "Select 'Deneyim' post type (always enabled)"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Gönderi Yaz"
+    timeout: 8000
+
+# Check for inventory CTA banner (visible if product not in inventory)
+# This is an optional check - the banner only shows if the product is NOT in inventory.
+- runFlow:
+    when:
+      visible: "Ürün envanterinde değil"
+    commands:
+      - assertVisible:
+          text: "Soru, ipucu veya karşılaştırma paylaşmak için önce ürünü envanterine ekle."
+          label: "Verify inventory CTA description text"
+
+# Navigate back from create screen
+- back
+- waitForAnimationToEnd
+
+# =========================================================
+# TEST 3: Tips post - missing benefit category validation
+# Create a tips post, fill text but skip category, try to submit.
+# =========================================================
+
+# Tap Create FAB
+- tapOn:
+    point: "90%,90%"
+    label: "Tap Create FAB for tips validation test"
+
+- waitForAnimationToEnd
+
+# Select "Ipuclari" type (if enabled)
+- runFlow:
+    when:
+      visible: "İpuçları"
+    commands:
+      - tapOn:
+          text: "İpuçları"
+          label: "Select Tips post type"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible:
+            text: "Gönderi Yaz"
+          timeout: 8000
+
+      # Write tips text
+      - scrollUntilVisible:
+          element:
+            text: "İpuçları ve Püf Noktalarınızı buraya yazın..."
+          direction: DOWN
+          timeout: 5000
+      - tapOn:
+          text: "İpuçları ve Püf Noktalarınızı buraya yazın..."
+      - inputText: "Bu urunu daha verimli kullanmak icin pratik bir ipucu."
+      - waitForAnimationToEnd
+
+      # DO NOT select benefit category (skip it intentionally)
+
+      # Try to submit - should fail validation (selectedCategory required)
+      - tapOn:
+          text: "Paylaş"
+          label: "Tap 'Paylas' without selecting benefit category"
+      - waitForAnimationToEnd
+
+      # Verify still on create screen (form validation should prevent submit)
+      - assertVisible:
+          text: "Gönderi Yaz"
+          label: "Verify still on CreatePostScreen (category validation blocked submit)"
+
+      # Navigate back
+      - back
+      - waitForAnimationToEnd
+
+# =========================================================
+# TEST 4: Insufficient TIPS paywall for boosted question
+# Create a question post, enable boost, if TIPS balance is
+# insufficient the InsufficientBalanceSheet should appear.
+# =========================================================
+
+# Tap Create FAB
+- tapOn:
+    point: "90%,90%"
+    label: "Tap Create FAB for paywall test"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Soru"
+    timeout: 5000
+
+- tapOn:
+    text: "Soru"
+    label: "Select 'Soru' type for boost paywall test"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Gönderi Yaz"
+    timeout: 8000
+
+# Write question text
+- scrollUntilVisible:
+    element:
+      text: "Sorunuzu buraya yazın..."
+    direction: DOWN
+    timeout: 5000
+
+- tapOn:
+    text: "Sorunuzu buraya yazın..."
+
+- inputText: "Bu urunun garanti suresi ne kadar? Garantisi disinda kalan arizalarda servis ucreti ne kadar tutuyor?"
+
+- waitForAnimationToEnd
+
+# Scroll to boost section and enable boost
+- scrollUntilVisible:
+    element:
+      text: "Bu Soruyu Öne Çıkar"
+    direction: DOWN
+    timeout: 5000
+
+# Toggle the boost switch ON
+# The switch is next to the boost title area
+- tapOn:
+    point: "90%,70%"
+    label: "Toggle boost switch ON"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Try to submit - if TIPS balance is insufficient,
+# InsufficientBalanceSheet bottom sheet will appear.
+- swipe:
+    direction: DOWN
+    duration: 400
+- tapOn:
+    text: "Paylaş"
+    label: "Tap 'Paylas' to trigger paywall check"
+
+- waitForAnimationToEnd
+
+# Check if paywall sheet appeared (conditional on low TIPS balance)
+- runFlow:
+    when:
+      visible: "Yetersiz TIPS Bakiyesi"
+    commands:
+      # Verify paywall bottom sheet elements
+      - assertVisible:
+          text: "Yetersiz TIPS Bakiyesi"
+          label: "Verify paywall title is shown"
+
+      # Verify description text
+      - assertVisible:
+          text: "bakiyeni yükle"
+          label: "Verify paywall description mentions loading balance"
+
+      # Verify "Cuzdana Git" button
+      - assertVisible:
+          text: "Cüzdana Git"
+          label: "Verify 'Cuzdana Git' CTA button is present"
+
+      # Verify "Vazgec" cancel button
+      - assertVisible:
+          text: "Vazgeç"
+          label: "Verify 'Vazgec' cancel button is present"
+
+      # Tap "Vazgec" to dismiss paywall
+      - tapOn:
+          text: "Vazgeç"
+          label: "Tap 'Vazgec' to dismiss paywall and stay on create screen"
+
+      - waitForAnimationToEnd
+
+      # Verify we are back on the create screen
+      - assertVisible:
+          text: "Gönderi Yaz"
+          label: "Verify still on CreatePostScreen after dismissing paywall"
+
+# =========================================================
+# TEST 5: Context missing validation
+# If somehow the context is cleared (e.g., flow store expired),
+# submitting should show a context missing error.
+# =========================================================
+
+# This is hard to reproduce in E2E as it requires 30-min TTL expiry.
+# Instead, we verify the UX remains consistent by navigating back.
+- back
+- waitForAnimationToEnd
+
+# Navigate back to Feed to confirm app is in stable state
+- tapOn:
+    point: "10%,97%"
+    label: "Tap Feed tab to return to stable state"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Akış"
+    timeout: 10000
+    label: "Verify Feed screen is visible (app in stable state after validation tests)"

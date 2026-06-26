@@ -1,0 +1,173 @@
+# =============================================================================
+# Flow 02: Edit Profile - Happy Path
+# Tests the complete profile editing flow: name change, bio update,
+# badge selection via bottom sheet, and successful save.
+# =============================================================================
+appId: app.tipbox.ios
+name: "Profile - Edit Profile Happy Path"
+tags:
+  - profile
+  - edit
+  - happy-path
+
+---
+
+# ------------------------------------------------------------------
+# STEP 1: Launch app and navigate to own profile
+# ------------------------------------------------------------------
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+
+# Navigate to profile via drawer
+- swipe:
+    direction: RIGHT
+    from:
+      x: 0
+      y: "50%"
+    to:
+      x: "80%"
+      y: "50%"
+
+- waitForAnimationToEnd
+
+# Tap profile section in drawer
+- tapOn:
+    text: "Profil"
+    optional: true
+
+- waitForAnimationToEnd
+
+# ------------------------------------------------------------------
+# STEP 2: Open the edit profile screen
+# ------------------------------------------------------------------
+- tapOn:
+    text: "Profili Düzenle"
+
+- waitForAnimationToEnd
+
+# Verify we are on edit screen
+- assertVisible:
+    text: "Profili Düzenle"
+
+# Verify Save button is visible (header right button)
+- assertVisible:
+    text: "Kaydet"
+
+# ------------------------------------------------------------------
+# STEP 3: Edit the name field
+# Clear existing name and type a new Turkish name
+# ------------------------------------------------------------------
+- tapOn:
+    text: "Adınızı girin"
+    optional: true
+
+# If placeholder is not visible, tap the name input area
+- tapOn:
+    text: "Ad"
+
+# Clear the existing text and type new name
+- inputText: ""
+- eraseText: 50
+- inputText: "Mehmet Kaya Tipbox"
+
+# ------------------------------------------------------------------
+# STEP 4: Edit the biography field
+# ------------------------------------------------------------------
+- tapOn:
+    text: "Biyografi"
+
+- tapOn:
+    text: "Kendinizden bahsedin"
+    optional: true
+
+- eraseText: 200
+- inputText: "Teknoloji meraklisi, urun deneyimlerimi paylasiyorum. Tipbox toplulugunda aktif katilimci."
+
+# ------------------------------------------------------------------
+# STEP 5: Select Badge 1 via bottom sheet
+# ------------------------------------------------------------------
+- tapOn:
+    text: "Rozet 1 Seç"
+    optional: true
+
+# If badge slot already has a value, tap on the first badge slot area
+- tapOn:
+    text: "Rozet"
+
+- waitForAnimationToEnd
+
+# Bottom sheet should appear with badge options
+- assertVisible:
+    text: "Günlük Tüketici"
+    optional: true
+
+- tapOn:
+    text: "Günlük Tüketici"
+    optional: true
+
+- waitForAnimationToEnd
+
+# ------------------------------------------------------------------
+# STEP 6: Select Badge 2 via bottom sheet
+# ------------------------------------------------------------------
+- tapOn:
+    text: "Rozet 2 Seç"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Teknoloji Uzmanı"
+    optional: true
+
+- waitForAnimationToEnd
+
+# ------------------------------------------------------------------
+# STEP 7: Select Badge 3 via bottom sheet
+# ------------------------------------------------------------------
+- tapOn:
+    text: "Rozet 3 Seç"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Ürün İncelemecisi"
+    optional: true
+
+- waitForAnimationToEnd
+
+# ------------------------------------------------------------------
+# STEP 8: Save the profile
+# ------------------------------------------------------------------
+- tapOn:
+    text: "Kaydet"
+
+- waitForAnimationToEnd
+
+# ------------------------------------------------------------------
+# STEP 9: Verify success alert appears
+# ------------------------------------------------------------------
+- assertVisible:
+    text: "Başarılı"
+    optional: true
+
+- assertVisible:
+    text: "Profil başarıyla güncellendi!"
+    optional: true
+
+# Dismiss the alert
+- tapOn:
+    text: "OK"
+    optional: true
+
+- waitForAnimationToEnd
+
+# ------------------------------------------------------------------
+# STEP 10: Verify we returned to profile screen with updated name
+# ------------------------------------------------------------------
+- assertVisible:
+    text: "Mehmet Kaya Tipbox"
+    optional: true

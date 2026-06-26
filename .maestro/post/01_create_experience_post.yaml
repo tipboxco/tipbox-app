@@ -1,0 +1,294 @@
+# =============================================================================
+# POST-01: Create Experience Post - Happy Path
+# =============================================================================
+# Flow: Feed -> Catalog -> Select Product -> PostsScreen -> FAB -> CreatePostScreen
+#       -> Select "Deneyim" type -> Select "Sahibim" -> Fill duration/location/purpose
+#       -> Write experience text -> "Devam Et" -> Rate AI segments -> "Paylas"
+#
+# Precondition: User is authenticated and has inventory products.
+# Priority: CRITICAL
+# =============================================================================
+appId: app.tipbox.ios
+name: "Post - Create Experience Post Happy Path"
+tags:
+  - post
+  - experience
+  - create
+  - happy-path
+  - priority-critical
+
+---
+
+# ---------------------------------------------------------
+# PHASE 0: Ensure app is launched and user is authenticated
+# ---------------------------------------------------------
+- runFlow: 00_sub_login_helper.yaml
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 1: Navigate to Catalog tab to find a product
+# Tab bar has no labels; Catalog is 3rd tab (center).
+# ---------------------------------------------------------
+- tapOn:
+    point: "50%,97%"
+    label: "Tap Catalog tab (3rd icon, center position)"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Ürün Kataloğu"
+    timeout: 10000
+    label: "Wait for Catalog screen to load"
+
+# ---------------------------------------------------------
+# PHASE 2: Browse to a product through the category tree
+# Tap first category -> first subcategory -> first product group -> first product
+# ---------------------------------------------------------
+- tapOn:
+    point: "25%,42%"
+    label: "Tap first category card"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first subcategory card"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product group card"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product to open PostsScreen"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 3: Wait for PostsScreen and tap the Create FAB (+)
+# The green FAB is at the bottom-right corner.
+# ---------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+    label: "Wait for PostsScreen to load with product context"
+
+# Tap the green FAB (Create button) at bottom-right
+- tapOn:
+    point: "90%,90%"
+    label: "Tap Create FAB button (green + circle, bottom-right)"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 4: CreatePostBottomSheet -> select Experience type
+# The bottom sheet shows post type options for the product.
+# Select "Deneyim" (Experience).
+# ---------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Deneyim"
+    timeout: 5000
+    label: "Wait for post type selection bottom sheet"
+
+- tapOn:
+    text: "Deneyim"
+    label: "Select 'Deneyim' (Experience) post type"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 5: CreatePostScreen with Experience composer
+# The product is pre-selected from the PostsScreen context.
+# Verify the "Deneyim" type is selected in PostTypeSelector.
+# ---------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Gönderi Yaz"
+    timeout: 8000
+    label: "Wait for CreatePostScreen header to appear"
+
+# Verify Experience type is selected (should be default for product context)
+- assertVisible:
+    text: "Deneyim"
+    label: "Verify 'Deneyim' post type is visible and selected"
+
+# ---------------------------------------------------------
+# PHASE 6: Experience Composer - Select ownership "Sahibim"
+# The experience composer shows "Sahibim" / "Test Ettim" buttons.
+# ---------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Sahibim"
+    timeout: 5000
+    label: "Wait for ownership selector to appear"
+
+- tapOn:
+    text: "Sahibim"
+    label: "Select 'Sahibim' (I Own) ownership option"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 7: Fill experience details (duration, location, purpose)
+# Tap dropdown selectors to open OptionSelectBottomSheet.
+# ---------------------------------------------------------
+
+# Select Duration
+- scrollUntilVisible:
+    element:
+      text: "Kullanım Süresi"
+    direction: DOWN
+    timeout: 5000
+
+- tapOn:
+    text: "Kullanım Süresi"
+    label: "Open duration selector"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Select the first duration option from the bottom sheet
+- tapOn:
+    point: "50%,55%"
+    label: "Select first duration option from bottom sheet"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Select Location
+- tapOn:
+    text: "Kullanım Konumu"
+    label: "Open location selector"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "50%,55%"
+    label: "Select first location option"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Select Purpose
+- tapOn:
+    text: "Kullanım Amacı"
+    label: "Open purpose selector"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "50%,55%"
+    label: "Select first purpose option"
+    optional: true
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 8: Write the experience text
+# The text area placeholder: "Deneyiminizi buraya yazin..."
+# ---------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "Deneyiminizi buraya yazın..."
+    direction: DOWN
+    timeout: 5000
+
+- tapOn:
+    text: "Deneyiminizi buraya yazın..."
+    label: "Tap on experience text area"
+
+- inputText: "Bu urun gercekten cok kaliteli. 3 aydir kullaniyorum ve performansindan cok memnunum. Fiyat-performans orani oldukca iyi. Kullanim suresi boyunca hicbir sorun yasamadim. Malzeme kalitesi ve tasarimi da bekledigim gibi oldu."
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 9: Tap "Devam Et" to proceed to AI split & rating
+# The header right button says "Devam Et" before rating step.
+# ---------------------------------------------------------
+- tapOn:
+    text: "Devam Et"
+    label: "Tap 'Devam Et' to proceed to experience rating step"
+
+- waitForAnimationToEnd
+
+# Wait for AI split processing (may take up to 60s)
+- extendedWaitUntil:
+    visible:
+      text: "Fiyat ve Alışveriş Deneyimi"
+    timeout: 65000
+    label: "Wait for AI split to complete and show rating segments"
+
+# ---------------------------------------------------------
+# PHASE 10: Rate the experience segments (1-5 stars)
+# Two segments: "Fiyat ve Alisveris Deneyimi" + "Urun ve Kullanim Deneyimi"
+# Tap on the 4th star for each segment.
+# ---------------------------------------------------------
+
+# Rate price & shopping experience: tap 4th star (approx 70% of rating row width)
+- tapOn:
+    point: "70%,45%"
+    label: "Rate price and shopping experience 4 stars"
+
+- waitForAnimationToEnd
+
+# Scroll down to see product & usage experience segment
+- scrollUntilVisible:
+    element:
+      text: "Ürün ve Kullanım Deneyimi"
+    direction: DOWN
+    timeout: 5000
+
+# Rate product & usage experience: tap 4th star
+- tapOn:
+    point: "70%,65%"
+    label: "Rate product and usage experience 4 stars"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 11: Submit the experience post
+# The header right button now shows "Paylas".
+# ---------------------------------------------------------
+- tapOn:
+    text: "Paylaş"
+    label: "Tap 'Paylas' to submit the experience post"
+
+# Wait for submission and navigation
+- extendedWaitUntil:
+    visible:
+      text: "Gönderi Oluşturuldu"
+    timeout: 15000
+    label: "Wait for success toast confirming post creation"
+
+- waitForAnimationToEnd
+
+# Verify we navigated away from the create screen
+# (should be on PostsScreen, Profile, or Feed)
+- assertNotVisible:
+    text: "Gönderi Yaz"
+    label: "Verify CreatePostScreen is no longer visible (navigated away)"

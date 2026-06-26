@@ -1,0 +1,79 @@
+# =============================================================================
+# Tipbox E2E: Sub-flow - Navigate to Marketplace
+# Reusable helper that launches the app, ensures login, and opens Marketplace.
+# Marketplace is accessible from the drawer menu as a root-level screen.
+# =============================================================================
+appId: app.tipbox.ios
+name: "Marketplace - Sub: Navigate to Marketplace"
+tags:
+  - marketplace
+  - sub-flow
+  - helper
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (preserve state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: If on Welcome/Login screen, log in first
+# -----------------------------------------------
+- runFlow:
+    when:
+      visible: "Giriş Yap"
+    commands:
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+      - inputText:
+          text: "cem@tipbox.co"
+          label: "Enter test email"
+      - tapOn:
+          text: "Devam Et"
+      - waitForAnimationToEnd
+      - inputText:
+          text: "password1234"
+          label: "Enter test password"
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Open drawer via hamburger icon
+# The hamburger is in the top-left corner of the feed screen.
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Tap on "Market" in the drawer menu
+# -----------------------------------------------
+- tapOn:
+    text: "Market"
+    label: "Tap Marketplace (Market) menu item in drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify MarketPlaceScreen loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Market"
+    label: "Marketplace header title should be visible"
+
+- assertVisible:
+    text: "Tüm NFT'ler"
+    label: "All NFTs tab should be visible"
+
+- assertVisible:
+    text: "İlanlarım"
+    label: "My Listings tab should be visible"

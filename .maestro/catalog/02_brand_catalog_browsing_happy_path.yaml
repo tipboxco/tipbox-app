@@ -1,0 +1,191 @@
+# ==============================================================================
+# Brand Catalog Browsing - Happy Path (CRITICAL)
+# Precondition: User is authenticated and on the main app screen.
+# Flow: Navigate to Catalog tab -> Switch to Brand Catalog via FAB ->
+#       Browse Brand Categories -> Select Category -> Browse Brands ->
+#       Select Brand -> Verify BrandDetailScreen loads with brand info,
+#       join/leave button, browse sections, and feed posts.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Catalog - Brand Catalog Browsing Happy Path"
+tags:
+  - catalog
+  - brand-catalog
+  - browsing
+  - happy-path
+  - priority-critical
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (user already authenticated)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Catalog tab (3rd tab)
+# -----------------------------------------------
+- tapOn:
+    point: "50%,97%"
+    label: "Tap Catalog tab (3rd icon in bottom tab bar)"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify Product Catalog is active (default)
+# -----------------------------------------------
+- assertVisible:
+    text: "Ürün Kataloğu"
+    label: "Product Catalog header should be visible as default"
+
+# -----------------------------------------------
+# Step 4: Tap FAB to switch to Brand Catalog
+# The purple FAB (60x60, bottom-right) toggles between
+# product catalog and brand catalog modes.
+# -----------------------------------------------
+- tapOn:
+    point: "92%,85%"
+    label: "Tap purple FAB button to switch to Brand Catalog"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify Brand Catalog mode is active
+# Header should now show "Marka Katalogu" (Brand Catalog).
+# Breadcrumb should show "Marka Kategorisi" (Brand Category).
+# Search bar should be visible for brand/category search.
+# -----------------------------------------------
+- assertVisible:
+    text: "Marka Kataloğu"
+    label: "Brand Catalog header title should be visible"
+
+- assertVisible:
+    text: "Marka Kategorisi"
+    label: "Breadcrumb root label 'Marka Kategorisi' should be visible"
+
+# -----------------------------------------------
+# Step 6: Verify brand categories grid loaded
+# Brand categories are in a 2-column grid (same as product categories).
+# Wait for API data to finish loading.
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Marka Kategorisi"
+    timeout: 10000
+    label: "Wait for brand categories to load"
+
+# -----------------------------------------------
+# Step 7: Tap on the first brand category card
+# -----------------------------------------------
+- tapOn:
+    point: "25%,50%"
+    label: "Tap first brand category card"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Verify Brands list loaded for selected category
+# After tapping category, the view transitions to a 3-column
+# brand cards grid. Breadcrumb: Marka Kategorisi > [CategoryName]
+# Loading text "Markalar yukleniyor..." may appear briefly.
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Marka Kategorisi"
+    timeout: 8000
+    label: "Wait for brands list to load"
+
+# -----------------------------------------------
+# Step 9: Tap on the first brand card
+# This navigates to BrandDetailScreen via Root navigator.
+# -----------------------------------------------
+- tapOn:
+    point: "17%,50%"
+    label: "Tap first brand card to open brand detail"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Verify BrandDetailScreen loaded
+# Should show: banner image, brand logo, brand name,
+# follower count, join/leave button, browse section.
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Katıl"
+    timeout: 10000
+    label: "Wait for BrandDetailScreen to load - Join button visible"
+
+# Verify "Kesfet" (Browse) section
+- assertVisible:
+    text: "Keşfet"
+    label: "Browse section title should be visible"
+
+# Verify browse cards
+- assertVisible:
+    text: "Anketler ve Oyunlaştırma"
+    label: "Surveys & Gamification card should be visible"
+
+- assertVisible:
+    text: "Marka Ürün Kataloğu"
+    label: "Brand Products Book card should be visible"
+
+# Verify "Tum Gonderiler" (All Posts) section
+- scrollUntilVisible:
+    element:
+      text: "Tüm Gönderiler"
+    direction: DOWN
+    timeout: 5000
+    label: "Scroll down to find All Posts section"
+
+# -----------------------------------------------
+# Step 11: Tap Join/Leave button to test brand membership
+# -----------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "Katıl"
+    direction: UP
+    timeout: 3000
+    label: "Scroll back up to find Join button"
+
+- tapOn:
+    text: "Katıl"
+    label: "Tap Join button to join the brand"
+
+- waitForAnimationToEnd
+
+# After joining, button should change to "Ayril" (Leave)
+- extendedWaitUntil:
+    visible:
+      text: "Ayrıl"
+    timeout: 5000
+    label: "Button should change to 'Ayril' after joining"
+
+# -----------------------------------------------
+# Step 12: Navigate back to Brand Catalog
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+# Verify we are back on Brand Catalog
+- assertVisible:
+    text: "Marka Kataloğu"
+    label: "Should be back on Brand Catalog screen"
+
+# -----------------------------------------------
+# Step 13: Switch back to Product Catalog via FAB
+# Tapping FAB again should toggle back to product mode.
+# -----------------------------------------------
+- tapOn:
+    point: "92%,85%"
+    label: "Tap FAB to switch back to Product Catalog"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Ürün Kataloğu"
+    label: "Product Catalog header should be visible again"

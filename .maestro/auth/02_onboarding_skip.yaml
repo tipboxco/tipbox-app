@@ -1,0 +1,16 @@
+# AUTH-02: Onboarding Skip Flow
+# Verifies: Skip button goes directly to Welcome screen
+appId: app.tipbox.ios
+---
+- clearState
+- launchApp
+
+# Wait for onboarding
+- assertVisible: "Dijital Envanterini Oluştur"
+
+# Tap skip
+- tapOn: "Atla"
+
+# Should be on Welcome screen
+- assertVisible: "E-posta ile Kayıt Ol"
+- assertVisible: "Giriş Yap"

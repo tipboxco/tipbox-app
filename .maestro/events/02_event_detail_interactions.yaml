@@ -1,0 +1,133 @@
+# ==============================================================================
+# Events Detail & Interactions
+# Tests: Event detail view, participants, share, join/leave, tabs
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Events - Detail & Interactions"
+tags:
+  - events
+  - detail
+  - interactions
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch & navigate to Events tab
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "72%,97%"
+    label: "Navigate to Events tab"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Verify Events screen loaded
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Etkinlikler|Topluluk Etkinlikleri|Yaklaşan"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 3: Test event filter tabs (if present)
+# -----------------------------------------------
+- tapOn:
+    text: "Yaklaşan"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Geçmiş"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Yaklaşan"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Tap on an event card to open detail
+# -----------------------------------------------
+- runFlow:
+    when:
+      notVisible: "Henüz etkinlik yok"
+    commands:
+      - tapOn:
+          point: "50%,45%"
+          label: "Tap first event card"
+          optional: true
+      - waitForAnimationToEnd
+
+      # -----------------------------------------------
+      # Step 5: Verify Event Detail screen
+      # -----------------------------------------------
+      - extendedWaitUntil:
+          visible: "Etkinlik Detayı|Katılımcılar|Katıl|Tarih"
+          timeout: 8000
+          optional: true
+
+      # -----------------------------------------------
+      # Step 6: Scroll event detail content
+      # -----------------------------------------------
+      - swipe:
+          direction: UP
+          duration: 400      - waitForAnimationToEnd
+
+      # Check for event information sections
+      - assertVisible:
+          text: "Tarih"
+          optional: true
+
+      - assertVisible:
+          text: "Konum"
+          optional: true
+
+      # -----------------------------------------------
+      # Step 7: View participants (if section visible)
+      # -----------------------------------------------
+      - tapOn:
+          text: "Katılımcılar"
+          optional: true
+      - waitForAnimationToEnd
+
+      # Go back from participants
+      - back
+      - waitForAnimationToEnd
+
+      # -----------------------------------------------
+      # Step 8: Test Join/Leave button
+      # -----------------------------------------------
+      - tapOn:
+          text: "Katıl"
+          optional: true
+      - waitForAnimationToEnd
+
+      # If joined, try to leave
+      - tapOn:
+          text: "Ayrıl"
+          optional: true
+      - waitForAnimationToEnd
+
+      # -----------------------------------------------
+      # Step 9: Navigate back to events list
+      # -----------------------------------------------
+      - back
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Verify back on events list
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Etkinlikler|Topluluk Etkinlikleri"
+    timeout: 8000
+    optional: true

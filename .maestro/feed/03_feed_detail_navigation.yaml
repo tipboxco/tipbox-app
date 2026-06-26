@@ -1,0 +1,135 @@
+# ==============================================================================
+# Feed Detail Navigation
+# Tap post → PostDetail → verify content → comment → back to feed
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Feed - Detail Navigation & Comment"
+tags:
+  - feed
+  - detail
+  - navigation
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 15000
+
+# -----------------------------------------------
+# Step 2: Ensure we are on Feed tab
+# -----------------------------------------------
+- tapOn:
+    point: "10%,97%"
+    label: "Tap Feed tab"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Tap on the first post card to open detail
+# -----------------------------------------------
+- tapOn:
+    point: "50%,45%"
+    label: "Tap first post card body to open detail"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Verify PostDetailScreen loaded
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Detay|Yorumlar|Yorum yaz..."
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 5: Verify post content elements
+# -----------------------------------------------
+- assertVisible:
+    text: "Yorumlar"
+    optional: true
+
+# -----------------------------------------------
+# Step 6: Scroll down to see comments section
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Write a comment
+# -----------------------------------------------
+- tapOn:
+    text: "Yorum yaz..."
+    optional: true
+
+- inputText: "Harika bir paylaşım, teşekkürler! 🎉"
+
+- waitForAnimationToEnd
+
+# Submit comment (tap send button)
+- tapOn:
+    point: "93%,95%"
+    label: "Tap send comment button"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Wait for comment to appear
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+    optional: true
+
+# -----------------------------------------------
+# Step 8: Test comment sort options (if available)
+# -----------------------------------------------
+- tapOn:
+    text: "En Yeniler"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "En Popüler"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 9: Navigate back to Feed
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 10: Verify feed is still scrollable
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd

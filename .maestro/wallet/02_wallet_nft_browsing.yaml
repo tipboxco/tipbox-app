@@ -1,0 +1,185 @@
+# ==============================================================================
+# Wallet - NFT Browsing
+# Precondition: User is authenticated and wallet is connected.
+# Flow: Navigate to Wallet -> Switch to NFT tab -> Scroll NFT grid ->
+#       Open filter/sort bottom sheets -> Tap NFT item to view detail.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Wallet - NFT Browsing and Detail View"
+tags:
+  - wallet
+  - nft
+  - browsing
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated, wallet connected)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Wallet via drawer
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Cüzdan"
+    label: "Tap Wallet menu item in drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify WalletScreen loaded on TIPS tab
+# -----------------------------------------------
+- assertVisible:
+    text: "TIPS"
+    label: "TIPS tab should be visible"
+
+- assertVisible:
+    text: "NFT Varlıkları"
+    label: "NFT tab should be visible"
+
+# -----------------------------------------------
+# Step 4: Switch to NFT tab
+# -----------------------------------------------
+- tapOn:
+    text: "NFT Varlıkları"
+    label: "Tap NFT tab to switch"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify NFT tab content is displayed
+# Wait for loading to complete, then check for NFT content
+# -----------------------------------------------
+- extendedWaitUntil:
+    notVisible:
+      text: "NFT'ler yükleniyor..."
+    timeout: 10000
+
+# NFT grid should be visible or empty state
+# If NFTs exist, the filter/sort buttons should be visible
+- assertVisible:
+    text: "Filtrele"
+    optional: true
+    label: "NFT filter button should be visible if NFTs exist"
+
+- assertVisible:
+    text: "Sırala"
+    optional: true
+    label: "NFT sort button should be visible if NFTs exist"
+
+# -----------------------------------------------
+# Step 6: Scroll through the NFT grid
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Scroll back up
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Tap filter button to open NFT Filter Bottom Sheet
+# -----------------------------------------------
+- tapOn:
+    text: "Filtrele"
+    optional: true
+    label: "Tap filter button to open NFT type filter"
+
+- waitForAnimationToEnd
+
+# Verify the filter bottom sheet title is visible
+- assertVisible:
+    text: "Tür Filtresi"
+    optional: true
+    label: "NFT Filter bottom sheet title should be visible"
+
+# Close filter bottom sheet by swiping down
+- swipe:
+    direction: DOWN
+    from:
+      x: "50%"
+      y: "50%"
+    to:
+      x: "50%"
+      y: "90%"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 9: Tap sort button to open NFT Sort Bottom Sheet
+# -----------------------------------------------
+- tapOn:
+    text: "Sırala"
+    optional: true
+    label: "Tap sort button to open NFT sort options"
+
+- waitForAnimationToEnd
+
+# Verify sort bottom sheet content
+- assertVisible:
+    text: "Nadirliğe Göre Sırala"
+    optional: true
+    label: "NFT Sort bottom sheet title should be visible"
+
+# Tap the rarity desc sort option
+- tapOn:
+    text: "Nadir öğeler önce"
+    optional: true
+    label: "Select rare-first sort option"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Tap on an NFT item to view detail (if any exist)
+# Since we cannot target specific NFT items without testIDs,
+# we try tapping the first image-like element in the NFT grid area
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 11: Switch back to TIPS tab to verify tab switching works
+# -----------------------------------------------
+- tapOn:
+    text: "TIPS"
+    label: "Switch back to TIPS tab"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Mevcut Bakiye"
+    label: "Current balance label should be visible on TIPS tab"
+
+- assertVisible:
+    text: "İşlem Geçmişi"
+    label: "Transaction History should be visible on TIPS tab"

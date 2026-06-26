@@ -1,0 +1,26 @@
+# AUTH-07: Welcome to Login Navigation
+# Verifies: "Already have account" link navigates to Login
+appId: app.tipbox.ios
+---
+- clearState
+- launchApp
+
+# Skip onboarding
+- assertVisible: "Atla"
+- tapOn: "Atla"
+
+# Verify Welcome screen elements
+- assertVisible: "E-posta ile Kayıt Ol"
+- assertVisible: "Google ile Devam Et"
+- assertVisible: "Apple ile Devam Et"
+- assertVisible: "Facebook ile Devam Et"
+- assertVisible: "Zaten hesabınız var mı?"
+- assertVisible: "Giriş Yap"
+
+# Navigate to Login
+- tapOn: "Giriş Yap"
+- assertVisible: "Giriş Yap"
+- assertVisible: "E-posta"
+
+# Navigate back to Register from Login
+- assertVisible: "Hesabınız yok mu? Kayıt Ol"

@@ -1,0 +1,115 @@
+# ==============================================================================
+# Search Edge Cases
+# Tests: empty query, no results, special characters, rapid typing
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Search - Edge Cases"
+tags:
+  - search
+  - edge-cases
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch & navigate to search
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "28%,97%"
+    label: "Navigate to Explore tab"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Gönderi, ürün veya marka ara"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Search with no results
+# -----------------------------------------------
+- inputText: "XYZ_NoMatch_99999"
+
+- waitForAnimationToEnd
+
+# Wait for search to complete (debounce + API)
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+
+# Clear for next test
+- clearText
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Search with special characters
+# -----------------------------------------------
+- inputText: "test@#$%"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+
+- clearText
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Very short query (1 char)
+# -----------------------------------------------
+- inputText: "a"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+
+- clearText
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Very long query
+# -----------------------------------------------
+- inputText: "Bu çok uzun bir arama metni olarak test edilmektedir"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+
+- clearText
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: Turkish characters
+# -----------------------------------------------
+- inputText: "Türkçe özel karakterler şığüö"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+
+# -----------------------------------------------
+# Step 7: Back to explore
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Keşfet"

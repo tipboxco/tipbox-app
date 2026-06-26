@@ -1,0 +1,182 @@
+# ==============================================================================
+# Settings - Notification Settings
+# Precondition: User is authenticated.
+# Flow: Navigate to Settings -> Notification Settings -> Verify all 6 toggles
+#       are visible -> Toggle individual notifications -> Toggle "All" master
+#       switch -> Verify switches respond -> Back navigation.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Settings - Notification Settings Toggle Preferences"
+tags:
+  - settings
+  - notifications
+  - toggles
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Settings
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Profil"
+    label: "Tap Profile in drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "93%,7%"
+    label: "Tap ellipsis icon to go to Settings"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify Settings screen loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Ayarlar"
+    label: "Settings title should be visible"
+
+# -----------------------------------------------
+# Step 4: Tap Notification Settings
+# -----------------------------------------------
+- tapOn:
+    text: "Bildirim Ayarları"
+    label: "Tap Notification Settings menu item"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify Notification Settings screen loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Bildirim Ayarları"
+    label: "Notification Settings title should be visible"
+
+# Wait for data to load
+- extendedWaitUntil:
+    notVisible:
+      text: "Yükleniyor..."
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 6: Verify all notification toggle labels are visible
+# -----------------------------------------------
+- assertVisible:
+    text: "Tüm Bildirimler"
+    label: "All Notifications master toggle should be visible"
+
+- assertVisible:
+    text: "Trust - Truster Bildirimleri"
+    label: "Trust/Truster Notifications toggle should be visible"
+
+- assertVisible:
+    text: "1-1 Destek Bildirimleri"
+    label: "1-on-1 Support Notifications toggle should be visible"
+
+- assertVisible:
+    text: "Mesaj Bildirimleri"
+    label: "Message Notifications toggle should be visible"
+
+- scrollUntilVisible:
+    element:
+      text: "Koleksiyon Bildirimleri"
+    direction: DOWN
+    timeout: 5000
+
+- assertVisible:
+    text: "Koleksiyon Bildirimleri"
+    label: "Collection Notifications toggle should be visible"
+
+- assertVisible:
+    text: "Gönderi Bildirimleri"
+    label: "Post Notifications toggle should be visible"
+
+- scrollUntilVisible:
+    element:
+      text: "Para Yatırma Bildirimleri"
+    direction: DOWN
+    timeout: 5000
+
+- assertVisible:
+    text: "Para Yatırma Bildirimleri"
+    label: "Deposit Notifications toggle should be visible"
+
+# -----------------------------------------------
+# Step 7: Toggle an individual notification setting
+# Tap the Trust - Truster notifications switch
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# Tap the switch area for Trust - Truster Notifications
+# Since switches don't have testIDs, we tap near the right side of the row
+- tapOn:
+    text: "Trust - Truster Bildirimleri"
+    label: "Tap Trust/Truster notification row to toggle"
+
+- waitForAnimationToEnd
+
+# Toggle it back
+- tapOn:
+    text: "Trust - Truster Bildirimleri"
+    label: "Tap Trust/Truster notification row again to toggle back"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Toggle the master "All Notifications" switch
+# -----------------------------------------------
+- tapOn:
+    text: "Tüm Bildirimler"
+    label: "Tap All Notifications to toggle all off"
+
+- waitForAnimationToEnd
+
+# Toggle all back on
+- tapOn:
+    text: "Tüm Bildirimler"
+    label: "Tap All Notifications to toggle all back on"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 9: Verify we can still see all toggles after toggling
+# -----------------------------------------------
+- assertVisible:
+    text: "Trust - Truster Bildirimleri"
+    label: "Trust notifications should still be visible"
+
+- assertVisible:
+    text: "Mesaj Bildirimleri"
+    label: "Message notifications should still be visible"
+
+# -----------------------------------------------
+# Step 10: Navigate back to Settings
+# -----------------------------------------------
+- tapOn:
+    point: "10%,7%"
+    label: "Tap back button to return to Settings"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Ayarlar"
+    label: "Should be back on Settings screen"

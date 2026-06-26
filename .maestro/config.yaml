@@ -1,0 +1,22 @@
+# Maestro Global Configuration for Tipbox App
+# =============================================
+# Bundle IDs
+# iOS:     app.tipbox.ios
+# Android: app.tipbox.ios
+# Deep link scheme: tipboxapp://
+
+appId: app.tipbox.ios  # Change to app.tipbox.ios for iOS runs
+
+# Default timeouts
+initFlow:
+  appId: app.tipbox.ios
+
+# Environment variables (override via CLI: maestro test -e EMAIL=x@y.com)
+env:
+  TEST_EMAIL: "cem@tipbox.co"
+  TEST_PASSWORD: "password1234"
+  TEST_USERNAME: "cem_tipbox"
+  TEST_FULLNAME: "Cem Tipbox"
+  DEMO_EMAIL: "cem@tipbox.co"
+  DEMO_PASSWORD: "password1234"
+  APP_LANG: "tr"

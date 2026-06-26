@@ -1,0 +1,57 @@
+# =============================================================================
+# Tipbox E2E Test: Events Flow (Master Orchestrator)
+# =============================================================================
+# Screens: EventsScreen -> EventDetailScreen -> EventCreatePost ->
+#          RewardsBadgesScreen -> CollectionDetailScreen -> SurveyScreen
+# Tabs: "Topluluk Etkinlikleri" (Community) / "Koleksiyonlar" (Collections)
+# Priority: MEDIUM
+# Precondition: User must be logged in (authenticated state)
+# =============================================================================
+
+appId: app.tipbox.ios
+name: "Events - Complete Flow"
+tags:
+  - events
+  - medium
+  - master
+
+---
+
+# -------------------------------------------------------
+# PHASE 0: Ensure app is launched and user is authenticated
+# -------------------------------------------------------
+- launchApp:
+    clearState: false
+
+# Wait for the app to fully load (bottom tab bar should appear)
+- extendedWaitUntil:
+    visible: "Etkinlikler"
+    timeout: 15000
+
+# -------------------------------------------------------
+# PHASE 1: Events screen flows
+# -------------------------------------------------------
+
+# 1. Events screen happy path (tabs, search, event cards)
+- runFlow: 01_events_screen_happy_path.yaml
+
+# 2. Event detail and participation flow
+- runFlow: 02_event_detail_happy_path.yaml
+
+# 3. Event post creation flow
+- runFlow: 03_event_create_post.yaml
+
+# 4. Rewards and badges screen
+- runFlow: 04_rewards_badges_flow.yaml
+
+# 5. Collections tab and detail flow
+- runFlow: 05_collections_flow.yaml
+
+# 6. Survey participation flow
+- runFlow: 06_survey_flow.yaml
+
+# 7. Negative and edge cases
+- runFlow: 07_events_negative_cases.yaml
+
+# 8. Swipe gestures and navigation edge cases
+- runFlow: 08_events_gestures_navigation.yaml

@@ -1,0 +1,66 @@
+# =============================================================================
+# Tipbox E2E: Universal Login Helper (Sub-flow)
+# Reusable login flow for all test modules.
+# Ensures user is authenticated before running any tests.
+# =============================================================================
+appId: app.tipbox.ios
+name: "Common - Sub: Universal Login Helper"
+tags:
+  - common
+  - sub-flow
+  - helper
+
+---
+
+# Launch app preserving any existing session state
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# If the Welcome/Login screen is visible (English UI), perform login
+- runFlow:
+    when:
+      visible: "Sign In"
+    commands:
+      - tapOn:
+          text: "Sign In"
+      - waitForAnimationToEnd
+
+      # Enter email
+      - tapOn:
+          id: "email-input"
+          optional: true
+      - inputText: "cem@tipbox.co"
+      - tapOn:
+          text: "Continue"
+          optional: true
+      - tapOn:
+          text: "Devam Et"
+          optional: true
+      - waitForAnimationToEnd
+
+      # Enter password
+      - tapOn:
+          id: "password-input"
+          optional: true
+      - inputText: "password1234"
+      - tapOn:
+          text: "Sign In"
+          optional: true
+      - tapOn:
+          text: "Giriş Yap"
+          optional: true
+      - tapOn:
+          text: "Continue"
+          optional: true
+      - tapOn:
+          text: "Onayla"
+          optional: true
+      - waitForAnimationToEnd
+
+      # Wait for main screen to fully load after login
+      - extendedWaitUntil:
+          visible: "Güvenilen|Senin İçin|Keşfet|Feed|Explore"
+          timeout: 15000

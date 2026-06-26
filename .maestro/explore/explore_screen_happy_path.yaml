@@ -1,0 +1,170 @@
+# =============================================================================
+# Tipbox E2E Test: Explore Screen Happy Path
+# =============================================================================
+# Tests the ExploreScreen main layout: header, search bar, banner carousel,
+# tab switching (En Populer / Neler Yeni), and content rendering.
+# =============================================================================
+
+appId: app.tipbox.ios
+
+---
+
+# -------------------------------------------------------
+# STEP 1: Navigate to Explore tab
+# -------------------------------------------------------
+# Explore is the second tab in the bottom tab bar.
+# Tab bar labels are hidden (tabBarShowLabel: false) so we use index-based tap.
+# The ExploreStack tab uses Ionicons binoculars icon.
+# We tap the Explore tab area (second tab from left).
+
+# First, ensure we are on the main screen (Feed is default)
+- assertVisible:
+    text: "Keşfet"
+    optional: true
+
+# Tap the Explore tab (second icon in bottom tab bar)
+# Since tabBarShowLabel is false, we identify it by its position
+- tapOn:
+    point: "28%,97%"
+- waitForAnimationToEnd
+
+# -------------------------------------------------------
+# STEP 2: Verify Explore screen header
+# -------------------------------------------------------
+# The header shows "Kesfet" title centered with a hamburger menu on the left
+
+- assertVisible:
+    text: "Keşfet"
+
+# -------------------------------------------------------
+# STEP 3: Verify search bar placeholder text is visible
+# -------------------------------------------------------
+# The fake search bar (Pressable, not an actual input) shows placeholder text
+
+- assertVisible:
+    text: "Gönderi, ürün veya marka ara"
+
+# -------------------------------------------------------
+# STEP 4: Verify tabs are visible
+# -------------------------------------------------------
+# Two tabs: "En Populer" (Hottest) and "Neler Yeni" (News)
+
+- assertVisible:
+    text: "En Popüler"
+
+- assertVisible:
+    text: "Neler Yeni"
+
+# -------------------------------------------------------
+# STEP 5: Verify Hottest tab is active by default (initial page = 0)
+# -------------------------------------------------------
+# On launch, the "En Populer" tab content should be loaded.
+# The Hottest tab shows feed item cards (posts) or skeleton loaders.
+# Wait for content to load (skeleton disappears, posts appear).
+
+- extendedWaitUntil:
+    notVisible: "Yükleniyor..."
+    timeout: 10000
+    optional: true
+
+# -------------------------------------------------------
+# STEP 6: Verify banner carousel is visible
+# -------------------------------------------------------
+# Static banners are always present. The first banner title should be visible.
+
+- assertVisible:
+    text: "Tipbox Dünyasına İlk Adım"
+    optional: true
+
+# -------------------------------------------------------
+# STEP 7: Switch to "Neler Yeni" (News) tab by tapping
+# -------------------------------------------------------
+
+- tapOn:
+    text: "Neler Yeni"
+- waitForAnimationToEnd
+
+# Verify News tab content sections are loading or visible
+# The News tab has three sections: Events, Brands, Products
+
+- extendedWaitUntil:
+    visible: "Yeni Topluluk Etkinlikleri|Yeni Markalar|Yeni Ürünler"
+    timeout: 10000
+    optional: true
+
+# -------------------------------------------------------
+# STEP 8: Verify "See All" links are present in News tab
+# -------------------------------------------------------
+
+- assertVisible:
+    text: "Etkinlik Listesini Gör"
+    optional: true
+
+- assertVisible:
+    text: "Marka Kataloğunu Gör"
+    optional: true
+
+- assertVisible:
+    text: "Ürün Kataloğunu Gör"
+    optional: true
+
+# -------------------------------------------------------
+# STEP 9: Verify section titles in News tab
+# -------------------------------------------------------
+
+- assertVisible:
+    text: "Yeni Topluluk Etkinlikleri"
+    optional: true
+
+- assertVisible:
+    text: "Yeni Markalar"
+    optional: true
+
+# Scroll down to see "Yeni Urunler" section if not visible
+- scrollUntilVisible:
+    element:
+      text: "Yeni Ürünler"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+# -------------------------------------------------------
+# STEP 10: Switch back to "En Populer" tab
+# -------------------------------------------------------
+
+- tapOn:
+    text: "En Popüler"
+- waitForAnimationToEnd
+
+# Verify we are back on Hottest tab (feed cards or empty state)
+# If content exists, there should be post cards. If not, "Henuz gonderi yok"
+- extendedWaitUntil:
+    visible: "Henüz gönderi yok|.*"
+    timeout: 8000
+    optional: true
+
+# -------------------------------------------------------
+# STEP 11: Tap hamburger menu to open drawer
+# -------------------------------------------------------
+
+# The hamburger icon is at the top-left of the header
+- tapOn:
+    point: "8%,7%"
+- waitForAnimationToEnd
+
+# Verify drawer content is visible
+- assertVisible:
+    text: "Hesap"
+    optional: true
+
+- assertVisible:
+    text: "Ayarlar"
+    optional: true
+
+# Close the drawer by tapping outside or pressing back
+- back
+- waitForAnimationToEnd
+
+# Verify we are back on Explore screen
+- assertVisible:
+    text: "Keşfet"

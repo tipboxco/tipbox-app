@@ -1,0 +1,210 @@
+# ==============================================================================
+# Profile - Collections Tab Browsing
+# Precondition: User is authenticated.
+# Flow: Navigate to own profile -> Scroll to Collections tab in tab bar ->
+#       Tap Collections tab -> Navigate to CollectionsScreen ->
+#       Verify Achievement and Bridge tabs -> Search for badge ->
+#       Browse badge grid -> Back navigation.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Profile - Collections Tab and Badge Browsing"
+tags:
+  - profile
+  - collections
+  - badges
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to own profile via drawer
+# -----------------------------------------------
+- swipe:
+    direction: RIGHT
+    from:
+      x: 0
+      y: "50%"
+    to:
+      x: "80%"
+      y: "50%"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Profil"
+    optional: true
+    label: "Tap Profile in drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify profile loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Trust"
+    label: "Trust stat should be visible on profile"
+
+- assertVisible:
+    text: "Truster"
+    label: "Truster stat should be visible on profile"
+
+# -----------------------------------------------
+# Step 4: Scroll tab bar to find Collections tab
+# The profile has 7 tabs - Collections is the last one
+# -----------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "Koleksiyonlar"
+    direction: RIGHT
+    timeout: 8000
+
+- assertVisible:
+    text: "Koleksiyonlar"
+    label: "Collections tab should be visible in tab bar"
+
+# -----------------------------------------------
+# Step 5: Tap Collections tab
+# -----------------------------------------------
+- tapOn:
+    text: "Koleksiyonlar"
+    label: "Tap Collections tab"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: Verify Collections tab content area
+# The profile collections section may show badges or a "see more" button
+# -----------------------------------------------
+- assertVisible:
+    text: "Koleksiyonlar"
+    label: "Collections content should be visible"
+
+# Look for badge-related content or "see more"
+- assertVisible:
+    text: "Daha Fazla Koleksiyon Gör"
+    optional: true
+    label: "See More Collections link may be visible"
+
+# -----------------------------------------------
+# Step 7: Tap to navigate to full Collections screen
+# Either tap "Daha Fazla Koleksiyon Gor" or a badge item
+# -----------------------------------------------
+- tapOn:
+    text: "Daha Fazla Koleksiyon Gör"
+    optional: true
+    label: "Tap See More Collections to open full Collections screen"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Verify CollectionsScreen loaded
+# Check for the two tabs: Achievement Badges and Bridge Badges
+# -----------------------------------------------
+- assertVisible:
+    text: "Başarı Rozetleri"
+    optional: true
+    label: "Achievement Badges tab should be visible"
+
+- assertVisible:
+    text: "Köprü Rozetleri"
+    optional: true
+    label: "Bridge Badges tab should be visible"
+
+# -----------------------------------------------
+# Step 9: Verify search input is available
+# -----------------------------------------------
+- assertVisible:
+    text: "Rozet adına göre ara"
+    optional: true
+    label: "Badge search placeholder should be visible"
+
+# -----------------------------------------------
+# Step 10: Verify category filter chips
+# -----------------------------------------------
+- assertVisible:
+    text: "Tümü"
+    optional: true
+    label: "All category chip should be visible"
+
+# -----------------------------------------------
+# Step 11: Scroll through the badge grid
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 12: Switch to Bridge Badges tab
+# -----------------------------------------------
+- tapOn:
+    text: "Köprü Rozetleri"
+    optional: true
+    label: "Tap Bridge Badges tab"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 13: Scroll through Bridge Badges
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 14: Switch back to Achievement Badges
+# -----------------------------------------------
+- tapOn:
+    text: "Başarı Rozetleri"
+    optional: true
+    label: "Tap Achievement Badges tab"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 15: Test search functionality
+# -----------------------------------------------
+- tapOn:
+    text: "Rozet adına göre ara"
+    optional: true
+    label: "Tap search input"
+
+- inputText: "test"
+
+- waitForAnimationToEnd
+
+# Clear search
+- eraseText: 10
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 16: Navigate back to profile
+# -----------------------------------------------
+- back
+
+- waitForAnimationToEnd
+
+# Verify we are back on the profile screen
+- assertVisible:
+    text: "Trust"
+    label: "Should be back on profile screen"
+
+- assertVisible:
+    text: "Truster"
+    label: "Truster stat should be visible again"

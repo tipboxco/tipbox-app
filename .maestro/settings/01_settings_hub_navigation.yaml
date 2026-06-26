@@ -1,0 +1,216 @@
+# ==============================================================================
+# Settings Hub - Navigation & Search
+# Precondition: User is authenticated and on the main app screen.
+# Flow: Navigate to Settings via Profile ellipsis -> Verify all sections
+#       and menu items -> Test search filtering -> Back navigation.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Settings - Hub Navigation & Search"
+tags:
+  - settings
+  - navigation
+  - happy-path
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Settings
+# Open drawer -> Profile -> Ellipsis -> Settings
+# Settings is accessible from Profile screen ellipsis menu
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+# Tap on profile area in the drawer to go to profile
+- tapOn:
+    text: "Profil"
+    label: "Tap Profile menu item in drawer"
+
+- waitForAnimationToEnd
+
+# Tap the ellipsis icon (settings gear) on own profile
+# On own profile, the EllipsisVertical navigates to Settings
+- tapOn:
+    point: "93%,7%"
+    label: "Tap ellipsis icon on own profile header"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify SettingsScreen loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Ayarlar"
+    label: "Settings title 'Ayarlar' should be visible"
+
+# -----------------------------------------------
+# Step 4: Verify all section headers are visible
+# -----------------------------------------------
+- assertVisible:
+    text: "Hesap Güvenliği"
+    label: "Account Security section header should be visible"
+
+- assertVisible:
+    text: "Hesap Tercihleri"
+    label: "Account Preferences section header should be visible"
+
+- scrollUntilVisible:
+    element:
+      text: "Ödeme ve Abonelik Ayarları"
+    direction: DOWN
+    timeout: 5000
+
+- assertVisible:
+    text: "Ödeme ve Abonelik Ayarları"
+    label: "Payment & Subscription section header should be visible"
+
+# -----------------------------------------------
+# Step 5: Verify all menu items in Account Security
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- assertVisible:
+    text: "Şifre Değiştir"
+    label: "Change Password menu item should be visible"
+
+- assertVisible:
+    text: "İki Faktörlü Kimlik Doğrulama"
+    label: "Two Factor Auth menu item should be visible"
+
+# -----------------------------------------------
+# Step 6: Verify all menu items in Account Preferences
+# -----------------------------------------------
+- assertVisible:
+    text: "Bildirim Ayarları"
+    label: "Notification Settings menu item should be visible"
+
+- assertVisible:
+    text: "Gizlilik Ayarları"
+    label: "Privacy Settings menu item should be visible"
+
+- assertVisible:
+    text: "1-1 Destek Ayarları"
+    label: "Support Settings menu item should be visible"
+
+- assertVisible:
+    text: "Tema"
+    label: "Theme menu item should be visible"
+
+- assertVisible:
+    text: "Dil"
+    label: "Language menu item should be visible"
+
+- scrollUntilVisible:
+    element:
+      text: "Cihazlarınız"
+    direction: DOWN
+    timeout: 5000
+
+- assertVisible:
+    text: "Cihazlarınız"
+    label: "Your Devices menu item should be visible"
+
+# -----------------------------------------------
+# Step 7: Verify Payment section items
+# -----------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "Ödeme ve Abonelik"
+    direction: DOWN
+    timeout: 5000
+
+- assertVisible:
+    text: "Ödeme ve Abonelik"
+    label: "Payment & Subscription menu item should be visible"
+
+- assertVisible:
+    text: "Fatura Geçmişi"
+    label: "Billing History menu item should be visible"
+
+# -----------------------------------------------
+# Step 8: Test search functionality
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+# Tap on the search field
+- tapOn:
+    text: "Ürün grubu seç veya ürün adı ara"
+    label: "Tap on search input placeholder"
+
+# Type a search query that matches a menu item
+- inputText: "Şifre"
+
+- waitForAnimationToEnd
+
+# The filtered results should show only "Sifre Degistir"
+- assertVisible:
+    text: "Şifre Değiştir"
+    label: "Change Password should still be visible after filtering"
+
+# Items that don't match should be hidden
+- assertNotVisible:
+    text: "Tema"
+    label: "Theme should NOT be visible when search filter is 'Sifre'"
+
+# Clear the search
+- clearText
+
+- waitForAnimationToEnd
+
+# All items should reappear
+- assertVisible:
+    text: "Tema"
+    label: "Theme should reappear after clearing search"
+
+# -----------------------------------------------
+# Step 9: Test search with no results
+# -----------------------------------------------
+- tapOn:
+    text: "Ürün grubu seç veya ürün adı ara"
+    label: "Tap on search input placeholder"
+
+- inputText: "XYZ_NoMatch_12345"
+
+- waitForAnimationToEnd
+
+# No section headers should be visible since nothing matches
+- assertNotVisible:
+    text: "Hesap Güvenliği"
+    label: "No results: Account Security section should be hidden"
+
+- assertNotVisible:
+    text: "Hesap Tercihleri"
+    label: "No results: Account Preferences section should be hidden"
+
+# Clear search and verify recovery
+- clearText
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Hesap Güvenliği"
+    label: "Sections should reappear after clearing no-result search"
+
+# -----------------------------------------------
+# Step 10: Test back navigation
+# -----------------------------------------------
+- tapOn:
+    point: "10%,7%"
+    label: "Tap back button to leave Settings"
+
+- waitForAnimationToEnd

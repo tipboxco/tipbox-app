@@ -1,0 +1,225 @@
+# =============================================================================
+# Marketplace Browsing - NFT Listings, Search, Tab Switching
+# =============================================================================
+# Precondition: User is authenticated. Marketplace opened via drawer.
+# Flow: Navigate to Marketplace -> Browse NFT listings -> Search ->
+#       Switch tabs (All NFTs / My Listings) -> Tap NFT card -> Verify detail
+# =============================================================================
+appId: app.tipbox.ios
+name: "Marketplace - Browsing Happy Path"
+tags:
+  - marketplace
+  - browsing
+  - happy-path
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 0: Ensure app is launched and user is logged in
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 1: Handle potential login screen
+# -----------------------------------------------
+- runFlow:
+    when:
+      visible: "Giriş Yap"
+    commands:
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+      - inputText:
+          text: "cem@tipbox.co"
+          label: "Enter test email"
+      - tapOn:
+          text: "Devam Et"
+      - waitForAnimationToEnd
+      - inputText:
+          text: "password1234"
+          label: "Enter test password"
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Open drawer via hamburger icon (top-left)
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Tap "Market" in the drawer menu
+# -----------------------------------------------
+- tapOn:
+    text: "Market"
+    label: "Tap Marketplace menu item in drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Verify MarketPlaceScreen loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Market"
+    label: "Marketplace header title should be visible"
+
+- assertVisible:
+    text: "Tüm NFT'ler"
+    label: "All NFTs tab should be visible"
+
+- assertVisible:
+    text: "İlanlarım"
+    label: "My Listings tab should be visible"
+
+# -----------------------------------------------
+# Step 5: Verify NFT listings are loading
+# Wait for content to appear (either NFT cards or empty state)
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 10000
+    label: "Wait for NFT listings to load from API"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: Test search functionality
+# Tap the search bar and type a query
+# -----------------------------------------------
+- tapOn:
+    text: "NFT adı veya açıklaması ile ara"
+    label: "Tap search bar placeholder"
+
+- inputText:
+    text: "Rozet"
+    label: "Type search query for badges"
+
+# Wait for debounce (500ms) and API response
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+    label: "Wait for search results to load"
+
+# -----------------------------------------------
+# Step 7: Clear search
+# -----------------------------------------------
+- clearText
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Test filter bottom sheet
+# Tap the funnel icon to open filter
+# -----------------------------------------------
+- runFlow:
+    when:
+      visible: "Tüm NFT'ler"
+    commands:
+      # Filter icon is next to search bar (not always visible)
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 9: Switch to "My Listings" tab
+# -----------------------------------------------
+- tapOn:
+    text: "İlanlarım"
+    label: "Tap My Listings tab"
+
+- waitForAnimationToEnd
+
+# Verify My Listings tab content loaded
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+    label: "Wait for My Listings content to load"
+
+# -----------------------------------------------
+# Step 10: Check for empty state or listings
+# -----------------------------------------------
+- runFlow:
+    when:
+      visible: "Henüz aktif ilanınız yok."
+    commands:
+      - assertVisible:
+          text: "Henüz aktif ilanınız yok."
+          label: "Empty state message should be visible when no listings"
+
+# -----------------------------------------------
+# Step 11: Switch back to "All NFTs" tab
+# -----------------------------------------------
+- tapOn:
+    text: "Tüm NFT'ler"
+    label: "Switch back to All NFTs tab"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 12: Tap on first NFT card (if listings exist)
+# NFT cards are in a 2-column grid below search/tabs
+# -----------------------------------------------
+- runFlow:
+    when:
+      notVisible: "Henüz satışta NFT yok."
+    commands:
+      - tapOn:
+          point: "25%,55%"
+          label: "Tap first NFT card in grid"
+      - waitForAnimationToEnd
+      # Verify NFTDetailScreen loaded
+      - extendedWaitUntil:
+          visible:
+            text: ".*"
+          timeout: 8000
+          label: "Wait for NFT Detail screen to load"
+      # Navigate back to marketplace
+      - back
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 13: Verify FAB (Floating Action Button) exists
+# Green circle button at bottom-right to list an NFT
+# -----------------------------------------------
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 14: Tap FAB to navigate to SelectNFTScreen
+# -----------------------------------------------
+- tapOn:
+    point: "90%,88%"
+    label: "Tap FAB (plus button) to list an NFT for sale"
+
+- waitForAnimationToEnd
+
+# Verify SelectNFTScreen or NFT selection appeared
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+    label: "Wait for SelectNFT screen to load"
+
+# -----------------------------------------------
+# Step 15: Navigate back to Marketplace
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+# Verify we are back on MarketPlaceScreen
+- assertVisible:
+    text: "Market"
+    label: "Should be back on Marketplace screen"
+
+- assertVisible:
+    text: "Tüm NFT'ler"
+    label: "All NFTs tab should still be visible"

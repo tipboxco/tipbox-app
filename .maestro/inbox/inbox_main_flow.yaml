@@ -1,0 +1,30 @@
+# =============================================================================
+# Inbox & Messaging - Main Orchestrator Flow
+# =============================================================================
+# Runs all inbox sub-flows in sequence.
+# Prerequisites: User must be logged in. App must be on main screen.
+# =============================================================================
+
+appId: app.tipbox.ios
+
+---
+
+# --- Pre-condition: Ensure user is authenticated and on the main app screen ---
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+
+# Navigate to Inbox tab via bottom tab bar
+- tapOn:
+    text: "Gelen Kutusu"
+- waitForAnimationToEnd
+
+# --- Run sub-flows ---
+
+- runFlow: inbox_screen_tabs.yaml
+- runFlow: inbox_messages_list.yaml
+- runFlow: inbox_message_detail.yaml
+- runFlow: inbox_support_requests.yaml
+- runFlow: inbox_send_tips.yaml
+- runFlow: inbox_negative_and_edge_cases.yaml

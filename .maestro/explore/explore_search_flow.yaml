@@ -1,0 +1,43 @@
+# =============================================================================
+# Tipbox E2E Test: Explore & Search Flow (Master Orchestrator)
+# =============================================================================
+# Screens: ExploreScreen -> ExploreSearchScreen -> SearchScreen
+# Tabs: "En Populer" (Hottest) / "Neler Yeni" (News)
+# Search: Users / Brands / Products tabs, Post search
+# Priority: HIGH
+# Precondition: User must be logged in (authenticated state)
+# =============================================================================
+
+appId: app.tipbox.ios
+
+---
+
+# -------------------------------------------------------
+# PHASE 0: Ensure app is launched and user is authenticated
+# -------------------------------------------------------
+- launchApp:
+    clearState: false
+
+# Wait for the app to fully load after launch
+- extendedWaitUntil:
+    visible: "Keşfet"
+    timeout: 15000
+
+# -------------------------------------------------------
+# PHASE 1: Run all sub-flows in sequence
+# -------------------------------------------------------
+
+# 1. Explore screen happy path (tabs, banners, content)
+- runFlow: explore_screen_happy_path.yaml
+
+# 2. Explore post search (ExploreSearchScreen)
+- runFlow: explore_post_search.yaml
+
+# 3. Global search (SearchScreen) - users, brands, products
+- runFlow: global_search_flow.yaml
+
+# 4. Negative and edge cases
+- runFlow: explore_search_negative_cases.yaml
+
+# 5. Swipe and gesture tests
+- runFlow: explore_search_gestures.yaml

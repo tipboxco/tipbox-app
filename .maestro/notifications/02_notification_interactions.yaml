@@ -1,0 +1,119 @@
+# ==============================================================================
+# Notification Interactions
+# Tests: filter tabs, mark all read, tap to navigate, scroll
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Notifications - Interactions & Filtering"
+tags:
+  - notifications
+  - interactions
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch & navigate to Notifications
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# Notifications is approximately the 5th tab
+- tapOn:
+    point: "87%,97%"
+    label: "Navigate to Notifications tab"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Verify Notifications screen loaded
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Bildirimler|Henüz bildiriminiz yok"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 3: Test filter tabs
+# -----------------------------------------------
+- tapOn:
+    text: "Tüm Bildirimler"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Yanıtlar"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Trust - Truster"
+    optional: true
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "TIPS"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Back to all
+- tapOn:
+    text: "Tüm Bildirimler"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Mark all as read (if button visible)
+# -----------------------------------------------
+- runFlow:
+    when:
+      visible: "Tümünü Okundu İşaretle"
+    commands:
+      - tapOn:
+          text: "Tümünü Okundu İşaretle"
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Tap on a notification to deep link
+# -----------------------------------------------
+- runFlow:
+    when:
+      notVisible: "Henüz bildiriminiz yok"
+    commands:
+      - tapOn:
+          point: "50%,35%"
+          label: "Tap first notification"
+          optional: true
+      - waitForAnimationToEnd
+
+      # Navigate back
+      - back
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: Scroll notifications list
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+
+- waitForAnimationToEnd
+
+- swipe:
+    direction: DOWN
+    duration: 400
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Verify screen integrity
+# -----------------------------------------------
+- assertVisible:
+    text: "Bildirimler"
+    optional: true

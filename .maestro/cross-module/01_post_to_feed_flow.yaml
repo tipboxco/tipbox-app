@@ -1,0 +1,124 @@
+# ==============================================================================
+# Cross-Module: Post Creation → Feed Verification
+# Creates a post and verifies it appears in the user's feed.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Cross-Module - Post to Feed Flow"
+tags:
+  - cross-module
+  - post
+  - feed
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch & ensure authenticated
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 15000
+
+# -----------------------------------------------
+# Step 2: Navigate to Catalog to find a product
+# -----------------------------------------------
+- tapOn:
+    point: "50%,97%"
+    label: "Navigate to Catalog tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ürün Kataloğu|Kategoriler"
+    timeout: 10000
+
+# Drill into categories → subcategory → product group → product
+- tapOn:
+    point: "25%,42%"
+    label: "Tap first category"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first subcategory"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product group"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify PostsScreen opened
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+
+# Tap FAB to create a new post
+- tapOn:
+    point: "90%,90%"
+    label: "Tap floating action button"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Select post type (Soru - simplest type)
+# -----------------------------------------------
+- tapOn:
+    text: "Soru"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Fill question text
+- tapOn:
+    text: "Sorunuzu buraya yazın..."
+    optional: true
+
+- inputText: "Bu ürün hakkında ne düşünüyorsunuz? Test sorusu."
+
+- waitForAnimationToEnd
+
+# Submit
+- tapOn:
+    text: "Paylaş"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Wait for success
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 5: Navigate to Feed and verify post
+# -----------------------------------------------
+- tapOn:
+    point: "10%,97%"
+    label: "Navigate to Feed tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000

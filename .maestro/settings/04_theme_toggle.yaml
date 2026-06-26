@@ -1,0 +1,167 @@
+# ==============================================================================
+# Settings - Theme Toggle
+# Precondition: User is authenticated.
+# Flow: Navigate to Settings -> Tap Theme -> Verify theme options (Light, Dark,
+#       System) -> Select Dark theme -> Verify bottom sheet closes ->
+#       Re-open and select Light -> Verify -> Re-open and select System.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Settings - Theme Toggle Between Dark/Light/System"
+tags:
+  - settings
+  - theme
+  - appearance
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Settings
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Profil"
+    label: "Tap Profile in drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "93%,7%"
+    label: "Tap ellipsis icon to go to Settings"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify Settings screen loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Ayarlar"
+    label: "Settings title should be visible"
+
+# -----------------------------------------------
+# Step 4: Scroll to Theme menu item and tap it
+# -----------------------------------------------
+- assertVisible:
+    text: "Tema"
+    label: "Theme menu item should be visible"
+
+- tapOn:
+    text: "Tema"
+    label: "Tap Theme menu item to open theme bottom sheet"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify theme bottom sheet options
+# -----------------------------------------------
+- assertVisible:
+    text: "Tema"
+    label: "Theme bottom sheet title should be visible"
+
+- assertVisible:
+    text: "Açık"
+    label: "Light theme option should be visible"
+
+- assertVisible:
+    text: "Koyu"
+    label: "Dark theme option should be visible"
+
+- assertVisible:
+    text: "Sistem (Otomatik)"
+    label: "System theme option should be visible"
+
+# -----------------------------------------------
+# Step 6: Select Dark theme
+# -----------------------------------------------
+- tapOn:
+    text: "Koyu"
+    label: "Select Dark theme"
+
+- waitForAnimationToEnd
+
+# Bottom sheet closes automatically after 300ms delay
+# Verify we are back on Settings screen
+- extendedWaitUntil:
+    visible:
+      text: "Ayarlar"
+    timeout: 5000
+
+# -----------------------------------------------
+# Step 7: Re-open theme bottom sheet and select Light
+# -----------------------------------------------
+- tapOn:
+    text: "Tema"
+    label: "Tap Theme again to re-open bottom sheet"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Açık"
+    label: "Light option should be visible in re-opened sheet"
+
+- tapOn:
+    text: "Açık"
+    label: "Select Light theme"
+
+- waitForAnimationToEnd
+
+# Verify Settings screen is visible after selection
+- extendedWaitUntil:
+    visible:
+      text: "Ayarlar"
+    timeout: 5000
+
+# -----------------------------------------------
+# Step 8: Re-open and select System (automatic)
+# -----------------------------------------------
+- tapOn:
+    text: "Tema"
+    label: "Tap Theme to open bottom sheet again"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Sistem (Otomatik)"
+    label: "Select System (automatic) theme"
+
+- waitForAnimationToEnd
+
+# Verify we return to Settings
+- extendedWaitUntil:
+    visible:
+      text: "Ayarlar"
+    timeout: 5000
+
+# -----------------------------------------------
+# Step 9: Verify Settings screen is still functional after theme changes
+# -----------------------------------------------
+- assertVisible:
+    text: "Hesap Güvenliği"
+    label: "Account Security section should still be visible"
+
+- assertVisible:
+    text: "Hesap Tercihleri"
+    label: "Account Preferences section should still be visible"
+
+# -----------------------------------------------
+# Step 10: Navigate back
+# -----------------------------------------------
+- tapOn:
+    point: "10%,7%"
+    label: "Tap back button to leave Settings"
+
+- waitForAnimationToEnd

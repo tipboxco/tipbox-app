@@ -1,0 +1,46 @@
+# Setup wizard + Login helper
+# Handles fresh app state: Hoş geldin → Başla → Onboarding → Login
+appId: app.tipbox.ios
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- waitForAnimationToEnd
+
+# Handle "Hoş geldin" setup screen
+- runFlow:
+    when:
+      visible: "Başla"
+    commands:
+      - tapOn: "Başla"
+      - waitForAnimationToEnd
+
+# Handle onboarding slides
+- runFlow:
+    when:
+      visible: "Atla"
+    commands:
+      - tapOn: "Atla"
+      - waitForAnimationToEnd
+
+# Handle Welcome screen → Login
+- runFlow:
+    when:
+      visible: "Giriş Yap"
+    commands:
+      - tapOn: "Giriş Yap"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "E-posta adresiniz"
+          optional: true
+      - inputText: "cem@tipbox.co"
+      - tapOn:
+          text: "Şifreniz"
+          optional: true
+      - inputText: "password1234"
+      - tapOn: "Onayla"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 20000

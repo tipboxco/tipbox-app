@@ -1,0 +1,279 @@
+# ==============================================================================
+# INVESTOR GOLDEN PATH — Choreographed Demo Flow
+# The complete, polished walkthrough for investor presentation.
+# Shows all major features in the best light with generous timeouts.
+# Precondition: cem@tipbox.co account with content pre-seeded.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Demo - Investor Golden Path"
+tags:
+  - demo
+  - investor
+  - golden-path
+  - priority-critical
+
+---
+
+# -----------------------------------------------
+# Step 1: Fresh launch & login as demo user
+# -----------------------------------------------
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+- waitForAnimationToEnd
+
+# Skip onboarding
+- runFlow:
+    when:
+      visible: "Atla"
+    commands:
+      - tapOn: "Atla"
+      - waitForAnimationToEnd
+
+# Tap "Giriş Yap" on welcome screen
+- tapOn:
+    text: "Giriş Yap"
+- waitForAnimationToEnd
+
+# Enter demo credentials
+- tapOn:
+    text: "E-posta adresiniz"
+    optional: true
+- inputText: "${DEMO_EMAIL}"
+
+- tapOn:
+    text: "Şifreniz"
+    optional: true
+- inputText: "${DEMO_PASSWORD}"
+
+- tapOn:
+    text: "Onayla"
+- waitForAnimationToEnd
+
+# Wait for feed to fully load
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin|Keşfet"
+    timeout: 20000
+
+# -----------------------------------------------
+# Step 2: FEED — Show content richness
+# -----------------------------------------------
+# Scroll feed to show content variety
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# Scroll back up
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Like a post — Social engagement
+# -----------------------------------------------
+- tapOn:
+    point: "12%,55%"
+    label: "Tap like button on first visible post"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: EXPLORE — Discovery experience
+# -----------------------------------------------
+- tapOn:
+    point: "28%,97%"
+    label: "Navigate to Explore tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Keşfet"
+    timeout: 10000
+
+# Show trending content
+- assertVisible:
+    text: "En Popüler"
+    optional: true
+
+- assertVisible:
+    text: "Neler Yeni"
+    optional: true
+
+# Switch to Neler Yeni tab
+- tapOn:
+    text: "Neler Yeni"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Switch back
+- tapOn:
+    text: "En Popüler"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: SEARCH — AI-powered search
+# -----------------------------------------------
+- tapOn:
+    text: "Gönderi, ürün veya marka ara"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Type search query
+- inputText: "iPhone"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Kullanıcılar|Markalar|Ürünler"
+    timeout: 10000
+    optional: true
+
+# Navigate back from search
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: CATALOG — Product database
+# -----------------------------------------------
+- tapOn:
+    point: "50%,97%"
+    label: "Navigate to Catalog tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ürün Kataloğu|Kategoriler"
+    timeout: 10000
+
+# Tap first category
+- tapOn:
+    point: "25%,42%"
+    label: "Tap first category"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Tap first subcategory
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first subcategory"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Go back to catalog root
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: EVENTS — Community engagement
+# -----------------------------------------------
+- tapOn:
+    point: "72%,97%"
+    label: "Navigate to Events tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Etkinlikler|Topluluk Etkinlikleri"
+    timeout: 10000
+    optional: true
+
+# -----------------------------------------------
+# Step 8: DRAWER — Full feature menu
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer menu"
+
+- waitForAnimationToEnd
+
+# Show drawer items
+- assertVisible:
+    text: "Cüzdan"
+    optional: true
+
+- assertVisible:
+    text: "Envanterim"
+    optional: true
+
+- assertVisible:
+    text: "Market"
+    optional: true
+
+# -----------------------------------------------
+# Step 9: WALLET — Monetization
+# -----------------------------------------------
+- tapOn:
+    text: "Cüzdan"
+    optional: true
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cüzdan|TIPS|Bakiye"
+    timeout: 10000
+    optional: true
+
+# Go back
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: PROFILE — User identity
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer again"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Profil"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify profile stats
+- assertVisible:
+    text: "Trust"
+    optional: true
+
+- assertVisible:
+    text: "Truster"
+    optional: true
+
+- assertVisible:
+    text: "Envanter"
+    optional: true
+
+# -----------------------------------------------
+# Step 11: Back to Feed — Full circle
+# -----------------------------------------------
+- tapOn:
+    point: "10%,97%"
+    label: "Navigate back to Feed tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000

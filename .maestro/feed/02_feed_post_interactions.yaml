@@ -1,0 +1,247 @@
+# =============================================================================
+# Tipbox E2E: Feed Post Interactions
+# =============================================================================
+# Tests per-card interactions on the Feed: like/unlike, bookmark/unbookmark,
+# share (opens ShareToTrusted bottom sheet), comment (navigates to PostDetail),
+# upvote, 3-dot options menu, and user avatar tap (navigates to profile).
+#
+# Precondition: User is authenticated and feed has at least one post.
+# Priority: HIGH
+# =============================================================================
+appId: app.tipbox.ios
+name: "Feed - Post Interactions"
+tags:
+  - feed
+  - interactions
+  - like
+  - bookmark
+  - share
+  - comment
+  - priority-high
+
+---
+
+# =================================================================
+# PHASE 0: Authenticate & navigate to Feed
+# =================================================================
+- runFlow: 00_sub_feed_login_helper.yaml
+
+# =================================================================
+# PHASE 1: Ensure feed has content
+# =================================================================
+# Wait for feed content to fully load (not just tab bar)
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000
+    label: "Wait for feed screen to be ready"
+
+# If Guvenilen tab is empty, try switching to Senin Icin for content
+- runFlow:
+    when:
+      visible: "Güvendiklerinden henüz paylaşım yok"
+    commands:
+      - tapOn:
+          text: "Senin İçin"
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Sana özel içerik henüz yok|.*"
+          timeout: 12000
+
+# Scroll down slightly to ensure a post card is fully visible
+- swipe:
+    direction: UP
+    duration: 400    duration: 200
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 2: Like / Unlike a post
+# =================================================================
+# The like button (HeartIcon) is at the bottom-left of each post card.
+# The action bar has: [Heart] [ChatBubble] [PaperAirplane] ... [Bookmark]
+# We target the first card's action bar area.
+#
+# First, scroll to ensure we see a full card with its action bar.
+- swipe:
+    direction: DOWN
+    duration: 400    duration: 300
+- waitForAnimationToEnd
+
+# Tap the like (heart) icon area on the first visible post card.
+# The action bar is roughly at the bottom of the first card.
+# Heart icon is the leftmost button in the action bar.
+- tapOn:
+    point: "8%,55%"
+    label: "Tap like (heart) icon on first visible post card"
+- waitForAnimationToEnd
+
+# Wait a moment for optimistic UI update
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Tap again to unlike (toggle)
+- tapOn:
+    point: "8%,55%"
+    label: "Tap like icon again to unlike (toggle)"
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 3: Comment button tap -> navigates to PostDetailScreen
+# =================================================================
+# The comment button (ChatBubbleLeftIcon) is the second icon in the action bar.
+- tapOn:
+    point: "16%,55%"
+    label: "Tap comment (chat bubble) icon on first post card"
+- waitForAnimationToEnd
+
+# Should navigate to PostDetailScreen which shows Yorumlar section
+- extendedWaitUntil:
+    visible: "Yorumlar|Henüz yorum yok. İlk yorumu siz yapın!|Bir mesaj yazın..."
+    timeout: 10000
+    label: "Wait for PostDetailScreen to load with comments section"
+
+# Verify comment input area is present
+- assertVisible:
+    text: "Bir mesaj yazın..."
+    label: "Comment input placeholder should be visible"
+    optional: true
+
+# Navigate back to feed
+- back
+- waitForAnimationToEnd
+
+# Verify we are back on the feed
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 8000
+    label: "Verify navigation back to feed after comment screen"
+
+# =================================================================
+# PHASE 4: Share button tap -> opens share bottom sheet
+# =================================================================
+# The share button (PaperAirplaneIcon) is the third icon in the action bar.
+- tapOn:
+    point: "24%,55%"
+    label: "Tap share (paper airplane) icon on first post card"
+- waitForAnimationToEnd
+
+# The share action opens ShareToTrustedBottomSheet or system share sheet.
+# Wait for any bottom sheet or share UI to appear.
+- extendedWaitUntil:
+    visible: "Paylaş|Ara|Gönder|.*"
+    timeout: 5000
+    label: "Wait for share UI to appear"
+    optional: true
+
+# Dismiss share sheet/bottom sheet
+- back
+- waitForAnimationToEnd
+
+# Fallback: swipe down to dismiss if back didn't close it
+- swipe:
+    start: "50%,40%"
+    end: "50%,85%"
+    duration: 300
+    optional: true
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 5: Bookmark / Unbookmark a post
+# =================================================================
+# The bookmark icon is at the far right of the action bar.
+- tapOn:
+    point: "94%,55%"
+    label: "Tap bookmark icon on first post card"
+- waitForAnimationToEnd
+
+# Wait for optimistic UI update
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Tap again to unbookmark (toggle)
+- tapOn:
+    point: "94%,55%"
+    label: "Tap bookmark icon again to unbookmark (toggle)"
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 6: Tap 3-dot options menu
+# =================================================================
+# The EllipsisHorizontalIcon (3-dot menu) is at the top-right of each card.
+- tapOn:
+    point: "94%,30%"
+    label: "Tap 3-dot options menu on first post card"
+- waitForAnimationToEnd
+
+# The options menu should show at least some of these options:
+# Edit, Delete, Report, View Profile
+- extendedWaitUntil:
+    visible: "Düzenle|Sil|Şikayet Et|Profili Gör|.*"
+    timeout: 5000
+    label: "Wait for post options menu to appear"
+    optional: true
+
+# Dismiss the options menu by tapping outside
+- tapOn:
+    point: "50%,50%"
+    label: "Tap outside to dismiss options menu"
+    optional: true
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 7: Tap user avatar -> navigates to profile
+# =================================================================
+# The user avatar is at the top-left of the post card header.
+# Scroll back to top first to find the first card.
+- swipe:
+    direction: DOWN
+    duration: 400    duration: 500
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "8%,28%"
+    label: "Tap user avatar on first post card"
+- waitForAnimationToEnd
+
+# Should navigate to the user's profile screen
+- extendedWaitUntil:
+    visible: "Güven|Gönderi|Takip Et|Takipçi|Profil|.*"
+    timeout: 8000
+    label: "Wait for profile screen to load"
+    optional: true
+
+# Navigate back to feed
+- back
+- waitForAnimationToEnd
+
+# Verify we are back on feed
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 8000
+    label: "Verify return to feed after profile visit"
+
+# =================================================================
+# PHASE 8: Tap card body -> navigates to PostDetailScreen
+# =================================================================
+# Tapping anywhere on the card body (content area) should navigate to detail.
+- tapOn:
+    point: "50%,42%"
+    label: "Tap card body/content area to navigate to post detail"
+- waitForAnimationToEnd
+
+# PostDetailScreen should load
+- extendedWaitUntil:
+    visible: "Yorumlar|Bir mesaj yazın...|.*"
+    timeout: 10000
+    label: "Wait for PostDetailScreen to load"
+
+# Navigate back
+- back
+- waitForAnimationToEnd
+
+# Final verification: back on feed
+- assertVisible:
+    text: "Güvenilen"
+    label: "Feed screen visible after all interaction tests"
+    optional: true

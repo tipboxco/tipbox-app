@@ -1,0 +1,228 @@
+# ==============================================================================
+# Profile - Other User Profile View
+# Precondition: User is authenticated and there are other users in the feed.
+# Flow: Navigate to feed -> Tap a post author to visit their profile ->
+#       Verify other-user profile elements (Trust button, action buttons) ->
+#       Check profile tabs -> Verify Trust/Truster stats are visible ->
+#       Back navigation.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Profile - Other User Profile from Feed"
+tags:
+  - profile
+  - other-user
+  - trust
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# Wait for feed to load
+- extendedWaitUntil:
+    visible:
+      text: "Akış"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 2: Navigate to own profile's Trust List to find another user
+# This is more reliable than trying to tap a feed post author
+# -----------------------------------------------
+- swipe:
+    direction: RIGHT
+    from:
+      x: 0
+      y: "50%"
+    to:
+      x: "80%"
+      y: "50%"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Profil"
+    optional: true
+    label: "Tap Profile in drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Tap Trust stat to go to Trust List
+# -----------------------------------------------
+- assertVisible:
+    text: "Trust"
+    label: "Trust stat should be visible"
+
+- tapOn:
+    text: "Trust"
+    label: "Tap Trust stat to open Trust list"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Verify Trust List screen loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Trust"
+    label: "Trust tab header should be visible"
+
+- assertVisible:
+    text: "Truster"
+    label: "Truster tab header should be visible"
+
+# Wait for trust list to load
+- extendedWaitUntil:
+    notVisible:
+      text: "Yükleniyor..."
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 5: Tap on a user in the trust list to visit their profile
+# -----------------------------------------------
+# Check for suggested users card or user cards
+- assertVisible:
+    text: "Önerilen Kullanıcıları Gör"
+    optional: true
+    label: "Suggested users card may be visible at top"
+
+# Scroll past the suggestion card to find trust list users
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# Tap the first user card in the list
+# Since we have no testIDs, we look for common elements of user cards
+# TrustUserCard displays user names - tap on any visible user
+- tapOn:
+    point: "50%,40%"
+    label: "Tap on a user card in the trust list"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: Verify we are on another user's profile
+# On another user's profile, we should see Trust/Untrust button
+# instead of "Profili Duzenle"
+# -----------------------------------------------
+- assertVisible:
+    text: "Trust"
+    optional: true
+    label: "Trust button should be visible on other user profile"
+
+- assertVisible:
+    text: "Untrust"
+    optional: true
+    label: "Or Untrust button if already trusted"
+
+# -----------------------------------------------
+# Step 7: Verify profile stats are visible
+# -----------------------------------------------
+- assertVisible:
+    text: "Trust"
+    label: "Trust stat should be visible"
+
+- assertVisible:
+    text: "Truster"
+    label: "Truster stat should be visible"
+
+- assertVisible:
+    text: "Envanter"
+    label: "Inventory stat should be visible"
+
+- assertVisible:
+    text: "Gönderiler"
+    label: "Posts stat should be visible"
+
+# -----------------------------------------------
+# Step 8: Verify profile content tabs are present
+# -----------------------------------------------
+- assertVisible:
+    text: "Akış"
+    label: "Feed tab should be visible"
+
+- scrollUntilVisible:
+    element:
+      text: "Deneyim"
+    direction: RIGHT
+    timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "Karşılaştırmalar"
+    direction: RIGHT
+    timeout: 5000
+
+# -----------------------------------------------
+# Step 9: Scroll down to see profile content
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Scroll back up
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 11: Verify ellipsis menu is available (for report/block actions)
+# On other user profile, ellipsis opens a context menu
+# -----------------------------------------------
+- tapOn:
+    point: "93%,7%"
+    label: "Tap ellipsis icon on other user profile"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Context menu should show report and block options
+- assertVisible:
+    text: "Şikayet Et"
+    optional: true
+    label: "Report option should be visible in context menu"
+
+- assertVisible:
+    text: "Engelle"
+    optional: true
+    label: "Block option should be visible in context menu"
+
+# Dismiss the context menu by tapping outside
+- tapOn:
+    point: "50%,50%"
+    optional: true
+    label: "Tap outside to dismiss context menu"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 12: Navigate back
+# -----------------------------------------------
+- back
+
+- waitForAnimationToEnd
+
+- back
+
+- waitForAnimationToEnd

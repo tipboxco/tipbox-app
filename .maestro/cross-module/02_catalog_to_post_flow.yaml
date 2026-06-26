@@ -1,0 +1,131 @@
+# ==============================================================================
+# Cross-Module: Catalog Browse → Post About Product
+# Browse catalog, select product, create post, return to catalog.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Cross-Module - Catalog to Post Flow"
+tags:
+  - cross-module
+  - catalog
+  - post
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch & navigate to Catalog
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "50%,97%"
+    label: "Navigate to Catalog tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Ürün Kataloğu|Kategoriler"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 2: Browse into a product
+# -----------------------------------------------
+- tapOn:
+    point: "25%,42%"
+    label: "Tap first category"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first subcategory"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product group"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product to open PostsScreen"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify product PostsScreen loaded
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 4: View some posts about this product
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+
+- waitForAnimationToEnd
+
+- swipe:
+    direction: DOWN
+    duration: 400
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Navigate back through catalog stack
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+- back
+- waitForAnimationToEnd
+
+- back
+- waitForAnimationToEnd
+
+# Verify we are back at catalog root
+- assertVisible:
+    text: "Ürün Kataloğu"
+    optional: true
+
+# -----------------------------------------------
+# Step 6: Switch to Brand catalog
+# -----------------------------------------------
+- tapOn:
+    point: "90%,90%"
+    label: "Tap FAB to switch to Brand catalog"
+    optional: true
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Marka Kataloğu"
+    optional: true
+
+# Tap first brand
+- tapOn:
+    point: "50%,35%"
+    label: "Tap first brand card"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Back to catalog root
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Marka Kataloğu"
+    optional: true

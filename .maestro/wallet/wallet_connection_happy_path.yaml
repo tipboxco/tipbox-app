@@ -1,0 +1,112 @@
+# ==============================================================================
+# Wallet Connection - Happy Path
+# Precondition: User is authenticated but wallet is NOT connected.
+# Flow: Navigate to Wallet tab -> WalletConnection screen -> Connect Wallet
+#       -> Verify WalletScreen loads with TIPS tab active.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Wallet - Connect Wallet Happy Path"
+tags:
+  - wallet
+  - connection
+  - happy-path
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app and ensure user is logged in
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to the Wallet screen via drawer
+# The wallet is accessible from the drawer menu.
+# Open the drawer (hamburger icon in Feed header).
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+# Tap on "Cuzdan" (Wallet) in the drawer
+- tapOn:
+    text: "Cüzdan"
+    label: "Tap Wallet menu item in drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: WalletConnection screen should appear
+# (if wallet is not yet connected)
+# Verify the connection screen UI elements.
+# -----------------------------------------------
+- assertVisible:
+    text: "Varlıklar"
+    label: "Header title 'Varliklar' should be visible"
+
+- assertVisible:
+    text: "Cüzdan Bağla"
+    label: "Connect Wallet button should be visible"
+
+- assertVisible:
+    text: "Cüzdan Oluştur"
+    label: "Create Wallet button should be visible"
+
+# -----------------------------------------------
+# Step 4: Tap "Cuzdan Bagla" (Connect Wallet)
+# This sets wallet connection status in AsyncStorage
+# and navigates to WalletScreen via replace.
+# -----------------------------------------------
+- tapOn:
+    text: "Cüzdan Bağla"
+    label: "Tap Connect Wallet button"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify WalletScreen loaded successfully
+# TIPS tab should be active by default (page 0).
+# -----------------------------------------------
+- assertVisible:
+    text: "Cüzdan"
+    label: "Wallet header title 'Cuzdan' should be visible"
+
+- assertVisible:
+    text: "TIPS"
+    label: "TIPS tab should be visible"
+
+- assertVisible:
+    text: "NFT Varlıkları"
+    label: "NFT tab label should be visible"
+
+- assertVisible:
+    text: "Mevcut Bakiye"
+    label: "Current balance label should be visible"
+
+# Verify quick action buttons are visible
+- assertVisible:
+    text: "Al"
+    label: "Receive (Al) quick action button should be visible"
+
+- assertVisible:
+    text: "Gönder"
+    label: "Send (Gonder) quick action button should be visible"
+
+- assertVisible:
+    text: "Takas"
+    label: "Swap (Takas) quick action button should be visible"
+
+- assertVisible:
+    text: "Talep Et"
+    label: "Claim (Talep Et) quick action button should be visible"
+
+# Verify transaction history section
+- assertVisible:
+    text: "İşlem Geçmişi"
+    label: "Transaction History title should be visible"

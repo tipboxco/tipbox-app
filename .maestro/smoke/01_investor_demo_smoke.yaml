@@ -1,0 +1,119 @@
+# =============================================================================
+# SMOKE-01: Investor Demo Smoke Test (CRITICAL)
+# =============================================================================
+# App must already be running and logged in before this test.
+# Tabs: FeedStack(1/6), ExploreStack(2/6), CatalogStack(3/6),
+#        EventsStack(4/6), NotificationStack(5/6), InboxStack(6/6)
+# =============================================================================
+appId: app.tipbox.ios
+name: "Smoke - Investor Demo Full App Smoke Test"
+tags:
+  - smoke
+  - investor-demo
+  - critical
+
+---
+
+# =================================================================
+# PHASE 1: Feed Tab
+# =================================================================
+- tapOn:
+    text: "FeedStack, tab, 1 of 6"
+    label: "Tap Feed tab"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000
+- takeScreenshot: smoke_01_feed
+
+# Scroll feed
+- swipe:
+    direction: UP
+    duration: 500
+- waitForAnimationToEnd
+- swipe:
+    direction: DOWN
+    duration: 500
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 2: Explore Tab
+# =================================================================
+- tapOn:
+    text: "ExploreStack, tab, 2 of 6"
+    label: "Tap Explore tab"
+- waitForAnimationToEnd
+- takeScreenshot: smoke_02_explore
+
+# =================================================================
+# PHASE 3: Catalog Tab
+# =================================================================
+- tapOn:
+    text: "CatalogStack, tab, 3 of 6"
+    label: "Tap Catalog tab"
+- waitForAnimationToEnd
+- takeScreenshot: smoke_03_catalog
+
+# =================================================================
+# PHASE 4: Events Tab
+# =================================================================
+- tapOn:
+    text: "EventsStack, tab, 4 of 6"
+    label: "Tap Events tab"
+- waitForAnimationToEnd
+- takeScreenshot: smoke_04_events
+
+# =================================================================
+# PHASE 5: Notifications Tab
+# =================================================================
+- tapOn:
+    text: "NotificationStack, tab, 5 of 6"
+    label: "Tap Notifications tab"
+- waitForAnimationToEnd
+- takeScreenshot: smoke_05_notifications
+
+# =================================================================
+# PHASE 6: Inbox/Messages Tab
+# =================================================================
+- tapOn:
+    text: "InboxStack, tab, 6 of 6"
+    label: "Tap Inbox tab"
+- waitForAnimationToEnd
+- takeScreenshot: smoke_06_inbox
+
+# =================================================================
+# PHASE 7: Back to Feed + Open Drawer
+# =================================================================
+- tapOn:
+    text: "FeedStack, tab, 1 of 6"
+    label: "Return to Feed"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000
+
+# Open drawer via hamburger menu
+- tapOn:
+    point: "7%,6%"
+    label: "Tap hamburger menu"
+- waitForAnimationToEnd
+- takeScreenshot: smoke_07_drawer
+
+# =================================================================
+# PHASE 8: Profile from Drawer
+# =================================================================
+- tapOn:
+    text: "Hesap"
+    optional: true
+    label: "Tap Hesap"
+- waitForAnimationToEnd
+- takeScreenshot: smoke_08_profile
+
+# =================================================================
+# PHASE 9: Return to Feed
+# =================================================================
+- tapOn:
+    text: "FeedStack, tab, 1 of 6"
+    label: "Return to Feed to finish"
+- waitForAnimationToEnd
+- takeScreenshot: smoke_09_final

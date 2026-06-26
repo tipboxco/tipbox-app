@@ -1,0 +1,197 @@
+# ==============================================================================
+# Cross-Module: Complete Drawer Navigation
+# Opens drawer and navigates to every menu item, verifying each screen loads.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Cross-Module - Drawer Navigation Complete"
+tags:
+  - cross-module
+  - drawer
+  - navigation
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 15000
+
+# -----------------------------------------------
+# Step 2: Open drawer
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer menu"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Navigate to Profil
+# -----------------------------------------------
+- tapOn:
+    text: "Profil"
+    optional: true
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Trust"
+    optional: true
+
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Navigate to Cüzdan (Wallet)
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Cüzdan"
+    optional: true
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Cüzdan|TIPS|Bakiye"
+    timeout: 10000
+    optional: true
+
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Navigate to Envanterim (Inventory)
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Envanterim"
+    optional: true
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Envanterim|Envanter"
+    timeout: 10000
+    optional: true
+
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: Navigate to Kaydedilenler (Bookmarks)
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Kaydedilenler"
+    optional: true
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Kaydedilenler|Kayıtlı gönderi bulunamadı"
+    timeout: 10000
+    optional: true
+
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Navigate to Market (Marketplace)
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Market"
+    optional: true
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Market|NFT"
+    timeout: 10000
+    optional: true
+
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Navigate to Ayarlar (Settings)
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Ayarlar"
+    optional: true
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Ayarlar"
+    optional: true
+
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 9: Verify drawer bottom items
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+# Scroll down to see bottom items
+- scrollUntilVisible:
+    element:
+      text: "Yardım Merkezi"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+- assertVisible:
+    text: "Yardım Merkezi"
+    optional: true
+
+# Close drawer
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Verify we're back on main screen
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000

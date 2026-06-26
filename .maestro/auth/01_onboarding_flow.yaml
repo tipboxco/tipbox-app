@@ -1,0 +1,39 @@
+# AUTH-01: Onboarding Screen Flow
+# Verifies: 4 onboarding slides, skip button, continue button, navigation to Welcome
+appId: app.tipbox.ios
+---
+# Clear app data so onboarding appears
+- clearState
+- launchApp
+
+# === ONBOARDING SCREEN ===
+# Wait for first slide to appear
+- assertVisible: "Dijital Envanterini Oluştur"
+- assertVisible: "Atla"  # Skip button
+
+# Swipe through slide 1 -> 2
+- swipe:
+    direction: LEFT
+    duration: 500
+- assertVisible: "Alışveriş ve Ürün Deneyimlerini Paylaş"
+
+# Swipe through slide 2 -> 3
+- swipe:
+    direction: LEFT
+    duration: 500
+- assertVisible: "Topluluğunla Bağlantı Kur"
+
+# Swipe through slide 3 -> 4
+- swipe:
+    direction: LEFT
+    duration: 500
+- assertVisible: "Özel Web3 Ödülleri Kazan"
+
+# On last slide, button text should be "Baslayalim"
+- assertVisible: "Başlayalım"
+- tapOn: "Başlayalım"
+
+# === WELCOME SCREEN ===
+- assertVisible: "E-posta ile Kayıt Ol"
+- assertVisible: "Google ile Devam Et"
+- assertVisible: "Giriş Yap"

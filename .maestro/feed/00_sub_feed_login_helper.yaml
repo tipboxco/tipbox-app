@@ -1,0 +1,55 @@
+# =============================================================================
+# Tipbox E2E: Sub-flow - Feed Login Helper
+# Reusable login flow that ensures the user is authenticated and on the Feed
+# screen before running any feed/post interaction tests.
+# =============================================================================
+appId: app.tipbox.ios
+name: "Feed - Sub: Login & Navigate to Feed"
+tags:
+  - feed
+  - sub-flow
+  - helper
+
+---
+
+# Launch the app preserving state (skip login if already authenticated)
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# ---------- Conditional login if Welcome/Login screen is showing ----------
+- runFlow:
+    when:
+      visible: "Giriş Yap"
+    commands:
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+      # Email input
+      - inputText:
+          text: "cem@tipbox.co"
+          label: "Enter test email"
+      - tapOn:
+          text: "Devam Et"
+      - waitForAnimationToEnd
+      # Password input
+      - inputText:
+          text: "password1234"
+          label: "Enter test password"
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+
+# ---------- Ensure we are on the Feed tab (first tab) ----------
+# Feed is the first tab in the bottom tab navigator (FeedStack).
+# Tab labels are hidden (tabBarShowLabel: false), so tap the first tab icon.
+- tapOn:
+    point: "10%,97%"
+- waitForAnimationToEnd
+
+# Verify the Feed screen is loaded by checking for one of the tab labels
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin|Akış Yüklenemedi"
+    timeout: 15000

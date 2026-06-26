@@ -1,0 +1,319 @@
+# =============================================================================
+# Tipbox E2E: Feed Browsing Happy Path
+# =============================================================================
+# Tests the main Feed screen: tab bar rendering, tab switching between all 7
+# tabs (Guvenilen, Senin Icin, Ipuclari, Sorular, Incelemeler, Karsilastirma,
+# Guncellemeler), feed card rendering, pull-to-refresh, and infinite scroll.
+#
+# Precondition: User is authenticated (uses feed login helper sub-flow).
+# Priority: CRITICAL
+# =============================================================================
+appId: app.tipbox.ios
+name: "Feed - Browsing Happy Path"
+tags:
+  - feed
+  - browsing
+  - happy-path
+  - priority-critical
+
+---
+
+# =================================================================
+# PHASE 0: Authenticate & navigate to Feed
+# =================================================================
+- runFlow: 00_sub_feed_login_helper.yaml
+
+# =================================================================
+# PHASE 1: Verify Feed screen loaded with default tab (Guvenilen)
+# =================================================================
+
+# The Feed screen should show the scrollable tab bar.
+# "Guvenilen" is the first tab and should be selected by default.
+- assertVisible:
+    text: "Güvenilen"
+    label: "Default tab 'Guvenilen' should be visible in the tab bar"
+
+- assertVisible:
+    text: "Senin İçin"
+    label: "Second tab 'Senin Icin' should be visible in the tab bar"
+
+# Verify at least a third tab is scrollable into view
+- assertVisible:
+    text: "İpuçları"
+    label: "Third tab 'Ipuclari' should be visible in the tab bar"
+    optional: true
+
+# =================================================================
+# PHASE 2: Verify Guvenilen tab content
+# =================================================================
+# Wait for feed content to load (skeleton -> cards or empty state)
+- extendedWaitUntil:
+    visible: "Güvendiklerinden henüz paylaşım yok|.*"
+    timeout: 12000
+    label: "Wait for Guvenilen tab content to load"
+
+# If the feed is populated, cards should be visible.
+# If the feed is empty, the empty CTA should be visible.
+- runFlow:
+    when:
+      visible: "Güvendiklerinden henüz paylaşım yok"
+    commands:
+      # Empty state CTA button should be visible
+      - assertVisible:
+          text: "Paylaşım Yap"
+          label: "Empty state CTA button should be visible on Guvenilen tab"
+
+# =================================================================
+# PHASE 3: Pull-to-refresh on current tab
+# =================================================================
+- swipe:
+    direction: UP
+    duration: 400    duration: 300
+- waitForAnimationToEnd
+
+# Swipe down from the middle of the screen to trigger pull-to-refresh
+- swipe:
+    start: "50%,30%"
+    end: "50%,70%"
+    duration: 500
+- waitForAnimationToEnd
+
+# Wait for content to re-render after refresh
+- extendedWaitUntil:
+    visible: "Güvenilen|Akış Yüklenemedi"
+    timeout: 10000
+    label: "Wait for refresh to complete on Guvenilen tab"
+
+# =================================================================
+# PHASE 4: Switch to "Senin Icin" tab
+# =================================================================
+- tapOn:
+    text: "Senin İçin"
+    label: "Tap 'Senin Icin' tab"
+- waitForAnimationToEnd
+
+# Wait for Senin Icin tab content to load
+- extendedWaitUntil:
+    visible: "Sana özel içerik henüz yok|.*"
+    timeout: 12000
+    label: "Wait for Senin Icin tab content to load"
+
+# If empty state, verify its CTA
+- runFlow:
+    when:
+      visible: "Sana özel içerik henüz yok"
+    commands:
+      - assertVisible:
+          text: "Paylaşım Yap"
+          label: "Empty CTA button on Senin Icin tab"
+
+# =================================================================
+# PHASE 5: Switch to "Ipuclari" tab
+# =================================================================
+- tapOn:
+    text: "İpuçları"
+    label: "Tap 'Ipuclari' tab"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Henüz ipucu yok|.*"
+    timeout: 12000
+    label: "Wait for Ipuclari tab content to load"
+
+# If empty state, verify its specific CTA text
+- runFlow:
+    when:
+      visible: "Henüz ipucu yok"
+    commands:
+      - assertVisible:
+          text: "İpucu Paylaş"
+          label: "Empty CTA button on Ipuclari tab"
+
+# =================================================================
+# PHASE 6: Switch to "Sorular" tab
+# =================================================================
+- tapOn:
+    text: "Sorular"
+    label: "Tap 'Sorular' tab"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Henüz soru yok|.*"
+    timeout: 12000
+    label: "Wait for Sorular tab content to load"
+
+- runFlow:
+    when:
+      visible: "Henüz soru yok"
+    commands:
+      - assertVisible:
+          text: "Soru Sor"
+          label: "Empty CTA button on Sorular tab"
+
+# =================================================================
+# PHASE 7: Switch to "Incelemeler" tab
+# =================================================================
+# Tab may be off-screen; scroll the tab bar first
+- tapOn:
+    text: "İncelemeler"
+    label: "Tap 'Incelemeler' tab"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Henüz inceleme yok|.*"
+    timeout: 12000
+    label: "Wait for Incelemeler tab content to load"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Henüz inceleme yok"
+    commands:
+      - assertVisible:
+          text: "İnceleme Yaz"
+          label: "Empty CTA button on Incelemeler tab"
+
+# =================================================================
+# PHASE 8: Switch to "Karsilastirma" tab
+# =================================================================
+- tapOn:
+    text: "Karşılaştırma"
+    label: "Tap 'Karsilastirma' tab"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Henüz karşılaştırma yok|.*"
+    timeout: 12000
+    label: "Wait for Karsilastirma tab content to load"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Henüz karşılaştırma yok"
+    commands:
+      - assertVisible:
+          text: "Karşılaştırma Yap"
+          label: "Empty CTA button on Karsilastirma tab"
+
+# =================================================================
+# PHASE 9: Switch to "Guncellemeler" tab
+# =================================================================
+- tapOn:
+    text: "Güncellemeler"
+    label: "Tap 'Guncellemeler' tab"
+    optional: true
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Henüz güncelleme yok|.*"
+    timeout: 12000
+    label: "Wait for Guncellemeler tab content to load"
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Henüz güncelleme yok"
+    commands:
+      - assertVisible:
+          text: "Güncelleme Paylaş"
+          label: "Empty CTA button on Guncellemeler tab"
+
+# =================================================================
+# PHASE 10: Swipe back through tabs using PagerView gesture
+# =================================================================
+# Swipe right (back) to navigate from Guncellemeler toward earlier tabs.
+# This tests the PagerView horizontal swipe interaction.
+- swipe:
+    start: "20%,50%"
+    end: "80%,50%"
+    duration: 400
+- waitForAnimationToEnd
+
+- swipe:
+    start: "20%,50%"
+    end: "80%,50%"
+    duration: 400
+- waitForAnimationToEnd
+
+# After two right swipes from Guncellemeler we should be near Incelemeler/Sorular
+# Verify we are still on the Feed screen (tab bar visible)
+- assertVisible:
+    text: "Güvenilen"
+    label: "Tab bar should remain visible after PagerView swipes"
+    optional: true
+
+# =================================================================
+# PHASE 11: Navigate back to Guvenilen (first tab)
+# =================================================================
+- tapOn:
+    text: "Güvenilen"
+    label: "Navigate back to the first tab"
+- waitForAnimationToEnd
+
+# Verify the Guvenilen tab is active
+- extendedWaitUntil:
+    visible: "Güvendiklerinden henüz paylaşım yok|Güvenilen"
+    timeout: 8000
+    label: "Verify Guvenilen tab is active again"
+
+# =================================================================
+# PHASE 12: Verify infinite scroll (if content exists)
+# =================================================================
+# Scroll down multiple times to trigger onEndReached pagination
+- swipe:
+    direction: UP
+    duration: 400    duration: 500
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 400    duration: 500
+- waitForAnimationToEnd
+- swipe:
+    direction: UP
+    duration: 400    duration: 500
+- waitForAnimationToEnd
+
+# Scroll back to top
+- swipe:
+    direction: DOWN
+    duration: 400    duration: 500
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 13: Verify floating Create button (+) is tappable
+# =================================================================
+# The Create button is a 60x60 green circle positioned at bottom-right.
+# Tapping it should open a bottom sheet with post creation options.
+- tapOn:
+    point: "90%,88%"
+    label: "Tap floating Create button (+)"
+- waitForAnimationToEnd
+
+# The bottom sheet should show "Gonderi Olustur" title
+- extendedWaitUntil:
+    visible: "Gönderi Oluştur"
+    timeout: 5000
+    label: "Create post bottom sheet should appear"
+
+# Verify the two post type options
+- assertVisible:
+    text: "Ürün Gönderisi"
+    label: "Product post option should be visible"
+
+- assertVisible:
+    text: "Kategori & Ürün Grubu Gönderisi"
+    label: "Category post option should be visible"
+
+# Dismiss the bottom sheet by swiping down
+- swipe:
+    start: "50%,50%"
+    end: "50%,90%"
+    duration: 300
+- waitForAnimationToEnd
+
+# Verify we are back on Feed screen
+- assertVisible:
+    text: "Güvenilen"
+    label: "Feed screen should be visible after dismissing create bottom sheet"

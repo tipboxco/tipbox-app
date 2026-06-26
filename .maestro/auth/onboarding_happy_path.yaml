@@ -1,0 +1,91 @@
+# =============================================================================
+# Tipbox E2E: Onboarding Happy Path
+# Flow: App Launch -> 4 Onboarding Slides -> Welcome Screen
+# Priority: CRITICAL
+# =============================================================================
+appId: app.tipbox.ios
+name: "Auth - Onboarding Happy Path"
+tags:
+  - auth
+  - onboarding
+  - critical
+  - happy-path
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app with fresh state (clear onboarding flag)
+# -----------------------------------------------
+- clearState
+- launchApp:
+    clearState: true
+
+# -----------------------------------------------
+# Step 2: Verify first onboarding slide is visible
+# -----------------------------------------------
+- assertVisible:
+    text: "Dijital Envanterini Oluştur"
+- assertVisible:
+    text: "Sahip olduğun ürünleri ekle ve dijital koleksiyonunu sergile."
+- assertVisible:
+    text: "Atla"
+- assertVisible:
+    text: "Devam Et"
+
+# -----------------------------------------------
+# Step 3: Tap "Devam Et" to go to slide 2
+# -----------------------------------------------
+- tapOn:
+    text: "Devam Et"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Alışveriş ve Ürün Deneyimlerini Paylaş"
+- assertVisible:
+    text: "Alışveriş yolculuğunu ve ürün kullanım deneyimlerini paylaş."
+
+# -----------------------------------------------
+# Step 4: Tap "Devam Et" to go to slide 3
+# -----------------------------------------------
+- tapOn:
+    text: "Devam Et"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Topluluğunla Bağlantı Kur"
+- assertVisible:
+    text: "Takipçi kazan ve uzmanlığınla topluluğa yön ver."
+
+# -----------------------------------------------
+# Step 5: Tap "Devam Et" to go to slide 4 (last)
+# -----------------------------------------------
+- tapOn:
+    text: "Devam Et"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Özel Web3 Ödülleri Kazan"
+- assertVisible:
+    text: "Sıralamada yüksel ve Web3 bağlantılı rozetler topla."
+# On the last slide, button text changes to "Baslayalim"
+- assertVisible:
+    text: "Başlayalım"
+
+# -----------------------------------------------
+# Step 6: Tap "Baslayalim" to proceed to Welcome
+# -----------------------------------------------
+- tapOn:
+    text: "Başlayalım"
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Verify Welcome screen is shown
+# -----------------------------------------------
+- assertVisible:
+    text: "E-posta ile Kayıt Ol"
+- assertVisible:
+    text: "Google ile Devam Et"
+- assertVisible:
+    text: "Zaten hesabınız var mı?"
+- assertVisible:
+    text: "Giriş Yap"

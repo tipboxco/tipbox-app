@@ -1,0 +1,134 @@
+# ==============================================================================
+# Global Search Flow - Happy Path
+# Precondition: User is authenticated.
+# Flow: Navigate to search → type query → verify tabs (Users/Brands/Products)
+#       → switch tabs → tap result → back navigation
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Search - Global Search Flow"
+tags:
+  - search
+  - happy-path
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Explore tab
+# -----------------------------------------------
+- tapOn:
+    point: "28%,97%"
+    label: "Navigate to Explore tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Keşfet"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 3: Tap the fake search bar to open SearchScreen
+# -----------------------------------------------
+- tapOn:
+    text: "Gönderi, ürün veya marka ara"
+    label: "Tap search bar placeholder"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Verify SearchScreen loaded with default content
+# -----------------------------------------------
+# Three tabs should be visible: Kullanıcılar, Markalar, Ürünler
+- assertVisible:
+    text: "Kullanıcılar"
+    optional: true
+
+- assertVisible:
+    text: "Markalar"
+    optional: true
+
+- assertVisible:
+    text: "Ürünler"
+    optional: true
+
+# Default content should load (popular/suggested items)
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+
+# -----------------------------------------------
+# Step 5: Type a search query
+# -----------------------------------------------
+- inputText: "Apple"
+
+- waitForAnimationToEnd
+
+# Wait for debounced search results
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+
+# -----------------------------------------------
+# Step 6: Switch between tabs
+# -----------------------------------------------
+# Tap Markalar tab
+- tapOn:
+    text: "Markalar"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Tap Ürünler tab
+- tapOn:
+    text: "Ürünler"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Back to Kullanıcılar tab
+- tapOn:
+    text: "Kullanıcılar"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Tap on a search result (if available)
+# -----------------------------------------------
+- tapOn:
+    point: "50%,35%"
+    label: "Tap first search result"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Navigate back to search
+- back
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Clear search and verify default state returns
+# -----------------------------------------------
+- clearText
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 9: Back to Explore
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Keşfet"

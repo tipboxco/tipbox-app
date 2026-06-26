@@ -1,0 +1,41 @@
+# =============================================================================
+# Tipbox E2E: Sub-flow - Login Helper
+# Reusable login flow for post creation tests.
+# Assumes user already has an account and onboarding is completed.
+# =============================================================================
+appId: app.tipbox.ios
+name: "Post - Sub: Login Helper"
+tags:
+  - post
+  - sub-flow
+  - helper
+
+---
+
+# Launch app (preserve state if already logged in)
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# If we land on the Welcome/Login screen, log in
+- runFlow:
+    when:
+      visible: "Giriş Yap"
+    commands:
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+      - inputText:
+          text: "cem@tipbox.co"
+          label: "Enter test email"
+      - tapOn:
+          text: "Devam Et"
+      - waitForAnimationToEnd
+      - inputText:
+          text: "password1234"
+          label: "Enter test password"
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd

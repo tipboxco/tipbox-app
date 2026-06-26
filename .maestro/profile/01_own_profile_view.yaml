@@ -1,0 +1,161 @@
+# =============================================================================
+# Flow 01: Own Profile View - Happy Path
+# Navigates to own profile from bottom tabs and verifies all profile elements
+# are visible: banner, avatar, name, bio, stats, tabs, and content.
+# =============================================================================
+appId: app.tipbox.ios
+name: "Profile - Own Profile View Happy Path"
+tags:
+  - profile
+  - smoke
+  - happy-path
+
+---
+
+# ------------------------------------------------------------------
+# STEP 1: Launch the app (user already authenticated from prior login)
+# ------------------------------------------------------------------
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+
+# ------------------------------------------------------------------
+# STEP 2: Navigate to profile via drawer menu
+# The profile tab is accessible through the drawer sidebar.
+# Tap the hamburger menu icon to open the drawer.
+# ------------------------------------------------------------------
+- tapOn:
+    text: ".*"
+    index: 0
+    optional: true
+
+# Wait for the feed to load first
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "Akış"
+    timeout: 10000
+
+# Open the drawer by tapping the hamburger menu
+- swipe:
+    direction: RIGHT
+    from:
+      x: 0
+      y: "50%"
+    to:
+      x: "80%"
+      y: "50%"
+
+- waitForAnimationToEnd
+
+# Tap on the profile area in the drawer to navigate to own profile
+- tapOn:
+    text: "Profili Düzenle"
+    optional: true
+
+# If "Profili Düzenle" is not visible, try tapping the user name/avatar in drawer
+- tapOn:
+    text: "Profil"
+    optional: true
+
+- waitForAnimationToEnd
+
+# ------------------------------------------------------------------
+# STEP 3: Verify profile screen elements are visible
+# ------------------------------------------------------------------
+
+# Verify the user name is displayed
+- assertVisible:
+    text: ".*"
+    enabled: true
+
+# Verify stats section - the profile stats row with Trust, Truster, Envanter
+- assertVisible:
+    text: "Trust"
+
+- assertVisible:
+    text: "Truster"
+
+- assertVisible:
+    text: "Envanter"
+
+- assertVisible:
+    text: "Gönderiler"
+
+# ------------------------------------------------------------------
+# STEP 4: Verify all 7 profile content tabs are visible
+# ------------------------------------------------------------------
+- assertVisible:
+    text: "Akış"
+
+- scrollUntilVisible:
+    element:
+      text: "Deneyim"
+    direction: RIGHT
+    timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "Karşılaştırmalar"
+    direction: RIGHT
+    timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "İpuçları ve Püf Noktaları"
+    direction: RIGHT
+    timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "Sorular"
+    direction: RIGHT
+    timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "Rozetler"
+    direction: RIGHT
+    timeout: 5000
+
+- scrollUntilVisible:
+    element:
+      text: "Koleksiyonlar"
+    direction: RIGHT
+    timeout: 5000
+
+# ------------------------------------------------------------------
+# STEP 5: Verify "Profili Düzenle" button is present for own profile
+# ------------------------------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- assertVisible:
+    text: "Profili Düzenle"
+
+# ------------------------------------------------------------------
+# STEP 6: Verify the edit button navigates to edit screen
+# ------------------------------------------------------------------
+- tapOn:
+    text: "Profili Düzenle"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Profili Düzenle"
+
+# Verify form fields are visible on edit screen
+- assertVisible:
+    text: "Ad"
+
+- assertVisible:
+    text: "Biyografi"
+
+- assertVisible:
+    text: "Rozet"
+
+# Go back to profile
+- back
+
+- waitForAnimationToEnd

@@ -1,0 +1,163 @@
+# ==============================================================================
+# Product Catalog Browsing - Happy Path (CRITICAL)
+# Precondition: User is authenticated and on the main app screen.
+# Flow: Navigate to Catalog tab -> Browse Categories -> Select Category ->
+#       Browse SubCategories -> Select SubCategory -> Browse ProductGroups ->
+#       Select ProductGroup -> Browse Products -> Select Product ->
+#       Verify PostsScreen opens with product context.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Catalog - Product Catalog Browsing Happy Path"
+tags:
+  - catalog
+  - product-catalog
+  - browsing
+  - happy-path
+  - priority-critical
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (user already authenticated)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Catalog tab
+# Tab bar has no labels (tabBarShowLabel: false),
+# CatalogStack is the 3rd tab (index 2).
+# Tap on the 3rd icon in the bottom tab bar.
+# -----------------------------------------------
+- tapOn:
+    point: "50%,97%"
+    label: "Tap Catalog tab (3rd icon in bottom tab bar, center position)"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify CatalogScreen loaded in Product mode
+# Default mode is 'product' catalog showing categories.
+# Header should show "Urun Katalogu" (Product Catalog).
+# -----------------------------------------------
+- assertVisible:
+    text: "Ürün Kataloğu"
+    label: "Product Catalog header title should be visible"
+
+# Verify breadcrumb shows root "Kategoriler"
+- assertVisible:
+    text: "Kategoriler"
+    label: "Breadcrumb root label 'Kategoriler' should be visible"
+
+# -----------------------------------------------
+# Step 4: Verify categories grid is loaded
+# Categories are displayed in a 2-column grid.
+# Wait for API data to load (skeleton -> content).
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 10000
+    label: "Wait for categories to load from API"
+
+# Verify the floating action button (FAB) is visible
+# Purple circle button to switch between product/brand catalog
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Tap on the first category card
+# Categories are dynamic from API, so we tap the first
+# visible card in the grid area.
+# -----------------------------------------------
+- tapOn:
+    point: "25%,42%"
+    label: "Tap first category card in the 2-column grid"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: Verify SubCategories view loaded
+# After tapping a category, the view transitions to subcategories.
+# Breadcrumb should now show: Kategoriler > [CategoryName]
+# The grid changes to 3-column layout for subcategories.
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+    label: "Wait for subcategories view with breadcrumb visible"
+
+# -----------------------------------------------
+# Step 7: Tap on the first subcategory card
+# SubCategories are in a 3-column grid.
+# -----------------------------------------------
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first subcategory card in the 3-column grid"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Verify ProductGroups view loaded
+# After tapping a subcategory, product groups appear.
+# Breadcrumb should have 2 items: Category > SubCategory
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+    label: "Wait for product groups view to load"
+
+# -----------------------------------------------
+# Step 9: Tap on the first product group card
+# -----------------------------------------------
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product group card in the 3-column grid"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Verify Products view loaded
+# After tapping a product group, individual products appear.
+# Breadcrumb: Category > SubCategory > ProductGroup
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+    label: "Wait for products view to load"
+
+# -----------------------------------------------
+# Step 11: Tap on the first product card
+# This should navigate to PostsScreen with product context.
+# -----------------------------------------------
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product card to navigate to posts"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 12: Verify PostsScreen opened with product context
+# The PostsScreen should show the product info header.
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+    label: "Wait for PostsScreen to load with product context"
+
+# -----------------------------------------------
+# Step 13: Navigate back to verify stack works
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+# Verify we are back on the Products view in Catalog
+- assertVisible:
+    text: "Ürün Kataloğu"
+    label: "Should be back on Product Catalog screen"

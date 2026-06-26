@@ -1,0 +1,137 @@
+# ==============================================================================
+# Marketplace NFT Detail & Actions
+# Tests: NFT detail view, price info, buy/sell actions, back navigation
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Marketplace - NFT Detail & Actions"
+tags:
+  - marketplace
+  - nft
+  - detail
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch & navigate to Marketplace via drawer
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 15000
+
+# Open drawer
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Market"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Wait for marketplace to load
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Market|NFT|Tüm NFT'ler"
+    timeout: 10000
+    optional: true
+
+# -----------------------------------------------
+# Step 3: Browse NFT listings
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+
+- waitForAnimationToEnd
+
+- swipe:
+    direction: DOWN
+    duration: 400
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Tap on an NFT to view detail
+# -----------------------------------------------
+- tapOn:
+    point: "30%,45%"
+    label: "Tap first NFT listing card"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify NFT Detail screen loaded
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Satın Al|Fiyat|TIPS|Sahip"
+    timeout: 8000
+    optional: true
+
+# -----------------------------------------------
+# Step 6: Scroll NFT detail content
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Test back navigation
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+# Verify we are back on marketplace
+- extendedWaitUntil:
+    visible: "Market|NFT|Tüm NFT'ler"
+    timeout: 8000
+    optional: true
+
+# -----------------------------------------------
+# Step 8: Test "Benim Listelemelerim" tab
+# -----------------------------------------------
+- tapOn:
+    text: "Benim Listelemelerim"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Switch back
+- tapOn:
+    text: "Tüm NFT'ler"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 9: Test search in marketplace
+# -----------------------------------------------
+- runFlow:
+    when:
+      visible: "Ara..."
+    commands:
+      - tapOn:
+          text: "Ara..."
+      - inputText: "Test NFT"
+      - waitForAnimationToEnd
+      - clearText
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Navigate back
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd

@@ -1,0 +1,298 @@
+# =============================================================================
+# SMOKE-02: First Time User Journey
+# =============================================================================
+# Simulates a brand-new user opening the app for the first time:
+#   Onboarding slides -> Register -> Setup profile -> First app exploration
+#
+# Priority: HIGH
+# Duration: ~2-3 minutes
+# Precondition: Fresh install (clearState: true)
+# =============================================================================
+appId: app.tipbox.ios
+name: "Smoke - First Time User Journey"
+tags:
+  - smoke
+  - onboarding
+  - registration
+  - first-time
+  - priority-high
+
+---
+
+# =================================================================
+# PHASE 0: Fresh launch - clear all state to simulate first install
+# =================================================================
+- clearState
+- launchApp
+
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 1: Onboarding Slides
+# =================================================================
+
+# Slide 1: "Dijital Envanterini Olustur"
+- extendedWaitUntil:
+    visible:
+      text: "Dijital Envanterini Oluştur"
+    timeout: 15000
+    label: "Wait for first onboarding slide"
+
+- assertVisible:
+    text: "Atla"
+    label: "Skip button should be visible on onboarding"
+
+# Swipe to Slide 2
+- swipe:
+    direction: LEFT
+    duration: 500
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Alışveriş ve Ürün Deneyimlerini Paylaş"
+    optional: true
+    label: "Second onboarding slide should be visible"
+
+# Swipe to Slide 3
+- swipe:
+    direction: LEFT
+    duration: 500
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Topluluğunla Bağlantı Kur"
+    optional: true
+    label: "Third onboarding slide should be visible"
+
+# Swipe to Slide 4
+- swipe:
+    direction: LEFT
+    duration: 500
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Özel Web3 Ödülleri Kazan"
+    optional: true
+    label: "Fourth onboarding slide should be visible"
+
+# Tap "Baslayalim" to proceed
+- assertVisible:
+    text: "Başlayalım"
+    label: "Start button should appear on last slide"
+
+- tapOn:
+    text: "Başlayalım"
+    label: "Tap 'Baslayalim' to proceed to Welcome screen"
+
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 2: Welcome Screen - Verify auth options
+# =================================================================
+- extendedWaitUntil:
+    visible: "E-posta ile Kayıt Ol|Giriş Yap"
+    timeout: 10000
+    label: "Wait for Welcome screen to load"
+
+- assertVisible:
+    text: "E-posta ile Kayıt Ol"
+    label: "Email registration button should be visible"
+
+- assertVisible:
+    text: "Google ile Devam Et"
+    optional: true
+    label: "Google sign-in button should be visible"
+
+- assertVisible:
+    text: "Giriş Yap"
+    label: "Login button should be visible"
+
+# =================================================================
+# PHASE 3: Navigate to Registration
+# =================================================================
+- tapOn:
+    text: "E-posta ile Kayıt Ol"
+    label: "Tap 'E-posta ile Kayit Ol' to start registration"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Kayıt Ol"
+    timeout: 10000
+    label: "Wait for Register screen to load"
+
+# Verify registration form fields
+- assertVisible:
+    text: "E-posta"
+    label: "Email field should be visible"
+
+- assertVisible:
+    text: "Şifre"
+    label: "Password field should be visible"
+
+- assertVisible:
+    text: "Onayla"
+    label: "Submit button should be visible"
+
+# =================================================================
+# PHASE 4: Fill Registration Form
+# =================================================================
+
+# Enter email
+- tapOn:
+    text: "E-posta adresiniz"
+    label: "Tap email input"
+    optional: true
+
+- inputText: "${TEST_EMAIL}"
+
+# Enter password
+- tapOn:
+    text: "Şifreniz"
+    label: "Tap password input"
+    optional: true
+
+- inputText: "${TEST_PASSWORD}"
+
+# Verify password hint
+- assertVisible:
+    text: "En az 8 karakter ve 1 büyük harf içermelidir"
+    optional: true
+    label: "Password hint should be visible"
+
+# Submit registration
+- tapOn:
+    text: "Onayla"
+    label: "Tap submit to register"
+
+- waitForAnimationToEnd
+
+# Wait for response (verification code screen or error for existing user)
+- extendedWaitUntil:
+    visible: "Doğrulama|Kod|Bu e-posta adresi zaten kayıtlı|Güvenilen"
+    timeout: 15000
+    label: "Wait for registration response"
+
+# =================================================================
+# PHASE 5: If registration redirects to verification code screen
+# =================================================================
+- runFlow:
+    when:
+      visible: "Doğrulama|Kod"
+    commands:
+      - assertVisible:
+          text: "Doğrulama"
+          optional: true
+          label: "Verification screen should be visible"
+      # We cannot complete verification in E2E without the real code
+      # Go back and login with existing account instead
+      - back
+      - waitForAnimationToEnd
+
+# =================================================================
+# PHASE 6: Fallback - Login with existing test account
+# (Needed because E2E cannot receive verification codes)
+# =================================================================
+- runFlow:
+    when:
+      visible: "Giriş Yap"
+    commands:
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+      - tapOn:
+          text: "E-posta adresiniz"
+          optional: true
+      - inputText:
+          text: "cem@tipbox.co"
+          label: "Enter existing test email"
+      - tapOn:
+          text: "Şifreniz"
+          optional: true
+      - inputText:
+          text: "password1234"
+          label: "Enter test password"
+      - tapOn:
+          text: "Onayla"
+      - waitForAnimationToEnd
+
+# =================================================================
+# PHASE 7: First Feed View - Verify new user sees the feed
+# =================================================================
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin|Keşfet"
+    timeout: 15000
+    label: "Wait for main app to load after auth"
+
+# Verify feed is showing
+- assertVisible:
+    text: "Güvenilen"
+    optional: true
+    label: "Feed tab 'Guvenilen' should be visible"
+
+# Scroll to explore feed content
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# =================================================================
+# PHASE 8: First Explore View
+# =================================================================
+- tapOn:
+    point: "28%,97%"
+    label: "Tap Explore tab for first exploration"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Keşfet"
+    timeout: 10000
+    label: "Explore screen should load for new user"
+
+# Verify explore content
+- assertVisible:
+    text: "En Popüler"
+    optional: true
+
+- assertVisible:
+    text: "Neler Yeni"
+    optional: true
+
+# =================================================================
+# PHASE 9: First Post Creation Attempt
+# =================================================================
+# Navigate back to Feed
+- tapOn:
+    point: "10%,97%"
+    label: "Back to Feed tab"
+
+- waitForAnimationToEnd
+
+# Open drawer to navigate to profile
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+# Verify new user profile area is accessible
+- assertVisible:
+    text: "Hesap"
+    optional: true
+    label: "Account menu item should be in drawer"
+
+# Close drawer
+- back
+- waitForAnimationToEnd
+
+# Final state: user is on Feed, app is functional
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000
+    label: "First time user journey complete - Feed is accessible"

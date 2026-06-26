@@ -1,0 +1,192 @@
+# =============================================================================
+# POST-03: Create Tips & Tricks Post - Happy Path
+# =============================================================================
+# Flow: Catalog -> Select Product -> PostsScreen -> FAB -> CreatePostScreen
+#       -> Select "Ipuclari & Puf Noktalari" type -> Write tip text
+#       -> Select benefit category -> "Paylas"
+#
+# Precondition: User is authenticated and product is in user's inventory
+#               (Tips type requires product in inventory).
+# Priority: HIGH
+# =============================================================================
+appId: app.tipbox.ios
+name: "Post - Create Tips And Tricks Post Happy Path"
+tags:
+  - post
+  - tips-and-tricks
+  - create
+  - happy-path
+  - priority-high
+
+---
+
+# ---------------------------------------------------------
+# PHASE 0: Ensure app is launched and user is authenticated
+# ---------------------------------------------------------
+- runFlow: 00_sub_login_helper.yaml
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 1: Navigate to Catalog tab
+# ---------------------------------------------------------
+- tapOn:
+    point: "50%,97%"
+    label: "Tap Catalog tab (3rd icon, center position)"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Ürün Kataloğu"
+    timeout: 10000
+
+# ---------------------------------------------------------
+# PHASE 2: Browse to a product
+# ---------------------------------------------------------
+- tapOn:
+    point: "25%,42%"
+    label: "Tap first category"
+
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first subcategory"
+
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product group"
+
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "Kategoriler"
+    timeout: 5000
+
+- tapOn:
+    point: "17%,42%"
+    label: "Tap first product to open PostsScreen"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 3: PostsScreen -> tap Create FAB
+# ---------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+
+- tapOn:
+    point: "90%,90%"
+    label: "Tap Create FAB (green + button)"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 4: Select "Ipuclari & Puf Noktalari" type
+# NOTE: This type requires the product to be in the user's inventory.
+# If not in inventory, the type card will be disabled (opacity 0.4).
+# ---------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "İpuçları"
+    timeout: 5000
+
+- tapOn:
+    text: "İpuçları"
+    label: "Select 'Ipuclari & Puf Noktalari' post type"
+    optional: true
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 5: CreatePostScreen with Tips & Tricks fields
+# Verify the header title and that the tips form is shown.
+# ---------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Gönderi Yaz"
+    timeout: 8000
+    label: "Wait for CreatePostScreen to load"
+
+# ---------------------------------------------------------
+# PHASE 6: Write the tips & tricks text
+# Placeholder: "Ipuclari ve Puf Noktalarinizi buraya yazin..."
+# ---------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "İpuçları ve Püf Noktalarınızı buraya yazın..."
+    direction: DOWN
+    timeout: 5000
+
+- tapOn:
+    text: "İpuçları ve Püf Noktalarınızı buraya yazın..."
+    label: "Tap tips text area"
+
+- inputText: "Bu urunle ilgili cok faydali bir ipucu paylasiyorum. Urunu ilk kullanmadan once 24 saat sarjda birakin, boylece batarya omru cok daha uzun oluyor. Ayrica dusuk isik ortaminda enerji tasarrufu modu aktif edin."
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 7: Select benefit category
+# The dropdown shows: Zaman Tasarrufu, Enerji Verimliligi,
+# Dayaniklilik, Daha Iyi Sonuc
+# ---------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "İpuçları ve Püf Noktaları Kategorisi"
+    direction: DOWN
+    timeout: 5000
+
+# Tap the category dropdown
+- tapOn:
+    text: "İpuçları ve Püf Noktaları kategorisini seçin"
+    label: "Open benefit category dropdown"
+
+- waitForAnimationToEnd
+
+# Select "Enerji Verimliligi" from the dropdown
+- extendedWaitUntil:
+    visible:
+      text: "Enerji Verimliliği"
+    timeout: 3000
+
+- tapOn:
+    text: "Enerji Verimliliği"
+    label: "Select 'Enerji Verimliligi' benefit category"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 8: Submit the tips post
+# Header right button: "Paylas"
+# ---------------------------------------------------------
+- tapOn:
+    text: "Paylaş"
+    label: "Tap 'Paylas' to submit the tips post"
+
+# Wait for success
+- extendedWaitUntil:
+    visible:
+      text: "Gönderi Oluşturuldu"
+    timeout: 15000
+    label: "Wait for success toast"
+
+- waitForAnimationToEnd
+
+# Verify navigated away from create screen
+- assertNotVisible:
+    text: "Gönderi Yaz"
+    label: "Verify CreatePostScreen is no longer visible"

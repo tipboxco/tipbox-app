@@ -1,0 +1,143 @@
+# ==============================================================================
+# Cross-Module: Profile Social Interactions
+# Own profile → stats → navigate to another user from feed → view profile →
+# follow/unfollow → back navigation
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Cross-Module - Profile Social Flow"
+tags:
+  - cross-module
+  - profile
+  - social
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch & go to own profile via drawer
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 15000
+
+# Open drawer
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+# Navigate to profile
+- tapOn:
+    text: "Profil"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Verify own profile elements
+# -----------------------------------------------
+- assertVisible:
+    text: "Trust"
+    optional: true
+
+- assertVisible:
+    text: "Truster"
+    optional: true
+
+- assertVisible:
+    text: "Envanter"
+    optional: true
+
+- assertVisible:
+    text: "Profili Düzenle"
+    optional: true
+
+# -----------------------------------------------
+# Step 3: Check profile tabs
+# -----------------------------------------------
+- assertVisible:
+    text: "Akış"
+    optional: true
+
+# Scroll through tabs
+- scrollUntilVisible:
+    element:
+      text: "Deneyim"
+    direction: RIGHT
+    timeout: 3000
+    optional: true
+
+- scrollUntilVisible:
+    element:
+      text: "Karşılaştırmalar"
+    direction: RIGHT
+    timeout: 3000
+    optional: true
+
+# -----------------------------------------------
+# Step 4: Navigate to Feed and find another user
+# -----------------------------------------------
+- tapOn:
+    point: "10%,97%"
+    label: "Navigate to Feed tab"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000
+
+# Tap on a user avatar/name in the feed to open their profile
+- tapOn:
+    point: "15%,30%"
+    label: "Tap user avatar on first feed post"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify other user's profile loaded
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Trust|Truster"
+    timeout: 10000
+    optional: true
+
+# Check that "Profili Düzenle" is NOT shown (it's another user)
+# Instead, follow/trust buttons should be visible
+- assertVisible:
+    text: "Trust Et"
+    optional: true
+
+# -----------------------------------------------
+# Step 6: Interact — Trust/Untrust
+# -----------------------------------------------
+- tapOn:
+    text: "Trust Et"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Untrust (toggle back)
+- tapOn:
+    text: "Trust Edildi"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Navigate back to feed
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000

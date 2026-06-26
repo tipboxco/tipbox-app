@@ -1,0 +1,6 @@
+appId: app.tipbox.ios
+---
+- launchApp:
+    clearState: false
+- waitForAnimationToEnd
+- takeScreenshot: current_state

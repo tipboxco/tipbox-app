@@ -1,0 +1,192 @@
+# =============================================================================
+# Tipbox E2E: Notifications List View
+# =============================================================================
+# Screens: NotificationsScreen (bottom tab, 5th icon)
+# Verifies: List renders, date group headers, tab filters, search bar,
+#           pull-to-refresh, notification card structure, deep-link navigation
+# Priority: CRITICAL
+# Precondition: User must be logged in (authenticated state)
+# =============================================================================
+
+appId: app.tipbox.ios
+name: "Notifications - List View & Rendering"
+tags:
+  - notifications
+  - list-view
+  - happy-path
+  - priority-critical
+
+---
+
+# -------------------------------------------------------
+# PHASE 0: Ensure user is authenticated
+# -------------------------------------------------------
+- runFlow: 00_sub_login_helper.yaml
+
+# -------------------------------------------------------
+# PHASE 1: Navigate to Notifications tab
+# Notifications is the 5th tab (rightmost) in the bottom tab bar.
+# Tab bar has no labels (tabBarShowLabel: false).
+# -------------------------------------------------------
+- tapOn:
+    point: "90%,97%"
+    label: "Tap Notifications tab (5th icon, rightmost in bottom tab bar)"
+
+- waitForAnimationToEnd
+
+# -------------------------------------------------------
+# PHASE 2: Verify NotificationsScreen loaded
+# Header title should show "Bildirimler" (Turkish for Notifications)
+# -------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Bildirimler"
+    timeout: 10000
+    label: "Wait for Notifications screen header to appear"
+
+- assertVisible:
+    text: "Bildirimler"
+    label: "Notifications header title should be visible"
+
+# -------------------------------------------------------
+# PHASE 3: Verify search bar is present
+# Search bar with placeholder "Bildirimlerde ara"
+# -------------------------------------------------------
+- assertVisible:
+    text: "Bildirimlerde ara"
+    label: "Search bar placeholder should be visible"
+
+# -------------------------------------------------------
+# PHASE 4: Verify tab filter chips are rendered
+# Tabs: "Tum Bildirimler", "Yanitlar", "Trust - Truster", "TIPS"
+# These are horizontal scroll pill-style chips
+# -------------------------------------------------------
+- assertVisible:
+    text: "Tüm Bildirimler"
+    label: "All Notifications filter tab should be visible"
+
+- assertVisible:
+    text: "Yanıtlar"
+    label: "Replies filter tab should be visible"
+
+- assertVisible:
+    text: "Trust - Truster"
+    label: "Trust-Truster filter tab should be visible"
+
+- assertVisible:
+    text: "TIPS"
+    label: "TIPS filter tab should be visible"
+
+# -------------------------------------------------------
+# PHASE 5: Verify notification list loaded (date group headers)
+# Backend returns date-grouped notifications.
+# Common group headers: "Bugun", "Dun", "Bu Hafta", etc.
+# Wait for at least one notification to render.
+# -------------------------------------------------------
+- extendedWaitUntil:
+    visible: "Bugün|Dün|Bu Hafta|Bu Ay|Daha Önce|Henüz bildirim yok"
+    timeout: 10000
+    label: "Wait for notification list or empty state to render"
+
+# -------------------------------------------------------
+# PHASE 6: If notifications exist, verify card structure
+# Notification cards have avatar, username, time, and optional extras.
+# We scroll down to confirm more items render (infinite scroll).
+# -------------------------------------------------------
+- runFlow:
+    when:
+      notVisible: "Henüz bildirim yok"
+    commands:
+      # Scroll down to verify more notifications load
+      - swipe:
+          direction: UP
+          duration: 400      - waitForAnimationToEnd
+
+      # Scroll further to trigger infinite pagination
+      - swipe:
+          direction: UP
+          duration: 400      - waitForAnimationToEnd
+
+      # Scroll back up to the top
+      - swipe:
+          direction: DOWN
+          duration: 400      - swipe:
+          direction: DOWN
+          duration: 400      - waitForAnimationToEnd
+
+# -------------------------------------------------------
+# PHASE 7: Test pull-to-refresh
+# FlashList has RefreshControl attached.
+# Swipe down from the content area to trigger refresh.
+# -------------------------------------------------------
+- runFlow:
+    when:
+      notVisible: "Henüz bildirim yok"
+    commands:
+      - swipe:
+          direction: DOWN
+          from:
+            x: "50%"
+            y: "40%"
+          to:
+            x: "50%"
+            y: "80%"
+      - waitForAnimationToEnd
+
+      # Verify screen is still showing notifications after refresh
+      - extendedWaitUntil:
+          visible:
+            text: "Bildirimler"
+          timeout: 10000
+          label: "Notifications header visible after pull-to-refresh"
+
+# -------------------------------------------------------
+# PHASE 8: Test search functionality
+# Type a query in the search bar to filter notifications client-side.
+# -------------------------------------------------------
+- tapOn:
+    text: "Bildirimlerde ara"
+    label: "Tap on search input field"
+
+- inputText:
+    text: "test"
+    label: "Type 'test' to search notifications"
+
+- waitForAnimationToEnd
+
+# Wait for debounce (500ms) + filtering
+- extendedWaitUntil:
+    visible: "Bugün|Dün|Arama sonucu bulunamadı."
+    timeout: 5000
+    label: "Wait for search results or empty search state"
+
+# Clear the search by clearing the text field
+- eraseText:
+    charactersToErase: 4
+- waitForAnimationToEnd
+
+# -------------------------------------------------------
+# PHASE 9: Tap on a notification card to verify deep-link navigation
+# Tapping a notification should navigate to the relevant screen
+# (PostDetailScreen, ProfileMain, WalletScreen, etc.)
+# -------------------------------------------------------
+- runFlow:
+    when:
+      notVisible: "Henüz bildirim yok"
+    commands:
+      # Tap the first notification card area
+      - tapOn:
+          point: "50%,55%"
+          label: "Tap first visible notification card"
+      - waitForAnimationToEnd
+
+      # Navigate back to notifications screen
+      - back
+      - waitForAnimationToEnd
+
+      # Verify we returned to the notifications screen
+      - extendedWaitUntil:
+          visible:
+            text: "Bildirimler"
+          timeout: 8000
+          label: "Should be back on Notifications screen after deep-link navigation"

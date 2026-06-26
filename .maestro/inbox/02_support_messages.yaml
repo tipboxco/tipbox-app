@@ -1,0 +1,140 @@
+# ==============================================================================
+# Inbox - Support Messages Flow
+# Tests: Switch to support tab, view requests, create support request
+# Precondition: User is authenticated
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Inbox - Support Messages Flow"
+tags:
+  - inbox
+  - support
+  - messages
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch & navigate to Inbox
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# Inbox is accessible through bottom tab or drawer
+# The tab bar has 6 items, inbox might be beyond visible tabs
+# Navigate via drawer instead
+- tapOn:
+    point: "5%,6%"
+    label: "Open drawer"
+
+- waitForAnimationToEnd
+
+# Look for inbox / mesaj entry
+- tapOn:
+    text: "Mesajlar"
+    optional: true
+
+- runFlow:
+    when:
+      notVisible: "Mesajlar"
+    commands:
+      - tapOn:
+          text: "Gelen Kutusu"
+          optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Verify InboxScreen loaded
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Mesajlar|Destek|Gelen Kutusu"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 3: Switch to Support tab
+# InboxScreen has PagerView with 2 tabs: Mesajlar / Destek
+# -----------------------------------------------
+- tapOn:
+    text: "Destek"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 4: Verify Support Requests screen
+# -----------------------------------------------
+- extendedWaitUntil:
+    visible: "Destek|Destek Talepleri|Henüz destek talebiniz yok"
+    timeout: 8000
+    optional: true
+
+# -----------------------------------------------
+# Step 5: Create new support request (if button visible)
+# -----------------------------------------------
+- runFlow:
+    when:
+      visible: "Yeni Destek Talebi"
+    commands:
+      - tapOn:
+          text: "Yeni Destek Talebi"
+      - waitForAnimationToEnd
+
+      # Fill in support request form
+      - tapOn:
+          text: "Konu"
+          optional: true
+      - inputText: "Test destek talebi"
+      - waitForAnimationToEnd
+
+      - tapOn:
+          text: "Mesajınız"
+          optional: true
+      - inputText: "Bu bir E2E test mesajıdır. Lütfen görmezden gelin."
+      - waitForAnimationToEnd
+
+      # Submit
+      - tapOn:
+          text: "Gönder"
+          optional: true
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 6: View existing support request (if any)
+# -----------------------------------------------
+- runFlow:
+    when:
+      notVisible: "Henüz destek talebiniz yok"
+    commands:
+      - tapOn:
+          point: "50%,40%"
+          label: "Tap first support request"
+          optional: true
+      - waitForAnimationToEnd
+
+      # Verify support message detail opened
+      - extendedWaitUntil:
+          visible:
+            text: ".*"
+          timeout: 5000
+
+      # Go back
+      - back
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Switch back to Messages tab
+# -----------------------------------------------
+- tapOn:
+    text: "Mesajlar"
+    optional: true
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Navigate back
+# -----------------------------------------------
+- back
+- waitForAnimationToEnd

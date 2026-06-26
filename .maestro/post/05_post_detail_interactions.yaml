@@ -1,0 +1,239 @@
+# =============================================================================
+# POST-05: Post Detail Screen - Interactions
+# =============================================================================
+# Flow: Feed -> Tap on a post card -> PostDetailScreen
+#       -> Like -> Bookmark -> Comment -> Share
+#
+# Tests: View post detail, like/unlike, bookmark/unbookmark,
+#        write & submit comment, open share bottom sheet.
+#
+# Precondition: User is authenticated and Feed has at least one post.
+# Priority: CRITICAL
+# =============================================================================
+appId: app.tipbox.ios
+name: "Post - Post Detail Interactions"
+tags:
+  - post
+  - detail
+  - interactions
+  - like
+  - bookmark
+  - comment
+  - share
+  - priority-critical
+
+---
+
+# ---------------------------------------------------------
+# PHASE 0: Ensure app is launched and user is authenticated
+# ---------------------------------------------------------
+- runFlow: 00_sub_login_helper.yaml
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 1: Navigate to Feed tab (1st tab)
+# ---------------------------------------------------------
+- tapOn:
+    point: "10%,97%"
+    label: "Tap Feed tab (1st icon in bottom tab bar)"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Akış"
+    timeout: 10000
+    label: "Wait for Feed screen to load"
+
+# ---------------------------------------------------------
+# PHASE 2: Tap on the first post card to open PostDetailScreen
+# Posts appear as cards in the feed. Tap the first visible one.
+# The card area is roughly in the middle of the screen.
+# ---------------------------------------------------------
+- tapOn:
+    point: "50%,45%"
+    label: "Tap first post card in Feed to open detail"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 3: Verify PostDetailScreen loaded
+# The header should show a detail title like "Gonderi Detayi",
+# "Deneyim Detayi", "Soru Detayi", etc.
+# ---------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      text: "Detay"
+    timeout: 8000
+    label: "Wait for post detail screen to load (header shows 'Detay')"
+
+# ---------------------------------------------------------
+# PHASE 4: Verify comments section is visible
+# ---------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "Yorumlar"
+    direction: DOWN
+    timeout: 5000
+
+- assertVisible:
+    text: "Yorumlar"
+    label: "Verify comments section header is visible"
+
+# Verify sort button is visible
+- assertVisible:
+    text: "En Yeni"
+    label: "Verify default sort option 'En Yeni' is visible"
+
+# ---------------------------------------------------------
+# PHASE 5: Write and submit a comment
+# Comment input is at the bottom of the screen.
+# Placeholder: "Bir mesaj yazin..."
+# ---------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "Bir mesaj yazın..."
+    direction: DOWN
+    timeout: 5000
+
+- tapOn:
+    text: "Bir mesaj yazın..."
+    label: "Tap comment input field"
+
+- inputText: "Harika bir paylasim, cok faydali bilgiler iceriyor. Tesekkurler!"
+
+- waitForAnimationToEnd
+
+# Submit the comment by tapping the send button (purple circle at right)
+- tapOn:
+    point: "93%,95%"
+    label: "Tap send button to submit comment"
+
+- waitForAnimationToEnd
+
+# Verify the comment appears in the list
+- extendedWaitUntil:
+    visible:
+      text: "Harika bir paylasim"
+    timeout: 8000
+    label: "Wait for the submitted comment to appear"
+
+# ---------------------------------------------------------
+# PHASE 6: Test comment sort options
+# Tap the sort button to open sort bottom sheet.
+# ---------------------------------------------------------
+- tapOn:
+    text: "En Yeni"
+    label: "Tap sort button to open sort options"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Yorumları Sırala"
+    timeout: 3000
+
+# Verify all sort options are visible
+- assertVisible:
+    text: "En Yeniler"
+    label: "Verify 'En Yeniler' sort option"
+
+- assertVisible:
+    text: "En Eskiler"
+    label: "Verify 'En Eskiler' sort option"
+
+- assertVisible:
+    text: "En Popüler"
+    label: "Verify 'En Populer' sort option"
+
+# Select "En Eskiler" sort
+- tapOn:
+    text: "En Eskiler"
+    label: "Select 'En Eskiler' sort option"
+
+- waitForAnimationToEnd
+
+# Verify sort changed
+- assertVisible:
+    text: "En Eski"
+    label: "Verify sort button now shows 'En Eski'"
+
+# ---------------------------------------------------------
+# PHASE 7: Scroll back up to interact with the post card
+# Like, bookmark, share buttons are on the post card area.
+# ---------------------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 8: Like the post
+# The like button (heart icon) is in the post card interaction bar.
+# Located at bottom-left of the post card.
+# ---------------------------------------------------------
+- tapOn:
+    point: "12%,52%"
+    label: "Tap like button on post card"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 9: Bookmark the post
+# The bookmark button (bookmark icon) is in the interaction bar.
+# Located at bottom-right of the post card.
+# ---------------------------------------------------------
+- tapOn:
+    point: "88%,52%"
+    label: "Tap bookmark button on post card"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 10: Share the post
+# The share button (share icon) is in the interaction bar.
+# Located between comment and bookmark buttons.
+# ---------------------------------------------------------
+- tapOn:
+    point: "36%,52%"
+    label: "Tap share button to open share options"
+
+- waitForAnimationToEnd
+
+# ShareBottomSheet should open with share options
+# It may show "Paylas" options or a trust list
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 5000
+    label: "Wait for share bottom sheet to appear"
+
+# Close the share sheet by swiping down
+- swipe:
+    direction: DOWN
+    from:
+      x: "50%"
+      y: "50%"
+    to:
+      x: "50%"
+      y: "90%"
+
+- waitForAnimationToEnd
+
+# ---------------------------------------------------------
+# PHASE 11: Navigate back
+# ---------------------------------------------------------
+- back
+
+- waitForAnimationToEnd
+
+# Verify we are back on the Feed
+- extendedWaitUntil:
+    visible:
+      text: "Akış"
+    timeout: 5000
+    label: "Verify returned to Feed screen"

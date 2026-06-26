@@ -1,0 +1,200 @@
+# ==============================================================================
+# Settings - Privacy Settings
+# Precondition: User is authenticated.
+# Flow: Navigate to Settings -> Privacy Settings -> Verify 3 privacy categories
+#       are displayed -> Open a dropdown -> Select option -> Verify selection ->
+#       Test all 3 dropdowns -> Back navigation.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Settings - Privacy Settings Dropdown Options"
+tags:
+  - settings
+  - privacy
+  - dropdowns
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated state)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Settings
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Profil"
+    label: "Tap Profile in drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "93%,7%"
+    label: "Tap ellipsis icon to go to Settings"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify Settings screen
+# -----------------------------------------------
+- assertVisible:
+    text: "Ayarlar"
+    label: "Settings title should be visible"
+
+# -----------------------------------------------
+# Step 4: Tap Privacy Settings
+# -----------------------------------------------
+- tapOn:
+    text: "Gizlilik Ayarları"
+    label: "Tap Privacy Settings menu item"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 5: Verify Privacy Settings screen loaded
+# -----------------------------------------------
+- assertVisible:
+    text: "Gizlilik Ayarları"
+    label: "Privacy Settings title should be visible"
+
+# Wait for data to load
+- extendedWaitUntil:
+    notVisible:
+      text: "Yükleniyor..."
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 6: Verify all 3 privacy categories are visible
+# -----------------------------------------------
+- assertVisible:
+    text: "NFT / Rozet Koleksiyonları"
+    label: "NFT/Badge Collections privacy setting should be visible"
+
+- assertVisible:
+    text: "NFT / Rozet Koleksiyonlarınızı kimlerin görebileceğini seçin."
+    label: "NFT Collections description should be visible"
+
+- assertVisible:
+    text: "Trust / Truster Listesi"
+    label: "Trust/Truster List privacy setting should be visible"
+
+- scrollUntilVisible:
+    element:
+      text: "1-1 Destek Oturumu Talebi"
+    direction: DOWN
+    timeout: 5000
+
+- assertVisible:
+    text: "1-1 Destek Oturumu Talebi"
+    label: "Support Session Request privacy setting should be visible"
+
+# -----------------------------------------------
+# Step 7: Open the NFT Collections dropdown
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# Tap on the first dropdown (NFT Collections)
+# The dropdown shows current value like "Yalnizca Truster'lar" or "Herkes"
+- tapOn:
+    text: "Yalnızca Truster'lar"
+    optional: true
+    label: "Tap NFT Collections dropdown showing trust-only"
+
+- tapOn:
+    text: "Herkes"
+    optional: true
+    label: "Or tap NFT Collections dropdown showing everyone"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 8: Verify dropdown options are visible
+# -----------------------------------------------
+- assertVisible:
+    text: "Yalnızca Truster'lar"
+    label: "Trust-only option should be visible in dropdown"
+
+- assertVisible:
+    text: "Herkes"
+    label: "Everyone option should be visible in dropdown"
+
+# -----------------------------------------------
+# Step 9: Select "Herkes" (Everyone) option
+# -----------------------------------------------
+- tapOn:
+    text: "Herkes"
+    label: "Select Everyone option for NFT Collections"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Open the Trust / Truster List dropdown
+# -----------------------------------------------
+- tapOn:
+    text: "Trust / Truster Listesi"
+    label: "Tap Trust/Truster List section"
+
+- waitForAnimationToEnd
+
+# Tap the dropdown under Trust/Truster List
+- tapOn:
+    text: "Yalnızca Truster'lar"
+    optional: true
+    label: "Tap dropdown for Trust/Truster list"
+
+- tapOn:
+    text: "Herkes"
+    optional: true
+    label: "Or tap dropdown showing Everyone"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 11: Select "Yalnizca Truster'lar" for Trust list
+# -----------------------------------------------
+- tapOn:
+    text: "Yalnızca Truster'lar"
+    optional: true
+    label: "Select Trusters Only for Trust/Truster list"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 12: Scroll down to verify Support Session dropdown
+# -----------------------------------------------
+- scrollUntilVisible:
+    element:
+      text: "1-1 Destek Oturumu Talebi"
+    direction: DOWN
+    timeout: 5000
+
+- assertVisible:
+    text: "Kimlerin 1-1 Destek Oturumu talep edebileceğini seçin."
+    label: "Support session description should be visible"
+
+# -----------------------------------------------
+# Step 13: Navigate back to Settings
+# -----------------------------------------------
+- tapOn:
+    point: "10%,7%"
+    label: "Tap back button to return to Settings"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Ayarlar"
+    label: "Should be back on Settings screen"

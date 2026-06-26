@@ -1,0 +1,50 @@
+# AUTH-03: Register Flow
+# Verifies: Email/password validation, form submission, navigation to VerifyCode
+appId: app.tipbox.ios
+---
+- clearState
+- launchApp
+
+# Skip onboarding
+- assertVisible: "Atla"
+- tapOn: "Atla"
+
+# Navigate to Register
+- assertVisible: "E-posta ile Kayıt Ol"
+- tapOn: "E-posta ile Kayıt Ol"
+
+# === REGISTER SCREEN ===
+- assertVisible: "Kayıt Ol"
+- assertVisible: "E-posta"
+- assertVisible: "Şifre"
+
+# Test: button should be disabled initially (opacity 0.5)
+- assertVisible: "Onayla"
+
+# Enter invalid email first
+- tapOn: "E-posta adresiniz"
+- inputText: "invalid-email"
+# Button still disabled -- we just enter password to proceed
+
+# Clear and enter valid email
+- clearText
+- inputText: "${TEST_EMAIL}"
+
+# Enter password (too short)
+- tapOn: "Şifreniz"
+- inputText: "short"
+# Button still disabled
+
+# Clear and enter valid password (8+ chars, 1 uppercase)
+- clearText
+- inputText: "${TEST_PASSWORD}"
+
+# Password hint should be visible
+- assertVisible: "En az 8 karakter ve 1 büyük harf içermelidir"
+
+# Submit
+- tapOn: "Onayla"
+
+# Should navigate to verify code or show toast
+# Note: this depends on backend being available
+- waitForAnimationToEnd

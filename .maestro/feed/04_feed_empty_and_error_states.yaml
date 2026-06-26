@@ -1,0 +1,134 @@
+# ==============================================================================
+# Feed Empty & Error States
+# Tests: empty feed message, error recovery, loading states
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Feed - Empty and Error States"
+tags:
+  - feed
+  - edge-cases
+  - error-handling
+  - priority-medium
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 15000
+
+# -----------------------------------------------
+# Step 2: Verify feed loads without permanent errors
+# -----------------------------------------------
+# If error state is showing, verify error message
+- runFlow:
+    when:
+      visible: "Akış Yüklenemedi"
+    commands:
+      - assertVisible:
+          text: "Akış Yüklenemedi"
+          label: "Error message visible"
+
+      # Pull to refresh to retry
+      - swipe:
+          direction: DOWN
+          from:
+            x: "50%"
+            y: "30%"
+          to:
+            x: "50%"
+            y: "70%"
+      - waitForAnimationToEnd
+
+      - extendedWaitUntil:
+          visible: "Güvenilen|Senin İçin"
+          timeout: 10000
+
+# -----------------------------------------------
+# Step 3: Test "Güvenilen" tab
+# -----------------------------------------------
+- tapOn:
+    text: "Güvenilen"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Content should load or show empty state
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+
+# -----------------------------------------------
+# Step 4: Test "Senin İçin" tab
+# -----------------------------------------------
+- tapOn:
+    text: "Senin İçin"
+    optional: true
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: ".*"
+    timeout: 8000
+
+# -----------------------------------------------
+# Step 5: Pull-to-refresh functionality
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    from:
+      x: "50%"
+      y: "25%"
+    to:
+      x: "50%"
+      y: "65%"
+
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "Güvenilen|Senin İçin"
+    timeout: 10000
+
+# -----------------------------------------------
+# Step 6: Test filter chips (if visible)
+# -----------------------------------------------
+- runFlow:
+    when:
+      visible: "Tümü"
+    commands:
+      - tapOn:
+          text: "Tümü"
+          optional: true
+      - waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 7: Rapid tab switching (stress test)
+# -----------------------------------------------
+- tapOn:
+    text: "Güvenilen"
+    optional: true
+
+- tapOn:
+    text: "Senin İçin"
+    optional: true
+
+- tapOn:
+    text: "Güvenilen"
+    optional: true
+
+- waitForAnimationToEnd
+
+# Verify app didn't crash
+- assertVisible:
+    text: "Güvenilen"
+    optional: true

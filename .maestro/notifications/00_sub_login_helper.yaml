@@ -1,0 +1,52 @@
+# =============================================================================
+# Tipbox E2E: Sub-flow - Login Helper for Notifications & Bookmarks
+# =============================================================================
+# Reusable login flow. Ensures user is authenticated before running tests.
+# Assumes onboarding has been completed previously.
+# =============================================================================
+appId: app.tipbox.ios
+name: "Notifications - Sub: Login Helper"
+tags:
+  - notifications
+  - bookmarks
+  - sub-flow
+  - helper
+
+---
+
+# Launch app preserving any existing session state
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# If the Welcome/Login screen is visible, perform login
+- runFlow:
+    when:
+      visible: "Giriş Yap"
+    commands:
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+
+      # Enter email
+      - inputText:
+          text: "cem@tipbox.co"
+          label: "Enter test email"
+      - tapOn:
+          text: "Devam Et"
+      - waitForAnimationToEnd
+
+      # Enter password
+      - inputText:
+          text: "password1234"
+          label: "Enter test password"
+      - tapOn:
+          text: "Giriş Yap"
+      - waitForAnimationToEnd
+
+      # Wait for main screen to fully load after login
+      - extendedWaitUntil:
+          visible: "Bildirimler|Keşfet|Güvenilen"
+          timeout: 15000

@@ -1,0 +1,39 @@
+# AUTH-04: Login Flow (Happy Path)
+# Verifies: Email/password entry, successful login, redirect to Feed
+appId: app.tipbox.ios
+---
+- clearState
+- launchApp
+
+# Skip onboarding
+- assertVisible: "Atla"
+- tapOn: "Atla"
+
+# Navigate to Login from Welcome
+- tapOn: "Giriş Yap"
+
+# === LOGIN SCREEN ===
+- assertVisible: "Giriş Yap"
+- assertVisible: "E-posta"
+- assertVisible: "Şifre"
+- assertVisible: "Beni hatırla"
+- assertVisible: "Şifremi Unuttum"
+
+# Enter credentials
+- tapOn: "E-posta adresiniz"
+- inputText: "${DEMO_EMAIL}"
+
+- tapOn: "Şifreniz"
+- inputText: "${DEMO_PASSWORD}"
+
+# Toggle remember me
+- tapOn: "Beni hatırla"
+
+# Submit login
+- tapOn: "Onayla"
+
+# Wait for login to complete and feed to appear
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Güvenilen"
+    timeout: 15000

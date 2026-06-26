@@ -1,0 +1,230 @@
+# ==============================================================================
+# Wallet - TIPS Balance & Transaction History
+# Precondition: User is authenticated and wallet is connected.
+# Flow: Navigate to Wallet -> Verify balance display -> Check transaction
+#       history section -> Open transaction filter -> Open period filter ->
+#       Pull to refresh balance.
+# ==============================================================================
+appId: app.tipbox.ios
+name: "Wallet - TIPS Balance and Transaction History"
+tags:
+  - wallet
+  - tips
+  - balance
+  - transactions
+  - priority-high
+
+---
+
+# -----------------------------------------------
+# Step 1: Launch app (authenticated, wallet connected)
+# -----------------------------------------------
+- launchApp:
+    clearState: false
+    clearKeychain: false
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 2: Navigate to Wallet via drawer
+# -----------------------------------------------
+- tapOn:
+    point: "5%,6%"
+    label: "Tap hamburger menu to open drawer"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    text: "Cüzdan"
+    label: "Tap Wallet menu item in drawer"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 3: Verify WalletScreen loaded with TIPS tab active
+# -----------------------------------------------
+- assertVisible:
+    text: "Cüzdan"
+    label: "Wallet header title should be visible"
+
+- assertVisible:
+    text: "TIPS"
+    label: "TIPS tab should be active"
+
+# -----------------------------------------------
+# Step 4: Verify balance section is displayed
+# -----------------------------------------------
+- assertVisible:
+    text: "Mevcut Bakiye"
+    label: "Current Balance label should be visible"
+
+# -----------------------------------------------
+# Step 5: Verify quick action buttons
+# -----------------------------------------------
+- assertVisible:
+    text: "Al"
+    label: "Receive button should be visible"
+
+- assertVisible:
+    text: "Gönder"
+    label: "Send button should be visible"
+
+- assertVisible:
+    text: "Takas"
+    label: "Swap button should be visible"
+
+- assertVisible:
+    text: "Talep Et"
+    label: "Claim button should be visible"
+
+# -----------------------------------------------
+# Step 6: Verify Transaction History section
+# -----------------------------------------------
+- assertVisible:
+    text: "İşlem Geçmişi"
+    label: "Transaction History title should be visible"
+
+# -----------------------------------------------
+# Step 7: Open Transaction Type Filter
+# Look for the filter icon button near Transaction History
+# -----------------------------------------------
+- swipe:
+    direction: UP
+    duration: 400
+- waitForAnimationToEnd
+
+# Try to find the filter bottom sheet by tapping the filter icon
+# The filter is accessed via a funnel icon near "Islem Gecmisi"
+# Since there are no testIDs, we scroll to make filter controls visible
+
+# -----------------------------------------------
+# Step 8: Open Transaction Filter Bottom Sheet
+# Tap on the filter icon (funnel icon) near transaction history
+# -----------------------------------------------
+- tapOn:
+    text: "Filtrele"
+    optional: true
+    label: "Tap transaction type filter button"
+
+- waitForAnimationToEnd
+
+# Verify filter options are visible
+- assertVisible:
+    text: "Tümü"
+    optional: true
+    label: "All filter option should be visible"
+
+- assertVisible:
+    text: "Gönderilen"
+    optional: true
+    label: "Sent filter option should be visible"
+
+- assertVisible:
+    text: "Alınan"
+    optional: true
+    label: "Received filter option should be visible"
+
+# Select "Gönderilen" (Sent) filter
+- tapOn:
+    text: "Gönderilen"
+    optional: true
+    label: "Select Sent filter"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 9: Open Transaction Period Bottom Sheet
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 10: Pull to refresh to update balance and transactions
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- swipe:
+    direction: DOWN
+    from:
+      x: "50%"
+      y: "30%"
+    to:
+      x: "50%"
+      y: "70%"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 11: Verify balance is still displayed after refresh
+# -----------------------------------------------
+- assertVisible:
+    text: "Mevcut Bakiye"
+    label: "Balance should still be visible after pull-to-refresh"
+
+# -----------------------------------------------
+# Step 12: Tap Receive button and verify bottom sheet
+# -----------------------------------------------
+- tapOn:
+    text: "Al"
+    label: "Tap Receive quick action button"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "TIPS Al"
+    optional: true
+    label: "Receive Bottom Sheet title should be visible"
+
+# Close by tapping X or swiping down
+- swipe:
+    direction: DOWN
+    from:
+      x: "50%"
+      y: "40%"
+    to:
+      x: "50%"
+      y: "90%"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 13: Tap Claim button and verify bottom sheet
+# -----------------------------------------------
+- tapOn:
+    text: "Talep Et"
+    label: "Tap Claim quick action button"
+
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Ödüller"
+    optional: true
+    label: "Claim Bottom Sheet title 'Oduller' should be visible"
+
+# Close claim bottom sheet
+- swipe:
+    direction: DOWN
+    from:
+      x: "50%"
+      y: "50%"
+    to:
+      x: "50%"
+      y: "90%"
+
+- waitForAnimationToEnd
+
+# -----------------------------------------------
+# Step 14: Verify wallet info card (address display)
+# -----------------------------------------------
+- swipe:
+    direction: DOWN
+    duration: 400
+- waitForAnimationToEnd
+
+# The wallet card shows the user name and truncated address
+- assertVisible:
+    text: "Mevcut Bakiye"
+    label: "Balance section should remain visible at the end"
