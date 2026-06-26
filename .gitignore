@@ -102,4 +102,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Maestro E2E tests (kept on test/maestro-flows branch; not shipped with builds)
+.maestro/
+current_state.png
+smoke_*.png
+
 # @end expo-cli

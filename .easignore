@@ -99,3 +99,8 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Maestro E2E tests + screenshots (never ship with builds)
+.maestro/
+current_state.png
+smoke_*.png
