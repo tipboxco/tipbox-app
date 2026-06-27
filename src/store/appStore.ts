@@ -398,7 +398,6 @@ export const useAppStore = create<AppState>()(
           colorMode: state.colorMode,
           walletId: state.walletId,
           walletIdentifier: state.walletIdentifier,
-          walletBalance: state.walletBalance,
         }),
       }
     ),

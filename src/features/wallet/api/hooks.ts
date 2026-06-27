@@ -127,7 +127,7 @@ export const useWalletBalance = () => {
       // Do not refetch when backend is not ready or on error
       return query.state.status === 'success' ? 10000 : false;
     },
-    staleTime: 5000, // 5 seconds
+    staleTime: 0,
     gcTime: 30000, // 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
