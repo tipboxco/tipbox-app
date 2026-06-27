@@ -22,14 +22,14 @@ import { ScrollRegistry } from '@/src/services/ScrollRegistry';
 // Heroicons imports
 import {
   HomeIcon as HomeIconSolid,
-  Squares2X2Icon as Squares2X2IconSolid,
+  CreditCardIcon as CreditCardIconSolid,
   CalendarIcon as CalendarIconSolid,
   InboxIcon as InboxIconSolid,
   BellIcon as BellIconSolid,
 } from 'react-native-heroicons/solid';
 import {
   HomeIcon as HomeIconOutline,
-  Squares2X2Icon as Squares2X2IconOutline,
+  CreditCardIcon as CreditCardIconOutline,
   CalendarIcon as CalendarIconOutline,
   InboxIcon as InboxIconOutline,
   BellIcon as BellIconOutline,
@@ -39,7 +39,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
-import { CatalogNavigator } from '@/src/features/catalog/navigation';
+import { WalletNavigator } from '@/src/features/wallet';
 import { EventsNavigator } from '@/src/features/events/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { InboxNavigator } from '@/src/features/inbox/navigation';
@@ -279,8 +279,8 @@ export const TabNavigator = () => {
         // Ionicons stroke Heroicons'a göre daha kalın - boyutu küçülterek görsel ağırlığı eşitle
         return <Ionicons name={focused ? 'binoculars' : 'binoculars-outline'} size={iconSize * 0.85} color={color} />;
 
-      case 'CatalogStack':
-        IconComponent = focused ? Squares2X2IconSolid : Squares2X2IconOutline;
+      case 'WalletStack':
+        IconComponent = focused ? CreditCardIconSolid : CreditCardIconOutline;
         break;
       case 'EventsStack':
         IconComponent = focused ? CalendarIconSolid : CalendarIconOutline;
@@ -392,7 +392,7 @@ export const TabNavigator = () => {
 
   // Diğer tab'lar için press handler'lar
   const handleExploreTabPress = createTabPressHandler('ExploreStack');
-  const handleCatalogTabPress = createTabPressHandler('CatalogStack');
+  const handleWalletTabPress = createTabPressHandler('WalletStack');
   const handleEventsTabPress = createTabPressHandler('EventsStack');
   const handleNotificationsTabPress = createTabPressHandler('NotificationStack');
 
@@ -462,9 +462,9 @@ export const TabNavigator = () => {
             listeners={{ tabPress: handleExploreTabPress }}
           />
           <Tab.Screen
-            name="CatalogStack"
-            component={CatalogNavigator}
-            listeners={{ tabPress: handleCatalogTabPress }}
+            name="WalletStack"
+            component={WalletNavigator}
+            listeners={{ tabPress: handleWalletTabPress }}
           />
           <Tab.Screen
             name="EventsStack"

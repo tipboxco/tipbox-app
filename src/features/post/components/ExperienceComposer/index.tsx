@@ -152,18 +152,13 @@ export const ExperienceComposer = forwardRef<
         : {}),
       ...initialValues,
     });
-    const { handleSubmit, setValue, getValues, watch, validateStep } = methods;
+    const { handleSubmit, setValue, getValues, watch } = methods;
 
     const createExperiencePostMutation = useCreateExperiencePost();
     const splitExperienceMutation = useSplitExperience();
     const addInventoryItemMutation = useAddInventoryItem();
     const { user } = useAppStore();
     const queryClient = useQueryClient();
-
-    const { data: experienceOptions } = useGetExperienceOptions();
-    const durations = experienceOptions?.durations ?? [];
-    const locations = experienceOptions?.locations ?? [];
-    const purposes = experienceOptions?.purposes ?? [];
 
     const contextType = useCreatePostFlowStore(state => state.contextType);
     const contextId = useCreatePostFlowStore(state => state.contextId);
@@ -190,14 +185,24 @@ export const ExperienceComposer = forwardRef<
     const isSubmittingRef = useRef(false);
 
     const selectedProduct = watch('selectedProduct');
-    const step1Duration = watch('step1Duration');
-    const selectedCondition = watch('selectedCondition');
-    const selectedFrequency = watch('selectedFrequency');
     const experienceText = watch('experienceText');
     const priceRating = watch('priceRating');
     const productRating = watch('productRating');
     const priceExperienceText = watch('priceExperienceText');
     const productExperienceText = watch('productExperienceText');
+
+    // Seçili ürün kullanıcının envanterinde mi (picker'dan gelen isOwned sinyali VEYA envanter Set'i)?
+    // Owned ise: own/tested seçimi gizli, 'own' kilitli. Katalog (owned değil): own/tested + uyarı.
+    const productOwned =
+      productInfoSnapshot?.isOwned === true ||
+      (!!selectedProduct?.id && isProductInInventory(selectedProduct.id));
+
+    // Owned ürün için 'own' kilitle ("owned seçili dursun").
+    useEffect(() => {
+      if (productOwned && experienceOption !== 'own') {
+        setExperienceOption('own');
+      }
+    }, [productOwned, experienceOption]);
 
     // productContext mount'tan SONRA değişebilir (kullanıcı ürünü üstteki seçiciden sonra seçer).
     // useForm defaultValues yalnızca bir kez uygulandığından, context değişince formu senkronla —
@@ -224,106 +229,7 @@ export const ExperienceComposer = forwardRef<
       setValue,
     ]);
 
-    // ---- Süre / Konum / Amaç select'leri (StepOne mantığı, inline) ----
-    const translateName = useCallback(
-      (name: string): string => {
-        const key = `create.experience.step1.optionNames.${name}`;
-        const translated = t(key);
-        return translated === key ? name : translated;
-      },
-      [t]
-    );
-    const toSheetOptions = useCallback(
-      (options: ExperienceOption[]): OptionSelectBottomSheetOption[] =>
-        options.map(opt => ({ label: translateName(opt.name), value: opt.id })),
-      [translateName]
-    );
-    const findName = useCallback(
-      (options: ExperienceOption[], id: string): string => {
-        const name = options.find(opt => opt.id === id)?.name ?? '';
-        return name ? translateName(name) : '';
-      },
-      [translateName]
-    );
-
-    const durationDisplay = useMemo(
-      () => findName(durations, step1Duration || ''),
-      [findName, durations, step1Duration]
-    );
-    const locationDisplay = useMemo(
-      () => findName(locations, selectedCondition || ''),
-      [findName, locations, selectedCondition]
-    );
-    const purposeDisplay = useMemo(
-      () => findName(purposes, selectedFrequency || ''),
-      [findName, purposes, selectedFrequency]
-    );
-
-    const openSelectSheet = useCallback(
-      (
-        title: string,
-        options: OptionSelectBottomSheetOption[],
-        value: string,
-        onChange: (v: string) => void
-      ) => {
-        openBottomSheet(
-          <OptionSelectBottomSheet
-            title={title}
-            options={options}
-            selectedValue={value}
-            onSelect={onChange}
-            onClose={closeBottomSheet}
-          />,
-          {
-            enableDynamicSizing: false,
-            snapPoints: ['40%'],
-            enablePanDownToClose: true,
-            enableOverDrag: false,
-            enableHandlePanningGesture: true,
-            enableContentPanningGesture: true,
-            animateOnMount: true,
-            paddingBottom: bottomOffset,
-          }
-        );
-      },
-      [openBottomSheet, closeBottomSheet, bottomOffset]
-    );
-
-    const renderSelectTrigger = (
-      label: string,
-      displayValue: string,
-      onPress: () => void
-    ) => (
-      <Pressable onPress={onPress}>
-        <Box
-          flexDirection='row'
-          alignItems='center'
-          justifyContent='space-between'
-          bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
-          borderWidth={1}
-          borderColor={isDark ? '#333333' : '#E9E9E9'}
-          borderRadius={10}
-          height={TRIGGER_HEIGHT}
-          px='$3'
-        >
-          <Text
-            fontSize={14}
-            fontWeight='$medium'
-            color={
-              displayValue ? (isDark ? '$textDark50' : '#000000') : '#8C8C8C'
-            }
-            flex={1}
-          >
-            {displayValue || label}
-          </Text>
-          <ChevronDownIcon
-            width={20}
-            height={20}
-            color={isDark ? '#FFFFFF' : '#000000'}
-          />
-        </Box>
-      </Pressable>
-    );
+    // Not: Süre/Konum/Amaç select'leri UI'dan kaldırıldı (artık opsiyonel; backend de opsiyonel).
 
     // ---- Görsel seçimi (paylaşılan ControlledImagePicker için handler'lar) ----
     const handleImagePicker = async () => {
@@ -388,10 +294,9 @@ export const ExperienceComposer = forwardRef<
       setValue('productRating', 0);
     }, [setValue, experienceText]);
 
-    // Temel veri doğrulaması (create ekranında Devam Et öncesi). Split YOK — hata navigasyonu engellemez.
+    // Temel veri doğrulaması (create ekranında Devam Et öncesi). Süre/konum/amaç kaldırıldı;
+    // yalnızca ürün + deneyim metni gerekir. Split YOK — hata navigasyonu engellemez.
     const validateBasic = async (): Promise<boolean> => {
-      const isValid = await validateStep(1);
-      if (!isValid) return false;
       if (!selectedProduct?.id) {
         showCustomToast(toast, {
           title: t('create.common.errors.title'),
@@ -511,23 +416,17 @@ export const ExperienceComposer = forwardRef<
         return;
       }
 
-      const selectedDurationId = data.step1Duration;
-      const selectedLocationId = data.selectedCondition;
-      const selectedPurposeId = data.selectedFrequency;
-      if (!selectedDurationId || !selectedLocationId || !selectedPurposeId) {
-        showCustomToast(toast, {
-          title: t('create.common.errors.title'),
-          description: t('create.experience.validation.durationRequired'),
-          action: 'error',
-        });
-        return;
-      }
+      // Süre/konum/amaç UI'dan kaldırıldı — opsiyonel (boşsa gönderilmez, backend de opsiyonel kabul eder).
+      const selectedDurationId = data.step1Duration || undefined;
+      const selectedLocationId = data.selectedCondition || undefined;
+      const selectedPurposeId = data.selectedFrequency || undefined;
 
       isSubmittingRef.current = true;
       const status: 'own' | 'tested' =
         experienceOption === 'own' ? 'own' : 'tested';
       // 'Sahibim' + ürün envanterde DEĞİLSE otomatik envantere ekle (ekleme endpoint'i post'u da oluşturur).
-      const alreadyInInventory = isProductInInventory(data.selectedProduct.id);
+      const alreadyInInventory =
+        productOwned || isProductInInventory(data.selectedProduct.id);
       const willAddToInventory =
         experienceOption === 'own' &&
         !!data.selectedProduct?.id &&
@@ -646,13 +545,10 @@ export const ExperienceComposer = forwardRef<
     // Paylaş akışı: temel veriler tamamsa Paylaş aktiftir. İlk Paylaş'ta (AI analizi yoksa)
     // analiz çalışır ve segmentli puanlama kartları görünür; kullanıcı puanlayıp tekrar
     // Paylaş'a basınca post oluşturulur.
-    // Temel veriler tamam mı (form adımı için Devam Et'i aktive eder)
+    // Temel veriler tamam mı (form adımı için Devam Et'i aktive eder).
+    // Süre/konum/amaç kaldırıldı — yalnızca ürün + deneyim metni gerekir.
     const formComplete =
-      !!selectedProduct &&
-      !!step1Duration &&
-      !!selectedCondition &&
-      !!selectedFrequency &&
-      (experienceText?.trim().length ?? 0) >= 10;
+      !!selectedProduct && (experienceText?.trim().length ?? 0) >= 10;
 
     useImperativeHandle(ref, () => ({
       submit: async () => {
@@ -799,105 +695,81 @@ export const ExperienceComposer = forwardRef<
         <VStack space='md'>
           {step === 'form' && (
             <>
-              {/* Ürün durumu: Sahibim / Test Ettim — segmented radio butonlar */}
-              <HStack px={16} space='sm'>
-                {[
-                  {
-                    value: 'own' as const,
-                    label: t('create.experience.inventory.iOwn', 'Sahibim'),
-                  },
-                  {
-                    value: 'tried' as const,
-                    label: t(
-                      'create.experience.inventory.iTried',
-                      'Test Ettim'
-                    ),
-                  },
-                ].map(({ value, label }) => {
-                  const selected = experienceOption === value;
-                  return (
-                    <Pressable
-                      key={value}
-                      flex={1}
-                      onPress={() => setExperienceOption(value)}
-                      accessibilityRole='radio'
-                      accessibilityState={{ selected }}
-                    >
-                      <Box
-                        h={48}
-                        borderRadius={10}
-                        alignItems='center'
-                        justifyContent='center'
-                        bg={
-                          selected
-                            ? isDark
-                              ? '#2A2E15'
-                              : '#EDF2C9'
-                            : isDark
-                              ? '#2A2A2A'
-                              : '#F2F2F2'
-                        }
-                        borderWidth={selected ? 1.5 : 1}
-                        borderColor={
-                          selected ? '#B8CC04' : isDark ? '#2A2A2A' : '#F2F2F2'
-                        }
-                      >
-                        <Text
-                          fontSize={14}
-                          fontWeight='$semibold'
-                          color={selected ? '#758600' : '#9D9D9D'}
+              {/* Ürün durumu: Sahibim / Test Ettim — yalnızca ürün envanterde DEĞİLSE.
+                  Owned ürün picker'dan 'own' kilitli geldiğinden bu seçim ve uyarı gizlenir. */}
+              {!productOwned && (
+                <VStack px={16} space='xs'>
+                  <HStack space='sm'>
+                    {[
+                      {
+                        value: 'own' as const,
+                        label: t('create.experience.inventory.iOwn', 'Sahibim'),
+                      },
+                      {
+                        value: 'tried' as const,
+                        label: t(
+                          'create.experience.inventory.iTried',
+                          'Test Ettim'
+                        ),
+                      },
+                    ].map(({ value, label }) => {
+                      const selected = experienceOption === value;
+                      return (
+                        <Pressable
+                          key={value}
+                          flex={1}
+                          onPress={() => setExperienceOption(value)}
+                          accessibilityRole='radio'
+                          accessibilityState={{ selected }}
                         >
-                          {label}
-                        </Text>
-                      </Box>
-                    </Pressable>
-                  );
-                })}
-              </HStack>
-
-              {/* Süre / Konum / Amaç */}
-              <VStack px={16} space='xs'>
-                {renderSelectTrigger(
-                  t('create.experience.step1.selectDuration'),
-                  durationDisplay,
-                  () =>
-                    openSelectSheet(
-                      t('create.experience.step1.selectDuration'),
-                      toSheetOptions(durations),
-                      step1Duration || '',
-                      v =>
-                        setValue('step1Duration', v, { shouldValidate: true })
-                    )
-                )}
-                {renderSelectTrigger(
-                  t('create.experience.step1.selectLocation'),
-                  locationDisplay,
-                  () =>
-                    openSelectSheet(
-                      t('create.experience.step1.selectLocation'),
-                      toSheetOptions(locations),
-                      selectedCondition || '',
-                      v =>
-                        setValue('selectedCondition', v, {
-                          shouldValidate: true,
-                        })
-                    )
-                )}
-                {renderSelectTrigger(
-                  t('create.experience.step1.selectPurpose'),
-                  purposeDisplay,
-                  () =>
-                    openSelectSheet(
-                      t('create.experience.step1.selectPurpose'),
-                      toSheetOptions(purposes),
-                      selectedFrequency || '',
-                      v =>
-                        setValue('selectedFrequency', v, {
-                          shouldValidate: true,
-                        })
-                    )
-                )}
-              </VStack>
+                          <Box
+                            h={48}
+                            borderRadius={10}
+                            alignItems='center'
+                            justifyContent='center'
+                            bg={
+                              selected
+                                ? isDark
+                                  ? '#2A2E15'
+                                  : '#EDF2C9'
+                                : isDark
+                                  ? '#2A2A2A'
+                                  : '#F2F2F2'
+                            }
+                            borderWidth={selected ? 1.5 : 1}
+                            borderColor={
+                              selected
+                                ? '#B8CC04'
+                                : isDark
+                                  ? '#2A2A2A'
+                                  : '#F2F2F2'
+                            }
+                          >
+                            <Text
+                              fontSize={14}
+                              fontWeight='$semibold'
+                              color={selected ? '#758600' : '#9D9D9D'}
+                            >
+                              {label}
+                            </Text>
+                          </Box>
+                        </Pressable>
+                      );
+                    })}
+                  </HStack>
+                  {/* Figma uyarısı: sahiplik durumunda otomatik envanter bilgisi */}
+                  <Text
+                    fontSize={12}
+                    color={isDark ? '$textDark400' : '#6B7280'}
+                    px={2}
+                  >
+                    {t(
+                      'create.experience.ownershipNotice',
+                      'Bu ürüne sahipsen otomatik olarak envanterine eklenir.'
+                    )}
+                  </Text>
+                </VStack>
+              )}
 
               {/* Deneyim metni — paylaşılan core input */}
               <VStack px={16} space='xs'>

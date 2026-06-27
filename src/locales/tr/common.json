@@ -126,6 +126,7 @@
   "drawer": {
     "menuItems": {
       "account": "Hesap",
+      "catalog": "Katalog",
       "wallet": "Cüzdan",
       "inventory": "Envanterim",
       "bookmarks": "Kaydedilenler",

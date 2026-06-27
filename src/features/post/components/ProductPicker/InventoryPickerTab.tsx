@@ -26,6 +26,8 @@ export type PickedProduct = {
   subName?: string;
   /** Ürünün ait olduğu ürün grubu (kategori) ID'si — benchmark 2. ürün filtresi için. */
   productGroupId?: string;
+  /** Envanter sekmesinden seçildiyse true (kullanıcı bu ürüne sahip). Tip-gating için. */
+  isOwned?: boolean;
 };
 
 type Props = {
@@ -118,6 +120,7 @@ export const InventoryPickerTab: React.FC<Props> = ({
               image: item.image,
               subName: item.brand?.model,
               productGroupId: item.productGroupId,
+              isOwned: true, // Envanter sekmesi → kullanıcı bu ürüne sahip
             })
           }
         >

@@ -114,6 +114,7 @@ export const CatalogPickerTab: React.FC<Props> = ({
         image: p.image,
         subName: p.subtitle,
         productGroupId: p.productGroupId,
+        isOwned: false, // Katalog sekmesi → sahiplik envanter kontrolüne bırakılır
       });
     },
     [onSelect]

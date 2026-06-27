@@ -61,6 +61,7 @@ export const ProductPickerScreen: React.FC = () => {
           title: product.title,
           subName: product.subName,
           productGroupId: product.productGroupId,
+          isOwned: product.isOwned,
         });
       }
       navigation.goBack();

@@ -68,6 +68,7 @@
       "cancel": "Vazgeç"
     },
     "experience": {
+      "ownershipNotice": "Bu ürüne sahipsen otomatik olarak envanterine eklenir.",
       "header": {
         "title": "Deneyim Gönderisi",
         "addToInventory": "Envantere Ekle",

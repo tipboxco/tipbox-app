@@ -7,11 +7,12 @@
  */
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { EventsStackParamList } from '@/src/features/events/navigation';
+import { WalletStackParamList } from '@/src/features/wallet/navigation';
 
 export type TabParamList = {
   FeedStack: undefined;
   ExploreStack: undefined;
-  CatalogStack: undefined;
+  WalletStack: NavigatorScreenParams<WalletStackParamList>;
   EventsStack: NavigatorScreenParams<EventsStackParamList>;
   NotificationStack: undefined;
   InboxStack: undefined;

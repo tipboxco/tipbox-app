@@ -20,7 +20,7 @@ import { useDrawerStore } from '@/src/store/drawerStore';
 import { useShallow } from 'zustand/react/shallow';
 import {
   UserCircleIcon,
-  CreditCardIcon,
+  Squares2X2Icon,
   ArchiveBoxIcon,
   BookmarkIcon,
   ShoppingBagIcon,
@@ -291,11 +291,11 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     });
   }, [handleCloseDrawer, user?.id]); // CRITICAL FIX: isOpen dependency'sini kaldır - gereksiz re-render önleme
 
-  const handleNavigateToWallet = useCallback(() => {
+  const handleNavigateToCatalog = useCallback(() => {
     handleCloseDrawer();
-    // Wallet navigator'a direkt navigate et
-    navigationService.navigate('Wallet', {
-      screen: 'WalletScreen',
+    // Catalog navigator'a direkt navigate et (root screen olarak açılır)
+    navigationService.navigate('Catalog', {
+      screen: 'CatalogScreen',
     });
   }, [handleCloseDrawer]);
 
@@ -472,10 +472,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       onPress: handleNavigateToProfile,
     },
     {
-      id: 'wallet',
-      icon: CreditCardIcon,
-      label: t('drawer.menuItems.wallet'),
-      onPress: handleNavigateToWallet,
+      id: 'catalog',
+      icon: Squares2X2Icon,
+      label: t('drawer.menuItems.catalog'),
+      onPress: handleNavigateToCatalog,
     },
     {
       id: 'inventory',
@@ -517,7 +517,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   ], [
     t,
     handleNavigateToProfile,
-    handleNavigateToWallet,
+    handleNavigateToCatalog,
     handleNavigateToInventory,
     handleNavigateToBookmarks,
     handleNavigateToMarketplace,

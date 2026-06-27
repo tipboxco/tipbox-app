@@ -25,7 +25,7 @@ export const useDrawerGestureEnabled = (): boolean => {
   const DRAWER_ENABLED_TABS = [
     'FeedStack',
     'ExploreStack',
-    'CatalogStack',
+    'WalletStack',
     'EventsStack',
     'NotificationStack',
     'InboxStack',
@@ -61,6 +61,7 @@ export const useDrawerGestureEnabled = (): boolean => {
         'Profile',
         'Post',
         'Wallet',
+        'Catalog',
         'Bookmarks',
         'Marketplace',
         'MessageDetail',

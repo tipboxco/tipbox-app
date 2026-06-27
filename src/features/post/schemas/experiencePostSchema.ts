@@ -17,10 +17,11 @@ export const experiencePostSchema = z.object({
   selectedLocation: z.string().optional(), // Step 0 için (inventory usage)
   selectedPurpose: z.string().optional(), // Step 0 için (inventory usage)
   
-  // Step 1: StepOneScreen
-  step1Duration: z.string().min(1, 'Deneyim süresi zorunludur'), // Step 1 için ayrı duration
-  selectedCondition: z.string().min(1, 'Ürün durumu zorunludur'),
-  selectedFrequency: z.string().min(1, 'Kullanım sıklığı zorunludur'),
+  // Step 1: Süre/Konum/Amaç — UI'dan kaldırıldı; zorunluluk yok (boş değer kabul edilir).
+  // Tip 'string' olarak korunur (defaultValues '' verir) — backend de bunları opsiyonel kabul eder.
+  step1Duration: z.string(),
+  selectedCondition: z.string(),
+  selectedFrequency: z.string(),
   
   // Step 2: StepTwoScreen
   experienceText: z.string().min(1, 'Deneyim metni zorunludur').max(500, 'Maksimum 500 karakter olabilir'),

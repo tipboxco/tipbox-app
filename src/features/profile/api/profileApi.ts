@@ -465,9 +465,10 @@ export const uploadBanner = async (bannerUri: string): Promise<UploadBannerRespo
  */
 export interface AddInventoryItemRequest {
   productId: string;
-  selectedDurationId: string;
-  selectedLocationId: string;
-  selectedPurposeId: string;
+  // Süre/konum/amaç UI'dan kaldırıldı — opsiyonel (verilmezse backend null kabul eder).
+  selectedDurationId?: string;
+  selectedLocationId?: string;
+  selectedPurposeId?: string;
   content: string;
   experience: Array<{
     type: 'price_and_shopping' | 'product_and_usage';

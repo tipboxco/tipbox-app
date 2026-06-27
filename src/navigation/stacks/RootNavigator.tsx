@@ -8,6 +8,7 @@ import { MoreSchoiseNavigator } from '@/src/features/moreSchoise/navigation';
 import { PostNavigator } from '@/src/features/post/navigation';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
 import { WalletNavigator } from '@/src/features/wallet';
+import { CatalogNavigator } from '@/src/features/catalog/navigation';
 import { BookmarksNavigator } from '@/src/features/bookmarks/navigation';
 import { MarketplaceNavigator } from '@/src/features/marketplace/navigation';
 import { EventNavigator } from '@/src/features/events/EventNavigator';
@@ -196,6 +197,18 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name="Wallet"
             component={WalletNavigator}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+              gestureEnabled: true,
+              headerShown: false,
+            }}
+          />
+
+          {/* Catalog - Card presentation (drawer'dan açılır, tab'dan taşındı) */}
+          <RootStack.Screen
+            name="Catalog"
+            component={CatalogNavigator}
             options={{
               presentation: 'card',
               animation: 'slide_from_right',

@@ -656,9 +656,10 @@ export interface CreateExperiencePostRequest {
   // Opsiyonel: AI split başarısızsa (Gemini rate limit) snippet olmadan, kullanıcının kendi
   // metniyle (experience array) gönderi oluşturulur.
   experienceSnippetId?: string;
-  selectedDurationId: string;
-  selectedLocationId: string;
-  selectedPurposeId: string;
+  // Süre/konum/amaç UI'dan kaldırıldı — opsiyonel (boşsa gönderilmez, backend opsiyonel kabul eder).
+  selectedDurationId?: string;
+  selectedLocationId?: string;
+  selectedPurposeId?: string;
   content: string;
   experience: Array<{
     type: 'price_and_shopping' | 'product_and_usage';
@@ -702,16 +703,10 @@ export const createExperiencePost = async (
       }
     );
 
-    // Zorunlu alan kontrolü
-    if (!data.selectedDurationId || data.selectedDurationId.trim() === '') {
-      throw new Error('selectedDurationId is required and cannot be empty');
-    }
-    if (!data.selectedLocationId || data.selectedLocationId.trim() === '') {
-      throw new Error('selectedLocationId is required and cannot be empty');
-    }
-    if (!data.selectedPurposeId || data.selectedPurposeId.trim() === '') {
-      throw new Error('selectedPurposeId is required and cannot be empty');
-    }
+    // Süre/konum/amaç UI'dan kaldırıldı — opsiyonel; verilmişse gönderilir, yoksa atlanır.
+    const hasDuration = !!data.selectedDurationId && data.selectedDurationId.trim() !== '';
+    const hasLocation = !!data.selectedLocationId && data.selectedLocationId.trim() !== '';
+    const hasPurpose = !!data.selectedPurposeId && data.selectedPurposeId.trim() !== '';
 
     const client = apiService.getClient();
     const hasImages = data.images && data.images.length > 0;
@@ -729,18 +724,22 @@ export const createExperiencePost = async (
           : {}),
         // productId - Required when contextType is sub_category or product_group
         ...(data.productId && { productId: data.productId }),
-        // camelCase (spec)
-        selectedDurationId: data.selectedDurationId,
-        selectedLocationId: data.selectedLocationId,
-        selectedPurposeId: data.selectedPurposeId,
-        // snake_case (bazı backend'ler bunu bekliyor)
-        selected_duration_id: data.selectedDurationId,
-        selected_location_id: data.selectedLocationId,
-        selected_purpose_id: data.selectedPurposeId,
-        // kısa isimler (bazı backend validation'ları bunları arıyor)
-        duration: data.selectedDurationId,
-        location: data.selectedLocationId,
-        purpose: data.selectedPurposeId,
+        // Süre/konum/amaç opsiyonel — yalnızca verildiyse ekle (camelCase + snake_case + kısa ad).
+        ...(hasDuration && {
+          selectedDurationId: data.selectedDurationId,
+          selected_duration_id: data.selectedDurationId,
+          duration: data.selectedDurationId,
+        }),
+        ...(hasLocation && {
+          selectedLocationId: data.selectedLocationId,
+          selected_location_id: data.selectedLocationId,
+          location: data.selectedLocationId,
+        }),
+        ...(hasPurpose && {
+          selectedPurposeId: data.selectedPurposeId,
+          selected_purpose_id: data.selectedPurposeId,
+          purpose: data.selectedPurposeId,
+        }),
         ...(data.eventId != null && data.eventId !== ''
           ? { eventId: data.eventId }
           : {}),
@@ -774,9 +773,16 @@ export const createExperiencePost = async (
     formData.append('content', data.content);
     formData.append('experience', JSON.stringify(data.experience));
     formData.append('status', data.status);
-    formData.append('selectedDurationId', data.selectedDurationId);
-    formData.append('selectedLocationId', data.selectedLocationId);
-    formData.append('selectedPurposeId', data.selectedPurposeId);
+    // Süre/konum/amaç opsiyonel — yalnızca verildiyse ekle.
+    if (hasDuration) {
+      formData.append('selectedDurationId', data.selectedDurationId as string);
+    }
+    if (hasLocation) {
+      formData.append('selectedLocationId', data.selectedLocationId as string);
+    }
+    if (hasPurpose) {
+      formData.append('selectedPurposeId', data.selectedPurposeId as string);
+    }
     if (data.experienceSnippetId) {
       formData.append('experienceSnippetId', data.experienceSnippetId);
     }

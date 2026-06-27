@@ -57,14 +57,10 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
                   },
                 },
               },
-              // Catalog Tab
-              CatalogStack: {
+              // Wallet Tab (Catalog tab'ından taşındı)
+              WalletStack: {
                 screens: {
-                  Catalog: {
-                    screens: {
-                      CatalogScreen: 'catalog',
-                    },
-                  },
+                  WalletScreen: 'wallet-tab',
                 },
               },
               // Events Tab
@@ -137,6 +133,11 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
       Wallet: {
         screens: {
           WalletScreen: 'wallet',
+        },
+      },
+      Catalog: {
+        screens: {
+          CatalogScreen: 'catalog',
         },
       },
       Event: {

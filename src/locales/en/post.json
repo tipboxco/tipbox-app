@@ -68,6 +68,7 @@
       "cancel": "Cancel"
     },
     "experience": {
+      "ownershipNotice": "If you own this product, it will be automatically added to your inventory.",
       "header": {
         "title": "Experience Post",
         "addToInventory": "Add to Inventory",

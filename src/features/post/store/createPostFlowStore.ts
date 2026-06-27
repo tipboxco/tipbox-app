@@ -12,6 +12,11 @@ interface ProductInfoSnapshot {
   subName?: string;
   /** Ürünün ait olduğu ürün grubu (kategori) ID'si — benchmark 2. ürün filtresi için. */
   productGroupId?: string;
+  /**
+   * Ürün seçim anında kullanıcının envanterinde mi (Envanter sekmesinden seçildiyse true).
+   * Tip-gating ve experience own/tested kararı için picker'dan taşınır.
+   */
+  isOwned?: boolean;
 }
 
 /** Benchmark karşılaştırma (2.) ürünü için ayrı slot */

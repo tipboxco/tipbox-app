@@ -394,17 +394,20 @@ export const CreatePostScreen = () => {
       ? productInfoSnapshot
       : routeParams.productInfo;
 
-  // Ürün bağlamında, seçili ürün envanterde mi? Envanter gerektiren tipler buna göre kilitlenir.
-  const selectedProductInInventory =
+  // Seçili ürün kullanıcının envanterinde mi (sahip mi)? Picker'dan gelen açık isOwned
+  // sinyali (Envanter sekmesi) VEYA envanter Set'i membership ile belirlenir.
+  const selectedProductOwned =
     finalContextType === ProductInfoType.PRODUCT && !!finalContextId
-      ? isProductInInventory(finalContextId)
+      ? (isValidFlow && productInfoSnapshot?.isOwned === true) ||
+        isProductInInventory(finalContextId)
       : false;
-  // 'experience' (Sahibim) ürünü envantere ekleyen yol olduğundan her zaman açık;
-  // question/tips/benchmark ürün envanterde değilse devre dışı.
+  // Owned ürün: tüm tipler açık (Experience 'owned' kilitli — ExperienceComposer'da toggle gizli).
+  // Katalog (owned değil): Experience (own/tested) + Question açık, Tips & Benchmark pasif.
   const disabledTypeValues = useMemo<string[]>(() => {
-    if (contextKind !== 'product' || selectedProductInInventory) return [];
-    return ['question', 'tips', 'benchmark'];
-  }, [contextKind, selectedProductInInventory]);
+    if (contextKind !== 'product') return [];
+    if (selectedProductOwned) return [];
+    return ['tips', 'benchmark'];
+  }, [contextKind, selectedProductOwned]);
 
   // Seçili tip devre dışı kaldıysa (ör. ürün envanterde değil) 'experience'a düş.
   useEffect(() => {
@@ -512,7 +515,7 @@ export const CreatePostScreen = () => {
                 routes: [
                   {
                     name: 'MainTabs',
-                    state: { routes: [{ name: 'CatalogStack' }], index: 0 },
+                    state: { routes: [{ name: 'FeedStack' }], index: 0 },
                   },
                 ],
                 index: 0,

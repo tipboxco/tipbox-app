@@ -6,6 +6,7 @@ import { MainStackParamList } from './main.types';
 import { ProfileStackParamList } from '@/src/features/profile/navigation';
 import { PostStackParamList } from '@/src/features/post/navigation';
 import { WalletStackParamList } from '@/src/features/wallet/navigation';
+import { CatalogStackParamList } from '@/src/features/catalog/navigation';
 import { BookmarksStackParamList } from '@/src/features/bookmarks/navigation';
 import { MarketplaceStackParamList } from '@/src/features/marketplace/navigation';
 import { EventStackParamList } from '@/src/features/events/EventNavigator';
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   Post: NavigatorScreenParams<PostStackParamList>;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
   Wallet: NavigatorScreenParams<WalletStackParamList>;
+  Catalog: NavigatorScreenParams<CatalogStackParamList>;
   Bookmarks: NavigatorScreenParams<BookmarksStackParamList>;
   Marketplace: NavigatorScreenParams<MarketplaceStackParamList>;
   Event: NavigatorScreenParams<EventStackParamList>;

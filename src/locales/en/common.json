@@ -126,6 +126,7 @@
   "drawer": {
     "menuItems": {
       "account": "Account",
+      "catalog": "Catalog",
       "wallet": "Wallet",
       "inventory": "My Inventory",
       "bookmarks": "Bookmarks",
