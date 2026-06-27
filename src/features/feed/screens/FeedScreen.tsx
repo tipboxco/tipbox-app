@@ -33,14 +33,16 @@ const FEED_TABS: Array<{
   filters?: FeedFilterParams;
 }> = [
   {
+    key: 'forYou',
+    labelKey: 'tabs.forYou',
+    filters: {
+      interests: ['CATEGORY_MATCH', 'TRENDING', 'BOOSTED', 'NEW_USER', 'ENGAGEMENT_HIGH'],
+    },
+  },
+  {
     key: 'trusting',
     labelKey: 'tabs.trusting',
     filters: { interests: ['MUTUAL_TRUST', 'TRUSTER'] },
-  },
-  {
-    key: 'forYou',
-    labelKey: 'tabs.forYou',
-    filters: { interests: ['CATEGORY_MATCH', 'ENGAGEMENT_HIGH'] },
   },
   { key: 'tips', labelKey: 'tabs.tips', filters: { tags: ['Tips'] } },
   {
