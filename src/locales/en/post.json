@@ -57,7 +57,7 @@
     },
     "inventoryCta": {
       "title": "Product not in your inventory",
-      "description": "To share a question, tip, or benchmark, add the product to your inventory first.",
+      "description": "To share a tip, or benchmark, add the product to your inventory first.",
       "action": "Add"
     },
     "paywall": {
