@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { FlatList, Dimensions, Modal as RNModal, Pressable as RNPressable, StyleSheet, View, Text as RNText } from 'react-native';
+import { FlatList, Dimensions, Modal as RNModal, Pressable as RNPressable, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,7 +7,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Search } from 'lucide-react-native';
 import { VStack, HStack, Box, Input, InputField, Pressable, Text, useToast } from '@gluestack-ui/themed';
-import { PlusIcon, CheckCircleIcon, HandRaisedIcon } from 'react-native-heroicons/outline';
+import { PlusIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { Header } from '@/src/components/Header';
@@ -20,7 +20,6 @@ import { useAppStore } from '@/src/store/appStore';
 import { InventorySkeleton } from '@/src/components/Skeletons';
 import { Alert } from 'react-native';
 import { useTranslation } from '@/src/hooks/useTranslation';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { ProductInfoType } from '@/src/types/common';
 
@@ -141,31 +140,14 @@ const InventoryScreen = () => {
     setOpenMenuItemId(() => (isOpen ? itemId : null));
   }, []);
 
-  const { openBottomSheet, dismissBottomSheet } = useGlobalBottomSheet();
-
-  const handleSelectExperienceOption = useCallback((option: 'own' | 'tried') => {
-    dismissBottomSheet();
-    navigationService.navigate(ROOT_ROUTES.POST, {
-      screen: 'CreateExperiencePostScreen',
-      params: {
-        fromInventory: false,
-        experienceOption: option,
-      },
-    });
-  }, [dismissBottomSheet]);
-
+  // Plus butonu: own/tried bottom sheet yerine doğrudan create post ekranına git.
+  // Ürün postu (category değil) — CreatePostScreen ürün modunda açılır; ürün + tip seçimi orada.
   const handleCreatePress = useCallback(() => {
-    openBottomSheet(
-      <AddProductBottomSheetContent
-        isDark={isDark}
-        onSelect={handleSelectExperienceOption}
-      />,
-      {
-        snapPoints: ['30%'],
-        enableDynamicSizing: false,
-      }
-    );
-  }, [openBottomSheet, isDark, handleSelectExperienceOption]);
+    navigationService.navigate(ROOT_ROUTES.POST, {
+      screen: 'CreatePostScreen',
+      params: { initialContextKind: 'product' },
+    });
+  }, []);
 
   // Handle update experience - CreateExperiencePostScreen'e yönlendir
   const handleUpdateExperience = useCallback((item: InventoryItem) => {
@@ -493,71 +475,5 @@ const styles = StyleSheet.create({
   fullScreenOverlay: {
     flex: 1,
     backgroundColor: 'transparent',
-  },
-});
-
-// Bottom sheet content component
-const AddProductBottomSheetContent: React.FC<{
-  isDark: boolean;
-  onSelect: (option: 'own' | 'tried') => void;
-}> = ({ isDark, onSelect }) => (
-  <View style={sheetStyles.container}>
-    <View style={sheetStyles.header}>
-      <RNText style={[sheetStyles.title, { color: isDark ? '#FFF' : '#000' }]}>
-        Add a Product
-      </RNText>
-    </View>
-    <View style={sheetStyles.options}>
-      <RNPressable
-        style={[sheetStyles.optionCard, { borderColor: isDark ? '#333' : '#E5E5E5' }]}
-        onPress={() => onSelect('own')}
-      >
-        <CheckCircleIcon size={22} color={isDark ? '#FFF' : '#000'} />
-        <RNText style={[sheetStyles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-          I owned
-        </RNText>
-      </RNPressable>
-
-      <RNPressable
-        style={[sheetStyles.optionCard, { borderColor: isDark ? '#333' : '#E5E5E5' }]}
-        onPress={() => onSelect('tried')}
-      >
-        <HandRaisedIcon size={22} color={isDark ? '#FFF' : '#000'} />
-        <RNText style={[sheetStyles.optionText, { color: isDark ? '#FFF' : '#000' }]}>
-          I tried
-        </RNText>
-      </RNPressable>
-    </View>
-  </View>
-);
-
-const sheetStyles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    paddingBottom: 34,
-  },
-  header: {
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  options: {
-    gap: 12,
-  },
-  optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-    borderWidth: 1,
-    borderRadius: 12,
-  },
-  optionText: {
-    fontSize: 15,
-    fontWeight: '600',
   },
 });
