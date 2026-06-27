@@ -1301,9 +1301,6 @@ export const WalletScreen: React.FC = () => {
                   <VStack alignItems="center" py="$8">
                     <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
                       {selectedTypes.length > 0 ? t('nft.noMatchingFilter') : t('nft.noNfts')}
-                      {
-                        JSON.stringify({filteredAndSortedNfts})
-                      }
                     </Text>
                   </VStack>
                 ) : (

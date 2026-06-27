@@ -31,7 +31,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerCom
     isFetchingNextPage,
     isLoading,
     error,
-  } = useHottest(3, searchQuery);
+  } = useHottest(5, searchQuery);
 
   // Flatten all pages into a single array and remove duplicates by ID
   const hottestItems = useMemo(() => {

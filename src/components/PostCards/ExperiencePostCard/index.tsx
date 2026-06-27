@@ -788,7 +788,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                 fontSize="$sm"
                 lineHeight={18}
                 py={10}
-                numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
+                {...(!showSegmentToggle && { numberOfLines: data.images && data.images.length > 0 ? 3 : 6 })}
               >
                 {data.content.map(item => item.text).filter(Boolean).join('\n\n')}
               </Text>

@@ -97,7 +97,7 @@ const mapExperienceToCardData = (
     .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
   // Carousel'de sadece kullanıcı yüklediği görseller; ürün görseli gösterilmez
   const filteredImages = mappedImages.filter((img) => !isSameImageSource(img, productImage ?? defaultPostImage));
-  const images = filteredImages.length > 0 ? filteredImages : [defaultPostImage];
+  const images = filteredImages;
 
   const isOwned = item.status === 'own' || rawProduct?.isOwned || false;
   const subNameRaw = rawProduct?.subName ?? '';
@@ -397,7 +397,9 @@ const FeedItemCardComponent: React.FC<FeedItemCardProps> = ({ item }) => {
 
   switch (item.type) {
     case CardType.EXPERIENCE:
-      if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
+    case 'experience':
+      if (('contextData' in item.data || 'product' in item.data || 'contextType' in item.data) &&
+          ('experienceContent' in item.data || 'content' in item.data)) {
         return (
           <ExperiencePostCard
             data={mapExperienceToCardData(item.data as ExperiencePostApiItem & { type: 'experience' }, t)}
