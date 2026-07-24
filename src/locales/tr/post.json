@@ -31,7 +31,8 @@
       "inventorySearch": "Envanterinde ara",
       "catalogSearch": "Ürün ara",
       "emptyInventory": "Envanterinde ürün yok",
-      "noResults": "Sonuç bulunamadı"
+      "noResults": "Sonuç bulunamadı",
+      "minSearchChars": "Ürün aramak için en az 3 karakter yazın"
     },
     "toast": {
       "limitExceeded": {

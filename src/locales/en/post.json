@@ -31,7 +31,8 @@
       "inventorySearch": "Search your inventory",
       "catalogSearch": "Search products",
       "emptyInventory": "No products in your inventory",
-      "noResults": "No results found"
+      "noResults": "No results found",
+      "minSearchChars": "Type at least 3 characters to search products"
     },
     "toast": {
       "limitExceeded": {

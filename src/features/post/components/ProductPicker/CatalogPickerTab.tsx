@@ -17,7 +17,6 @@ import {
   useGlobalProductSearch,
   useCatalogCategories,
   useCatalogSubCategories,
-  useCatalogProductGroups,
   useCatalogProducts,
 } from '@/src/features/catalog/api/hooks';
 import { CachedImage } from '@/src/components/CachedImage';
@@ -45,7 +44,8 @@ type Row = {
 /**
  * Katalog sekmesi — iki kullanım:
  *  1) Üstteki arama kutusuyla doğrudan ürün arama (global product search).
- *  2) Arama boşsa: Ana kategori → Alt kategori → Ürün grubu → Ürün drill-down.
+ *  2) Arama boşsa: kategori ağacında drill-down. Derinlik veriye göre değişir;
+ *     alt kategorisi olmayan (leaf) düğüme girilince o düğümün ürünleri listelenir.
  * En alt katmandaki ürün seçilince post bağlamı olarak üst ekrana iletilir.
  */
 export const CatalogPickerTab: React.FC<Props> = ({
@@ -64,29 +64,36 @@ export const CatalogPickerTab: React.FC<Props> = ({
     return () => clearTimeout(timer);
   }, [inputValue]);
 
-  const isSearching = debouncedQuery.length > 0;
+  // Arama en az 3 karakterle tetiklenir; daha kısa sorgular gezgin görünümünde kalır
+  const isSearching = debouncedQuery.length >= 3;
+  const isQueryTooShort =
+    inputValue.trim().length > 0 && inputValue.trim().length < 3;
 
-  // Gezgin yolu: 0=ana kategoriler, 1=alt kategoriler, 2=ürün grupları, 3=ürünler
+  // Gezgin yolu: kök kategoriden itibaren girilen düğümler. Hiyerarşi derinliği
+  // veriye göre değişebilir (2-4 seviye), o yüzden seviye başına sabit sorgu yok.
   const [path, setPath] = useState<BrowseNode[]>([]);
   const depth = path.length;
+  const currentNodeId = depth > 0 ? path[depth - 1].id : undefined;
 
   // Ürün araması (arama kutusu doluyken)
   const productSearch = useGlobalProductSearch(
     isSearching ? debouncedQuery : undefined
   );
 
-  // Gezgin sorguları — her biri ilgili seviyede aktif
+  // Gezgin sorguları — backend children endpoint'i parentId bazlı olduğundan
+  // her derinlikte aynı sorgu kullanılır; alt kategori kalmayınca ürünlere geçilir.
   const categories = useCatalogCategories(50);
-  const subCategories = useCatalogSubCategories(
-    depth >= 1 ? path[0]?.id : undefined,
-    50
+  const childCategories = useCatalogSubCategories(currentNodeId, 50);
+
+  const childItems = useMemo(
+    () => (childCategories.data?.pages ?? []).flatMap(p => p.items),
+    [childCategories.data]
   );
-  const productGroups = useCatalogProductGroups(
-    depth >= 2 ? path[1]?.id : undefined,
-    50
-  );
+  // Mevcut düğümün alt kategorisi yoksa leaf'tir: alt ağacındaki ürünler listelenir
+  const isLeafNode =
+    !!currentNodeId && !!childCategories.data && childItems.length === 0;
   const products = useCatalogProducts(
-    depth >= 3 ? path[2]?.id : undefined,
+    isLeafNode ? currentNodeId : undefined,
     undefined,
     30
   );
@@ -158,7 +165,7 @@ export const CatalogPickerTab: React.FC<Props> = ({
       });
   }, [isSearching, productSearch.data, handleSelectProduct]);
 
-  // Gezgin satırları (mevcut seviyeye göre)
+  // Gezgin satırları — alt kategorisi olan düğümde çocuklar, leaf düğümde ürünler
   const browseRows = useMemo<Row[]>(() => {
     if (isSearching) return [];
     if (depth === 0) {
@@ -173,35 +180,18 @@ export const CatalogPickerTab: React.FC<Props> = ({
             setPath([{ id: c.categoryId, name: c.name, image: c.image }]),
         }));
     }
-    if (depth === 1) {
-      return (subCategories.data?.pages ?? [])
-        .flatMap(p => p.items)
-        .map<Row>(s => ({
-          key: `sub-${s.subCategoryId}`,
-          title: s.name,
-          image: s.image,
-          drill: true,
-          onPress: () =>
-            setPath(prev => [
-              ...prev,
-              { id: s.subCategoryId, name: s.name, image: s.image },
-            ]),
-        }));
-    }
-    if (depth === 2) {
-      return (productGroups.data?.pages ?? [])
-        .flatMap(p => p.items)
-        .map<Row>(g => ({
-          key: `pg-${g.productGroupId}`,
-          title: g.name,
-          image: g.image,
-          drill: true,
-          onPress: () =>
-            setPath(prev => [
-              ...prev,
-              { id: g.productGroupId, name: g.name, image: g.image },
-            ]),
-        }));
+    if (!isLeafNode) {
+      return childItems.map<Row>(s => ({
+        key: `cat-${s.subCategoryId}`,
+        title: s.name,
+        image: s.image,
+        drill: true,
+        onPress: () =>
+          setPath(prev => [
+            ...prev,
+            { id: s.subCategoryId, name: s.name, image: s.image },
+          ]),
+      }));
     }
     return (products.data?.pages ?? [])
       .flatMap(p => p.items)
@@ -216,8 +206,8 @@ export const CatalogPickerTab: React.FC<Props> = ({
     isSearching,
     depth,
     categories.data,
-    subCategories.data,
-    productGroups.data,
+    childItems,
+    isLeafNode,
     products.data,
     handleSelectProduct,
   ]);
@@ -234,11 +224,7 @@ export const CatalogPickerTab: React.FC<Props> = ({
       ? productSearch.isLoading
       : depth === 0
         ? categories.isLoading
-        : depth === 1
-          ? subCategories.isLoading
-          : depth === 2
-            ? productGroups.isLoading
-            : products.isLoading;
+        : childCategories.isLoading || (isLeafNode && products.isLoading);
 
   const handleEndReached = useCallback(() => {
     if (restricted) {
@@ -255,13 +241,7 @@ export const CatalogPickerTab: React.FC<Props> = ({
       return;
     }
     const q =
-      depth === 0
-        ? categories
-        : depth === 1
-          ? subCategories
-          : depth === 2
-            ? productGroups
-            : products;
+      depth === 0 ? categories : isLeafNode ? products : childCategories;
     if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage();
   }, [
     restricted,
@@ -269,8 +249,8 @@ export const CatalogPickerTab: React.FC<Props> = ({
     isSearching,
     depth,
     categories,
-    subCategories,
-    productGroups,
+    childCategories,
+    isLeafNode,
     products,
     productSearch,
   ]);
@@ -364,7 +344,13 @@ export const CatalogPickerTab: React.FC<Props> = ({
         </Pressable>
       )}
 
-      {loading && rows.length === 0 ? (
+      {isQueryTooShort ? (
+        <Box flex={1} alignItems='center' justifyContent='center' px='$8'>
+          <Text fontSize='$sm' textAlign='center' color={subTextColor}>
+            {t('create.productPicker.minSearchChars')}
+          </Text>
+        </Box>
+      ) : loading && rows.length === 0 ? (
         <Box flex={1} alignItems='center' justifyContent='center'>
           <Spinner color={accentColor} />
         </Box>
